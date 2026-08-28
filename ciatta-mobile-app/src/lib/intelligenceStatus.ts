@@ -15,64 +15,34 @@ const FALLBACK_STATUS: Record<Strength, string> = {
   'very-strong': 'very confident',
 };
 
-function notableShareFromNarrative(narrative: string | null | undefined): number | null {
-  if (!narrative) return null;
-  const match = narrative.match(/About (\d+)% of your days/i);
-  if (!match) return null;
-  return Number(match[1]) / 100;
-}
-
-function capDisplayedStrength(strength: Strength, notableRate: number): Strength {
-  if (notableRate < 0.05) {
-    if (strength === 'very-strong' || strength === 'strong') return 'moderate';
-    return strength;
-  }
-  if (strength === 'very-strong' && notableRate < 0.15) return 'strong';
-  return strength;
-}
-
-function stripCareSentence(guidance: string | null): string | null {
-  if (!guidance) return null;
-  const withoutCare = guidance
-    .replace(/\s*This is a consistent pattern in your recovery\.\s*If it continues, it may be worth discussing with your primary care provider\./gi, '')
-    .replace(/\s*This pattern in your recovery appears connected to your [^.]+.\s*If it continues, it may be worth discussing with your primary care provider\./gi, '')
-    .trim();
-  return withoutCare ? displayCopy(withoutCare) : null;
-}
-
 /**
- * Aligns a persisted Understanding with the presentation rules so Today,
- * Core, and Why cannot show a stale very-strong/care status that the
- * evidence in the same row does not support. Does not rewrite the
- * database or touch observations.
+ * Display-only sanitization of a persisted Understanding.
+ * Does not rewrite strength, care, or guidance. Those belong to the engine.
  */
 export function presentPersistedUnderstanding<T extends {
   domain: string;
   strength: Strength;
   narrative: string;
+  seeing?: string | null;
   confidence_label: string | null;
   guidance: string | null;
   care_recommendation_type: string | null;
   care_recommendation_reason: string | null;
+  evidence_summary?: string | null;
+  baseline_summary?: string | null;
+  change_summary?: string | null;
 }>(row: T): T {
-  const narrative = row.narrative ?? '';
-  const notable = notableShareFromNarrative(narrative);
-  const stepsRecovery = row.domain === 'recovery' && /steps a day/i.test(narrative);
-  const hrvRecovery = row.domain === 'recovery' && /heart rate variability/i.test(narrative);
-  let strength = row.strength;
-  if (notable != null && (stepsRecovery || hrvRecovery || row.domain === 'sleep' || row.domain === 'mood')) {
-    strength = capDisplayedStrength(row.strength, notable);
-  }
-  const dropCare =
-    stepsRecovery || (hrvRecovery && (notable == null || notable < 0.15)) || strength === 'emerging' || strength === 'moderate';
-  const status = FALLBACK_STATUS[strength] ?? row.confidence_label ?? 'still learning';
+  const seeing = displayCopy(row.seeing || row.narrative || '');
+  const status = row.confidence_label?.trim() || FALLBACK_STATUS[row.strength] || 'still learning';
   return {
     ...row,
-    strength,
+    seeing,
+    narrative: seeing || displayCopy(row.narrative ?? ''),
     confidence_label: displayCopy(status),
-    guidance: dropCare && (stepsRecovery || hrvRecovery) ? stripCareSentence(row.guidance) : row.guidance,
-    care_recommendation_type: dropCare ? null : row.care_recommendation_type,
-    care_recommendation_reason: dropCare ? null : row.care_recommendation_reason,
+    guidance: row.guidance ? displayCopy(row.guidance) : null,
+    evidence_summary: row.evidence_summary ? displayCopy(row.evidence_summary) : row.evidence_summary,
+    baseline_summary: row.baseline_summary ? displayCopy(row.baseline_summary) : row.baseline_summary,
+    change_summary: row.change_summary ? displayCopy(row.change_summary) : row.change_summary,
   };
 }
 
@@ -98,13 +68,14 @@ export function intelligenceSurfaces(input: WhyLayerInput): {
 } {
   const featured = input.featured;
   const status = coreStatusLabel(featured);
+  const seeing = displayCopy(featured.seeing || featured.narrative);
   return {
     today: {
-      narrative: displayCopy(featured.narrative),
+      narrative: seeing,
       status,
       strength: featured.strength,
     },
     core: { status, strength: featured.strength },
-    why: composeWhyLayer(input),
+    why: composeWhyLayer({ ...input, todayNarrative: seeing }),
   };
 }

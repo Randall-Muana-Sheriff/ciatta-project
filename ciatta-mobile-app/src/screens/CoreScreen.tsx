@@ -14,7 +14,6 @@ import BodySilhouette, {
   CORE_FIGURE_BASE_WIDTH,
 } from '../components/BodySilhouette';
 import Card from '../components/Card';
-import { domainUnderstandingTitle } from '../lib/voice';
 
 // Single-line empty-state/tap-hint text plus its own marginTop, and the
 // `model` wrapper's marginVertical on both ends — the fixed cost around the
@@ -100,7 +99,7 @@ export default function CoreScreen({
     <ScreenContainer>
       <View style={{ minHeight: introMinHeight }}>
         <View onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
-          <EditorialHeader title="Core" subtitle="Your understanding." />
+          <EditorialHeader title="Core" subtitle="How this has taken shape." />
         </View>
 
         <View style={styles.model}>
@@ -119,7 +118,7 @@ export default function CoreScreen({
           />
           <Text style={styles.tapHint}>
             {understoodDomains.length > 0
-              ? 'Tap a point to explore your understandings'
+              ? 'Tap a point to see more'
               : 'Nothing to show here yet.'}
           </Text>
         </View>
@@ -127,15 +126,10 @@ export default function CoreScreen({
 
       {careRows.length > 0 ? (
         <View style={styles.careBlock}>
-          <Text style={styles.careLabel}>CARE CONNECTION</Text>
+          <Text style={styles.careLabel}>FOR A VISIT</Text>
           {careRows.map((u) => (
             <Card key={u.id} onPress={() => onOpenUnderstanding(u.domain)}>
-              <Text style={styles.rowTitle}>
-                {domainUnderstandingTitle(domainLabel[u.domain], u.strength)}
-              </Text>
-              <Text style={styles.rowSub} numberOfLines={3}>
-                {u.narrative}
-              </Text>
+              <Text style={styles.rowTitle}>{domainLabel[u.domain]}</Text>
               {u.care_recommendation_reason ? (
                 <Text style={styles.careReason}>{u.care_recommendation_reason}</Text>
               ) : u.guidance ? (
@@ -149,8 +143,8 @@ export default function CoreScreen({
       <View style={styles.tabs}>
         {(
           [
-            ['discoveries', 'Discoveries'],
-            ['unwritten', 'Unwritten'],
+            ['discoveries', 'Noticed'],
+            ['unwritten', 'Still taking shape'],
           ] as [Tab, string][]
         ).map(([id, label]) => (
           <Text
@@ -168,7 +162,7 @@ export default function CoreScreen({
           <View style={styles.list}>
             {discoveries.map((disc) => (
               <Card key={disc.id} onPress={() => onOpenDiscovery(disc.id)}>
-                <Text style={styles.rowTitle}>{disc.name ?? 'A new discovery'}</Text>
+                <Text style={styles.rowTitle}>{disc.name ?? 'Something new'}</Text>
                 <Text style={styles.rowSub}>{disc.narrative}</Text>
               </Card>
             ))}
@@ -176,8 +170,8 @@ export default function CoreScreen({
         ) : (
           <Card style={styles.list}>
             <Text style={styles.emptyText}>
-              Nothing here yet. Discoveries appear once a pattern is strong
-              enough to become part of your story.
+              Nothing here yet. Patterns appear once they are strong enough to
+              become part of your story.
             </Text>
           </Card>
         ))}
@@ -189,15 +183,15 @@ export default function CoreScreen({
               <Card key={d} style={styles.row}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.rowTitle}>{domainLabel[d]}</Text>
-                  <Text style={styles.rowSub}>Not yet part of your picture.</Text>
+                  <Text style={styles.rowSub}>Not yet in the picture.</Text>
                 </View>
               </Card>
             ))
           ) : (
             <Card>
               <Text style={styles.emptyText}>
-                Everything with a starting point is here. Nothing left
-                unwritten.
+                Everything with a starting point is here. Nothing left to take
+                shape.
               </Text>
             </Card>
           )}

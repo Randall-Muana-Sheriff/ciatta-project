@@ -73,11 +73,12 @@ export default function HealthSyncSheet({
         return;
       }
       const reflection = await fetchSyncReflection(userId);
+      const telemetry = 'telemetry' in result ? result.telemetry : undefined;
       setOutcome({
         kind: 'synced',
         count: result.observationsSynced,
         reflection,
-        telemetry: 'telemetry' in result ? result.telemetry : undefined,
+        telemetry: telemetry as HealthKitSyncTelemetry | undefined,
       });
       onSynced();
     } catch (e) {

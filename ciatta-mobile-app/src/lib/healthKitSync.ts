@@ -13,15 +13,20 @@ import {
   elapsedMs,
   emptyHealthKitTelemetry,
   logHealthKitTelemetry,
+  markHealthKitStage,
   type HealthKitSyncTelemetry,
+  type HealthKitSyncTrigger,
 } from './healthKitTelemetry';
 
 export { chunk, WRITE_BATCH_SIZE, QUERY_CONCURRENCY } from './healthKitObservations';
 export { emptyHealthKitTelemetry } from './healthKitTelemetry';
-export type { HealthKitSyncTelemetry };
+export type { HealthKitSyncTelemetry, HealthKitSyncTrigger };
 
 const SYNC_WINDOW_HOURS = 24 * 30;
 const CYCLE_HISTORY_DAYS = 365;
+const WORKOUT_IDENTIFIER = 'HKWorkoutTypeIdentifier';
+
+export type HealthKitSyncMode = 'recovery' | 'incremental';
 
 export type HealthKitAnchorStore = {
   get: (identifier: string) => Promise<string | null>;
@@ -60,6 +65,7 @@ export type HealthKitSyncPort = {
     newAnchor: string;
   }>;
   write: (rows: HealthKitNewObservation[]) => Promise<void>;
+  enqueueIntelligence?: () => Promise<void>;
 };
 
 export type HealthKitSyncProgress = {
@@ -103,6 +109,15 @@ async function mapPool<T, R>(
   return out;
 }
 
+function selectedByIdentifier<T extends { identifier: string }>(
+  items: readonly T[],
+  identifiers: readonly string[] | undefined
+): readonly T[] {
+  if (!identifiers || identifiers.length === 0) return items;
+  const allow = new Set(identifiers);
+  return items.filter((item) => allow.has(item.identifier));
+}
+
 export async function runHealthKitSync(
   _userId: string,
   deps: {
@@ -110,13 +125,29 @@ export async function runHealthKitSync(
     anchors: HealthKitAnchorStore;
     queryConcurrency?: number;
     onProgress?: (progress: HealthKitSyncProgress) => void;
+    mode?: HealthKitSyncMode;
+    trigger?: HealthKitSyncTrigger;
+    identifiers?: readonly string[];
+    backgroundEventAt?: number;
   }
 ): Promise<HealthKitSyncResult> {
   const started = Date.now();
-  const telemetry = emptyHealthKitTelemetry();
+  const mode: HealthKitSyncMode = deps.mode ?? 'recovery';
+  const trigger: HealthKitSyncTrigger = deps.trigger ?? 'manual';
+  const telemetry = emptyHealthKitTelemetry(trigger);
+  if (trigger === 'background') {
+    telemetry.backgroundEventMs = elapsedMs(deps.backgroundEventAt ?? started);
+    markHealthKitStage(telemetry, 'background_event');
+  }
   const { port, anchors } = deps;
   const concurrency = deps.queryConcurrency ?? QUERY_CONCURRENCY;
-  const typesTotal = port.quantitySpecs.length + port.categorySpecs.length + 1;
+  const quantitySpecs = selectedByIdentifier(port.quantitySpecs, deps.identifiers);
+  const categorySpecs = selectedByIdentifier(port.categorySpecs, deps.identifiers);
+  const includeWorkouts =
+    !deps.identifiers ||
+    deps.identifiers.length === 0 ||
+    deps.identifiers.includes(WORKOUT_IDENTIFIER);
+  const typesTotal = quantitySpecs.length + categorySpecs.length + (includeWorkouts ? 1 : 0);
   const endDate = new Date();
   const pendingAnchors: { identifier: string; anchor: string }[] = [];
   const observations: HealthKitNewObservation[] = [];
@@ -137,8 +168,11 @@ export async function runHealthKitSync(
 
   const queryStarted = Date.now();
 
-  const quantityResults = await mapPool(port.quantitySpecs, concurrency, async (spec) => {
+  const quantityResults = await mapPool(quantitySpecs, concurrency, async (spec) => {
     const stored = await anchors.get(spec.identifier);
+    if (mode === 'incremental' && !stored) {
+      return { spec, result: null, ok: false as const, skipped: true as const };
+    }
     usedStoredAnchor.push(Boolean(stored));
     const opts: AnchoredQueryOptions = {
       limit: 0,
@@ -149,15 +183,18 @@ export async function runHealthKitSync(
     };
     try {
       const result = await port.queryQuantity(spec.identifier, opts);
-      return { spec, result, ok: true as const };
+      return { spec, result, ok: true as const, skipped: false as const };
     } catch (e) {
       console.log('[healthkit] query failed', spec.type, e instanceof Error ? e.message : e);
-      return { spec, result: null, ok: false as const };
+      return { spec, result: null, ok: false as const, skipped: false as const };
     }
   });
 
-  const categoryResults = await mapPool(port.categorySpecs, concurrency, async (spec) => {
+  const categoryResults = await mapPool(categorySpecs, concurrency, async (spec) => {
     const stored = await anchors.get(spec.identifier);
+    if (mode === 'incremental' && !stored) {
+      return { spec, result: null, ok: false as const, skipped: true as const };
+    }
     usedStoredAnchor.push(Boolean(stored));
     const opts: AnchoredQueryOptions = {
       limit: 0,
@@ -167,40 +204,48 @@ export async function runHealthKitSync(
     };
     try {
       const result = await port.queryCategory(spec.identifier, opts);
-      return { spec, result, ok: true as const };
+      return { spec, result, ok: true as const, skipped: false as const };
     } catch (e) {
       console.log('[healthkit] query failed', spec.type, e instanceof Error ? e.message : e);
-      return { spec, result: null, ok: false as const };
+      return { spec, result: null, ok: false as const, skipped: false as const };
     }
   });
 
-  const workoutIdentifier = 'HKWorkoutTypeIdentifier';
-  const workoutStored = await anchors.get(workoutIdentifier);
-  usedStoredAnchor.push(Boolean(workoutStored));
+  const workoutStored = includeWorkouts ? await anchors.get(WORKOUT_IDENTIFIER) : null;
   let workoutResult: {
     workouts: readonly WorkoutSampleLike[];
     deletedSamples: readonly unknown[];
     newAnchor: string;
   } | null = null;
-  try {
-    workoutResult = await port.queryWorkouts({
-      limit: 0,
-      ...(workoutStored
-        ? { anchor: workoutStored }
-        : { filter: dateFilterFor('recent', endDate) }),
-    });
-  } catch (e) {
-    console.log('[healthkit] query failed', 'workout', e instanceof Error ? e.message : e);
+  let workoutSkipped = !includeWorkouts;
+  if (includeWorkouts && mode === 'incremental' && !workoutStored) {
+    workoutSkipped = true;
+  } else if (includeWorkouts) {
+    usedStoredAnchor.push(Boolean(workoutStored));
+    try {
+      workoutResult = await port.queryWorkouts({
+        limit: 0,
+        ...(workoutStored
+          ? { anchor: workoutStored }
+          : { filter: dateFilterFor('recent', endDate) }),
+      });
+    } catch (e) {
+      console.log('[healthkit] query failed', 'workout', e instanceof Error ? e.message : e);
+    }
   }
 
   telemetry.healthKitQueryMs = elapsedMs(queryStarted);
-  telemetry.typesQueried = typesTotal;
-  telemetry.incremental = usedStoredAnchor.length > 0 && usedStoredAnchor.every(Boolean);
+  telemetry.typesQueried =
+    quantityResults.filter((row) => !row.skipped).length +
+    categoryResults.filter((row) => !row.skipped).length +
+    (workoutSkipped ? 0 : 1);
+  telemetry.incremental =
+    mode === 'incremental' || (usedStoredAnchor.length > 0 && usedStoredAnchor.every(Boolean));
 
   const normalizeStarted = Date.now();
   for (const row of quantityResults) {
     typesDone += 1;
-    if (!row.ok || !row.result) {
+    if (row.skipped || !row.ok || !row.result) {
       report('query');
       continue;
     }
@@ -215,7 +260,7 @@ export async function runHealthKitSync(
   }
   for (const row of categoryResults) {
     typesDone += 1;
-    if (!row.ok || !row.result) {
+    if (row.skipped || !row.ok || !row.result) {
       report('query');
       continue;
     }
@@ -228,7 +273,7 @@ export async function runHealthKitSync(
     pendingAnchors.push({ identifier: row.spec.identifier, anchor: row.result.newAnchor });
     report('query');
   }
-  typesDone += 1;
+  if (includeWorkouts) typesDone += 1;
   if (workoutResult) {
     telemetry.samplesFetched += workoutResult.workouts.length;
     samplesDeleted += workoutResult.deletedSamples.length;
@@ -236,12 +281,13 @@ export async function runHealthKitSync(
     for (const workout of workoutResult.workouts) {
       observations.push(workoutToObservation(workout));
     }
-    pendingAnchors.push({ identifier: workoutIdentifier, anchor: workoutResult.newAnchor });
+    pendingAnchors.push({ identifier: WORKOUT_IDENTIFIER, anchor: workoutResult.newAnchor });
   }
   report('normalize');
   telemetry.normalizationMs = elapsedMs(normalizeStarted);
   telemetry.samplesDeleted = samplesDeleted;
   telemetry.typesWithNewSamples = typesWithNewSamples;
+  markHealthKitStage(telemetry, 'samples_fetched');
 
   const writeStarted = Date.now();
   report('write', 0);
@@ -249,13 +295,21 @@ export async function runHealthKitSync(
     await port.write(observations);
   }
   telemetry.databaseWriteMs = elapsedMs(writeStarted);
-  telemetry.intelligenceProcessingMs = 0;
+  markHealthKitStage(telemetry, 'database_write');
+
+  const intelligenceStarted = Date.now();
+  if (observations.length > 0 && port.enqueueIntelligence) {
+    await port.enqueueIntelligence();
+  }
+  telemetry.intelligenceProcessingMs = elapsedMs(intelligenceStarted);
+  markHealthKitStage(telemetry, 'intelligence_processing');
 
   for (const pending of pendingAnchors) {
     await anchors.set(pending.identifier, pending.anchor);
   }
 
   telemetry.totalMs = elapsedMs(started);
+  markHealthKitStage(telemetry, 'completion');
   logHealthKitTelemetry(telemetry);
 
   return {

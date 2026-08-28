@@ -45,15 +45,15 @@ export default function TodayInfoSheet({
       ) : null}
 
       <Text style={styles.body}>
-        The understanding shown is whichever one changed most recently. The
-        priority beneath it is either an action anchored to something measured,
-        or the open question that would sharpen this picture. If neither is
-        available, nothing appears there. Better to say less than guess.
+        The sentence at the center is what Ciatta understands right now, from
+        the Understanding that changed most recently. If there is something
+        useful to do, it sits just beneath that. Why opens the evidence behind
+        it. Core is where the longer picture lives.
       </Text>
 
       <Text style={styles.body}>
-        Open <Text style={styles.emphasis}>Core</Text> to see every understanding,
-        the evidence behind it, and how each one has changed over time.
+        Open <Text style={styles.emphasis}>Core</Text> to see how this has
+        developed over time, including connections between areas.
       </Text>
 
       <GhostButton label="Close" onPress={onClose} />

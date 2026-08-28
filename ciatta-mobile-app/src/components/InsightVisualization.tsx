@@ -213,7 +213,7 @@ export default function InsightVisualization({
 }) {
   return (
     <Card style={styles.card}>
-      <Text style={styles.kicker}>{displayCopy(`${view.catalog} ${view.title}`)}</Text>
+          <Text style={[styles.kicker, compact && styles.kickerCompact]}>{displayCopy(view.title)}</Text>
       {!(compact && view.kind !== 'still-learning') ? (
         <Text style={[styles.headline, compact && styles.headlineCompact]}>{view.headline}</Text>
       ) : null}
@@ -265,6 +265,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.2,
     color: colors.ink3,
+  },
+  kickerCompact: {
+    marginBottom: 0,
   },
   headline: {
     ...type.title3,

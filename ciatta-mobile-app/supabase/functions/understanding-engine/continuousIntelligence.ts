@@ -219,6 +219,8 @@ export interface UnderstandingSnapshot {
   confidenceLabel: string;
   observationsCount: number;
   stillLearning: string[];
+  seeing?: string;
+  evidenceSummary?: string;
 }
 
 export function isRedundantUnderstandingWrite(
@@ -230,7 +232,9 @@ export function isRedundantUnderstandingWrite(
     existing.narrative === next.narrative &&
     existing.confidenceLabel === next.confidenceLabel &&
     existing.observationsCount === next.observationsCount &&
-    existing.stillLearning.join('\0') === next.stillLearning.join('\0')
+    existing.stillLearning.join('\0') === next.stillLearning.join('\0') &&
+    (existing.seeing ?? existing.narrative) === (next.seeing ?? next.narrative) &&
+    (existing.evidenceSummary ?? '') === (next.evidenceSummary ?? '')
   );
 }
 

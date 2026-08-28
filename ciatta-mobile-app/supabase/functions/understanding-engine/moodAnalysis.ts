@@ -13,6 +13,11 @@
 import type { Strength } from './cycleAnalysis.ts';
 import { strengthForObservedPattern } from './cycleAnalysis.ts';
 import type { RatingObservation } from './energyRelationship.ts';
+import {
+  changeFromNotableRate,
+  readingsEvidenceSummary,
+  type UnderstandingFacets,
+} from './understandingFacets.ts';
 
 const MIN_ANSWERS = 10;
 const CONFIDENCE_SAMPLE_CAP = 20;
@@ -57,7 +62,7 @@ export function analyzeMood(observations: RatingObservation[]): MoodUnderstandin
   };
 }
 
-export interface MoodUnderstandingDraft {
+export interface MoodUnderstandingDraft extends UnderstandingFacets {
   strength: Strength;
   narrative: string;
   confidenceLabel: string;
@@ -76,9 +81,18 @@ export function buildMoodUnderstanding(
   if (!result.eligible) return null;
   const strength = strengthForObservedPattern(result.confidence, result.lowMoodRate);
   const pct = Math.round(result.lowMoodRate * 100);
+  const seeing = `Out of ${result.totalAnswers} times you've answered, you've rated your mood as "Low" ${pct}% of the time.`;
   return {
     strength,
-    narrative: `Out of ${result.totalAnswers} times you've answered, you've rated your mood as "Low" ${pct}% of the time.`,
+    narrative: seeing,
+    seeing,
     confidenceLabel: CONFIDENCE_LABEL[strength],
+    evidenceSummary: readingsEvidenceSummary(result.observationIds.length, strength),
+    evidenceSignal: 'mood_rating',
+    baselineValue: result.lowMoodRate,
+    baselineUnit: 'share',
+    baselineWindowDays: null,
+    baselineSummary: `Low has shown up in ${pct}% of the mood answers Ciatta has.`,
+    ...changeFromNotableRate(result.lowMoodRate),
   };
 }

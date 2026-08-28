@@ -146,7 +146,14 @@ function evidenceSentence(domainWord: string, evidence: EvidenceContext, now: Da
 
 // Answers "what might the user consider doing?" — one fixed sentence per
 // domain, never generated from the narrative or any external source.
-function considerSentence(domain: string): string {
+function considerSentence(domain: string, options: GuidanceOptions = {}): string {
+  if (
+    domain === 'sleep' &&
+    options.sleepAverageMinutes != null &&
+    options.sleepAverageMinutes < 8 * 60
+  ) {
+    return 'Consider aiming for about eight hours of sleep and tracking whether the pattern continues.';
+  }
   const action = CONSIDER_ACTION[domain] ?? CONSIDER_ACTION.recovery;
   return `Consider ${action} and tracking whether the pattern continues.`;
 }
@@ -159,6 +166,12 @@ export interface GuidanceOptions {
    * mood, and sleep, false otherwise.
    */
   clinicalConcern?: boolean;
+  /**
+   * Sleep processor's personal average night length in minutes. When this
+   * is below eight hours and sleep is actionable, guidance names that
+   * target instead of a client invented last night comparison.
+   */
+  sleepAverageMinutes?: number;
 }
 
 function wantsCare(domain: string, clinicalConcern?: boolean): boolean {
@@ -197,7 +210,7 @@ export function deriveGuidance(
   const connectedWord = connectedDomain ? DOMAIN_LABEL[connectedDomain] ?? connectedDomain : null;
   const attachCare = wantsCare(domain, options.clinicalConcern);
 
-  const sentences = [evidenceSentence(domainWord, evidence, now), considerSentence(domain)];
+  const sentences = [evidenceSentence(domainWord, evidence, now), considerSentence(domain, options)];
 
   if (!attachCare) {
     return {

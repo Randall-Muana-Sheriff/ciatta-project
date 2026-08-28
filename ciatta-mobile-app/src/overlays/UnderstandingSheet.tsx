@@ -395,7 +395,6 @@ export default function UnderstandingSheet({
       <View>
         <View style={styles.headerRow}>
           <View style={styles.headerText}>
-            <Text style={styles.eyebrow}>YOUR UNDERSTANDING</Text>
             <Text style={styles.title}>{domainLabel[understanding.domain]}</Text>
           </View>
           <Pressable onPress={handleClose} hitSlop={10}>
@@ -404,7 +403,7 @@ export default function UnderstandingSheet({
         </View>
 
         {/* The finding itself, given the weight it deserves. */}
-        <Text style={styles.narrative}>{understanding.narrative}</Text>
+        <Text style={styles.narrative}>{understanding.seeing || understanding.narrative}</Text>
 
         {/* Confidence, stated once, where it belongs — next to the claim it
             qualifies rather than buried in a stat table below. */}
@@ -536,7 +535,7 @@ export default function UnderstandingSheet({
 
         {guidance ? (
           <>
-            <Text style={styles.sectionLabel}>CARE CONNECTION</Text>
+            <Text style={styles.sectionLabel}>FOR A VISIT</Text>
             {understanding.care_recommendation_reason ? (
               <Text style={styles.bulletText}>{understanding.care_recommendation_reason}</Text>
             ) : null}

@@ -30,6 +30,11 @@ import {
   type DailyMetricRatingRelationshipResult,
   type DailyMetricDiscoveryDraft,
 } from './dailyMetricRatingRelationship.ts';
+import {
+  changeFromNotableRate,
+  readingsEvidenceSummary,
+  type UnderstandingFacets,
+} from './understandingFacets.ts';
 
 export interface StepsObservation {
   id: string;
@@ -60,6 +65,7 @@ export function dailyStepTotals(observations: StepsObservation[]): Map<string, D
 export interface StepsUnderstandingResult {
   totalDays: number;
   avgSteps: number;
+  medianSteps: number;
   lowActivityDays: number;
   lowActivityRate: number;
   confidence: number;
@@ -76,6 +82,7 @@ export function analyzeSteps(observations: StepsObservation[]): StepsUnderstandi
     return {
       totalDays,
       avgSteps: 0,
+      medianSteps: 0,
       lowActivityDays: 0,
       lowActivityRate: 0,
       confidence: 0,
@@ -92,6 +99,7 @@ export function analyzeSteps(observations: StepsObservation[]): StepsUnderstandi
   return {
     totalDays,
     avgSteps,
+    medianSteps: baseline,
     lowActivityDays,
     lowActivityRate: lowActivityDays / totalDays,
     confidence: Math.min(1, totalDays / CONFIDENCE_SAMPLE_CAP),
@@ -100,7 +108,7 @@ export function analyzeSteps(observations: StepsObservation[]): StepsUnderstandi
   };
 }
 
-export interface StepsUnderstandingDraft {
+export interface StepsUnderstandingDraft extends UnderstandingFacets {
   strength: Strength;
   narrative: string;
   confidenceLabel: string;
@@ -119,11 +127,21 @@ export function buildStepsUnderstanding(
   if (!result.eligible) return null;
   const strength = strengthForObservedPattern(result.confidence, result.lowActivityRate);
   const avgSteps = Math.round(result.avgSteps).toLocaleString('en-US');
+  const medianSteps = Math.round(result.medianSteps).toLocaleString('en-US');
   const pct = Math.round(result.lowActivityRate * 100);
+  const seeing = `You average about ${avgSteps} steps a day. About ${pct}% of your days are notably less active than that.`;
   return {
     strength,
-    narrative: `You average about ${avgSteps} steps a day. About ${pct}% of your days are notably less active than that.`,
+    narrative: seeing,
+    seeing,
     confidenceLabel: CONFIDENCE_LABEL[strength],
+    evidenceSummary: readingsEvidenceSummary(result.observationIds.length, strength),
+    evidenceSignal: 'steps',
+    baselineValue: result.medianSteps,
+    baselineUnit: 'count',
+    baselineWindowDays: result.totalDays,
+    baselineSummary: `Your usual day is about ${medianSteps} steps.`,
+    ...changeFromNotableRate(result.lowActivityRate),
   };
 }
 

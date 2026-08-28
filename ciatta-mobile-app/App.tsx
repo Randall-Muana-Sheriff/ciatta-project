@@ -30,7 +30,12 @@ import { answerCuriosity, fetchActiveCuriosity, fetchNextOnboardingQuestion, typ
 import { fetchLastHealthSyncAt, fetchProviderFeedback, fetchRecentSyncSummary, fetchVisitPrepShared, type ProviderFeedbackRow, type RecentSyncSummary } from './src/lib/observations';
 import { registerForPush } from './src/lib/notifications';
 import { connectHealthConnect } from './src/lib/healthConnect';
-import { connectHealthKit } from './src/lib/healthKit';
+import {
+  catchUpHealthKitSync,
+  connectHealthKit,
+  startHealthKitBackgroundDelivery,
+  stopHealthKitBackgroundDelivery,
+} from './src/lib/healthKit';
 import { syncCalendarContext } from './src/lib/calendarContext';
 import { saveHealthNote } from './src/lib/healthNotes';
 import { domainLabel } from './src/lib/mockData';
@@ -140,14 +145,10 @@ export default function App() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // Auto-sync replaces having to find the manual "Sync now" button — if
-  // Health Connect/HealthKit is already connected and it's been a while
-  // since the last sync, quietly pull fresh data whenever the app is
-  // opened. requestPermission/requestAuthorization only prompt the OS
-  // dialog the first time (or if access was revoked), so this is silent on
-  // every normal open. Failures are swallowed — this is a background
-  // nicety, not a user-facing action, so it never surfaces an error; the
-  // manual sync sheet remains the fallback with real error messaging.
+  // iOS: HealthKit background delivery is opportunistic. On open, register
+  // observers and run an incremental catch-up (stored HKQueryAnchors only).
+  // Android still uses a cooldown plus Health Connect. Failures are swallowed
+  // so this never surfaces an error; Sync Now remains the recovery path.
   //
   // Guarded against re-entrancy: Android's AppState can emit several rapid
   // 'active' transitions around a single cold start (window-focus churn,
@@ -160,12 +161,17 @@ export default function App() {
     if (autoSyncInFlightRef.current) return;
     autoSyncInFlightRef.current = true;
     try {
+      if (Platform.OS === 'ios') {
+        await startHealthKitBackgroundDelivery(userId);
+        await catchUpHealthKitSync(userId);
+        setRecentSyncSummary(await fetchRecentSyncSummary(userId));
+        return;
+      }
       const lastSyncedAt = await fetchLastHealthSyncAt(userId);
       const due =
         !lastSyncedAt || Date.now() - new Date(lastSyncedAt).getTime() > AUTO_SYNC_COOLDOWN_MS;
       if (!due) return;
-      const result =
-        Platform.OS === 'android' ? await connectHealthConnect(userId) : await connectHealthKit(userId);
+      const result = await connectHealthConnect(userId);
       if (result.granted) {
         setRecentSyncSummary(await fetchRecentSyncSummary(userId));
       }
@@ -249,7 +255,7 @@ export default function App() {
         // Fire-and-forget: push is an enhancement and must never block or
         // fail the load. Honours the preference captured at onboarding.
         registerForPush(userId, p?.notification_preference);
-        if (hc) {
+        if (Platform.OS === 'ios' || hc) {
           maybeAutoSync(userId);
         }
       } catch (e) {
@@ -299,6 +305,7 @@ export default function App() {
     if (session?.user?.id) {
       loadUserData(session.user.id);
     } else {
+      stopHealthKitBackgroundDelivery();
       setProfile(null);
       setUnderstandings([]);
       setRelationships([]);
@@ -318,7 +325,7 @@ export default function App() {
       const cameToForeground =
         /inactive|background/.test(appStateRef.current) && nextState === 'active';
       appStateRef.current = nextState;
-      if (cameToForeground && session?.user?.id && healthSourceConnected) {
+      if (cameToForeground && session?.user?.id && (Platform.OS === 'ios' || healthSourceConnected)) {
         maybeAutoSync(session.user.id);
       }
     });

@@ -8,6 +8,12 @@
  * against their own history rather than a population norm.
  */
 
+import {
+  changeFromNotableRate,
+  readingsEvidenceSummary,
+  type UnderstandingFacets,
+} from './understandingFacets.ts';
+
 export interface FlowObservation {
   id: string;
   recordedAt: string; // ISO timestamp
@@ -246,7 +252,7 @@ export function strengthForObservedPattern(confidence: number, notableRate: numb
   return bySample;
 }
 
-export interface UnderstandingDraft {
+export interface UnderstandingDraft extends UnderstandingFacets {
   strength: Strength;
   narrative: string;
   confidenceLabel: string;
@@ -266,13 +272,22 @@ export function buildUnderstanding(result: CycleAnalysisResult): UnderstandingDr
   const strength = strengthForConfidence(result.confidence);
   const delta = result.avgDeltaBpm.toFixed(1);
 
+  const seeing = `Your resting heart rate tends to run about ${delta} bpm higher in the days before your period. This has shown up in ${result.cyclesConfirming} of the ${result.cyclesWithSufficientData} cycles with enough data so far.`;
   return {
     strength,
-    narrative: `Your resting heart rate tends to run about ${delta} bpm higher in the days before your period. This has shown up in ${result.cyclesConfirming} of the ${result.cyclesWithSufficientData} cycles with enough data so far.`,
+    narrative: seeing,
+    seeing,
     confidenceLabel: CONFIDENCE_LABEL[strength],
     stillLearning: [
       'exactly how many days before your period this shift starts',
       'how this connects to your energy day to day',
     ],
+    evidenceSummary: readingsEvidenceSummary(result.observationIds.length, strength),
+    evidenceSignal: 'resting_heart_rate',
+    baselineValue: result.avgDeltaBpm,
+    baselineUnit: 'bpm',
+    baselineWindowDays: null,
+    baselineSummary: `The usual lift is about ${delta} bpm in the days before your period.`,
+    ...changeFromNotableRate(result.confirmationRate),
   };
 }

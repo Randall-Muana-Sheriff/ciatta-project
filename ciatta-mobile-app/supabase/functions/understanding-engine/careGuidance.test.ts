@@ -145,3 +145,11 @@ Deno.test('durationPhrase: buckets days into fixed, enumerated phrases', () => {
   assertEquals(durationPhrase(179), 'over the past couple of months');
   assertEquals(durationPhrase(180), 'over the past several months');
 });
+
+Deno.test('deriveGuidance: sleep that runs short of eight hours uses engine sleep guidance', () => {
+  const result = deriveGuidance('sleep', 'strong', null, EVIDENCE_3_WEEKS, NOW, {
+    sleepAverageMinutes: 6 * 60 + 30,
+  });
+  assert(result.guidance!.includes('aiming for about eight hours of sleep'));
+  assertEquals(result.guidance!.includes('keeping your sleep schedule consistent'), false);
+});

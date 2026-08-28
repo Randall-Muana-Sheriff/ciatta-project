@@ -14,6 +14,7 @@ const recoveryVolume: IntelligenceUnderstanding = {
   domain: 'recovery',
   strength: 'moderate',
   narrative: 'You average about 8,412 steps a day. About 0% of your days are notably less active than that.',
+  seeing: 'You average about 8,412 steps a day. About 0% of your days are notably less active than that.',
   observations_count: 26,
   confidence_label: 'fairly confident',
   learning_since: '2026-07-01',
@@ -24,6 +25,10 @@ const recoveryVolume: IntelligenceUnderstanding = {
     "We've been learning your recovery patterns over the past several weeks. Consider prioritizing recovery and easing up where you can and tracking whether the pattern continues.",
   care_recommendation_type: null,
   care_recommendation_reason: null,
+  evidence_summary: 'This is grounded in 26 readings Ciatta has already seen.',
+  baseline_summary: 'Your usual day is about 8,412 steps.',
+  change_summary: null,
+  related_domains: [],
 };
 
 Deno.test('Today, Core, and Why share one persisted status and cannot contradict it', () => {
@@ -102,11 +107,31 @@ Deno.test('Why is available from history even when Today already holds the narra
   );
 });
 
+Deno.test('guidance on Today is the engine field, never a client invented target', () => {
+  const surfaces = intelligenceSurfaces({
+    featured: recoveryVolume,
+    todayNarrative: recoveryVolume.seeing ?? recoveryVolume.narrative,
+    todayPriority: {
+      text: recoveryVolume.guidance ?? '',
+      measured: true,
+    },
+    understandings: [recoveryVolume],
+    relationships: [],
+    crossDomain: [],
+    history: [],
+    candidates: [],
+  });
+  assertEquals(surfaces.today.narrative, recoveryVolume.seeing);
+  assertEquals((surfaces.why.evidence ?? '').includes('8,412 steps a day. About 0%'), false);
+  assertEquals(surfaces.why.evidence?.includes('26 readings'), true);
+  assertEquals(surfaces.why.evidence?.includes('8,412 steps'), true);
+});
+
 Deno.test('care connection stays off when recovery guidance has no clinical fields', () => {
   assertEquals(isEligibleCareConnection(recoveryVolume), false);
 });
 
-Deno.test('stale very-strong activity volume Recovery is presented as developing, without care', () => {
+Deno.test('client presents persisted Recovery strength as stored, without rewriting it', () => {
   const presented = presentPersistedUnderstanding({
     ...recoveryVolume,
     strength: 'very-strong' as const,
@@ -116,34 +141,9 @@ Deno.test('stale very-strong activity volume Recovery is presented as developing
     care_recommendation_type: 'primary-care',
     care_recommendation_reason: 'General or unexplained changes are usually best started with primary care.',
   });
-  assertEquals(presented.strength, 'moderate');
-  assertEquals(presented.confidence_label, 'fairly confident');
-  assertEquals(presented.narrative.includes('8,412 steps'), true);
-  assertEquals(presented.observations_count, 26);
-  assertEquals(presented.care_recommendation_type, null);
-  assertEquals(presented.care_recommendation_reason, null);
-  assertEquals((presented.guidance ?? '').toLowerCase().includes('discussing'), false);
-  assertEquals(isEligibleCareConnection(presented), false);
-
-  const surfaces = intelligenceSurfaces({
-    featured: presented,
-    todayNarrative: presented.narrative,
-    todayPriority: null,
-    understandings: [presented],
-    relationships: [],
-    crossDomain: [],
-    history: [
-      {
-        understanding_id: presented.id,
-        event_date: '2026-07-01',
-        label: 'A pattern in how much you move day to day started to show.',
-      },
-    ],
-    candidates: [],
-  });
-  assertEquals(surfaces.today.status, 'fairly confident');
-  assertEquals(surfaces.core.status, 'fairly confident');
-  assertEquals(surfaces.today.status.includes('Very strong'), false);
+  assertEquals(presented.strength, 'very-strong');
+  assertEquals(presented.confidence_label, 'very confident');
+  assertEquals(presented.care_recommendation_type, 'primary-care');
 });
 
 Deno.test('presentPersistedUnderstanding does not throw on an empty narrative', () => {

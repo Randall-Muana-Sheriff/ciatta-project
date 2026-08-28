@@ -54,6 +54,7 @@ import {
 } from './hrvAnalysis.ts';
 import { analyzeMood, buildMoodUnderstanding } from './moodAnalysis.ts';
 import { deriveGuidance } from './careGuidance.ts';
+import { readingsEvidenceSummary, type UnderstandingFacets } from './understandingFacets.ts';
 import { buildContextualUnderstanding, mapConcernToDomain, type Domain } from './contextualUnderstanding.ts';
 import { nextDecayedState } from './decay.ts';
 import { buildCrossDomainDraft } from './crossDomainSynthesis.ts';
@@ -279,7 +280,7 @@ async function loadObservations(
   };
 }
 
-interface UnderstandingDraftLike {
+interface UnderstandingDraftLike extends Partial<UnderstandingFacets> {
   strength: Strength;
   narrative: string;
   confidenceLabel: string;
@@ -309,11 +310,26 @@ async function upsertUnderstanding(
   historyLabel: { first: string; changed: string },
   evidenceType: 'health_data' | 'user_reported',
   skipIfUnchanged = false,
-  guidanceOptions?: { clinicalConcern?: boolean }
+  guidanceOptions?: { clinicalConcern?: boolean; sleepAverageMinutes?: number }
 ): Promise<string> {
+  const facets: UnderstandingFacets = {
+    seeing: draft.seeing ?? draft.narrative,
+    evidenceSummary:
+      draft.evidenceSummary ?? readingsEvidenceSummary(observationIds.length, draft.strength),
+    evidenceSignal: draft.evidenceSignal ?? null,
+    baselineValue: draft.baselineValue ?? null,
+    baselineUnit: draft.baselineUnit ?? null,
+    baselineWindowDays: draft.baselineWindowDays ?? null,
+    baselineSummary: draft.baselineSummary ?? null,
+    changeDetected: draft.changeDetected ?? false,
+    changeSummary: draft.changeSummary ?? null,
+  };
+
   const { data: existing, error: fetchError } = await supabase
     .from('understandings')
-    .select('id, strength, learning_since, narrative, confidence_label, observations_count, still_learning')
+    .select(
+      'id, strength, learning_since, narrative, seeing, confidence_label, observations_count, still_learning, evidence_summary, baseline_summary, change_summary'
+    )
     .eq('user_id', userId)
     .eq('domain', domain)
     .maybeSingle();
@@ -329,6 +345,8 @@ async function upsertUnderstanding(
         confidenceLabel: (existing.confidence_label as string) ?? '',
         observationsCount: (existing.observations_count as number) ?? 0,
         stillLearning: (existing.still_learning as string[]) ?? [],
+        seeing: (existing.seeing as string) ?? '',
+        evidenceSummary: (existing.evidence_summary as string) ?? '',
       },
       {
         strength: draft.strength,
@@ -336,6 +354,8 @@ async function upsertUnderstanding(
         confidenceLabel: draft.confidenceLabel,
         observationsCount: observationIds.length,
         stillLearning: draft.stillLearning ?? [],
+        seeing: facets.seeing,
+        evidenceSummary: facets.evidenceSummary,
       }
     )
   ) {
@@ -360,15 +380,18 @@ async function upsertUnderstanding(
   const { data: relatedRows, error: relatedError } = await supabase
     .from('relationships')
     .select('from_domain, to_domain, confidence')
+    .eq('user_id', userId)
     .or(`from_domain.eq.${domain},to_domain.eq.${domain}`)
-    .order('confidence', { ascending: false })
-    .limit(1);
+    .order('confidence', { ascending: false });
   if (relatedError) throw relatedError;
-  const connectedDomain = relatedRows?.[0]
-    ? relatedRows[0].from_domain === domain
-      ? (relatedRows[0].to_domain as string)
-      : (relatedRows[0].from_domain as string)
-    : null;
+  const relatedDomains = [
+    ...new Set(
+      (relatedRows ?? []).map((row) =>
+        row.from_domain === domain ? (row.to_domain as string) : (row.from_domain as string)
+      )
+    ),
+  ];
+  const connectedDomain = relatedDomains[0] ?? null;
 
   // Same anchor upsertUnderstanding's own `learning_since` write below
   // uses: the persisted value once one exists, else this run's own
@@ -393,12 +416,22 @@ async function upsertUnderstanding(
         domain,
         strength: draft.strength,
         narrative: draft.narrative,
+        seeing: facets.seeing,
         confidence_label: draft.confidenceLabel,
         observations_count: observationIds.length,
         first_observed: firstObserved,
         learning_since: existing?.strength == null ? firstObserved : undefined,
         last_updated: new Date().toISOString(),
         still_learning: draft.stillLearning ?? [],
+        evidence_summary: facets.evidenceSummary,
+        evidence_signal: facets.evidenceSignal,
+        baseline_value: facets.baselineValue,
+        baseline_unit: facets.baselineUnit,
+        baseline_window_days: facets.baselineWindowDays,
+        baseline_summary: facets.baselineSummary,
+        change_detected: facets.changeDetected,
+        change_summary: facets.changeSummary,
+        related_domains: relatedDomains,
         guidance,
         care_recommendation_type: careRecommendationType,
         care_recommendation_reason: careRecommendationReason,
@@ -590,7 +623,8 @@ async function processSleepDomain(
       changed: `This pattern has held across ${result.totalNights} nights now.`,
     },
     'health_data',
-    skipIfUnchanged
+    skipIfUnchanged,
+    { sleepAverageMinutes: result.avgMinutes }
   );
 
   // Energy and mood are collected identically (same 1-4 curiosity scale),

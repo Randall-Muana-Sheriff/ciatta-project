@@ -13,6 +13,7 @@ export type WhyUnderstanding = {
   domain: Domain;
   strength: Strength;
   narrative: string;
+  seeing?: string | null;
   still_learning: string[];
   last_updated: string;
   observations_count: number;
@@ -20,6 +21,14 @@ export type WhyUnderstanding = {
   learning_since: string | null;
   first_observed: string | null;
   guidance: string | null;
+  evidence_summary?: string | null;
+  evidence_signal?: string | null;
+  baseline_value?: number | null;
+  baseline_unit?: string | null;
+  baseline_window_days?: number | null;
+  baseline_summary?: string | null;
+  change_summary?: string | null;
+  related_domains?: Domain[];
 };
 
 export type WhyRelationship = {
@@ -91,7 +100,7 @@ function lowerFirst(value: string): string {
   return trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
 }
 
-function evidenceCopy(featured: WhyUnderstanding): string {
+function fallbackEvidenceCopy(featured: WhyUnderstanding): string {
   const n = featured.observations_count ?? 0;
   const thin = n < 8 || THIN_STRENGTH.includes(featured.strength);
   if (n <= 0) {
@@ -116,56 +125,103 @@ function watchingCopy(questions: string[]): string | null {
   return displayCopy(`Ciatta is watching for ${lowerFirst(text)}.`);
 }
 
+const DOMAIN_WORD: Record<Domain, string> = {
+  sleep: 'sleep',
+  recovery: 'recovery',
+  energy: 'energy',
+  cycle: 'cycle',
+  mood: 'mood',
+};
+
+function relatedLine(domain: Domain): string {
+  return displayCopy(`This sits beside your ${DOMAIN_WORD[domain]}.`);
+}
+
 /**
- * Compose the Why layer from engine output already on the row.
- * Never invents a pattern. Never repeats the Today narrative.
- * Never surfaces internal metadata as the experience.
+ * Compose the Why layer from structured Understanding fields.
+ * Never invents a pattern. Never repeats Today seeing or guidance.
  */
 export function composeWhyLayer(input: WhyLayerInput): WhyLayer {
   const { featured, todayNarrative, todayPriority } = input;
-  const used = [todayNarrative, todayPriority?.text, todayPriority?.consider].filter(Boolean) as string[];
+  const seeing = featured.seeing || todayNarrative || featured.narrative;
+  const used = [seeing, todayNarrative, todayPriority?.text, todayPriority?.consider, featured.guidance].filter(
+    Boolean
+  ) as string[];
 
   const featuredHistory = (input.history ?? []).filter((h) => h.understanding_id === featured.id);
   const history = featuredHistory
     .map((h) => displayCopy(h.label))
     .filter((label) => label && !used.some((u) => overlaps(label, u)));
 
-  const cross = input.crossDomain.find(
-    (cd) => cd.from_domain === featured.domain || cd.to_domain === featured.domain
-  );
-  const neighbors = input.relationships
-    .filter((r) => r.from_domain === featured.domain || r.to_domain === featured.domain)
-    .map((r) => (r.from_domain === featured.domain ? r.to_domain : r.from_domain));
-
-  const neighborCopy = neighbors
-    .map((d) => input.understandings.find((u) => u.domain === d))
-    .filter((u): u is WhyUnderstanding => !!u)
-    .map((u) => ({ domain: u.domain, text: displayCopy(u.narrative) }))
-    .filter((item) => !used.some((u) => overlaps(item.text, u)));
+  const relatedDomains = [
+    ...new Set(
+      (featured.related_domains ?? []).concat(
+        input.relationships
+          .filter((r) => r.from_domain === featured.domain || r.to_domain === featured.domain)
+          .map((r) => (r.from_domain === featured.domain ? r.to_domain : r.from_domain))
+      )
+    ),
+  ];
+  const related = relatedDomains.map((domain) => ({
+    domain,
+    text: relatedLine(domain),
+  }));
 
   let mattering: string | null = null;
-  if (cross?.narrative && !used.some((u) => overlaps(cross.narrative, u))) {
-    mattering = displayCopy(cross.narrative);
-  } else if (history[0] && !overlaps(history[0], todayNarrative)) {
+  if (featured.change_summary && !used.some((u) => overlaps(featured.change_summary, u))) {
+    mattering = displayCopy(featured.change_summary);
+  } else if (history[0] && !overlaps(history[0], seeing)) {
     mattering = history[0];
-  } else if (featured.guidance && !used.some((u) => overlaps(featured.guidance, u))) {
-    mattering = displayCopy(featured.guidance);
   }
 
-  const related = neighborCopy.filter((item) => !overlaps(item.text, mattering));
+  const windowCopy =
+    featured.baseline_window_days && featured.baseline_window_days > 0
+      ? displayCopy(`This looks across the last ${featured.baseline_window_days} days.`)
+      : null;
+
+  const evidenceBits = [
+    featured.evidence_summary ? displayCopy(featured.evidence_summary) : fallbackEvidenceCopy(featured),
+    featured.evidence_signal ? displayCopy(featured.evidence_signal) : null,
+    featured.baseline_summary && !overlaps(featured.baseline_summary, mattering)
+      ? displayCopy(featured.baseline_summary)
+      : null,
+    windowCopy &&
+    !overlaps(windowCopy, featured.baseline_summary) &&
+    !overlaps(windowCopy, featured.evidence_summary)
+      ? windowCopy
+      : null,
+    featured.change_summary &&
+    !overlaps(featured.change_summary, mattering) &&
+    !used.some((u) => overlaps(featured.change_summary, u))
+      ? displayCopy(featured.change_summary)
+      : null,
+  ].filter((bit): bit is string => !!bit && !used.some((u) => overlaps(bit, u)));
 
   const leftoverQuestions = (featured.still_learning ?? []).filter(
     (q) => !used.some((u) => overlaps(q, u))
   );
   const watching = watchingCopy(leftoverQuestions);
 
-  const vizPool = input.candidates.filter(
-    (c) => c.kind !== 'still-learning' && c.id !== input.todayVizId
-  );
+  const vizPool = input.candidates
+    .filter((c) => c.kind !== 'still-learning' && c.id !== input.todayVizId)
+    .map((c) => {
+      if (
+        overlaps(c.headline, seeing) ||
+        overlaps(c.headline, mattering) ||
+        overlaps(c.context, seeing)
+      ) {
+        return {
+          ...c,
+          headline: overlaps(c.headline, seeing) || overlaps(c.headline, mattering) ? c.title : c.headline,
+          context: overlaps(c.context, seeing) ? c.metricLine : c.context,
+        };
+      }
+      return c;
+    });
 
   return {
     mattering,
-    evidence: evidenceCopy(featured),
+    evidence: evidenceBits.length > 0 ? evidenceBits.join(' ') : null,
     related,
     watching,
     history,
@@ -180,6 +236,8 @@ export function whyAvailable(input: Omit<WhyLayerInput, 'candidates'>): boolean 
     layer.mattering ||
     layer.related.length > 0 ||
     layer.watching ||
-    layer.history.length > 0
+    layer.history.length > 0 ||
+    layer.evidence ||
+    (input.featured.observations_count ?? 0) >= 4
   );
 }

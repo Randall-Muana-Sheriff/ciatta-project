@@ -32,6 +32,12 @@ export type UnderstandingSignal = {
   stillLearning: string[];
   lastUpdated: string;
   observationsCount: number;
+  seeing?: string | null;
+  baselineValue?: number | null;
+  baselineUnit?: string | null;
+  baselineWindowDays?: number | null;
+  baselineSummary?: string | null;
+  changeSummary?: string | null;
 };
 
 export type RelationshipSignal = {
@@ -95,11 +101,18 @@ type Candidate = InsightViewModel & {
   score: number;
 };
 
-function windowLine(points: DailyPoint[], metric: string): string {
+function windowLine(
+  points: DailyPoint[],
+  metric: string,
+  windowDays?: number | null
+): string {
+  if (windowDays && windowDays > 0) {
+    return displayCopy(`${metric} · last ${windowDays} days`);
+  }
   if (points.length === 0) return displayCopy(metric);
   const first = points[0].label;
   const last = points[points.length - 1].label;
-  return displayCopy(`${metric} | ${first} to ${last}`);
+  return displayCopy(`${metric} · ${first} to ${last}`);
 }
 
 function mean(values: number[]): number {
@@ -149,15 +162,25 @@ function understandingFor(
 
 function tryLabel(u?: UnderstandingSignal): string | null {
   const open = u?.stillLearning[0];
-  if (open) return displayCopy(open);
-  if (u) return 'See why this holds';
-  return null;
+  return open ? displayCopy(open) : null;
 }
 
 function headlineFrom(u: UnderstandingSignal | undefined, fallback: string): string {
-  const n = u?.narrative?.trim();
-  if (n) return displayCopy(n);
+  const change = u?.changeSummary?.trim();
+  if (change) return displayCopy(change);
   return displayCopy(fallback);
+}
+
+function contextFrom(u: UnderstandingSignal | undefined, fallback: string): string {
+  const baseline = u?.baselineSummary?.trim();
+  if (baseline) return displayCopy(baseline);
+  return displayCopy(fallback);
+}
+
+function usualBaseline(u?: UnderstandingSignal): number | undefined {
+  const value = u?.baselineValue;
+  if (value == null || !Number.isFinite(value)) return undefined;
+  return value;
 }
 
 function rank(
@@ -229,20 +252,24 @@ function buildCandidates(input: InsightSelectionInput): Candidate[] {
           domain: 'sleep',
           catalog: '01',
           title: displayCopy('Sleep'),
-          headline: headlineFrom(sleepU, 'Your nights have been shifting.'),
-          metricLine: windowLine(series.sleepMinutes, 'Sleep duration'),
-          context: displayCopy(
-            sleepU.stillLearning[0] ?? 'Quieter nights sit higher. Shorter ones sit lower.'
+          headline: headlineFrom(sleepU, 'Your nights have a shape across this stretch.'),
+          metricLine: windowLine(
+            series.sleepMinutes,
+            'Sleep duration',
+            sleepU.baselineWindowDays
+          ),
+          context: contextFrom(
+            sleepU,
+            sleepU.stillLearning[0] ?? 'Each mark is a night. The dashed line is your usual.'
           ),
           tryLabel: tryLabel(sleepU),
           color: vizColor.plum,
           kind: 'line',
           points: series.sleepMinutes,
-          yGuides: [
-            { value: 480, label: 'Good' },
-            { value: 390, label: 'Okay' },
-            { value: 300, label: 'Poor' },
-          ],
+          baseline: usualBaseline(sleepU),
+          yGuides: usualBaseline(sleepU)
+            ? [{ value: usualBaseline(sleepU)!, label: 'Usual' }]
+            : undefined,
         },
         {
           understanding: sleepU,
@@ -267,12 +294,14 @@ function buildCandidates(input: InsightSelectionInput): Candidate[] {
           id: 'hrv_bars',
           domain: hrvHost.domain,
           catalog: '02',
-          title: displayCopy('Stress and HRV'),
-          headline: headlineFrom(hrvHost, 'Your body has been under more load than usual.'),
-          metricLine: windowLine(series.hrvMs, 'Heart rate variability'),
-          context: displayCopy(
+          title: displayCopy('Heart rate variability'),
+          headline: headlineFrom(hrvHost, 'Your rest between beats has a shape across this stretch.'),
+          metricLine: windowLine(series.hrvMs, 'Heart rate variability', hrvHost.baselineWindowDays),
+          context: contextFrom(
+            hrvHost,
             hrvHost.stillLearning[0] ?? 'Higher bars mean more variable rest between beats.'
           ),
+          baseline: usualBaseline(hrvHost),
           tryLabel: tryLabel(hrvHost),
           color: vizColor.sage,
           kind: 'bars',
@@ -293,7 +322,7 @@ function buildCandidates(input: InsightSelectionInput): Candidate[] {
 
   if (series.rhrBpm.length >= MIN_POINTS && (recoveryU || sleepU || understandingFor(understandings, 'cycle'))) {
     const host = recoveryU ?? sleepU ?? understandingFor(understandings, 'cycle');
-    const baseline = mean(series.rhrBpm.map((p) => p.value));
+    const baseline = usualBaseline(host) ?? mean(series.rhrBpm.map((p) => p.value));
     out.push(
       rank(
         {
@@ -301,9 +330,12 @@ function buildCandidates(input: InsightSelectionInput): Candidate[] {
           domain: host?.domain,
           catalog: '03',
           title: displayCopy('Resting heart rate'),
-          headline: headlineFrom(host, 'Your resting heart rate has moved off its usual place.'),
-          metricLine: windowLine(series.rhrBpm, 'Resting heart rate'),
-          context: displayCopy(host?.stillLearning[0] ?? 'The dashed line is your usual range this week.'),
+          headline: headlineFrom(host, 'Your resting heart rate has a shape across this stretch.'),
+          metricLine: windowLine(series.rhrBpm, 'Resting heart rate', host?.baselineWindowDays),
+          context: contextFrom(
+            host,
+            host?.stillLearning[0] ?? 'The dashed line is your usual across this stretch.'
+          ),
           tryLabel: tryLabel(host),
           color: vizColor.ocean,
           kind: 'line',
@@ -334,13 +366,14 @@ function buildCandidates(input: InsightSelectionInput): Candidate[] {
           domain: 'energy',
           catalog: '06',
           title: displayCopy('Energy'),
-          headline: headlineFrom(energyU, 'Your energy has been moving day to day.'),
-          metricLine: windowLine(energyPts, metric),
-          context: displayCopy(energyU.stillLearning[0] ?? 'Taller marks are fuller days.'),
+          headline: headlineFrom(energyU, 'Your activity has a shape across this stretch.'),
+          metricLine: windowLine(energyPts, metric, energyU.baselineWindowDays),
+          context: contextFrom(energyU, energyU.stillLearning[0] ?? 'Taller marks are fuller days.'),
           tryLabel: tryLabel(energyU),
           color: vizColor.amber,
           kind: 'bars',
           points: energyPts,
+          baseline: usualBaseline(energyU),
         },
         {
           understanding: energyU,
@@ -363,9 +396,9 @@ function buildCandidates(input: InsightSelectionInput): Candidate[] {
           domain: 'mood',
           catalog: '08',
           title: displayCopy('Mood'),
-          headline: headlineFrom(moodU, 'How you have been feeling has a shape this week.'),
-          metricLine: windowLine(series.moodRating, 'Mood'),
-          context: displayCopy(moodU.stillLearning[0] ?? 'This is the week as you named it.'),
+          headline: headlineFrom(moodU, 'How you have been feeling has a shape across this stretch.'),
+          metricLine: windowLine(series.moodRating, 'Mood', moodU.baselineWindowDays),
+          context: contextFrom(moodU, moodU.stillLearning[0] ?? 'This is the stretch as you named it.'),
           tryLabel: tryLabel(moodU),
           color: vizColor.ink,
           kind: 'area',
@@ -396,10 +429,13 @@ function buildCandidates(input: InsightSelectionInput): Candidate[] {
     (sleepU || recoveryU)
   ) {
     const host = STRENGTH_SCORE[related.strength] >= 0.8 ? recoveryU ?? sleepU : sleepU ?? recoveryU;
+    const sleepUsual =
+      (usualBaseline(sleepU) ?? mean(series.sleepMinutes.map((p) => p.value))) || 1;
+    const hrvUsual = (usualBaseline(recoveryU) ?? mean(series.hrvMs.map((x) => x.value))) || 1;
     const aligned = series.sleepMinutes.map((p, i) => {
       const h = series.hrvMs.find((h) => h.day === p.day) ?? series.hrvMs[i];
-      const sleepN = p.value / 480;
-      const hrvN = h ? h.value / (mean(series.hrvMs.map((x) => x.value)) || 1) : 0;
+      const sleepN = p.value / sleepUsual;
+      const hrvN = h ? h.value / hrvUsual : 0;
       return { ...p, value: sleepN - hrvN };
     });
     out.push(
@@ -409,9 +445,13 @@ function buildCandidates(input: InsightSelectionInput): Candidate[] {
           domain: host?.domain,
           catalog: '07',
           title: displayCopy('Recovery'),
-          headline: headlineFrom(host, 'Rest and strain have been pulling in different directions.'),
-          metricLine: windowLine(aligned, 'Recovery balance'),
-          context: displayCopy(
+          headline: headlineFrom(
+            host,
+            'Rest and strain have been pulling in different directions.'
+          ),
+          metricLine: windowLine(aligned, 'Rest beside load', host?.baselineWindowDays),
+          context: contextFrom(
+            host,
             host?.stillLearning[0] ?? 'Marks above show rest. Marks below show more load than rest.'
           ),
           tryLabel: tryLabel(host),
@@ -518,6 +558,12 @@ export function toUnderstandingSignals(
     still_learning: string[];
     last_updated: string;
     observations_count: number;
+    seeing?: string | null;
+    baseline_value?: number | null;
+    baseline_unit?: string | null;
+    baseline_window_days?: number | null;
+    baseline_summary?: string | null;
+    change_summary?: string | null;
   }[]
 ): UnderstandingSignal[] {
   return rows.map((r) => ({
@@ -527,5 +573,11 @@ export function toUnderstandingSignals(
     stillLearning: r.still_learning,
     lastUpdated: r.last_updated,
     observationsCount: r.observations_count,
+    seeing: r.seeing,
+    baselineValue: r.baseline_value,
+    baselineUnit: r.baseline_unit,
+    baselineWindowDays: r.baseline_window_days,
+    baselineSummary: r.baseline_summary,
+    changeSummary: r.change_summary,
   }));
 }

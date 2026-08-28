@@ -89,11 +89,17 @@ Deno.test('a complete still learning sentence is shown as written', () => {
   );
 });
 
-Deno.test('Why uses guidance and never repeats Today narrative', () => {
+Deno.test('Why uses persisted change and evidence, not Today seeing', () => {
   const layer = composeWhyLayer({
-    featured,
+    featured: {
+      ...featured,
+      seeing: featured.narrative,
+      evidence_summary: 'This is grounded in 18 readings Ciatta has already seen.',
+      baseline_summary: 'Your usual night is about 7h 10m.',
+      change_summary: 'About 22% of recent days sit apart from your usual baseline.',
+    },
     todayNarrative: featured.narrative,
-    todayPriority: { text: 'Prioritize eight hours of sleep.', measured: true },
+    todayPriority: { text: featured.guidance ?? '', measured: true },
     understandings: [featured],
     relationships: [],
     crossDomain: [],
@@ -101,17 +107,27 @@ Deno.test('Why uses guidance and never repeats Today narrative', () => {
     candidates: [viz('sleep_trend', 'Sleep')],
   });
   assertEquals(layer.mattering?.includes('shorter than they were last week'), false);
-  assertEquals(layer.mattering?.includes('sleep schedule consistent'), true);
+  assertEquals(layer.mattering?.includes('22%'), true);
+  assertEquals(layer.evidence?.includes('18 readings'), true);
+  assertEquals(layer.evidence?.includes('7h 10m'), true);
   assertEquals(layer.primaryViz?.id, 'sleep_trend');
 });
 
-Deno.test('Why prefers a broader pattern over repeating Today', () => {
+Deno.test('Why names related domains without reprinting a neighbor or cross domain narrative', () => {
   const layer = composeWhyLayer({
-    featured,
+    featured: { ...featured, related_domains: ['mood'] },
     todayNarrative: featured.narrative,
     todayPriority: null,
-    understandings: [featured],
-    relationships: [],
+    understandings: [
+      featured,
+      {
+        ...featured,
+        id: 'u-mood',
+        domain: 'mood',
+        narrative: 'Out of 12 times you have answered, you have rated your mood as Low 40% of the time.',
+      },
+    ],
+    relationships: [{ from_domain: 'sleep', to_domain: 'mood' }],
     crossDomain: [
       {
         from_domain: 'sleep',
@@ -122,7 +138,10 @@ Deno.test('Why prefers a broader pattern over repeating Today', () => {
     history: [],
     candidates: [],
   });
-  assertEquals(layer.mattering, 'Shorter nights have been showing up beside heavier mood days.');
+  assertEquals(layer.related.map((r) => r.text), ['This sits beside your mood.']);
+  assertEquals(layer.related.some((r) => r.text.includes('40%')), false);
+  assertEquals((layer.mattering ?? '').includes('heavier mood'), false);
+  assertEquals((layer.evidence ?? '').includes('heavier mood'), false);
 });
 
 Deno.test('Why does not use a still learning placeholder as a chart', () => {
@@ -149,7 +168,7 @@ Deno.test('whyAvailable is true when history, evidence, or a connection sits bey
       featured,
       todayNarrative: featured.narrative,
       todayPriority: {
-        text: 'Prioritize eight hours of sleep.',
+        text: featured.guidance ?? '',
         measured: true,
       },
       understandings: [featured],
@@ -168,12 +187,18 @@ Deno.test('whyAvailable is false when Today already holds the whole story', () =
     whyAvailable({
       featured: {
         ...featured,
+        seeing: 'Not enough yet.',
+        narrative: 'Not enough yet.',
+        evidence_summary: 'Not enough yet.',
+        baseline_summary: null,
+        change_summary: null,
+        related_domains: [],
         observations_count: 3,
         strength: 'emerging',
-        guidance: featured.narrative,
+        guidance: 'Not enough yet.',
         still_learning: [],
       },
-      todayNarrative: featured.narrative,
+      todayNarrative: 'Not enough yet.',
       todayPriority: null,
       understandings: [featured],
       relationships: [],

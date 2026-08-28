@@ -169,6 +169,10 @@ Deno.test('stepsAnalysis: activity volume without notable low days is developing
   assertEquals(draft!.strength, 'moderate');
   assertEquals(draft!.confidenceLabel, 'fairly confident');
   assert(!draft!.narrative.toLowerCase().includes('very strong'));
+  assertEquals(draft!.seeing, draft!.narrative);
+  assertEquals(draft!.evidenceSignal, 'steps');
+  assertEquals(draft!.changeDetected, false);
+  assert(draft!.baselineSummary != null);
 });
 
 Deno.test('stepsAnalysis: real low-activity -> low-rating pattern is confirmed', () => {

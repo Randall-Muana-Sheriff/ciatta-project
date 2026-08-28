@@ -109,7 +109,7 @@ Deno.test('goal aligned HRV can outrank a flat sleep series', () => {
     now: new Date('2026-08-27T18:00:00.000Z'),
   });
   assertEquals(view?.kind, 'bars');
-  assertEquals(view?.title, 'Stress and HRV');
+  assertEquals(view?.title, 'Heart rate variability');
 });
 
 Deno.test('a close second visualization can replace one already shown today', () => {
@@ -172,4 +172,32 @@ Deno.test('sheet focus keeps the visualization on that domain', () => {
   });
   assertEquals(view?.title, 'Energy');
   assertEquals(view?.kind, 'bars');
+});
+
+Deno.test('sleep chart uses the persisted baseline, not an eight hour target', () => {
+  const view = selectInsightVisualization({
+    understandings: [
+      {
+        ...sleepU,
+        seeing: 'Your nights have been shorter than they were last week.',
+        baselineValue: 430,
+        baselineWindowDays: 30,
+        baselineSummary: 'Your usual night is about 7h 10m.',
+        changeSummary: 'About 22% of recent days sit apart from your usual baseline.',
+      },
+    ],
+    relationships: [],
+    goals: ['sleep'],
+    series: { ...emptySeries(), sleepMinutes: pts([480, 460, 420, 390, 360, 340, 300]) },
+    featuredDomain: 'sleep',
+    focusDomain: 'sleep',
+    now: new Date('2026-08-27T18:00:00.000Z'),
+  });
+  assertEquals(view?.id, 'sleep_trend');
+  assertEquals(view?.baseline, 430);
+  assertEquals(view?.yGuides, [{ value: 430, label: 'Usual' }]);
+  assertEquals(view?.headline.includes('shorter than they were last week'), false);
+  assertEquals(view?.headline.includes('22%'), true);
+  assertEquals(view?.context.includes('7h 10m'), true);
+  assertEquals(view?.metricLine.includes('last 30 days'), true);
 });

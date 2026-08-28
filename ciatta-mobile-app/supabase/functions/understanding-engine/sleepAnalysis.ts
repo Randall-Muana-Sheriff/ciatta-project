@@ -17,6 +17,11 @@
 import type { Strength } from './cycleAnalysis.ts';
 import { strengthForConfidence, strengthForObservedPattern } from './cycleAnalysis.ts';
 import type { RatingObservation } from './energyRelationship.ts';
+import {
+  changeFromNotableRate,
+  readingsEvidenceSummary,
+  type UnderstandingFacets,
+} from './understandingFacets.ts';
 
 export interface SleepObservation {
   id: string;
@@ -69,6 +74,7 @@ function median(xs: number[]): number {
 export interface SleepUnderstandingResult {
   totalNights: number;
   avgMinutes: number;
+  medianMinutes: number;
   shortNights: number;
   shortNightRate: number;
   confidence: number;
@@ -85,6 +91,7 @@ export function analyzeSleep(observations: SleepObservation[]): SleepUnderstandi
     return {
       totalNights,
       avgMinutes: 0,
+      medianMinutes: 0,
       shortNights: 0,
       shortNightRate: 0,
       confidence: 0,
@@ -100,6 +107,7 @@ export function analyzeSleep(observations: SleepObservation[]): SleepUnderstandi
   return {
     totalNights,
     avgMinutes,
+    medianMinutes: baseline,
     shortNights,
     shortNightRate: shortNights / totalNights,
     confidence: Math.min(1, totalNights / CONFIDENCE_SAMPLE_CAP_UNDERSTANDING),
@@ -108,7 +116,7 @@ export function analyzeSleep(observations: SleepObservation[]): SleepUnderstandi
   };
 }
 
-export interface SleepUnderstandingDraft {
+export interface SleepUnderstandingDraft extends UnderstandingFacets {
   strength: Strength;
   narrative: string;
   confidenceLabel: string;
@@ -127,10 +135,21 @@ export function buildSleepUnderstanding(result: SleepUnderstandingResult): Sleep
   const hours = Math.floor(result.avgMinutes / 60);
   const minutes = Math.round(result.avgMinutes % 60);
   const pct = Math.round(result.shortNightRate * 100);
+  const seeing = `You average about ${hours}h ${minutes}m of sleep a night. About ${pct}% of your nights fall noticeably short of that.`;
+  const usualHours = Math.floor(result.medianMinutes / 60);
+  const usualMinutes = Math.round(result.medianMinutes % 60);
   return {
     strength,
-    narrative: `You average about ${hours}h ${minutes}m of sleep a night. About ${pct}% of your nights fall noticeably short of that.`,
+    narrative: seeing,
+    seeing,
     confidenceLabel: CONFIDENCE_LABEL[strength],
+    evidenceSummary: readingsEvidenceSummary(result.observationIds.length, strength),
+    evidenceSignal: 'sleep_segment',
+    baselineValue: result.medianMinutes,
+    baselineUnit: 'minutes',
+    baselineWindowDays: result.totalNights,
+    baselineSummary: `Your usual night is about ${usualHours}h ${usualMinutes}m.`,
+    ...changeFromNotableRate(result.shortNightRate),
   };
 }
 

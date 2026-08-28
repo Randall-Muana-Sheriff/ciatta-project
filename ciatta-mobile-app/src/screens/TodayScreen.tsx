@@ -5,13 +5,11 @@ import GlassSurface from '../components/GlassSurface';
 import type { ActiveCuriosity } from '../lib/curiosity';
 import type { CrossDomainUnderstandingRow, RelationshipRow, UnderstandingHistoryRow, UnderstandingRow } from '../lib/queries';
 import type { Domain } from '../lib/types';
-import { domainLabel } from '../lib/mockData';
 import { formatSleepMinutes, type RecentSyncSummary } from '../lib/observations';
 import { derivePriority } from '../lib/priority';
 import { whyAvailable } from '../lib/whyLayer';
-import { domainUnderstandingTitle } from '../lib/voice';
 import { displayCopy } from '../lib/displayCopy';
-import { selectCareNotice } from '../lib/careConnection';
+import { isEligibleCareConnection } from '../lib/careConnection';
 import ScreenContainer from '../components/ScreenContainer';
 import BodySilhouette from '../components/BodySilhouette';
 import CuriosityCard from '../components/CuriosityCard';
@@ -102,7 +100,6 @@ export default function TodayScreen({
   const [tamponBusy, setTamponBusy] = useState(false);
   const [tamponTick, setTamponTick] = useState(0);
   const [whyOpen, setWhyOpen] = useState(false);
-  const careNotice = selectCareNotice(understandings);
 
   // The thank-you is an acknowledgement, not a resting state — let it sit
   // long enough to read, then clear so the section collapses away rather
@@ -165,12 +162,13 @@ export default function TodayScreen({
     understandings.map((u) => [u.domain, u.strength])
   ) as Partial<Record<Domain, (typeof understandings)[number]['strength']>>;
 
-  const priority = derivePriority(featured, recentSyncSummary);
+  const priority = derivePriority(featured);
+  const showCareCta = featured != null && isEligibleCareConnection(featured);
   const showWhy =
     featured != null &&
     whyAvailable({
       featured,
-      todayNarrative: featured.narrative,
+      todayNarrative: featured.seeing || featured.narrative,
       todayPriority: priority,
       understandings,
       relationships: relationships.map((r) => ({
@@ -284,15 +282,24 @@ export default function TodayScreen({
 
       {featured ? (
         <View style={styles.section}>
-          <Text style={styles.label}>TODAY'S UNDERSTANDING</Text>
-          <Text style={styles.headline}>
-            {domainUnderstandingTitle(domainLabel[featured.domain], featured.strength)}.
-          </Text>
-          <Text style={styles.body}>{featured.narrative}</Text>
+          <Text style={styles.headline}>{featured.seeing || featured.narrative}</Text>
+          {priority ? (
+            <Text style={styles.guidance}>{priority.text}</Text>
+          ) : null}
+          {showCareCta ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Prepare for a provider conversation"
+              onPress={() => onOpenUnderstanding(featured.domain)}
+              style={({ pressed }) => [styles.careCta, pressed && styles.pressedSoft]}
+            >
+              <Text style={styles.careCtaText}>Prepare for a provider conversation</Text>
+            </Pressable>
+          ) : null}
           {showWhy ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Why this holds"
+            accessibilityLabel="Why Ciatta believes this"
             onPress={() => setWhyOpen(true)}
             style={({ pressed }) => [styles.whyRow, pressed && styles.pressedSoft]}
           >
@@ -303,53 +310,13 @@ export default function TodayScreen({
         </View>
       ) : (
         <View style={styles.section}>
-          <Text style={styles.label}>TODAY'S UNDERSTANDING</Text>
-          <Text style={styles.headline}>Your understanding is still taking shape.</Text>
+          <Text style={styles.headline}>Your picture is still taking shape.</Text>
           <Text style={styles.body}>
             There isn't enough evidence yet to notice a pattern. As you share
             more and connect your data, what you've learned will appear here.
           </Text>
         </View>
       )}
-
-      {priority ? (
-        <>
-          <View style={styles.divider} />
-          <View>
-            <Text style={styles.label}>TODAY'S PRIORITY</Text>
-            <Text
-              style={[
-                styles.priorityHeadline,
-                !priority.measured && styles.priorityOpen,
-              ]}
-            >
-              {priority.text}
-            </Text>
-            {priority.consider ? (
-              <Text style={styles.considerText}>{priority.consider}</Text>
-            ) : null}
-          </View>
-        </>
-      ) : null}
-
-      {careNotice ? (
-        <>
-          <View style={styles.divider} />
-          <View>
-            <Text style={styles.label}>SOMETHING WORTH DISCUSSING</Text>
-            <Text style={styles.body}>{careNotice.noticed}</Text>
-            <Text style={styles.considerText}>{careNotice.reason}</Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Prepare for a provider conversation"
-              onPress={() => onOpenUnderstanding(careNotice.domain)}
-              style={({ pressed }) => [styles.careCta, pressed && styles.pressedSoft]}
-            >
-              <Text style={styles.careCtaText}>Prepare for a provider conversation</Text>
-            </Pressable>
-          </View>
-        </>
-      ) : null}
 
       {showTampon && tamponWear ? (
         <View style={styles.block}>
@@ -387,7 +354,6 @@ export default function TodayScreen({
 
       {hasPendingDiscovery ? (
         <Card onPress={onOpenDiscoveryNudge} style={styles.nudgeFooter}>
-          <Text style={styles.nudgeEyebrow}>NEW DISCOVERY</Text>
           <Text style={styles.nudgeText}>
             Something new is becoming part of your story.
           </Text>
@@ -397,7 +363,7 @@ export default function TodayScreen({
     <WhySheet
       visible={whyOpen}
       featured={featured}
-      todayNarrative={featured?.narrative ?? ''}
+      todayNarrative={featured?.seeing || featured?.narrative || ''}
       todayPriority={priority}
       understandings={understandings}
       relationships={relationships}
@@ -471,28 +437,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.canvas,
   },
   section: {},
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: 24,
-  },
-  label: {
-    ...fonts.sansMedium,
-    fontSize: 11,
-    letterSpacing: 1.1,
-    color: colors.ink3,
-    marginBottom: 10,
-  },
   headline: {
     ...type.title2,
     color: colors.ink,
-    marginBottom: 12,
   },
   body: {
     ...fonts.sans,
     fontSize: 14.5,
     lineHeight: 22,
     color: colors.ink2,
+    marginTop: 12,
+  },
+  guidance: {
+    ...fonts.sans,
+    fontSize: 14.5,
+    lineHeight: 22,
+    color: colors.ink2,
+    marginTop: 12,
   },
   whyRow: {
     flexDirection: 'row',
@@ -505,24 +466,6 @@ const styles = StyleSheet.create({
     ...fonts.sansMedium,
     fontSize: 14,
     color: colors.accent,
-  },
-  priorityHeadline: {
-    ...type.title2,
-    color: colors.ink,
-  },
-  // Open questions sit at body size so they don't shout louder than the
-  // understanding above; Halbfett still marks them as the action to take.
-  priorityOpen: {
-    ...fonts.sansSemiBold,
-    fontSize: 14.5,
-    lineHeight: 22,
-  },
-  considerText: {
-    ...fonts.sans,
-    fontSize: 13,
-    lineHeight: 19,
-    color: colors.ink3,
-    marginTop: 8,
   },
   careCta: {
     marginTop: 14,
@@ -551,13 +494,6 @@ const styles = StyleSheet.create({
   nudgeFooter: {
     marginTop: 28,
     marginBottom: 12,
-  },
-  nudgeEyebrow: {
-    ...fonts.sansMedium,
-    fontSize: 11,
-    letterSpacing: 1,
-    color: colors.ink3,
-    marginBottom: 6,
   },
   nudgeText: {
     ...type.headline,

@@ -23,6 +23,11 @@ import {
   type DailyMetricRatingRelationshipResult,
   type DailyMetricDiscoveryDraft,
 } from './dailyMetricRatingRelationship.ts';
+import {
+  changeFromNotableRate,
+  readingsEvidenceSummary,
+  type UnderstandingFacets,
+} from './understandingFacets.ts';
 
 export interface HrvObservation {
   id: string;
@@ -106,6 +111,7 @@ export function dailyHrvAverages(observations: HrvObservation[]): Map<string, Da
 export interface HrvUnderstandingResult {
   totalDays: number;
   avgMs: number;
+  medianMs: number;
   lowHrvDays: number;
   lowHrvRate: number;
   confidence: number;
@@ -138,6 +144,7 @@ export function analyzeHrv(observations: HrvObservation[]): HrvUnderstandingResu
     return {
       totalDays,
       avgMs: 0,
+      medianMs: 0,
       lowHrvDays: 0,
       lowHrvRate: 0,
       confidence: 0,
@@ -154,6 +161,7 @@ export function analyzeHrv(observations: HrvObservation[]): HrvUnderstandingResu
   return {
     totalDays,
     avgMs,
+    medianMs: baseline,
     lowHrvDays,
     lowHrvRate: lowHrvDays / totalDays,
     confidence: Math.min(1, totalDays / CONFIDENCE_SAMPLE_CAP),
@@ -162,7 +170,7 @@ export function analyzeHrv(observations: HrvObservation[]): HrvUnderstandingResu
   };
 }
 
-export interface HrvUnderstandingDraft {
+export interface HrvUnderstandingDraft extends UnderstandingFacets {
   strength: Strength;
   narrative: string;
   confidenceLabel: string;
@@ -180,10 +188,19 @@ export function buildHrvUnderstanding(result: HrvUnderstandingResult): HrvUnders
   const strength = strengthForObservedPattern(result.confidence, result.lowHrvRate);
   const avgMs = Math.round(result.avgMs);
   const pct = Math.round(result.lowHrvRate * 100);
+  const seeing = `Your heart rate variability averages about ${avgMs}ms. About ${pct}% of your days run notably lower than that.`;
   return {
     strength,
-    narrative: `Your heart rate variability averages about ${avgMs}ms. About ${pct}% of your days run notably lower than that.`,
+    narrative: seeing,
+    seeing,
     confidenceLabel: CONFIDENCE_LABEL[strength],
+    evidenceSummary: readingsEvidenceSummary(result.observationIds.length, strength),
+    evidenceSignal: 'hrv',
+    baselineValue: result.medianMs,
+    baselineUnit: 'ms',
+    baselineWindowDays: result.totalDays,
+    baselineSummary: `Your usual heart rate variability is about ${Math.round(result.medianMs)}ms.`,
+    ...changeFromNotableRate(result.lowHrvRate),
   };
 }
 

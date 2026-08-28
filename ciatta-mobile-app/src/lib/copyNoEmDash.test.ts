@@ -4,10 +4,12 @@ import { assert, assertEquals } from 'jsr:@std/assert@1';
 import { COPY_DASH, displayCopy, displayCopyList, displayCopyMaybe } from './displayCopy.ts';
 
 const COPY_FILES = [
+  'src/lib/insightViz.ts',
   'src/lib/voice.ts',
   'src/lib/displayCopy.ts',
   'src/lib/tamponWear.ts',
   'src/components/TamponWearCard.tsx',
+  'src/lib/priority.ts',
   'src/lib/whyLayer.ts',
   'src/lib/intelligenceStatus.ts',
   'src/lib/observationFold.ts',
@@ -23,6 +25,7 @@ const COPY_FILES = [
   'src/screens/onboarding/OnboardingFlow.tsx',
   'src/screens/onboarding/OnboardingSetupSteps.tsx',
   'src/screens/onboarding/ConversationOnboarding.tsx',
+  'src/overlays/WhySheet.tsx',
   'src/overlays/UnderstandingSheet.tsx',
   'src/overlays/TodayInfoSheet.tsx',
   'src/overlays/HealthSyncSheet.tsx',
@@ -49,6 +52,7 @@ const COPY_FILES = [
   'supabase/functions/understanding-engine/stepsAnalysis.ts',
   'supabase/functions/understanding-engine/hrvAnalysis.ts',
   'supabase/functions/understanding-engine/dailyMetricRatingRelationship.ts',
+  'supabase/functions/understanding-engine/understandingFacets.ts',
   'supabase/functions/understanding-engine/index.ts',
   'supabase/functions/notify-discoveries/index.ts',
 ];
