@@ -38,6 +38,16 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-dev-client",
+        {
+          "launchMode": "most-recent",
+          "defaultLaunchURL": "http://127.0.0.1:8081",
+          "toolsButton": false,
+          "skipOnboarding": true,
+          "showMenuAtLaunch": false
+        }
+      ],
       "expo-font",
       "expo-status-bar",
       "expo-apple-authentication",
@@ -45,14 +55,17 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Your steps, heart rate, and sleep from Health complete your picture, so you aren't asked the same questions twice.",
-          "NSHealthUpdateUsageDescription": "Your steps, heart rate, and sleep from Health complete your picture, so you aren't asked the same questions twice.",
-          "background": false
+          "NSHealthShareUsageDescription": "Health shares your activity, heart, sleep, breathing, cycle, workouts, and body measurements with Ciatta so you are not asked the same questions twice.",
+          "NSHealthUpdateUsageDescription": "Health shares your activity, heart, sleep, breathing, cycle, workouts, and body measurements with Ciatta so you are not asked the same questions twice.",
+          "background": true
         }
       ],
       [
         "expo-build-properties",
         {
+          "ios": {
+            "deploymentTarget": "16.4"
+          },
           "android": {
             "compileSdkVersion": 36,
             "targetSdkVersion": 36,

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
-import { colors, fonts, glass, strengthColor } from '../theme/tokens';
-import { domainLabel, strengthLabel } from '../lib/mockData';
+import { colors, fonts, glass, type } from '../theme/tokens';
+import { domainLabel } from '../lib/mockData';
+import { coreStatusLabel } from '../lib/intelligenceStatus';
 import type { Domain, RelationshipRef } from '../lib/types';
 import type {
   CrossDomainUnderstandingRow,
@@ -20,15 +21,8 @@ import TextField from '../components/TextField';
 import PrimaryButton from '../components/PrimaryButton';
 import GlassChip from '../components/GlassChip';
 import GlassSurface, { GlassGroup } from '../components/GlassSurface';
-import Card from '../components/Card';
 import { CloseIcon } from '../components/icons';
 import ProviderSearchSheet from './ProviderSearchSheet';
-
-const CARE_TYPE_LABEL: Record<string, string> = {
-  'primary-care': 'PRIMARY CARE',
-  'ob-gyn': 'OB/GYN',
-  'mental-health': 'MENTAL HEALTH',
-};
 
 // Closed-form outcomes only — the same discipline as careGuidance.ts's own
 // enumerated maps. This is the "Outcome" half of Provider Feedback: what
@@ -68,6 +62,13 @@ function formatSpan(from: string | null): string | null {
   const weeks = Math.round(days / 7);
   if (days < 60) return `${weeks} weeks`;
   return `${Math.round(days / 30)} months`;
+}
+
+function evidenceCopy(count: number, span: string | null): string {
+  const readings = count === 1 ? '1 reading' : `${count} readings`;
+  if (!span) return displayCopy(`Grounded in ${readings}.`);
+  if (span === 'today') return displayCopy(`Grounded in ${readings}, first noticed today.`);
+  return displayCopy(`Grounded in ${readings}, noticed over ${span}.`);
 }
 
 function formatProviderAddress(provider: Provider): string | null {
@@ -188,7 +189,7 @@ export default function UnderstandingSheet({
   }
 
   const span = formatSpan(understanding.learning_since);
-  const confidence = understanding.confidence_label ?? strengthLabel[understanding.strength];
+  const confidence = coreStatusLabel(understanding);
   // Read straight off the row the Understanding Engine wrote — not
   // recomputed here, so there is exactly one place Guidance is derived.
   const guidance = understanding.guidance;
@@ -229,7 +230,7 @@ export default function UnderstandingSheet({
           displayLabel: `your ${displayCopy(cd.label).replace(/ related$/i, '').trim()} pattern`,
           domain: feedbackUnderstanding.domain,
           narrative: cd.narrative,
-          confidenceLabel: cd.confidence_label ?? strengthLabel[cd.strength],
+          confidenceLabel: cd.confidence_label ?? coreStatusLabel({ strength: cd.strength, confidence_label: cd.confidence_label }),
           // Cross-domain rows don't persist their own observation count —
           // it's the honest sum of what's already loaded for the two
           // domains that produced it, not a fabricated number.
@@ -391,7 +392,6 @@ export default function UnderstandingSheet({
       <View>
         <View style={styles.headerRow}>
           <View style={styles.headerText}>
-            <Text style={styles.eyebrow}>YOUR UNDERSTANDING</Text>
             <Text style={styles.title}>{domainLabel[understanding.domain]}</Text>
           </View>
           <Pressable onPress={handleClose} hitSlop={10}>
@@ -400,71 +400,35 @@ export default function UnderstandingSheet({
         </View>
 
         {/* The finding itself, given the weight it deserves. */}
-        <Text style={styles.narrative}>{understanding.narrative}</Text>
+        <Text style={styles.narrative}>{understanding.seeing || understanding.narrative}</Text>
 
-        {/* Confidence, stated once, where it belongs — next to the claim it
-            qualifies rather than buried in a stat table below. */}
-        <View style={styles.confidenceRow}>
-          <View
-            style={[
-              styles.confidenceDot,
-              { backgroundColor: strengthColor[understanding.strength] },
-            ]}
-          />
-          <Text style={[styles.confidenceText, { color: strengthColor[understanding.strength] }]}>
-            {confidence}
-          </Text>
-          <Text style={styles.confidenceSep}>·</Text>
-          <Text style={styles.confidenceMeta}>updated {formatAgo(understanding.last_updated)}</Text>
-        </View>
-
-        <Text style={styles.sectionLabel}>THE EVIDENCE</Text>
-        <View style={styles.evidenceStrip}>
-          <View style={styles.metric}>
-            <Text style={styles.metricValue}>{understanding.observations_count}</Text>
-            <Text style={styles.metricLabel}>readings{'\n'}behind this</Text>
-          </View>
-          <View style={styles.metricDivider} />
-          <View style={styles.metric}>
-            <Text style={styles.metricValue}>{span ?? '·'}</Text>
-            <Text style={styles.metricLabel}>of this{'\n'}pattern</Text>
-          </View>
-          <View style={styles.metricDivider} />
-          <View style={styles.metric}>
-            <Text style={styles.metricValue}>{timelineSteps.length || '·'}</Text>
-            <Text style={styles.metricLabel}>time{timelineSteps.length === 1 ? '' : 's'} this{'\n'}has shifted</Text>
-          </View>
-        </View>
-        <Text style={styles.evidenceFootnote}>
-          Learning since {formatDate(understanding.learning_since)}.
+        <Text style={styles.confidenceMeta}>
+          {confidence}
+          {' · '}
+          updated {formatAgo(understanding.last_updated)}
         </Text>
+
+        <Text style={styles.evidenceLine}>{evidenceCopy(understanding.observations_count, span)}</Text>
 
         {relatedDomains.length > 0 ? (
           <>
-            <Text style={styles.sectionLabel}>CONNECTED TO</Text>
+            <Text style={styles.sectionLabel}>Connected to</Text>
             <RelationshipList relationships={relatedDomains} />
           </>
         ) : null}
 
         {relatedCrossDomain.length > 0 ? (
           <>
-            <Text style={styles.sectionLabel}>A BROADER PATTERN</Text>
+            <Text style={styles.sectionLabel}>A broader pattern</Text>
             {relatedCrossDomain.map((cd) => {
               const otherDomain = cd.from_domain === understanding.domain ? cd.to_domain : cd.from_domain;
               return (
-                <Card key={cd.id} style={styles.crossDomainCard}>
-                  <View style={styles.confidenceRow}>
-                    <View
-                      style={[styles.confidenceDot, { backgroundColor: strengthColor[cd.strength] }]}
-                    />
-                    <Text style={[styles.confidenceText, { color: strengthColor[cd.strength] }]}>
-                      {cd.confidence_label ?? strengthLabel[cd.strength]}
-                    </Text>
-                    <Text style={styles.confidenceSep}>·</Text>
-                    <Text style={styles.confidenceMeta}>
-                      with your {domainLabel[otherDomain]}
-                    </Text>
-                  </View>
+                <View key={cd.id} style={styles.crossDomainCard}>
+                  <Text style={styles.confidenceMeta}>
+                    {coreStatusLabel({ strength: cd.strength, confidence_label: cd.confidence_label })}
+                    {' · '}
+                    with your {domainLabel[otherDomain]}
+                  </Text>
                   <Text style={styles.crossDomainNarrative}>{cd.narrative}</Text>
                   {cd.guidance ? <Text style={styles.bulletText}>{cd.guidance}</Text> : null}
                   {userId && cd.guidance ? (
@@ -492,7 +456,7 @@ export default function UnderstandingSheet({
                       </Pressable>
                     </View>
                   ) : null}
-                </Card>
+                </View>
               );
             })}
           </>
@@ -500,14 +464,14 @@ export default function UnderstandingSheet({
 
         {timelineSteps.length > 0 ? (
           <>
-            <Text style={styles.sectionLabel}>HOW THIS CHANGED</Text>
+            <Text style={styles.sectionLabel}>How this changed</Text>
             <Timeline steps={timelineSteps} />
           </>
         ) : null}
 
         {understanding.still_learning.length > 0 ? (
           <>
-            <Text style={styles.sectionLabel}>STILL LEARNING</Text>
+            <Text style={styles.sectionLabel}>Still learning</Text>
             {understanding.still_learning.map((q) => (
               <View key={q} style={styles.bulletRow}>
                 <View style={styles.bullet} />
@@ -519,15 +483,9 @@ export default function UnderstandingSheet({
 
         {guidance ? (
           <>
-            <Text style={styles.sectionLabel}>CARE CONNECTION</Text>
+            <Text style={styles.sectionLabel}>For a visit</Text>
             {understanding.care_recommendation_reason ? (
               <Text style={styles.bulletText}>{understanding.care_recommendation_reason}</Text>
-            ) : null}
-            {understanding.care_recommendation_type ? (
-              <Text style={styles.careTypeBadge}>
-                {CARE_TYPE_LABEL[understanding.care_recommendation_type] ??
-                  understanding.care_recommendation_type}
-              </Text>
             ) : null}
             <Text style={styles.bulletText}>{guidance}</Text>
 
@@ -661,94 +619,29 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingRight: 12,
   },
-  eyebrow: {
-    ...fonts.sansMedium,
-    fontSize: 10.5,
-    letterSpacing: 1.1,
-    color: colors.ink3,
-    marginBottom: 4,
-  },
   title: {
-    ...fonts.serif,
-    fontSize: 14,
-    lineHeight: 18,
+    ...type.subheadline,
     color: colors.ink,
   },
   narrative: {
-    ...fonts.sans,
-    fontSize: 14.5,
-    lineHeight: 22,
+    ...type.title2,
     color: colors.ink,
   },
-  confidenceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    marginTop: 14,
-    flexWrap: 'wrap',
-  },
-  confidenceDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  confidenceText: {
-    ...fonts.sansSemiBold,
-    fontSize: 13,
-  },
-  confidenceSep: {
-    ...fonts.sans,
-    fontSize: 13,
-    color: colors.ink3,
-  },
   confidenceMeta: {
-    ...fonts.sans,
-    fontSize: 13,
+    ...type.footnote,
     color: colors.ink3,
+    marginTop: 12,
+  },
+  evidenceLine: {
+    ...type.body,
+    color: colors.ink2,
+    marginTop: 16,
   },
   sectionLabel: {
-    ...fonts.sansMedium,
-    fontSize: 10.5,
-    letterSpacing: 1.1,
+    ...type.caption1,
     color: colors.ink3,
-    marginTop: 30,
-    marginBottom: 12,
-  },
-  evidenceStrip: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    backgroundColor: colors.wash,
-    borderRadius: 14,
-    paddingVertical: 18,
-  },
-  metric: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 6,
-  },
-  metricDivider: {
-    width: 1,
-    backgroundColor: colors.border,
-    marginVertical: 2,
-  },
-  metricValue: {
-    ...fonts.mono,
-    fontSize: 20,
-    color: colors.evidence,
-  },
-  metricLabel: {
-    ...fonts.sans,
-    fontSize: 11.5,
-    lineHeight: 15,
-    color: colors.ink2,
-    textAlign: 'center',
-    marginTop: 6,
-  },
-  evidenceFootnote: {
-    ...fonts.sans,
-    fontSize: 12,
-    color: colors.ink3,
-    marginTop: 10,
+    marginTop: 32,
+    marginBottom: 10,
   },
   bulletRow: {
     flexDirection: 'row',
@@ -769,13 +662,6 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     lineHeight: 20,
     color: colors.ink2,
-  },
-  careTypeBadge: {
-    ...fonts.sansSemiBold,
-    fontSize: 10.5,
-    letterSpacing: 0.8,
-    color: colors.accent,
-    marginBottom: 6,
   },
   careActions: {
     flexDirection: 'row',
@@ -827,8 +713,7 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   crossDomainCard: {
-    padding: 14,
-    marginBottom: 10,
+    marginBottom: 16,
   },
   crossDomainNarrative: {
     ...fonts.serif,

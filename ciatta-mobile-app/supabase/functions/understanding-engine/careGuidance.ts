@@ -35,18 +35,23 @@
 //   3. WHEN might a provider help?     — the original connected-domain-
 //      aware care sentence, unchanged in content and behavior.
 
+import type { PatternStance, GuidanceOutcome } from './intelligenceIntegrity.ts';
+import { outcomeForStance } from './intelligenceIntegrity.ts';
+
 export type CareRecommendationType = 'primary-care' | 'ob-gyn' | 'mental-health';
 
 export interface GuidanceResult {
   guidance: string | null;
   careRecommendationType: CareRecommendationType | null;
   careRecommendationReason: string | null;
+  outcome: GuidanceOutcome;
 }
 
 const NO_GUIDANCE: GuidanceResult = {
   guidance: null,
   careRecommendationType: null,
   careRecommendationReason: null,
+  outcome: 'none',
 };
 
 // Guidance follows evidence — it is gated on the exact same confidence
@@ -146,9 +151,36 @@ function evidenceSentence(domainWord: string, evidence: EvidenceContext, now: Da
 
 // Answers "what might the user consider doing?" — one fixed sentence per
 // domain, never generated from the narrative or any external source.
-function considerSentence(domain: string): string {
+function considerSentence(domain: string, _options: GuidanceOptions = {}): string {
   const action = CONSIDER_ACTION[domain] ?? CONSIDER_ACTION.recovery;
   return `Consider ${action} and tracking whether the pattern continues.`;
+}
+
+export interface GuidanceOptions {
+  /**
+   * When false, pattern/consider sentences may still be written, but no
+   * provider care connection is attached. Activity volume and other
+   * descriptive recovery signals pass false. Defaults to true for cycle,
+   * mood, and sleep, false otherwise.
+   */
+  clinicalConcern?: boolean;
+  /**
+   * Sleep processor's personal average night length in minutes. Unused for
+   * a population eight hour target. Kept so callers do not invent one.
+   */
+  sleepAverageMinutes?: number;
+  /**
+   * What the evidence supports doing. Watch, reassure, understand, and
+   * no action are valid. Consider plus care only when the stance is
+   * changing and the domain is clinically routed.
+   */
+  stance?: PatternStance;
+}
+
+function wantsCare(domain: string, clinicalConcern?: boolean): boolean {
+  if (clinicalConcern === false) return false;
+  if (clinicalConcern === true) return true;
+  return domain === 'cycle' || domain === 'mood' || domain === 'sleep';
 }
 
 /**
@@ -172,29 +204,68 @@ export function deriveGuidance(
   strength: string,
   connectedDomain: string | null,
   evidence: EvidenceContext,
-  now: Date = new Date()
+  now: Date = new Date(),
+  options: GuidanceOptions = {}
 ): GuidanceResult {
-  if (!ACTIONABLE.has(strength)) return NO_GUIDANCE;
+  const stance = options.stance ?? (ACTIONABLE.has(strength) ? 'changing' : 'early');
+  const outcome = outcomeForStance(stance, strength as 'emerging' | 'moderate' | 'strong' | 'very-strong');
+
+  if (outcome === 'none') return NO_GUIDANCE;
 
   const domainWord = DOMAIN_LABEL[domain] ?? domain;
   const connectedWord = connectedDomain ? DOMAIN_LABEL[connectedDomain] ?? connectedDomain : null;
+  const why = evidenceSentence(domainWord, evidence, now);
+
+  if (outcome === 'watch') {
+    return {
+      guidance: `${why} Ciatta is watching this. No action is needed yet.`,
+      careRecommendationType: null,
+      careRecommendationReason: null,
+      outcome,
+    };
+  }
+
+  if (outcome === 'reassure') {
+    return {
+      guidance: `${why} This is sitting close to your usual. Nothing here asks for a change.`,
+      careRecommendationType: null,
+      careRecommendationReason: null,
+      outcome,
+    };
+  }
+
+  if (outcome === 'understand') {
+    return {
+      guidance: `${why} This is here to understand. Ciatta is not asking you to do anything with it.`,
+      careRecommendationType: null,
+      careRecommendationReason: null,
+      outcome,
+    };
+  }
+
+  const attachCare = wantsCare(domain, options.clinicalConcern);
+  const sentences = [why, considerSentence(domain, options)];
+
+  if (!attachCare) {
+    return {
+      guidance: sentences.join(' '),
+      careRecommendationType: null,
+      careRecommendationReason: null,
+      outcome,
+    };
+  }
 
   const careRecommendationType: CareRecommendationType = DOMAIN_CARE_TYPE[domain] ?? 'primary-care';
   const careLabel = CARE_LABEL[careRecommendationType];
-
   const patternBase = connectedWord
     ? `This pattern in your ${domainWord} appears connected to your ${connectedWord}.`
     : `This is a consistent pattern in your ${domainWord}.`;
-
-  const guidance = [
-    evidenceSentence(domainWord, evidence, now),
-    considerSentence(domain),
-    `${patternBase} If it continues, it may be worth discussing with ${careLabel}.`,
-  ].join(' ');
+  sentences.push(`${patternBase} If it continues, it may be worth discussing with ${careLabel}.`);
 
   return {
-    guidance,
+    guidance: sentences.join(' '),
     careRecommendationType,
     careRecommendationReason: CARE_REASON[careRecommendationType],
+    outcome,
   };
 }

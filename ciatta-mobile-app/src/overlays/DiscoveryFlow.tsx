@@ -162,10 +162,7 @@ export default function DiscoveryFlow({
                 <Text style={styles.discoveryDetail}>{discovery.detail}</Text>
               ) : null}
             </View>
-            <ConfidenceBar
-              value={Math.round((discovery.confidence ?? 0) * 100)}
-              label={discovery.confidence_label ?? undefined}
-            />
+            <ConfidenceBar label={discovery.confidence_label ?? undefined} />
             {saveError ? <Text style={styles.saveError}>{saveError}</Text> : null}
             <View style={{ flex: 1 }} />
             <PrimaryButton label="See in Core" onPress={handleFinish} loading={saving} />

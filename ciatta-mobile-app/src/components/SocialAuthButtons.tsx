@@ -8,6 +8,7 @@ import {
   signInWithGoogle,
   SocialAuthCancelled,
 } from '../lib/socialAuth';
+import { userFacingError } from '../lib/userFacingError';
 
 /**
  * Apple and Google sign-in, above the email/password form. `onAuthed`
@@ -43,7 +44,7 @@ export default function SocialAuthButtons({
     } catch (e) {
       // A deliberate cancel isn't an error worth surfacing.
       if (e instanceof SocialAuthCancelled) return;
-      onError(e instanceof Error ? e.message : 'That sign in did not go through.');
+      onError(userFacingError(e, 'That sign in did not go through.') || 'That sign in did not go through.');
     } finally {
       setBusy(null);
     }

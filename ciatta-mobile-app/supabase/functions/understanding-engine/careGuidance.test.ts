@@ -14,11 +14,13 @@ Deno.test('deriveGuidance: emerging and moderate understandings get no guidance 
     guidance: null,
     careRecommendationType: null,
     careRecommendationReason: null,
+    outcome: 'none',
   });
   assertEquals(deriveGuidance('sleep', 'moderate', null, EVIDENCE_3_WEEKS, NOW), {
     guidance: null,
     careRecommendationType: null,
     careRecommendationReason: null,
+    outcome: 'none',
   });
 });
 
@@ -39,8 +41,27 @@ Deno.test('deriveGuidance: domain-specific defaults are ob-gyn for cycle, mental
   assertEquals(deriveGuidance('cycle', 'strong', null, EVIDENCE_3_WEEKS, NOW).careRecommendationType, 'ob-gyn');
   assertEquals(deriveGuidance('mood', 'strong', null, EVIDENCE_3_WEEKS, NOW).careRecommendationType, 'mental-health');
   assertEquals(deriveGuidance('sleep', 'strong', null, EVIDENCE_3_WEEKS, NOW).careRecommendationType, 'primary-care');
-  assertEquals(deriveGuidance('recovery', 'strong', null, EVIDENCE_3_WEEKS, NOW).careRecommendationType, 'primary-care');
-  assertEquals(deriveGuidance('energy', 'strong', null, EVIDENCE_3_WEEKS, NOW).careRecommendationType, 'primary-care');
+  assertEquals(deriveGuidance('recovery', 'strong', null, EVIDENCE_3_WEEKS, NOW).careRecommendationType, null);
+  assertEquals(deriveGuidance('energy', 'strong', null, EVIDENCE_3_WEEKS, NOW).careRecommendationType, null);
+});
+
+Deno.test('deriveGuidance: activity volume recovery is pattern only, never a care connection', () => {
+  const result = deriveGuidance('recovery', 'very-strong', null, EVIDENCE_3_WEEKS, NOW, {
+    clinicalConcern: false,
+  });
+  assert(result.guidance !== null);
+  assertEquals(result.careRecommendationType, null);
+  assertEquals(result.careRecommendationReason, null);
+  assertEquals(result.guidance!.toLowerCase().includes('discussing'), false);
+  assertEquals(result.guidance!.toLowerCase().includes('provider'), false);
+});
+
+Deno.test('deriveGuidance: recovery care is attached only when clinical concern is evidenced', () => {
+  const result = deriveGuidance('recovery', 'strong', 'mood', EVIDENCE_3_WEEKS, NOW, {
+    clinicalConcern: true,
+  });
+  assertEquals(result.careRecommendationType, 'primary-care');
+  assert(result.guidance!.includes('primary care provider'));
 });
 
 Deno.test('deriveGuidance: the recommended provider type and the guidance sentence never disagree', () => {
@@ -125,4 +146,12 @@ Deno.test('durationPhrase: buckets days into fixed, enumerated phrases', () => {
   assertEquals(durationPhrase(60), 'over the past couple of months');
   assertEquals(durationPhrase(179), 'over the past couple of months');
   assertEquals(durationPhrase(180), 'over the past several months');
+});
+
+Deno.test('deriveGuidance: sleep uses understand or consider, never an eight hour target', () => {
+  const result = deriveGuidance('sleep', 'strong', null, EVIDENCE_3_WEEKS, NOW, {
+    sleepAverageMinutes: 6 * 60 + 30,
+  });
+  assertEquals(result.guidance!.includes('eight hours'), false);
+  assert(result.guidance!.includes('Consider') || result.guidance!.includes('understand'));
 });

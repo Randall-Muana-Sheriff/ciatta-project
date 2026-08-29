@@ -47,7 +47,20 @@ const ROUTES: Record<string, Route> = {
   sleep_segment: { processors: [], cadence: { kind: 'morning' } },
   body_temperature: { processors: [], cadence: { kind: 'debounce', minIntervalMs: ONE_HOUR_MS } },
   wrist_temperature: { processors: [], cadence: { kind: 'debounce', minIntervalMs: ONE_HOUR_MS } },
+  basal_body_temperature: { processors: [], cadence: { kind: 'debounce', minIntervalMs: ONE_HOUR_MS } },
   temperature: { processors: [], cadence: { kind: 'debounce', minIntervalMs: ONE_HOUR_MS } },
+  workout: { processors: ['recovery'], cadence: { kind: 'debounce', minIntervalMs: ONE_HOUR_MS } },
+  active_energy: { processors: ['recovery'], cadence: { kind: 'debounce', minIntervalMs: ONE_HOUR_MS } },
+  basal_energy: { processors: ['recovery'], cadence: { kind: 'debounce', minIntervalMs: ONE_HOUR_MS } },
+  oxygen_saturation: { processors: ['recovery'], cadence: { kind: 'debounce', minIntervalMs: ONE_HOUR_MS } },
+  respiratory_rate: { processors: ['recovery'], cadence: { kind: 'debounce', minIntervalMs: ONE_HOUR_MS } },
+  vo2_max: { processors: ['recovery'], cadence: { kind: 'debounce', minIntervalMs: ONE_HOUR_MS } },
+  walking_heart_rate_average: { processors: ['recovery'], cadence: { kind: 'debounce', minIntervalMs: ONE_HOUR_MS } },
+  blood_pressure_systolic: { processors: [], cadence: { kind: 'debounce', minIntervalMs: ONE_HOUR_MS } },
+  blood_pressure_diastolic: { processors: [], cadence: { kind: 'debounce', minIntervalMs: ONE_HOUR_MS } },
+  body_mass: { processors: [], cadence: { kind: 'debounce', minIntervalMs: ONE_HOUR_MS } },
+  ovulation_test_result: { processors: ['cycle'], cadence: { kind: 'debounce', minIntervalMs: ONE_HOUR_MS } },
+  intermenstrual_bleeding: { processors: ['cycle'], cadence: { kind: 'debounce', minIntervalMs: ONE_HOUR_MS } },
   mood_rating: { processors: ['mood'], cadence: { kind: 'immediate' } },
   energy_rating: { processors: ['cycle', 'recovery'], cadence: { kind: 'immediate' } },
   health_concern: { processors: ['contextual'], cadence: { kind: 'immediate' } },
@@ -206,6 +219,8 @@ export interface UnderstandingSnapshot {
   confidenceLabel: string;
   observationsCount: number;
   stillLearning: string[];
+  seeing?: string;
+  evidenceSummary?: string;
 }
 
 export function isRedundantUnderstandingWrite(
@@ -217,7 +232,9 @@ export function isRedundantUnderstandingWrite(
     existing.narrative === next.narrative &&
     existing.confidenceLabel === next.confidenceLabel &&
     existing.observationsCount === next.observationsCount &&
-    existing.stillLearning.join('\0') === next.stillLearning.join('\0')
+    existing.stillLearning.join('\0') === next.stillLearning.join('\0') &&
+    (existing.seeing ?? existing.narrative) === (next.seeing ?? next.narrative) &&
+    (existing.evidenceSummary ?? '') === (next.evidenceSummary ?? '')
   );
 }
 

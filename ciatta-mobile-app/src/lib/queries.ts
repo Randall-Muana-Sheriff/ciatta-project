@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { displayCopy, displayCopyList, displayCopyMaybe } from './displayCopy';
+import { presentPersistedUnderstanding } from './intelligenceStatus';
 import type { Discovery, Domain, Strength } from './types';
 
 // 'primary-care' | 'ob-gyn' | 'mental-health' — mirrors
@@ -13,26 +14,32 @@ export interface UnderstandingRow {
   domain: Domain;
   strength: Strength;
   narrative: string;
+  seeing: string;
   observations_count: number;
   confidence_label: string | null;
   learning_since: string | null;
   first_observed: string | null;
   last_updated: string;
   still_learning: string[];
-  // Guidance and Care Connection — written by the same Understanding
-  // Engine run that writes `narrative`, gated on the same `strength`. Null
-  // on any row where the evidence didn't clear the bar; that IS "Ciatta
-  // stays silent," not a missing value to fall back on.
   guidance: string | null;
   care_recommendation_type: string | null;
   care_recommendation_reason: string | null;
+  evidence_summary: string | null;
+  evidence_signal: string | null;
+  baseline_value: number | null;
+  baseline_unit: string | null;
+  baseline_window_days: number | null;
+  baseline_summary: string | null;
+  change_detected: boolean;
+  change_summary: string | null;
+  related_domains: Domain[];
 }
 
 export async function fetchUnderstandings(userId: string): Promise<UnderstandingRow[]> {
   const { data, error } = await supabase
     .from('understandings')
     .select(
-      'id, domain, strength, narrative, observations_count, confidence_label, learning_since, first_observed, last_updated, still_learning, guidance, care_recommendation_type, care_recommendation_reason'
+      'id, domain, strength, narrative, seeing, observations_count, confidence_label, learning_since, first_observed, last_updated, still_learning, guidance, care_recommendation_type, care_recommendation_reason, evidence_summary, evidence_signal, baseline_value, baseline_unit, baseline_window_days, baseline_summary, change_detected, change_summary, related_domains'
     )
     .eq('user_id', userId);
   if (error) throw error;
@@ -40,13 +47,24 @@ export async function fetchUnderstandings(userId: string): Promise<Understanding
 }
 
 function sanitizeUnderstanding(row: UnderstandingRow): UnderstandingRow {
-  return {
+  const presented = presentPersistedUnderstanding({
     ...row,
-    narrative: displayCopy(row.narrative),
+    seeing: displayCopyMaybe(row.seeing) ?? displayCopyMaybe(row.narrative) ?? '',
+    narrative: displayCopyMaybe(row.narrative) ?? '',
     confidence_label: displayCopyMaybe(row.confidence_label),
     still_learning: displayCopyList(row.still_learning),
     guidance: displayCopyMaybe(row.guidance),
     care_recommendation_reason: displayCopyMaybe(row.care_recommendation_reason),
+    evidence_summary: displayCopyMaybe(row.evidence_summary),
+    baseline_summary: displayCopyMaybe(row.baseline_summary),
+    change_summary: displayCopyMaybe(row.change_summary),
+    related_domains: row.related_domains ?? [],
+    change_detected: row.change_detected ?? false,
+  });
+  return {
+    ...presented,
+    seeing: presented.seeing || presented.narrative,
+    narrative: presented.seeing || presented.narrative,
   };
 }
 

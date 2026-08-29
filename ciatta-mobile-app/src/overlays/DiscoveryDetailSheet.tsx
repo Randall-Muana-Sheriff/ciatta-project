@@ -35,11 +35,8 @@ export default function DiscoveryDetailSheet({
             <Text style={styles.narrative}>{discovery.narrative}</Text>
             {discovery.detail ? <Text style={styles.detail}>{discovery.detail}</Text> : null}
           </View>
-          {discovery.confidence !== null ? (
-            <ConfidenceBar
-              value={Math.round(discovery.confidence * 100)}
-              label={discovery.confidence_label ?? undefined}
-            />
+          {discovery.confidence_label ? (
+            <ConfidenceBar label={discovery.confidence_label} />
           ) : null}
         </View>
       ) : null}

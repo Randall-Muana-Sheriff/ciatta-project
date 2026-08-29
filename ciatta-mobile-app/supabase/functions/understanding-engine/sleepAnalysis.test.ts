@@ -92,7 +92,7 @@ Deno.test('sleepAnalysis: real short-night pattern produces a descriptive Unders
   assert(understanding!.narrative.includes('average about'));
 });
 
-Deno.test('sleepAnalysis: cold start blocks the Understanding under 14 nights', () => {
+Deno.test('sleepAnalysis: cold start writes an early Understanding instead of silence', () => {
   nextId = 1;
   const { sleep } = buildScenario({
     numNights: 10,
@@ -106,7 +106,10 @@ Deno.test('sleepAnalysis: cold start blocks the Understanding under 14 nights', 
   });
   const result = analyzeSleep(sleep);
   assertEquals(result.eligible, false);
-  assertEquals(buildSleepUnderstanding(result), null);
+  const draft = buildSleepUnderstanding(result);
+  assert(draft !== null);
+  assertEquals(draft!.stance, 'early');
+  assertEquals(draft!.narrative.toLowerCase().includes('average'), false);
 });
 
 Deno.test('sleepAnalysis: real short-sleep -> low-rating pattern is confirmed with enough paired days', () => {

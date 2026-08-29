@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, AppState, Platform, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, AppState, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import type { Session } from '@supabase/supabase-js';
@@ -10,6 +10,7 @@ import GlassSurface from './src/components/GlassSurface';
 import { supabase } from './src/lib/supabase';
 import { signOut, getSession } from './src/lib/auth';
 import { isAuthFailure } from './src/lib/errors';
+import { userFacingError } from './src/lib/userFacingError';
 import { isClockSkewError, logSessionClockSkew, withClockSkewRetry } from './src/lib/sessionGuard';
 import { fetchProfile, updateProfile } from './src/lib/profile';
 import {
@@ -30,7 +31,12 @@ import { answerCuriosity, fetchActiveCuriosity, fetchNextOnboardingQuestion, typ
 import { fetchLastHealthSyncAt, fetchProviderFeedback, fetchRecentSyncSummary, fetchVisitPrepShared, type ProviderFeedbackRow, type RecentSyncSummary } from './src/lib/observations';
 import { registerForPush } from './src/lib/notifications';
 import { connectHealthConnect } from './src/lib/healthConnect';
-import { connectHealthKit } from './src/lib/healthKit';
+import {
+  catchUpHealthKitSync,
+  connectHealthKit,
+  startHealthKitBackgroundDelivery,
+  stopHealthKitBackgroundDelivery,
+} from './src/lib/healthKit';
 import { syncCalendarContext } from './src/lib/calendarContext';
 import { saveHealthNote } from './src/lib/healthNotes';
 import { domainLabel } from './src/lib/mockData';
@@ -48,7 +54,7 @@ import TodayScreen from './src/screens/TodayScreen';
 import CoreScreen from './src/screens/CoreScreen';
 import YouScreen from './src/screens/YouScreen';
 import BottomNav, { MainTab } from './src/components/BottomNav';
-import { NavAdaptivityProvider } from './src/lib/NavAdaptivity';
+import { NavAdaptivityProvider } from './src/lib/navAdaptivityContext';
 
 import UnderstandingSheet from './src/overlays/UnderstandingSheet';
 import ProviderSearchSheet from './src/overlays/ProviderSearchSheet';
@@ -105,10 +111,13 @@ export default function App() {
   const [splashDone, setSplashDone] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
+  const completingRef = useRef(false);
   const [completeError, setCompleteError] = useState<string | null>(null);
   const holdingOnboardingRef = useRef(false);
 
   const [tab, setTab] = useState<MainTab>('today');
+  const tabOpacity = useRef(new Animated.Value(1)).current;
+  const tabReady = useRef(false);
   const [understandingDomain, setUnderstandingDomain] = useState<Domain | null>(null);
   const [startUnderstandingWithProviderSearch, setStartUnderstandingWithProviderSearch] =
     useState(false);
@@ -129,6 +138,19 @@ export default function App() {
   const selectedDiscovery = discoveries.find((d) => d.id === selectedDiscoveryId) ?? null;
 
   useEffect(() => {
+    if (!tabReady.current) {
+      tabReady.current = true;
+      return;
+    }
+    tabOpacity.setValue(0.88);
+    Animated.timing(tabOpacity, {
+      toValue: 1,
+      duration: 280,
+      useNativeDriver: true,
+    }).start();
+  }, [tab, tabOpacity]);
+
+  useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       logSessionClockSkew(data.session?.access_token, 'getSession (restart/persisted)');
       setSession(data.session);
@@ -140,14 +162,36 @@ export default function App() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // Auto-sync replaces having to find the manual "Sync now" button — if
-  // Health Connect/HealthKit is already connected and it's been a while
-  // since the last sync, quietly pull fresh data whenever the app is
-  // opened. requestPermission/requestAuthorization only prompt the OS
-  // dialog the first time (or if access was revoked), so this is silent on
-  // every normal open. Failures are swallowed — this is a background
-  // nicety, not a user-facing action, so it never surfaces an error; the
-  // manual sync sheet remains the fallback with real error messaging.
+  useEffect(() => {
+    try {
+      const { requireOptionalNativeModule } = require('expo-modules-core') as {
+        requireOptionalNativeModule: (name: string) => {
+          setPreferencesAsync?: (prefs: Record<string, boolean>) => Promise<unknown>;
+          setSettings?: (prefs: Record<string, boolean>) => void;
+          hideMenu?: () => void;
+          closeMenu?: () => void;
+        } | null;
+      };
+      const prefs = {
+        showFloatingActionButton: false,
+        showsAtLaunch: false,
+        isOnboardingFinished: true,
+      };
+      const menuPrefs = requireOptionalNativeModule('DevMenuPreferences');
+      menuPrefs?.setPreferencesAsync?.(prefs);
+      menuPrefs?.setSettings?.(prefs);
+      const menu = requireOptionalNativeModule('ExpoDevMenu');
+      menu?.hideMenu?.();
+      menu?.closeMenu?.();
+    } catch {
+      /* Store and release builds do not include the development menu. */
+    }
+  }, []);
+
+  // iOS: HealthKit background delivery is opportunistic. On open, register
+  // observers and run an incremental catch-up (stored HKQueryAnchors only).
+  // Android still uses a cooldown plus Health Connect. Failures are swallowed
+  // so this never surfaces an error; Sync Now remains the recovery path.
   //
   // Guarded against re-entrancy: Android's AppState can emit several rapid
   // 'active' transitions around a single cold start (window-focus churn,
@@ -160,12 +204,17 @@ export default function App() {
     if (autoSyncInFlightRef.current) return;
     autoSyncInFlightRef.current = true;
     try {
+      if (Platform.OS === 'ios') {
+        await startHealthKitBackgroundDelivery(userId);
+        await catchUpHealthKitSync(userId);
+        setRecentSyncSummary(await fetchRecentSyncSummary(userId));
+        return;
+      }
       const lastSyncedAt = await fetchLastHealthSyncAt(userId);
       const due =
         !lastSyncedAt || Date.now() - new Date(lastSyncedAt).getTime() > AUTO_SYNC_COOLDOWN_MS;
       if (!due) return;
-      const result =
-        Platform.OS === 'android' ? await connectHealthConnect(userId) : await connectHealthKit(userId);
+      const result = await connectHealthConnect(userId);
       if (result.granted) {
         setRecentSyncSummary(await fetchRecentSyncSummary(userId));
       }
@@ -188,17 +237,50 @@ export default function App() {
         const [p, u, r, h, cd, pf, d, c, hc, sync, briefs] = await withClockSkewRetry(
           () =>
             Promise.all([
-              fetchProfile(userId),
-              fetchUnderstandings(userId),
-              fetchRelationships(userId),
-              fetchUnderstandingHistory(userId),
-              fetchCrossDomainUnderstandings(userId),
-              fetchProviderFeedback(userId),
-              fetchDiscoveries(userId),
-              fetchActiveCuriosity(userId),
-              hasHealthSourceObservations(userId),
-              fetchRecentSyncSummary(userId),
-              fetchVisitPrepShared(userId),
+              fetchProfile(userId).catch((err) => {
+                console.error('[data] profile failed', err);
+                throw err;
+              }),
+              fetchUnderstandings(userId).catch((err) => {
+                console.error('[data] understandings failed', err);
+                throw err;
+              }),
+              fetchRelationships(userId).catch((err) => {
+                console.error('[data] relationships failed', err);
+                throw err;
+              }),
+              fetchUnderstandingHistory(userId).catch((err) => {
+                console.error('[data] history failed', err);
+                throw err;
+              }),
+              fetchCrossDomainUnderstandings(userId).catch((err) => {
+                console.error('[data] crossDomain failed', err);
+                throw err;
+              }),
+              fetchProviderFeedback(userId).catch((err) => {
+                console.error('[data] providerFeedback failed', err);
+                throw err;
+              }),
+              fetchDiscoveries(userId).catch((err) => {
+                console.error('[data] discoveries failed', err);
+                throw err;
+              }),
+              fetchActiveCuriosity(userId).catch((err) => {
+                console.error('[data] curiosity failed', err);
+                throw err;
+              }),
+              hasHealthSourceObservations(userId).catch((err) => {
+                console.error('[data] healthSource failed', err);
+                throw err;
+              }),
+              fetchRecentSyncSummary(userId).catch((err) => {
+                console.error('[data] syncSummary failed', err);
+                throw err;
+              }),
+              fetchVisitPrepShared(userId).catch((err) => {
+                console.error('[data] visitPrep failed', err);
+                throw err;
+              }),
             ]),
           'loadUserData'
         );
@@ -216,7 +298,7 @@ export default function App() {
         // Fire-and-forget: push is an enhancement and must never block or
         // fail the load. Honours the preference captured at onboarding.
         registerForPush(userId, p?.notification_preference);
-        if (hc) {
+        if (Platform.OS === 'ios' || hc) {
           maybeAutoSync(userId);
         }
       } catch (e) {
@@ -248,9 +330,7 @@ export default function App() {
           } else {
             console.error('Could not load user data (keeping session):', e);
           }
-          setLoadError(
-            "Your data couldn't be reached just now. Check your connection and try again."
-          );
+          setLoadError("Your data couldn't be reached just now. Check your connection and try again.");
         }
       } finally {
         setDataLoading(false);
@@ -263,6 +343,7 @@ export default function App() {
     if (session?.user?.id) {
       loadUserData(session.user.id);
     } else {
+      stopHealthKitBackgroundDelivery();
       setProfile(null);
       setUnderstandings([]);
       setRelationships([]);
@@ -282,7 +363,7 @@ export default function App() {
       const cameToForeground =
         /inactive|background/.test(appStateRef.current) && nextState === 'active';
       appStateRef.current = nextState;
-      if (cameToForeground && session?.user?.id && healthSourceConnected) {
+      if (cameToForeground && session?.user?.id && (Platform.OS === 'ios' || healthSourceConnected)) {
         maybeAutoSync(session.user.id);
       }
     });
@@ -290,9 +371,11 @@ export default function App() {
   }, [session?.user?.id, healthSourceConnected, maybeAutoSync]);
 
   async function handleOnboardingComplete(draft: OnboardingDraft) {
+    if (completingRef.current) return;
     const sessionNow = (await getSession()) ?? session;
     const userId = sessionNow?.user?.id;
     if (!userId) return;
+    completingRef.current = true;
     setCompleting(true);
     setCompleteError(null);
     try {
@@ -329,9 +412,10 @@ export default function App() {
       }
     } catch (e) {
       setCompleteError(
-        e instanceof Error ? e.message : 'Something went wrong saving your profile.'
+        userFacingError(e, 'Your picture could not be saved just now. Try again.')
       );
     } finally {
+      completingRef.current = false;
       setCompleting(false);
     }
   }
@@ -388,7 +472,9 @@ export default function App() {
           <SafeAreaProvider>
             <View style={styles.loading}>
               <Text style={styles.retryTitle}>Your data couldn't be reached just now.</Text>
-              <Text style={styles.retryBody}>{loadError}</Text>
+              <Text style={styles.retryBody}>
+                Check your connection and try again.
+              </Text>
               <View style={styles.retryButton}>
                 <PrimaryButton
                   label="Try again"
@@ -422,6 +508,7 @@ export default function App() {
           onComplete={handleOnboardingComplete}
           startStep={session && !holdingOnboardingRef.current ? ONBOARDING_CONVERSATION_STEP : 0}
           userId={session?.user?.id}
+          completing={completing}
         />
         {completeError ? (
           <GlassSurface
@@ -447,20 +534,22 @@ export default function App() {
       <StatusBar style="dark" />
       <NavAdaptivityProvider>
       <View style={styles.app}>
-        <View style={{ flex: 1 }}>
+        <Animated.View style={{ flex: 1, opacity: tabOpacity }}>
           {tab === 'today' && (
             <TodayScreen
               userId={session?.user?.id}
               onOpenDiscoveryNudge={() => setDiscoveryFlowVisible(true)}
-              onOpenUnderstanding={(d) => setUnderstandingDomain(d)}
               onOpenInfo={() => setTodayInfoVisible(true)}
+              onOpenCore={() => setTab('core')}
               activeCuriosity={activeCuriosity}
               onAnswerCuriosity={handleAnswerCuriosity}
               hasPendingDiscovery={hasPendingDiscovery}
               understandings={understandings}
               preferredName={profile.preferred_name || profile.name || ''}
-              recentSyncSummary={recentSyncSummary}
               relationships={relationships}
+              goals={profile?.goals ?? []}
+              history={understandingHistory}
+              crossDomain={crossDomainUnderstandings}
             />
           )}
           {tab === 'core' && (
@@ -507,7 +596,7 @@ export default function App() {
               onSignOut={handleSignOut}
             />
           )}
-        </View>
+        </Animated.View>
         <BottomNav active={tab} onChange={setTab} />
       </View>
       </NavAdaptivityProvider>

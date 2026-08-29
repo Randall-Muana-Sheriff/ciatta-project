@@ -5,6 +5,8 @@ import {
   statusCodes,
 } from '@react-native-google-signin/google-signin';
 import { supabase } from './supabase';
+import { resolvedGoogleClientIds } from './googleAuthConfig';
+import { userFacingError } from './userFacingError';
 
 /**
  * Thrown when the user backs out of the native sheet themselves. Callers
@@ -44,12 +46,17 @@ const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 let googleConfigured = false;
 function configureGoogle() {
   if (googleConfigured) return;
-  // webClientId is what Supabase validates the ID token against, so it's
-  // required on both platforms — iosClientId only affects which native
-  // credential the iOS SDK requests.
-  GoogleSignin.configure({
+  const ids = resolvedGoogleClientIds({
     webClientId: GOOGLE_WEB_CLIENT_ID,
     iosClientId: GOOGLE_IOS_CLIENT_ID,
+  });
+  if (!ids) {
+    throw new Error('Google sign in is not available right now.');
+  }
+  GoogleSignin.configure({
+    webClientId: ids.webClientId,
+    iosClientId: ids.iosClientId,
+    offlineAccess: false,
   });
   googleConfigured = true;
 }
@@ -82,14 +89,16 @@ export async function signInWithApple() {
   }
 
   if (!credential.identityToken) {
-    throw new Error('Apple did not return an identity token.');
+    throw new Error('Apple sign in did not finish. Try again.');
   }
 
   const { data, error } = await supabase.auth.signInWithIdToken({
     provider: 'apple',
     token: credential.identityToken,
   });
-  if (error) throw error;
+  if (error) {
+    throw new Error(userFacingError(error, 'Apple sign in did not finish. Try again.'));
+  }
 
   const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
     .filter(Boolean)
@@ -104,38 +113,43 @@ export async function signInWithGoogle() {
   configureGoogle();
 
   try {
-    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    if (Platform.OS === 'android') {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    }
     const response = await GoogleSignin.signIn();
 
-    // v13+ returns a discriminated {type, data} envelope; older shapes put the
-    // user object at the top level. Handle both so a minor bump doesn't break
-    // sign-in silently.
     const idToken =
       (response as { data?: { idToken?: string | null } }).data?.idToken ??
       (response as { idToken?: string | null }).idToken ??
       null;
 
     if (!idToken) {
-      // The v13 envelope uses type: 'cancelled' instead of throwing.
       if ((response as { type?: string }).type === 'cancelled') {
         throw new SocialAuthCancelled();
       }
-      throw new Error('Google did not return an ID token.');
+      throw new Error('Google sign in did not finish. Try again.');
     }
 
     const { data, error } = await supabase.auth.signInWithIdToken({
       provider: 'google',
       token: idToken,
     });
-    if (error) throw error;
+    if (error) {
+      throw new Error(userFacingError(error, 'Google sign in did not finish. Try again.'));
+    }
 
     const user = (response as { data?: { user?: { name?: string | null } } }).data?.user;
     return { session: data.session, fullName: user?.name?.trim() || null };
   } catch (e) {
+    if (e instanceof SocialAuthCancelled) throw e;
     const code = (e as { code?: string }).code;
-    if (code === statusCodes.SIGN_IN_CANCELLED || code === statusCodes.IN_PROGRESS) {
+    if (code === statusCodes.SIGN_IN_CANCELLED) {
       throw new SocialAuthCancelled();
     }
-    throw e;
+    if (code === statusCodes.IN_PROGRESS) {
+      throw new SocialAuthCancelled();
+    }
+    const mapped = userFacingError(e, 'Google sign in did not finish. Try again.');
+    throw new Error(mapped || 'Google sign in did not finish. Try again.');
   }
 }

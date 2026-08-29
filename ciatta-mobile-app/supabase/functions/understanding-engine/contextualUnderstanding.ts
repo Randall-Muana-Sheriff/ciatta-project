@@ -19,6 +19,11 @@
 // existing five domains their words matched) plus, verbatim, their own
 // elaboration — never a rewritten version of it.
 
+import {
+  readingsEvidenceSummary,
+  type UnderstandingFacets,
+} from './understandingFacets.ts';
+
 export type Domain = 'sleep' | 'recovery' | 'energy' | 'cycle' | 'mood';
 
 const RECENCY_PHRASE: Record<string, string> = {
@@ -69,11 +74,12 @@ export function mapConcernToDomain(healthDomains: string[]): Domain {
   return 'recovery';
 }
 
-export interface ContextualUnderstandingDraft {
+export interface ContextualUnderstandingDraft extends UnderstandingFacets {
   strength: 'emerging';
   narrative: string;
   confidenceLabel: string;
   stillLearning: string[];
+  stance: 'early';
 }
 
 export interface ContextualInput {
@@ -116,10 +122,20 @@ export function buildContextualUnderstanding(
   return {
     strength: 'emerging',
     narrative,
+    seeing: narrative,
     confidenceLabel: 'still learning',
     stillLearning: [
       `There isn't enough health data yet to understand what may be contributing to this.`,
     ],
+    stance: 'early',
+    evidenceSummary: readingsEvidenceSummary(1, 'emerging', 'context'),
+    evidenceSignal: 'health_concern',
+    baselineValue: null,
+    baselineUnit: null,
+    baselineWindowDays: null,
+    baselineSummary: null,
+    changeDetected: false,
+    changeSummary: null,
   };
 }
 

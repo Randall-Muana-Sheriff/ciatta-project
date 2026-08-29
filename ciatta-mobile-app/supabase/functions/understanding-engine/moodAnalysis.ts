@@ -11,8 +11,16 @@
  * count, not calendar days — there's no daily density to assume.
  */
 import type { Strength } from './cycleAnalysis.ts';
-import { strengthForConfidence } from './cycleAnalysis.ts';
 import type { RatingObservation } from './energyRelationship.ts';
+import { readingsEvidenceSummary, type UnderstandingFacets } from './understandingFacets.ts';
+import {
+  changeFromNotableCount,
+  CONFIDENCE_LABEL,
+  stillLearningForStance,
+  strengthForStance,
+  volumeStance,
+  type PatternStance,
+} from './intelligenceIntegrity.ts';
 
 const MIN_ANSWERS = 10;
 const CONFIDENCE_SAMPLE_CAP = 20;
@@ -39,9 +47,9 @@ export function analyzeMood(observations: RatingObservation[]): MoodUnderstandin
       totalAnswers,
       lowMoodCount: 0,
       lowMoodRate: 0,
-      confidence: 0,
+      confidence: Math.min(1, totalAnswers / CONFIDENCE_SAMPLE_CAP),
       eligible: false,
-      observationIds: [],
+      observationIds: observations.map((o) => o.id),
     };
   }
 
@@ -57,28 +65,65 @@ export function analyzeMood(observations: RatingObservation[]): MoodUnderstandin
   };
 }
 
-export interface MoodUnderstandingDraft {
+export interface MoodUnderstandingDraft extends UnderstandingFacets {
   strength: Strength;
   narrative: string;
   confidenceLabel: string;
+  stillLearning: string[];
+  stance: PatternStance;
 }
-
-const CONFIDENCE_LABEL: Record<Strength, string> = {
-  emerging: 'still learning',
-  moderate: 'fairly confident',
-  strong: 'confident',
-  'very-strong': 'very confident',
-};
 
 export function buildMoodUnderstanding(
   result: MoodUnderstandingResult
 ): MoodUnderstandingDraft | null {
-  if (!result.eligible) return null;
-  const strength = strengthForConfidence(result.confidence);
-  const pct = Math.round(result.lowMoodRate * 100);
+  const stance = volumeStance({
+    sampleCount: result.totalAnswers,
+    minSample: MIN_ANSWERS,
+    notableCount: result.lowMoodCount,
+  });
+  if (stance === 'insufficient') return null;
+
+  const strength = strengthForStance(result.confidence, stance);
+  if (stance === 'early') {
+    const seeing = `Ciatta has ${result.totalAnswers} mood check ins so far. That is not enough yet to see a usual picture.`;
+    return {
+      strength,
+      narrative: seeing,
+      seeing,
+      confidenceLabel: CONFIDENCE_LABEL[strength],
+      stillLearning: stillLearningForStance(stance, 'how your mood check ins usually sit'),
+      stance,
+      evidenceSummary: readingsEvidenceSummary(result.observationIds.length, strength, 'checkin'),
+      evidenceSignal: 'mood_rating',
+      baselineValue: null,
+      baselineUnit: null,
+      baselineWindowDays: null,
+      baselineSummary: null,
+      changeDetected: false,
+      changeSummary: null,
+    };
+  }
+
+  const seeing =
+    result.lowMoodCount <= 0
+      ? `You have not rated your mood as Low in ${result.totalAnswers} check ins.`
+      : `You rated your mood as Low in ${result.lowMoodCount} of ${result.totalAnswers} check ins.`;
   return {
     strength,
-    narrative: `Out of ${result.totalAnswers} times you've answered, you've rated your mood as "Low" ${pct}% of the time.`,
+    narrative: seeing,
+    seeing,
     confidenceLabel: CONFIDENCE_LABEL[strength],
+    stillLearning: stillLearningForStance(stance, 'what tends to sit beside these check ins'),
+    stance,
+    evidenceSummary: readingsEvidenceSummary(result.observationIds.length, strength, 'checkin'),
+    evidenceSignal: 'mood_rating',
+    baselineValue: result.lowMoodRate,
+    baselineUnit: 'share',
+    baselineWindowDays: null,
+    baselineSummary:
+      result.lowMoodCount <= 0
+        ? `Low has not shown up in the mood check ins Ciatta has.`
+        : `Low has shown up in ${result.lowMoodCount} of ${result.totalAnswers} mood check ins.`,
+    ...changeFromNotableCount(result.lowMoodCount, result.totalAnswers, 'check in'),
   };
 }
