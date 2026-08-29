@@ -13,8 +13,8 @@ const recoveryVolume: IntelligenceUnderstanding = {
   id: 'u-recovery',
   domain: 'recovery',
   strength: 'moderate',
-  narrative: 'You average about 8,412 steps a day. About 0% of your days are notably less active than that.',
-  seeing: 'You average about 8,412 steps a day. About 0% of your days are notably less active than that.',
+  narrative: 'You average about 8,412 steps a day. Recent days have been sitting close to that.',
+  seeing: 'You average about 8,412 steps a day. Recent days have been sitting close to that.',
   observations_count: 26,
   confidence_label: 'fairly confident',
   learning_since: '2026-07-01',
@@ -122,7 +122,7 @@ Deno.test('guidance on Today is the engine field, never a client invented target
     candidates: [],
   });
   assertEquals(surfaces.today.narrative, recoveryVolume.seeing);
-  assertEquals((surfaces.why.evidence ?? '').includes('8,412 steps a day. About 0%'), false);
+  assertEquals((surfaces.why.evidence ?? '').includes('About 0%'), false);
   assertEquals(surfaces.why.evidence?.includes('26 readings'), true);
   assertEquals(surfaces.why.evidence?.includes('8,412 steps'), true);
 });

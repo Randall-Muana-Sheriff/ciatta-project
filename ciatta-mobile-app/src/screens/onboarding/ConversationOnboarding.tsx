@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -19,7 +20,8 @@ import {
   type OnboardingAnswer,
   type OnboardingBankRow,
 } from '../../lib/onboardingConversation';
-import { ArrowUpIcon, MicIcon } from '../../components/icons';
+import GhostButton from '../../components/GhostButton';
+import { ArrowUpIcon } from '../../components/icons';
 
 const LIFE_STAGES = ['Reproductive Years', 'Perimenopause', 'Menopause', 'Postmenopause'];
 
@@ -73,7 +75,7 @@ export interface ConversationSummary {
 // and the new one reveal in exactly the same position, using the same
 // fade + slide the old chat bubbles used, just without a history trailing
 // behind it.
-function QuestionCard({ text, purpose, thinking }: { text: string; purpose?: string; thinking?: boolean }) {
+function QuestionCard({ text, thinking }: { text: string; thinking?: boolean }) {
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(anim, {
@@ -91,37 +93,31 @@ function QuestionCard({ text, purpose, thinking }: { text: string; purpose?: str
 
   return (
     <Animated.View style={[styles.ciattaRow, style]}>
-      <View style={styles.ciattaMark} />
-      <View style={styles.ciattaBubble}>
-        {thinking ? (
-          <Text style={styles.thinking}>···</Text>
-        ) : (
-          <>
-            <Text style={styles.ciattaText}>{text}</Text>
-            {purpose ? <Text style={styles.ciattaPurpose}>{purpose}</Text> : null}
-          </>
-        )}
-      </View>
+      {thinking ? (
+        <Text style={styles.thinking}>···</Text>
+      ) : (
+        <Text style={styles.ciattaText}>{text}</Text>
+      )}
     </Animated.View>
   );
 }
 
-// The composer is a single rounded field, not a text box with a separate
-// button beside it: empty shows a mic (tapping it just focuses the field —
-// there's no speech-to-text wired up yet, so this never pretends to listen)
-// and typing morphs that same trailing slot into Send, in place.
+// The composer is a single rounded field. Typing morphs the trailing
+// slot into Send. Empty never shows a microphone. Speech is not wired.
 function Composer({
   value,
   onChangeText,
   onSubmit,
   placeholder,
   autoCapitalize,
+  disabled,
 }: {
   value: string;
   onChangeText: (v: string) => void;
   onSubmit: () => void;
   placeholder: string;
   autoCapitalize?: 'words' | 'sentences' | 'none' | 'characters';
+  disabled?: boolean;
 }) {
   const inputRef = useRef<TextInput>(null);
   const hasText = value.trim().length > 0;
@@ -145,16 +141,20 @@ function Composer({
         onSubmitEditing={onSubmit}
         returnKeyType="send"
         autoCapitalize={autoCapitalize}
+        editable={!disabled}
       />
       <Pressable
-        onPress={hasText ? onSubmit : () => inputRef.current?.focus()}
+        accessibilityRole="button"
+        accessibilityLabel="Send"
+        onPress={hasText && !disabled ? onSubmit : undefined}
+        disabled={!hasText || disabled}
         style={({ pressed }) => [
           styles.composerAction,
           hasText && styles.composerActionActive,
-          pressed && { opacity: 0.85 },
+          pressed && hasText && { opacity: 0.85 },
         ]}
       >
-        {hasText ? <ArrowUpIcon size={16} color={colors.white} /> : <MicIcon size={16} color={colors.ink3} />}
+        {hasText ? <ArrowUpIcon size={16} color={colors.white} /> : null}
       </Pressable>
     </GlassSurface>
   );
@@ -173,6 +173,9 @@ export default function ConversationOnboarding({
   const [inputValue, setInputValue] = useState('');
   const [preferTyping, setPreferTyping] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [answering, setAnswering] = useState(false);
+  const answeringRef = useRef(false);
+  const finishingRef = useRef(false);
   // What loadNextAdaptiveQuestion was called with, so "Try again" can
   // re-issue the exact same call after a failure instead of losing it.
   const lastCallRef = useRef<{ tag?: string; answer?: string }>({});
@@ -195,6 +198,8 @@ export default function ConversationOnboarding({
     phase === 'identity' ? IDENTITY_QUESTIONS[identityIndex] : null;
 
   function finishConversation() {
+    if (finishingRef.current) return;
+    finishingRef.current = true;
     draft.current = {
       ...draft.current,
       answers: answersRef.current,
@@ -252,21 +257,30 @@ export default function ConversationOnboarding({
   }
 
   function submitIdentityAnswer(rawValue: string) {
+    if (answeringRef.current) return;
     const value = rawValue.trim();
     if (!value || !currentIdentityQuestion) return;
+    answeringRef.current = true;
+    setAnswering(true);
     draft.current = { ...draft.current, [currentIdentityQuestion.field]: value };
     setInputValue('');
     setPreferTyping(false);
     if (identityIndex + 1 < IDENTITY_QUESTIONS.length) {
       setIdentityIndex((i) => i + 1);
+      answeringRef.current = false;
+      setAnswering(false);
     } else {
+      answeringRef.current = false;
+      setAnswering(false);
       loadNextAdaptiveQuestion();
     }
   }
 
   async function submitAdaptiveAnswer(rawValue: string) {
     const value = rawValue.trim();
-    if (!value || !activeCuriosity) return;
+    if (!value || !activeCuriosity || answeringRef.current) return;
+    answeringRef.current = true;
+    setAnswering(true);
     const answeredCuriosity = activeCuriosity;
     if (answeredCuriosity.tag === 'intent') draft.current.intent = value;
     if (answeredCuriosity.tag === 'concern') draft.current.concern = value;
@@ -289,10 +303,14 @@ export default function ConversationOnboarding({
         // was actually saved, so nothing else should move forward either.
         setActiveCuriosity(answeredCuriosity);
         setLoadError("That didn't save. Check your connection and try again.");
+        answeringRef.current = false;
+        setAnswering(false);
         return;
       }
     }
     answersRef.current = [...answersRef.current, recorded];
+    answeringRef.current = false;
+    setAnswering(false);
     await loadNextAdaptiveQuestion(tag, value);
   }
 
@@ -323,7 +341,6 @@ export default function ConversationOnboarding({
       : 'done';
   const questionText =
     phase === 'identity' ? currentIdentityQuestion?.prompt ?? '' : activeCuriosity?.question ?? '';
-  const questionPurpose = phase === 'adaptive' ? activeCuriosity?.purpose : undefined;
 
   // No KeyboardAvoidingView here — the parent OnboardingFlow already wraps
   // its whole body in one (the app-wide KeyboardAvoidingScreen), and this
@@ -331,12 +348,18 @@ export default function ConversationOnboarding({
   // the first would double-compensate for the keyboard height.
   return (
     <View style={styles.flex}>
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.conversationScroll}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.questionArea}>
         {questionKey !== 'done' && (
           <QuestionCard
             key={questionKey}
             text={questionText}
-            purpose={questionPurpose}
             thinking={phase === 'loading'}
           />
         )}
@@ -366,9 +389,11 @@ export default function ConversationOnboarding({
                 <GlassChip
                   key={opt}
                   label={opt}
-                  onPress={() =>
-                    phase === 'identity' ? submitIdentityAnswer(opt) : submitAdaptiveAnswer(opt)
-                  }
+                  onPress={() => {
+                    if (answering) return;
+                    if (phase === 'identity') submitIdentityAnswer(opt);
+                    else submitAdaptiveAnswer(opt);
+                  }}
                 />
               ))}
             </GlassGroup>
@@ -384,46 +409,32 @@ export default function ConversationOnboarding({
             onSubmit={submitTextInput}
             placeholder={currentIdentityQuestion?.placeholder ?? 'Type your answer'}
             autoCapitalize={currentIdentityQuestion?.field === 'name' ? 'words' : 'sentences'}
+            disabled={answering || phase === 'loading'}
           />
         )}
+        {phase !== 'done' && phase !== 'loading' ? (
+          <GhostButton label="I'll do this later" onPress={finishConversation} />
+        ) : null}
       </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  conversationScroll: { flexGrow: 1 },
   questionArea: {
     flex: 1,
     paddingHorizontal: 22,
-    paddingTop: 12,
+    paddingTop: 28,
   },
   ciattaRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    maxWidth: '92%',
-  },
-  ciattaMark: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.accent,
-    marginTop: 8,
-  },
-  ciattaBubble: {
-    flex: 1,
+    maxWidth: '94%',
   },
   ciattaText: {
-    ...type.title3,
+    ...type.title2,
     color: colors.ink,
-  },
-  ciattaPurpose: {
-    ...fonts.sans,
-    fontSize: 13,
-    lineHeight: 18,
-    color: colors.ink3,
-    marginTop: 6,
   },
   thinking: {
     ...type.title3,

@@ -3,32 +3,34 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors, fonts } from '../theme/tokens';
 
 export default function ConfidenceBar({
-  value,
   label,
-  showEndpoints,
 }: {
-  value: number;
   label?: string;
+  /** Ignored. Kept so existing call sites compile while percents are gone. */
+  value?: number;
   showEndpoints?: boolean;
 }) {
+  const width = fillForLabel(label);
   return (
     <View style={{ marginTop: 18 }}>
       <View style={styles.headerRow}>
-        <Text style={styles.label}>HOW CONFIDENT AM I?</Text>
-        {label ? <Text style={styles.pct}>{value}%</Text> : null}
+        <Text style={styles.label}>HOW THIS IS HELD</Text>
+        {label ? <Text style={styles.status}>{label}</Text> : null}
       </View>
       <View style={styles.track}>
-        <View style={[styles.fill, { width: `${Math.min(100, Math.max(0, value))}%` }]} />
+        <View style={[styles.fill, { width: `${width}%` }]} />
       </View>
-      {showEndpoints ? (
-        <View style={styles.endpoints}>
-          <Text style={styles.endpointText}>Low</Text>
-          <Text style={styles.endpointTextMid}>{label}</Text>
-          <Text style={styles.endpointText}>High</Text>
-        </View>
-      ) : null}
     </View>
   );
+}
+
+function fillForLabel(label: string | undefined): number {
+  const raw = (label ?? '').toLowerCase();
+  if (raw.includes('very confident')) return 90;
+  if (raw.includes('fairly confident')) return 50;
+  if (raw.includes('still learning')) return 22;
+  if (raw.includes('confident')) return 72;
+  return 40;
 }
 
 const styles = StyleSheet.create({
@@ -44,8 +46,8 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     color: colors.ink3,
   },
-  pct: {
-    ...fonts.mono,
+  status: {
+    ...fonts.sansMedium,
     fontSize: 13,
     color: colors.evidence,
   },
@@ -59,20 +61,5 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: colors.evidence,
     borderRadius: 3,
-  },
-  endpoints: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 6,
-  },
-  endpointText: {
-    ...fonts.sans,
-    fontSize: 11,
-    color: colors.ink3,
-  },
-  endpointTextMid: {
-    ...fonts.sansMedium,
-    fontSize: 11,
-    color: colors.ink,
   },
 });

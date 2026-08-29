@@ -3,6 +3,7 @@ import {
   Animated,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -30,6 +31,7 @@ import {
 } from './OnboardingSetupSteps';
 import type { PendingHealthDocument } from '../../lib/onboardingSetup';
 import KeyboardAvoidingScreen from '../../components/KeyboardAvoidingScreen';
+import { userFacingError } from '../../lib/userFacingError';
 import {
   ONBOARDING_ACCOUNT_STEP,
   ONBOARDING_CONVERSATION_STEP,
@@ -91,13 +93,16 @@ export default function OnboardingFlow({
   onComplete,
   startStep = 0,
   userId,
+  completing = false,
 }: {
   onComplete: (draft: OnboardingDraft) => void;
   startStep?: number;
   userId?: string;
+  completing?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(startStep);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
   const fade = useRef(new Animated.Value(1)).current;
 
   const [name, setName] = useState('');
@@ -117,6 +122,7 @@ export default function OnboardingFlow({
   const [notifPref, setNotifPref] = useState('discoveries');
   const [sharedHealthRows, setSharedHealthRows] = useState<string[]>([]);
   const [pendingHealthNotes, setPendingHealthNotes] = useState<Record<string, string>>({});
+  const [accountMode, setAccountMode] = useState<'signup' | 'signin'>('signup');
   const [policiesAgreed, setPoliciesAgreed] = useState(false);
   const [pendingDocuments, setPendingDocuments] = useState<PendingHealthDocument[]>([]);
   const [suggestedTests, setSuggestedTests] = useState<string[]>([]);
@@ -217,10 +223,12 @@ export default function OnboardingFlow({
   // were discussed (answered or explicitly declined) rather than merely
   // permitted in the abstract.
   function finishOnboarding(healthAfterAuth = connectHealthAfterAuth) {
+    if (completing) return;
     onComplete(buildDraft(healthAfterAuth));
   }
 
   async function handleConnectHealthSource() {
+    if (healthConnecting) return;
     if (Platform.OS !== 'android' && Platform.OS !== 'ios') {
       setAppleHealthConnected(true);
       setConnectHealthAfterAuth(true);
@@ -250,7 +258,7 @@ export default function OnboardingFlow({
         }
       } catch (e) {
         setHealthConnectNote(
-          e instanceof Error ? e.message : `Something went wrong connecting ${HEALTH_SOURCE_NAME}.`
+          userFacingError(e, `This could not connect to ${HEALTH_SOURCE_NAME} just now. You can continue without it.`)
         );
       } finally {
         setHealthConnecting(false);
@@ -279,7 +287,7 @@ export default function OnboardingFlow({
       }
     } catch (e) {
       setHealthConnectNote(
-        e instanceof Error ? e.message : `Something went wrong connecting ${HEALTH_SOURCE_NAME}.`
+        userFacingError(e, `This could not connect to ${HEALTH_SOURCE_NAME} just now. You can continue without it.`)
       );
     } finally {
       setHealthConnecting(false);
@@ -342,18 +350,18 @@ export default function OnboardingFlow({
         { backgroundColor: dark ? colors.dark : colors.canvas },
       ]}
     >
-      <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
-        <View style={styles.dots}>
-          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.dot,
-                i === step && styles.dotActive,
-                i !== step && (dark ? styles.dotInactiveDark : styles.dotInactiveLight),
-              ]}
-            />
-          ))}
+      <View
+        style={[styles.topBar, { paddingTop: insets.top + 10 }]}
+        onLayout={(e) => setKeyboardOffset(e.nativeEvent.layout.height)}
+      >
+        <View style={[styles.progressTrack, dark && styles.progressTrackDark]}>
+          <View
+            style={[
+              styles.progressFill,
+              dark && styles.progressFillDark,
+              { width: `${((step + 1) / TOTAL_STEPS) * 100}%` },
+            ]}
+          />
         </View>
         {step > 0 ? (
           <Pressable onPress={back} hitSlop={10}>
@@ -366,16 +374,22 @@ export default function OnboardingFlow({
         )}
       </View>
 
-      <KeyboardAvoidingScreen>
+      <KeyboardAvoidingScreen keyboardVerticalOffset={keyboardOffset}>
       <Animated.View style={[styles.body, { opacity: fade, paddingBottom: insets.bottom + 24 }]}>
         {step === 0 && (
           <Message
             title={WELCOME_SLIDE.title}
             body={WELCOME_SLIDE.body}
             ctaLabel="Begin"
-            onContinue={next}
+            onContinue={() => {
+              setAccountMode('signup');
+              next();
+            }}
             secondaryLabel="Already have an account? Sign in"
-            onSecondary={skipToAccount}
+            onSecondary={() => {
+              setAccountMode('signin');
+              skipToAccount();
+            }}
           />
         )}
 
@@ -403,6 +417,11 @@ export default function OnboardingFlow({
             onContinue={() => {
               setIncludeMentalEmotional(true);
               snapshotGuestDraft(HEALTH_DOCUMENTS_STEP, true, { includeMentalEmotional: true });
+              next();
+            }}
+            onSkip={() => {
+              setIncludeMentalEmotional(false);
+              snapshotGuestDraft(HEALTH_DOCUMENTS_STEP, true, { includeMentalEmotional: false });
               next();
             }}
           />
@@ -498,6 +517,7 @@ export default function OnboardingFlow({
 
         {step === ACCOUNT_STEP && (
           <AccountStep
+            initialMode={accountMode}
             onAuthed={() => {
               if (conversationDone) {
                 finishOnboarding();
@@ -509,6 +529,11 @@ export default function OnboardingFlow({
         )}
       </Animated.View>
       </KeyboardAvoidingScreen>
+      {completing ? (
+        <View style={styles.completingMask} pointerEvents="auto">
+          <Text style={styles.completingText}>Saving your picture.</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -573,7 +598,12 @@ function Reflection({
   if (concern && concern !== "I'm not sure yet") told.push(`Right now: ${concern.toLowerCase()}.`);
 
   return (
-    <View style={styles.flex}>
+    <ScrollView
+      style={styles.flex}
+      contentContainerStyle={styles.accountScroll}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={styles.title}>What's taking{'\n'}shape so far.</Text>
       <Text style={styles.subtitle}>
         A quick honest look: what you shared, and what has actually
@@ -603,12 +633,18 @@ function Reflection({
 
       <View style={{ flex: 1 }} />
       <PrimaryButton label="Continue" onPress={onContinue} />
-    </View>
+    </ScrollView>
   );
 }
 
-function AccountStep({ onAuthed }: { onAuthed: () => void }) {
-  const [mode, setMode] = useState<'signup' | 'signin'>('signup');
+function AccountStep({
+  onAuthed,
+  initialMode = 'signup',
+}: {
+  onAuthed: () => void;
+  initialMode?: 'signup' | 'signin';
+}) {
+  const [mode, setMode] = useState<'signup' | 'signin'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -616,6 +652,7 @@ function AccountStep({ onAuthed }: { onAuthed: () => void }) {
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
   async function handleSubmit() {
+    if (loading) return;
     setError(null);
     setLoading(true);
     try {
@@ -631,13 +668,14 @@ function AccountStep({ onAuthed }: { onAuthed: () => void }) {
         onAuthed();
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.');
+      setError(userFacingError(e, 'That sign in did not go through. Try again.'));
     } finally {
       setLoading(false);
     }
   }
 
   async function handleConfirmedContinue() {
+    if (loading) return;
     setError(null);
     setLoading(true);
     try {
@@ -645,9 +683,7 @@ function AccountStep({ onAuthed }: { onAuthed: () => void }) {
       onAuthed();
     } catch (e) {
       setError(
-        e instanceof Error
-          ? e.message
-          : "That didn't work yet. Try again once you've confirmed."
+        userFacingError(e, "That didn't work yet. Try again once you've confirmed.")
       );
     } finally {
       setLoading(false);
@@ -656,7 +692,13 @@ function AccountStep({ onAuthed }: { onAuthed: () => void }) {
 
   if (needsConfirmation) {
     return (
-      <View style={styles.flex}>
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.accountScroll}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>Check your email.</Text>
         <Text style={styles.subtitle}>
           A confirmation link is on its way to {email}. Once you've confirmed, come
@@ -669,12 +711,18 @@ function AccountStep({ onAuthed }: { onAuthed: () => void }) {
           onPress={handleConfirmedContinue}
           loading={loading}
         />
-      </View>
+      </ScrollView>
     );
   }
 
   return (
-    <View style={styles.flex}>
+    <ScrollView
+      style={styles.flex}
+      contentContainerStyle={styles.accountScroll}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={styles.title}>
         {mode === 'signup' ? 'Create your account.' : 'Welcome back.'}
       </Text>
@@ -740,7 +788,7 @@ function AccountStep({ onAuthed }: { onAuthed: () => void }) {
           setMode((m) => (m === 'signup' ? 'signin' : 'signup'));
         }}
       />
-    </View>
+    </ScrollView>
   );
 }
 
@@ -762,7 +810,12 @@ function Message({
   onSecondary?: () => void;
 }) {
   return (
-    <View style={styles.flex}>
+    <ScrollView
+      style={styles.flex}
+      contentContainerStyle={styles.accountScroll}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={[styles.messageTitle, dark && { color: colors.white }]}>{title}</Text>
       <Text style={[styles.messageBody, dark && { color: 'rgba(255,255,255,0.75)' }]}>
         {body}
@@ -772,13 +825,27 @@ function Message({
       {secondaryLabel && onSecondary ? (
         <GhostButton label={secondaryLabel} onPress={onSecondary} />
       ) : null}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   flex: { flex: 1 },
+  accountScroll: { flexGrow: 1, paddingBottom: 12 },
+  completingMask: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(255,252,247,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  completingText: {
+    ...fonts.sans,
+    fontSize: 15,
+    color: colors.ink2,
+    textAlign: 'center',
+  },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -786,25 +853,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 8,
   },
-  dots: {
-    flexDirection: 'row',
-    gap: 5,
-    alignItems: 'center',
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  dotActive: {
-    width: 16,
-    backgroundColor: colors.accent,
-  },
-  dotInactiveLight: {
+  progressTrack: {
+    flex: 1,
+    height: 2,
+    borderRadius: 1,
     backgroundColor: colors.border,
+    marginRight: 16,
+    overflow: 'hidden',
   },
-  dotInactiveDark: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  progressTrackDark: {
+    backgroundColor: 'rgba(255,255,255,0.16)',
+  },
+  progressFill: {
+    height: 2,
+    backgroundColor: colors.ink,
+  },
+  progressFillDark: {
+    backgroundColor: colors.white,
   },
   back: {
     ...fonts.sans,

@@ -46,7 +46,7 @@
     "test:provider-search": "cd supabase/functions/provider-search && deno test",
     "test:visitprep": "deno test --sloppy-imports src/lib/visitPrep.test.ts",
     "test:tampon": "deno test --sloppy-imports src/lib/tamponWear.test.ts",
-    "test:onboarding": "deno test --sloppy-imports src/lib/onboardingConversation.test.ts src/lib/onboardingComplete.test.ts src/lib/onboardingSetup.test.ts",
+    "test:onboarding": "deno test --sloppy-imports src/lib/onboardingConversation.test.ts src/lib/onboardingComplete.test.ts src/lib/onboardingSetup.test.ts src/lib/userFacingError.test.ts src/lib/googleAuthConfig.test.ts",
     "test:care": "deno test --sloppy-imports src/lib/careConnection.test.ts",
     "test:glass": "deno test --sloppy-imports src/lib/liquidGlass.test.ts src/lib/navAdaptivity.test.ts",
     "test:copy": "deno test --allow-read --sloppy-imports src/lib/copyNoEmDash.test.ts",

@@ -15,13 +15,17 @@
  *    rotation.
  */
 import type { Strength } from './cycleAnalysis.ts';
-import { strengthForConfidence, strengthForObservedPattern } from './cycleAnalysis.ts';
+import { strengthForConfidence } from './cycleAnalysis.ts';
 import type { RatingObservation } from './energyRelationship.ts';
+import { readingsEvidenceSummary, type UnderstandingFacets } from './understandingFacets.ts';
 import {
-  changeFromNotableRate,
-  readingsEvidenceSummary,
-  type UnderstandingFacets,
-} from './understandingFacets.ts';
+  changeFromNotableCount,
+  CONFIDENCE_LABEL,
+  stillLearningForStance,
+  strengthForStance,
+  volumeStance,
+  type PatternStance,
+} from './intelligenceIntegrity.ts';
 
 export interface SleepObservation {
   id: string;
@@ -87,6 +91,7 @@ export function analyzeSleep(observations: SleepObservation[]): SleepUnderstandi
   const nights = [...byNight.values()];
   const totalNights = nights.length;
 
+  const observationIds = observations.map((o) => o.id);
   if (totalNights < BASELINE_MIN_NIGHTS) {
     return {
       totalNights,
@@ -94,9 +99,9 @@ export function analyzeSleep(observations: SleepObservation[]): SleepUnderstandi
       medianMinutes: 0,
       shortNights: 0,
       shortNightRate: 0,
-      confidence: 0,
+      confidence: Math.min(1, totalNights / CONFIDENCE_SAMPLE_CAP_UNDERSTANDING),
       eligible: false,
-      observationIds: [],
+      observationIds,
     };
   }
 
@@ -112,7 +117,7 @@ export function analyzeSleep(observations: SleepObservation[]): SleepUnderstandi
     shortNightRate: shortNights / totalNights,
     confidence: Math.min(1, totalNights / CONFIDENCE_SAMPLE_CAP_UNDERSTANDING),
     eligible: true,
-    observationIds: observations.map((o) => o.id),
+    observationIds,
   };
 }
 
@@ -120,37 +125,68 @@ export interface SleepUnderstandingDraft extends UnderstandingFacets {
   strength: Strength;
   narrative: string;
   confidenceLabel: string;
+  stillLearning: string[];
+  stance: PatternStance;
 }
 
-const CONFIDENCE_LABEL: Record<Strength, string> = {
-  emerging: 'still learning',
-  moderate: 'fairly confident',
-  strong: 'confident',
-  'very-strong': 'very confident',
-};
-
 export function buildSleepUnderstanding(result: SleepUnderstandingResult): SleepUnderstandingDraft | null {
-  if (!result.eligible) return null;
-  const strength = strengthForObservedPattern(result.confidence, result.shortNightRate);
+  const stance = volumeStance({
+    sampleCount: result.totalNights,
+    minSample: BASELINE_MIN_NIGHTS,
+    notableCount: result.shortNights,
+  });
+  if (stance === 'insufficient') return null;
+
+  const strength = strengthForStance(result.confidence, stance);
+  if (stance === 'early') {
+    const seeing = `Ciatta has ${result.totalNights} nights of sleep so far. That is not enough yet to see your usual night.`;
+    return {
+      strength,
+      narrative: seeing,
+      seeing,
+      confidenceLabel: CONFIDENCE_LABEL[strength],
+      stillLearning: stillLearningForStance(stance, 'what your usual night looks like'),
+      stance,
+      evidenceSummary: readingsEvidenceSummary(result.observationIds.length, strength),
+      evidenceSignal: 'sleep_segment',
+      baselineValue: null,
+      baselineUnit: null,
+      baselineWindowDays: result.totalNights,
+      baselineSummary: null,
+      changeDetected: false,
+      changeSummary: null,
+    };
+  }
+
   const hours = Math.floor(result.avgMinutes / 60);
   const minutes = Math.round(result.avgMinutes % 60);
-  const pct = Math.round(result.shortNightRate * 100);
-  const seeing = `You average about ${hours}h ${minutes}m of sleep a night. About ${pct}% of your nights fall noticeably short of that.`;
   const usualHours = Math.floor(result.medianMinutes / 60);
   const usualMinutes = Math.round(result.medianMinutes % 60);
+  const share = countShareSleep(result.shortNights, result.totalNights);
+  const seeing =
+    stance === 'steady'
+      ? `You average about ${hours}h ${minutes}m of sleep a night. Recent nights have been sitting close to that.`
+      : `You average about ${hours}h ${minutes}m of sleep a night. ${share} sat noticeably short of that.`;
   return {
     strength,
     narrative: seeing,
     seeing,
     confidenceLabel: CONFIDENCE_LABEL[strength],
+    stillLearning: stillLearningForStance(stance, 'whether shorter nights keep showing up'),
+    stance,
     evidenceSummary: readingsEvidenceSummary(result.observationIds.length, strength),
     evidenceSignal: 'sleep_segment',
     baselineValue: result.medianMinutes,
     baselineUnit: 'minutes',
     baselineWindowDays: result.totalNights,
     baselineSummary: `Your usual night is about ${usualHours}h ${usualMinutes}m.`,
-    ...changeFromNotableRate(result.shortNightRate),
+    ...changeFromNotableCount(result.shortNights, result.totalNights, 'night'),
   };
+}
+
+function countShareSleep(notable: number, total: number): string {
+  if (notable <= 0) return 'None of these nights';
+  return `${notable} of ${total} nights`;
 }
 
 export interface SleepRatingRelationshipResult {

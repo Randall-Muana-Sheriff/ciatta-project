@@ -183,7 +183,7 @@ Deno.test('sleep chart uses the persisted baseline, not an eight hour target', (
         baselineValue: 430,
         baselineWindowDays: 30,
         baselineSummary: 'Your usual night is about 7h 10m.',
-        changeSummary: 'About 22% of recent days sit apart from your usual baseline.',
+        changeSummary: '8 of 30 nights sat apart from your usual.',
       },
     ],
     relationships: [],
@@ -197,7 +197,7 @@ Deno.test('sleep chart uses the persisted baseline, not an eight hour target', (
   assertEquals(view?.baseline, 430);
   assertEquals(view?.yGuides, [{ value: 430, label: 'Usual' }]);
   assertEquals(view?.headline.includes('shorter than they were last week'), false);
-  assertEquals(view?.headline.includes('22%'), true);
+  assertEquals(view?.headline.includes('8 of 30 nights'), true);
   assertEquals(view?.context.includes('7h 10m'), true);
   assertEquals(view?.metricLine.includes('last 30 days'), true);
 });

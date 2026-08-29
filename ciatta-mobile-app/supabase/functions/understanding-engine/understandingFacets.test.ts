@@ -25,6 +25,7 @@ Deno.test('changeFromNotableRate stays silent below a real share of unusual days
   assertEquals(changeFromNotableRate(0.2).changeDetected, true);
   assertEquals(
     changeFromNotableRate(0.2).changeSummary,
-    'About 20% of recent days sit apart from your usual baseline.'
+    '4 of 20 days sat apart from your usual.'
   );
+  assertEquals((changeFromNotableRate(0.2).changeSummary ?? '').includes('%'), false);
 });

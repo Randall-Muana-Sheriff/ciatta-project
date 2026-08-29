@@ -14,11 +14,13 @@ Deno.test('deriveGuidance: emerging and moderate understandings get no guidance 
     guidance: null,
     careRecommendationType: null,
     careRecommendationReason: null,
+    outcome: 'none',
   });
   assertEquals(deriveGuidance('sleep', 'moderate', null, EVIDENCE_3_WEEKS, NOW), {
     guidance: null,
     careRecommendationType: null,
     careRecommendationReason: null,
+    outcome: 'none',
   });
 });
 
@@ -146,10 +148,10 @@ Deno.test('durationPhrase: buckets days into fixed, enumerated phrases', () => {
   assertEquals(durationPhrase(180), 'over the past several months');
 });
 
-Deno.test('deriveGuidance: sleep that runs short of eight hours uses engine sleep guidance', () => {
+Deno.test('deriveGuidance: sleep uses understand or consider, never an eight hour target', () => {
   const result = deriveGuidance('sleep', 'strong', null, EVIDENCE_3_WEEKS, NOW, {
     sleepAverageMinutes: 6 * 60 + 30,
   });
-  assert(result.guidance!.includes('aiming for about eight hours of sleep'));
-  assertEquals(result.guidance!.includes('keeping your sleep schedule consistent'), false);
+  assertEquals(result.guidance!.includes('eight hours'), false);
+  assert(result.guidance!.includes('Consider') || result.guidance!.includes('understand'));
 });

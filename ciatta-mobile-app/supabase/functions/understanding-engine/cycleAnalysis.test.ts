@@ -104,7 +104,10 @@ Deno.test('cycleAnalysis: no real pattern produces no claim, even with full data
 
   assertEquals(result.cyclesConfirming, 0);
   assertEquals(result.eligible, false);
-  assertEquals(buildUnderstanding(result), null);
+  const understanding = buildUnderstanding(result);
+  assert(understanding !== null);
+  assertEquals(understanding!.stance, 'mixed');
+  assert(understanding!.narrative.toLowerCase().includes('mixed'));
 });
 
 Deno.test('cycleAnalysis: cold-start gate blocks even a strong real pattern at 2 cycles', () => {
@@ -125,7 +128,11 @@ Deno.test('cycleAnalysis: cold-start gate blocks even a strong real pattern at 2
   // enough cycles yet — the gate must win regardless of pattern strength.
   assertEquals(result.cyclesConfirming, 2);
   assertEquals(result.eligible, false);
-  assertEquals(result.confidence, 0);
+  assert(result.confidence > 0);
+  const understanding = buildUnderstanding(result);
+  assert(understanding !== null);
+  assertEquals(understanding!.stance, 'early');
+  assertEquals(understanding!.narrative.includes('bpm higher'), false);
 });
 
 Deno.test('cycleAnalysis: zero RHR data never crashes and is never eligible', () => {
@@ -185,10 +192,10 @@ Deno.test('strengthForConfidence: tiers are monotonic and match the documented t
   assertEquals(strengthForConfidence(1), 'very-strong');
 });
 
-Deno.test('strengthForObservedPattern: sample size alone never produces very-strong', () => {
-  assertEquals(strengthForObservedPattern(1, 0), 'moderate');
-  assertEquals(strengthForObservedPattern(0.9, 0.04), 'moderate');
-  assertEquals(strengthForObservedPattern(0.9, 0.1), 'strong');
+Deno.test('strengthForObservedPattern: follows evidence quality, not a dip rate', () => {
+  assertEquals(strengthForObservedPattern(1, 0), 'very-strong');
+  assertEquals(strengthForObservedPattern(0.9, 0.04), 'very-strong');
+  assertEquals(strengthForObservedPattern(0.9, 0.1), 'very-strong');
   assertEquals(strengthForObservedPattern(0.9, 0.2), 'very-strong');
   assertEquals(strengthForObservedPattern(0.5, 0.4), 'moderate');
 });

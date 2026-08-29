@@ -130,7 +130,7 @@ Deno.test('stepsAnalysis: low-activity threshold is relative to personal baselin
   assert(sedentaryResult.lowActivityDays > 0);
 });
 
-Deno.test('stepsAnalysis: cold start blocks the Understanding under 14 days', () => {
+Deno.test('stepsAnalysis: cold start writes an early Understanding instead of silence', () => {
   nextId = 1;
   const { steps } = buildScenario({
     numDays: 8,
@@ -145,10 +145,12 @@ Deno.test('stepsAnalysis: cold start blocks the Understanding under 14 days', ()
   });
   const result = analyzeSteps(steps);
   assertEquals(result.eligible, false);
-  assertEquals(buildStepsUnderstanding(result), null);
+  const draft = buildStepsUnderstanding(result);
+  assert(draft !== null);
+  assertEquals(draft!.stance, 'early');
 });
 
-Deno.test('stepsAnalysis: activity volume without notable low days is developing, never very-strong', () => {
+Deno.test('stepsAnalysis: activity volume without notable low days is well evidenced and steady', () => {
   nextId = 1;
   const { steps } = buildScenario({
     numDays: 30,
@@ -166,9 +168,11 @@ Deno.test('stepsAnalysis: activity volume without notable low days is developing
   assertEquals(result.eligible, true);
   assertEquals(result.lowActivityDays, 0);
   assert(draft !== null);
-  assertEquals(draft!.strength, 'moderate');
-  assertEquals(draft!.confidenceLabel, 'fairly confident');
+  assertEquals(draft!.strength, 'very-strong');
+  assertEquals(draft!.confidenceLabel, 'very confident');
+  assertEquals(draft!.stance, 'steady');
   assert(!draft!.narrative.toLowerCase().includes('very strong'));
+  assertEquals(draft!.narrative.includes('%'), false);
   assertEquals(draft!.seeing, draft!.narrative);
   assertEquals(draft!.evidenceSignal, 'steps');
   assertEquals(draft!.changeDetected, false);

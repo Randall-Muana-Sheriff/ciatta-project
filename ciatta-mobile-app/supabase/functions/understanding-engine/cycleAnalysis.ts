@@ -9,10 +9,18 @@
  */
 
 import {
-  changeFromNotableRate,
-  readingsEvidenceSummary,
-  type UnderstandingFacets,
-} from './understandingFacets.ts';
+  changeFromNotableCount,
+  CONFIDENCE_LABEL,
+  cycleStance,
+  stillLearningForStance,
+  strengthForEvidenceQuality,
+  strengthForStance,
+  type PatternStance,
+  type Strength,
+} from './intelligenceIntegrity.ts';
+import { readingsEvidenceSummary, type UnderstandingFacets } from './understandingFacets.ts';
+
+export type { Strength };
 
 export interface FlowObservation {
   id: string;
@@ -210,9 +218,7 @@ export function analyzeCycles(
   const eligible =
     cyclesWithSufficientData >= MIN_CYCLES_FOR_CONFIDENCE && confirmationRate >= MIN_CONFIRMATION_RATE;
 
-  const confidence = eligible
-    ? confirmationRate * Math.min(1, cyclesWithSufficientData / CONFIDENCE_SAMPLE_CAP)
-    : 0;
+  const confidence = Math.min(1, cyclesWithSufficientData / CONFIDENCE_SAMPLE_CAP);
 
   return {
     cyclesDetected: cycles.length,
@@ -228,28 +234,16 @@ export function analyzeCycles(
   };
 }
 
-export type Strength = 'emerging' | 'moderate' | 'strong' | 'very-strong';
-
 export function strengthForConfidence(confidence: number): Strength {
-  if (confidence < 0.3) return 'emerging';
-  if (confidence < 0.6) return 'moderate';
-  if (confidence < 0.85) return 'strong';
-  return 'very-strong';
+  return strengthForEvidenceQuality(confidence);
 }
 
 /**
- * Sample size can make a volume signal look "very-strong" without a real
- * pattern. very-strong requires both a large sample *and* a notable share
- * of days that actually differ from this person's baseline.
+ * Confidence is evidence quality. notableRate no longer caps the label.
+ * Stance carries whether a pattern is actually showing.
  */
-export function strengthForObservedPattern(confidence: number, notableRate: number): Strength {
-  const bySample = strengthForConfidence(confidence);
-  if (notableRate < 0.05) {
-    if (bySample === 'very-strong' || bySample === 'strong') return 'moderate';
-    return bySample;
-  }
-  if (bySample === 'very-strong' && notableRate < 0.15) return 'strong';
-  return bySample;
+export function strengthForObservedPattern(confidence: number, _notableRate?: number): Strength {
+  return strengthForEvidenceQuality(confidence);
 }
 
 export interface UnderstandingDraft extends UnderstandingFacets {
@@ -257,21 +251,66 @@ export interface UnderstandingDraft extends UnderstandingFacets {
   narrative: string;
   confidenceLabel: string;
   stillLearning: string[];
+  stance: PatternStance;
 }
 
-const CONFIDENCE_LABEL: Record<Strength, string> = {
-  emerging: 'still learning',
-  moderate: 'fairly confident',
-  strong: 'confident',
-  'very-strong': 'very confident',
-};
-
 export function buildUnderstanding(result: CycleAnalysisResult): UnderstandingDraft | null {
-  if (!result.eligible || result.avgDeltaBpm === null) return null;
+  const stance = cycleStance({
+    cyclesDetected: result.cyclesDetected,
+    cyclesWithSufficientData: result.cyclesWithSufficientData,
+    cyclesConfirming: result.cyclesConfirming,
+    minCycles: MIN_CYCLES_FOR_CONFIDENCE,
+  });
+  if (stance === 'insufficient') return null;
+  if (result.cyclesDetected > 0 && result.cyclesWithSufficientData === 0 && result.observationIds.length === 0) {
+    return null;
+  }
 
-  const strength = strengthForConfidence(result.confidence);
+  const strength = strengthForStance(result.confidence, stance);
+  if (stance === 'early') {
+    const seeing = `Ciatta has ${result.cyclesWithSufficientData || result.cyclesDetected} cycles in view. That is not enough yet to treat a heart rate shift as a pattern.`;
+    return {
+      strength,
+      narrative: seeing,
+      seeing,
+      confidenceLabel: CONFIDENCE_LABEL[strength],
+      stillLearning: stillLearningForStance(stance, 'how this sits across more cycles'),
+      stance,
+      evidenceSummary: readingsEvidenceSummary(result.observationIds.length, strength),
+      evidenceSignal: 'resting_heart_rate',
+      baselineValue: null,
+      baselineUnit: null,
+      baselineWindowDays: null,
+      baselineSummary: null,
+      changeDetected: false,
+      changeSummary: null,
+    };
+  }
+
+  if (stance === 'mixed' || result.avgDeltaBpm === null) {
+    const seeing = `This resting heart rate shift has shown up in ${result.cyclesConfirming} of ${result.cyclesWithSufficientData} cycles with enough data. It is mixed so far, not a settled pattern.`;
+    return {
+      strength,
+      narrative: seeing,
+      seeing,
+      confidenceLabel: CONFIDENCE_LABEL[strength],
+      stillLearning: stillLearningForStance(stance, 'whether this settles across more cycles'),
+      stance,
+      evidenceSummary: readingsEvidenceSummary(result.observationIds.length, strength),
+      evidenceSignal: 'resting_heart_rate',
+      baselineValue: result.avgDeltaBpm,
+      baselineUnit: result.avgDeltaBpm == null ? null : 'bpm',
+      baselineWindowDays: null,
+      baselineSummary: null,
+      changeDetected: result.cyclesConfirming > 0,
+      changeSummary:
+        result.cyclesConfirming > 0
+          ? `This has shown up in ${result.cyclesConfirming} of ${result.cyclesWithSufficientData} cycles.`
+          : null,
+    };
+  }
+
   const delta = result.avgDeltaBpm.toFixed(1);
-
   const seeing = `Your resting heart rate tends to run about ${delta} bpm higher in the days before your period. This has shown up in ${result.cyclesConfirming} of the ${result.cyclesWithSufficientData} cycles with enough data so far.`;
   return {
     strength,
@@ -282,12 +321,13 @@ export function buildUnderstanding(result: CycleAnalysisResult): UnderstandingDr
       'exactly how many days before your period this shift starts',
       'how this connects to your energy day to day',
     ],
+    stance,
     evidenceSummary: readingsEvidenceSummary(result.observationIds.length, strength),
     evidenceSignal: 'resting_heart_rate',
     baselineValue: result.avgDeltaBpm,
     baselineUnit: 'bpm',
     baselineWindowDays: null,
     baselineSummary: `The usual lift is about ${delta} bpm in the days before your period.`,
-    ...changeFromNotableRate(result.confirmationRate),
+    ...changeFromNotableCount(result.cyclesConfirming, result.cyclesWithSufficientData, 'cycle'),
   };
 }

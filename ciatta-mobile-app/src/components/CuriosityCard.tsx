@@ -27,9 +27,6 @@ export default function CuriosityCard({
       style={[styles.card, dark && styles.cardDark]}
       fallbackStyle={[styles.fallback, dark && styles.fallbackDark]}
     >
-      <Text style={[styles.eyebrow, dark && styles.eyebrowDark]}>
-        ONE QUESTION FOR YOU
-      </Text>
       <Text style={[styles.question, dark && styles.questionDark]}>{question}</Text>
       {purpose ? (
         <Text style={[styles.purpose, dark && styles.purposeDark]}>{purpose}</Text>
@@ -60,15 +57,6 @@ const styles = StyleSheet.create({
   fallbackDark: {
     backgroundColor: colors.dark,
     borderColor: 'rgba(255,255,255,0.18)',
-  },
-  eyebrow: {
-    ...type.label,
-    letterSpacing: 1,
-    color: colors.ink3,
-    marginBottom: 10,
-  },
-  eyebrowDark: {
-    color: 'rgba(255,255,255,0.55)',
   },
   question: {
     ...type.title2,

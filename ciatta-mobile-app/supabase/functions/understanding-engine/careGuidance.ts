@@ -35,18 +35,23 @@
 //   3. WHEN might a provider help?     — the original connected-domain-
 //      aware care sentence, unchanged in content and behavior.
 
+import type { PatternStance, GuidanceOutcome } from './intelligenceIntegrity.ts';
+import { outcomeForStance } from './intelligenceIntegrity.ts';
+
 export type CareRecommendationType = 'primary-care' | 'ob-gyn' | 'mental-health';
 
 export interface GuidanceResult {
   guidance: string | null;
   careRecommendationType: CareRecommendationType | null;
   careRecommendationReason: string | null;
+  outcome: GuidanceOutcome;
 }
 
 const NO_GUIDANCE: GuidanceResult = {
   guidance: null,
   careRecommendationType: null,
   careRecommendationReason: null,
+  outcome: 'none',
 };
 
 // Guidance follows evidence — it is gated on the exact same confidence
@@ -146,14 +151,7 @@ function evidenceSentence(domainWord: string, evidence: EvidenceContext, now: Da
 
 // Answers "what might the user consider doing?" — one fixed sentence per
 // domain, never generated from the narrative or any external source.
-function considerSentence(domain: string, options: GuidanceOptions = {}): string {
-  if (
-    domain === 'sleep' &&
-    options.sleepAverageMinutes != null &&
-    options.sleepAverageMinutes < 8 * 60
-  ) {
-    return 'Consider aiming for about eight hours of sleep and tracking whether the pattern continues.';
-  }
+function considerSentence(domain: string, _options: GuidanceOptions = {}): string {
   const action = CONSIDER_ACTION[domain] ?? CONSIDER_ACTION.recovery;
   return `Consider ${action} and tracking whether the pattern continues.`;
 }
@@ -167,11 +165,16 @@ export interface GuidanceOptions {
    */
   clinicalConcern?: boolean;
   /**
-   * Sleep processor's personal average night length in minutes. When this
-   * is below eight hours and sleep is actionable, guidance names that
-   * target instead of a client invented last night comparison.
+   * Sleep processor's personal average night length in minutes. Unused for
+   * a population eight hour target. Kept so callers do not invent one.
    */
   sleepAverageMinutes?: number;
+  /**
+   * What the evidence supports doing. Watch, reassure, understand, and
+   * no action are valid. Consider plus care only when the stance is
+   * changing and the domain is clinically routed.
+   */
+  stance?: PatternStance;
 }
 
 function wantsCare(domain: string, clinicalConcern?: boolean): boolean {
@@ -204,19 +207,51 @@ export function deriveGuidance(
   now: Date = new Date(),
   options: GuidanceOptions = {}
 ): GuidanceResult {
-  if (!ACTIONABLE.has(strength)) return NO_GUIDANCE;
+  const stance = options.stance ?? (ACTIONABLE.has(strength) ? 'changing' : 'early');
+  const outcome = outcomeForStance(stance, strength as 'emerging' | 'moderate' | 'strong' | 'very-strong');
+
+  if (outcome === 'none') return NO_GUIDANCE;
 
   const domainWord = DOMAIN_LABEL[domain] ?? domain;
   const connectedWord = connectedDomain ? DOMAIN_LABEL[connectedDomain] ?? connectedDomain : null;
-  const attachCare = wantsCare(domain, options.clinicalConcern);
+  const why = evidenceSentence(domainWord, evidence, now);
 
-  const sentences = [evidenceSentence(domainWord, evidence, now), considerSentence(domain, options)];
+  if (outcome === 'watch') {
+    return {
+      guidance: `${why} Ciatta is watching this. No action is needed yet.`,
+      careRecommendationType: null,
+      careRecommendationReason: null,
+      outcome,
+    };
+  }
+
+  if (outcome === 'reassure') {
+    return {
+      guidance: `${why} This is sitting close to your usual. Nothing here asks for a change.`,
+      careRecommendationType: null,
+      careRecommendationReason: null,
+      outcome,
+    };
+  }
+
+  if (outcome === 'understand') {
+    return {
+      guidance: `${why} This is here to understand. Ciatta is not asking you to do anything with it.`,
+      careRecommendationType: null,
+      careRecommendationReason: null,
+      outcome,
+    };
+  }
+
+  const attachCare = wantsCare(domain, options.clinicalConcern);
+  const sentences = [why, considerSentence(domain, options)];
 
   if (!attachCare) {
     return {
       guidance: sentences.join(' '),
       careRecommendationType: null,
       careRecommendationReason: null,
+      outcome,
     };
   }
 
@@ -231,5 +266,6 @@ export function deriveGuidance(
     guidance: sentences.join(' '),
     careRecommendationType,
     careRecommendationReason: CARE_REASON[careRecommendationType],
+    outcome,
   };
 }

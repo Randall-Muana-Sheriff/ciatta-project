@@ -49,8 +49,8 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   subtitle: {
-    ...type.subheadline,
+    ...type.body,
     color: colors.ink2,
-    marginTop: 2,
+    marginTop: 6,
   },
 });

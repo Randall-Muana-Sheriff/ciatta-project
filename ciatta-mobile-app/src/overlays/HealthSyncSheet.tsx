@@ -6,6 +6,7 @@ import PrimaryButton from '../components/PrimaryButton';
 import StatRow from '../components/StatRow';
 import { connectHealthConnect } from '../lib/healthConnect';
 import { connectHealthKit } from '../lib/healthKit';
+import { userFacingError } from '../lib/userFacingError';
 import { fetchSyncReflection, formatSleepMinutes, type SyncReflection } from '../lib/observations';
 import type { HealthKitSyncProgress, HealthKitSyncTelemetry } from '../lib/healthKitSync';
 
@@ -82,7 +83,10 @@ export default function HealthSyncSheet({
       });
       onSynced();
     } catch (e) {
-      setOutcome({ kind: 'error', message: e instanceof Error ? e.message : 'Something went wrong.' });
+      setOutcome({
+        kind: 'error',
+        message: userFacingError(e, 'Health could not sync just now. You can continue without it.'),
+      });
     } finally {
       setSyncing(false);
     }
@@ -130,20 +134,6 @@ export default function HealthSyncSheet({
                   ))}
                 </View>
               )}
-              {__DEV__ && outcome.telemetry ? (
-                <View style={styles.reflection}>
-                  <StatRow label="HealthKit query" value={`${outcome.telemetry.healthKitQueryMs} ms`} />
-                  <StatRow label="Samples fetched" value={String(outcome.telemetry.samplesFetched)} />
-                  <StatRow label="Normalization" value={`${outcome.telemetry.normalizationMs} ms`} />
-                  <StatRow label="Database write" value={`${outcome.telemetry.databaseWriteMs} ms`} />
-                  <StatRow label="Intelligence" value={`${outcome.telemetry.intelligenceProcessingMs} ms`} />
-                  <StatRow
-                    label="Total"
-                    value={`${outcome.telemetry.totalMs} ms`}
-                    last
-                  />
-                </View>
-              ) : null}
             </>
           )}
           {outcome?.kind === 'unavailable' && (

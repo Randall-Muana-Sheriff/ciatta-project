@@ -116,7 +116,7 @@ Deno.test('activity volume recovery with pattern guidance is not a care connecti
   const recovery = row({
     domain: 'recovery',
     strength: 'strong',
-    narrative: 'You average about 8,412 steps a day. About 0% of your days are notably less active than that.',
+    narrative: 'You average about 8,412 steps a day. Recent days have been sitting close to that.',
     guidance: "We've been learning your recovery patterns over the past several weeks. Consider prioritizing recovery and easing up where you can and tracking whether the pattern continues.",
     care_recommendation_type: null,
     care_recommendation_reason: null,

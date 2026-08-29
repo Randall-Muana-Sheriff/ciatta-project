@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, domainColor, fonts, type } from '../theme/tokens';
+import { colors, type } from '../theme/tokens';
 import { displayCopy } from '../lib/displayCopy';
 import { composeWhyLayer } from '../lib/whyLayer';
 import {
@@ -17,7 +17,6 @@ import type {
   UnderstandingRow,
 } from '../lib/queries';
 import BottomSheet from '../components/BottomSheet';
-import GhostButton from '../components/GhostButton';
 import InsightVisualization from '../components/InsightVisualization';
 
 export default function WhySheet({
@@ -32,6 +31,7 @@ export default function WhySheet({
   goals = [],
   userId,
   onClose,
+  onOpenCore,
 }: {
   visible: boolean;
   featured: UnderstandingRow | null;
@@ -44,12 +44,17 @@ export default function WhySheet({
   goals?: string[];
   userId?: string | null;
   onClose: () => void;
+  onOpenCore: () => void;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [candidates, setCandidates] = useState<ReturnType<typeof listInsightCandidates>>([]);
 
   useEffect(() => {
-    if (!visible) setExpandedId(null);
+    if (!visible) {
+      setExpandedId(null);
+      setHistoryOpen(false);
+    }
   }, [visible]);
 
   useEffect(() => {
@@ -115,6 +120,8 @@ export default function WhySheet({
     candidates,
   ]);
 
+  const historyItems = (layer?.history ?? []).filter((label) => label !== layer?.mattering);
+
   return (
     <BottomSheet visible={visible} onClose={onClose} maxHeightPct={0.88}>
       {featured && layer ? (
@@ -124,7 +131,7 @@ export default function WhySheet({
 
           {layer.primaryViz ? (
             <View style={styles.viz}>
-              <InsightVisualization view={layer.primaryViz} />
+              <InsightVisualization view={layer.primaryViz} framed={false} />
             </View>
           ) : null}
 
@@ -138,36 +145,57 @@ export default function WhySheet({
                   onPress={() => setExpandedId(open ? null : signal.id)}
                   style={({ pressed }) => [styles.supportHit, pressed && { opacity: 0.65 }]}
                 >
-                  <View style={[styles.dot, { backgroundColor: signal.color }]} />
                   <Text style={styles.supportTitle}>{displayCopy(signal.title)}</Text>
                 </Pressable>
                 {open ? (
                   <View style={styles.supportViz}>
-                    <InsightVisualization view={signal} compact />
+                    <InsightVisualization view={signal} compact framed={false} />
                   </View>
                 ) : null}
               </View>
             );
           })}
 
-          {layer.related.map((item) => (
-            <View key={item.domain} style={styles.related}>
-              <View style={[styles.dot, { backgroundColor: domainColor[item.domain] }]} />
-              <Text style={styles.relatedText}>{item.text}</Text>
+          {layer.related.length > 0 ? (
+            <View style={styles.relatedBlock}>
+              {layer.related.map((item) => (
+                <Text key={item.domain} style={styles.relatedText}>
+                  {item.text}
+                </Text>
+              ))}
             </View>
-          ))}
+          ) : null}
 
-          {(layer.history ?? [])
-            .filter((label) => label !== layer.mattering)
-            .map((label) => (
-              <Text key={label} style={styles.history}>
-                {label}
-              </Text>
-            ))}
+          {historyItems.length > 0 ? (
+            <View style={styles.historyBlock}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="How this changed"
+                onPress={() => setHistoryOpen((v) => !v)}
+                style={({ pressed }) => [styles.historyHit, pressed && { opacity: 0.65 }]}
+              >
+                <Text style={styles.historyLabel}>How this changed</Text>
+              </Pressable>
+              {historyOpen
+                ? historyItems.map((label) => (
+                    <Text key={label} style={styles.history}>
+                      {label}
+                    </Text>
+                  ))
+                : null}
+            </View>
+          ) : null}
 
           {layer.watching ? <Text style={styles.watching}>{layer.watching}</Text> : null}
 
-          <GhostButton label="Close" onPress={onClose} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open Core"
+            onPress={onOpenCore}
+            style={({ pressed }) => [styles.coreHit, pressed && { opacity: 0.65 }]}
+          >
+            <Text style={styles.coreLink}>The longer picture lives in Core.</Text>
+          </Pressable>
         </>
       ) : null}
     </BottomSheet>
@@ -176,66 +204,67 @@ export default function WhySheet({
 
 const styles = StyleSheet.create({
   mattering: {
-    ...type.title3,
+    ...type.title2,
     color: colors.ink,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   evidence: {
-    ...fonts.sans,
-    fontSize: 14.5,
-    lineHeight: 22,
+    ...type.body,
     color: colors.ink2,
   },
   viz: {
-    marginTop: 16,
+    marginTop: 28,
   },
   support: {
-    marginTop: 14,
+    marginTop: 8,
   },
   supportHit: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
     minHeight: 44,
+    justifyContent: 'center',
   },
   supportTitle: {
-    ...fonts.sans,
-    fontSize: 14,
+    ...type.subheadline,
     color: colors.ink2,
   },
   supportViz: {
     marginTop: 8,
   },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  related: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    marginTop: 16,
+  relatedBlock: {
+    marginTop: 28,
+    gap: 12,
   },
   relatedText: {
-    ...fonts.sans,
-    fontSize: 14.5,
-    lineHeight: 21,
+    ...type.body,
     color: colors.ink2,
-    flex: 1,
   },
-  watching: {
-    ...fonts.sans,
-    fontSize: 14.5,
-    lineHeight: 21,
-    color: colors.ink,
+  historyBlock: {
     marginTop: 20,
   },
+  historyHit: {
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  historyLabel: {
+    ...type.headline,
+    color: colors.ink,
+  },
   history: {
-    ...fonts.sans,
-    fontSize: 14.5,
-    lineHeight: 21,
+    ...type.body,
     color: colors.ink2,
-    marginTop: 16,
+    marginTop: 12,
+  },
+  watching: {
+    ...type.body,
+    color: colors.ink,
+    marginTop: 28,
+  },
+  coreHit: {
+    marginTop: 36,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  coreLink: {
+    ...type.subheadline,
+    color: colors.ink2,
   },
 });

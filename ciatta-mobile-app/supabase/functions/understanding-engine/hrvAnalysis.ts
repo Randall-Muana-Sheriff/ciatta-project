@@ -13,7 +13,6 @@
  * 'hrv' signal (noted in the ingestion code, not silently pretended away).
  */
 import type { Strength } from './cycleAnalysis.ts';
-import { strengthForObservedPattern } from './cycleAnalysis.ts';
 import type { RatingObservation } from './energyRelationship.ts';
 import {
   median,
@@ -23,11 +22,15 @@ import {
   type DailyMetricRatingRelationshipResult,
   type DailyMetricDiscoveryDraft,
 } from './dailyMetricRatingRelationship.ts';
+import { readingsEvidenceSummary, type UnderstandingFacets } from './understandingFacets.ts';
 import {
-  changeFromNotableRate,
-  readingsEvidenceSummary,
-  type UnderstandingFacets,
-} from './understandingFacets.ts';
+  changeFromNotableCount,
+  CONFIDENCE_LABEL,
+  stillLearningForStance,
+  strengthForStance,
+  volumeStance,
+  type PatternStance,
+} from './intelligenceIntegrity.ts';
 
 export interface HrvObservation {
   id: string;
@@ -140,6 +143,7 @@ export function analyzeHrv(observations: HrvObservation[]): HrvUnderstandingResu
   const days = [...byDay.values()];
   const totalDays = days.length;
 
+  const observationIds = days.flatMap((d) => d.ids);
   if (totalDays < BASELINE_MIN_DAYS) {
     return {
       totalDays,
@@ -147,9 +151,9 @@ export function analyzeHrv(observations: HrvObservation[]): HrvUnderstandingResu
       medianMs: 0,
       lowHrvDays: 0,
       lowHrvRate: 0,
-      confidence: 0,
+      confidence: Math.min(1, totalDays / CONFIDENCE_SAMPLE_CAP),
       eligible: false,
-      observationIds: [],
+      observationIds,
     };
   }
 
@@ -166,7 +170,7 @@ export function analyzeHrv(observations: HrvObservation[]): HrvUnderstandingResu
     lowHrvRate: lowHrvDays / totalDays,
     confidence: Math.min(1, totalDays / CONFIDENCE_SAMPLE_CAP),
     eligible: true,
-    observationIds: days.flatMap((d) => d.ids),
+    observationIds,
   };
 }
 
@@ -174,33 +178,60 @@ export interface HrvUnderstandingDraft extends UnderstandingFacets {
   strength: Strength;
   narrative: string;
   confidenceLabel: string;
+  stillLearning: string[];
+  stance: PatternStance;
 }
 
-const CONFIDENCE_LABEL: Record<Strength, string> = {
-  emerging: 'still learning',
-  moderate: 'fairly confident',
-  strong: 'confident',
-  'very-strong': 'very confident',
-};
-
 export function buildHrvUnderstanding(result: HrvUnderstandingResult): HrvUnderstandingDraft | null {
-  if (!result.eligible) return null;
-  const strength = strengthForObservedPattern(result.confidence, result.lowHrvRate);
+  const stance = volumeStance({
+    sampleCount: result.totalDays,
+    minSample: BASELINE_MIN_DAYS,
+    notableCount: result.lowHrvDays,
+  });
+  if (stance === 'insufficient') return null;
+
+  const strength = strengthForStance(result.confidence, stance);
+  if (stance === 'early') {
+    const seeing = `Ciatta has ${result.totalDays} days of heart rate variability so far. That is not enough yet to see your usual.`;
+    return {
+      strength,
+      narrative: seeing,
+      seeing,
+      confidenceLabel: CONFIDENCE_LABEL[strength],
+      stillLearning: stillLearningForStance(stance, 'what your usual heart rate variability looks like'),
+      stance,
+      evidenceSummary: readingsEvidenceSummary(result.observationIds.length, strength),
+      evidenceSignal: 'hrv',
+      baselineValue: null,
+      baselineUnit: null,
+      baselineWindowDays: result.totalDays,
+      baselineSummary: null,
+      changeDetected: false,
+      changeSummary: null,
+    };
+  }
+
   const avgMs = Math.round(result.avgMs);
-  const pct = Math.round(result.lowHrvRate * 100);
-  const seeing = `Your heart rate variability averages about ${avgMs}ms. About ${pct}% of your days run notably lower than that.`;
+  const share =
+    result.lowHrvDays <= 0 ? null : `${result.lowHrvDays} of ${result.totalDays} days`;
+  const seeing =
+    stance === 'steady'
+      ? `Your heart rate variability averages about ${avgMs}ms. Recent days have been sitting close to that.`
+      : `Your heart rate variability averages about ${avgMs}ms. ${share} ran notably lower than that.`;
   return {
     strength,
     narrative: seeing,
     seeing,
     confidenceLabel: CONFIDENCE_LABEL[strength],
+    stillLearning: stillLearningForStance(stance, 'whether quieter variability days keep showing up'),
+    stance,
     evidenceSummary: readingsEvidenceSummary(result.observationIds.length, strength),
     evidenceSignal: 'hrv',
     baselineValue: result.medianMs,
     baselineUnit: 'ms',
     baselineWindowDays: result.totalDays,
     baselineSummary: `Your usual heart rate variability is about ${Math.round(result.medianMs)}ms.`,
-    ...changeFromNotableRate(result.lowHrvRate),
+    ...changeFromNotableCount(result.lowHrvDays, result.totalDays, 'day'),
   };
 }
 

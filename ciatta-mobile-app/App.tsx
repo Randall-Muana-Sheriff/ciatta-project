@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, AppState, Platform, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, AppState, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import type { Session } from '@supabase/supabase-js';
@@ -10,6 +10,7 @@ import GlassSurface from './src/components/GlassSurface';
 import { supabase } from './src/lib/supabase';
 import { signOut, getSession } from './src/lib/auth';
 import { isAuthFailure } from './src/lib/errors';
+import { userFacingError } from './src/lib/userFacingError';
 import { isClockSkewError, logSessionClockSkew, withClockSkewRetry } from './src/lib/sessionGuard';
 import { fetchProfile, updateProfile } from './src/lib/profile';
 import {
@@ -110,10 +111,13 @@ export default function App() {
   const [splashDone, setSplashDone] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
+  const completingRef = useRef(false);
   const [completeError, setCompleteError] = useState<string | null>(null);
   const holdingOnboardingRef = useRef(false);
 
   const [tab, setTab] = useState<MainTab>('today');
+  const tabOpacity = useRef(new Animated.Value(1)).current;
+  const tabReady = useRef(false);
   const [understandingDomain, setUnderstandingDomain] = useState<Domain | null>(null);
   const [startUnderstandingWithProviderSearch, setStartUnderstandingWithProviderSearch] =
     useState(false);
@@ -134,6 +138,19 @@ export default function App() {
   const selectedDiscovery = discoveries.find((d) => d.id === selectedDiscoveryId) ?? null;
 
   useEffect(() => {
+    if (!tabReady.current) {
+      tabReady.current = true;
+      return;
+    }
+    tabOpacity.setValue(0.88);
+    Animated.timing(tabOpacity, {
+      toValue: 1,
+      duration: 280,
+      useNativeDriver: true,
+    }).start();
+  }, [tab, tabOpacity]);
+
+  useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       logSessionClockSkew(data.session?.access_token, 'getSession (restart/persisted)');
       setSession(data.session);
@@ -143,6 +160,32 @@ export default function App() {
       setSession(s);
     });
     return () => sub.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    try {
+      const { requireOptionalNativeModule } = require('expo-modules-core') as {
+        requireOptionalNativeModule: (name: string) => {
+          setPreferencesAsync?: (prefs: Record<string, boolean>) => Promise<unknown>;
+          setSettings?: (prefs: Record<string, boolean>) => void;
+          hideMenu?: () => void;
+          closeMenu?: () => void;
+        } | null;
+      };
+      const prefs = {
+        showFloatingActionButton: false,
+        showsAtLaunch: false,
+        isOnboardingFinished: true,
+      };
+      const menuPrefs = requireOptionalNativeModule('DevMenuPreferences');
+      menuPrefs?.setPreferencesAsync?.(prefs);
+      menuPrefs?.setSettings?.(prefs);
+      const menu = requireOptionalNativeModule('ExpoDevMenu');
+      menu?.hideMenu?.();
+      menu?.closeMenu?.();
+    } catch {
+      /* Store and release builds do not include the development menu. */
+    }
   }, []);
 
   // iOS: HealthKit background delivery is opportunistic. On open, register
@@ -287,12 +330,7 @@ export default function App() {
           } else {
             console.error('Could not load user data (keeping session):', e);
           }
-          const detail = e instanceof Error ? e.message : '';
-          setLoadError(
-            __DEV__ && detail
-              ? detail
-              : "Your data couldn't be reached just now. Check your connection and try again."
-          );
+          setLoadError("Your data couldn't be reached just now. Check your connection and try again.");
         }
       } finally {
         setDataLoading(false);
@@ -333,9 +371,11 @@ export default function App() {
   }, [session?.user?.id, healthSourceConnected, maybeAutoSync]);
 
   async function handleOnboardingComplete(draft: OnboardingDraft) {
+    if (completingRef.current) return;
     const sessionNow = (await getSession()) ?? session;
     const userId = sessionNow?.user?.id;
     if (!userId) return;
+    completingRef.current = true;
     setCompleting(true);
     setCompleteError(null);
     try {
@@ -372,9 +412,10 @@ export default function App() {
       }
     } catch (e) {
       setCompleteError(
-        e instanceof Error ? e.message : 'Something went wrong saving your profile.'
+        userFacingError(e, 'Your picture could not be saved just now. Try again.')
       );
     } finally {
+      completingRef.current = false;
       setCompleting(false);
     }
   }
@@ -431,7 +472,9 @@ export default function App() {
           <SafeAreaProvider>
             <View style={styles.loading}>
               <Text style={styles.retryTitle}>Your data couldn't be reached just now.</Text>
-              <Text style={styles.retryBody}>{loadError}</Text>
+              <Text style={styles.retryBody}>
+                Check your connection and try again.
+              </Text>
               <View style={styles.retryButton}>
                 <PrimaryButton
                   label="Try again"
@@ -465,6 +508,7 @@ export default function App() {
           onComplete={handleOnboardingComplete}
           startStep={session && !holdingOnboardingRef.current ? ONBOARDING_CONVERSATION_STEP : 0}
           userId={session?.user?.id}
+          completing={completing}
         />
         {completeError ? (
           <GlassSurface
@@ -490,19 +534,18 @@ export default function App() {
       <StatusBar style="dark" />
       <NavAdaptivityProvider>
       <View style={styles.app}>
-        <View style={{ flex: 1 }}>
+        <Animated.View style={{ flex: 1, opacity: tabOpacity }}>
           {tab === 'today' && (
             <TodayScreen
               userId={session?.user?.id}
               onOpenDiscoveryNudge={() => setDiscoveryFlowVisible(true)}
-              onOpenUnderstanding={(d) => setUnderstandingDomain(d)}
               onOpenInfo={() => setTodayInfoVisible(true)}
+              onOpenCore={() => setTab('core')}
               activeCuriosity={activeCuriosity}
               onAnswerCuriosity={handleAnswerCuriosity}
               hasPendingDiscovery={hasPendingDiscovery}
               understandings={understandings}
               preferredName={profile.preferred_name || profile.name || ''}
-              recentSyncSummary={recentSyncSummary}
               relationships={relationships}
               goals={profile?.goals ?? []}
               history={understandingHistory}
@@ -553,7 +596,7 @@ export default function App() {
               onSignOut={handleSignOut}
             />
           )}
-        </View>
+        </Animated.View>
         <BottomNav active={tab} onChange={setTab} />
       </View>
       </NavAdaptivityProvider>
@@ -573,7 +616,6 @@ export default function App() {
         providerFeedback={providerFeedback}
         userId={session?.user?.id ?? null}
         profileLocation={profile?.location ?? null}
-        goals={profile?.goals ?? []}
         startWithProviderSearch={startUnderstandingWithProviderSearch}
         onClose={() => {
           setUnderstandingDomain(null);

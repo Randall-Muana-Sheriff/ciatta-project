@@ -92,7 +92,7 @@ Deno.test('hrvAnalysis: multi-reading days are averaged, not summed', () => {
   assert(result.avgMs > 20 && result.avgMs < 80);
 });
 
-Deno.test('hrvAnalysis: cold start blocks the Understanding under 14 days', () => {
+Deno.test('hrvAnalysis: cold start writes an early Understanding instead of silence', () => {
   nextId = 1;
   const { hrv } = buildScenario({
     numDays: 9,
@@ -107,7 +107,9 @@ Deno.test('hrvAnalysis: cold start blocks the Understanding under 14 days', () =
   });
   const result = analyzeHrv(hrv);
   assertEquals(result.eligible, false);
-  assertEquals(buildHrvUnderstanding(result), null);
+  const draft = buildHrvUnderstanding(result);
+  assert(draft !== null);
+  assertEquals(draft!.stance, 'early');
 });
 
 Deno.test('hrvAnalysis: real low-HRV -> low-rating pattern is confirmed with enough days', () => {

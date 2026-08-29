@@ -24,16 +24,25 @@ import BottomSheet from '../../components/BottomSheet';
 
 const SKIP_LABEL = "I'll do this later";
 
-function StepFrame({ children }: { children: React.ReactNode }) {
+function StepFrame({
+  children,
+  footer,
+}: {
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+}) {
   return (
-    <ScrollView
-      style={styles.flex}
-      contentContainerStyle={styles.scroll}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-    >
-      {children}
-    </ScrollView>
+    <View style={styles.flex}>
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {children}
+      </ScrollView>
+      {footer ? <View style={styles.footer}>{footer}</View> : null}
+    </View>
   );
 }
 
@@ -41,17 +50,28 @@ function Group({ children }: { children: React.ReactNode }) {
   return <View style={styles.group}>{children}</View>;
 }
 
-export function MentalHealthStep({ onContinue }: { onContinue: () => void }) {
+export function MentalHealthStep({
+  onContinue,
+  onSkip,
+}: {
+  onContinue: () => void;
+  onSkip: () => void;
+}) {
   return (
-    <StepFrame>
+    <StepFrame
+      footer={
+        <>
+          <PrimaryButton label="Continue" onPress={onContinue} />
+          <GhostButton label="I'll do this later" onPress={onSkip} />
+        </>
+      }
+    >
       <Text style={styles.title}>How you feel belongs here too.</Text>
       <Text style={styles.subtitle}>
         Sleep, energy, and cycle are only part of the picture. Mental and emotional health sits
         alongside them, so understanding can take shape across the whole person, not as a separate
         clinical track.
       </Text>
-      <View style={{ flex: 1 }} />
-      <PrimaryButton label="Continue" onPress={onContinue} />
     </StepFrame>
   );
 }
@@ -82,11 +102,14 @@ export function HealthDocumentsStep({
   const [rowId, setRowId] = useState<string | null>(null);
   const [testsOpen, setTestsOpen] = useState(false);
   const [picking, setPicking] = useState(false);
+  const [pickerNote, setPickerNote] = useState<string | null>(null);
   const shared = new Set(sharedIds);
   const selectedTests = new Set(suggestedTests);
 
   async function addFiles() {
+    if (picking) return;
     setPicking(true);
+    setPickerNote(null);
     try {
       const result = await DocumentPicker.getDocumentAsync({
         copyToCacheDirectory: true,
@@ -100,15 +123,22 @@ export function HealthDocumentsStep({
       }));
       onDocumentsChange([...documents, ...next]);
     } catch {
-      /* Picker is optional. */
+      setPickerNote('A file could not be added just now. You can continue without it.');
     } finally {
       setPicking(false);
     }
   }
 
   async function addPhotos() {
+    if (picking) return;
     setPicking(true);
+    setPickerNote(null);
     try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setPickerNote('Photos were not allowed. You can continue without them.');
+        return;
+      }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsMultipleSelection: true,
@@ -122,7 +152,7 @@ export function HealthDocumentsStep({
       }));
       onDocumentsChange([...documents, ...next]);
     } catch {
-      /* Picker is optional. */
+      setPickerNote('Photos could not be added just now. You can continue without them.');
     } finally {
       setPicking(false);
     }
@@ -137,74 +167,80 @@ export function HealthDocumentsStep({
   }
 
   return (
-    <StepFrame>
-      <Text style={styles.title}>Health documents.</Text>
-      <Text style={styles.subtitle}>
-        Add lab results, wearable exports, photos, or notes you already have. Everything here is
-        optional, and you can finish later in You.
-      </Text>
-      <Group>
-        <DisclosureRow
-          label="Upload a file"
-          value={
-            documents.some((d) => d.kind === 'file')
-              ? `${documents.filter((d) => d.kind === 'file').length} added`
-              : 'Lab results, exports, PDFs'
-          }
-          onPress={addFiles}
-        />
-        <DisclosureRow
-          label="Add a photo"
-          value={
-            documents.some((d) => d.kind === 'photo')
-              ? `${documents.filter((d) => d.kind === 'photo').length} added`
-              : 'Pages, screenshots, scans'
-          }
-          onPress={addPhotos}
-        />
-        <DisclosureRow
-          label="Suggested tests and scans"
-          value={
-            suggestedTests.length > 0 ? `${suggestedTests.length} selected` : 'Optional ideas'
-          }
-          last
-          onPress={() => setTestsOpen(true)}
-        />
-      </Group>
-
-      <Text style={styles.sectionLabel}>NOTES YOU CAN ADD</Text>
-      <Group>
-        {healthItems.map((item, i) => (
+    <>
+      <StepFrame
+        footer={
+          <>
+            {pickerNote ? <Text style={styles.note}>{pickerNote}</Text> : null}
+            <PrimaryButton label="Continue" onPress={onContinue} loading={picking} />
+            <GhostButton label={SKIP_LABEL} onPress={onSkip} />
+          </>
+        }
+      >
+        <Text style={styles.title}>Health documents.</Text>
+        <Text style={styles.subtitle}>
+          Add lab results, wearable exports, photos, or notes you already have. Everything here is
+          optional, and you can finish later in You.
+        </Text>
+        <Group>
           <DisclosureRow
-            key={item.id}
-            label={item.label}
-            value={shared.has(item.id) ? 'Shared' : 'Not shared yet'}
-            last={i === healthItems.length - 1}
-            onPress={() => setRowId(item.id)}
+            label="Upload a file"
+            value={
+              documents.some((d) => d.kind === 'file')
+                ? `${documents.filter((d) => d.kind === 'file').length} added`
+                : 'Lab results, exports, PDFs'
+            }
+            onPress={addFiles}
           />
-        ))}
-      </Group>
+          <DisclosureRow
+            label="Add a photo"
+            value={
+              documents.some((d) => d.kind === 'photo')
+                ? `${documents.filter((d) => d.kind === 'photo').length} added`
+                : 'Pages, screenshots, scans'
+            }
+            onPress={addPhotos}
+          />
+          <DisclosureRow
+            label="Suggested tests and scans"
+            value={
+              suggestedTests.length > 0 ? `${suggestedTests.length} selected` : 'Optional ideas'
+            }
+            last
+            onPress={() => setTestsOpen(true)}
+          />
+        </Group>
 
-      {documents.length > 0 ? (
-        <>
-          <Text style={styles.sectionLabel}>ADDED</Text>
-          <Group>
-            {documents.map((doc, i) => (
-              <DisclosureRow
-                key={doc.id}
-                label={displayCopy(doc.name)}
-                value={doc.kind === 'photo' ? 'Photo' : 'File'}
-                last={i === documents.length - 1}
-                onPress={() => onDocumentsChange(documents.filter((row) => row.id !== doc.id))}
-              />
-            ))}
-          </Group>
-        </>
-      ) : null}
+        <Text style={styles.sectionLabel}>NOTES YOU CAN ADD</Text>
+        <Group>
+          {healthItems.map((item, i) => (
+            <DisclosureRow
+              key={item.id}
+              label={item.label}
+              value={shared.has(item.id) ? 'Shared' : 'Not shared yet'}
+              last={i === healthItems.length - 1}
+              onPress={() => setRowId(item.id)}
+            />
+          ))}
+        </Group>
 
-      <View style={{ flex: 1 }} />
-      <PrimaryButton label="Continue" onPress={onContinue} loading={picking} />
-      <GhostButton label={SKIP_LABEL} onPress={onSkip} />
+        {documents.length > 0 ? (
+          <>
+            <Text style={styles.sectionLabel}>ADDED</Text>
+            <Group>
+              {documents.map((doc, i) => (
+                <DisclosureRow
+                  key={doc.id}
+                  label={displayCopy(doc.name)}
+                  value={doc.kind === 'photo' ? 'Photo' : 'File'}
+                  last={i === documents.length - 1}
+                  onPress={() => onDocumentsChange(documents.filter((row) => row.id !== doc.id))}
+                />
+              ))}
+            </Group>
+          </>
+        ) : null}
+      </StepFrame>
       <HealthNoteSheet
         rowId={rowId}
         userId={userId}
@@ -233,7 +269,7 @@ export function HealthDocumentsStep({
           <PrimaryButton label="Done" onPress={() => setTestsOpen(false)} />
         </View>
       </BottomSheet>
-    </StepFrame>
+    </>
   );
 }
 
@@ -253,38 +289,44 @@ export function MedicalRecordsStep({
   const medical = connections.find((c) => c.label === 'Medical records');
 
   return (
-    <StepFrame>
-      <Text style={styles.title}>Medical records.</Text>
-      <Text style={styles.subtitle}>
-        Connecting a provider can bring in visits, labs, and medications already on file. You choose
-        what is imported. Nothing moves without your permission.
-      </Text>
-      <Group>
-        {medical ? (
+    <>
+      <StepFrame
+        footer={
+          <>
+            <PrimaryButton label="Continue" onPress={onContinue} />
+            <GhostButton label="Continue without connecting" onPress={onSkip} />
+          </>
+        }
+      >
+        <Text style={styles.title}>Medical records.</Text>
+        <Text style={styles.subtitle}>
+          Connecting a provider can bring in visits, labs, and medications already on file. You choose
+          what is imported. Nothing moves without your permission.
+        </Text>
+        <Group>
+          {medical ? (
+            <DisclosureRow
+              label={medical.label}
+              value="Not connected"
+              onPress={() => setRecordsOpen(true)}
+            />
+          ) : null}
           <DisclosureRow
-            label={medical.label}
-            value="Not connected"
-            onPress={() => setRecordsOpen(true)}
+            label="Find a provider"
+            value="Search"
+            onPress={() => setSearchOpen(true)}
           />
-        ) : null}
-        <DisclosureRow
-          label="Find a provider"
-          value="Search"
-          onPress={() => setSearchOpen(true)}
-        />
-        <DisclosureRow
-          label="What can be imported"
-          value="Visits, labs, medications"
-          last
-          onPress={() => setImportOpen(true)}
-        />
-      </Group>
-      <Text style={styles.privacy}>
-        Records stay yours. They are used to help you make sense of what changes. They are not sold.
-      </Text>
-      <View style={{ flex: 1 }} />
-      <PrimaryButton label="Continue" onPress={onContinue} />
-      <GhostButton label="Continue without connecting" onPress={onSkip} />
+          <DisclosureRow
+            label="What can be imported"
+            value="Visits, labs, medications"
+            last
+            onPress={() => setImportOpen(true)}
+          />
+        </Group>
+        <Text style={styles.privacy}>
+          Records stay yours. They are used to help you make sense of what changes. They are not sold.
+        </Text>
+      </StepFrame>
       <ProviderSearchSheet
         visible={searchOpen}
         understandingId={null}
@@ -311,7 +353,7 @@ export function MedicalRecordsStep({
           </Text>
         ))}
       </BottomSheet>
-    </StepFrame>
+    </>
   );
 }
 
@@ -343,52 +385,58 @@ export function WearablesStep({
   const source = WEARABLE_SOURCES.find((row) => row.id === sourceId) ?? null;
 
   return (
-    <StepFrame>
-      <Text style={styles.title}>Wearables and apps.</Text>
-      <Text style={styles.subtitle}>{healthSourceBody}</Text>
-      <Text style={styles.sectionLabel}>WHAT CAN BE COLLECTED</Text>
-      {HEALTH_SOURCE_DATA_POINTS.map((line) => (
-        <Text key={line} style={styles.inlineBullet}>
-          {`• ${line}`}
-        </Text>
-      ))}
-      {healthConnectNote ? (
-        <View style={{ marginTop: 14 }}>
-          <Text style={styles.note}>{displayCopy(healthConnectNote)}</Text>
-          {healthConnectNote.startsWith("Health Connect isn't installed") ? (
-            <GhostButton
-              label="Open Play Store"
-              tone="ink"
-              onPress={() =>
-                Linking.openURL('market://details?id=com.google.android.apps.healthdata').catch(() =>
-                  Linking.openURL(
-                    'https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata'
-                  )
-                )
-              }
+    <>
+      <StepFrame
+        footer={
+          <>
+            <PrimaryButton
+              label={connected ? 'Continue' : `Connect ${healthSourceName}`}
+              onPress={connected ? onContinue : userId ? () => setSyncOpen(true) : onConnect}
+              loading={healthConnecting}
             />
-          ) : null}
-        </View>
-      ) : null}
-      <Text style={styles.sectionLabel}>CONNECTED SOURCES</Text>
-      <Group>
-        {WEARABLE_SOURCES.map((row, i) => (
-          <DisclosureRow
-            key={row.id}
-            label={row.label}
-            value={connected ? 'Through Health' : 'Not connected'}
-            last={i === WEARABLE_SOURCES.length - 1}
-            onPress={() => setSourceId(row.id)}
-          />
+            {!connected ? <GhostButton label={SKIP_LABEL} onPress={onSkip} /> : null}
+          </>
+        }
+      >
+        <Text style={styles.title}>Wearables and apps.</Text>
+        <Text style={styles.subtitle}>{healthSourceBody}</Text>
+        <Text style={styles.sectionLabel}>WHAT CAN BE COLLECTED</Text>
+        {HEALTH_SOURCE_DATA_POINTS.map((line) => (
+          <Text key={line} style={styles.inlineBullet}>
+            {`• ${line}`}
+          </Text>
         ))}
-      </Group>
-      <View style={{ flex: 1 }} />
-      <PrimaryButton
-        label={connected ? 'Continue' : `Connect ${healthSourceName}`}
-        onPress={connected ? onContinue : userId ? () => setSyncOpen(true) : onConnect}
-        loading={healthConnecting}
-      />
-      {!connected ? <GhostButton label={SKIP_LABEL} onPress={onSkip} /> : null}
+        {healthConnectNote ? (
+          <View style={{ marginTop: 14 }}>
+            <Text style={styles.note}>{displayCopy(healthConnectNote)}</Text>
+            {healthConnectNote.startsWith("Health Connect isn't installed") ? (
+              <GhostButton
+                label="Open Play Store"
+                tone="ink"
+                onPress={() =>
+                  Linking.openURL('market://details?id=com.google.android.apps.healthdata').catch(() =>
+                    Linking.openURL(
+                      'https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata'
+                    )
+                  )
+                }
+              />
+            ) : null}
+          </View>
+        ) : null}
+        <Text style={styles.sectionLabel}>CONNECTED SOURCES</Text>
+        <Group>
+          {WEARABLE_SOURCES.map((row, i) => (
+            <DisclosureRow
+              key={row.id}
+              label={row.label}
+              value={connected ? 'Through Health' : 'Not connected'}
+              last={i === WEARABLE_SOURCES.length - 1}
+              onPress={() => setSourceId(row.id)}
+            />
+          ))}
+        </Group>
+      </StepFrame>
       <HealthSyncSheet
         visible={syncOpen}
         userId={userId}
@@ -423,7 +471,7 @@ export function WearablesStep({
           </>
         ) : null}
       </BottomSheet>
-    </StepFrame>
+    </>
   );
 }
 
@@ -438,6 +486,7 @@ export function CalendarStep({
   const [note, setNote] = useState<string | null>(null);
 
   async function handleAllow() {
+    if (busy) return;
     setBusy(true);
     setNote(null);
     try {
@@ -455,7 +504,15 @@ export function CalendarStep({
   }
 
   return (
-    <StepFrame>
+    <StepFrame
+      footer={
+        <>
+          {note ? <Text style={styles.note}>{note}</Text> : null}
+          <PrimaryButton label="Allow calendar access" onPress={handleAllow} loading={busy} />
+          <GhostButton label={SKIP_LABEL} onPress={onSkip} />
+        </>
+      }
+    >
       <Text style={styles.title}>Your days have context.</Text>
       <Text style={styles.subtitle}>
         Calendar access helps relate busy days, travel, and rest to how you sleep and feel. Event
@@ -464,10 +521,6 @@ export function CalendarStep({
       <Text style={styles.privacy}>
         You can turn this off later. Nothing from your calendar is sold or shared.
       </Text>
-      {note ? <Text style={styles.note}>{note}</Text> : null}
-      <View style={{ flex: 1 }} />
-      <PrimaryButton label="Allow calendar access" onPress={handleAllow} loading={busy} />
-      <GhostButton label={SKIP_LABEL} onPress={onSkip} />
     </StepFrame>
   );
 }
@@ -482,27 +535,33 @@ export function NotificationsStep({
   const [busy, setBusy] = useState(false);
 
   async function handleAllow() {
+    if (busy) return;
     setBusy(true);
     try {
-      await Notifications.requestPermissionsAsync();
+      const result = await Notifications.requestPermissionsAsync();
+      if (result.status === 'granted') onAllow();
+      else onSkip();
     } catch {
-      /* Permission is optional. Onboarding continues either way. */
+      onSkip();
     } finally {
       setBusy(false);
-      onAllow();
     }
   }
 
   return (
-    <StepFrame>
+    <StepFrame
+      footer={
+        <>
+          <PrimaryButton label="Allow notifications" onPress={handleAllow} loading={busy} />
+          <GhostButton label="Not now" onPress={onSkip} />
+        </>
+      }
+    >
       <Text style={styles.title}>A few useful reminders.</Text>
       <Text style={styles.subtitle}>
         Notifications stay limited to reminders that help, and updates that matter for your picture.
         You choose whether to turn them on, and you can change this later in You.
       </Text>
-      <View style={{ flex: 1 }} />
-      <PrimaryButton label="Allow notifications" onPress={handleAllow} loading={busy} />
-      <GhostButton label="Not now" onPress={onSkip} />
     </StepFrame>
   );
 }
@@ -517,7 +576,9 @@ export function PoliciesStep({
   onContinue: () => void;
 }) {
   return (
-    <StepFrame>
+    <StepFrame
+      footer={<PrimaryButton label="Continue" onPress={onContinue} disabled={!agreed} />}
+    >
       <Text style={styles.title}>How your data is used.</Text>
       <Text style={styles.subtitle}>
         Everything in your understanding is yours. Take a full copy with you later, or delete it
@@ -535,15 +596,16 @@ export function PoliciesStep({
           I agree to the Privacy Policy and Terms of Service.
         </Text>
       </Pressable>
-      <View style={{ flex: 1 }} />
-      <PrimaryButton label="Continue" onPress={onContinue} disabled={!agreed} />
     </StepFrame>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  scroll: { flexGrow: 1 },
+  scroll: { flexGrow: 1, paddingBottom: 16 },
+  footer: {
+    paddingTop: 8,
+  },
   title: {
     ...type.title1,
     color: colors.ink,

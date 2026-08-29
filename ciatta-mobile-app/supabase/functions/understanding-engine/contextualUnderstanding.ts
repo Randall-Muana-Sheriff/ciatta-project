@@ -79,6 +79,7 @@ export interface ContextualUnderstandingDraft extends UnderstandingFacets {
   narrative: string;
   confidenceLabel: string;
   stillLearning: string[];
+  stance: 'early';
 }
 
 export interface ContextualInput {
@@ -126,7 +127,8 @@ export function buildContextualUnderstanding(
     stillLearning: [
       `There isn't enough health data yet to understand what may be contributing to this.`,
     ],
-    evidenceSummary: readingsEvidenceSummary(1, 'emerging'),
+    stance: 'early',
+    evidenceSummary: readingsEvidenceSummary(1, 'emerging', 'context'),
     evidenceSignal: 'health_concern',
     baselineValue: null,
     baselineUnit: null,

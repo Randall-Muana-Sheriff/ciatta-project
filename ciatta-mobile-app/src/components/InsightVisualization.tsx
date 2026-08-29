@@ -205,19 +205,21 @@ function InsightChart({
 export default function InsightVisualization({
   view,
   compact = false,
+  framed = true,
   onTry,
 }: {
   view: InsightViewModel;
   compact?: boolean;
+  framed?: boolean;
   onTry?: () => void;
 }) {
-  return (
-    <Card style={styles.card}>
-          <Text style={[styles.kicker, compact && styles.kickerCompact]}>{displayCopy(view.title)}</Text>
+  const body = (
+    <>
+      <Text style={[styles.kicker, compact && styles.kickerCompact]}>{displayCopy(view.title)}</Text>
       {!(compact && view.kind !== 'still-learning') ? (
         <Text style={[styles.headline, compact && styles.headlineCompact]}>{view.headline}</Text>
       ) : null}
-      <Text style={styles.metric}>{view.metricLine}</Text>
+      <Text style={styles.metric}>{displayCopy(view.metricLine)}</Text>
       <View style={styles.chart}>
         <InsightChart
           kind={view.kind}
@@ -228,13 +230,8 @@ export default function InsightVisualization({
           band={view.band}
         />
       </View>
-      {view.badge ? (
-        <View style={[styles.badge, { borderColor: view.color }]}>
-          <Text style={[styles.badgeText, { color: view.color }]}>{view.badge}</Text>
-        </View>
-      ) : null}
       {!compact && view.context && view.context !== view.headline ? (
-        <Text style={styles.context}>{view.context}</Text>
+        <Text style={styles.context}>{displayCopy(view.context)}</Text>
       ) : null}
       {onTry && view.tryLabel ? (
         <Pressable
@@ -243,15 +240,16 @@ export default function InsightVisualization({
           onPress={onTry}
           style={({ pressed }) => [styles.tryRow, pressed && { opacity: 0.7 }]}
         >
-          <Text style={styles.tryWord}>Try</Text>
           <Text style={styles.tryLabel} numberOfLines={2}>
             {view.tryLabel}
           </Text>
-          <Text style={styles.chevron}>{'>'}</Text>
         </Pressable>
       ) : null}
-    </Card>
+    </>
   );
+
+  if (!framed) return <View>{body}</View>;
+  return <Card style={styles.card}>{body}</Card>;
 }
 
 const styles = StyleSheet.create({
@@ -289,18 +287,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginHorizontal: -4,
   },
-  badge: {
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    marginTop: 4,
-  },
-  badgeText: {
-    ...fonts.sansMedium,
-    fontSize: 11,
-  },
   context: {
     ...fonts.sans,
     fontSize: 13.5,
@@ -309,26 +295,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   tryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
     marginTop: 14,
-  },
-  tryWord: {
-    ...fonts.sansSemiBold,
-    fontSize: 14,
-    color: colors.ink,
   },
   tryLabel: {
     ...fonts.sans,
     fontSize: 14,
     lineHeight: 19,
     color: colors.ink2,
-    flex: 1,
-  },
-  chevron: {
-    ...fonts.sans,
-    fontSize: 16,
-    color: colors.ink3,
   },
 });

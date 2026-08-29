@@ -100,6 +100,17 @@ function lowerFirst(value: string): string {
   return trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
 }
 
+function provenanceCopy(featured: WhyUnderstanding): string | null {
+  const signal = featured.evidence_signal ?? '';
+  if (signal === 'health_concern' || signal === 'health_concern_detail') {
+    return displayCopy('This comes from what you shared, not a device measurement.');
+  }
+  if (signal === 'mood_rating' || signal === 'energy_rating') {
+    return displayCopy('This comes from check ins you reported, kept apart from device readings.');
+  }
+  return null;
+}
+
 function fallbackEvidenceCopy(featured: WhyUnderstanding): string {
   const n = featured.observations_count ?? 0;
   const thin = n < 8 || THIN_STRENGTH.includes(featured.strength);
@@ -180,8 +191,8 @@ export function composeWhyLayer(input: WhyLayerInput): WhyLayer {
       : null;
 
   const evidenceBits = [
+    provenanceCopy(featured),
     featured.evidence_summary ? displayCopy(featured.evidence_summary) : fallbackEvidenceCopy(featured),
-    featured.evidence_signal ? displayCopy(featured.evidence_signal) : null,
     featured.baseline_summary && !overlaps(featured.baseline_summary, mattering)
       ? displayCopy(featured.baseline_summary)
       : null,

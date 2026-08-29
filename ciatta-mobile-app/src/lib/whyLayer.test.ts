@@ -89,6 +89,32 @@ Deno.test('a complete still learning sentence is shown as written', () => {
   );
 });
 
+Deno.test('Why names user reported provenance without repeating Today', () => {
+  const layer = composeWhyLayer({
+    featured: {
+      ...featured,
+      seeing: featured.narrative,
+      evidence_summary: 'This is grounded in 12 check ins you reported.',
+      evidence_signal: 'mood_rating',
+      baseline_summary: null,
+      change_summary: null,
+      still_learning: ['Ciatta is watching whether Low keeps showing up.'],
+    },
+    todayNarrative: featured.narrative,
+    todayPriority: null,
+    understandings: [featured],
+    relationships: [],
+    crossDomain: [],
+    history: [
+      { understanding_id: featured.id, event_date: '2026-08-01', label: 'A picture of mood check ins started to show.' },
+    ],
+    candidates: [],
+  });
+  assertEquals((layer.evidence ?? '').includes('check ins you reported'), true);
+  assertEquals((layer.evidence ?? '').includes('kept apart from device readings'), true);
+  assertEquals((layer.mattering ?? '').includes('shorter than they were last week'), false);
+});
+
 Deno.test('Why uses persisted change and evidence, not Today seeing', () => {
   const layer = composeWhyLayer({
     featured: {
@@ -96,7 +122,7 @@ Deno.test('Why uses persisted change and evidence, not Today seeing', () => {
       seeing: featured.narrative,
       evidence_summary: 'This is grounded in 18 readings Ciatta has already seen.',
       baseline_summary: 'Your usual night is about 7h 10m.',
-      change_summary: 'About 22% of recent days sit apart from your usual baseline.',
+      change_summary: '8 of 30 nights sat apart from your usual.',
     },
     todayNarrative: featured.narrative,
     todayPriority: { text: featured.guidance ?? '', measured: true },
@@ -107,7 +133,7 @@ Deno.test('Why uses persisted change and evidence, not Today seeing', () => {
     candidates: [viz('sleep_trend', 'Sleep')],
   });
   assertEquals(layer.mattering?.includes('shorter than they were last week'), false);
-  assertEquals(layer.mattering?.includes('22%'), true);
+  assertEquals(layer.mattering?.includes('8 of 30 nights'), true);
   assertEquals(layer.evidence?.includes('18 readings'), true);
   assertEquals(layer.evidence?.includes('7h 10m'), true);
   assertEquals(layer.primaryViz?.id, 'sleep_trend');

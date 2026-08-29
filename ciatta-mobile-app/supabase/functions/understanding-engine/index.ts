@@ -55,6 +55,7 @@ import {
 import { analyzeMood, buildMoodUnderstanding } from './moodAnalysis.ts';
 import { deriveGuidance } from './careGuidance.ts';
 import { readingsEvidenceSummary, type UnderstandingFacets } from './understandingFacets.ts';
+import type { PatternStance } from './intelligenceIntegrity.ts';
 import { buildContextualUnderstanding, mapConcernToDomain, type Domain } from './contextualUnderstanding.ts';
 import { nextDecayedState } from './decay.ts';
 import { buildCrossDomainDraft } from './crossDomainSynthesis.ts';
@@ -285,6 +286,7 @@ interface UnderstandingDraftLike extends Partial<UnderstandingFacets> {
   narrative: string;
   confidenceLabel: string;
   stillLearning?: string[];
+  stance?: PatternStance;
 }
 
 /** Writes Evidence + upserts the Understanding + logs history on change.
@@ -310,7 +312,7 @@ async function upsertUnderstanding(
   historyLabel: { first: string; changed: string },
   evidenceType: 'health_data' | 'user_reported',
   skipIfUnchanged = false,
-  guidanceOptions?: { clinicalConcern?: boolean; sleepAverageMinutes?: number }
+  guidanceOptions?: { clinicalConcern?: boolean; sleepAverageMinutes?: number; stance?: PatternStance }
 ): Promise<string> {
   const facets: UnderstandingFacets = {
     seeing: draft.seeing ?? draft.narrative,
@@ -405,7 +407,7 @@ async function upsertUnderstanding(
     connectedDomain,
     { observationsCount: observationIds.length, learningSince: learningSinceAnchor },
     new Date(),
-    guidanceOptions
+    { ...guidanceOptions, stance: draft.stance ?? guidanceOptions?.stance }
   );
 
   const { data: upserted, error: upsertError } = await supabase
@@ -546,8 +548,13 @@ async function processCycleDomain(
     result.confidence,
     result.firstCycleStart ? result.firstCycleStart.toISOString().slice(0, 10) : null,
     {
-      first: 'A possible heart rate pattern tied to your cycle started to show.',
-      changed: `This pattern has held for ${result.cyclesWithSufficientData} cycles now.`,
+      first:
+        draft.stance === 'early'
+          ? 'Ciatta started looking at cycle and resting heart rate together.'
+          : draft.stance === 'mixed'
+            ? 'A mixed picture of cycle and resting heart rate started to show.'
+            : 'A possible heart rate pattern tied to your cycle started to show.',
+      changed: `This picture has held for ${result.cyclesWithSufficientData} cycles now.`,
     },
     'health_data',
     skipIfUnchanged
@@ -619,12 +626,15 @@ async function processSleepDomain(
     result.confidence,
     firstNight ? firstNight.slice(0, 10) : null,
     {
-      first: 'A pattern in how much you sleep started to show.',
-      changed: `This pattern has held across ${result.totalNights} nights now.`,
+      first:
+        draft.stance === 'early'
+          ? 'Ciatta started gathering sleep readings.'
+          : 'A picture of how much you sleep started to show.',
+      changed: `This picture has held across ${result.totalNights} nights now.`,
     },
     'health_data',
     skipIfUnchanged,
-    { sleepAverageMinutes: result.avgMinutes }
+    { sleepAverageMinutes: result.eligible ? result.avgMinutes : undefined, stance: draft.stance }
   );
 
   // Energy and mood are collected identically (same 1-4 curiosity scale),
@@ -716,15 +726,21 @@ async function processRecoveryDomain(
     confidence,
     firstDay ? firstDay.slice(0, 10) : null,
     {
-      first: usingHrv
-        ? 'A pattern in your heart rate variability started to show.'
-        : 'A pattern in how much you move day to day started to show.',
-      changed: `This pattern has held across ${weight} days now.`,
+      first:
+        draft.stance === 'early'
+          ? usingHrv
+            ? 'Ciatta started gathering heart rate variability readings.'
+            : 'Ciatta started gathering movement readings.'
+          : usingHrv
+            ? 'A pattern in your heart rate variability started to show.'
+            : 'A pattern in how much you move day to day started to show.',
+      changed: `This picture has held across ${weight} days now.`,
     },
     'health_data',
     skipIfUnchanged,
     {
-      clinicalConcern: usingHrv && hrvResult.lowHrvRate >= 0.15,
+      clinicalConcern: usingHrv && draft.stance === 'changing' && hrvResult.lowHrvRate >= 0.15,
+      stance: draft.stance,
     }
   );
 
@@ -802,8 +818,8 @@ async function processMoodDomain(
     result.confidence,
     firstAnswer ? firstAnswer.slice(0, 10) : null,
     {
-      first: 'A pattern in how you report your mood started to show.',
-      changed: `This pattern has held across ${result.totalAnswers} check ins now.`,
+      first: 'A picture of how you report your mood started to show.',
+      changed: `This picture has held across ${result.totalAnswers} check ins now.`,
     },
     'health_data',
     skipIfUnchanged
