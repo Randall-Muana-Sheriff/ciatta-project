@@ -44,7 +44,7 @@ const MIN_RATING_DROP = 0.5; // on the 1-4 scale, same floor as the cycle rule
 const CONFIDENCE_SAMPLE_CAP_UNDERSTANDING = 30;
 const CONFIDENCE_SAMPLE_CAP_RELATIONSHIP = 12;
 
-function isAsleepStage(stage: string | null | undefined): boolean {
+export function isAsleepStage(stage: string | null | undefined): boolean {
   return stage !== 'in_bed' && stage !== 'awake';
 }
 
@@ -54,7 +54,7 @@ function isAsleepStage(stage: string | null | undefined): boolean {
 // sleep." A same-day nap ending mid-afternoon keys to that same day, which
 // is an acceptable imprecision for a rare case rather than something worth
 // a more elaborate heuristic.
-function nightKey(endTime: string): string {
+export function nightKey(endTime: string): string {
   const d = new Date(new Date(endTime).getTime() - 12 * 60 * 60 * 1000);
   return d.toISOString().slice(0, 10);
 }
