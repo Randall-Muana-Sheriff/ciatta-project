@@ -53,6 +53,7 @@ import {
   type HrvObservation,
 } from './hrvAnalysis.ts';
 import { analyzeMood, buildMoodUnderstanding } from './moodAnalysis.ts';
+import { runSleepDurationSlice } from './sleepDurationSlice.ts';
 import { deriveGuidance } from './careGuidance.ts';
 import { readingsEvidenceSummary, type UnderstandingFacets } from './understandingFacets.ts';
 import type { PatternStance } from './intelligenceIntegrity.ts';
@@ -1236,6 +1237,19 @@ async function processUser(
     want.has('recovery') ? processRecoveryDomain(supabase, userId, obs, skipIfUnchanged) : skipped,
     want.has('mood') ? processMoodDomain(supabase, userId, obs, skipIfUnchanged) : skipped,
   ]);
+
+  // Stage 1 vertical slice — additive only, writes exclusively to the new
+  // features/baselines/change_events/finding_evidence/findings/
+  // ciatta_knowledge tables. Isolated so a failure here can never affect
+  // the legacy write path above, matching the existing announceDiscoveries
+  // isolation pattern further down this function.
+  if (want.has('sleep')) {
+    try {
+      await runSleepDurationSlice(supabase, userId, obs.sleep, obs.energy, obs.mood);
+    } catch (err) {
+      console.error('sleepDurationSlice failed (non-fatal, legacy path unaffected):', err);
+    }
+  }
 
   // Runs after, not alongside, the four physiological processors above —
   // its "don't overwrite a real physiological Understanding" guard reads
