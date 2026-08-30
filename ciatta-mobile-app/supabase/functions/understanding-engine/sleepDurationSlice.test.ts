@@ -1,5 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.208.0/assert/mod.ts';
 import { buildSleepDurationPipelineResult, checkAlternativeExplanation, runSleepDurationSlice } from './sleepDurationSlice.ts';
+import { explainSleepDurationFinding } from './explanation.ts';
 import type { SleepObservation } from './sleepAnalysis.ts';
 import type { RatingObservation } from './energyRelationship.ts';
 
@@ -39,6 +40,61 @@ Deno.test('buildSleepDurationPipelineResult: enough nights but no meaningful cha
   const result = buildSleepDurationPipelineResult(obs, [], [], new Date('2026-07-21'));
   assertEquals(result.outcome, 'no_surfacing');
   assertEquals(result.finding?.statement.includes('close to your usual'), true);
+});
+
+function nineteenNightsAt400ThenOneAt200(): SleepObservation[] {
+  const nights = Array.from({ length: 20 }, (_, i) => {
+    const day = String(i + 1).padStart(2, '0');
+    return {
+      id: `night-${i}`,
+      type: 'sleep_segment' as const,
+      startTime: `2026-07-${day}T23:00:00Z`,
+      endTime: `2026-07-${day}T23:00:00Z`.replace('23:00', '06:00'),
+      durationMinutes: i === 19 ? 200 : 400,
+      stage: 'asleep' as const,
+    };
+  });
+  return nights;
+}
+
+Deno.test('buildSleepDurationPipelineResult: a genuine meaningful deviation with enough history reaches surfaced', () => {
+  const obs = nineteenNightsAt400ThenOneAt200();
+  const result = buildSleepDurationPipelineResult(obs, [], [], new Date('2026-07-21'));
+
+  assertEquals(result.outcome, 'surfaced');
+  assertEquals(result.baseline?.value, 400);
+  assertEquals(result.change?.deviation, -200);
+  assertEquals(result.change?.isMeaningful, true);
+  assertEquals(result.finding?.confidenceTier, 'strong');
+  assertEquals(result.finding?.statement, 'Your nightly sleep has been running about 200 minutes below your usual.');
+  assertEquals(result.safetyTier, 'minimal');
+});
+
+Deno.test('buildSleepDurationPipelineResult: the surfaced Finding traces backward to its evidence via Explanation', () => {
+  const obs = nineteenNightsAt400ThenOneAt200();
+  const result = buildSleepDurationPipelineResult(obs, [], [], new Date('2026-07-21'));
+  assertEquals(result.outcome, 'surfaced');
+
+  const explanation = explainSleepDurationFinding(
+    result.finding!,
+    result.evidence!,
+    result.baseline!,
+    result.change!,
+    result.hasSupportedRelationship
+  );
+
+  assertEquals(explanation.whatCiattaNoticed, result.finding!.statement);
+  assertEquals(explanation.supportingEvidence, 'Based on 20 nights of sleep data.');
+  assertEquals(explanation.whatChanged, 'A meaningful change from your 400-minute usual.');
+  assertEquals(explanation.confidenceStatement, 'Ciatta is confident in this.');
+  // The explanation is built entirely from fields already on the Finding/
+  // Evidence/Baseline/Change objects passed in -- nothing here is
+  // recomputed or asserted beyond what those objects already carry,
+  // which is the traceability the success criterion asks for: every
+  // sentence in the explanation can be walked back to a concrete field
+  // on a concrete, already-persisted-shape object.
+  assertEquals(typeof explanation.whatCiattaDoesNotKnow, 'string');
+  assertEquals(typeof explanation.whatThisDoesNotMean, 'string');
 });
 
 Deno.test('checkAlternativeExplanation: zero confirming windows is never ruled out', () => {
