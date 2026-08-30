@@ -10,6 +10,9 @@
 // approved amendment to docs/specs/ciatta-semantic-refactor-spec-v1.md.
 // It is meant to be revisited once real usage data exists, not treated as
 // settled science.
+import { strengthForConfidence, type Strength } from './cycleAnalysis.ts';
+import { CONFIDENCE_LABEL } from './decay.ts';
+
 export const PATTERN_MIN_RECURRING_WINDOWS = 3;
 export const PATTERN_THRESHOLD_VERSION = 'mvp-recurrence-3-v1';
 
@@ -63,4 +66,23 @@ export function evaluatePattern(
     alternativeExplanationRuledOut,
     thresholdVersion: PATTERN_THRESHOLD_VERSION,
   };
+}
+
+// Pattern confidence -- derived only when a Pattern already qualifies
+// (evaluatePattern's own gate, unchanged). Reuses the same
+// strengthForConfidence()/CONFIDENCE_LABEL machinery every other stage
+// uses, scaled against how far recurrenceCount clears the true
+// qualifying minimum -- PATTERN_CONFIDENCE_RECURRENCE_CAP is an explicit,
+// configurable MVP hypothesis for that scaling, NOT a universal
+// scientific rule, same status as PATTERN_MIN_RECURRING_WINDOWS itself.
+export const PATTERN_CONFIDENCE_RECURRENCE_CAP = 8;
+
+export interface PatternConfidence {
+  tier: Strength;
+  label: string;
+}
+
+export function patternConfidence(recurrenceCount: number): PatternConfidence {
+  const tier = strengthForConfidence(Math.min(1, recurrenceCount / PATTERN_CONFIDENCE_RECURRENCE_CAP));
+  return { tier, label: CONFIDENCE_LABEL[tier] };
 }

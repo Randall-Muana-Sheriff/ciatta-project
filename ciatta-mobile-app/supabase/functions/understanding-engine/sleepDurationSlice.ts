@@ -6,17 +6,17 @@
 // generated on read from a persisted Finding, never computed here at
 // write time; see explanation.ts's own header comment. Additive only:
 // writes exclusively to
-// these new Stage 1 tables: features, baselines, change_events,
+// these new Stage 1 tables: features, baselines, change_events, patterns,
 // finding_evidence, findings, ciatta_knowledge. It never touches
 // understandings/understanding_history/evidence/relationships.
 //
 // NOTE: Pattern (Task 6) IS evaluated here -- hasSupportedRelationship
-// reflects a real evaluatePattern() call -- but its result is not
-// currently persisted: no row is written to `patterns`, and
-// `finding_evidence.pattern_id`/`.relationship_id` stay null. Whether and
-// how to persist Pattern results is an open scope question for a later
-// task, not decided by this one; see this task's own report/build-history
-// entry for the finding that surfaced this. Called
+// reflects a real evaluatePattern() call -- and, as of Task 17, a
+// qualifying Pattern (energy checked first, then mood) is persisted to
+// `patterns` and linked via `finding_evidence.pattern_id`.
+// `finding_evidence.relationship_id` stays null: this pipeline computes
+// its own ad hoc monthly relationship instances and never writes to or
+// reads from the legacy `relationships` table. Called
 // from index.ts's processUser() in a try/catch-isolated call site so a
 // failure here can never break the legacy path.
 //
@@ -28,7 +28,13 @@
 import { computeNightlySleepMinutesFeatures, type FeatureRecord } from './feature.ts';
 import { computeNightlySleepBaseline, type BaselineRecord } from './baseline.ts';
 import { evaluateChange, type ChangeEventRecord } from './changeEvent.ts';
-import { evaluatePattern, type RelationshipInstance } from './patternEvaluation.ts';
+import {
+  evaluatePattern,
+  patternConfidence,
+  PATTERN_CONFIDENCE_RECURRENCE_CAP,
+  type PatternEvaluation,
+  type RelationshipInstance,
+} from './patternEvaluation.ts';
 import { assembleSleepDurationEvidenceContent, type FindingEvidenceContent } from './findingEvidence.ts';
 import { produceSleepDurationFinding, type FindingDraft } from './finding.ts';
 import { assessSafety, type SafetyTier } from './safety.ts';
@@ -52,6 +58,8 @@ export interface SleepDurationPipelineResult {
   finding: FindingDraft | null;
   safetyTier: SafetyTier | null;
   hasSupportedRelationship: boolean;
+  energyPattern: PatternEvaluation | null;
+  moodPattern: PatternEvaluation | null;
 }
 
 /** Buckets sleep + rating observations by calendar month so
@@ -120,6 +128,8 @@ export function buildSleepDurationPipelineResult(
       finding: null,
       safetyTier: null,
       hasSupportedRelationship: false,
+      energyPattern: null,
+      moodPattern: null,
     };
   }
 
@@ -137,6 +147,8 @@ export function buildSleepDurationPipelineResult(
       finding: null,
       safetyTier: null,
       hasSupportedRelationship: false,
+      energyPattern: null,
+      moodPattern: null,
     };
   }
 
@@ -152,6 +164,8 @@ export function buildSleepDurationPipelineResult(
       finding: null,
       safetyTier: null,
       hasSupportedRelationship: false,
+      energyPattern: null,
+      moodPattern: null,
     };
   }
 
@@ -179,6 +193,8 @@ export function buildSleepDurationPipelineResult(
     finding,
     safetyTier,
     hasSupportedRelationship,
+    energyPattern,
+    moodPattern,
   };
 }
 
@@ -280,6 +296,40 @@ export async function runSleepDurationSlice(
     changeEventId = changeRow.id;
   }
 
+  let patternId: string | null = null;
+  const qualifyingPattern = result.energyPattern?.qualifies
+    ? { pattern: result.energyPattern, toDomain: 'energy' as const }
+    : result.moodPattern?.qualifies
+      ? { pattern: result.moodPattern, toDomain: 'mood' as const }
+      : null;
+
+  if (qualifyingPattern) {
+    const confidence = patternConfidence(qualifyingPattern.pattern.recurrenceCount);
+    const { data: patternRow, error: patternError } = await supabase
+      .from('patterns')
+      .upsert(
+        {
+          user_id: userId,
+          domain: 'sleep',
+          to_domain: qualifyingPattern.toDomain,
+          pattern_type: 'sleep_duration_vs_rating',
+          recurrence_count: qualifyingPattern.pattern.recurrenceCount,
+          window_count_required: qualifyingPattern.pattern.windowCountRequired,
+          stable_under_removal: qualifyingPattern.pattern.stableUnderRemoval,
+          alternative_explanation_checked: qualifyingPattern.pattern.alternativeExplanationChecked,
+          alternative_explanation_ruled_out: qualifyingPattern.pattern.alternativeExplanationRuledOut,
+          confidence: Math.min(1, qualifyingPattern.pattern.recurrenceCount / PATTERN_CONFIDENCE_RECURRENCE_CAP),
+          confidence_label: confidence.label,
+          threshold_version: qualifyingPattern.pattern.thresholdVersion,
+        },
+        { onConflict: 'user_id,domain,to_domain,pattern_type' }
+      )
+      .select('id')
+      .single();
+    if (patternError) throw patternError;
+    patternId = patternRow.id;
+  }
+
   const { data: evidenceRow, error: evidenceError } = await supabase
     .from('finding_evidence')
     .upsert(
@@ -289,6 +339,7 @@ export async function runSleepDurationSlice(
         feature_ids: [featureRow.id],
         baseline_id: baselineRow.id,
         change_event_id: changeEventId,
+        pattern_id: patternId,
         quality_flags: result.evidence.qualityFlags,
         contradictory_evidence: result.evidence.contradictoryEvidence,
         alternative_explanations: result.evidence.alternativeExplanations,

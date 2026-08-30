@@ -1,5 +1,5 @@
 import { assertEquals } from 'https://deno.land/std@0.208.0/assert/mod.ts';
-import { evaluatePattern, PATTERN_MIN_RECURRING_WINDOWS } from './patternEvaluation.ts';
+import { evaluatePattern, patternConfidence, PATTERN_MIN_RECURRING_WINDOWS } from './patternEvaluation.ts';
 import type { RelationshipInstance } from './patternEvaluation.ts';
 
 Deno.test('evaluatePattern: two variables correlating once does NOT qualify', () => {
@@ -74,4 +74,12 @@ Deno.test('evaluatePattern: exactly at the recurrence minimum still fails stabil
   assertEquals(result.recurrenceCount, PATTERN_MIN_RECURRING_WINDOWS);
   assertEquals(result.stableUnderRemoval, false);
   assertEquals(result.qualifies, false);
+});
+
+Deno.test('patternConfidence: scales toward higher confidence as recurrence grows past the qualifying minimum', () => {
+  const atMinimum = patternConfidence(4); // the true qualifying minimum
+  const doubled = patternConfidence(8); // PATTERN_CONFIDENCE_RECURRENCE_CAP
+  assertEquals(atMinimum.tier, 'moderate'); // min(1, 4/8)=0.5 -> <0.6 -> moderate
+  assertEquals(doubled.tier, 'very-strong'); // min(1, 8/8)=1.0 -> very-strong
+  assertEquals(doubled.label, 'very confident');
 });

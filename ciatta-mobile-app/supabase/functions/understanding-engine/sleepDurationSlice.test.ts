@@ -156,6 +156,99 @@ Deno.test('runSleepDurationSlice: a failed write is never swallowed internally -
   assertEquals(threw, true);
 });
 
+// Builds one calendar month's worth of nights + next-day energy ratings
+// that genuinely qualifies as a confirming window for
+// analyzeSleepRatingRelationship (sleepAnalysis.ts): 20 nights (well over
+// the BASELINE_MIN_NIGHTS=14 floor), alternating 450min (normal) / 250min
+// (short) so the in-month median lands at 350 and the short-night cutoff
+// (median - SHORT_NIGHT_THRESHOLD_MINUTES=45 = 305) cleanly separates the
+// two groups (10 each, both over MIN_NIGHTS_PER_GROUP=5). Each night's
+// rating is recorded the following calendar day: 4 after a normal night,
+// 2 after a short one, giving a ratingDelta of 2 -- comfortably over
+// MIN_RATING_DROP=0.5. Days 3..22 are used (never the first or last few
+// days of the month) so nightKey()'s endTime-minus-12h bucketing and the
+// next-day rating date never cross a month boundary.
+function monthFixture(year: number, month: number): { sleepObs: SleepObservation[]; energyObs: RatingObservation[] } {
+  const mm = String(month).padStart(2, '0');
+  const sleepObs: SleepObservation[] = [];
+  const energyObs: RatingObservation[] = [];
+
+  for (let i = 0; i < 20; i++) {
+    const day = 3 + i;
+    const nextDay = day + 1;
+    const dd = String(day).padStart(2, '0');
+    const nextDd = String(nextDay).padStart(2, '0');
+    const isNormal = i % 2 === 0;
+    const minutes = isNormal ? 450 : 250;
+    const rating = isNormal ? 4 : 2;
+
+    sleepObs.push({
+      id: `sleep-${year}-${mm}-${i}`,
+      type: 'sleep_segment',
+      startTime: `${year}-${mm}-${dd}T12:00:00Z`,
+      endTime: `${year}-${mm}-${dd}T20:00:00Z`,
+      durationMinutes: minutes,
+      stage: 'asleep',
+    });
+
+    energyObs.push({
+      id: `energy-${year}-${mm}-${i}`,
+      recordedAt: `${year}-${mm}-${nextDd}T12:00:00Z`,
+      rating,
+    });
+  }
+
+  return { sleepObs, energyObs };
+}
+
+Deno.test('runSleepDurationSlice: writes a patterns row and links it when a Pattern qualifies', async () => {
+  const recordedTables: string[] = [];
+  const upserted: Record<string, unknown>[] = [];
+  const chain: Record<string, (...args: unknown[]) => unknown> = {
+    eq: () => chain,
+    order: () => chain,
+    limit: () => chain,
+    select: () => chain,
+    insert: () => chain,
+    single: () => Promise.resolve({ data: { id: 'fake-id' }, error: null }),
+    maybeSingle: () => Promise.resolve({ data: null, error: null }),
+    upsert: (payload: unknown) => {
+      upserted.push(payload as Record<string, unknown>);
+      return chain;
+    },
+  };
+  const supabase = {
+    from(table: string) {
+      recordedTables.push(table);
+      return chain;
+    },
+  };
+
+  // 4 independently confirming calendar months (May-Aug 2026) so
+  // evaluatePattern's true qualifying minimum (recurrenceCount >= 4, i.e.
+  // stability-under-removal, not just the raw >=3 recurrence bar) is
+  // genuinely met, and checkAlternativeExplanation's >=2-confirming-window
+  // floor clears comfortably too.
+  const months = [
+    monthFixture(2026, 5),
+    monthFixture(2026, 6),
+    monthFixture(2026, 7),
+    monthFixture(2026, 8),
+  ];
+  const sleepObs = months.flatMap((m) => m.sleepObs);
+  const energyObs = months.flatMap((m) => m.energyObs);
+
+  await runSleepDurationSlice(supabase, 'user-1', sleepObs, energyObs, [], new Date('2026-08-25'));
+
+  assertEquals(recordedTables.includes('patterns'), true);
+  const patternsWrite = upserted.find((p) => 'pattern_type' in p);
+  assertEquals(patternsWrite?.to_domain, 'energy');
+  assertEquals(patternsWrite?.recurrence_count, 4);
+  assertEquals(patternsWrite?.stable_under_removal, true);
+  const evidenceWrite = upserted.find((p) => 'sufficiency_verdict' in p);
+  assertEquals(evidenceWrite?.pattern_id, 'fake-id');
+});
+
 Deno.test('runSleepDurationSlice: re-running with the same data upserts (not duplicates) every write', async () => {
   const upsertCalls: string[] = [];
   const chain: Record<string, (...args: unknown[]) => unknown> = {
