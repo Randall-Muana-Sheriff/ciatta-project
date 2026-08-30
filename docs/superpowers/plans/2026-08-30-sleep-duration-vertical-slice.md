@@ -1770,9 +1770,17 @@ Expected: FAIL — `sleepDurationSlice.ts` does not exist yet
 // generated on read from a persisted Finding, never computed here at
 // write time; see explanation.ts's own header comment. Additive only:
 // writes exclusively to
-// the new Stage 1 tables (features, baselines, change_events, patterns,
-// finding_evidence, findings, ciatta_knowledge) and never touches
-// understandings/understanding_history/evidence/relationships. Called
+// these new Stage 1 tables: features, baselines, change_events,
+// finding_evidence, findings, ciatta_knowledge. It never touches
+// understandings/understanding_history/evidence/relationships.
+//
+// NOTE: Pattern (Task 6) IS evaluated here -- hasSupportedRelationship
+// reflects a real evaluatePattern() call -- but its result is not
+// currently persisted: no row is written to `patterns`, and
+// `finding_evidence.pattern_id`/`.relationship_id` stay null. Whether and
+// how to persist Pattern results is an open scope question for a later
+// task, not decided by this one; see this task's own report/build-history
+// entry for the finding that surfaced this. Called
 // from index.ts's processUser() in a try/catch-isolated call site so a
 // failure here can never break the legacy path.
 //
@@ -2049,6 +2057,24 @@ export async function runSleepDurationSlice(
     .single();
   if (evidenceError) throw evidenceError;
 
+  // Prior runs MUST be read from `findings` (written on every run), never
+  // from `ciatta_knowledge` itself. `ciatta_knowledge` is only ever
+  // written a few lines below, gated on retention.shouldRetain -- sourcing
+  // priorRuns from it would make the gate unsatisfiable forever (no row
+  // exists to read until after the gate has already passed once, and it
+  // can never pass without a prior row to read). Read BEFORE inserting
+  // this run's own findings row, so this query only ever sees genuinely
+  // prior runs, never the one this call is about to write.
+  const { data: priorFindingRow } = await supabase
+    .from('findings')
+    .select('confidence_tier')
+    .eq('user_id', userId)
+    .eq('domain', 'sleep')
+    .eq('feature_type', 'nightly_sleep_minutes')
+    .order('produced_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   const { data: findingRow, error: findingError } = await supabase
     .from('findings')
     .insert({
@@ -2064,16 +2090,14 @@ export async function runSleepDurationSlice(
     .single();
   if (findingError) throw findingError;
 
-  const { data: priorKnowledge } = await supabase
-    .from('ciatta_knowledge')
-    .select('finding_ids, confidence_tier')
-    .eq('user_id', userId)
-    .eq('domain', 'sleep')
-    .eq('feature_type', 'nightly_sleep_minutes')
-    .maybeSingle();
-
-  const priorRuns: PriorFindingRun[] = priorKnowledge
-    ? [{ confidenceTier: priorKnowledge.confidence_tier, statement: '', contradicted: false }]
+  // `contradicted` always false here: this slice has no mechanism yet
+  // for marking a prior run contradicted (that would require comparing
+  // this run's Change/Finding against the prior one's, not just its
+  // confidence tier) -- a known, deliberate MVP simplification, not a
+  // silent omission. `statement` is unused by evaluateRetention itself,
+  // kept empty rather than duplicating a query for a field nothing reads.
+  const priorRuns: PriorFindingRun[] = priorFindingRow
+    ? [{ confidenceTier: priorFindingRow.confidence_tier, statement: '', contradicted: false }]
     : [];
   const retention = evaluateRetention(result.finding.confidenceTier, priorRuns);
 
@@ -2101,7 +2125,7 @@ export async function runSleepDurationSlice(
 
 - [ ] **Step 4: Add more coverage to the pure-logic test file, then run it**
 
-Add to `sleepDurationSlice.test.ts`. First, add `checkAlternativeExplanation` to the existing import from `./sleepDurationSlice.ts` (change the Step 1 import line from `import { buildSleepDurationPipelineResult } from './sleepDurationSlice.ts';` to `import { buildSleepDurationPipelineResult, checkAlternativeExplanation } from './sleepDurationSlice.ts';`), then add:
+Add to `sleepDurationSlice.test.ts`. First, add `checkAlternativeExplanation` AND `runSleepDurationSlice` to the existing import from `./sleepDurationSlice.ts` (change the Step 1 import line from `import { buildSleepDurationPipelineResult } from './sleepDurationSlice.ts';` to `import { buildSleepDurationPipelineResult, checkAlternativeExplanation, runSleepDurationSlice } from './sleepDurationSlice.ts';`), then add:
 
 ```typescript
 Deno.test('buildSleepDurationPipelineResult: enough nights but no meaningful change -> no_surfacing', () => {
@@ -2143,10 +2167,98 @@ Deno.test('checkAlternativeExplanation: two or more independently confirming win
   ];
   assertEquals(checkAlternativeExplanation(instances), true);
 });
+
+// Minimal fake Supabase client covering only the chain shapes
+// runSleepDurationSlice actually calls: .from(table).insert(x).select(c).single(),
+// .from(table).select(c).eq().eq().eq().order().limit().maybeSingle(), and
+// .from(table).upsert(x, opts). Every chain method returns the same
+// stateless object except the two terminal methods, which resolve.
+function createFakeSupabase(recordedTables: string[], opts: { failInserts?: boolean } = {}) {
+  const chain: Record<string, (...args: unknown[]) => unknown> = {
+    eq: () => chain,
+    order: () => chain,
+    limit: () => chain,
+    select: () => chain,
+    insert: () => chain,
+    single: () =>
+      opts.failInserts
+        ? Promise.resolve({ data: null, error: new Error('simulated insert failure') })
+        : Promise.resolve({ data: { id: 'fake-id' }, error: null }),
+    maybeSingle: () => Promise.resolve({ data: null, error: null }),
+    upsert: () => Promise.resolve({ data: null, error: null }),
+  };
+  return {
+    from(table: string) {
+      recordedTables.push(table);
+      return chain;
+    },
+  };
+}
+
+function twentyNightsAt400(): SleepObservation[] {
+  return Array.from({ length: 20 }, (_, i) => {
+    const day = String(i + 1).padStart(2, '0');
+    return {
+      id: `night-${i}`,
+      type: 'sleep_segment',
+      startTime: `2026-07-${day}T23:00:00Z`,
+      endTime: `2026-07-${day}T23:00:00Z`.replace('23:00', '06:00'),
+      durationMinutes: 400,
+      stage: 'asleep',
+    };
+  });
+}
+
+Deno.test('runSleepDurationSlice: writes only to the permitted Stage 1 tables, never a legacy table', async () => {
+  const recordedTables: string[] = [];
+  const supabase = createFakeSupabase(recordedTables);
+
+  await runSleepDurationSlice(supabase, 'user-1', twentyNightsAt400(), [], [], new Date('2026-07-21'));
+
+  const permitted = new Set([
+    'features',
+    'baselines',
+    'change_events',
+    'finding_evidence',
+    'findings',
+    'ciatta_knowledge',
+  ]);
+  const forbidden = ['understandings', 'understanding_history', 'evidence', 'relationships', 'discoveries'];
+
+  for (const table of recordedTables) {
+    assertEquals(permitted.has(table), true, `unexpected table touched: ${table}`);
+  }
+  for (const table of forbidden) {
+    assertEquals(recordedTables.includes(table), false, `must never touch legacy table: ${table}`);
+  }
+  // Confirms the fixture actually reached the full write path, not just
+  // an early-return branch -- findings is only reached once evidence and
+  // a finding both exist.
+  assertEquals(recordedTables.includes('findings'), true);
+});
+
+Deno.test('runSleepDurationSlice: a failed write is never swallowed internally -- it propagates to the caller', async () => {
+  const recordedTables: string[] = [];
+  const supabase = createFakeSupabase(recordedTables, { failInserts: true });
+
+  let threw = false;
+  try {
+    await runSleepDurationSlice(supabase, 'user-1', twentyNightsAt400(), [], [], new Date('2026-07-21'));
+  } catch {
+    threw = true;
+  }
+  // This function must NOT catch its own errors -- index.ts's try/catch
+  // around the call site is what provides legacy-path isolation, per this
+  // file's own docstring ("Errors are the caller's ... responsibility to
+  // isolate via try/catch -- this function does not swallow them
+  // itself"). If this function silently swallowed errors instead, that
+  // isolation guarantee would be untested and could silently break.
+  assertEquals(threw, true);
+});
 ```
 
 Run: `cd ciatta-mobile-app/supabase/functions/understanding-engine && deno test --allow-read=../../migrations sleepDurationSlice.test.ts`
-Expected: PASS (all five tests)
+Expected: PASS (all seven tests)
 
 - [ ] **Step 5: Wire the new call site into `index.ts`, isolated with try/catch**
 
