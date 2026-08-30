@@ -65,10 +65,14 @@ Deno.test('checkAlternativeExplanation: two or more independently confirming win
 });
 
 // Minimal fake Supabase client covering only the chain shapes
-// runSleepDurationSlice actually calls: .from(table).insert(x).select(c).single(),
+// runSleepDurationSlice actually calls: .from(table).upsert(x, opts).select(c).single(),
 // .from(table).select(c).eq().eq().eq().order().limit().maybeSingle(), and
-// .from(table).upsert(x, opts). Every chain method returns the same
-// stateless object except the two terminal methods, which resolve.
+// .from('ciatta_knowledge').upsert(x, opts) (awaited directly, no .select()).
+// Every chain method returns the same stateless object except the
+// terminal methods, which resolve -- including upsert() itself, which
+// must return `chain` (not resolve directly) so a subsequent
+// .select('id').single() call still works, mirroring real supabase-js
+// chain semantics.
 function createFakeSupabase(recordedTables: string[], opts: { failInserts?: boolean } = {}) {
   const chain: Record<string, (...args: unknown[]) => unknown> = {
     eq: () => chain,
@@ -81,7 +85,7 @@ function createFakeSupabase(recordedTables: string[], opts: { failInserts?: bool
         ? Promise.resolve({ data: null, error: new Error('simulated insert failure') })
         : Promise.resolve({ data: { id: 'fake-id' }, error: null }),
     maybeSingle: () => Promise.resolve({ data: null, error: null }),
-    upsert: () => Promise.resolve({ data: null, error: null }),
+    upsert: () => chain,
   };
   return {
     from(table: string) {
@@ -150,4 +154,33 @@ Deno.test('runSleepDurationSlice: a failed write is never swallowed internally -
   // itself"). If this function silently swallowed errors instead, that
   // isolation guarantee would be untested and could silently break.
   assertEquals(threw, true);
+});
+
+Deno.test('runSleepDurationSlice: re-running with the same data upserts (not duplicates) every write', async () => {
+  const upsertCalls: string[] = [];
+  const chain: Record<string, (...args: unknown[]) => unknown> = {
+    eq: () => chain,
+    order: () => chain,
+    limit: () => chain,
+    select: () => chain,
+    insert: () => chain,
+    single: () => Promise.resolve({ data: { id: 'fake-id' }, error: null }),
+    maybeSingle: () => Promise.resolve({ data: null, error: null }),
+    upsert: (_payload: unknown, opts: unknown) => {
+      upsertCalls.push(JSON.stringify(opts));
+      return chain;
+    },
+  };
+  const supabase = { from: () => chain };
+
+  const obs = twentyNightsAt400();
+  await runSleepDurationSlice(supabase, 'user-1', obs, [], [], new Date('2026-07-21'));
+  await runSleepDurationSlice(supabase, 'user-1', obs, [], [], new Date('2026-07-21'));
+
+  // Every write must go through upsert with an onConflict target -- a
+  // plain, unconditional insert would duplicate on the second run.
+  assertEquals(upsertCalls.length > 0, true);
+  for (const opts of upsertCalls) {
+    assertEquals(opts.includes('onConflict'), true, `upsert call missing onConflict: ${opts}`);
+  }
 });

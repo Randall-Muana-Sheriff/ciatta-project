@@ -213,33 +213,39 @@ export async function runSleepDurationSlice(
 
   const { data: featureRow, error: featureError } = await supabase
     .from('features')
-    .insert({
-      user_id: userId,
-      domain: result.feature.domain,
-      feature_type: result.feature.featureType,
-      value: result.feature.value,
-      window_start: result.feature.windowStart,
-      window_end: result.feature.windowEnd,
-      observation_ids: result.feature.observationIds,
-      calculation_version: result.feature.calculationVersion,
-    })
+    .upsert(
+      {
+        user_id: userId,
+        domain: result.feature.domain,
+        feature_type: result.feature.featureType,
+        value: result.feature.value,
+        window_start: result.feature.windowStart,
+        window_end: result.feature.windowEnd,
+        observation_ids: result.feature.observationIds,
+        calculation_version: result.feature.calculationVersion,
+      },
+      { onConflict: 'user_id,domain,feature_type,window_end' }
+    )
     .select('id')
     .single();
   if (featureError) throw featureError;
 
   const { data: baselineRow, error: baselineError } = await supabase
     .from('baselines')
-    .insert({
-      user_id: userId,
-      domain: result.baseline.domain,
-      feature_type: result.baseline.featureType,
-      value: result.baseline.value,
-      window_start: result.baseline.windowStart,
-      window_end: result.baseline.windowEnd,
-      sample_size: result.baseline.sampleSize,
-      eligible: result.baseline.eligible,
-      calculation_version: result.baseline.calculationVersion,
-    })
+    .upsert(
+      {
+        user_id: userId,
+        domain: result.baseline.domain,
+        feature_type: result.baseline.featureType,
+        value: result.baseline.value,
+        window_start: result.baseline.windowStart,
+        window_end: result.baseline.windowEnd,
+        sample_size: result.baseline.sampleSize,
+        eligible: result.baseline.eligible,
+        calculation_version: result.baseline.calculationVersion,
+      },
+      { onConflict: 'user_id,domain,feature_type,window_end' }
+    )
     .select('id')
     .single();
   if (baselineError) throw baselineError;
@@ -252,19 +258,22 @@ export async function runSleepDurationSlice(
   if (result.change) {
     const { data: changeRow, error: changeError } = await supabase
       .from('change_events')
-      .insert({
-        user_id: userId,
-        domain: 'sleep',
-        feature_type: 'nightly_sleep_minutes',
-        feature_id: featureRow.id,
-        baseline_id: baselineRow.id,
-        observed_value: result.change.observedValue,
-        baseline_value: result.change.baselineValue,
-        deviation: result.change.deviation,
-        direction: result.change.direction,
-        threshold_used: result.change.thresholdUsed,
-        is_meaningful: result.change.isMeaningful,
-      })
+      .upsert(
+        {
+          user_id: userId,
+          domain: 'sleep',
+          feature_type: 'nightly_sleep_minutes',
+          feature_id: featureRow.id,
+          baseline_id: baselineRow.id,
+          observed_value: result.change.observedValue,
+          baseline_value: result.change.baselineValue,
+          deviation: result.change.deviation,
+          direction: result.change.direction,
+          threshold_used: result.change.thresholdUsed,
+          is_meaningful: result.change.isMeaningful,
+        },
+        { onConflict: 'user_id,domain,feature_type,feature_id' }
+      )
       .select('id')
       .single();
     if (changeError) throw changeError;
@@ -273,22 +282,25 @@ export async function runSleepDurationSlice(
 
   const { data: evidenceRow, error: evidenceError } = await supabase
     .from('finding_evidence')
-    .insert({
-      user_id: userId,
-      domain: 'sleep',
-      feature_ids: [featureRow.id],
-      baseline_id: baselineRow.id,
-      change_event_id: changeEventId,
-      quality_flags: result.evidence.qualityFlags,
-      contradictory_evidence: result.evidence.contradictoryEvidence,
-      alternative_explanations: result.evidence.alternativeExplanations,
-      uncertainty: result.evidence.uncertainty,
-      scientific_basis: result.evidence.scientificBasis,
-      permitted_language: result.evidence.permittedLanguage,
-      prohibited_language: result.evidence.prohibitedLanguage,
-      sufficiency_verdict: result.evidence.sufficiencyVerdict,
-      version: result.evidence.version,
-    })
+    .upsert(
+      {
+        user_id: userId,
+        domain: 'sleep',
+        feature_ids: [featureRow.id],
+        baseline_id: baselineRow.id,
+        change_event_id: changeEventId,
+        quality_flags: result.evidence.qualityFlags,
+        contradictory_evidence: result.evidence.contradictoryEvidence,
+        alternative_explanations: result.evidence.alternativeExplanations,
+        uncertainty: result.evidence.uncertainty,
+        scientific_basis: result.evidence.scientificBasis,
+        permitted_language: result.evidence.permittedLanguage,
+        prohibited_language: result.evidence.prohibitedLanguage,
+        sufficiency_verdict: result.evidence.sufficiencyVerdict,
+        version: result.evidence.version,
+      },
+      { onConflict: 'user_id,domain,baseline_id' }
+    )
     .select('id')
     .single();
   if (evidenceError) throw evidenceError;
@@ -313,15 +325,18 @@ export async function runSleepDurationSlice(
 
   const { data: findingRow, error: findingError } = await supabase
     .from('findings')
-    .insert({
-      user_id: userId,
-      domain: 'sleep',
-      feature_type: 'nightly_sleep_minutes',
-      statement: result.finding.statement,
-      evidence_id: evidenceRow.id,
-      confidence_tier: result.finding.confidenceTier,
-      safety_tier: result.safetyTier,
-    })
+    .upsert(
+      {
+        user_id: userId,
+        domain: 'sleep',
+        feature_type: 'nightly_sleep_minutes',
+        statement: result.finding.statement,
+        evidence_id: evidenceRow.id,
+        confidence_tier: result.finding.confidenceTier,
+        safety_tier: result.safetyTier,
+      },
+      { onConflict: 'user_id,domain,feature_type,evidence_id' }
+    )
     .select('id')
     .single();
   if (findingError) throw findingError;
