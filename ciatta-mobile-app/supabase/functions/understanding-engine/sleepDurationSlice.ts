@@ -6,9 +6,17 @@
 // generated on read from a persisted Finding, never computed here at
 // write time; see explanation.ts's own header comment. Additive only:
 // writes exclusively to
-// the new Stage 1 tables (features, baselines, change_events, patterns,
-// finding_evidence, findings, ciatta_knowledge) and never touches
-// understandings/understanding_history/evidence/relationships. Called
+// these new Stage 1 tables: features, baselines, change_events,
+// finding_evidence, findings, ciatta_knowledge. It never touches
+// understandings/understanding_history/evidence/relationships.
+//
+// NOTE: Pattern (Task 6) IS evaluated here -- hasSupportedRelationship
+// reflects a real evaluatePattern() call -- but its result is not
+// currently persisted: no row is written to `patterns`, and
+// `finding_evidence.pattern_id`/`.relationship_id` stay null. Whether and
+// how to persist Pattern results is an open scope question for a later
+// task, not decided by this one; see this task's own report/build-history
+// entry for the finding that surfaced this. Called
 // from index.ts's processUser() in a try/catch-isolated call site so a
 // failure here can never break the legacy path.
 //
@@ -285,6 +293,24 @@ export async function runSleepDurationSlice(
     .single();
   if (evidenceError) throw evidenceError;
 
+  // Prior runs MUST be read from `findings` (written on every run), never
+  // from `ciatta_knowledge` itself. `ciatta_knowledge` is only ever
+  // written a few lines below, gated on retention.shouldRetain -- sourcing
+  // priorRuns from it would make the gate unsatisfiable forever (no row
+  // exists to read until after the gate has already passed once, and it
+  // can never pass without a prior row to read). Read BEFORE inserting
+  // this run's own findings row, so this query only ever sees genuinely
+  // prior runs, never the one this call is about to write.
+  const { data: priorFindingRow } = await supabase
+    .from('findings')
+    .select('confidence_tier')
+    .eq('user_id', userId)
+    .eq('domain', 'sleep')
+    .eq('feature_type', 'nightly_sleep_minutes')
+    .order('produced_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   const { data: findingRow, error: findingError } = await supabase
     .from('findings')
     .insert({
@@ -300,16 +326,14 @@ export async function runSleepDurationSlice(
     .single();
   if (findingError) throw findingError;
 
-  const { data: priorKnowledge } = await supabase
-    .from('ciatta_knowledge')
-    .select('finding_ids, confidence_tier')
-    .eq('user_id', userId)
-    .eq('domain', 'sleep')
-    .eq('feature_type', 'nightly_sleep_minutes')
-    .maybeSingle();
-
-  const priorRuns: PriorFindingRun[] = priorKnowledge
-    ? [{ confidenceTier: priorKnowledge.confidence_tier, statement: '', contradicted: false }]
+  // `contradicted` always false here: this slice has no mechanism yet
+  // for marking a prior run contradicted (that would require comparing
+  // this run's Change/Finding against the prior one's, not just its
+  // confidence tier) -- a known, deliberate MVP simplification, not a
+  // silent omission. `statement` is unused by evaluateRetention itself,
+  // kept empty rather than duplicating a query for a field nothing reads.
+  const priorRuns: PriorFindingRun[] = priorFindingRow
+    ? [{ confidenceTier: priorFindingRow.confidence_tier, statement: '', contradicted: false }]
     : [];
   const retention = evaluateRetention(result.finding.confidenceTier, priorRuns);
 
