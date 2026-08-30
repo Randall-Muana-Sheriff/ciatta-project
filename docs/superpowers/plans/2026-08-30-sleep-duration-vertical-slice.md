@@ -2405,6 +2405,409 @@ Cover, at minimum:
 
 ---
 
+## Stage 1 Closure Pass (added after Task 14's validation, per explicit user direction)
+
+Task 14's validation surfaced five architectural findings and one product-validation gap (no test exercises the `'surfaced'` outcome). The user directed a focused closure pass — NOT Stage 2 — resolving these before any domain expansion. Tasks 16-20 below implement it. Unlike Tasks 1-15, the user asked for ONE consolidated closure report at the end, not a per-task checkpoint — but the same TDD/subagent-driven-development/independent-verification discipline applies throughout.
+
+**Decision made explicitly per this round's instruction** (the user delegated this call rather than asking it be flagged): qualified Patterns MUST be persisted for this MVP — the `patterns` table and `finding_evidence.pattern_id` column already exist specifically for this (Task 2), Pattern is already genuinely computed (Task 13), and leaving it computed-then-discarded left Task 2's schema work for `patterns` entirely vestigial. Implemented minimally: no new statistical rigor added to `evaluatePattern`'s qualifying logic (Task 6's already-reviewed gate is untouched) — only a confidence-tier derivation for the row being written, and the write itself, gated on the exact same `qualifies` boolean already computed today.
+
+### Task 16: Deterministic idempotency across the Stage 1 tables
+
+**Files:**
+- Create: `ciatta-mobile-app/supabase/migrations/20260901010000_stage1_idempotency.sql`
+- Modify: `ciatta-mobile-app/supabase/functions/understanding-engine/sleepDurationSlice.ts` (convert the five plain `.insert()` write calls to `.upsert(..., { onConflict: '...' })`)
+
+**Design:** each table's natural key is "this specific computation, once" — keying the chain so a re-run of the same source data for the same night reuses the same rows instead of duplicating them, cascading naturally: a Feature is unique per night; a Baseline is unique per "as of night X"; a Change Event is unique per the Feature it's about; Evidence is unique per the Baseline it bundles; a Finding is unique per the Evidence it cites.
+
+- [ ] **Step 1: Write the migration**
+
+```sql
+-- Stage 1 vertical slice, closure pass -- deterministic idempotency
+-- protection. Without these constraints, every qualifying engine
+-- invocation (nightly AND continuous mode) appends a full new row set
+-- describing the same night's computation, growing these tables
+-- unboundedly. Each constraint keys on the natural "this specific
+-- computation, once" identity for its object, letting
+-- sleepDurationSlice.ts upsert instead of blind-insert -- a re-run of the
+-- same source data reuses the same rows rather than duplicating them.
+alter table public.features
+  add constraint features_user_domain_feature_window_key
+  unique (user_id, domain, feature_type, window_end);
+
+alter table public.baselines
+  add constraint baselines_user_domain_feature_window_key
+  unique (user_id, domain, feature_type, window_end);
+
+alter table public.change_events
+  add constraint change_events_user_domain_feature_feature_id_key
+  unique (user_id, domain, feature_type, feature_id);
+
+alter table public.finding_evidence
+  add constraint finding_evidence_user_domain_baseline_key
+  unique (user_id, domain, baseline_id);
+
+alter table public.findings
+  add constraint findings_user_domain_feature_evidence_key
+  unique (user_id, domain, feature_type, evidence_id);
+```
+
+- [ ] **Step 2: Verify the migration applies cleanly**
+
+Run: `cd ciatta-mobile-app && supabase db reset` if a live local Postgres is available; otherwise (as in this environment) verify statically: confirm the migration filename sorts after `20260901000000_intelligence_foundation_sleep_slice.sql`, confirm no other migration already defines a constraint with these names, confirm every referenced column (`user_id`, `domain`, `feature_type`, `window_end`, `feature_id`, `baseline_id`, `evidence_id`) exists on its table per `20260901000000_intelligence_foundation_sleep_slice.sql`, and read the SQL once top to bottom for balanced syntax.
+
+- [ ] **Step 3: Convert `sleepDurationSlice.ts`'s five plain inserts to upserts**
+
+In `runSleepDurationSlice`, change each of the following five `.insert({...}).select('id').single()` calls to `.upsert({...}, { onConflict: '...' }).select('id').single()`, with the exact `onConflict` string matching the constraint's own column list (comma-separated, no spaces, matching Supabase's convention already used for `ciatta_knowledge`'s existing upsert):
+
+1. `features` insert → `.upsert({...same payload...}, { onConflict: 'user_id,domain,feature_type,window_end' })`
+2. `baselines` insert → `.upsert({...same payload...}, { onConflict: 'user_id,domain,feature_type,window_end' })`
+3. `change_events` insert (inside `if (result.change)`) → `.upsert({...same payload...}, { onConflict: 'user_id,domain,feature_type,feature_id' })`
+4. `finding_evidence` insert → `.upsert({...same payload...}, { onConflict: 'user_id,domain,baseline_id' })`
+5. `findings` insert → `.upsert({...same payload...}, { onConflict: 'user_id,domain,feature_type,evidence_id' })`
+
+Do not change any payload field, only the method name and the added `onConflict` option. Do not change `ciatta_knowledge`'s existing upsert (already correct, untouched by this task).
+
+- [ ] **Step 4: Add a test proving idempotent re-runs don't duplicate writes**
+
+Add to `sleepDurationSlice.test.ts`, using the existing `createFakeSupabase` helper extended to track insert/upsert call counts per table rather than just table names:
+
+```typescript
+Deno.test('runSleepDurationSlice: re-running with the same data upserts (not duplicates) every write', async () => {
+  const upsertCalls: string[] = [];
+  const chain: Record<string, (...args: unknown[]) => unknown> = {
+    eq: () => chain,
+    order: () => chain,
+    limit: () => chain,
+    select: () => chain,
+    insert: () => chain,
+    single: () => Promise.resolve({ data: { id: 'fake-id' }, error: null }),
+    maybeSingle: () => Promise.resolve({ data: null, error: null }),
+    upsert: (_payload: unknown, opts: unknown) => {
+      upsertCalls.push(JSON.stringify(opts));
+      return Promise.resolve({ data: { id: 'fake-id' }, error: null });
+    },
+  };
+  const supabase = { from: () => chain };
+
+  const obs = twentyNightsAt400();
+  await runSleepDurationSlice(supabase, 'user-1', obs, [], [], new Date('2026-07-21'));
+  await runSleepDurationSlice(supabase, 'user-1', obs, [], [], new Date('2026-07-21'));
+
+  // Every write must go through upsert with an onConflict target -- a
+  // plain, unconditional insert would duplicate on the second run.
+  assertEquals(upsertCalls.length > 0, true);
+  for (const opts of upsertCalls) {
+    assertEquals(opts.includes('onConflict'), true, `upsert call missing onConflict: ${opts}`);
+  }
+});
+```
+
+Run: `cd ciatta-mobile-app/supabase/functions/understanding-engine && deno test --allow-read=../../migrations sleepDurationSlice.test.ts` — expect all prior tests plus this one to pass. Note: the existing `single()`-based helper in `createFakeSupabase` still needs `insert()` and `select()` in its chain (used by the `findings`/`baselines`/etc. `.select('id')` step after `.upsert(...)` in real supabase-js semantics — mirror the real client's shape: `.upsert(obj).select('id').single()` is the actual call chain, so `upsert()` must return `chain` (not resolve directly) so `.select('id').single()` can still be called after it. Adjust the fake so `upsert()` records the call and returns `chain`, with `chain.single()` doing the actual resolving — do not have `upsert()` itself return a Promise, or the subsequent `.select('id').single()` chain call will fail on a resolved value having no `.select` method.
+
+- [ ] **Step 5: Run the full engine test suite**
+
+Run: `cd ciatta-mobile-app/supabase/functions/understanding-engine && deno test --allow-read=../../migrations` — expect every prior test plus the new one(s) to pass, zero regressions.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add ciatta-mobile-app/supabase/migrations/20260901010000_stage1_idempotency.sql ciatta-mobile-app/supabase/functions/understanding-engine/sleepDurationSlice.ts ciatta-mobile-app/supabase/functions/understanding-engine/sleepDurationSlice.test.ts
+git commit -m "feat: add deterministic idempotency to the Stage 1 write path"
+```
+
+---
+
+### Task 17: Persist qualified Patterns
+
+**Files:**
+- Modify: `ciatta-mobile-app/supabase/functions/understanding-engine/patternEvaluation.ts` (add a new, additive confidence-derivation helper — do not touch `evaluatePattern`'s existing qualifying logic)
+- Modify: `ciatta-mobile-app/supabase/functions/understanding-engine/sleepDurationSlice.ts` (return the two `PatternEvaluation` results from the pure function; write a `patterns` row and link `finding_evidence.pattern_id` when either qualifies)
+- Test: `patternEvaluation.test.ts` (new cases for the confidence helper), `sleepDurationSlice.test.ts` (new case proving persistence)
+
+**Step 1: Add `patternConfidence()` to `patternEvaluation.ts`** — a new export, added after `evaluatePattern`, not modifying it:
+
+```typescript
+// Pattern confidence -- derived only when a Pattern already qualifies
+// (evaluatePattern's own gate, unchanged). Reuses the same
+// strengthForConfidence()/CONFIDENCE_LABEL machinery every other stage
+// uses, scaled against how far recurrenceCount clears the true
+// qualifying minimum -- PATTERN_CONFIDENCE_RECURRENCE_CAP is an explicit,
+// configurable MVP hypothesis for that scaling, NOT a universal
+// scientific rule, same status as PATTERN_MIN_RECURRING_WINDOWS itself.
+import { strengthForConfidence, type Strength } from './cycleAnalysis.ts';
+import { CONFIDENCE_LABEL } from './decay.ts';
+
+export const PATTERN_CONFIDENCE_RECURRENCE_CAP = 8;
+
+export interface PatternConfidence {
+  tier: Strength;
+  label: string;
+}
+
+export function patternConfidence(recurrenceCount: number): PatternConfidence {
+  const tier = strengthForConfidence(Math.min(1, recurrenceCount / PATTERN_CONFIDENCE_RECURRENCE_CAP));
+  return { tier, label: CONFIDENCE_LABEL[tier] };
+}
+```
+
+Add the import line (`strengthForConfidence`/`Strength` from `./cycleAnalysis.ts`, `CONFIDENCE_LABEL` from `./decay.ts`) to the top of `patternEvaluation.ts` alongside its existing (currently empty) import section — this file was deliberately import-free before; it is no longer fully domain-agnostic in the dependency sense, but its qualifying logic (`evaluatePattern`) is completely unchanged and still takes no dependency on these imports.
+
+**Step 2: Test the new helper** — add to `patternEvaluation.test.ts`:
+
+```typescript
+Deno.test('patternConfidence: scales toward higher confidence as recurrence grows past the qualifying minimum', () => {
+  const atMinimum = patternConfidence(4); // the true qualifying minimum
+  const doubled = patternConfidence(8); // PATTERN_CONFIDENCE_RECURRENCE_CAP
+  assertEquals(atMinimum.tier, 'moderate'); // min(1, 4/8)=0.5 -> <0.6 -> moderate
+  assertEquals(doubled.tier, 'very-strong'); // min(1, 8/8)=1.0 -> very-strong
+  assertEquals(doubled.label, 'very confident');
+});
+```
+
+Run: `cd ciatta-mobile-app/supabase/functions/understanding-engine && deno test --allow-read=../../migrations patternEvaluation.test.ts` — expect all prior tests (from Task 6) plus this new one to pass unchanged.
+
+**Step 3: Return Pattern results from `buildSleepDurationPipelineResult`** — in `sleepDurationSlice.ts`, add `energyPattern: PatternEvaluation | null` and `moodPattern: PatternEvaluation | null` (import the type from `./patternEvaluation.ts`) to the `SleepDurationPipelineResult` interface, and populate both fields at every return path (`null` on the three early-return branches, the real computed values on the happy path — they already exist as local variables `energyPattern`/`moodPattern`, just not currently returned).
+
+**Step 4: Write the `patterns` row and link it, in `runSleepDurationSlice`** — after the `finding_evidence`... no: BEFORE the `finding_evidence` insert (since `finding_evidence.pattern_id` needs the pattern's real id at insert time), insert this block right after the `change_events` conditional block and before the `finding_evidence` upsert:
+
+```typescript
+  let patternId: string | null = null;
+  const qualifyingPattern = result.energyPattern?.qualifies
+    ? { pattern: result.energyPattern, toDomain: 'energy' as const }
+    : result.moodPattern?.qualifies
+      ? { pattern: result.moodPattern, toDomain: 'mood' as const }
+      : null;
+
+  if (qualifyingPattern) {
+    const confidence = patternConfidence(qualifyingPattern.pattern.recurrenceCount);
+    const { data: patternRow, error: patternError } = await supabase
+      .from('patterns')
+      .upsert(
+        {
+          user_id: userId,
+          domain: 'sleep',
+          to_domain: qualifyingPattern.toDomain,
+          pattern_type: 'sleep_duration_vs_rating',
+          recurrence_count: qualifyingPattern.pattern.recurrenceCount,
+          window_count_required: qualifyingPattern.pattern.windowCountRequired,
+          stable_under_removal: qualifyingPattern.pattern.stableUnderRemoval,
+          alternative_explanation_checked: qualifyingPattern.pattern.alternativeExplanationChecked,
+          alternative_explanation_ruled_out: qualifyingPattern.pattern.alternativeExplanationRuledOut,
+          confidence: Math.min(1, qualifyingPattern.pattern.recurrenceCount / PATTERN_CONFIDENCE_RECURRENCE_CAP),
+          confidence_label: confidence.label,
+          threshold_version: qualifyingPattern.pattern.thresholdVersion,
+        },
+        { onConflict: 'user_id,domain,to_domain,pattern_type' }
+      )
+      .select('id')
+      .single();
+    if (patternError) throw patternError;
+    patternId = patternRow.id;
+  }
+```
+
+Add `patternConfidence` and `PatternEvaluation` to the existing `import ... from './patternEvaluation.ts'` line. Then add `pattern_id: patternId,` to the `finding_evidence` upsert payload (Task 16's Step 3 already converted this to `.upsert(...)` — add this one field to that same payload object, alongside the existing fields; `relationship_id` stays absent/null — this pipeline computes its own ad hoc monthly relationship instances, it does not write to or read from the legacy `relationships` table, so there is no relationship row of this pipeline's own to link).
+
+- [ ] **Step 5: Test persistence** — add to `sleepDurationSlice.test.ts`:
+
+```typescript
+Deno.test('runSleepDurationSlice: writes a patterns row and links it when a Pattern qualifies', async () => {
+  const recordedTables: string[] = [];
+  const upserted: Record<string, unknown>[] = [];
+  const chain: Record<string, (...args: unknown[]) => unknown> = {
+    eq: () => chain,
+    order: () => chain,
+    limit: () => chain,
+    select: () => chain,
+    insert: () => chain,
+    single: () => Promise.resolve({ data: { id: 'fake-id' }, error: null }),
+    maybeSingle: () => Promise.resolve({ data: null, error: null }),
+    upsert: (payload: Record<string, unknown>) => {
+      upserted.push(payload);
+      return chain;
+    },
+  };
+  const supabase = {
+    from(table: string) {
+      recordedTables.push(table);
+      return chain;
+    },
+  };
+
+  // Sleep fixture: 20 nights, meaningful deviation on the latest night
+  // (see Task 19's canonical surfaced fixture for the exact construction).
+  // Energy fixture: >=4 independently confirming calendar months, each
+  // with >=14 nights of sleep and enough paired rating data to confirm --
+  // enough to genuinely qualify per evaluatePattern's true minimum.
+  // (Implementer: build this fixture; if constructing 4 real confirming
+  // months proves impractical within this task's time budget, that is
+  // itself a finding to report — do not fabricate a fixture that doesn't
+  // actually exercise real qualification.)
+
+  // ... construct sleepObs, energyObs per the above ...
+  // await runSleepDurationSlice(supabase, 'user-1', sleepObs, energyObs, [], new Date(...));
+
+  // assertEquals(recordedTables.includes('patterns'), true);
+  // const patternsWrite = upserted.find((p) => 'pattern_type' in p);
+  // assertEquals(patternsWrite?.to_domain, 'energy');
+  // const evidenceWrite = upserted.find((p) => 'sufficiency_verdict' in p);
+  // assertEquals(evidenceWrite?.pattern_id, 'fake-id');
+});
+```
+
+This test's exact fixture construction is intentionally left to the implementer to complete (constructing 4+ genuinely confirming months is real, non-trivial work) — write it for real, do not leave the commented-out skeleton in place. If after a good-faith attempt the fixture proves impractical to construct deterministically within reasonable effort, report that as a finding (BLOCKED or DONE_WITH_CONCERNS) rather than shipping a fake/vacuous test.
+
+- [ ] **Step 6: Run the full suite, commit.**
+
+```bash
+git add ciatta-mobile-app/supabase/functions/understanding-engine/patternEvaluation.ts ciatta-mobile-app/supabase/functions/understanding-engine/patternEvaluation.test.ts ciatta-mobile-app/supabase/functions/understanding-engine/sleepDurationSlice.ts ciatta-mobile-app/supabase/functions/understanding-engine/sleepDurationSlice.test.ts
+git commit -m "feat: persist qualified Patterns, linked from finding_evidence"
+```
+
+---
+
+### Task 18: Fix the prior-findings query's ignored error
+
+**Files:**
+- Modify: `ciatta-mobile-app/supabase/functions/understanding-engine/sleepDurationSlice.ts`
+
+**Step 1:** change the prior-findings query (added in Task 13's fix round) from:
+```typescript
+  const { data: priorFindingRow } = await supabase
+    .from('findings')
+    ...
+    .maybeSingle();
+```
+to:
+```typescript
+  const { data: priorFindingRow, error: priorFindingError } = await supabase
+    .from('findings')
+    ...
+    .maybeSingle();
+  if (priorFindingError) throw priorFindingError;
+```
+matching every other query in this file, all of which already check and throw. This makes a failed prior-read a real, visible failure (caught by `index.ts`'s outer try/catch, same as any other failure in this path) instead of being silently treated as "no prior runs."
+
+**Step 2:** add a test to `sleepDurationSlice.test.ts` proving a failed prior-read now throws:
+```typescript
+Deno.test('runSleepDurationSlice: a failed prior-findings read is never silently treated as "no prior runs"', async () => {
+  const chain: Record<string, (...args: unknown[]) => unknown> = {
+    eq: () => chain,
+    order: () => chain,
+    limit: () => chain,
+    select: () => chain,
+    insert: () => chain,
+    single: () => Promise.resolve({ data: { id: 'fake-id' }, error: null }),
+    maybeSingle: () => Promise.resolve({ data: null, error: new Error('simulated read failure') }),
+    upsert: () => chain,
+  };
+  const supabase = { from: () => chain };
+
+  let threw = false;
+  try {
+    await runSleepDurationSlice(supabase, 'user-1', twentyNightsAt400(), [], [], new Date('2026-07-21'));
+  } catch {
+    threw = true;
+  }
+  assertEquals(threw, true);
+});
+```
+
+- [ ] **Step 3:** run the full suite; commit.
+
+```bash
+git add ciatta-mobile-app/supabase/functions/understanding-engine/sleepDurationSlice.ts ciatta-mobile-app/supabase/functions/understanding-engine/sleepDurationSlice.test.ts
+git commit -m "fix: surface prior-findings read failures instead of silently treating them as no history"
+```
+
+---
+
+### Task 19: A deterministic fixture proving the positive `'surfaced'` path
+
+**Files:**
+- Modify: `ciatta-mobile-app/supabase/functions/understanding-engine/sleepDurationSlice.test.ts`
+
+**The fixture (hand-verified by the controller before this task was written):** 20 nights, July 1–20, 2026. Nights 1–19 (July 1–19) at exactly 400 minutes each. Night 20 (July 20, chronologically latest) at 200 minutes. `computeNightlySleepMinutesFeatures` produces 20 Feature rows; `computeNightlySleepBaseline` computes the median over all 20 values — sorted numerically, only one value (200) is below 400, so both middle values (index 9 and 10 of 20) are still 400, giving `baseline.value = 400`, `eligible = true` (20 ≥ 14). The latest Feature (July 20, value 200) evaluated against that baseline: `deviation = 200 - 400 = -200`, `direction = 'down'`, `isMeaningful = |−200| ≥ 45 = true`. Confidence: `strengthForConfidence(min(1, 20/30)) = strengthForConfidence(0.667) = 'strong'` (≥0.6, <0.85). Safety: the resulting statement contains no prohibited word → `'minimal'`. Experience selection: finding present, safe, meaningful, confidence in `['strong','very-strong']` → **`'surfaced'`**.
+
+Add to `sleepDurationSlice.test.ts`:
+
+```typescript
+function nineteenNightsAt400ThenOneAt200(): SleepObservation[] {
+  const nights = Array.from({ length: 20 }, (_, i) => {
+    const day = String(i + 1).padStart(2, '0');
+    return {
+      id: `night-${i}`,
+      type: 'sleep_segment' as const,
+      startTime: `2026-07-${day}T23:00:00Z`,
+      endTime: `2026-07-${day}T23:00:00Z`.replace('23:00', '06:00'),
+      durationMinutes: i === 19 ? 200 : 400,
+      stage: 'asleep' as const,
+    };
+  });
+  return nights;
+}
+
+Deno.test('buildSleepDurationPipelineResult: a genuine meaningful deviation with enough history reaches surfaced', () => {
+  const obs = nineteenNightsAt400ThenOneAt200();
+  const result = buildSleepDurationPipelineResult(obs, [], [], new Date('2026-07-21'));
+
+  assertEquals(result.outcome, 'surfaced');
+  assertEquals(result.baseline?.value, 400);
+  assertEquals(result.change?.deviation, -200);
+  assertEquals(result.change?.isMeaningful, true);
+  assertEquals(result.finding?.confidenceTier, 'strong');
+  assertEquals(result.finding?.statement, 'Your nightly sleep has been running about 200 minutes below your usual.');
+  assertEquals(result.safetyTier, 'minimal');
+});
+
+Deno.test('buildSleepDurationPipelineResult: the surfaced Finding traces backward to its evidence via Explanation', () => {
+  const obs = nineteenNightsAt400ThenOneAt200();
+  const result = buildSleepDurationPipelineResult(obs, [], [], new Date('2026-07-21'));
+  assertEquals(result.outcome, 'surfaced');
+
+  const explanation = explainSleepDurationFinding(
+    result.finding!,
+    result.evidence!,
+    result.baseline!,
+    result.change!,
+    result.hasSupportedRelationship
+  );
+
+  assertEquals(explanation.whatCiattaNoticed, result.finding!.statement);
+  assertEquals(explanation.supportingEvidence, 'Based on 20 nights of sleep data.');
+  assertEquals(explanation.whatChanged, 'A meaningful change from your 400-minute usual.');
+  assertEquals(explanation.confidenceStatement, 'Ciatta is confident in this.');
+  // The explanation is built entirely from fields already on the Finding/
+  // Evidence/Baseline/Change objects passed in -- nothing here is
+  // recomputed or asserted beyond what those objects already carry,
+  // which is the traceability the success criterion asks for: every
+  // sentence in the explanation can be walked back to a concrete field
+  // on a concrete, already-persisted-shape object.
+  assertEquals(typeof explanation.whatCiattaDoesNotKnow, 'string');
+  assertEquals(typeof explanation.whatThisDoesNotMean, 'string');
+});
+```
+
+Add `explainSleepDurationFinding` to the existing import from `./explanation.ts` at the top of the test file (a new import line, since this file didn't previously import from `explanation.ts`).
+
+- [ ] Run the full suite; commit.
+
+```bash
+git add ciatta-mobile-app/supabase/functions/understanding-engine/sleepDurationSlice.test.ts
+git commit -m "test: prove the deterministic positive path to a surfaced, traceable Experience"
+```
+
+---
+
+### Task 20: Full regression, independent verification, and the closure report
+
+- [ ] Run `cd ciatta-mobile-app && npm run test:engine` — record the exact pass/fail count.
+- [ ] Independently re-verify (controller, not a dispatched subagent): re-read every changed file from Tasks 16-19, re-run the full suite a second time, confirm `index.ts` has zero additional diff beyond what Task 13 already established, confirm the migration count and content.
+- [ ] Write one consolidated closure build-history entry covering Tasks 16-20 together (not one per task, matching the user's request for a single closure report).
+- [ ] Report to the user per the exact structure requested: closure results, remaining risks, then explicitly wait for approval before Stage 2 (still not authorized).
+
+---
+
 ## Self-Review Notes
 
 - **Spec coverage:** every object in `docs/specs/ciatta-semantic-refactor-spec-v1.md` §1 that the vertical slice must touch (Observation, Feature, Baseline, Change, Relationship [reused existing], Pattern, Evidence, Finding, Ciatta Knowledge, Confidence [reused `Strength`/`CONFIDENCE_LABEL`], Safety, Explanation, Experience, Guidance [reused `deriveGuidance` unchanged]) has a task. Context/Contextualization are explicitly out of scope for this one-Feature slice (no circumstantial data is used yet) — noted here rather than silently skipped.
