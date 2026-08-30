@@ -1720,7 +1720,7 @@ git commit -m "feat: add Ciatta Knowledge retention stage"
 
 **Interfaces:**
 - Consumes: every stage from Tasks 3–12, plus `analyzeSleepRatingRelationship`, `type SleepObservation` from `./sleepAnalysis.ts`, `type RatingObservation` from `./energyRelationship.ts`.
-- Produces: `export interface SleepDurationSliceResult { outcome: 'surfaced' | 'no_finding' | 'no_surfacing' | 'no_notification'; findingId?: string; knowledgeRetained?: boolean }` and `export async function runSleepDurationSlice(supabase: SupabaseClient, userId: string, sleepObservations: SleepObservation[], energyObservations: RatingObservation[], moodObservations: RatingObservation[], now?: Date): Promise<SleepDurationSliceResult>` — called from `index.ts`'s `processUser()`.
+- Produces: `export interface SleepDurationSliceResult { outcome: 'surfaced' | 'no_finding' | 'no_surfacing' | 'no_notification'; findingId?: string; knowledgeRetained?: boolean }`, `export async function runSleepDurationSlice(supabase: SupabaseClient, userId: string, sleepObservations: SleepObservation[], energyObservations: RatingObservation[], moodObservations: RatingObservation[], now?: Date): Promise<SleepDurationSliceResult>` — called from `index.ts`'s `processUser()` — and `export function checkAlternativeExplanation(instances: RelationshipInstance[]): boolean` (exported specifically so it has direct unit-test coverage — see Step 1).
 
 - [ ] **Step 1: Write the failing test (pure decision logic, no real Supabase client — a minimal fake covering only what this function calls)**
 
@@ -1764,9 +1764,12 @@ Expected: FAIL — `sleepDurationSlice.ts` does not exist yet
 ```typescript
 // Orchestrator for the Stage 1 vertical slice: Observation -> Feature ->
 // Baseline -> Change -> Relationship -> Pattern -> Evidence -> Finding ->
-// Ciatta Knowledge -> Confidence/Safety -> Explanation -> Experience/
-// Silence -> Guidance, for exactly the 'sleep' domain and the
-// 'nightly_sleep_minutes' Feature. Additive only: writes exclusively to
+// Ciatta Knowledge -> Confidence/Safety -> Experience/Silence, for
+// exactly the 'sleep' domain and the 'nightly_sleep_minutes' Feature.
+// Explanation (Task 10) is deliberately NOT part of this chain -- it is
+// generated on read from a persisted Finding, never computed here at
+// write time; see explanation.ts's own header comment. Additive only:
+// writes exclusively to
 // the new Stage 1 tables (features, baselines, change_events, patterns,
 // finding_evidence, findings, ciatta_knowledge) and never touches
 // understandings/understanding_history/evidence/relationships. Called
@@ -1785,7 +1788,12 @@ import { evaluatePattern, type RelationshipInstance } from './patternEvaluation.
 import { assembleSleepDurationEvidenceContent, type FindingEvidenceContent } from './findingEvidence.ts';
 import { produceSleepDurationFinding, type FindingDraft } from './finding.ts';
 import { assessSafety, type SafetyTier } from './safety.ts';
-import { explainSleepDurationFinding } from './explanation.ts';
+// explanation.ts is deliberately NOT imported here: Explanation (Task 10)
+// is generated on read, from a persisted Finding + its Evidence, never
+// computed eagerly at write time -- see explanation.ts's own header
+// comment and spec §1.13. This orchestrator only ever writes; a future
+// read-path (a client query or a Task 14+ API) is what calls
+// explainSleepDurationFinding(), not this file.
 import { selectForExperience, type ExperienceOutcome } from './experienceSelection.ts';
 import { evaluateRetention, type PriorFindingRun } from './ciattaKnowledge.ts';
 import { analyzeSleepRatingRelationship, type SleepObservation } from './sleepAnalysis.ts';
@@ -1823,17 +1831,27 @@ function monthlyRelationshipInstances(
 }
 
 /**
- * A bounded, honest alternative-explanation check for this one slice: the
- * relationship must still hold in the single month with the smallest
- * spread between short-night and normal-night ratings — ruling out "the
- * whole effect is really just one especially strong month driving the
- * average." This does not rule out every possible confound; per spec
- * §1.7's "what it is NOT," a Pattern from this check is still an MVP
- * operational finding, not a settled causal claim.
+ * A deliberately minimal, honest alternative-explanation check for this
+ * one slice — NOT a full leave-one-out or statistical-outlier procedure.
+ * It rules out only the single most literal reading of "the whole effect
+ * is really just one especially strong month driving the average": if
+ * only one month ever confirmed, that one month IS the entire case for
+ * the relationship, so the alternative explanation cannot be ruled out.
+ * Requiring at least two independently confirming months is the smallest
+ * change that makes this a real check rather than "did anything confirm
+ * at all" — which is already covered by evaluatePattern()'s own,
+ * separate, stricter recurrence gate (a true minimum of 4 confirming
+ * instances) and stability-under-removal check. This function's job is
+ * narrower and only needs to not be trivially true. A more rigorous
+ * check (e.g. holding while removing the single strongest confirming
+ * month, weighted by rating-delta magnitude) is a real enhancement for a
+ * later stage, not this vertical slice — see spec §1.7's "what it is
+ * NOT": a Pattern from this check is still an MVP operational finding,
+ * not a settled causal claim, regardless of how this function evolves.
  */
-function checkAlternativeExplanation(instances: RelationshipInstance[]): boolean {
+export function checkAlternativeExplanation(instances: RelationshipInstance[]): boolean {
   const confirming = instances.filter((i) => i.confirms);
-  return confirming.length > 0 && confirming.length === instances.filter((i) => i.confirms).length;
+  return confirming.length >= 2;
 }
 
 /** Pure decision core -- no I/O. See Task 13's test note for why this is
@@ -2083,7 +2101,7 @@ export async function runSleepDurationSlice(
 
 - [ ] **Step 4: Add more coverage to the pure-logic test file, then run it**
 
-Add to `sleepDurationSlice.test.ts`:
+Add to `sleepDurationSlice.test.ts`. First, add `checkAlternativeExplanation` to the existing import from `./sleepDurationSlice.ts` (change the Step 1 import line from `import { buildSleepDurationPipelineResult } from './sleepDurationSlice.ts';` to `import { buildSleepDurationPipelineResult, checkAlternativeExplanation } from './sleepDurationSlice.ts';`), then add:
 
 ```typescript
 Deno.test('buildSleepDurationPipelineResult: enough nights but no meaningful change -> no_surfacing', () => {
@@ -2102,10 +2120,33 @@ Deno.test('buildSleepDurationPipelineResult: enough nights but no meaningful cha
   assertEquals(result.outcome, 'no_surfacing');
   assertEquals(result.finding?.statement.includes('close to your usual'), true);
 });
+
+Deno.test('checkAlternativeExplanation: zero confirming windows is never ruled out', () => {
+  assertEquals(checkAlternativeExplanation([]), false);
+  assertEquals(checkAlternativeExplanation([{ windowLabel: '2026-06', confirms: false }]), false);
+});
+
+Deno.test('checkAlternativeExplanation: exactly one confirming window is NOT enough -- one strong month could be driving the whole effect', () => {
+  const instances = [
+    { windowLabel: '2026-05', confirms: false },
+    { windowLabel: '2026-06', confirms: true },
+    { windowLabel: '2026-07', confirms: false },
+  ];
+  assertEquals(checkAlternativeExplanation(instances), false);
+});
+
+Deno.test('checkAlternativeExplanation: two or more independently confirming windows rules it out', () => {
+  const instances = [
+    { windowLabel: '2026-05', confirms: true },
+    { windowLabel: '2026-06', confirms: false },
+    { windowLabel: '2026-07', confirms: true },
+  ];
+  assertEquals(checkAlternativeExplanation(instances), true);
+});
 ```
 
 Run: `cd ciatta-mobile-app/supabase/functions/understanding-engine && deno test --allow-read=../../migrations sleepDurationSlice.test.ts`
-Expected: PASS (both tests)
+Expected: PASS (all five tests)
 
 - [ ] **Step 5: Wire the new call site into `index.ts`, isolated with try/catch**
 
