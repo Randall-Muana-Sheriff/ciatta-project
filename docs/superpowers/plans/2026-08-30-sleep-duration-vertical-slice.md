@@ -1667,10 +1667,16 @@ export interface RetentionDecision {
 }
 
 /**
- * Retains only when the current Finding plus its prior runs together show
- * >= KNOWLEDGE_MIN_REPRODUCED_RUNS consistent, non-contradicted,
- * strong-or-better-confidence occurrences. A single strong Finding is
- * never enough on its own — most Findings should never reach retention.
+ * Retains only when BOTH: (a) the current run's own confidence
+ * independently qualifies (strong-or-better) -- a currently-weak or
+ * currently-contradicted signal never retains no matter how strong its
+ * prior track record was, matching spec 1.10's revisability requirement
+ * ("if supporting evidence weakens... Knowledge updates or withdraws,
+ * never stays stale") -- AND (b) the current Finding plus its prior runs
+ * together show >= KNOWLEDGE_MIN_REPRODUCED_RUNS consistent,
+ * non-contradicted, strong-or-better-confidence occurrences. A single
+ * strong Finding is never enough on its own -- most Findings should
+ * never reach retention.
  */
 export function evaluateRetention(
   currentConfidence: Strength,
@@ -1683,7 +1689,7 @@ export function evaluateRetention(
   const reproducedRuns = qualifyingPriorRuns + (currentQualifies ? 1 : 0);
 
   return {
-    shouldRetain: reproducedRuns >= KNOWLEDGE_MIN_REPRODUCED_RUNS,
+    shouldRetain: currentQualifies && reproducedRuns >= KNOWLEDGE_MIN_REPRODUCED_RUNS,
     reproducedRuns,
     runsRequired: KNOWLEDGE_MIN_REPRODUCED_RUNS,
     ruleVersion: KNOWLEDGE_RETENTION_RULE_VERSION,
