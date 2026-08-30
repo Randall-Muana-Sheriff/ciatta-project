@@ -13,6 +13,10 @@ const WORDMARK = require('../../assets/images/wordmark.png');
 const WORDMARK_ASPECT = 3575 / 1046;
 const WORDMARK_WIDTH = 150;
 
+// Hard ceiling on the splash, whatever the video does. Comfortably beyond
+// the ~11s runtime so a healthy playback always finishes on its own.
+const SPLASH_MAX_MS = 15000;
+
 export default function AnimatedSplash({
   ready,
   onFinish,
@@ -38,12 +42,27 @@ export default function AnimatedSplash({
     p.muted = true;
   });
 
-  // The splash's own exit is driven by the video's real end, never a
-  // timer — `ready` (fonts + auth session) usually resolves in well under a
-  // second and must not be allowed to cut the ~10s video short.
+  // The splash's own exit is driven by the video's real end, not a timer —
+  // `ready` (fonts + auth session) usually resolves in well under a second
+  // and must not be allowed to cut the ~10s video short.
   useEventListener(player, 'playToEnd', () => {
     setVideoEnded(true);
   });
+
+  // ...but `playToEnd` is not guaranteed to arrive. If the device cannot
+  // decode the video, the event never fires and the splash traps the user on
+  // a still frame with no way forward — which is exactly what happens on a
+  // player without working HEVC support. Observed as a hard hang under
+  // Waydroid's software decoder (SoftHEVC: Fatal Error 0x43dd).
+  //
+  // So the video's real end is still what normally drives the exit; this only
+  // catches the case where that end never comes. The delay sits well past the
+  // ~11s runtime so it cannot clip a video that is playing correctly.
+  useEffect(() => {
+    if (videoEnded) return;
+    const t = setTimeout(() => setVideoEnded(true), SPLASH_MAX_MS);
+    return () => clearTimeout(t);
+  }, [videoEnded]);
 
   useEffect(() => {
     Animated.timing(opacity, {

@@ -7,6 +7,7 @@ import { derivePriority } from '../lib/priority';
 import { whyAvailable } from '../lib/whyLayer';
 import { displayCopy } from '../lib/displayCopy';
 import ScreenContainer from '../components/ScreenContainer';
+import BodySilhouette from '../components/BodySilhouette';
 import CuriosityCard from '../components/CuriosityCard';
 import TamponWearCard from '../components/TamponWearCard';
 import WhySheet from '../overlays/WhySheet';
@@ -202,6 +203,15 @@ export default function TodayScreen({
         <Text style={styles.date}>{dateLabel}</Text>
       </View>
 
+      <View style={styles.hero}>
+        <BodySilhouette
+          variant="today"
+          crop={0.78}
+          scale={1.48}
+          activeDomain={featured?.domain}
+        />
+      </View>
+
       {featured ? (
         <View style={styles.section}>
           <Text style={styles.headline}>{featured.seeing || featured.narrative}</Text>
@@ -296,7 +306,13 @@ export default function TodayScreen({
 
 const styles = StyleSheet.create({
   header: {
-    marginBottom: 36,
+    marginBottom: 12,
+  },
+  hero: {
+    // Negative on purpose: the source PNG carries transparent padding above
+    // the head, so a zero margin still reads as a gap.
+    marginTop: -12,
+    marginBottom: 24,
   },
   wordmark: {
     height: WORDMARK_HEIGHT,

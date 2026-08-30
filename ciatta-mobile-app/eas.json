@@ -27,7 +27,7 @@
       "extends": "preview",
       "android": {
         "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease -PreactNativeArchitectures=x86_64"
+        "gradleCommand": ":app:assembleRelease -PreactNativeArchitectures=x86_64 --max-workers=2"
       },
       "channel": "preview"
     }
