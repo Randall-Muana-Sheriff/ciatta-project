@@ -245,6 +245,13 @@ Deno.test('runSleepDurationSlice: writes a patterns row and links it when a Patt
   assertEquals(patternsWrite?.to_domain, 'energy');
   assertEquals(patternsWrite?.recurrence_count, 4);
   assertEquals(patternsWrite?.stable_under_removal, true);
+  // recurrenceCount=4 -> min(1, 4/PATTERN_CONFIDENCE_RECURRENCE_CAP=8) = 0.5
+  // -> strengthForConfidence(0.5) = 'moderate' -> 'fairly confident'. Both
+  // values must come from the one patternConfidence() call -- this pins
+  // the numeric/label pair actually written, not just that some pattern
+  // was persisted.
+  assertEquals(patternsWrite?.confidence, 0.5);
+  assertEquals(patternsWrite?.confidence_label, 'fairly confident');
   const evidenceWrite = upserted.find((p) => 'sufficiency_verdict' in p);
   assertEquals(evidenceWrite?.pattern_id, 'fake-id');
 });

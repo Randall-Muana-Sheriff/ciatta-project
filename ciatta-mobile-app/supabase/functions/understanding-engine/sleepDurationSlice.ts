@@ -31,7 +31,6 @@ import { evaluateChange, type ChangeEventRecord } from './changeEvent.ts';
 import {
   evaluatePattern,
   patternConfidence,
-  PATTERN_CONFIDENCE_RECURRENCE_CAP,
   type PatternEvaluation,
   type RelationshipInstance,
 } from './patternEvaluation.ts';
@@ -296,6 +295,16 @@ export async function runSleepDurationSlice(
     changeEventId = changeRow.id;
   }
 
+  // KNOWN LIMITATION, deliberately not addressed in this closure pass
+  // (flagged in the Task 17 report/build-history rather than silently
+  // expanded): if both energy and mood independently qualify, only one
+  // (energy, checked first) is written and linked -- the other is simply
+  // not persisted this run, not merged or ranked against it. There is
+  // also no deactivation path: once a Pattern row exists, it is upserted
+  // (refreshed) on every qualifying run but never removed or marked
+  // stale if a later run's evidence no longer qualifies for it. Both are
+  // real product questions (should Ciatta Knowledge-style revisability
+  // extend to Patterns too?) left for explicit decision, not solved here.
   let patternId: string | null = null;
   const qualifyingPattern = result.energyPattern?.qualifies
     ? { pattern: result.energyPattern, toDomain: 'energy' as const }
@@ -304,6 +313,9 @@ export async function runSleepDurationSlice(
       : null;
 
   if (qualifyingPattern) {
+    // Single source of truth for both the numeric and label fields -- see
+    // patternConfidence()'s own doc comment for why these must never be
+    // computed by two independent formula copies.
     const confidence = patternConfidence(qualifyingPattern.pattern.recurrenceCount);
     const { data: patternRow, error: patternError } = await supabase
       .from('patterns')
@@ -318,7 +330,7 @@ export async function runSleepDurationSlice(
           stable_under_removal: qualifyingPattern.pattern.stableUnderRemoval,
           alternative_explanation_checked: qualifyingPattern.pattern.alternativeExplanationChecked,
           alternative_explanation_ruled_out: qualifyingPattern.pattern.alternativeExplanationRuledOut,
-          confidence: Math.min(1, qualifyingPattern.pattern.recurrenceCount / PATTERN_CONFIDENCE_RECURRENCE_CAP),
+          confidence: confidence.value,
           confidence_label: confidence.label,
           threshold_version: qualifyingPattern.pattern.thresholdVersion,
         },

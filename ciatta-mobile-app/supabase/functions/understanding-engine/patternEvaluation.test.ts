@@ -1,6 +1,12 @@
 import { assertEquals } from 'https://deno.land/std@0.208.0/assert/mod.ts';
-import { evaluatePattern, patternConfidence, PATTERN_MIN_RECURRING_WINDOWS } from './patternEvaluation.ts';
+import {
+  evaluatePattern,
+  patternConfidence,
+  PATTERN_MIN_RECURRING_WINDOWS,
+  PATTERN_CONFIDENCE_RECURRENCE_CAP,
+} from './patternEvaluation.ts';
 import type { RelationshipInstance } from './patternEvaluation.ts';
+import { CONFIDENCE_LABEL } from './decay.ts';
 
 Deno.test('evaluatePattern: two variables correlating once does NOT qualify', () => {
   const instances: RelationshipInstance[] = [{ windowLabel: '2026-06', confirms: true }];
@@ -79,7 +85,20 @@ Deno.test('evaluatePattern: exactly at the recurrence minimum still fails stabil
 Deno.test('patternConfidence: scales toward higher confidence as recurrence grows past the qualifying minimum', () => {
   const atMinimum = patternConfidence(4); // the true qualifying minimum
   const doubled = patternConfidence(8); // PATTERN_CONFIDENCE_RECURRENCE_CAP
-  assertEquals(atMinimum.tier, 'moderate'); // min(1, 4/8)=0.5 -> <0.6 -> moderate
-  assertEquals(doubled.tier, 'very-strong'); // min(1, 8/8)=1.0 -> very-strong
+  assertEquals(atMinimum.value, 0.5); // min(1, 4/8)=0.5
+  assertEquals(atMinimum.tier, 'moderate'); // 0.5 -> <0.6 -> moderate
+  assertEquals(doubled.value, 1); // min(1, 8/8)=1.0
+  assertEquals(doubled.tier, 'very-strong'); // 1.0 -> very-strong
   assertEquals(doubled.label, 'very confident');
+});
+
+Deno.test('patternConfidence: value, tier, and label always agree -- one calculation, never two independent copies', () => {
+  // Exercises every tier boundary the qualifying-Pattern range (>=4) can
+  // actually reach, confirming there is no recurrenceCount at which the
+  // stored numeric and its label could silently diverge.
+  for (const recurrenceCount of [4, 5, 6, 7, 8, 12]) {
+    const result = patternConfidence(recurrenceCount);
+    assertEquals(result.value, Math.min(1, recurrenceCount / PATTERN_CONFIDENCE_RECURRENCE_CAP));
+    assertEquals(result.label, CONFIDENCE_LABEL[result.tier]);
+  }
 });

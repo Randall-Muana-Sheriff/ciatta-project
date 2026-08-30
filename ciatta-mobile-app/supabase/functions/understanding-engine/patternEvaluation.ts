@@ -78,11 +78,23 @@ export function evaluatePattern(
 export const PATTERN_CONFIDENCE_RECURRENCE_CAP = 8;
 
 export interface PatternConfidence {
+  value: number;
   tier: Strength;
   label: string;
 }
 
+/**
+ * The single source of truth for a Pattern's confidence -- both the
+ * numeric `value` and its derived `tier`/`label` come from this one
+ * calculation. A caller that needs the numeric confidence (e.g. to store
+ * alongside the label) MUST read `.value` from this function's result,
+ * never re-derive `Math.min(1, recurrenceCount / PATTERN_CONFIDENCE_RECURRENCE_CAP)`
+ * separately -- two independent copies of the same formula would risk
+ * silently diverging if either one's shape ever changes, producing a
+ * stored numeric/label pair that disagree with each other.
+ */
 export function patternConfidence(recurrenceCount: number): PatternConfidence {
-  const tier = strengthForConfidence(Math.min(1, recurrenceCount / PATTERN_CONFIDENCE_RECURRENCE_CAP));
-  return { tier, label: CONFIDENCE_LABEL[tier] };
+  const value = Math.min(1, recurrenceCount / PATTERN_CONFIDENCE_RECURRENCE_CAP);
+  const tier = strengthForConfidence(value);
+  return { value, tier, label: CONFIDENCE_LABEL[tier] };
 }
