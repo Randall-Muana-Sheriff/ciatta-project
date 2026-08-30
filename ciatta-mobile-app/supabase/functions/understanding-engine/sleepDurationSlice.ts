@@ -376,7 +376,7 @@ export async function runSleepDurationSlice(
   // can never pass without a prior row to read). Read BEFORE inserting
   // this run's own findings row, so this query only ever sees genuinely
   // prior runs, never the one this call is about to write.
-  const { data: priorFindingRow } = await supabase
+  const { data: priorFindingRow, error: priorFindingError } = await supabase
     .from('findings')
     .select('confidence_tier')
     .eq('user_id', userId)
@@ -385,6 +385,7 @@ export async function runSleepDurationSlice(
     .order('produced_at', { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (priorFindingError) throw priorFindingError;
 
   const { data: findingRow, error: findingError } = await supabase
     .from('findings')

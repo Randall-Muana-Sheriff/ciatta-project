@@ -284,3 +284,25 @@ Deno.test('runSleepDurationSlice: re-running with the same data upserts (not dup
     assertEquals(opts.includes('onConflict'), true, `upsert call missing onConflict: ${opts}`);
   }
 });
+
+Deno.test('runSleepDurationSlice: a failed prior-findings read is never silently treated as "no prior runs"', async () => {
+  const chain: Record<string, (...args: unknown[]) => unknown> = {
+    eq: () => chain,
+    order: () => chain,
+    limit: () => chain,
+    select: () => chain,
+    insert: () => chain,
+    single: () => Promise.resolve({ data: { id: 'fake-id' }, error: null }),
+    maybeSingle: () => Promise.resolve({ data: null, error: new Error('simulated read failure') }),
+    upsert: () => chain,
+  };
+  const supabase = { from: () => chain };
+
+  let threw = false;
+  try {
+    await runSleepDurationSlice(supabase, 'user-1', twentyNightsAt400(), [], [], new Date('2026-07-21'));
+  } catch {
+    threw = true;
+  }
+  assertEquals(threw, true);
+});
