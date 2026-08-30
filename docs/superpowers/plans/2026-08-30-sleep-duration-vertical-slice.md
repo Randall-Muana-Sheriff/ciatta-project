@@ -536,7 +536,10 @@ Deno.test('computeNightlySleepBaseline: median of an eligible sample', () => {
   const baseline = computeNightlySleepBaseline(features);
   assertEquals(baseline.eligible, true);
   assertEquals(baseline.sampleSize, BASELINE_MIN_SAMPLE);
-  assertEquals(baseline.value, [...values].sort((a, b) => a - b)[6] === undefined ? 0 : (400 + 400) / 2);
+  // Sorted: 380,385,390,393,395,398,400,400,402,405,407,410,415,420 (14
+  // values, even count) -> median is the average of the two middle
+  // values (index 6 and 7): (400 + 400) / 2 = 400.
+  assertEquals(baseline.value, 400);
 });
 ```
 
