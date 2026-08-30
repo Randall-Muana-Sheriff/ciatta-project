@@ -795,15 +795,34 @@ Deno.test('evaluatePattern: qualifies when recurrence, stability, and alternativ
 });
 
 Deno.test('evaluatePattern: non-confirming instances do not count toward recurrence', () => {
+  // 5 windows, only 4 confirm -> recurrenceCount must be 4, not 5 (the
+  // non-confirming window is excluded from the count entirely, not
+  // counted as a weaker confirmation). 4 confirming instances is also
+  // this evaluator's true qualifying minimum (see the stability-under-
+  // removal test above and PATTERN_MIN_RECURRING_WINDOWS's own doc
+  // comment: 3 recurrences plus one to spare for the removal check).
   const instances: RelationshipInstance[] = [
+    { windowLabel: '2026-04', confirms: true },
     { windowLabel: '2026-05', confirms: true },
     { windowLabel: '2026-06', confirms: false },
     { windowLabel: '2026-07', confirms: true },
     { windowLabel: '2026-08', confirms: true },
   ];
   const result = evaluatePattern(instances, true);
-  assertEquals(result.recurrenceCount, 3);
+  assertEquals(result.recurrenceCount, 4);
   assertEquals(result.qualifies, true);
+});
+
+Deno.test('evaluatePattern: exactly at the recurrence minimum still fails stability-under-removal', () => {
+  const instances: RelationshipInstance[] = [
+    { windowLabel: '2026-06', confirms: true },
+    { windowLabel: '2026-07', confirms: true },
+    { windowLabel: '2026-08', confirms: true },
+  ];
+  const result = evaluatePattern(instances, true);
+  assertEquals(result.recurrenceCount, PATTERN_MIN_RECURRING_WINDOWS);
+  assertEquals(result.stableUnderRemoval, false);
+  assertEquals(result.qualifies, false);
 });
 ```
 
@@ -860,9 +879,14 @@ export function evaluatePattern(
 ): PatternEvaluation {
   const recurrenceCount = instances.filter((i) => i.confirms).length;
   const meetsRecurrence = recurrenceCount >= PATTERN_MIN_RECURRING_WINDOWS;
-  const stableUnderRemoval = meetsRecurrence && recurrenceCount - 1 >= PATTERN_MIN_RECURRING_WINDOWS - 1
-    ? recurrenceCount - 1 >= PATTERN_MIN_RECURRING_WINDOWS
-    : false;
+  // The true qualifying minimum is one MORE than PATTERN_MIN_RECURRING_
+  // WINDOWS: removing the single strongest confirming window must still
+  // leave the count at or above the raw recurrence bar, or the "stable
+  // under removal" check would be vacuous (always true whenever
+  // meetsRecurrence is true, checking nothing of its own). At exactly
+  // PATTERN_MIN_RECURRING_WINDOWS confirming instances, removing one
+  // drops below the bar, so stability correctly fails there.
+  const stableUnderRemoval = recurrenceCount - 1 >= PATTERN_MIN_RECURRING_WINDOWS;
 
   const qualifies = meetsRecurrence && stableUnderRemoval && alternativeExplanationRuledOut;
 
@@ -878,26 +902,7 @@ export function evaluatePattern(
 }
 ```
 
-Note: `stableUnderRemoval` is only ever `true` when recurrence is strictly above the minimum (removing one confirming window must still leave the count at or above the threshold) — at exactly the minimum, removing one window drops below it, so stability correctly fails. Trace through: at `recurrenceCount = 3` (the minimum), `3 - 1 = 2`, and `2 >= 3` is `false` — so `stableUnderRemoval` is `false` at exactly the threshold, meaning `qualifies` is `false` at exactly 3. This means the real minimum to qualify is 4 confirming windows, not 3. If 3 is intended to be sufficient on its own (recurrence bar and stability-under-removal bar being the same number), simplify Step 3's `stableUnderRemoval` line to `recurrenceCount >= PATTERN_MIN_RECURRING_WINDOWS` (i.e., stability just re-confirms meetsRecurrence and is trivially true whenever meetsRecurrence is true) — but that makes the stability check vacuous. **Resolve this deliberately, not accidentally**: use `recurrenceCount - 1 >= PATTERN_MIN_RECURRING_WINDOWS` so exactly 4 confirming windows is the true minimum to qualify (3 recurrences plus one to spare for the removal check) — update the test at Step 1's fourth case to use 4 confirming instances (already written that way above) and add one more explicit test asserting exactly 3 confirming instances does NOT qualify (already covered by the second test case above, which uses `PATTERN_MIN_RECURRING_WINDOWS - 1 = 2` instances — add a third test case with exactly 3 to close the gap):
-
-```typescript
-Deno.test('evaluatePattern: exactly at the recurrence minimum still fails stability-under-removal', () => {
-  const instances: RelationshipInstance[] = [
-    { windowLabel: '2026-06', confirms: true },
-    { windowLabel: '2026-07', confirms: true },
-    { windowLabel: '2026-08', confirms: true },
-  ];
-  const result = evaluatePattern(instances, true);
-  assertEquals(result.recurrenceCount, PATTERN_MIN_RECURRING_WINDOWS);
-  assertEquals(result.stableUnderRemoval, false);
-  assertEquals(result.qualifies, false);
-});
-```
-
-And simplify the implementation's `stableUnderRemoval` line to exactly:
-```typescript
-const stableUnderRemoval = recurrenceCount - 1 >= PATTERN_MIN_RECURRING_WINDOWS;
-```
+The true qualifying minimum is therefore 4 confirming instances, not 3 (3 recurrences plus one to spare for the removal check) — reflected in both the implementation above and all six test cases in Step 1, including the "exactly at the recurrence minimum still fails stability-under-removal" and "non-confirming instances do not count toward recurrence" cases, which were written to be mutually consistent with this rule.
 
 - [ ] **Step 4: Run test to verify it passes**
 
