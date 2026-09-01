@@ -7,9 +7,11 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
 # Deno powers the ciatta-mobile-app test suite and the Supabase edge functions.
+# Run the installer from $HOME so its bootstrap does not drop a stray deno.lock
+# inside the repository tree.
 if ! command -v deno >/dev/null 2>&1 && [ ! -x "$HOME/.deno/bin/deno" ]; then
   echo "Installing Deno..."
-  curl -fsSL https://deno.land/install.sh | sh -s -- -y
+  ( cd "$HOME" && curl -fsSL https://deno.land/install.sh | sh -s -- -y )
 fi
 export PATH="$HOME/.deno/bin:$PATH"
 deno --version | head -1
