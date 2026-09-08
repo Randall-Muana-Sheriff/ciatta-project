@@ -6,12 +6,14 @@ import PrimaryButton from '../components/PrimaryButton';
 import StatRow from '../components/StatRow';
 import { connectHealthConnect } from '../lib/healthConnect';
 import { connectHealthKit } from '../lib/healthKit';
+import { HEALTH_SYNC_COPY, type HealthSyncUiKind } from '../lib/healthKitUi';
 import { fetchSyncReflection, formatSleepMinutes, type SyncReflection } from '../lib/observations';
+import { displayCopy } from '../lib/displayCopy';
 
 const SOURCE_NAME = Platform.OS === 'android' ? 'Health Connect' : 'Apple Health';
 
 type SyncOutcome =
-  | { kind: 'synced'; count: number; reflection: SyncReflection }
+  | { kind: 'synced'; count: number; reflection: SyncReflection; uiKind?: HealthSyncUiKind }
   | { kind: 'unavailable' }
   | { kind: 'permission-denied' }
   | { kind: 'error'; message: string };
@@ -55,14 +57,23 @@ export default function HealthSyncSheet({
   }
 
   async function handleSync() {
-    if (!userId) return;
+    console.log('[hksync] sync started', {
+      source: 'HealthSyncSheet',
+      platform: Platform.OS,
+      userIdPresent: Boolean(userId),
+      connected,
+    });
+    if (!userId) {
+      console.log('[hksync] sync completed', { reason: 'no userId' });
+      return;
+    }
     setSyncing(true);
     setOutcome(null);
     try {
       const result =
         Platform.OS === 'android'
           ? await connectHealthConnect(userId)
-          : await connectHealthKit(userId);
+          : await connectHealthKit(userId, { reason: connected ? 'manual' : 'initial' });
       if (!result.granted) {
         setOutcome(
           result.reason === 'unavailable' ? { kind: 'unavailable' } : { kind: 'permission-denied' }
@@ -70,9 +81,15 @@ export default function HealthSyncSheet({
         return;
       }
       const reflection = await fetchSyncReflection(userId);
-      setOutcome({ kind: 'synced', count: result.observationsSynced, reflection });
+      setOutcome({
+        kind: 'synced',
+        count: result.observationsSynced,
+        reflection,
+        uiKind: result.uiKind,
+      });
       onSynced();
     } catch (e) {
+      console.error('[hksync] sync completed', { kind: 'error', error: e });
       setOutcome({ kind: 'error', message: e instanceof Error ? e.message : 'Something went wrong.' });
     } finally {
       setSyncing(false);
@@ -82,26 +99,37 @@ export default function HealthSyncSheet({
   return (
     <BottomSheet visible={visible} onClose={handleClose}>
       <View>
-        <Text style={styles.title}>{SOURCE_NAME}</Text>
+        <Text style={styles.title}>{displayCopy(SOURCE_NAME)}</Text>
         <Text style={styles.intro}>
           {connected
-            ? `${SOURCE_NAME} is connected. Sync any time to pull in what's changed since last time. The more days that accumulate, the clearer the picture gets.`
-            : `Connect ${SOURCE_NAME} to bring in your steps, heart rate, sleep, and cycle history without asking the same questions twice.`}
+            ? displayCopy(
+                `${SOURCE_NAME} is connected. Sync any time to pull in what has changed since last time.`
+              )
+            : displayCopy(
+                `Connect ${SOURCE_NAME} to bring in your sleep and other health history so Ciatta can compare you with you.`
+              )}
         </Text>
 
         <View style={styles.section}>
           <PrimaryButton
-            label={connected ? 'Sync now' : `Connect ${SOURCE_NAME}`}
+            label={connected ? displayCopy('Sync now') : displayCopy(`Connect ${SOURCE_NAME}`)}
             onPress={handleSync}
             loading={syncing}
           />
+          {syncing ? (
+            <Text style={styles.result}>{displayCopy(HEALTH_SYNC_COPY.syncing)}</Text>
+          ) : null}
 
           {outcome?.kind === 'synced' && (
             <>
               <Text style={styles.result}>
-                {outcome.count > 0
-                  ? `Pulled in ${outcome.count} new reading${outcome.count === 1 ? '' : 's'}.`
-                  : `No new data since last time. More can take shape the next time you sync.`}
+                {Platform.OS === 'ios' && outcome.uiKind
+                  ? displayCopy(HEALTH_SYNC_COPY[outcome.uiKind])
+                  : outcome.count > 0
+                    ? displayCopy(
+                        `Pulled in ${outcome.count} new reading${outcome.count === 1 ? '' : 's'}.`
+                      )
+                    : displayCopy('No new data since last time. More can take shape the next time you sync.')}
               </Text>
               {reflectionRows(outcome.reflection).length > 0 && (
                 <View style={styles.reflection}>
@@ -115,23 +143,30 @@ export default function HealthSyncSheet({
           {outcome?.kind === 'unavailable' && (
             <Text style={styles.error}>
               {Platform.OS === 'android'
-                ? "Health Connect isn't installed on this device yet. Install it from the Play Store, then come back and sync."
-                : `${SOURCE_NAME} isn't available on this device.`}
+                ? displayCopy(
+                    "Health Connect isn't installed on this device yet. Install it from the Play Store, then come back and sync."
+                  )
+                : displayCopy(`${SOURCE_NAME} isn't available on this device.`)}
             </Text>
           )}
           {outcome?.kind === 'permission-denied' && (
             <Text style={styles.error}>
-              Permission wasn't granted to read your health data. You can try again, or check your
-              {Platform.OS === 'android' ? ' Health Connect' : ' Health app'} permissions for Ciatta.
+              {displayCopy(
+                Platform.OS === 'android'
+                  ? "Permission wasn't granted to read your health data. You can try again, or check your Health Connect permissions for Ciatta."
+                  : "Permission wasn't granted to read your health data. You can try again, or check your Health app permissions for Ciatta."
+              )}
             </Text>
           )}
-          {outcome?.kind === 'error' && <Text style={styles.error}>{outcome.message}</Text>}
+          {outcome?.kind === 'error' && (
+            <Text style={styles.error}>{displayCopy(outcome.message)}</Text>
+          )}
         </View>
 
         <Text style={styles.footnote}>
-          Some patterns, like how your cycle relates to your resting heart rate, need at least a
-          couple of weeks of data before anything meaningful can take shape. Syncing regularly is
-          what gets there.
+          {displayCopy(
+            'Sleep comparison uses your own nights. Ciatta stays quiet until there is enough history to compare.'
+          )}
         </Text>
       </View>
     </BottomSheet>

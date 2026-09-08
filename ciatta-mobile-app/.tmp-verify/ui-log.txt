@@ -1,0 +1,149 @@
+2026-08-29T02:50:45Z SCRIPT START
+2026-08-29T02:50:45Z CMD 0: activate
+2026-08-29T02:50:45Z CMD 1: sleep 3
+2026-08-29T02:50:48Z CMD 2: shot p2-welcome
+2026-08-29T02:50:48Z shot ui-p2-welcome.png
+2026-08-29T02:50:48Z CMD 3: tap Begin
+2026-08-29T02:50:49Z CMD 4: sleep 2
+2026-08-29T02:50:51Z CMD 5: shot p2-conversation
+2026-08-29T02:50:51Z shot ui-p2-conversation.png
+2026-08-29T02:50:51Z CMD 6: tap I'll do this later
+2026-08-29T02:50:51Z CMD 7: sleep 2
+2026-08-29T02:50:53Z CMD 8: shot p2-after-conversation
+2026-08-29T02:50:53Z shot ui-p2-after-conversation.png
+2026-08-29T02:50:53Z CMD 9: tapif Continue
+2026-08-29T02:50:55Z CMD 10: sleep 1
+2026-08-29T02:50:56Z CMD 11: tapif I'll do this later
+2026-08-29T02:50:56Z CMD 12: sleep 1
+2026-08-29T02:50:57Z CMD 13: tapif I'll do this later
+2026-08-29T02:50:58Z CMD 14: sleep 1
+2026-08-29T02:50:59Z CMD 15: tapif Continue without connecting
+2026-08-29T02:50:59Z CMD 16: sleep 1
+2026-08-29T02:51:00Z CMD 17: tapif I'll do this later
+2026-08-29T02:51:00Z CMD 18: sleep 1
+2026-08-29T02:51:01Z CMD 19: tapif Not now
+2026-08-29T02:51:04Z tapif miss: Not now
+2026-08-29T02:51:04Z CMD 20: sleep 1
+2026-08-29T02:51:05Z CMD 21: shot p2-onboarding-later
+2026-08-29T02:51:05Z shot ui-p2-onboarding-later.png
+2026-08-29T02:51:05Z CMD 22: dump
+2026-08-29T02:51:05Z dumped ui-dump.txt
+2026-08-29T02:51:05Z shot ui-script-end.png
+2026-08-29T02:51:05Z SCRIPT END
+2026-08-30T00:43:17Z SCRIPT START
+2026-08-30T00:43:17Z CMD 0: activate
+2026-08-30T00:43:17Z CMD 1: sleep 3
+2026-08-30T00:43:20Z CMD 2: shot p2-welcome
+2026-08-30T00:43:20Z shot ui-p2-welcome.png
+2026-08-30T00:43:20Z CMD 3: tap Begin
+2026-08-30T00:43:29Z CMD 4: sleep 2
+2026-08-30T00:43:31Z CMD 5: shot p2-conversation
+2026-08-30T00:43:31Z shot ui-p2-conversation.png
+2026-08-30T00:43:31Z CMD 6: tap I'll do this later
+2026-08-30T00:43:39Z CMD 7: sleep 2
+2026-08-30T00:43:41Z CMD 8: shot p2-after-conversation
+2026-08-30T00:43:41Z shot ui-p2-after-conversation.png
+2026-08-30T00:43:41Z CMD 9: tapif Continue
+2026-08-30T00:43:43Z tapif miss: Continue
+2026-08-30T00:43:43Z CMD 10: sleep 1
+2026-08-30T00:43:44Z CMD 11: tapif I'll do this later
+2026-08-30T00:43:46Z tapif miss: I'll do this later
+2026-08-30T00:43:46Z CMD 12: sleep 1
+2026-08-30T00:43:47Z CMD 13: tapif I'll do this later
+2026-08-30T00:43:50Z tapif miss: I'll do this later
+2026-08-30T00:43:50Z CMD 14: sleep 1
+2026-08-30T00:43:51Z CMD 15: tapif Continue without connecting
+2026-08-30T00:43:53Z tapif miss: Continue without connecting
+2026-08-30T00:43:53Z CMD 16: sleep 1
+2026-08-30T00:43:54Z CMD 17: tapif I'll do this later
+2026-08-30T00:43:56Z tapif miss: I'll do this later
+2026-08-30T00:43:56Z CMD 18: sleep 1
+2026-08-30T00:43:57Z CMD 19: tapif Not now
+2026-08-31T12:47:12Z SCRIPT START
+2026-08-31T12:47:12Z CMD 0: activate
+2026-08-31T12:47:12Z CMD 1: sleep 2
+2026-08-31T12:47:14Z CMD 2: tap Enter URL manually
+2026-08-31T12:47:14Z CMD 3: sleep 1
+2026-08-31T12:47:15Z CMD 4: type http://128.180.242.195:8081
+2026-08-31T12:47:17Z CMD 5: keyreturn
+2026-08-31T12:47:18Z CMD 6: sleep 15
+2026-08-31T12:47:33Z CMD 7: shot 2g-surfaced-today
+2026-08-31T12:47:33Z shot ui-2g-surfaced-today.png
+2026-08-31T12:47:33Z CMD 8: dump
+2026-08-31T12:47:33Z dumped ui-dump.txt
+2026-08-31T12:47:33Z CMD 9: exists WHAT CONNECTS
+2026-08-31T12:47:36Z exists WHAT CONNECTS => false
+2026-08-31T12:47:36Z CMD 10: exists Cycle and mood
+2026-08-31T12:47:39Z exists Cycle and mood => false
+2026-08-31T12:47:39Z CMD 11: tapif Why this holds
+2026-08-31T12:47:41Z tapif miss: Why this holds
+2026-08-31T12:47:41Z CMD 12: sleep 2
+2026-08-31T12:47:43Z CMD 13: shot 2g-surfaced-understanding
+2026-08-31T12:47:43Z shot ui-2g-surfaced-understanding.png
+2026-08-31T12:47:43Z CMD 14: exists WHAT'S HAPPENING
+2026-08-31T12:47:46Z exists WHAT'S HAPPENING => false
+2026-08-31T12:47:46Z CMD 15: exists HOW THIS CHANGED
+2026-08-31T12:47:49Z exists HOW THIS CHANGED => false
+2026-08-31T12:47:49Z CMD 16: exists WHERE THIS COMES FROM
+2026-08-31T12:47:52Z exists WHERE THIS COMES FROM => false
+2026-08-31T12:47:52Z CMD 17: tapif Close
+2026-08-31T12:47:54Z tapif miss: Close
+2026-08-31T12:47:54Z CMD 18: sleep 1
+2026-08-31T12:47:55Z CMD 19: tap Core
+2026-08-31T12:48:04Z CMD 20: sleep 2
+2026-08-31T12:48:06Z CMD 21: shot 2g-surfaced-core
+2026-08-31T12:48:06Z shot ui-2g-surfaced-core.png
+2026-08-31T12:48:06Z CMD 22: exists CYCLE AND MOOD
+2026-08-31T12:48:09Z exists CYCLE AND MOOD => false
+2026-08-31T12:48:09Z CMD 23: exists WHAT CONNECTS
+2026-08-31T12:48:12Z exists WHAT CONNECTS => false
+2026-08-31T12:48:12Z shot ui-script-end.png
+2026-08-31T12:48:12Z SCRIPT END
+2026-08-31T12:50:03Z SCRIPT START
+2026-08-31T12:50:03Z CMD 0: activate
+2026-08-31T12:50:03Z CMD 1: sleep 1
+2026-08-31T12:50:04Z CMD 2: tapif OK
+2026-08-31T12:50:05Z CMD 3: sleep 1
+2026-08-31T12:50:06Z CMD 4: tap Enter URL manually
+2026-08-31T12:50:06Z CMD 5: sleep 1
+2026-08-31T12:50:07Z CMD 6: type http://localhost:8081
+2026-08-31T12:50:09Z CMD 7: keyreturn
+2026-08-31T12:50:09Z CMD 8: sleep 18
+2026-08-31T12:50:27Z CMD 9: shot 2g-surfaced-today
+2026-08-31T12:50:27Z shot ui-2g-surfaced-today.png
+2026-08-31T12:50:27Z CMD 10: dump
+2026-08-31T12:50:27Z dumped ui-dump.txt
+2026-08-31T12:50:27Z CMD 11: exists WHAT CONNECTS
+2026-08-31T12:50:30Z exists WHAT CONNECTS => false
+2026-08-31T12:50:30Z CMD 12: exists Cycle and mood
+2026-08-31T12:50:33Z exists Cycle and mood => false
+2026-08-31T12:50:33Z CMD 13: tapif Why this holds
+2026-08-31T12:50:35Z tapif miss: Why this holds
+2026-08-31T12:50:35Z CMD 14: sleep 2
+2026-08-31T12:50:37Z CMD 15: shot 2g-surfaced-understanding
+2026-08-31T12:50:37Z shot ui-2g-surfaced-understanding.png
+2026-08-31T12:50:37Z CMD 16: exists WHAT'S HAPPENING
+2026-08-31T12:50:40Z exists WHAT'S HAPPENING => false
+2026-08-31T12:50:40Z CMD 17: exists HOW THIS CHANGED
+2026-08-31T12:50:43Z exists HOW THIS CHANGED => false
+2026-08-31T12:50:43Z CMD 18: exists WHERE THIS COMES FROM
+2026-08-31T12:50:46Z exists WHERE THIS COMES FROM => false
+2026-08-31T12:50:46Z CMD 19: tap Core
+2026-08-31T12:50:54Z CMD 20: sleep 2
+2026-08-31T12:50:56Z CMD 21: shot 2g-surfaced-core
+2026-08-31T12:50:56Z shot ui-2g-surfaced-core.png
+2026-08-31T12:50:56Z CMD 22: exists CYCLE AND MOOD
+2026-08-31T12:50:59Z exists CYCLE AND MOOD => false
+2026-08-31T12:50:59Z shot ui-script-end.png
+2026-08-31T12:50:59Z SCRIPT END
+2026-08-31T12:52:25Z SCRIPT START
+2026-08-31T12:52:25Z CMD 0: activate
+2026-08-31T12:52:28Z CMD 1: sleep 2
+2026-08-31T12:52:30Z CMD 2: tapif OK
+2026-08-31T12:52:32Z tapif miss: OK
+2026-08-31T12:52:32Z CMD 3: tapif Dismiss
+2026-08-31T12:52:34Z tapif miss: Dismiss
+2026-08-31T12:52:34Z CMD 4: sleep 1
+2026-08-31T12:52:35Z CMD 5: tap Enter URL manually
+2026-08-31T12:52:43Z CMD 6: sleep 1
+2026-08-31T12:52:44Z CMD 7: type http://127.0.0.1:8081

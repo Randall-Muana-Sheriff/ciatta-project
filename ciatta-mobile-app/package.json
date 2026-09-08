@@ -49,9 +49,10 @@
     "test:onboarding": "deno test --sloppy-imports src/lib/onboardingConversation.test.ts src/lib/onboardingComplete.test.ts src/lib/onboardingSetup.test.ts",
     "test:care": "deno test --sloppy-imports src/lib/careConnection.test.ts",
     "test:glass": "deno test --sloppy-imports src/lib/liquidGlass.test.ts src/lib/navAdaptivity.test.ts",
+    "test:now": "deno test --sloppy-imports src/lib/nowComposition.test.ts",
     "test:copy": "deno test --allow-read --sloppy-imports src/lib/copyNoEmDash.test.ts",
     "test:constellation": "deno test --sloppy-imports src/lib/constellation.test.ts",
-    "test:all": "npm run test:engine && npm run test:provider-search && npm run test:visitprep && npm run test:tampon && npm run test:onboarding && npm run test:care && npm run test:glass && npm run test:constellation && npm run test:copy"
+    "test:all": "npm run test:engine && npm run test:provider-search && npm run test:visitprep && npm run test:tampon && npm run test:onboarding && npm run test:care && npm run test:glass && npm run test:constellation && npm run test:now && npm run test:copy"
   },
   "private": true
 }

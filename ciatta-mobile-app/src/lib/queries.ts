@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { displayCopy, displayCopyList, displayCopyMaybe } from './displayCopy';
+import { countEligibleSleepNights, type SleepNightRow } from './sleepNights';
 import type { Discovery, Domain, Strength } from './types';
 
 // 'primary-care' | 'ob-gyn' | 'mental-health' — mirrors
@@ -179,6 +180,33 @@ export async function hasHealthSourceObservations(userId: string): Promise<boole
     .in('source', ['health-connect', 'apple-health']);
   if (error) throw error;
   return (count ?? 0) > 0;
+}
+
+export async function countSleepSessions(userId: string): Promise<number> {
+  // Distinct nights, matching sleepAnalysis.ts: sleep_session plus asleep
+  // sleep_segment rows. HealthKit does not write sleep_session.
+  const { data, error } = await supabase
+    .from('observations')
+    .select('type, recorded_at, value, context')
+    .eq('user_id', userId)
+    .in('type', ['sleep_session', 'sleep_segment']);
+  if (error) throw error;
+  return countEligibleSleepNights((data ?? []) as SleepNightRow[]);
+}
+
+export async function fetchLatestUserNowNote(userId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('observations')
+    .select('value')
+    .eq('user_id', userId)
+    .eq('source', 'manual')
+    .eq('type', 'health_concern_detail')
+    .contains('context', { origin: 'now_add' })
+    .order('recorded_at', { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  const text = (data?.[0]?.value as { text?: string } | undefined)?.text;
+  return displayCopyMaybe(text);
 }
 
 export async function nameDiscovery(

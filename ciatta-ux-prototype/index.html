@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ciatta Prototype 1. Not production</title>
+  <style>
+    :root {
+      --canvas: #f4f4f2;
+      --ink: #1c1c1e;
+      --muted: #5c5c60;
+      --line: #c8c8c4;
+      --fill: #ecece8;
+      --phone: #fafaf8;
+      --review: #e8e8e4;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      background: var(--canvas);
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+    button, textarea { font: inherit; }
+    h1, h2, h3, p { margin: 0; }
+    .shell {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      min-height: 100%;
+    }
+    .review {
+      background: var(--review);
+      border-right: 1px solid var(--line);
+      padding: 16px;
+      overflow: auto;
+    }
+    .review h1 { font-size: 16px; margin-bottom: 8px; }
+    .review p, .review li { color: var(--muted); font-size: 12px; }
+    .review ul { padding-left: 16px; margin: 8px 0; }
+    .tools { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+    .tools button, .ghost, .primary {
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 8px 10px;
+      text-align: left;
+      cursor: pointer;
+    }
+    .tools button.on, .primary {
+      background: var(--ink);
+      color: #fff;
+      border-color: var(--ink);
+    }
+    .ghost { width: 100%; margin: 6px 0; background: var(--phone); }
+    .primary { width: 100%; margin: 8px 0 0; text-align: center; }
+    .stage { padding: 24px; display: flex; justify-content: center; align-items: flex-start; }
+    .phone {
+      width: 300px;
+      min-height: 560px;
+      background: var(--phone);
+      border: 1px solid var(--ink);
+      display: flex;
+      flex-direction: column;
+    }
+    .status {
+      text-align: center;
+      font-size: 11px;
+      padding: 8px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .body { padding: 16px; flex: 1; }
+    .chrome {
+      display: flex;
+      border-top: 1px solid var(--ink);
+    }
+    .chrome button {
+      flex: 1;
+      border: 0;
+      background: transparent;
+      padding: 12px 0;
+      cursor: pointer;
+      color: var(--muted);
+    }
+    .chrome button.on { color: var(--ink); font-weight: 600; }
+    .kicker { font-size: 11px; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; }
+    .block {
+      border: 1px solid var(--line);
+      padding: 10px;
+      margin: 8px 0;
+      background: #fff;
+    }
+    .block.lead { border-color: var(--ink); }
+    .label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .receipt {
+      border: 1px solid var(--ink);
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 88px;
+      border: 1px solid var(--line);
+      padding: 8px;
+      resize: vertical;
+    }
+    .fine { font-size: 12px; color: var(--muted); margin-top: 8px; }
+    .banner {
+      font-size: 11px;
+      padding: 6px 16px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      background: var(--fill);
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="review">
+      <h1>Prototype 1 review</h1>
+      <p>Low fidelity. Not the Ciatta app. Switch fixtures here. Walk the phone on the right.</p>
+      <p style="margin-top:8px"><strong>Cycle 1</strong></p>
+      <div class="tools">
+        <button type="button" data-act="restart">Restart Cycle 1</button>
+      </div>
+      <p><strong>Now fixtures</strong></p>
+      <div class="tools" id="fixtures"></div>
+      <p><strong>Where the loop stops</strong></p>
+      <ul>
+        <li>Building: after Observe. No Change.</li>
+        <li>Quiet: after eligible history. No Change.</li>
+        <li>Surfaced, once: Change, Context. No Pattern. No Action.</li>
+        <li>Surfaced: Change, Pattern, Context. No Action.</li>
+        <li>Surfaced, Action eligible: full composition.</li>
+      </ul>
+      <p><strong>Simulated</strong></p>
+      <ul>
+        <li>All findings, Pattern recurrence, Action eligibility, Apple Health nights.</li>
+        <li>Connect to care is a stub. No provider search.</li>
+      </ul>
+    </aside>
+    <main class="stage">
+      <div class="phone" id="phone"></div>
+    </main>
+  </div>
+  <script>
+    function displayCopy(value) {
+      return String(value)
+        .replace(/\s*[—–−]\s*/g, ". ")
+        .replace(/[-‐‑‒]/g, " ")
+        .replace(/\.\s*\./g, ".")
+        .replace(/[ \t]{2,}/g, " ")
+        .replace(/ \./g, ".")
+        .trim();
+    }
+
+    function esc(value) {
+      return displayCopy(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    const FIXTURES = {
+      BUILDING: { id: "BUILDING", label: "Building" },
+      QUIET: { id: "QUIET", label: "Quiet" },
+      SURFACED_ONCE: { id: "SURFACED_ONCE", label: "Surfaced, no Pattern" },
+      SURFACED: { id: "SURFACED", label: "Surfaced, no Action" },
+      SURFACED_STRONG: { id: "SURFACED_STRONG", label: "Surfaced, Action eligible" },
+    };
+
+    const state = {
+      screen: "welcome",
+      fixture: "BUILDING",
+      health: false,
+      note: "",
+      receipt: "",
+    };
+
+    function go(screen) {
+      state.screen = screen;
+      render();
+    }
+
+    function setFixture(id, jumpNow) {
+      state.fixture = id;
+      state.receipt = "";
+      if (jumpNow) state.screen = "now";
+      render();
+    }
+
+    function chrome(active) {
+      return `<div class="chrome">
+        <button type="button" class="${active === "now" ? "on" : ""}" data-nav="now">Now</button>
+        <button type="button" class="${active === "account" ? "on" : ""}" data-nav="account">Account</button>
+      </div>`;
+    }
+
+    function addBtn() {
+      return `<button type="button" class="ghost" data-go="add">${displayCopy("Add")}</button>`;
+    }
+
+    function userNoteBlock() {
+      if (!state.note) return "";
+      return `<div class="block">
+        <div class="label">${displayCopy("From you")}</div>
+        <p>${esc(state.note)}</p>
+        <p class="fine">${displayCopy("This is what you added. It is not a Ciatta finding.")}</p>
+      </div>`;
+    }
+
+    function changeBlock() {
+      return `<div class="block lead">
+        <div class="label">${displayCopy("Change")}</div>
+        <p><strong>${displayCopy("Last night your sleep was shorter than your usual.")}</strong></p>
+        <p class="fine">${displayCopy("Compared with your recent nights. Not with other people. Window: last night versus your usual sleep over the nights Ciatta can use.")}</p>
+      </div>`;
+    }
+
+    function patternBlock() {
+      return `<div class="block">
+        <div class="label">${displayCopy("What kept happening")}</div>
+        <p>${displayCopy("Shorter sleep has shown up across several of your recent nights, not only once.")}</p>
+        <p class="fine">${displayCopy("This block is here because recurrence is simulated as true. If this had happened once, this block would be absent.")}</p>
+      </div>`;
+    }
+
+    function contextForChange() {
+      return `<div class="block">
+        <div class="label">${displayCopy("Context")}</div>
+        <p><strong>${displayCopy("Your data")}</strong> ${displayCopy("Sleep nights from Apple Health, if connected, plus anything you added.")}</p>
+        <p><strong>${displayCopy("What Ciatta is saying")}</strong> ${displayCopy("A comparison with your own recent sleep. Not a diagnosis.")}</p>
+        <p class="fine">${displayCopy("What Ciatta does not know: why it was shorter, what will happen next, or whether this needs care.")}</p>
+        <p class="fine">${displayCopy("What this does not mean: illness, treatment, or a hormone claim.")}</p>
+      </div>`;
+    }
+
+    function contextWithAssociation() {
+      return `<div class="block">
+        <div class="label">${displayCopy("Context")}</div>
+        <p><strong>${displayCopy("Your data")}</strong> ${displayCopy("Sleep nights, cycle days you reported, and mood reports.")}</p>
+        <p><strong>${displayCopy("What Ciatta is saying")}</strong> ${displayCopy("In your data, cycle days and lower mood have shown up together. That is an association, not a cause.")}</p>
+        <p class="fine">${displayCopy("What Ciatta does not know: why they show up together, hormones, or what will happen next.")}</p>
+        <p class="fine">${displayCopy("What this does not mean: PMS, PMDD, diagnosis, or a treatment plan.")}</p>
+      </div>`;
+    }
+
+    function actionBlock() {
+      return `<div class="block">
+        <div class="label">${displayCopy("You could consider")}</div>
+        <p>${displayCopy("Pay attention to sleep on the next nights of this cycle.")}</p>
+        <p>${displayCopy("Gather: add a note if a night felt different.")}</p>
+        <p>${displayCopy("A question you could bring: My sleep has been shorter than my usual. Could we look at that together?")}</p>
+        <button type="button" class="ghost" data-go="care">${displayCopy("Connect to care")}</button>
+        <p class="fine">${displayCopy("Shown only in the Action eligible review state. Ciatta does not diagnose or choose treatment.")}</p>
+      </div>`;
+    }
+
+    function nowBody() {
+      const f = state.fixture;
+      const receipt = state.receipt
+        ? `<div class="receipt">${displayCopy(state.receipt)}</div>`
+        : "";
+      if (f === "BUILDING") {
+        return `${receipt}
+          <p class="kicker">${displayCopy("Now")}</p>
+          <h2>${displayCopy("Building")}</h2>
+          <div class="block lead">
+            <p>${displayCopy("Ciatta has your sleep.")}</p>
+            <p>${displayCopy("Comparison starts after more of your own nights.")}</p>
+          </div>
+          <p class="fine">${displayCopy("Nothing to surface yet. This is not Quiet. Ciatta does not have enough of your nights to compare.")}</p>
+          ${userNoteBlock()}
+          ${addBtn()}`;
+      }
+      if (f === "QUIET") {
+        return `${receipt}
+          <p class="kicker">${displayCopy("Now")}</p>
+          <h2>${displayCopy("Nothing to surface")}</h2>
+          <div class="block lead">
+            <p>${displayCopy("Ciatta has enough of your recent nights to compare.")}</p>
+            <p>${displayCopy("Nothing is different enough from your usual to show right now.")}</p>
+          </div>
+          <p class="fine">${displayCopy("Quiet is complete. Ciatta will look again. No recommendation.")}</p>
+          ${userNoteBlock()}
+          ${addBtn()}`;
+      }
+      const showPattern = f === "SURFACED" || f === "SURFACED_STRONG";
+      const showAction = f === "SURFACED_STRONG";
+      const ctx = f === "SURFACED_ONCE" ? contextForChange() : contextWithAssociation();
+      return `${receipt}
+        <p class="kicker">${displayCopy("Now")}</p>
+        ${changeBlock()}
+        ${showPattern ? patternBlock() : ""}
+        ${ctx}
+        ${showAction ? actionBlock() : `<p class="fine">${displayCopy("No next step is shown. Nothing here is eligible as Action.")}</p>`}
+        ${userNoteBlock()}
+        ${addBtn()}`;
+    }
+
+    function screenHtml() {
+      switch (state.screen) {
+        case "welcome":
+          return `<div class="body">
+            <h2>${displayCopy("Ciatta")}</h2>
+            <p style="margin:12px 0">${displayCopy("See what changed for you. Notice what keeps happening. Get context. When there is not enough, Ciatta stays quiet.")}</p>
+            <button type="button" class="primary" data-go="account">${displayCopy("Continue")}</button>
+          </div>`;
+        case "account":
+          return `<div class="body">
+            <h2>${displayCopy("Stay this person")}</h2>
+            <p class="fine">${displayCopy("Your health stays with your account. Ciatta does not write observations until you continue.")}</p>
+            <button type="button" class="primary" data-go="why">${displayCopy("Continue with Apple")}</button>
+            <button type="button" class="ghost" data-go="why">${displayCopy("Continue with Google")}</button>
+            <button type="button" class="ghost" data-go="why">${displayCopy("Continue with email")}</button>
+          </div>`;
+        case "why":
+          return `<div class="body">
+            <h2>${displayCopy("Ciatta compares you with you.")}</h2>
+            <p class="fine">${displayCopy("It does not diagnose. It stays quiet without enough of your own history.")}</p>
+            <button type="button" class="primary" data-go="source">${displayCopy("Continue")}</button>
+          </div>`;
+        case "source":
+          return `<div class="body">
+            <h2>${displayCopy("Use Apple Health for sleep?")}</h2>
+            <p class="fine">${displayCopy("If you already have enough nights, Ciatta will not quiz you. Skip is fine.")}</p>
+            <button type="button" class="primary" data-act="connect">${displayCopy("Connect Apple Health")}</button>
+            <button type="button" class="ghost" data-act="skip">${displayCopy("Skip")}</button>
+          </div>`;
+        case "now":
+          return `<div class="banner">${displayCopy("Prototype. Fixture: " + FIXTURES[state.fixture].label)}</div>
+            <div class="body">${nowBody()}</div>${chrome("now")}`;
+        case "add":
+          return `<div class="body">
+            <p class="kicker">${displayCopy("Add")}</p>
+            <h2>${displayCopy("What should Ciatta know?")}</h2>
+            <p class="fine">${displayCopy("This is Observe Again. Saving does not create a finding by itself.")}</p>
+            <textarea id="note" placeholder="${esc("Last night I slept less and felt low.")}">${state.note ? esc(state.note) : ""}</textarea>
+            <button type="button" class="primary" data-act="save">${displayCopy("Save")}</button>
+            <button type="button" class="ghost" data-go="now">${displayCopy("Cancel")}</button>
+          </div>${chrome("now")}`;
+        case "accountPage":
+          return `<div class="body">
+            <h2>${displayCopy("Account")}</h2>
+            <p class="fine">${displayCopy("Control only. Not an intelligence surface.")}</p>
+            <div class="block"><div class="label">${displayCopy("Sources")}</div><p>${displayCopy(state.health ? "Apple Health connected in this prototype." : "No source connected.")}</p></div>
+            <div class="block"><div class="label">${displayCopy("Privacy")}</div><p>${displayCopy("Export and delete would live here. Not wired.")}</p></div>
+            <button type="button" class="ghost" data-act="signout">${displayCopy("Sign out")}</button>
+          </div>${chrome("account")}`;
+        case "care":
+          return `<div class="body">
+            <h2>${displayCopy("Connect to care")}</h2>
+            <p>${displayCopy("In production this would open existing care options only when already eligible.")}</p>
+            <p class="fine">${displayCopy("This prototype does not search providers and does not advise treatment.")}</p>
+            <button type="button" class="primary" data-go="now">${displayCopy("Back to Now")}</button>
+          </div>${chrome("now")}`;
+        default:
+          return `<div class="body"><p>Unknown screen.</p></div>`;
+      }
+    }
+
+    function render() {
+      const phone = document.getElementById("phone");
+      phone.innerHTML = `<div class="status">${displayCopy("Ciatta prototype")}</div>` + screenHtml();
+
+      const box = document.getElementById("fixtures");
+      box.innerHTML = Object.values(FIXTURES)
+        .map((f) => `<button type="button" class="${state.fixture === f.id ? "on" : ""}" data-fix="${f.id}">${f.label}</button>`)
+        .join("");
+
+      document.querySelectorAll("[data-go]").forEach((el) => {
+        el.onclick = () => go(el.getAttribute("data-go"));
+      });
+      document.querySelectorAll("[data-nav]").forEach((el) => {
+        el.onclick = () => go(el.getAttribute("data-nav") === "account" ? "accountPage" : "now");
+      });
+      document.querySelectorAll("[data-fix]").forEach((el) => {
+        el.onclick = () => setFixture(el.getAttribute("data-fix"), true);
+      });
+      document.querySelectorAll("[data-act]").forEach((el) => {
+        el.onclick = () => {
+          const act = el.getAttribute("data-act");
+          if (act === "connect") {
+            state.health = true;
+            state.fixture = "SURFACED";
+            state.receipt = "";
+            go("now");
+          } else if (act === "skip") {
+            state.health = false;
+            state.fixture = "BUILDING";
+            go("now");
+          } else if (act === "save") {
+            const text = displayCopy(document.getElementById("note").value || "Last night I slept less.");
+            state.note = text;
+            state.receipt = "Ciatta has what you added. This is not a new finding.";
+            go("now");
+          } else if (act === "signout" || act === "restart") {
+            state.screen = "welcome";
+            state.fixture = "BUILDING";
+            state.health = false;
+            state.note = "";
+            state.receipt = "";
+            render();
+          }
+        };
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>

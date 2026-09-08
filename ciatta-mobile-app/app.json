@@ -11,7 +11,8 @@
       "bundleIdentifier": "com.ciatta.mobileapp",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["fetch"]
       }
     },
     "android": {
@@ -47,7 +48,7 @@
         {
           "NSHealthShareUsageDescription": "Your steps, heart rate, and sleep from Health complete your picture, so you aren't asked the same questions twice.",
           "NSHealthUpdateUsageDescription": "Your steps, heart rate, and sleep from Health complete your picture, so you aren't asked the same questions twice.",
-          "background": false
+          "background": true
         }
       ],
       [

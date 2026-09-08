@@ -12,15 +12,14 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, glass, type } from '../theme/tokens';
 import { useNavAdaptivity } from '../lib/NavAdaptivity';
-import { CoreIcon, PersonIcon, SunIcon } from './icons';
+import { PersonIcon, SunIcon } from './icons';
 import GlassSurface, { useLiquidGlass } from './GlassSurface';
 
-export type MainTab = 'today' | 'core' | 'you';
+export type MainTab = 'now' | 'account';
 
 const TABS: { id: MainTab; label: string; Icon: typeof SunIcon }[] = [
-  { id: 'today', label: 'Today', Icon: SunIcon },
-  { id: 'core', label: 'Core', Icon: CoreIcon },
-  { id: 'you', label: 'You', Icon: PersonIcon },
+  { id: 'now', label: 'Now', Icon: SunIcon },
+  { id: 'account', label: 'Account', Icon: PersonIcon },
 ];
 
 const PRESS_IN_MS = 120;

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "252844388344",
+    "project_id": "ciatta-app-f14c0",
+    "storage_bucket": "ciatta-app-f14c0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:252844388344:android:55e23ce7b2a0b6fe74300d",
+        "android_client_info": {
+          "package_name": "com.ciatta.mobileapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCze-UpMfDBHnesu2q_ZUmV6xBIm8HXVas"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

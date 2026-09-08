@@ -1,0 +1,23 @@
+activate
+sleep 3
+shot p2-welcome
+tap Begin
+sleep 2
+shot p2-conversation
+tap I'll do this later
+sleep 2
+shot p2-after-conversation
+tapif Continue
+sleep 1
+tapif I'll do this later
+sleep 1
+tapif I'll do this later
+sleep 1
+tapif Continue without connecting
+sleep 1
+tapif I'll do this later
+sleep 1
+tapif Not now
+sleep 1
+shot p2-onboarding-later
+dump

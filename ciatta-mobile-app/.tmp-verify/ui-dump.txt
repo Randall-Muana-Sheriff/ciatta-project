@@ -1,0 +1,48 @@
+Attributes: Application, 0x103b19240, pid: 53700, label: 'ciatta-mobile-app'
+Element subtree:
+ →Application, 0x103b19240, pid: 53700, label: 'ciatta-mobile-app'
+    Window (Main), 0x103d33230, {{0.0, 0.0}, {390.0, 844.0}}
+      Other, 0x103d10b40, {{0.0, 0.0}, {390.0, 844.0}}
+        Other, 0x103d10c60, {{0.0, 0.0}, {390.0, 844.0}}
+          Other, 0x103d352a0, {{-390.0, -844.0}, {1170.0, 2532.0}}
+          Other, 0x103d348a0, {{0.0, 0.0}, {390.0, 844.0}}
+            Other, 0x103d10d80, {{0.0, 0.0}, {390.0, 844.0}}
+              Other, 0x103d35ec0, {{0.0, 0.0}, {390.0, 844.0}}
+                Image, 0x103d35fe0, {{85.0, 312.0}, {220.0, 220.0}}, identifier: 'SplashScreenLogo'
+      Other, 0x103d36100, {{0.0, 0.0}, {390.0, 844.0}}
+        Other, 0x103d36220, {{-390.0, -844.0}, {1170.0, 2532.0}}
+        Other, 0x103d36340, {{0.0, 47.0}, {390.0, 797.0}}
+          Other, 0x103d36460, {{0.0, 47.0}, {390.0, 797.0}}
+            Other, 0x103d36580, {{0.0, 47.0}, {390.0, 797.0}}
+              Other, 0x103d366a0, {{0.0, 47.0}, {390.0, 797.0}}
+                Table, 0x103d367c0, {{0.0, 47.0}, {390.0, 703.0}}
+                  Cell, 0x103d368e0, {{0.0, 47.0}, {390.0, 346.0}}
+                    StaticText, 0x103d36a00, {{16.0, 47.0}, {358.0, 346.0}}, identifier: 'redbox-error', label: 'Could not connect to development server.
+
+Ensure the following: - Node server is running and available on the same network - run 'npm start' from react-native root - Node server URL is correctly set in AppDelegate - WiFi is enabled and connected to the same network as the Node Server
+
+URL: http://127.0.0.1:8081/index.ts.bundle?platform=ios&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable'
+                  Other, 0x103d36d20, {{357.0, 85.0}, {30.0, 665.0}}, label: 'Vertical scroll bar, 1 page', value: 0%
+                    Other, 0x103d36e40, {{384.0, 740.0}, {3.0, 7.0}}
+                  Other, 0x103d36f60, {{0.0, 717.0}, {390.0, 30.0}}, label: 'Horizontal scroll bar, 1 page', value: 0%
+                    Other, 0x103d37080, {{380.0, 744.0}, {7.0, 3.0}}
+                Other, 0x103d371a0, {{0.0, 749.0}, {390.0, 1.0}}
+                Other, 0x103d372c0, {{0.0, 750.0}, {390.0, 94.0}}
+                  Button, 0x103d373e0, {{0.0, 750.0}, {97.7, 60.0}}, identifier: 'redbox-dismiss', label: 'Dismiss (ESC)'
+                    StaticText, 0x103d37500, {{25.3, 764.0}, {47.0, 32.0}}, label: 'Dismiss (ESC)'
+                  Button, 0x103d37620, {{97.7, 750.0}, {97.3, 60.0}}, identifier: 'redbox-reload', label: 'Reload (⌘R)'
+                    StaticText, 0x103d37740, {{125.3, 764.0}, {42.0, 32.0}}, label: 'Reload (⌘R)'
+                  Button, 0x103d37860, {{195.0, 750.0}, {97.7, 60.0}}, identifier: 'redbox-copy', label: 'Copy (⌥⌘C)'
+                    StaticText, 0x103d37980, {{222.0, 764.0}, {44.0, 32.0}}, label: 'Copy (⌥⌘C)'
+                  Button, 0x103d37aa0, {{292.7, 750.0}, {97.3, 60.0}}, identifier: 'redbox-extra', label: 'Extra Info (⌘E)'
+                    StaticText, 0x103d37bc0, {{312.3, 764.0}, {58.0, 32.0}}, label: 'Extra Info (⌘E)'
+    Window, 0x103d339f0, {{0.0, 0.0}, {390.0, 844.0}}
+      Other, 0x103d33b10, {{0.0, 0.0}, {390.0, 844.0}}
+        Other, 0x103d33c30, {{0.0, 0.0}, {390.0, 844.0}}
+Path to element:
+ →Application, 0x103b19240, pid: 53700, label: 'ciatta-mobile-app'
+Query chain:
+ →Find: Application 'com.ciatta.mobileapp'
+  Output: {
+    Application, 0x103b6e0d0, pid: 53700, label: 'ciatta-mobile-app'
+  }

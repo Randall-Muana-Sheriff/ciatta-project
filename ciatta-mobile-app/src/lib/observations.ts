@@ -40,6 +40,49 @@ export async function insertObservation(userId: string, observation: NewObservat
   if (error) throw error;
 }
 
+/** True when a new row was written. False when the dedupe key already existed. */
+export async function insertObservationIfNew(
+  userId: string,
+  observation: NewObservation
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('observations')
+    .upsert(
+      {
+        user_id: userId,
+        source: observation.source,
+        type: observation.type,
+        value: observation.value,
+        unit: observation.unit ?? null,
+        recorded_at: observation.recordedAt ?? new Date().toISOString(),
+        context: observation.context ?? {},
+      },
+      { onConflict: 'user_id,source,type,recorded_at', ignoreDuplicates: true }
+    )
+    .select('id');
+  if (error) throw error;
+  if (data == null) return true;
+  return data.length > 0;
+}
+
+export async function deleteAppleHealthObservationByHkUuid(
+  userId: string,
+  hkUuid: string
+): Promise<void> {
+  const { data, error } = await supabase
+    .from('observations')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('source', 'apple-health')
+    .contains('context', { hkUuid })
+    .limit(1);
+  if (error) throw error;
+  const id = data?.[0]?.id as string | undefined;
+  if (!id) return;
+  const { error: deleteError } = await supabase.from('observations').delete().eq('id', id);
+  if (deleteError) throw deleteError;
+}
+
 // Provider Feedback / Outcome — both are ordinary Observations
 // (source: 'provider'), never a separate table: 'provider_assessment' is
 // what the provider said (patient-relayed, free text — UnderstandingSheet's

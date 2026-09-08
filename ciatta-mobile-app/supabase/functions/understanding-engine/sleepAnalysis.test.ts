@@ -109,6 +109,35 @@ Deno.test('sleepAnalysis: cold start blocks the Understanding under 14 nights', 
   assertEquals(buildSleepUnderstanding(result), null);
 });
 
+Deno.test('sleepAnalysis: 14 HealthKit sleep_segment nights are eligible; in_bed is not a night', () => {
+  nextId = 1;
+  const start = new Date('2025-06-01T07:00:00Z');
+  const sleep: SleepObservation[] = [];
+  for (let i = 0; i < 14; i++) {
+    const end = addDays(start, i);
+    const startTime = new Date(end.getTime() - 8 * 60 * 60 * 1000);
+    sleep.push({
+      id: id(),
+      type: 'sleep_segment',
+      startTime: startTime.toISOString(),
+      endTime: end.toISOString(),
+      durationMinutes: 480,
+      stage: 'asleep_core',
+    });
+  }
+  sleep.push({
+    id: id(),
+    type: 'sleep_segment',
+    startTime: addDays(start, 20).toISOString(),
+    endTime: addDays(start, 20).toISOString(),
+    durationMinutes: 30,
+    stage: 'in_bed',
+  });
+  const result = analyzeSleep(sleep);
+  assertEquals(result.totalNights, 14);
+  assertEquals(result.eligible, true);
+});
+
 Deno.test('sleepAnalysis: real short-sleep -> low-rating pattern is confirmed with enough paired days', () => {
   nextId = 1;
   const { sleep, rating } = buildScenario({
