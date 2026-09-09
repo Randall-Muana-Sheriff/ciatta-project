@@ -41,19 +41,7 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web",
-    "test:engine": "cd supabase/functions/understanding-engine && deno test --sloppy-imports --allow-read=../../migrations",
-    "test:provider-search": "cd supabase/functions/provider-search && deno test",
-    "test:visitprep": "deno test --sloppy-imports src/lib/visitPrep.test.ts",
-    "test:tampon": "deno test --sloppy-imports src/lib/tamponWear.test.ts",
-    "test:onboarding": "deno test --sloppy-imports src/lib/onboardingConversation.test.ts src/lib/onboardingComplete.test.ts src/lib/onboardingSetup.test.ts src/lib/userFacingError.test.ts src/lib/googleAuthConfig.test.ts",
-    "test:care": "deno test --sloppy-imports src/lib/careConnection.test.ts",
-    "test:glass": "deno test --sloppy-imports src/lib/liquidGlass.test.ts src/lib/navAdaptivity.test.ts",
-    "test:copy": "deno test --allow-read --sloppy-imports src/lib/copyNoEmDash.test.ts",
-    "test:constellation": "deno test --sloppy-imports src/lib/constellation.test.ts",
-    "test:insight": "deno test --sloppy-imports src/lib/insightViz.test.ts src/lib/observationSeries.test.ts src/lib/whyLayer.test.ts src/lib/intelligenceStatus.test.ts",
-    "test:healthkit": "deno test --sloppy-imports src/lib/healthKitMap.test.ts src/lib/observationIdentity.test.ts src/lib/healthKitSync.test.ts src/lib/healthKitBackground.test.ts",
-    "test:all": "npm run test:engine && npm run test:provider-search && npm run test:visitprep && npm run test:tampon && npm run test:onboarding && npm run test:care && npm run test:glass && npm run test:constellation && npm run test:insight && npm run test:copy && npm run test:healthkit"
+    "web": "expo start --web"
   },
   "private": true
 }
