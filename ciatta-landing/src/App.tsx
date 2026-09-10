@@ -48,7 +48,7 @@ const VALUE = [
     img: '/images/value/connect.jpg',
     alt: 'A woman with her eyes closed and one hand resting on her chest, in warm evening light.',
     title: 'You know what to pay attention to',
-    body: 'Not everything that moves matters. Ciatta shows you which changes held, which repeated, and which are still too thin to call.',
+    body: 'Not everything that moves matters. Six months of readings narrow to the two or three that actually changed.',
   },
   {
     id: 'clinician',
@@ -74,74 +74,11 @@ const PROOF = [
   ['63%', 'wanted one connected place for it'],
 ] as const;
 
-/* -- The finding, carried all the way through: what she noticed, what Ciatta
-      found in it, what evidence says in general, what may be worth exploring,
-      and what to raise. The register of each answer tells her which kind of
-      claim it is, which is the Writing System doing the work no label could. */
-const MOMENT = [
-  {
-    q: 'What you noticed',
-    a: 'That something changed in the spring, and that you had stopped sleeping through the night.',
-  },
-  {
-    q: 'What Ciatta found in it',
-    a: 'Your two shortest cycles each began within a week of your two lowest-sleep weeks.',
-  },
-  {
-    q: 'What evidence says in general',
-    a: 'Sleep disruption is associated with cycle variability in published cohorts. That is a population finding, not a statement about you.',
-  },
-  {
-    q: 'What may be worth exploring',
-    a: 'Whether the pattern holds through the three months missing from your record, and whether anything else moved in the same weeks.',
-  },
-  {
-    q: 'What to raise with your clinician',
-    a: 'Whether shorter cycles alongside disrupted sleep is worth investigating now, or worth watching for another two cycles.',
-  },
-] as const;
-
-/* -- Her journey, not the machine's. The five stages are what she does and
-      what she gets, in the order she meets them. Stage five returns to the
-      first, because a change she made becomes something to observe. ------- */
-const JOURNEY = [
-  {
-    name: 'See',
-    token: 'var(--measured)',
-    line: 'What has been changing, across all of it.',
-    body: 'Your cycle, your sleep, your symptoms and your labs, read against your own history rather than a population average.',
-  },
-  {
-    name: 'Understand',
-    token: 'var(--change)',
-    line: 'What may be behind it.',
-    body: 'Your own information, the context you add, and published evidence, read together to make sense of what may be happening. Ciatta states what it found and what it cannot establish.',
-  },
-  {
-    name: 'Prepare',
-    token: 'var(--reported)',
-    line: 'What to bring to your clinician.',
-    body: 'The findings, your observations and your questions, gathered before the appointment rather than recalled during it.',
-  },
-  {
-    name: 'Decide',
-    token: 'var(--evidence)',
-    line: 'What may be worth exploring next.',
-    body: 'Options and questions grounded in your own evidence, with the uncertainty stated. Ciatta does not diagnose, prescribe, or stand in for your clinician.',
-  },
-  {
-    name: 'Learn',
-    token: 'var(--measured)',
-    line: 'What happened after.',
-    body: 'You try something, or decide to watch. Ciatta observes the period that follows and carries what it learns into everything it shows you next.',
-  },
-] as const;
-
 /* -- Evidence. Four kinds of provenance only, and what Ciatta worked out is
       listed last and named as Ciatta's. ------------------------------------ */
 const CHAIN = [
   { what: 'Cycle length, 12 months', src: 'Measured · Oura', family: 'measured' },
-  { what: 'Two entries in March', src: 'You told Ciatta', family: 'reported' },
+  { what: 'Three entries, March and May', src: 'You told Ciatta', family: 'reported' },
   { what: 'Sleep, nightly', src: 'Measured · Oura', family: 'measured' },
   { what: 'Range for ages 25 to 34', src: 'Published 2019', family: 'evidence' },
   { what: 'Three months missing', src: 'Not in the record', family: 'uncertainty' },
@@ -154,6 +91,21 @@ const PREPARED = [
   ['What you noticed', 'A stressful stretch in March, and sleep that stopped running through.'],
   ['What seems connected', 'The two shortest cycles each followed a lowest-sleep week.'],
   ['What you want to ask', 'Is this worth investigating now, or worth watching another two cycles?'],
+] as const;
+
+/* -- What "worth exploring" actually means, so it is not a vague promise. -- */
+/* -- The loop, shown on the story the screens already told. --------------- */
+const AFTER: [string, string, string][] = [
+  ['Ferritin', '34 ng/mL, 2 Feb', '41 ng/mL, 12 Jun'],
+  ['Cycle length, average', '28.5 days', '27.0 days'],
+  ['Sleep, weekly average', '6h 51m', '6h 58m'],
+  ['Low energy', 'not reported', '20 May to 5 Jun'],
+];
+
+const EXPLORE = [
+  ['What held', 'A change that stayed once more information arrived, rather than a single odd month.'],
+  ['What repeated', 'Something that has now happened more than once, at a time Ciatta can name.'],
+  ['What is still thin', 'A pattern with too little behind it to call. Ciatta says so rather than guessing.'],
 ] as const;
 
 const REFUSALS = [
@@ -243,71 +195,6 @@ function WaitlistForm({ id, source }: { id: string; source: string }) {
           : 'Private testing. One email when it opens.'}
       </p>
     </form>
-  );
-}
-
-/**
- * Cycle length over twelve months on a real time axis.
- *
- * Distance on screen is distance in time. Spacing irregular observations
- * evenly manufactures a smooth history out of a patchy one, so the three
- * missing months are drawn as a dashed span sized to the real gap.
- */
-function CycleChart() {
-  const points = [
-    { m: 0, d: 29 }, { m: 1, d: 29 },
-    { m: 5, d: 28 }, { m: 6, d: 28 }, { m: 7, d: 27 },
-    { m: 8, d: 27 }, { m: 9, d: 26 }, { m: 10, d: 26 }, { m: 11, d: 26 },
-  ];
-  const W = 360, H = 150;
-  const padL = 30, padR = 12, padT = 16, padB = 26;
-  const x = (m: number) => padL + (m / 11) * (W - padL - padR);
-  const y = (d: number) => padT + ((30 - d) / 5) * (H - padT - padB);
-  const before = points.filter((p) => p.m <= 1);
-  const after = points.filter((p) => p.m >= 5);
-  const line = (ps: typeof points) => ps.map((p, i) => `${i ? 'L' : 'M'} ${x(p.m)} ${y(p.d)}`).join(' ');
-
-  return (
-    <div className="surface chart">
-      <svg
-        className="chart-frame"
-        viewBox={`0 0 ${W} ${H}`}
-        role="img"
-        aria-label="Cycle length over twelve months, falling from 29 days to 26 days. Three months in the middle are missing from the record and are drawn as a gap."
-      >
-        {[26, 28, 30].map((d) => (
-          <g key={d}>
-            <line x1={padL} y1={y(d)} x2={W - padR} y2={y(d)} stroke="var(--rule)" strokeWidth="1" />
-            <text x={0} y={y(d) + 4} fill="var(--meta-ink)" fontSize="11" fontFamily="var(--font)">{d}d</text>
-          </g>
-        ))}
-        <line
-          x1={x(1)} y1={y(29)} x2={x(5)} y2={y(28)}
-          stroke="var(--uncertainty)" strokeWidth="2" strokeDasharray="4 4"
-        />
-        <text
-          x={(x(1) + x(5)) / 2} y={y(29) - 8}
-          fill="var(--meta-ink)" fontSize="11" fontFamily="var(--font)"
-          textAnchor="middle" letterSpacing="1"
-        >
-          3 MONTHS MISSING
-        </text>
-        <path d={line(before)} fill="none" stroke="var(--measured)" strokeWidth="2" />
-        <path d={line(after)} fill="none" stroke="var(--measured)" strokeWidth="2" />
-        {points.map((p) => (
-          <circle key={p.m} cx={x(p.m)} cy={y(p.d)} r="2.5" fill="var(--measured)" />
-        ))}
-        <text x={padL} y={H - 6} fill="var(--meta-ink)" fontSize="11" fontFamily="var(--font)">JAN</text>
-        <text x={W - padR} y={H - 6} fill="var(--meta-ink)" fontSize="11" fontFamily="var(--font)" textAnchor="end">DEC</text>
-      </svg>
-      <div className="chart-legend">
-        <span className="pill is-measured">Measured</span>
-        <span className="pill is-uncertainty">Not in the record</span>
-      </div>
-      <p className="chart-note">
-        Three months are missing from the record. Ciatta does not guess to fill the gap.
-      </p>
-    </div>
   );
 }
 
@@ -405,83 +292,91 @@ export default function App() {
           </div>
         </section>
 
-        {/* ---------------------------- 02 · THE JOURNEY -------------------- */}
-        <section className="section" aria-labelledby="journey-heading">
+        {/* -------------------- 02 · KNOW WHAT TO EXPLORE ------------------ */}
+        <section className="section" aria-labelledby="explore-heading">
           <div className="shell">
             <div className="section-head">
               <span className="section-num">02</span>
-              <h2 id="journey-heading">See, understand, prepare, decide, learn</h2>
-              <span className="aside">Returns to See</span>
+              <h2 id="explore-heading">Know what may be worth exploring</h2>
             </div>
             <div className="section-intro">
               <p className="statement">
-                Seeing the pattern is where it starts, not where it stops.
+                A pattern is only useful if you know what to do with it.
+              </p>
+              <p>
+                Ciatta says which changes held, which repeated, and which are still too
+                thin to call. Where something is worth watching, it says so plainly, with
+                the uncertainty attached and the reason it thinks so.
               </p>
             </div>
 
-            <ol className="journey">
-              {JOURNEY.map((st, i) => (
-                <li className="surface journey-step" key={st.name}>
-                  <span className="journey-mark" style={{ background: st.token }} aria-hidden="true" />
-                  <span className="journey-n">{String(i + 1).padStart(2, '0')}</span>
-                  <div className="journey-body">
-                    <h3 className="journey-name">{st.name}</h3>
-                    <p className="journey-line">{st.line}</p>
-                    <p>{st.body}</p>
-                  </div>
-                </li>
+            <div className="surface-grid cols-3">
+              {EXPLORE.map(([k, v]) => (
+                <div className="surface value-card" key={k}>
+                  <h3 className="title">{k}</h3>
+                  <p>{v}</p>
+                </div>
               ))}
-            </ol>
-            <p className="loop-return">
-              <b>&#8634;</b>
-              <span>
-                Then it begins again, already knowing what happened last time. That is
-                what makes the second visit different from the first.
-              </span>
+            </div>
+
+            <p className="note">
+              Ciatta does not diagnose, prescribe or tell you what to do. It narrows
+              what is worth your attention, and leaves the choice with you.
             </p>
           </div>
         </section>
 
-        {/* ------------------------- 03 · UNDERSTAND ------------------------ */}
-        <section className="section" aria-labelledby="moment-heading">
+        {/* ------------------------- 03 · WHAT HAPPENS NEXT ---------------- */}
+        <section className="section" aria-labelledby="learn-heading">
           <div className="shell">
             <div className="section-head">
               <span className="section-num">03</span>
-              <h2 id="moment-heading">Understand what may be happening</h2>
-              <span className="aside">A worked example</span>
+              <h2 id="learn-heading">See what happens after you change something</h2>
+              <span className="aside">The part that compounds</span>
             </div>
             <div className="section-intro">
+              <p className="statement">
+                Most health apps forget. That is why they never get more useful.
+              </p>
               <p>
-                It starts with something you noticed. Ciatta reads that against your own
-                history and against published evidence, then says what it found, what it
-                cannot establish, and what may be worth raising.
+                You try something, or decide to just watch. Ciatta records what you tried
+                and when, then shows you the period after it against the period before,
+                named plainly: improved, worsened, unchanged, persisted, or not enough
+                evidence yet.
+              </p>
+              <p>
+                Every pass leaves it knowing something it did not know before, so the
+                second visit is different from the first, and the tenth is different
+                again.
               </p>
             </div>
 
-            <div className="finding">
-              <div className="surface is-shell is-lifted finding-main">
-                <span className="pill is-measured finding-register">
-                  <i aria-hidden="true" />
-                  Finding
-                </span>
-                <p className="statement finding-sentence">
-                  Your two shortest cycles followed your two lowest-sleep weeks.
-                </p>
-                <dl className="finding-parts">
-                  {MOMENT.map((m) => (
-                    <div className="nested finding-part" key={m.q}>
-                      <dt>{m.q}</dt>
-                      <dd>{m.a}</dd>
-                    </div>
-                  ))}
-                </dl>
-                <p className="chart-note">
-                  Things that move together are not one causing the other. Ciatta has not
-                  established a mechanism here, and it says so.
-                </p>
-              </div>
-              <CycleChart />
+            {/* The same story the screens tell, carried one step further: what
+                the record looked like on either side of a change she made. */}
+            <div className="surface is-shell is-lifted">
+              <span className="eyebrow">Stopped iron &middot; 30 April</span>
+              <dl className="prepared">
+                {AFTER.map(([k, before, after]) => (
+                  <div className="nested prepared-row is-split" key={k}>
+                    <dt>{k}</dt>
+                    <dd>
+                      <span className="was">{before}</span>
+                      <span className="arrow" aria-hidden="true">&rarr;</span>
+                      <span className="now">{after}</span>
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="verdict">
+                <b>Not enough evidence yet.</b> One lab draw since the change is not
+                enough to call it. Ciatta will say so again when there are two.
+              </p>
             </div>
+
+            <p className="note">
+              Improved, worsened, unchanged, persisted, or not enough evidence yet.
+              Those are the only five things Ciatta will say about what you tried.
+            </p>
           </div>
         </section>
 

@@ -169,7 +169,7 @@ body {
 .display   { font-size: clamp(2.125rem, 6vw, 2.5rem); font-weight: 300; letter-spacing: -0.024em; line-height: 1.05; text-wrap: balance; margin: 0; }
 .statement { font-size: clamp(1.4375rem, 3.4vw, 1.625rem); font-weight: 400; letter-spacing: -0.012em; line-height: 1.28; text-wrap: balance; margin: 0; }
 .title     { font-size: 1.1875rem; font-weight: 500; letter-spacing: -0.006em; line-height: 1.35; margin: 0; }
-.iface     { font-size: 0.9375rem; font-weight: 400; line-height: 1.45; }
+
 .eyebrow   { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; line-height: 1.2; color: var(--meta-ink); }
 p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 
@@ -224,7 +224,6 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   border-radius: var(--r-nested);
   padding: var(--pad-nested);
 }
-.inset { border-radius: var(--r-inset); }
 
 /* Pills: compact controls only. Things shorter than they are wide, holding
    two or three words. Never around a paragraph. The shape adds no meaning. */
@@ -459,7 +458,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 /* The gutter is the boundary. Surfaces closer than 20 read as one surface
    with a seam. */
 .surface-grid { display: grid; gap: var(--gap-surface); }
-.cols-4 { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+
 /* Three items never leave one stranded in a row: at the two-column step the
    third spans, and at three columns it returns to its own track. */
 .cols-3 { grid-template-columns: 1fr; }
@@ -529,43 +528,22 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
    The loop — each stage is a surface on the canvas. The pivot floats.
    =========================================================================== */
 .loop { display: grid; gap: var(--gap-surface); }
-.loop-stage { display: grid; gap: var(--s3); grid-template-columns: 1fr; }
-@media (min-width: 760px) {
-  .loop-stage { grid-template-columns: 150px minmax(0, 1fr); gap: var(--s5); align-items: start; }
-}
+
 /* Asymmetry earns it: an inset-width surface is permitted when it is the
    leading finding. Not as rhythm, and not more than once per view. */
-.loop-stage.is-pivot { margin-inline-end: clamp(0px, 6vw, 72px); }
-.loop-name { display: flex; align-items: center; gap: var(--s2); }
-.loop-name .eyebrow { color: var(--ink); }
+
 /* The stage's semantic family, as a mark. Round because it is a point, not a
    surface — the ladder does not reach it. */
-.loop-mark { width: 8px; height: 8px; border-radius: 50%; flex: none; }
-.loop-body { display: flex; flex-direction: column; gap: var(--s2); min-width: 0; }
-.loop-q { font-size: 1.0625rem; font-weight: 400; color: var(--ink); }
-.loop-body p { color: var(--body-ink); font-size: 0.9375rem; line-height: 1.5; }
-.loop-return { display: flex; align-items: baseline; gap: var(--s3); padding-top: var(--s5); color: var(--meta-ink); font-size: 0.9375rem; }
-.loop-return b { color: var(--ink); font-weight: 500; }
 
 /* ===========================================================================
    The finding — the leading surface, so it takes float.lifted.
    =========================================================================== */
 .finding { display: grid; gap: var(--gap-surface); }
 @media (min-width: 900px) { .finding { grid-template-columns: minmax(0, 1fr) minmax(0, 0.86fr); } }
-.finding-main { display: flex; flex-direction: column; gap: var(--s5); min-width: 0; }
-.finding-register { align-self: flex-start; }
-.finding-sentence { color: var(--ink); }
+
 /* Nested 16 rows on the canvas tone, inside a 32 shell padded 16. */
-.finding-parts { display: grid; gap: var(--s2); margin: 0; }
-.finding-part { margin: 0; display: grid; gap: var(--s1); }
-.finding-part dt { color: var(--meta-ink); font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; }
-.finding-part dd { margin: 0; color: var(--body-ink); font-size: 0.9375rem; line-height: 1.5; }
-.finding-part dd b { color: var(--ink); font-weight: 500; }
 
 .chart { display: flex; flex-direction: column; gap: var(--s3); min-width: 0; }
-.chart-frame { width: 100%; height: auto; display: block; overflow: visible; }
-.chart-legend { display: flex; flex-wrap: wrap; gap: var(--s2); }
-.chart-note { color: var(--meta-ink); font-size: 0.875rem; }
 
 /* ===========================================================================
    Provenance — nested rows, each carrying its family's pill.
@@ -581,9 +559,6 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 /* ===========================================================================
    Statement band — Daylight, full-bleed behind one sentence. Sparingly.
    =========================================================================== */
-.band { padding-block: var(--s8); }
-.band-inner { display: flex; flex-direction: column; gap: var(--s5); }
-.band p { color: var(--body-ink); }
 
 .close-inner { display: flex; flex-direction: column; gap: var(--s5); }
 .close-lines { color: var(--body-ink); }
@@ -665,6 +640,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   --ps-measured: #789AF3;      /* Sky, dark step */
   --ps-reported: #F46EB4;      /* Rose, dark step */
   --ps-uncertain: #E4C058;     /* Mustard, dark step */
+  --ps-evidence: #F2B863;   /* Amber, dark step. Published evidence. */
   --ps-clay: #EC9658;          /* Ember, dark step. The connection. */
   --ps-w: 14rem;
   padding-block: var(--s8);
@@ -684,7 +660,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .showcase-stage { width: 100%; }
 .ps-fan {
   position: relative;
-  height: calc(var(--ps-w) * 1.62 * 874 / 402 + 1.5rem);
+  height: calc(var(--ps-w) * 1.75 * 874 / 402 + 1.5rem);
   margin-inline: auto;
 }
 .ps-slot {
@@ -697,7 +673,6 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   transition: transform 900ms cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform;
 }
-
 
 @media (prefers-reduced-motion: reduce) {
   .ps-slot { transition: none; }
@@ -763,9 +738,12 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .ps-body {
   flex: 1 1 auto; min-height: 0;
   padding: 3.4cqw 6cqw 2cqw;
-  display: flex; flex-direction: column; gap: 2.8cqw;
+  display: flex; flex-direction: column; gap: 3.2cqw;
+  justify-content: space-between;
   overflow: hidden;
 }
+
+.ps-body.is-dense { gap: 2.2cqw; }
 
 .ps-tabs {
   display: flex; gap: 1cqw; margin: 0 5cqw 1.6cqw;
@@ -782,116 +760,318 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   margin: 0 auto 1.8cqw;
 }
 
-/* --- screen content ------------------------------------------------------ */
-.ps-hero { display: flex; flex-direction: column; gap: 0.8cqw; }
-.ps-hero-n { font-size: 11cqw; font-weight: 300; line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
-.ps-hero-n i { font-style: normal; font-size: 0.5em; color: var(--ps-meta); margin-left: 0.5cqw; }
-.ps-delta { font-size: 3cqw; color: var(--ps-clay); line-height: 1.35; }
-.ps-lead { font-size: 3.1cqw; color: var(--ps-body); margin: 0; line-height: 1.4; }
-.ps-chart { width: 100%; height: auto; display: block; }
-.ps-axis-row { display: flex; justify-content: space-between; font-size: 2.5cqw; color: var(--ps-meta); }
+/* --- screen content: the app's own UI kit --------------------------------
+   Everything here is sized in cqw so a screen at 0.62 scale and one at 1.75
+   hold identical proportions. The vocabulary is shared across all seven
+   screens: control strip, section label, row, detail, provenance. ---------- */
 
-.ps-bars { display: flex; align-items: flex-end; gap: 1.1cqw; height: 20cqw; }
-.ps-bar { flex: 1; background: var(--ps-measured); opacity: 0.3; border-radius: 0.8cqw; min-height: 12%; }
-.ps-bar.is-low { opacity: 1; }
-
-.ps-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.ps-list li {
-  display: flex; justify-content: space-between; align-items: baseline;
-  font-size: 3cqw; color: var(--ps-body);
-  border-top: 1px solid var(--ps-rule); padding: 2.2cqw 0;
+/* the range control, in the same place on every measured screen */
+.ps-seg {
+  display: flex; gap: 0.6cqw; padding: 0.9cqw;
+  background: var(--ps-raised); border-radius: 999px;
 }
-.ps-list b { font-weight: 600; color: var(--ps-ink); font-variant-numeric: tabular-nums; }
-.ps-foot { font-size: 2.7cqw; line-height: 1.45; color: var(--ps-meta); margin: auto 0 0; }
+.ps-seg-i {
+  flex: 1; text-align: center; padding: 1.2cqw 0; border-radius: 999px;
+  font-size: 2.6cqw; font-weight: 500; color: var(--ps-meta);
+}
+.ps-seg-i.is-on { background: var(--ps-canvas); color: var(--ps-ink); }
 
-.ps-tracks { display: flex; flex-direction: column; gap: 2.4cqw; }
-.ps-track { display: flex; flex-direction: column; gap: 1cqw; }
-.ps-track-name { font-size: 2.8cqw; color: var(--ps-body); }
+/* filter chips, where the content is kinds rather than a period */
+.ps-chips { display: flex; gap: 1.4cqw; flex-wrap: wrap; }
+.ps-chip {
+  padding: 1.2cqw 2.6cqw; border-radius: 999px;
+  border: 1px solid var(--ps-rule); font-size: 2.5cqw; color: var(--ps-body);
+}
+.ps-chip.is-on { background: var(--ps-ink); border-color: transparent; color: var(--ps-canvas); font-weight: 500; }
+
+/* section label, with a right-hand qualifier that says how much there is */
+.ps-lab {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 2.3cqw; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ps-meta);
+}
+.ps-lab-q { font-weight: 400; letter-spacing: 0.04em; text-transform: none; }
+
+/* the big number, and what it is measured against */
+.ps-figure { display: flex; flex-direction: column; gap: 0.8cqw; }
+.ps-fig-k { font-size: 2.6cqw; color: var(--ps-meta); }
+.ps-fig-n {
+  font-size: 11cqw; font-weight: 300; line-height: 1;
+  letter-spacing: -0.03em; font-variant-numeric: tabular-nums;
+}
+.ps-fig-n.is-sm { font-size: 7.4cqw; }
+.ps-fig-n i { font-style: normal; font-size: 0.42em; color: var(--ps-meta); margin-left: 0.6cqw; }
+.ps-fig-d { font-size: 2.7cqw; line-height: 1.35; }
+.ps-fig-d.is-down { color: var(--ps-clay); }
+.ps-fig-d.is-up { color: var(--ps-measured); }
+.ps-figure.is-inline {
+  flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 3cqw;
+}
+.ps-figure.is-inline > span { display: flex; flex-direction: column; gap: 0.6cqw; }
+.ps-fig-side { align-items: flex-end; text-align: right; }
+
+/* the current-cycle card: the one live thing on the Cycle screen */
+.ps-now {
+  background: var(--ps-raised); border-radius: 3.2cqw; padding: 3cqw;
+  display: flex; flex-direction: column; gap: 1.8cqw;
+}
+.ps-now-head { display: flex; justify-content: space-between; align-items: baseline; }
+.ps-now-k { font-size: 2.6cqw; color: var(--ps-meta); }
+.ps-now-n { font-size: 4.4cqw; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ps-prog { height: 1.4cqw; background: rgba(247,244,238,0.12); border-radius: 999px; overflow: hidden; }
+.ps-prog span { display: block; height: 100%; background: var(--ps-measured); border-radius: 999px; }
+.ps-now-foot {
+  display: flex; justify-content: space-between;
+  font-size: 2.4cqw; color: var(--ps-meta); font-variant-numeric: tabular-nums;
+}
+
+/* the plot frame: a reference band or target line, then the columns */
+.ps-plot { position: relative; height: 28cqw; }
+.ps-band {
+  position: absolute; inset-inline: 0;
+  background: rgba(120,154,243,0.09);
+  border-top: 1px dashed rgba(120,154,243,0.30);
+}
+.ps-target {
+  position: absolute; inset-inline: 0; z-index: 1;
+  border-top: 1px dashed rgba(247,244,238,0.28);
+}
+.ps-target i {
+  position: absolute; right: 0; top: 0.6cqw;
+  font-style: normal; font-size: 2.1cqw; color: var(--ps-meta);
+  background: var(--ps-canvas); padding-left: 1cqw;
+}
+.ps-cols { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 1.2cqw; }
+.ps-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; gap: 0.6cqw; }
+.ps-col-bar { width: 100%; background: var(--ps-measured); opacity: 0.42; border-radius: 0.8cqw 0.8cqw 0 0; }
+.ps-col-n { font-size: 2.2cqw; font-weight: 600; color: var(--ps-clay); font-variant-numeric: tabular-nums; }
+.ps-col.is-short .ps-col-bar,
+.ps-col.is-low .ps-col-bar { background: var(--ps-clay); opacity: 1; }
+.ps-col.is-short .ps-col-n { color: var(--ps-clay); font-weight: 600; }
+
+.ps-axis {
+  display: flex; justify-content: space-between;
+  font-size: 2.3cqw; color: var(--ps-meta);
+  border-top: 1px solid var(--ps-rule); padding-top: 1.2cqw;
+}
+
+/* lanes: a shared timeline that several things are drawn against */
+.ps-lanes { display: flex; flex-direction: column; gap: 2cqw; }
+.ps-lane { display: flex; flex-direction: column; gap: 0.9cqw; }
+.ps-lane-k { font-size: 2.5cqw; color: var(--ps-body); }
+.ps-lane.is-ref .ps-lane-k { color: var(--ps-meta); }
 .ps-rail { position: relative; height: 1.9cqw; background: var(--ps-raised); border-radius: 999px; }
 .ps-span { position: absolute; inset-block: 0; border-radius: 999px; }
-.ps-span.is-reported { background: var(--ps-reported); }
-.ps-span.is-measured { background: var(--ps-measured); }
-
-.ps-events { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2.6cqw; }
-.ps-events li { display: grid; grid-template-columns: 2cqw 11cqw 1fr; gap: 2cqw; align-items: baseline; font-size: 2.9cqw; }
-.ps-dot { width: 1.8cqw; height: 1.8cqw; border-radius: 50%; background: var(--ps-reported); align-self: center; }
-.ps-events li.is-historical .ps-dot { background: transparent; border: 1px solid var(--ps-meta); }
-.ps-ev-date { color: var(--ps-meta); font-variant-numeric: tabular-nums; }
-.ps-ev-body { display: flex; flex-direction: column; gap: 0.4cqw; }
-.ps-ev-body b { font-weight: 600; }
-.ps-ev-body span { color: var(--ps-body); }
-
-.ps-panel {
-  background: var(--ps-raised); border-radius: 3.2cqw; padding: 3cqw;
-  display: flex; flex-direction: column; gap: 0.7cqw;
+.ps-span.is-mild { background: rgba(244,110,180,0.35); }
+.ps-span.is-mod  { background: rgba(244,110,180,0.65); }
+.ps-span.is-sev  { background: var(--ps-reported); }
+.ps-span.is-on   { background: var(--ps-measured); }
+.ps-span.is-past { background: rgba(247,244,238,0.22); }
+.ps-tick {
+  position: absolute; top: -0.7cqw; bottom: -0.7cqw; width: 0.8cqw;
+  border-radius: 999px; background: var(--ps-meta);
 }
-.ps-panel-k { font-size: 2.5cqw; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ps-meta); }
-.ps-panel-v { font-size: 3.4cqw; font-weight: 600; }
+.ps-legend { display: flex; gap: 3.4cqw; font-size: 2.2cqw; color: var(--ps-meta); }
+.ps-legend span { display: inline-flex; align-items: center; gap: 1cqw; }
+.ps-legend i { width: 2.4cqw; height: 1.2cqw; border-radius: 999px; }
+.ps-legend i.is-mild { background: rgba(244,110,180,0.35); }
+.ps-legend i.is-mod  { background: rgba(244,110,180,0.65); }
+.ps-legend i.is-sev  { background: var(--ps-reported); }
 
-.ps-quote {
-  margin: 0; padding-left: 3cqw; border-left: 0.6cqw solid var(--ps-reported);
-  font-size: 3.2cqw; line-height: 1.4;
-  display: flex; flex-direction: column; gap: 0.7cqw;
+/* rows: the one tappable thing. The open row shows its detail in place. */
+.ps-rows { display: flex; flex-direction: column; }
+.ps-rows.is-tight .ps-row-line { padding-block: 1cqw; }
+.ps-row { border-top: 1px solid var(--ps-rule); }
+.ps-row-line { display: flex; align-items: center; gap: 2cqw; padding-block: 2.1cqw; }
+.ps-row-k { flex: 1; display: flex; flex-direction: column; gap: 0.3cqw; min-width: 0; }
+.ps-row-k b { font-size: 2.9cqw; font-weight: 500; color: var(--ps-ink); }
+.ps-row-k i {
+  font-style: normal; font-size: 2.3cqw; color: var(--ps-meta);
+  font-variant-numeric: tabular-nums;
 }
-.ps-quote cite { font-style: normal; font-size: 2.6cqw; color: var(--ps-meta); }
-
-.ps-action {
-  margin-top: auto; text-align: center; border-radius: 999px;
-  padding: 2.6cqw; font-size: 3cqw; font-weight: 600;
-  border: 1px solid var(--ps-rule); color: var(--ps-ink);
+.ps-row-v {
+  font-size: 2.9cqw; font-weight: 600; color: var(--ps-ink);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
 }
-.ps-action.is-primary { background: var(--ps-ink); color: var(--ps-canvas); border-color: transparent; margin-top: auto; }
+.ps-caret { width: 1.7cqw; height: auto; flex: none; stroke: var(--ps-meta); fill: none; }
+.ps-row.is-open { background: var(--ps-raised); border-radius: 2.4cqw; border-top-color: transparent; }
+.ps-row.is-open .ps-row-line { padding-inline: 2.6cqw; }
+.ps-row.is-open .ps-caret { transform: rotate(90deg); }
+.ps-row-detail {
+  padding: 0 2.6cqw 2.6cqw;
+  display: flex; flex-direction: column; gap: 1.8cqw;
+}
+.ps-facts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1.1cqw; }
+.ps-facts li { display: flex; justify-content: space-between; gap: 2.4cqw; font-size: 2.5cqw; }
+.ps-facts span { color: var(--ps-meta); white-space: nowrap; }
+.ps-facts b { font-weight: 500; color: var(--ps-body); text-align: right; }
 
-.ps-table { width: 100%; border-collapse: collapse; font-size: 2.9cqw; }
+/* the nightly breakdown inside an open sleep week */
+.ps-nights { display: flex; align-items: flex-end; gap: 1.2cqw; height: 14cqw; }
+.ps-nights span {
+  flex: 1; display: flex; flex-direction: column; justify-content: flex-end;
+  align-items: center; gap: 0.7cqw; height: 100%;
+  font-size: 2cqw; color: var(--ps-meta);
+}
+.ps-nights i { width: 100%; background: var(--ps-measured); opacity: 0.5; border-radius: 0.6cqw 0.6cqw 0 0; }
+
+/* two secondary figures side by side, subordinate to the headline one */
+.ps-duo { display: flex; gap: 2.4cqw; }
+.ps-duo span {
+  flex: 1; display: flex; flex-direction: column; gap: 0.5cqw;
+  background: var(--ps-raised); border-radius: 2.4cqw; padding: 2.2cqw;
+  font-size: 2.3cqw; color: var(--ps-meta);
+}
+.ps-duo b {
+  font-size: 4cqw; font-weight: 500; color: var(--ps-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* cards, for things she is currently taking */
+.ps-cards { display: flex; flex-direction: column; gap: 1.6cqw; }
+.ps-card {
+  background: var(--ps-raised); border-radius: 2.8cqw; padding: 2.6cqw;
+  display: flex; flex-direction: column; gap: 0.9cqw;
+}
+.ps-card-t { display: flex; align-items: baseline; gap: 1.6cqw; }
+.ps-card-t b { font-size: 3.2cqw; font-weight: 600; }
+.ps-card-t span { font-size: 2.6cqw; color: var(--ps-body); font-variant-numeric: tabular-nums; }
+.ps-card-m {
+  display: flex; justify-content: space-between;
+  font-size: 2.4cqw; color: var(--ps-meta); font-variant-numeric: tabular-nums;
+}
+
+/* her own entries: no chart, no units, larger type, Rose throughout */
+.ps-entries { display: flex; flex-direction: column; gap: 1.6cqw; }
+.ps-month {
+  font-size: 2.3cqw; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ps-reported); margin-top: 1cqw;
+}
+.ps-entry {
+  margin: 0; padding: 2.6cqw;
+  background: rgba(244,110,180,0.10); border-radius: 2.8cqw;
+  display: flex; flex-direction: column; gap: 1.2cqw;
+}
+.ps-entry p { margin: 0; font-size: 3.5cqw; line-height: 1.34; color: var(--ps-ink); }
+.ps-entry footer {
+  display: flex; justify-content: space-between; align-items: center; gap: 2cqw;
+  font-size: 2.3cqw; color: var(--ps-reported); font-variant-numeric: tabular-nums;
+}
+.ps-tag-s {
+  padding: 0.7cqw 1.8cqw; border-radius: 999px;
+  background: rgba(244,110,180,0.16); font-size: 2.1cqw;
+}
+.ps-entry.is-linked { background: rgba(244,110,180,0.16); }
+
+/* results: value, unit, reference range, and whether it sits inside it */
+.ps-table { width: 100%; border-collapse: collapse; font-size: 2.7cqw; }
 .ps-table tr { border-top: 1px solid var(--ps-rule); }
-.ps-table th { text-align: left; font-weight: 500; padding: 2.2cqw 1cqw 2.2cqw 0; }
-.ps-val { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.ps-src { color: var(--ps-meta); text-align: right; white-space: nowrap; }
-.ps-gap { display: flex; align-items: center; gap: 2cqw; font-size: 2.7cqw; color: var(--ps-uncertain); }
+.ps-table th { text-align: left; font-weight: 500; padding: 1.9cqw 1cqw 1.9cqw 0; }
+.ps-table td { padding: 1.9cqw 0; }
+.ps-v { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ps-r { color: var(--ps-meta); text-align: right; padding-right: 1.6cqw !important; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ps-table td:last-child { text-align: right; width: 1%; }
+.ps-pill {
+  display: inline-block; padding: 0.6cqw 1.6cqw; border-radius: 999px;
+  font-size: 2.1cqw; font-weight: 500; white-space: nowrap;
+}
+.ps-pill.is-ok { background: rgba(247,244,238,0.10); color: var(--ps-body); }
+.ps-pill.is-low { background: rgba(228,192,88,0.18); color: var(--ps-uncertain); }
+.ps-pill.is-watch { background: rgba(236,150,88,0.18); color: var(--ps-clay); }
+
+/* a result that is out of range on every draw is worth saying out loud */
+.ps-flag {
+  display: flex; align-items: center; gap: 1.8cqw;
+  background: rgba(228,192,88,0.10); border-radius: 2.2cqw;
+  padding: 1.8cqw 2.2cqw; font-size: 2.4cqw; line-height: 1.35; color: var(--ps-body);
+}
+
+/* an absence has a date too */
+.ps-gap { display: flex; align-items: center; gap: 2cqw; font-size: 2.4cqw; color: var(--ps-uncertain); }
 .ps-dash { width: 5cqw; border-top: 0.5cqw dashed var(--ps-uncertain); flex: none; }
 
-/* the anchor */
+/* actions and links */
+.ps-bar-action {
+  text-align: center; padding: 2.4cqw; border-radius: 999px;
+  font-size: 2.9cqw; font-weight: 500;
+  border: 1px solid var(--ps-rule); color: var(--ps-ink);
+}
+.ps-bar-action.is-primary { background: var(--ps-ink); color: var(--ps-canvas); border-color: transparent; }
+.ps-link { font-size: 2.5cqw; color: var(--ps-measured); }
+.ps-link.is-centred { text-align: center; }
+
+/* every screen ends by saying where its numbers came from */
+.ps-prov {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 1.4cqw;
+  font-size: 2.4cqw; line-height: 1.4; color: var(--ps-meta);
+}
+.ps-src {
+  padding: 0.6cqw 1.6cqw; border-radius: 999px;
+  font-size: 2.1cqw; font-weight: 500; white-space: nowrap;
+}
+.ps-src.is-measured { background: rgba(120,154,243,0.18); color: var(--ps-measured); }
+.ps-src.is-reported { background: rgba(244,110,180,0.18); color: var(--ps-reported); }
+.ps-src.is-lab { background: rgba(242,184,99,0.18); color: var(--ps-evidence); }
+.ps-src.is-worked { background: rgba(236,150,88,0.18); color: var(--ps-clay); }
+
+/* --- the insight screen -------------------------------------------------- */
+.ps-stack { display: flex; flex-direction: column; gap: 1.4cqw; }
+.ps-stack.is-actions { gap: 2cqw; }
+.ps-ins-head { display: flex; justify-content: space-between; align-items: center; gap: 2cqw; }
 .ps-tag {
-  align-self: flex-start; font-size: 2.4cqw; font-weight: 600;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--ps-clay); background: rgba(236,150,88,0.16);
-  padding: 1cqw 2.4cqw; border-radius: 999px;
+  padding: 0.9cqw 2.2cqw; border-radius: 999px; align-self: flex-start;
+  background: rgba(236,150,88,0.16); color: var(--ps-clay);
+  font-size: 2.2cqw; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
 }
 .ps-finding {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-weight: 400; font-size: 6.2cqw; line-height: 1.18;
-  letter-spacing: -0.005em; margin: 0;
+  margin: 0;
+  font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  font-weight: 400; font-size: 5.1cqw; line-height: 1.18;
+  letter-spacing: -0.01em; color: var(--ps-ink);
 }
-.ps-parts { margin: 0; display: flex; flex-direction: column; }
-.ps-parts > div { display: flex; flex-direction: column; gap: 0.5cqw; border-top: 1px solid var(--ps-rule); padding: 2.2cqw 0; }
-.ps-parts dt { font-size: 2.3cqw; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ps-meta); }
-.ps-parts dd { margin: 0; font-size: 2.9cqw; line-height: 1.4; color: var(--ps-body); }
+.ps-conf {
+  display: flex; align-items: center; gap: 1.4cqw;
+  font-size: 2.3cqw; color: var(--ps-meta); font-variant-numeric: tabular-nums;
+}
 .ps-pair {
-  background: var(--ps-raised); border-radius: 3.2cqw; padding: 3cqw;
-  display: flex; flex-direction: column; gap: 1.6cqw;
+  background: var(--ps-raised); border-radius: 3.2cqw; padding: 2.6cqw;
+  display: flex; flex-direction: column; gap: 1.3cqw;
 }
-.ps-pair-head { display: flex; gap: 4cqw; font-size: 2.5cqw; color: var(--ps-body); }
+.ps-pair-head { display: flex; gap: 4cqw; font-size: 2.4cqw; color: var(--ps-body); }
 .ps-pair-head span { display: inline-flex; align-items: center; gap: 1.2cqw; }
 .ps-key { width: 3cqw; height: 0.6cqw; border-radius: 999px; flex: none; }
 .ps-key.is-measured { background: var(--ps-measured); }
 .ps-key.is-sleep { background: var(--ps-ink); opacity: 0.55; }
 .ps-pair-chart { width: 100%; height: auto; display: block; }
-.ps-pair-t { fill: var(--ps-clay); font-size: 5px; font-weight: 600; font-family: 'Urbanist', sans-serif; }
-.ps-pair-note { font-size: 2.4cqw; color: var(--ps-meta); line-height: 1.35; }
-.ps-hedge { font-size: 2.5cqw; line-height: 1.4; color: var(--ps-meta); margin: 0; }
-.ps-chips { display: flex; flex-wrap: wrap; gap: 1.2cqw; }
-.ps-chip { font-size: 2.3cqw; padding: 0.9cqw 2cqw; border-radius: 999px; white-space: nowrap; }
-.ps-chip.is-measured { background: rgba(120,154,243,0.18); color: var(--ps-measured); }
-.ps-chip.is-reported { background: rgba(244,110,180,0.18); color: var(--ps-reported); }
-.ps-chip.is-uncertain { background: rgba(228,192,88,0.18); color: var(--ps-uncertain); }
+.ps-pair-note { font-size: 2.3cqw; color: var(--ps-meta); line-height: 1.35; }
+
+/* published evidence is visibly not her data */
+.ps-ev {
+  background: rgba(242,184,99,0.09); border-radius: 2.4cqw;
+  padding: 2.2cqw 2.6cqw; display: flex; flex-direction: column; gap: 0.6cqw;
+}
+.ps-ev-k {
+  font-size: 2.2cqw; font-weight: 600; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--ps-evidence);
+}
+.ps-ev p { margin: 0; font-size: 2.7cqw; line-height: 1.4; color: var(--ps-body); }
+.ps-cite { font-size: 2.2cqw; color: var(--ps-meta); font-variant-numeric: tabular-nums; }
+.ps-open { margin: 0; font-size: 2.7cqw; line-height: 1.45; color: var(--ps-body); }
+.ps-open span {
+  font-size: 2.2cqw; font-weight: 600; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--ps-meta); margin-right: 1.2cqw;
+}
+.ps-hedge { font-size: 2.3cqw; line-height: 1.4; color: var(--ps-meta); margin: 0; }
 
 /* --- responsive ---------------------------------------------------------- */
-@media (max-width: 1240px) { .showcase { --ps-w: 11.5rem; } }
-@media (max-width: 940px)  { .showcase { --ps-w: 9.5rem; } }
+@media (max-width: 1240px) { .showcase { --ps-w: 11.75rem; } }
+@media (max-width: 940px)  { .showcase { --ps-w: 9.75rem; } }
 @media (max-width: 720px) {
   /* A fan cannot survive a phone, so it becomes a set of screens you move
-     through. The Finding leads, since it is the payoff. */
-  .showcase { --ps-w: 15rem; overflow: visible; }
+     through. The insight leads, since it is the payoff. These screens are
+     dense, so the card takes as much of the viewport as it can and still
+     show the edge of the next one. */
+  .showcase { --ps-w: min(19rem, 74vw); overflow: visible; }
   .ps-fan {
     display: grid; grid-auto-flow: column; grid-auto-columns: max-content;
     gap: var(--s4); overflow-x: auto; scroll-snap-type: x mandatory;
@@ -902,38 +1082,19 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   .ps-fan { position: static; height: auto; }
   .ps-slot { position: static; transform: none !important; transition: none; scroll-snap-align: center; }
   .ps-slot.is-centre { order: -1; }
-  .ps-phone.is-anchor { width: calc(var(--ps-w) * 1.06); }
+  .ps-slot.is-centre .ps-phone { width: calc(var(--ps-w) * 1.12); }
 }
-@media (prefers-reduced-transparency: reduce) { .ps-bar { opacity: 1; } }
-@media (prefers-contrast: more) { .showcase { --ps-meta: #B4B7BA; --ps-body: #C9CCCF; } .ps-bar { opacity: 0.55; } }
+@media (prefers-reduced-transparency: reduce) { .ps-col-bar { opacity: 1; } }
+@media (prefers-contrast: more) {
+  .showcase { --ps-meta: #B4B7BA; --ps-body: #C9CCCF; }
+  .ps-col-bar { opacity: 0.7; }
+  .ps-slot:not(.is-centre) .ps-phone { filter: none; }
+}
 
 /* ===========================================================================
    The journey — five stages, hers. Each is a surface on the canvas, so the
    sequence reads as steps she takes rather than a machine's pipeline.
    =========================================================================== */
-.journey { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--gap-surface); }
-.journey-step {
-  display: grid;
-  grid-template-columns: auto auto 1fr;
-  gap: var(--s3) var(--s4);
-  align-items: start;
-}
-@media (min-width: 760px) {
-  .journey-step { grid-template-columns: auto 3rem 1fr; gap: var(--s5); align-items: center; }
-}
-.journey-mark { width: 0.625rem; height: 0.625rem; border-radius: 50%; flex: none; margin-top: 0.45rem; }
-@media (min-width: 760px) { .journey-mark { margin-top: 0; } }
-.journey-n {
-  font-size: 1.375rem; font-weight: 200; line-height: 1;
-  color: var(--meta-ink); font-variant-numeric: tabular-nums;
-}
-.journey-body { display: flex; flex-direction: column; gap: var(--s2); min-width: 0; }
-.journey-name {
-  margin: 0; font-size: 1.1875rem; font-weight: 500;
-  letter-spacing: -0.006em; color: var(--ink);
-}
-.journey-line { color: var(--ink); font-size: 1.0625rem; }
-.journey-body p:last-child { color: var(--body-ink); font-size: 0.9375rem; line-height: 1.5; }
 
 /* --- what she walks in with ---------------------------------------------- */
 .prepared { margin: var(--s4) 0 0; display: grid; gap: var(--s2); }
@@ -953,21 +1114,6 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .showcase-stage { touch-action: pan-y; cursor: grab; }
 .showcase-stage:active { cursor: grabbing; }
 
-.showcase-controls { margin-top: var(--s6); }
-.ps-dots { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s2); }
-.ps-dot-btn {
-  appearance: none; cursor: pointer; background: transparent;
-  border: 1px solid var(--rule); border-radius: var(--r-pill);
-  padding: 0 var(--s4); min-height: 2.75rem;
-  display: inline-flex; align-items: center; gap: var(--s2);
-  font: inherit; font-size: 0.8125rem; color: var(--body-ink);
-  transition: color var(--instant) var(--ease-caused),
-              border-color var(--instant) var(--ease-caused);
-}
-.ps-dot-btn:hover { color: var(--ink); border-color: var(--meta-ink); }
-.ps-dot-mark { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: var(--rule); flex: none; }
-.ps-dot-btn.is-on { color: var(--on-ink); background: var(--ink); border-color: var(--ink); }
-.ps-dot-btn.is-on .ps-dot-mark { background: var(--change); }
 @media (prefers-reduced-motion: reduce) { .ps-slot.is-rejoining { animation: none; } }
 
 /* --- the section's own narrative: ingredients, arrow, progression --------- */
@@ -1008,16 +1154,6 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .ps-progression li:last-child { border-top-color: var(--change); color: var(--ink); }
 
 /* the guidance block on the centre screen */
-.ps-next {
-  background: rgba(236,150,88,0.12);
-  border-radius: 3.2cqw; padding: 3cqw;
-  display: flex; flex-direction: column; gap: 0.8cqw;
-}
-.ps-next-k {
-  font-size: 2.3cqw; font-weight: 600; letter-spacing: 0.09em;
-  text-transform: uppercase; color: var(--ps-clay);
-}
-.ps-next-v { font-size: 2.9cqw; line-height: 1.4; color: var(--ps-ink); }
 
 @media (prefers-reduced-motion: reduce) { .ps-slot:not(.is-centre) .ps-phone { transition: none; } }
 
@@ -1025,3 +1161,18 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   content: ''; width: 0.4rem; height: 0.4rem; border-radius: 50%;
   background: var(--change); margin-right: var(--s2); flex: none;
 }
+
+/* --- the learning loop's before/after rows -------------------------------- */
+.prepared-row.is-split dd {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s2);
+  font-variant-numeric: tabular-nums;
+}
+.prepared-row.is-split .was,
+.prepared-row.is-split .arrow { color: var(--meta-ink); }
+.prepared-row.is-split .now { color: var(--ink); font-weight: 500; }
+.verdict {
+  margin: var(--s5) 0 0; padding-top: var(--s4);
+  border-top: 1px solid var(--rule);
+  font-size: 0.9375rem; line-height: 1.55; color: var(--body-ink);
+}
+.verdict b { font-weight: 500; color: var(--ink); }
