@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Wordmark } from './components/Wordmark';
 
 /**
- * Digests — Ciatta's writing, indexed.
+ * Briefs — Ciatta's writing, indexed.
  *
  * Three kinds, and the kind is not a label on top of one undifferentiated pile:
  * they answer different questions and are written differently.
@@ -89,12 +89,20 @@ const KIND_BLURB: Record<Kind, string> = {
   Definitions: 'One term, said plainly, in about a paragraph.',
 };
 
-export default function Digests() {
+export default function Briefs() {
   const [kind, setKind] = useState<Kind | 'All'>('All');
   const [topic, setTopic] = useState<Topic | 'All'>('All');
+  const [q, setQ] = useState('');
 
+  // Search reads the title, the blurb and the topic, so "iron" finds the
+  // ferritin pieces and "labs" finds the ones filed under Results.
+  const needle = q.trim().toLowerCase();
   const shown = PIECES.filter(
-    (p) => (kind === 'All' || p.kind === kind) && (topic === 'All' || p.topic === topic),
+    (p) =>
+      (kind === 'All' || p.kind === kind) &&
+      (topic === 'All' || p.topic === topic) &&
+      (needle === '' ||
+        `${p.title} ${p.blurb} ${p.topic} ${p.kind}`.toLowerCase().includes(needle)),
   );
   // Grouped by kind, and only the groups that survived both filters get a heading.
   const groups = KINDS.map((k) => [k, shown.filter((p) => p.kind === k)] as const)
@@ -102,7 +110,7 @@ export default function Digests() {
 
   return (
     <>
-      <a className="skip" href="#digests-main">Skip to the writing</a>
+      <a className="skip" href="#briefs-main">Skip to the writing</a>
 
       <header className="header is-scrolled">
         <a href="/" className="header-brand" aria-label="Ciatta, home">
@@ -113,10 +121,10 @@ export default function Digests() {
         </div>
       </header>
 
-      <main id="digests-main">
-        <section className="section digest-head">
+      <main id="briefs-main">
+        <section className="section briefs-head">
           <div className="shell">
-            <h1 className="band-title">Digests</h1>
+            <h1 className="band-title">Briefs</h1>
             <p className="band-sub">
               What we have had to look up, written down properly. Guides for the
               long questions, comparisons for the two things that get confused,
@@ -125,9 +133,32 @@ export default function Digests() {
           </div>
         </section>
 
-        <section className="section digest-body" aria-labelledby="digest-list">
+        <section className="section briefs-body" aria-labelledby="briefs-list">
           <div className="shell">
-            <h2 id="digest-list" className="sr-only">All writing</h2>
+            <h2 id="briefs-list" className="sr-only">All writing</h2>
+
+            {/* Search sits above the chips because it is the broader net: the
+                chips narrow what search already found, not the other way round. */}
+            <form className="briefs-search" role="search" onSubmit={(e) => e.preventDefault()}>
+              <label htmlFor="briefs-q" className="sr-only">Search the briefs</label>
+              <svg viewBox="0 0 16 16" aria-hidden="true" className="briefs-search-i"
+                   fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                <circle cx="7.2" cy="7.2" r="4.8" /><path d="m11 11 3.2 3.2" />
+              </svg>
+              <input
+                id="briefs-q"
+                type="search"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search for a word, a term, or a test"
+                autoComplete="off"
+              />
+              {q !== '' && (
+                <button type="button" className="briefs-search-x" onClick={() => setQ('')}>
+                  Clear<span className="sr-only"> the search</span>
+                </button>
+              )}
+            </form>
 
             <div className="filters">
               <div className="filter-row" role="group" aria-label="Filter by kind">
@@ -156,25 +187,25 @@ export default function Digests() {
 
             <p className="filter-count" aria-live="polite">
               {shown.length} {shown.length === 1 ? 'piece' : 'pieces'}
-              {kind !== 'All' || topic !== 'All' ? ' shown' : ''}
+              {kind !== 'All' || topic !== 'All' || needle !== '' ? ' shown' : ''}
             </p>
 
             {groups.map(([k, list]) => (
-              <div className="digest-group" key={k}>
-                <div className="digest-group-head">
+              <div className="briefs-group" key={k}>
+                <div className="briefs-group-head">
                   <h3>{k}</h3>
                   <p>{KIND_BLURB[k]}</p>
                 </div>
-                <div className="digest-grid">
+                <div className="briefs-grid">
                   {list.map((p) => (
-                    <article className="digest-card" key={p.title}>
-                      <span className="digest-topic">{p.topic}</span>
+                    <article className="briefs-card" key={p.title}>
+                      <span className="briefs-topic">{p.topic}</span>
                       <h4>{p.title}</h4>
                       <p>{p.blurb}</p>
                       {/* Not a link. Nothing is written yet, and a card that
                           looks clickable and is not is worse than one that
                           says where it stands. */}
-                      <span className="digest-soon">In writing</span>
+                      <span className="briefs-soon">In writing</span>
                     </article>
                   ))}
                 </div>
@@ -182,8 +213,10 @@ export default function Digests() {
             ))}
 
             {groups.length === 0 && (
-              <p className="digest-empty">
-                Nothing under both of those yet. Try one filter at a time.
+              <p className="briefs-empty">
+                {needle
+                  ? `Nothing matches “${q.trim()}” under those filters yet.`
+                  : 'Nothing under both of those yet. Try one filter at a time.'}
               </p>
             )}
           </div>
