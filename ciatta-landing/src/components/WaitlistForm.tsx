@@ -12,7 +12,21 @@ type FormState =
   | { kind: 'done'; alreadyJoined: boolean }
   | { kind: 'error'; message: string };
 
-export function WaitlistForm({ id, source }: { id: string; source: string }) {
+export function WaitlistForm({
+  id,
+  source,
+  cta = 'Join the waitlist',
+  note = 'One email when it opens.',
+}: {
+  id: string;
+  source: string;
+  /** The button's label. It names what the page it sits on is offering, so a
+      section that leads with "Start free" says so on the button too. */
+  cta?: string;
+  /** The line under the field. Pass '' where the surrounding copy already
+      says it; the slot still appears to carry an error, and only then. */
+  note?: string;
+}) {
   const [email, setEmail] = useState('');
   const [state, setState] = useState<FormState>({ kind: 'idle' });
 
@@ -58,22 +72,22 @@ export function WaitlistForm({ id, source }: { id: string; source: string }) {
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            aria-describedby={`${id}-note`}
+            aria-describedby={note ? `${id}-note` : undefined}
           />
         </div>
         <button className="btn-primary" type="submit" disabled={state.kind === 'saving'}>
-          {state.kind === 'saving' ? 'Adding…' : 'Join the waitlist'}
+          {state.kind === 'saving' ? 'Adding…' : cta}
         </button>
       </div>
-      <p
-        id={`${id}-note`}
-        className={state.kind === 'error' ? 'waitlist-note is-error' : 'waitlist-note'}
-        role={state.kind === 'error' ? 'alert' : undefined}
-      >
-        {state.kind === 'error'
-          ? state.message
-          : 'One email when it opens.'}
-      </p>
+      {(state.kind === 'error' || note) && (
+        <p
+          id={`${id}-note`}
+          className={state.kind === 'error' ? 'waitlist-note is-error' : 'waitlist-note'}
+          role={state.kind === 'error' ? 'alert' : undefined}
+        >
+          {state.kind === 'error' ? state.message : note}
+        </p>
+      )}
     </form>
   );
 }

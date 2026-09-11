@@ -497,8 +497,8 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
    defines, and it does what the reference does, which is separate cleanly from
    a light page without needing a border.
 
-   Instrument Serif carries the Finding sentence, Urbanist carries the screen
-   UI. Page chrome stays in Jost.
+   Urbanist carries the type inside the screens, which depict the app rather
+   than the page. Everything else, here and everywhere, is Jost.
    =========================================================================== */
 .showcase {
   --ps-canvas: #18191B;        /* Graphite, the screen ground */
@@ -532,16 +532,6 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   line-height: 1.04; letter-spacing: -0.03em; color: var(--ink);
   margin: 0; max-width: 20ch; text-wrap: balance;
 }
-/* The line that closes the section, centred on the same axis as the title and
-   the fan. It is a statement now rather than a caption, so it takes the ink and
-   the weight to match: full Graphite at 500, which clears 16:1 on Paper. */
-.showcase-foot {
-  color: var(--ink); font-weight: 500;
-  font-size: clamp(1.25rem, 0.95rem + 0.9vw, 1.75rem);
-  line-height: 1.32; letter-spacing: -0.008em; text-wrap: balance;
-  margin: var(--s6) auto 0; max-width: 34ch; text-align: center;
-}
-
 /* --- the fan ------------------------------------------------------------- */
 .showcase-stage { width: 100%; }
 .ps-fan {
@@ -889,9 +879,12 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 }
 .ps-finding {
   margin: 0;
-  font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif;
-  font-weight: 400; font-size: 5.1cqw; line-height: 1.18;
-  letter-spacing: -0.01em; color: var(--ps-ink);
+  /* Jost, like everything else. It sets narrower and lighter than the serif
+     this used to be, so it takes Medium and tighter tracking to keep the
+     presence the sentence had. */
+  font-family: var(--font);
+  font-weight: 500; font-size: 5.1cqw; line-height: 1.14;
+  letter-spacing: -0.025em; color: var(--ps-ink);
 }
 .ps-conf {
   display: flex; align-items: center; gap: 1.4cqw;
@@ -1261,77 +1254,529 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 }
 
 /* ===========================================================================
-   Member — the page "Become a member" goes to. One decision, so the layout
-   gives it one column and puts everything else beside it rather than above it.
+   Member — the page "Become a member" goes to.
+
+   Composed after whoop.com/membership: film, then the membership, then what
+   it promises, then "Start free, choose later", then the questions. WHOOP's
+   rhythm on Ciatta's grounds. The one borrowed surface detail is the button —
+   a tracked, uppercase pill — which is the thing that actually makes a page
+   read as WHOOP's, and it is the only place this page raises its voice.
    =========================================================================== */
-.member { display: grid; grid-template-columns: 1fr; min-height: 100vh; }
-@media (min-width: 960px) { .member { grid-template-columns: 1fr 1fr; } }
+.member { display: block; background: var(--canvas); }
 
-/* the film is decoration on this page, so it is hidden below the split */
-.member-film { display: none; position: relative; overflow: hidden; background: #2E2A24; }
-@media (min-width: 960px) {
-  .member-film { display: block; position: sticky; top: 0; height: 100vh; }
+.m-wrap {
+  width: 100%; max-width: var(--measure); margin-inline: auto;
+  padding-inline: var(--gutter);
 }
-.member-film img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.member-film-scrim {
+.m-wrap.is-narrow { max-width: 52rem; }
+
+/* the pill. Tracked capitals at 0.8125rem sit at 13px, so it takes Semibold
+   and the 3:1 floor never applies — Graphite on Paper is 15.9:1 either way. */
+.m-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: var(--control-h); padding: 0 var(--s6);
+  border-radius: var(--r-pill); border: 0;
+  background: var(--ink); color: var(--on-ink);
+  font-size: 0.8125rem; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  text-decoration: none; cursor: pointer;
+  transition: opacity var(--instant) var(--ease-caused);
+}
+.m-btn:hover { opacity: 0.88; color: var(--on-ink); }
+.m-btn:active { opacity: 0.78; }
+.m-btn.is-light { background: #F7F4EE; color: #18191B; }
+.m-btn.is-light:hover { opacity: 0.92; color: #18191B; }
+.m-btn:focus-visible { outline: var(--strong) solid currentColor; outline-offset: 3px; }
+
+/* --- the bar over the film ---------------------------------------------- */
+.m-top {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+  height: var(--header-h);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s4); padding-inline: var(--gutter);
+  color: #F7F4EE;
+}
+/* No underline on the mark — it is the identity, not a link in a sentence.
+   The clear-space padding it already carries becomes the 44x44 hit region,
+   the same way .header-brand does it on the home page. */
+.m-mark {
+  color: #F7F4EE; display: inline-flex; align-items: center;
+  text-decoration: none; border-radius: var(--r-control);
+  min-height: 2.75rem; padding-inline: 0.72em; margin-inline: -0.72em;
+}
+.m-mark .wordmark { color: #F7F4EE; }
+.m-top-link {
+  display: inline-flex; align-items: center; min-height: 44px;
+  padding-inline: var(--s2); margin-inline: calc(var(--s2) * -1);
+  color: #F7F4EE; font-size: 0.9375rem; font-weight: 500;
+  text-underline-offset: 0.28em;
+}
+.m-top-link:hover { color: #F7F4EE; }
+
+/* --- the film ------------------------------------------------------------ */
+.m-hero {
+  position: relative; isolation: isolate; overflow: hidden;
+  display: flex; align-items: flex-end;
+  min-height: clamp(560px, 84vh, 880px);
+  padding-block: calc(var(--header-h) + var(--section-y)) var(--s7);
+}
+.m-hero-film { position: absolute; inset: 0; z-index: -1; }
+.m-hero-film video,
+.m-hero-film img {
+  display: block; width: 100%; height: 100%;
+  object-fit: cover;
+  /* The clip is portrait and the two faces sit in its upper third; hold them
+     in frame as a wide viewport crops the band shorter. */
+  object-position: 50% 22%;
+  background: #2E2A24;
+}
+/* The pale wall behind the subjects gives white type nothing to sit on, so
+   this scrim is heavier than the home page's and weighted to the bottom,
+   where the copy is. Measured on the poster at 1440: 8.9:1 on the title. */
+.m-hero-scrim {
   position: absolute; inset: 0;
-  background: linear-gradient(to top, rgba(24,25,27,0.88) 0%, rgba(24,25,27,0.34) 52%, rgba(24,25,27,0.5) 100%);
+  background:
+    linear-gradient(to top, rgba(24,25,27,0.90) 0%, rgba(24,25,27,0.62) 44%, rgba(24,25,27,0.30) 78%, rgba(24,25,27,0.22) 100%),
+    linear-gradient(to right, rgba(24,25,27,0.42) 0%, rgba(24,25,27,0.10) 62%, rgba(24,25,27,0) 100%),
+    linear-gradient(to bottom, rgba(24,25,27,0.80) 0%, rgba(24,25,27,0.36) 55%, rgba(24,25,27,0) 100%) top / 100% 10rem no-repeat;
 }
-.member-film-line {
-  position: absolute; left: var(--s7); right: var(--s7); bottom: var(--s7);
-  margin: 0; color: #F7F4EE; font-weight: 500;
-  font-size: clamp(1.5rem, 0.9rem + 1.8vw, 2.5rem);
-  line-height: 1.06; letter-spacing: -0.028em; text-wrap: balance;
+.m-hero-inner {
+  position: relative; width: 100%; max-width: var(--measure);
+  margin-inline: auto; padding-inline: var(--gutter);
+  display: flex; flex-direction: column; align-items: flex-start;
+  gap: var(--s4); color: #F7F4EE;
 }
-.member-mark {
-  position: absolute; top: var(--s6); left: var(--s7);
-  color: #F7F4EE; display: inline-flex;
-}
-.member-mark.is-inline { position: static; color: var(--ink); margin-bottom: var(--s6); }
-
-.member-panel {
-  display: flex; flex-direction: column;
-  padding: var(--s6) var(--gutter) var(--s5);
-  background: var(--canvas);
-}
-@media (min-width: 960px) {
-  .member-panel { padding: var(--s7) clamp(var(--s6), 5vw, 4.5rem) var(--s6); justify-content: center; }
-  .member-mark.is-inline { position: absolute; top: var(--s6); }
-}
-
-.member-card { width: 100%; max-width: 30rem; margin: 0 auto; }
-.member-eyebrow {
+.m-eyebrow {
   display: inline-block; padding: 0.3rem 0.7rem; border-radius: var(--r-pill);
-  background: var(--change-tint); color: var(--change-text);
-  font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase;
+  background: rgba(247,244,238,0.16); color: #F7F4EE;
+  font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.13em;
+  text-transform: uppercase;
 }
-.member-title {
-  margin: var(--s4) 0 var(--s3); color: var(--ink); font-weight: 600;
-  font-size: clamp(2rem, 1.3rem + 2.2vw, 3rem);
-  line-height: 1.06; letter-spacing: -0.03em; text-wrap: balance;
+.m-hero-title {
+  margin: 0; color: #F7F4EE; font-weight: 500;
+  font-size: clamp(2rem, 1rem + 3.4vw, 4rem);
+  line-height: 1.02; letter-spacing: -0.03em; text-wrap: balance;
+  max-width: 20ch;
 }
-.member-sub { color: var(--body-ink); margin-bottom: var(--s5); max-width: 44ch; }
-/* the shared form is built for a dark ground in the hero; here it is on Paper */
-.member-card .waitlist { max-width: none; }
-.member-aside {
-  margin-top: var(--s4); color: var(--meta-ink); font-size: 0.875rem; max-width: 44ch;
+.m-hero-lede {
+  color: rgba(247,244,238,0.90); max-width: 52ch; margin: 0;
+  font-size: clamp(1rem, 0.94rem + 0.3vw, 1.1875rem);
+}
+.m-hero-inner .m-btn { margin-top: var(--s2); }
+.m-hero-note {
+  margin: 0; color: rgba(247,244,238,0.76); font-size: 0.8125rem;
+  font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+  line-height: 1.7;
+}
+/* the three claims break between themselves, never inside one of them */
+.m-hero-note span { white-space: nowrap; }
+
+/* --- the bands ----------------------------------------------------------- */
+.m-band { padding-block: clamp(3rem, 5.5vw, 5.5rem); background: var(--canvas); }
+.m-band.is-alt { background: var(--surface); }
+.m-h2 {
+  margin: 0 0 var(--s6); color: var(--ink); font-weight: 500;
+  font-size: clamp(1.625rem, 1rem + 2.1vw, 3rem);
+  line-height: 1.04; letter-spacing: -0.03em; text-wrap: balance;
+}
+/* a deck under a heading, where the heading alone would leave something
+   material unsaid. It takes the heading's bottom margin over from it. */
+.m-h2:has(+ .m-h2-sub) { margin-bottom: var(--s3); }
+.m-h2-sub {
+  margin: 0 0 var(--s6); color: var(--body-ink);
+  max-width: 56ch; font-size: 1.0625rem; line-height: 1.6;
 }
 
-.member-includes { margin-top: var(--s6); }
-.member-includes-k {
-  display: block; margin-bottom: var(--s3);
-  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.13em;
-  text-transform: uppercase; color: var(--meta-ink);
+/* --- the membership ------------------------------------------------------ */
+/* One card, held to its own measure rather than the page's — stretched to
+   1520px its right half is empty. Left-aligned, so it starts on the same
+   gutter as every heading on the page. */
+.m-plan {
+  display: grid; gap: var(--s6); max-width: 66rem;
+  background: var(--surface); border-radius: var(--r-shell);
+  padding: clamp(var(--s5), 3.2vw, var(--s7));
+  box-shadow: var(--float-lifted);
 }
-.member-includes .qa-item summary { font-size: 1rem; padding: var(--s3) 0; }
-.member-includes .qa-item p { margin-bottom: var(--s4); padding-right: var(--s5); font-size: 0.9375rem; }
+.m-band.is-alt .m-plan { background: var(--canvas); }
+@media (min-width: 880px) {
+  .m-plan { grid-template-columns: minmax(0, 19rem) minmax(0, 1fr); gap: var(--s8); align-items: start; }
+}
+.m-plan-head { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s3); }
+.m-plan-name {
+  font-size: 1.125rem; font-weight: 500; letter-spacing: 0.34em;
+  text-transform: uppercase; color: var(--ink);
+}
+.m-plan-price {
+  margin: 0; color: var(--ink); font-weight: 500;
+  font-size: clamp(1.5rem, 1.1rem + 1.2vw, 2rem);
+  line-height: 1.1; letter-spacing: -0.02em;
+}
+.m-plan-price-note { margin: 0; color: var(--meta-ink); font-size: 0.9375rem; max-width: 28ch; }
+.m-plan-head .m-btn { margin-top: var(--s2); }
+.m-plan-foot { margin: 0; color: var(--meta-ink); font-size: 0.875rem; }
 
-.member-foot {
-  margin-top: var(--s7); width: 100%; max-width: 30rem;
-  margin-inline: auto; display: flex; flex-wrap: wrap; gap: var(--s3) var(--s5);
+.m-ticks { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s4); }
+.m-ticks li {
+  display: grid; grid-template-columns: 1.25rem 1fr; gap: var(--s3);
+  align-items: start; color: var(--body-ink); font-size: 1rem; line-height: 1.5;
+}
+/* the tick, drawn rather than an icon font: two strokes rotated into a check */
+.m-ticks i {
+  position: relative; display: block; width: 1.25rem; height: 1.5rem;
+}
+.m-ticks i::before,
+.m-ticks i::after {
+  content: ''; position: absolute; background: var(--ink); border-radius: 1px;
+}
+.m-ticks i::before { left: 1px;  top: 12px; width: 7px;  height: 1.5px; transform: rotate(45deg);  transform-origin: left center; }
+.m-ticks i::after  { left: 5.6px; top: 15px; width: 12px; height: 1.5px; transform: rotate(-52deg); transform-origin: left center; }
+
+/* --- start free, choose later. The page's one dark ground. --------------- */
+.m-free { background: var(--ink); color: #F7F4EE; padding-block: clamp(3.5rem, 6vw, 6.5rem); }
+.m-free-title {
+  margin: 0; color: #F7F4EE; font-weight: 500;
+  font-size: clamp(2rem, 1.1rem + 3.1vw, 4rem);
+  line-height: 1.02; letter-spacing: -0.03em; text-wrap: balance;
+}
+.m-free-sub {
+  margin: var(--s3) 0 0; color: rgba(247,244,238,0.72);
+  font-size: clamp(1.0625rem, 0.98rem + 0.4vw, 1.375rem);
+}
+.m-free-body {
+  margin: var(--s5) 0 var(--s6); color: rgba(247,244,238,0.88);
+  max-width: 56ch; font-size: 1.0625rem; line-height: 1.6;
+}
+.m-free-note { margin: var(--s4) 0 0; color: rgba(247,244,238,0.72); font-size: 0.875rem; max-width: 48ch; }
+
+/* The shared form is built for Paper. On this band the ground inverts and the
+   filled action inverts with it, exactly as it does in the hero. */
+.m-dark .btn-primary { background: #F7F4EE; color: #18191B; border-radius: var(--r-pill); font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; padding: 0 var(--s6); }
+.m-dark .btn-primary:hover { opacity: 0.92; }
+.m-dark .waitlist-field label { color: rgba(247,244,238,0.72); }
+.m-dark .waitlist input {
+  background: rgba(247,244,238,0.10);
+  border-color: rgba(247,244,238,0.32);
+  color: #F7F4EE;
+}
+.m-dark .waitlist input::placeholder { color: rgba(247,244,238,0.58); }
+.m-dark .waitlist input:focus { border-color: #F7F4EE; }
+.m-dark .waitlist input:focus-visible { outline-color: #F7F4EE; }
+.m-dark .waitlist-note { color: rgba(247,244,238,0.72); }
+.m-dark .waitlist-note.is-error { color: var(--flare-dark); }
+.m-dark .joined-title { color: #F7F4EE; }
+.m-dark .joined-sub { color: rgba(247,244,238,0.72); }
+
+/* --- questions ----------------------------------------------------------- */
+.m-faq { max-width: 60rem; }
+.m-band .qa-item summary { font-size: 1.0625rem; padding: var(--s4) 0; }
+.m-band .qa-item p { margin-bottom: var(--s5); padding-right: var(--s5); font-size: 0.9375rem; }
+
+/* --- footer -------------------------------------------------------------- */
+.m-foot { background: var(--canvas); padding-block: var(--s6) var(--s7); border-top: var(--hairline) solid var(--rule); }
+.m-foot .m-wrap {
+  display: flex; flex-wrap: wrap; gap: var(--s3) var(--s5);
   align-items: baseline; justify-content: space-between;
   color: var(--meta-ink); font-size: 0.875rem;
 }
-.member-foot nav { display: flex; flex-wrap: wrap; gap: var(--s4); }
-.member-foot a { color: var(--meta-ink); text-underline-offset: 0.28em; }
-.member-foot a:hover { color: var(--ink); }
+.m-foot nav { display: flex; flex-wrap: wrap; gap: var(--s5); }
+.m-foot a { color: var(--meta-ink); text-underline-offset: 0.28em; }
+.m-foot a:hover { color: var(--ink); }
+
+/* ===========================================================================
+   Explore — "See it, connect it, and understand why."
+
+   Built to the shape of the section of the same job on hioctohealth.com: a
+   centred heading, a row of photographic tabs, and one dark panel that swaps
+   when a tab is chosen. Copy over the photograph on the left, figures on the
+   right. Octo's panel is the section's only dark surface and the only place
+   it raises its voice; the same holds here, which is why nothing in this
+   block borrows a card, a rule or a radius from the bands around it.
+   =========================================================================== */
+.band-title.is-centred,
+.band-sub.is-centred { margin-inline: auto; text-align: center; }
+.band-title.is-centred { max-width: 24ch; }
+.band-sub.is-centred { max-width: 60ch; }
+
+/* --- the tabs. Six photographs, and on a phone a rail that scrolls. ------ */
+.ex-tabs {
+  display: grid; grid-auto-flow: column;
+  grid-auto-columns: minmax(9.5rem, 1fr);
+  gap: var(--s3);
+  overflow-x: auto; scrollbar-width: none;
+  /* the rail bleeds to the gutter on a phone and the snap has to follow the
+     padding edge, not the content edge, or card one hides under the gutter */
+  scroll-snap-type: x mandatory;
+  padding-bottom: var(--s2);
+  margin-bottom: var(--s5);
+}
+.ex-tabs::-webkit-scrollbar { display: none; }
+
+.ex-tab {
+  position: relative; overflow: hidden; isolation: isolate;
+  appearance: none; border: 0; padding: 0; cursor: pointer;
+  scroll-snap-align: start;
+  border-radius: var(--r-nested);
+  aspect-ratio: 6 / 5; min-height: 5.5rem;
+  display: flex; flex-direction: column; justify-content: space-between;
+  text-align: left; background: #2E2A24; color: #F7F4EE;
+  /* the ring is the whole selected state, so it is drawn outside the frame
+     rather than inside it: an inset ring would crop the photograph */
+  box-shadow: 0 0 0 0 rgba(24,25,27,0);
+  transition: box-shadow var(--quick) var(--ease-caused);
+}
+.ex-tab img {
+  position: absolute; inset: 0; z-index: -2;
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  opacity: 0.7; transition: opacity var(--quick) var(--ease-caused);
+}
+.ex-tab-scrim {
+  position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(to top, rgba(24,25,27,0.92) 0%, rgba(24,25,27,0.52) 52%, rgba(24,25,27,0.76) 100%);
+}
+.ex-tab:hover img { opacity: 0.88; }
+/* a ring with a gap, so it reads as selection rather than as a border */
+.ex-tab.is-on { box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px var(--ink); }
+.ex-tab.is-on img { opacity: 1; }
+.ex-tab:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 3px; }
+.ex-tab-pill {
+  align-self: flex-start; margin: var(--s3) var(--s3) 0;
+  padding: 0.22rem 0.5rem; border-radius: var(--r-pill);
+  background: rgba(247,244,238,0.22); color: #F7F4EE;
+  font-size: 0.625rem; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; line-height: 1.4;
+  /* one line, and never wider than the tab it sits on: a nowrap label that
+     outgrows its card spills its text onto the page behind it */
+  white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+}
+.ex-tab-cap {
+  margin: 0 var(--s3) var(--s3);
+  font-size: 0.8125rem; font-weight: 500; line-height: 1.24; color: #F7F4EE;
+}
+
+/* --- the panel ----------------------------------------------------------- */
+.ex-panel {
+  position: relative; isolation: isolate; overflow: hidden;
+  border-radius: var(--r-shell);
+  background: #2E2A24; color: #F7F4EE;
+  display: grid; gap: var(--s6);
+  padding: clamp(var(--s5), 3.4vw, var(--s7));
+  min-height: 26rem;
+}
+@media (min-width: 900px) {
+  .ex-panel {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
+    gap: var(--s7); align-items: center;
+  }
+}
+.ex-panel:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 3px; }
+.ex-panel-img {
+  position: absolute; inset: 0; z-index: -2;
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+/* Weighted to the left, where the copy is, and left lighter on the right so
+   the photograph survives behind the card rather than being flattened. */
+.ex-panel-scrim {
+  position: absolute; inset: 0; z-index: -1;
+  background:
+    linear-gradient(to right, rgba(24,25,27,0.93) 0%, rgba(24,25,27,0.86) 38%, rgba(24,25,27,0.62) 72%, rgba(24,25,27,0.50) 100%),
+    linear-gradient(to top, rgba(24,25,27,0.42) 0%, rgba(24,25,27,0) 55%);
+}
+/* The directional scrim assumes the copy occupies the left half. Below the
+   split the copy is the whole width and the lede runs over the lit part of
+   the photograph: measured at 375, 3.77:1 against the 4.5:1 it needs
+   (accessibility.md > Color and effects). The even scrim starts there. */
+@media (max-width: 899px) {
+  .ex-panel-scrim {
+    background: linear-gradient(to top, rgba(24,25,27,0.93) 0%, rgba(24,25,27,0.84) 52%, rgba(24,25,27,0.78) 100%);
+  }
+}
+
+.ex-copy { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s4); max-width: 34rem; }
+.ex-pill {
+  padding: 0.28rem 0.62rem; border-radius: var(--r-pill);
+  background: rgba(247,244,238,0.20); color: #F7F4EE;
+  font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+}
+/* Octo sets this headline in a serif. Ciatta is one family, so this is Jost
+   at Medium — the same treatment the band titles take, one step larger,
+   because it is the one thing the panel is actually saying. */
+.ex-title {
+  margin: 0; color: #F7F4EE;
+  font-family: var(--font);
+  font-weight: 500; font-size: clamp(2rem, 1.2rem + 2.6vw, 3.25rem);
+  line-height: 1.02; letter-spacing: -0.03em; text-wrap: balance;
+}
+.ex-lede { margin: 0; color: rgba(247,244,238,0.86); max-width: 46ch; line-height: 1.6; }
+
+/* the exchange. A question in her words, and what Ciatta says back. */
+.ex-chat { display: flex; flex-direction: column; gap: var(--s3); align-items: flex-start; max-width: 34rem; }
+.ex-ask {
+  margin: 0; padding: var(--s3) var(--s4);
+  border-radius: var(--r-control) var(--r-control) var(--r-control) var(--s1);
+  background: rgba(247,244,238,0.16); color: #F7F4EE;
+  font-size: 0.9375rem; line-height: 1.45;
+}
+.ex-ans {
+  display: grid; grid-template-columns: 1.5rem 1fr; gap: var(--s3); align-items: start;
+  padding: var(--s4); border-radius: var(--r-control);
+  background: rgba(247,244,238,0.94); color: var(--ink);
+}
+.ex-ans p { margin: 0; font-size: 0.9375rem; line-height: 1.5; }
+.ex-ans-mark {
+  width: 1.5rem; height: 1.5rem; border-radius: 50%;
+  background: var(--change); opacity: 0.9;
+}
+
+/* --- the card of figures ------------------------------------------------- */
+.ex-card {
+  margin: 0; justify-self: stretch;
+  background: rgba(24,25,27,0.72);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-radius: var(--r-surface);
+  padding: var(--s5);
+  display: flex; flex-direction: column; gap: var(--s4);
+}
+.ex-card-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3);
+  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(247,244,238,0.82);
+}
+.ex-card-head i { font-style: normal; letter-spacing: 0.08em; color: rgba(247,244,238,0.66); }
+.ex-card-body { color: #F7F4EE; }
+.ex-card-note {
+  margin: 0; color: rgba(247,244,238,0.70); font-size: 0.75rem; line-height: 1.5;
+  padding-top: var(--s3); border-top: var(--hairline) solid rgba(247,244,238,0.20);
+}
+
+/* the plot. Colour comes from the card, so the line and the marks cannot
+   drift apart from the figures they belong to. */
+.ex-plot { display: block; width: 100%; height: 5.5rem; color: var(--ember-dark); }
+.ex-points {
+  margin: var(--s3) 0 0; display: grid; grid-auto-flow: column;
+  grid-auto-columns: 1fr; gap: var(--s2);
+}
+.ex-points div { display: flex; flex-direction: column; gap: 2px; text-align: center; min-width: 0; }
+.ex-points dt { color: rgba(247,244,238,0.62); font-size: 0.625rem; letter-spacing: 0.04em; }
+.ex-points dd {
+  margin: 0; color: rgba(247,244,238,0.82); font-size: 0.75rem;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.ex-points .is-last dd { color: #F7F4EE; font-weight: 600; }
+
+/* a value against the range it was reported in */
+.ex-ranges { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s4); }
+.ex-range-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); }
+.ex-range-head span { color: rgba(247,244,238,0.86); font-size: 0.875rem; }
+.ex-range-head b {
+  color: #F7F4EE; font-size: 1.0625rem; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.ex-range-head i { font-style: normal; font-weight: 400; font-size: 0.6875rem; color: rgba(247,244,238,0.66); margin-left: 0.3em; }
+.ex-range-bar {
+  position: relative; height: 6px; margin-top: 6px;
+  border-radius: var(--r-pill); background: rgba(247,244,238,0.20);
+}
+.ex-range-mark {
+  position: absolute; top: 50%; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--ember-dark); transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 2px rgba(24,25,27,0.65);
+}
+.ex-range-foot {
+  display: flex; justify-content: space-between; gap: var(--s3); margin-top: 5px;
+  color: rgba(247,244,238,0.60); font-size: 0.625rem; font-variant-numeric: tabular-nums;
+}
+.ex-range-foot span:nth-child(2) { letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* dated entries */
+.ex-log { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s4); }
+.ex-log li { display: grid; gap: 2px; }
+.ex-log-date {
+  color: rgba(247,244,238,0.62); font-size: 0.6875rem;
+  letter-spacing: 0.08em; text-transform: uppercase; font-variant-numeric: tabular-nums;
+}
+.ex-log-what { color: #F7F4EE; font-size: 0.9375rem; line-height: 1.4; }
+.ex-log-src { color: rgba(247,244,238,0.66); font-size: 0.6875rem; letter-spacing: 0.04em; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ex-tab, .ex-tab img { transition: none; }
+}
+
+/* ===========================================================================
+   "Grounded in evidence, built for the questioner."
+
+   The mosaic from whoop.com's "Backed by PHDs, worn by MVPs": a grid of tiles
+   that alternates photographs with written cards, some spanning two columns
+   so the grid reads as a mosaic rather than a table. WHOOP's written cards
+   are member quotes; these are statements about how the product works, which
+   is the only half of that section Ciatta can fill honestly.
+
+   Twelve cells over three rows at the top size, and the spans are chosen so
+   there is never a hole: 1+1+2 / 2+1+1 / 1+2+1.
+   =========================================================================== */
+.who-grid {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; gap: var(--gap-surface);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) { .who-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1040px) { .who-grid { grid-template-columns: repeat(4, 1fr); } }
+/* a wide tile is only wide where there is more than one column to be wide in */
+@media (min-width: 640px) { .who-tile.is-wide { grid-column: span 2; } }
+
+.who-tile {
+  position: relative; isolation: isolate; overflow: hidden;
+  border-radius: var(--r-surface);
+  display: flex; align-items: flex-end;
+  min-height: 15rem;
+  padding: var(--pad-surface);
+}
+.who-tile p { margin: 0; text-wrap: pretty; }
+
+/* the photographic half: who this is for */
+.who-tile.is-photo { background: #2E2A24; }
+.who-tile.is-photo img {
+  position: absolute; inset: 0; z-index: -2;
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.who-scrim {
+  position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(to top, rgba(24,25,27,0.90) 0%, rgba(24,25,27,0.52) 46%, rgba(24,25,27,0.24) 100%);
+}
+.who-tile.is-photo p {
+  color: #F7F4EE; font-weight: 500;
+  font-size: clamp(1.125rem, 1rem + 0.5vw, 1.375rem);
+  line-height: 1.2; letter-spacing: -0.018em; max-width: 18ch;
+}
+
+/* the written half: what the women in the study actually said. WHOOP's
+   member-quote card, and the quotation mark is honest here because someone
+   did say it. */
+.who-tile.is-quote {
+  background: var(--surface); box-shadow: var(--float-lifted);
+  align-items: center;
+}
+.who-tile.is-quote figure { margin: 0; display: flex; flex-direction: column; gap: var(--s4); }
+.who-tile.is-quote blockquote {
+  margin: 0; position: relative; padding-top: var(--s5);
+}
+/* the mark sits above the quote rather than beside it, so the first line of
+   every card starts on the same left edge whatever its length */
+.who-tile.is-quote blockquote::before {
+  content: '\201C'; position: absolute; top: -0.24em; left: -0.04em;
+  font-size: 3rem; line-height: 1; color: var(--change); opacity: 0.55;
+}
+.who-tile.is-quote blockquote p {
+  color: var(--ink); font-size: clamp(1rem, 0.95rem + 0.25vw, 1.1875rem);
+  line-height: 1.45; letter-spacing: -0.008em; max-width: 42ch;
+}
+.who-tile.is-quote figcaption {
+  color: var(--meta-ink); font-size: 0.8125rem; letter-spacing: 0.02em;
+}
+
+/* the provenance of the quotations. The section claims to be grounded in
+   evidence, so it says where the evidence came from. */
+.who-note {
+  margin: var(--s5) 0 0; color: var(--meta-ink);
+  font-size: 0.8125rem; line-height: 1.6; max-width: 68ch;
+  margin-inline: auto; text-align: center;
+}
+.who-note em { font-style: italic; }
