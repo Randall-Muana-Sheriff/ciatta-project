@@ -137,3 +137,39 @@ end $$;
 alter table public.documents
   add constraint documents_storage_path_owned
   check (storage_path like user_id::text || '/%');
+
+-- 9. `supabase test db` caught what a review of the SQL alone could not:
+-- every table and view above enforces its rules through RLS policies, but
+-- RLS only narrows rows a role can already reach -- the Data API role still
+-- needs the base table/view grant, and this CLI's local default no longer
+-- hands new `public` entities to anon/authenticated automatically
+-- (auto_expose_new_tables is off; see supabase/config.toml). Without these,
+-- every one of her own reads and writes failed with permission denied
+-- before RLS was ever evaluated. authenticated gets exactly the operations
+-- its owner policies allow; anon gets select only, so the anon-reads-nothing
+-- assertions see an RLS-empty result rather than a permission error -- there
+-- is no anon policy anywhere, so every row stays hidden either way.
+grant select, insert, update, delete on
+  public.health_sources, public.raw_inputs, public.episodes, public.journal_entries,
+  public.medications, public.supplements, public.documents, public.results
+  to authenticated;
+grant select on
+  public.health_sources, public.raw_inputs, public.episodes, public.journal_entries,
+  public.medications, public.supplements, public.documents, public.results
+  to anon;
+
+-- profiles: only ever selected or updated as her; the row is created by the
+-- handle_new_user trigger, which runs with the definer's own privileges.
+grant select, update on public.profiles to authenticated;
+grant select on public.profiles to anon;
+
+-- observations: only ever selected, or inserted under the client-provenance
+-- check; DERIVED rows are written by the observation triggers as the
+-- (security definer) function owner, not as authenticated.
+grant select, insert on public.observations to authenticated;
+grant select on public.observations to anon;
+
+-- cycle_events / pain_events: a view is its own grantable object.
+-- security_invoker makes each check her RLS on episodes, but the view
+-- itself still needs the Data API role's grant, same as any other table.
+grant select on public.cycle_events, public.pain_events to authenticated;
