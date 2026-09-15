@@ -99,6 +99,7 @@ export function JournalScreen() {
             onChangeText={setText}
             placeholder="What are you noticing?"
             placeholderTextColor={C.muted}
+            accessibilityLabel="What are you noticing"
             autoFocus
           />
           {error ? <Text style={[font('footnote'), { color: C.tint, marginBottom: 8 }]}>{error}</Text> : null}

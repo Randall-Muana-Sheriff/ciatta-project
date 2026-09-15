@@ -3,6 +3,7 @@ import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, 
 
 import { addDays, type Episode, type EpisodeForm, isoDay, recordEpisodes, startOfDay } from '../data/cycleLog';
 import { importDeviceRecord } from '../data/deviceImport';
+import { mergeEpisodes, mergeInterventions, mergeWatching } from '../data/cycleMerge';
 import { enqueue, flush } from '../data/outbox';
 import { WALK_PLAN_AGO } from '../data/daily';
 import { lensFor } from '../lib/cycleLens';
@@ -60,6 +61,9 @@ export function CycleStoreProvider({ children }: { children: ReactNode }) {
   const [focus, setFocus] = useState<string | null>(null);
   const [profile, setProfileState] = useState<CycleProfile>(real ? EMPTY_PROFILE : SAMPLE_PROFILE);
   const loaded = useRef(false);
+  // Set as soon as she changes her profile herself, so a slower initial load
+  // landing afterward never overwrites a change she already made and saved.
+  const profileTouched = useRef(false);
 
   useEffect(() => {
     if (!real) return;
@@ -77,12 +81,12 @@ export function CycleStoreProvider({ children }: { children: ReactNode }) {
         AsyncStorage.getItem(LOOP_KEY).catch(() => null),
       ]);
       if (!alive) return;
-      setOwn(mine);
-      if (savedProfile) setProfileState(savedProfile);
+      setOwn((prev) => mergeEpisodes(mine, prev));
+      if (savedProfile && !profileTouched.current) setProfileState(savedProfile);
       if (loop) {
         const saved = JSON.parse(loop) as { watching?: Record<string, boolean>; interventions?: Intervention[] };
-        if (saved.watching) setWatchingMap(saved.watching);
-        if (saved.interventions) setInterventions(saved.interventions);
+        setWatchingMap((current) => mergeWatching(saved.watching, current));
+        setInterventions((current) => mergeInterventions(saved.interventions, current));
       }
       loaded.current = true;
     })();
@@ -101,7 +105,7 @@ export function CycleStoreProvider({ children }: { children: ReactNode }) {
       episodes,
       add: (episode) => {
         setOwn((list) => [...list.filter((e) => e.id !== episode.id), episode]);
-        repo.saveEpisode(episode).catch(() => enqueue(AsyncStorage, episode));
+        repo.saveEpisode(episode).catch(() => enqueue(AsyncStorage, episode).catch(() => {}));
       },
       draft,
       startDraft: (next) => setDraft({ mode: 'new', form: {}, ...next }),
@@ -118,6 +122,7 @@ export function CycleStoreProvider({ children }: { children: ReactNode }) {
       setFocus,
       profile,
       setProfile: (next) => {
+        profileTouched.current = true;
         setProfileState(next);
         repo.saveCycleProfile(next).catch(() => {});
       },
