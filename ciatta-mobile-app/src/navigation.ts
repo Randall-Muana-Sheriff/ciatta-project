@@ -1,6 +1,14 @@
 import { createContext, useContext } from 'react';
 
-export type Tab = 'today' | 'myhealth' | 'profile';
+export type Tab = 'today' | 'myhealth' | 'journey' | 'profile';
+
+export const TAB_ORDER: Tab[] = ['today', 'myhealth', 'journey', 'profile'];
+
+// The header arrows step through the tabs, wrapping at either end.
+export function adjacentTab(tab: Tab, step: 1 | -1): Tab {
+  const n = TAB_ORDER.length;
+  return TAB_ORDER[(TAB_ORDER.indexOf(tab) + step + n) % n];
+}
 
 export type Screen =
   | 'insight'
@@ -9,7 +17,9 @@ export type Screen =
   | 'symptoms'
   | 'medications'
   | 'journal'
-  | 'healthrecords';
+  | 'healthrecords'
+  | 'cycleLog'
+  | 'cycleHistory';
 
 export type Nav = {
   tab: Tab;

@@ -1,30 +1,29 @@
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import type { SourceKind } from '../data/sample';
 import { displayCopy } from '../lib/displayCopy';
-import type { Tab } from '../navigation';
-import { C, caps, GUTTER, sans } from '../theme';
+import { C, font, GUTTER, RADIUS } from '../theme';
 
 // ── Icons ──────────────────────────────────────────────────────
 
+// Disclosure indicator, drawn like chevron.forward.
 export function ChevronRight() {
   return (
-    <Svg width={8} height={14} viewBox="0 0 8 14" fill="none">
-      <Path d="M1 1l6 6-6 6" stroke={C.muted} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    <Svg width={8} height={13} viewBox="0 0 8 13" fill="none">
+      <Path d="M1.5 1.5l5 5-5 5" stroke={C.chevron} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
 
 export function ChevronToggle({ open }: { open: boolean }) {
   return (
-    <Svg width={14} height={8} viewBox="0 0 14 8" fill="none">
+    <Svg width={13} height={8} viewBox="0 0 13 8" fill="none">
       <Path
-        d={open ? 'M1 7l6-6 6 6' : 'M1 1l6 6 6-6'}
+        d={open ? 'M1.5 6.5l5-5 5 5' : 'M1.5 1.5l5 5 5-5'}
         stroke={C.secondary}
-        strokeWidth={1.5}
+        strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -34,55 +33,33 @@ export function ChevronToggle({ open }: { open: boolean }) {
 
 // ── Chrome ─────────────────────────────────────────────────────
 
+// Standard navigation bar: a Back button in the accent color and a
+// centred Headline title.
 export function ScreenHeader({ title, onBack }: { title: string; onBack: () => void }) {
   return (
-    <View>
-      <View style={s.header}>
-        <Pressable onPress={onBack} hitSlop={14} accessibilityRole="button" accessibilityLabel="Back" style={s.back}>
-          <Svg width={10} height={18} viewBox="0 0 10 18" fill="none">
-            <Path d="M9 1L1 9l8 8" stroke={C.text} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-          </Svg>
-        </Pressable>
-        <View style={s.headerTitle}>
-          <Text style={[sans(17, 600), { color: C.text }]} numberOfLines={1} accessibilityRole="header">
-            {title}
-          </Text>
-        </View>
+    <View style={s.header}>
+      <Pressable
+        onPress={onBack}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel="Back"
+        style={({ pressed }) => [s.back, pressed && s.pressed]}
+      >
+        <Svg width={12} height={20} viewBox="0 0 12 20" fill="none">
+          <Path d="M10 2L2 10l8 8" stroke={C.tint} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
+        <Text style={[font('body'), { color: C.tint }]}>Back</Text>
+      </Pressable>
+      <View style={s.headerTitle} pointerEvents="none">
+        <Text style={[font('headline'), { color: C.text }]} numberOfLines={1} accessibilityRole="header">
+          {title}
+        </Text>
       </View>
-      <View style={s.hairline} />
     </View>
   );
 }
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'today', label: 'Today' },
-  { key: 'myhealth', label: 'My Health' },
-  { key: 'profile', label: 'Profile' },
-];
-
-export function BottomNav({ active, onTab }: { active: Tab; onTab: (tab: Tab) => void }) {
-  const insets = useSafeAreaInsets();
-  return (
-    <View style={[s.nav, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]} accessibilityRole="tablist">
-      {TABS.map((t) => {
-        const on = t.key === active;
-        return (
-          <Pressable
-            key={t.key}
-            onPress={() => onTab(t.key)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: on }}
-            style={[s.navButton, on && { backgroundColor: C.white }]}
-          >
-            <Text style={[sans(15, 600), { color: on ? C.bg : C.secondary }]}>{t.label}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
-// A pushed screen: back header, scrolling body, optional provenance footer.
+// A pushed screen: navigation bar, scrolling body, optional provenance footer.
 export function DetailScreen({
   title,
   onBack,
@@ -110,29 +87,32 @@ export function DetailScreen({
 export function SecLabel({ children, right }: { children: string; right?: string }) {
   return (
     <View style={s.secLabel}>
-      <Text style={[sans(11, 600), caps, { color: C.muted }]}>{displayCopy(children)}</Text>
-      {right ? <Text style={[sans(12), { color: C.muted }]}>{displayCopy(right)}</Text> : null}
+      <Text style={[font('title3', 'semibold'), { color: C.text, flex: 1 }]} accessibilityRole="header">
+        {displayCopy(children)}
+      </Text>
+      {right ? <Text style={[font('footnote'), { color: C.secondary }]}>{displayCopy(right)}</Text> : null}
     </View>
   );
 }
 
 type Tone = 'amber' | 'neutral' | 'orange' | 'in' | 'low' | SourceKind;
 
-const TONES: Record<Tone, { bg: string; fg: string; border?: string }> = {
-  amber: { bg: C.amberBg, fg: C.amber, border: C.amberBorder },
-  neutral: { bg: C.surface, fg: C.secondary, border: C.border },
-  orange: { bg: C.orange + '30', fg: C.orange },
+const TONES: Record<Tone, { bg: string; fg: string }> = {
+  amber: { bg: C.amberBg, fg: C.amber },
+  neutral: { bg: C.fill, fg: C.secondary },
+  orange: { bg: '#3A2410', fg: C.orange },
   in: { bg: C.inBg, fg: C.inText },
-  low: { bg: C.lowBg, fg: C.lowText, border: C.amberBorder },
+  low: { bg: C.lowBg, fg: C.lowText },
   logged: { bg: C.loggedBg, fg: C.white },
   measured: { bg: C.measuredBg, fg: C.measuredText },
   lab: { bg: C.labBg, fg: C.labText },
 };
 
+// `size` is kept for callers; every tag renders at Caption 1 (12 pt),
+// above the 11 pt minimum.
 export function Tag({
   label,
   tone,
-  size = 11,
   upper = false,
 }: {
   label: string;
@@ -142,13 +122,8 @@ export function Tag({
 }) {
   const t = TONES[tone];
   return (
-    <View
-      style={[
-        s.tag,
-        { backgroundColor: t.bg, borderColor: t.border ?? t.bg, paddingHorizontal: upper ? 11 : 8 },
-      ]}
-    >
-      <Text style={[sans(size, 600), { color: t.fg, lineHeight: 16 }, upper && { letterSpacing: 0.6 }]}>
+    <View style={[s.tag, { backgroundColor: t.bg }]}>
+      <Text style={[font('caption1', 'semibold'), { color: t.fg }]}>
         {upper ? label.toUpperCase() : displayCopy(label)}
       </Text>
     </View>
@@ -161,60 +136,85 @@ const SOURCE_LABEL: Record<SourceKind, string> = { logged: 'You logged', measure
 export function SourceFooter({ kind, text }: { kind: SourceKind; text: string }) {
   return (
     <View style={s.sourceFooter}>
-      <Tag label={SOURCE_LABEL[kind]} tone={kind} size={10} />
-      <Text style={[sans(12), { color: C.secondary, flex: 1 }]}>{displayCopy(text)}</Text>
+      <Tag label={SOURCE_LABEL[kind]} tone={kind} />
+      <Text style={[font('footnote'), { color: C.secondary, flex: 1 }]}>{displayCopy(text)}</Text>
     </View>
   );
 }
 
 // ── Controls ───────────────────────────────────────────────────
 
-export function FilterPills<T extends string>({
-  pills,
+// iOS segmented control. `scroll` lets a long set of segments scroll
+// sideways instead of squeezing.
+export function SegmentedControl<T extends string>({
+  segments,
   active,
   onChange,
+  scroll = false,
+  style,
 }: {
-  pills: readonly T[];
+  segments: readonly T[];
   active: T;
-  onChange: (pill: T) => void;
+  onChange: (segment: T) => void;
+  scroll?: boolean;
+  style?: object;
 }) {
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={s.pillsScroll}
-      contentContainerStyle={s.pills}
-    >
-      {pills.map((p) => {
-        const on = p === active;
+  const bar = (
+    <View style={s.segBar} accessibilityRole="tablist">
+      {segments.map((seg) => {
+        const on = seg === active;
         return (
           <Pressable
-            key={p}
-            onPress={() => onChange(p)}
-            accessibilityRole="button"
+            key={seg}
+            onPress={() => onChange(seg)}
+            accessibilityRole="tab"
             accessibilityState={{ selected: on }}
-            style={[s.pill, on ? s.pillOn : s.pillOff]}
+            hitSlop={{ top: 6, bottom: 6 }}
+            style={[s.seg, !scroll && s.segFlex, on && s.segOn]}
           >
-            <Text style={[sans(14, on ? 600 : 400), { color: on ? C.bg : C.secondary }]}>{p}</Text>
+            <Text style={[font('footnote', on ? 'semibold' : 'medium'), { color: C.text }]} numberOfLines={1}>
+              {seg}
+            </Text>
           </Pressable>
         );
       })}
-    </ScrollView>
+    </View>
   );
+  if (scroll) {
+    return (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={[s.segScroll, style]}
+        contentContainerStyle={{ paddingHorizontal: GUTTER }}
+      >
+        {bar}
+      </ScrollView>
+    );
+  }
+  return <View style={[s.segWrap, style]}>{bar}</View>;
 }
 
-export function PrimaryButton({ label, onPress }: { label: string; onPress?: () => void }) {
+// Filled capsule for the one most likely action on a view.
+export function PrimaryButton({ label, onPress, disabled = false }: { label: string; onPress?: () => void; disabled?: boolean }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [s.primary, pressed && s.pressed]}>
-      <Text style={[sans(16, 600), { color: C.bg }]}>{label}</Text>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      style={({ pressed }) => [s.button, s.primary, disabled && s.disabled, pressed && s.pressed]}
+    >
+      <Text style={[font('headline'), { color: C.bg }]}>{label}</Text>
     </Pressable>
   );
 }
 
+// Gray capsule with an accent label for supporting actions.
 export function SecondaryButton({ label, onPress }: { label: string; onPress?: () => void }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [s.secondary, pressed && s.pressed]}>
-      <Text style={[sans(15, 600), { color: C.text }]}>{label}</Text>
+    <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [s.button, s.secondary, pressed && s.pressed]}>
+      <Text style={[font('headline'), { color: C.tint }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -223,7 +223,6 @@ export function LinkButton({
   label,
   onPress,
   center = false,
-  size = 13,
 }: {
   label: string;
   onPress?: () => void;
@@ -234,10 +233,9 @@ export function LinkButton({
     <Pressable
       onPress={onPress}
       accessibilityRole="link"
-      hitSlop={8}
       style={({ pressed }) => [s.link, center && { alignSelf: 'center' }, pressed && s.pressed]}
     >
-      <Text style={[sans(size, 500), { color: C.blueLink }]}>{label}</Text>
+      <Text style={[font('subhead'), { color: C.tint }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -273,11 +271,11 @@ export function Row({
       style={({ pressed }) => [s.row, !first && s.rowBorder, pressed && s.pressed]}
     >
       <View style={s.rowText}>
-        <Text style={[sans(15), { color: titleColor }]}>{displayCopy(title)}</Text>
-        {sub ? <Text style={[sans(12), { color: C.muted, marginTop: 2 }]}>{displayCopy(sub)}</Text> : null}
+        <Text style={[font('body'), { color: titleColor }]}>{displayCopy(title)}</Text>
+        {sub ? <Text style={[font('footnote'), { color: C.secondary, marginTop: 2 }]}>{displayCopy(sub)}</Text> : null}
       </View>
       <View style={s.rowRight}>
-        {value ? <Text style={[sans(15, 500), { color: valueColor ?? C.text }]}>{displayCopy(value)}</Text> : null}
+        {value ? <Text style={[font('body'), { color: valueColor ?? C.secondary }]}>{displayCopy(value)}</Text> : null}
         {onPress ? <ChevronRight /> : null}
       </View>
     </Pressable>
@@ -316,15 +314,15 @@ export function Expandable({
         style={s.openHead}
       >
         <View style={s.rowText}>
-          <Text style={[sans(15, 600), { color: C.text }]}>{displayCopy(title)}</Text>
-          {sub ? <Text style={[sans(12), { color: C.muted }]}>{displayCopy(sub)}</Text> : null}
+          <Text style={[font('headline'), { color: C.text }]}>{displayCopy(title)}</Text>
+          {sub ? <Text style={[font('footnote'), { color: C.secondary }]}>{displayCopy(sub)}</Text> : null}
         </View>
         <View style={s.rowRight}>
-          {value ? <Text style={[sans(15, 600), { color: valueColor ?? C.text }]}>{displayCopy(value)}</Text> : null}
+          {value ? <Text style={[font('headline'), { color: valueColor ?? C.text }]}>{displayCopy(value)}</Text> : null}
           <ChevronToggle open />
         </View>
       </Pressable>
-      <View style={{ marginTop: 10 }}>{children}</View>
+      <View style={{ marginTop: 8 }}>{children}</View>
     </View>
   );
 }
@@ -334,8 +332,8 @@ export function Facts({ rows }: { rows: { label: string; value: string }[] }) {
     <View>
       {rows.map((r) => (
         <View key={r.label} style={s.fact}>
-          <Text style={[sans(13), { color: C.muted }]}>{displayCopy(r.label)}</Text>
-          <Text style={[sans(13), s.factValue]}>{displayCopy(r.value)}</Text>
+          <Text style={[font('subhead'), { color: C.secondary }]}>{displayCopy(r.label)}</Text>
+          <Text style={[font('subhead'), s.factValue]}>{displayCopy(r.value)}</Text>
         </View>
       ))}
     </View>
@@ -344,33 +342,20 @@ export function Facts({ rows }: { rows: { label: string; value: string }[] }) {
 
 export const s = StyleSheet.create({
   fill: { flex: 1 },
-  pressed: { opacity: 0.6 },
+  pressed: { opacity: 0.55 },
 
-  header: { flexDirection: 'row', alignItems: 'center', minHeight: 48, paddingHorizontal: GUTTER },
-  back: { paddingVertical: 6, paddingRight: 8, zIndex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', height: 44, paddingHorizontal: 8 },
+  back: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, paddingHorizontal: 4, zIndex: 1 },
   headerTitle: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 56,
-    pointerEvents: 'none',
+    paddingHorizontal: 88,
   },
-  hairline: { height: StyleSheet.hairlineWidth * 2, backgroundColor: C.border, opacity: 0.6 },
-  detailBody: { paddingHorizontal: GUTTER, paddingTop: 16, paddingBottom: 24 },
+  detailBody: { paddingHorizontal: GUTTER, paddingTop: 12, paddingBottom: 32 },
 
-  nav: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    backgroundColor: C.surface,
-    borderTopWidth: 1,
-    borderTopColor: C.border,
-  },
-  navButton: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 100 },
-
-  secLabel: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  tag: { alignSelf: 'flex-start', borderRadius: 100, borderWidth: 1, paddingVertical: 1 },
+  secLabel: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 10 },
+  tag: { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
   sourceFooter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -378,40 +363,36 @@ export const s = StyleSheet.create({
     paddingHorizontal: GUTTER,
     paddingVertical: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: C.borderSub,
+    borderTopColor: C.separator,
   },
 
-  pillsScroll: { flexGrow: 0, marginBottom: 20, marginHorizontal: -GUTTER },
-  pills: { gap: 8, paddingHorizontal: GUTTER },
-  pill: { paddingVertical: 7, paddingHorizontal: 16, borderRadius: 100, borderWidth: 1 },
-  pillOn: { backgroundColor: C.white, borderColor: C.white },
-  pillOff: { backgroundColor: C.surface, borderColor: C.border },
+  segWrap: { marginBottom: 20 },
+  segScroll: { flexGrow: 0 },
+  segBar: { flexDirection: 'row', backgroundColor: C.fill, borderRadius: 9, padding: 2, minHeight: 32 },
+  seg: { minHeight: 28, paddingHorizontal: 14, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
+  segFlex: { flex: 1 },
+  segOn: { backgroundColor: C.fillSelected },
 
-  primary: { alignItems: 'center', paddingVertical: 16, borderRadius: 100, backgroundColor: C.white },
-  secondary: {
-    alignItems: 'center',
-    paddingVertical: 15,
-    borderRadius: 100,
-    backgroundColor: C.surface,
-    borderWidth: 1,
-    borderColor: C.border,
-  },
-  link: { paddingTop: 8, alignSelf: 'flex-start' },
+  button: { minHeight: 50, borderRadius: 25, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
+  primary: { backgroundColor: C.tint },
+  disabled: { opacity: 0.4 },
+  secondary: { backgroundColor: C.fill },
+  link: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
 
-  card: { backgroundColor: C.card, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 13 },
-  rowBorder: { borderTopWidth: 1, borderTopColor: C.borderSub },
+  card: { backgroundColor: C.card, borderRadius: RADIUS, padding: 16 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 44, paddingVertical: 11 },
+  rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.separator },
   rowText: { flex: 1, paddingRight: 12 },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  openCard: { backgroundColor: C.card, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 1 },
-  openHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  openCard: { backgroundColor: C.card, borderRadius: RADIUS, paddingVertical: 12, paddingHorizontal: 16, marginVertical: 4 },
+  openHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 32 },
   fact: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 16,
-    paddingVertical: 5,
-    borderTopWidth: 1,
-    borderTopColor: C.borderSub,
+    paddingVertical: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: C.separator,
   },
-  factValue: { color: C.secondary, flexShrink: 1, textAlign: 'right' },
+  factValue: { color: C.text, flexShrink: 1, textAlign: 'right' },
 });

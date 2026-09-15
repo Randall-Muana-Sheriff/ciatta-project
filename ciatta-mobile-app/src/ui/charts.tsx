@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
-import { C, fonts, sans } from '../theme';
+import { C, font, fonts } from '../theme';
 
 // Charts are drawn on the Figma frame's 333pt grid and scaled to the width
 // they are given, so they keep the reference proportions on any phone.
@@ -16,7 +16,7 @@ function Frame({ w, h, children }: { w: number; h: number; children: ReactNode }
   );
 }
 
-const axisFont = { fontSize: 11, fill: C.muted, fontFamily: fonts.sans[400] } as const;
+const axisFont = { fontSize: 11, fill: C.muted, fontFamily: fonts.regular } as const;
 
 // ── Insight: cycle length against sleep ────────────────────────
 export function InsightLineChart() {
@@ -49,7 +49,7 @@ export function InsightLineChart() {
       {dots.map(([cx, cy]) => (
         <Circle key={cx} cx={cx} cy={cy} r={5} fill={C.orange} />
       ))}
-      <SvgText x={18} y={H - 1} {...axisFont} fontSize={10}>
+      <SvgText x={18} y={H - 1} {...axisFont} fontSize={11}>
         A lowest sleep week, then a short cycle inside ten days. Twice.
       </SvgText>
     </Frame>
@@ -74,7 +74,7 @@ export function Legend({
                 : { width: 24, height: 2, backgroundColor: it.color }
             }
           />
-          <Text style={[sans(12), { color: C.secondary }]}>{it.label}</Text>
+          <Text style={[font('caption1'), { color: C.secondary }]}>{it.label}</Text>
         </View>
       ))}
     </View>
@@ -99,7 +99,7 @@ export function SleepBarChart({ bars, highlight }: { bars: number[]; highlight: 
   return (
     <Frame w={W} h={H + 24}>
       <Line x1={offsetX} y1={refY} x2={W - 14} y2={refY} stroke={C.secondary} strokeWidth={1} strokeDasharray="4 4" />
-      <SvgText x={W - 12} y={refY + 4} {...axisFont} fontSize={10} fill={C.secondary} textAnchor="end">
+      <SvgText x={W - 12} y={refY + 4} {...axisFont} fontSize={11} fill={C.secondary} textAnchor="end">
         7h
       </SvgText>
       {bars.map((h, i) => {
@@ -172,7 +172,7 @@ export function CycleBarChart({ bars }: { bars: { h: number; short?: string }[] 
           <G key={i}>
             <Rect x={x} y={y} width={barW} height={b.h * H} rx={4} fill={b.short ? C.orange : C.blue} opacity={b.short ? 0.95 : 0.7} />
             {b.short ? (
-              <SvgText x={x + barW / 2} y={y - 4} {...axisFont} fill={C.orange} fontFamily={fonts.sans[600]} textAnchor="middle">
+              <SvgText x={x + barW / 2} y={y - 4} {...axisFont} fill={C.orange} fontFamily={fonts.semibold} textAnchor="middle">
                 {b.short}
               </SvgText>
             ) : null}
@@ -194,7 +194,7 @@ function MonthAxis({ months }: { months: number }) {
   return (
     <View style={cs.axis}>
       {['Jan', 'Mar', 'May', 'Jul'].map((l, i) => (
-        <Text key={l} style={[sans(11), cs.axisLabel, { left: `${((i * 2) / months) * 100}%` }]}>
+        <Text key={l} style={[font('caption2'), cs.axisLabel, { left: `${((i * 2) / months) * 100}%` }]}>
           {l}
         </Text>
       ))}
@@ -232,7 +232,7 @@ export function MedTimeline({ rows }: { rows: { label: string; start: number; en
     <View>
       {rows.map((r, i) => (
         <View key={r.label} style={{ marginBottom: 12 }}>
-          <Text style={[sans(13), { color: C.secondary, marginBottom: 5 }]}>{r.label}</Text>
+          <Text style={[font('footnote'), { color: C.secondary, marginBottom: 5 }]}>{r.label}</Text>
           <View style={[cs.track, { height: 12, borderRadius: 6 }]}>
             <Span
               start={r.start}
@@ -264,7 +264,7 @@ export function SymptomTimeline({
   return (
     <View>
       <View style={{ marginBottom: 16 }}>
-        <Text style={[sans(13), { color: C.secondary, marginBottom: 6 }]}>Cycle starts</Text>
+        <Text style={[font('footnote'), { color: C.secondary, marginBottom: 6 }]}>Cycle starts</Text>
         <View style={[cs.track, cs.trackFaint]}>
           {cycleStarts.map((m) => (
             <View key={m} style={[cs.tick, { left: `${(m / months) * 100}%` }]} />
@@ -273,7 +273,7 @@ export function SymptomTimeline({
       </View>
       {rows.map((r) => (
         <View key={r.label} style={{ marginBottom: 16 }}>
-          <Text style={[sans(13), { color: C.secondary, marginBottom: 6 }]}>{r.label}</Text>
+          <Text style={[font('footnote'), { color: C.secondary, marginBottom: 6 }]}>{r.label}</Text>
           <View style={[cs.track, cs.trackFaint]}>
             <Span start={r.start} end={r.end} months={months} height={10} color={SEVERITY[r.color]} opacity={0.85} />
           </View>

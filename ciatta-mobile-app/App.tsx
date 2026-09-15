@@ -1,10 +1,9 @@
-// Per-weight imports: the package roots would bundle every weight they ship.
-import { InstrumentSerif_400Regular } from '@expo-google-fonts/instrument-serif/400Regular';
-import { InstrumentSerif_400Regular_Italic } from '@expo-google-fonts/instrument-serif/400Regular_Italic';
-import { Urbanist_400Regular } from '@expo-google-fonts/urbanist/400Regular';
-import { Urbanist_400Regular_Italic } from '@expo-google-fonts/urbanist/400Regular_Italic';
-import { Urbanist_500Medium } from '@expo-google-fonts/urbanist/500Medium';
-import { Urbanist_600SemiBold } from '@expo-google-fonts/urbanist/600SemiBold';
+// Per-weight imports: the package root would bundle every weight it ships.
+import { Jost_400Regular } from '@expo-google-fonts/jost/400Regular';
+import { Jost_400Regular_Italic } from '@expo-google-fonts/jost/400Regular_Italic';
+import { Jost_500Medium } from '@expo-google-fonts/jost/500Medium';
+import { Jost_600SemiBold } from '@expo-google-fonts/jost/600SemiBold';
+import { Jost_700Bold } from '@expo-google-fonts/jost/700Bold';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -12,19 +11,19 @@ import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Root } from './src/Root';
-
-SplashScreen.preventAutoHideAsync();
+import { CycleStoreProvider } from './src/state/cycleStore';
 
 export default function App() {
   const [loaded, error] = useFonts({
-    InstrumentSerif_400Regular,
-    InstrumentSerif_400Regular_Italic,
-    Urbanist_400Regular,
-    Urbanist_400Regular_Italic,
-    Urbanist_500Medium,
-    Urbanist_600SemiBold,
+    Jost_400Regular,
+    Jost_400Regular_Italic,
+    Jost_500Medium,
+    Jost_600SemiBold,
+    Jost_700Bold,
   });
 
+  // The native splash doesn't dismiss itself in this build, so hide it once
+  // the fonts are ready.
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync();
   }, [loaded, error]);
@@ -35,7 +34,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
-      <Root />
+      <CycleStoreProvider>
+        <Root />
+      </CycleStoreProvider>
     </SafeAreaProvider>
   );
 }

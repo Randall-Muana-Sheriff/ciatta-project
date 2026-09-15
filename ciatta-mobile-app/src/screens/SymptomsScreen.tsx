@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { symptoms } from '../data/sample';
 import { useNav } from '../navigation';
 import { SymptomTimeline } from '../ui/charts';
-import { DetailScreen, Expandable, Facts, FilterPills, SecLabel, SecondaryButton, SourceFooter } from '../ui/kit';
+import { DetailScreen, Expandable, Facts, SegmentedControl, SecLabel, SecondaryButton, SourceFooter } from '../ui/kit';
 
 const FILTERS = ['All', 'Sleep', 'Energy', 'Temperature'] as const;
 
@@ -20,7 +20,7 @@ export function SymptomsScreen() {
       onBack={nav.back}
       footer={<SourceFooter kind="logged" text="Entered by you, dated as you entered it" />}
     >
-      <FilterPills pills={FILTERS} active={filter} onChange={setFilter} />
+      <SegmentedControl segments={FILTERS} active={filter} onChange={setFilter} />
 
       <SecLabel right="Jan to Aug">Timeline</SecLabel>
       <View style={{ marginBottom: 24 }}>
@@ -43,7 +43,7 @@ export function SymptomsScreen() {
       ))}
 
       <View style={{ paddingTop: 20 }}>
-        <SecondaryButton label="Log a symptom" />
+        <SecondaryButton label="Log a Symptom" />
       </View>
     </DetailScreen>
   );

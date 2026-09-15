@@ -1,4 +1,6 @@
 import type { Screen } from '../navigation';
+import type { IconName } from '../ui/icons';
+import type { images } from '../ui/images';
 
 // A made up person to build the UI against before the schema exists. Maya is
 // invented and every figure matches the Figma Make reference screens. Swap
@@ -6,10 +8,10 @@ import type { Screen } from '../navigation';
 
 export const person = {
   firstName: 'Maya',
-  fullName: 'Maya Adeyemi',
+  fullName: 'Maya Chen',
   initial: 'M',
   email: 'maya@example.com',
-  age: 41,
+  age: 28,
   memberSince: 'January 2026',
 };
 
@@ -237,8 +239,154 @@ export const sources = [
 ] as { name: string; kind: SourceKind; status: string; facts: { label: string; value: string }[] }[];
 
 export const aboutYou = [
-  { label: 'Age', value: '41' },
-  { label: 'Life stage', value: 'Perimenopause, in your words' },
+  { label: 'Age', value: '28' },
+  { label: 'Life stage', value: 'Not added' },
   { label: 'Cycle', value: 'Usually 26 to 30 days' },
   { label: 'Conditions', value: 'None added' },
 ];
+
+// ── Reference screens (ciatta-visual-assets) ──────────────────
+// Figures below match today-cia, health-cia, journey-cia and profile-cia.
+
+export type Tone = 'coral' | 'mint' | 'lavender' | 'indigo' | 'text';
+
+export const today = {
+  headline: 'Your two shortest cycles occurred after your two lowest sleep weeks.',
+  kicker: 'A pattern worth watching',
+  cycle: { from: 29, to: 26 },
+  sleep: { from: '7h 05m', to: '6h 12m' },
+  months: ['Jan', 'Feb', 'Mar', 'Apr'],
+  cycleDays: [29, 28, 27, 26],
+  sleepHours: [7.08, 6.98, 6.72, 6.2],
+  // Opens Today's Pattern; the live patterns follow it in the same paragraph.
+  brief:
+    'Over the last four months your cycle has shortened from 29 to 26 days, and both of your shortest cycles followed your lowest sleep weeks, a stretch when you also logged more stress. That has happened twice so far, which is enough to keep watching but not enough to say lower sleep caused the change.',
+};
+
+export const healthCards: {
+  title: string;
+  value: string;
+  period: string;
+  meta: string;
+  metaIcon: IconName;
+  tone: 'coral' | 'mint' | 'lavender';
+  image: keyof typeof images;
+  screen: Screen;
+}[] = [
+  { title: 'Health Records', value: '14 results · 3 documents', period: 'Results and documents', meta: '2 new since last visit', metaIcon: 'ring', tone: 'mint', image: 'records', screen: 'healthrecords' },
+  { title: 'Cycle', value: '26 to 29 days', period: 'Last 4 cycles', meta: 'Slightly shorter recently', metaIcon: 'wave', tone: 'coral', image: 'cycle', screen: 'cycle' },
+  { title: 'Sleep', value: '6h 12m average', period: 'Last 7 days', meta: '12% lower than your usual', metaIcon: 'bars', tone: 'coral', image: 'sleep', screen: 'sleep' },
+  { title: 'Symptoms', value: '3 observations', period: 'This month', meta: 'Fatigue, sleep disruption, stress', metaIcon: 'ring', tone: 'coral', image: 'symptoms', screen: 'symptoms' },
+  { title: 'Medications & Supplements', value: '4 active', period: '2 changes this year', meta: 'Levothyroxine · Magnesium · Vitamin D', metaIcon: 'pill', tone: 'coral', image: 'medications', screen: 'medications' },
+  { title: 'Your Notes', value: '38 entries', period: 'Last 30 days', meta: '“Work has been stressful lately…”', metaIcon: 'chat', tone: 'lavender', image: 'journal', screen: 'journal' },
+];
+
+// Month positions are fractional: cycles and draws do not land on month starts.
+// Seven months ending one month ahead, so the timeline always reaches today
+// and logged episodes land in the current month.
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function journeyMonth(i: number): Date {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth() + i - 5, 1);
+}
+
+export const journey = {
+  months: Array.from({ length: 7 }, (_, i) => MONTHS_SHORT[journeyMonth(i).getMonth()]),
+  yearOf: (month: number) => String(journeyMonth(month).getFullYear()),
+  monthDate: journeyMonth,
+  now: 5,
+  cycle: [
+    { m: 0, days: 28 },
+    { m: 1.1, days: 29 },
+    { m: 2.4, days: 28 },
+    { m: 3.8, days: 27 },
+    { m: 5, days: 26 },
+    { m: 6.3, days: 27, expected: true },
+  ] as { m: number; days: number; expected?: boolean }[],
+  sleep: [
+    { m: 0, hours: 7.47, label: '7h 28m' },
+    { m: 1.1, hours: 7.2, label: '7h 12m' },
+    { m: 2.4, hours: 6.8, label: '6h 48m' },
+    { m: 3.8, hours: 6.53, label: '6h 32m' },
+    { m: 5, hours: 6.2, label: '6h 12m' },
+    { m: 6.3, hours: 6.6, expected: true },
+  ] as { m: number; hours: number; label?: string; expected?: boolean }[],
+  symptoms: [
+    { m: 0.2, y: 58 }, { m: 1.1, y: 58 }, { m: 1.7, y: 66 }, { m: 2.3, y: 30 },
+    { m: 3.7, y: 56 }, { m: 3.9, y: 70 }, { m: 5, y: 26 }, { m: 5, y: 44 },
+    { m: 5.2, y: 58 }, { m: 5.2, y: 72 }, { m: 6.3, y: 58, expected: true },
+  ] as { m: number; y: number; expected?: boolean }[],
+  medications: [
+    { name: 'Magnesium', from: 0.35, to: 5, ongoing: 6.5, y: 32, labelAt: 1, tone: 'mint' },
+    { name: 'Levothyroxine', from: 2.4, to: 5.4, y: 76, labelAt: 3.5, tone: 'lavender' },
+  ] as { name: string; from: number; to: number; ongoing?: number; y: number; labelAt: number; tone: 'mint' | 'lavender' }[],
+  records: [
+    { m: 0.35, label: 'Lab results' },
+    { m: 2.4, label: 'Annual exam' },
+    { m: 5.2, label: 'Blood work' },
+  ],
+  notes: [
+    { m: 1, lines: ['Felt more', 'stressed'] },
+    { m: 3, lines: ['Waking up', 'often'] },
+    { m: 5, lines: ['Work has been', 'really stressful'] },
+  ],
+  insight: {
+    headline: 'Your two shortest cycles followed your two lowest sleep weeks.',
+    sub: 'Tap to explore what happened during this time.',
+  },
+};
+
+type ProfileTile = { icon: IconName; tone: Tone; label: string; value: string; sub?: string };
+
+export const profile = {
+  name: 'Maya Chen',
+  age: '28 years',
+  born: 'Born Apr 14, 1996',
+  tagline: 'Continuous understanding for my changing health.',
+  stats: [
+    { icon: 'person', tone: 'coral', label: 'Age', value: '28 years', sub: 'Born Apr 14, 1996' },
+    { icon: 'ruler', tone: 'coral', label: 'Height', value: '5′ 8″', sub: '173 cm' },
+    { icon: 'drop', tone: 'coral', label: 'Blood Type', value: 'A+' },
+    { icon: 'shield', tone: 'lavender', label: 'Insurance', value: 'Anthem', sub: 'PPO' },
+  ] as ProfileTile[],
+  care: [
+    { icon: 'stethoscope', tone: 'lavender', label: 'Primary Care Provider', value: 'Dr. Sarah Kim', sub: 'Internal Medicine' },
+    { icon: 'people', tone: 'coral', label: 'Care Team', value: '3 providers', sub: 'PCP · OB/GYN · Dermatologist' },
+  ] as ProfileTile[],
+  score: 78,
+  overview: [
+    { label: 'Prevention', done: 3, total: 4, tone: 'indigo' },
+    { label: 'Monitoring', done: 5, total: 7, tone: 'mint' },
+    { label: 'Action', done: 3, total: 6, tone: 'coral' },
+  ] as { label: string; done: number; total: number; tone: Tone }[],
+  records: [
+    { icon: 'bandage', tone: 'coral', title: 'Conditions & Injuries', lines: ['2 conditions', '1 past injury'], screen: 'symptoms' },
+    { icon: 'flower', tone: 'lavender', title: 'Allergies & Intolerances', lines: ['3 allergies', '1 intolerance'] },
+    { icon: 'pill', tone: 'mint', title: 'Medications & Supplements', lines: ['4 active', '2 supplements'], screen: 'medications' },
+    { icon: 'syringe', tone: 'indigo', title: 'Vaccinations', lines: ['Up to date', 'Last: Oct 2023'] },
+    { icon: 'hourglass', tone: 'coral', title: 'Genetics', lines: ['1 report', 'View insights'] },
+    { icon: 'leaf', tone: 'mint', title: 'Lifestyle & Habits', lines: ['Sleep, nutrition, activity, stress, and more'], screen: 'sleep' },
+  ] as { icon: IconName; tone: Tone; title: string; lines: string[]; screen?: Screen }[],
+  biomarkers: [
+    { value: '72', label: 'Resting HR', unit: 'bpm', change: '↓ 6%', tone: 'text', trend: [76, 75, 77, 74, 73, 74, 72] },
+    { value: '54', label: 'HRV', unit: 'ms', change: '↑ 12%', tone: 'text', trend: [46, 48, 47, 50, 52, 51, 54] },
+    { value: '36.6', label: 'Body Temp', unit: '°C', change: '→ 0%', tone: 'lavender', trend: [36.5, 36.6, 36.5, 36.7, 36.6, 36.6, 36.6] },
+    { value: '98', label: 'SpO₂', unit: '%', change: '→ 0%', tone: 'text', trend: [97, 98, 97, 98, 98, 99, 98] },
+  ] as { value: string; label: string; unit: string; change: string; tone: Tone; trend: number[] }[],
+  bodySystems: [
+    { label: 'Heart Health', icon: 'heart', tone: 'coral' },
+    { label: 'Kidney Function', icon: 'kidney', tone: 'coral' },
+    { label: 'Liver & Pancreas', icon: 'liver', tone: 'coral' },
+    { label: 'Metabolic Health', icon: 'molecule', tone: 'lavender' },
+    { label: 'Reproductive Health', icon: 'uterus', tone: 'coral' },
+    { label: 'Bones & Muscles', icon: 'bone', tone: 'text' },
+    { label: 'Immune Regulation', icon: 'shield', tone: 'lavender' },
+    { label: 'Blood Function', icon: 'drop', tone: 'coral' },
+    { label: 'Nutrients', icon: 'leaf', tone: 'mint' },
+    { label: 'Thyroid Function', icon: 'thyroid', tone: 'indigo' },
+    { label: 'Autoimmune Health', icon: 'sun', tone: 'lavender' },
+    { label: 'Infectious Diseases', icon: 'virus', tone: 'coral' },
+    { label: 'Substance Levels', icon: 'flask', tone: 'coral' },
+    { label: 'Other Panels', icon: 'panels', tone: 'text' },
+  ] as { label: string; icon: IconName; tone: Tone }[],
+};

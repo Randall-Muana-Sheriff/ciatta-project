@@ -3,9 +3,9 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { medications } from '../data/sample';
 import { useNav } from '../navigation';
-import { C, sans } from '../theme';
+import { C, font } from '../theme';
 import { MedTimeline } from '../ui/charts';
-import { DetailScreen, Expandable, Facts, FilterPills, LinkButton, SecLabel, SourceFooter } from '../ui/kit';
+import { DetailScreen, Expandable, Facts, SegmentedControl, LinkButton, SecLabel, SourceFooter } from '../ui/kit';
 
 const TABS = ['Current', 'All'] as const;
 
@@ -15,14 +15,14 @@ function MedCard({ med, past = false }: { med: Med; past?: boolean }) {
   return (
     <View style={[m.card, past && { opacity: 0.7 }]}>
       <View style={m.nameRow}>
-        <Text style={[sans(16, 600), { color: C.text }]}>{med.name}</Text>
-        <Text style={[sans(14), { color: C.secondary }]}>{med.dose}</Text>
+        <Text style={[font('callout', 'semibold'), { color: C.text }]}>{med.name}</Text>
+        <Text style={[font('subhead'), { color: C.secondary }]}>{med.dose}</Text>
       </View>
       <View style={m.between}>
-        <Text style={[sans(13), { color: C.secondary }]}>{med.timing}</Text>
-        <Text style={[sans(12), { color: C.muted }]}>{med.since}</Text>
+        <Text style={[font('footnote'), { color: C.secondary }]}>{med.timing}</Text>
+        <Text style={[font('caption1'), { color: C.muted }]}>{med.since}</Text>
       </View>
-      {med.note ? <Text style={[sans(13, 500), { color: C.blueLink, marginTop: 6 }]}>{med.note}</Text> : null}
+      {med.note ? <Text style={[font('footnote', 'semibold'), { color: C.blueLink, marginTop: 6 }]}>{med.note}</Text> : null}
     </View>
   );
 }
@@ -36,9 +36,9 @@ export function MedicationsScreen() {
     <DetailScreen
       title="Medications"
       onBack={nav.back}
-      footer={<SourceFooter kind="logged" text="You logged these. Ciatta does not remind you to take anything." />}
+      footer={<SourceFooter kind="logged" text="You logged these. There are no reminders to take anything." />}
     >
-      <FilterPills pills={TABS} active={tab} onChange={setTab} />
+      <SegmentedControl segments={TABS} active={tab} onChange={setTab} />
 
       <SecLabel right={`${medications.current.length} items`}>Taking now</SecLabel>
       {medications.current.map((med) => (

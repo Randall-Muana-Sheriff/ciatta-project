@@ -3,9 +3,9 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { sleep } from '../data/sample';
 import { useNav } from '../navigation';
-import { C, sans } from '../theme';
+import { C, font, numeral } from '../theme';
 import { MiniWeekChart, SleepBarChart } from '../ui/charts';
-import { DetailScreen, Expandable, Facts, FilterPills, SecLabel, SourceFooter } from '../ui/kit';
+import { DetailScreen, Expandable, Facts, SegmentedControl, SecLabel, SourceFooter } from '../ui/kit';
 
 const PERIODS = ['3M', '6M', '12M', 'All'] as const;
 
@@ -16,16 +16,16 @@ export function SleepScreen() {
 
   return (
     <DetailScreen title="Sleep" onBack={nav.back} footer={<SourceFooter kind="measured" text={sleep.source} />}>
-      <FilterPills pills={PERIODS} active={period} onChange={setPeriod} />
+      <SegmentedControl segments={PERIODS} active={period} onChange={setPeriod} />
 
-      <Text style={[sans(12), { color: C.muted, marginBottom: 4 }]}>Average, last 4 weeks</Text>
+      <Text style={[font('caption1'), { color: C.muted, marginBottom: 4 }]}>Average, last 4 weeks</Text>
       <View style={sl.big} accessible accessibilityLabel={`${sleep.average.hours} hours ${sleep.average.minutes} minutes`}>
-        <Text style={[sans(48, 600), sl.num]}>{sleep.average.hours}</Text>
-        <Text style={[sans(24, 600), sl.unit]}>h</Text>
-        <Text style={[sans(48, 600), sl.num]}>{sleep.average.minutes}</Text>
-        <Text style={[sans(24, 600), sl.unit]}>m</Text>
+        <Text style={[numeral(48), sl.num]}>{sleep.average.hours}</Text>
+        <Text style={[font('title1', 'semibold'), sl.unit]}>h</Text>
+        <Text style={[numeral(48), sl.num]}>{sleep.average.minutes}</Text>
+        <Text style={[font('title1', 'semibold'), sl.unit]}>m</Text>
       </View>
-      <Text style={[sans(14, 500), { color: C.orangeText, marginBottom: 20 }]}>{sleep.vsTypical}</Text>
+      <Text style={[font('subhead', 'semibold'), { color: C.orangeText, marginBottom: 20 }]}>{sleep.vsTypical}</Text>
 
       <SecLabel right="Weekly average">Duration</SecLabel>
       <View style={{ marginBottom: 8 }}>
@@ -35,8 +35,8 @@ export function SleepScreen() {
       <View style={sl.tiles}>
         {sleep.tiles.map((t) => (
           <View key={t.label} style={sl.tile}>
-            <Text style={[sans(22, 600), { color: C.text, marginBottom: 4 }]}>{t.value}</Text>
-            <Text style={[sans(13), { color: C.secondary }]}>{t.label}</Text>
+            <Text style={[font('title2', 'semibold'), { color: C.text, marginBottom: 4 }]}>{t.value}</Text>
+            <Text style={[font('footnote'), { color: C.secondary }]}>{t.label}</Text>
           </View>
         ))}
       </View>

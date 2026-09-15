@@ -3,10 +3,13 @@ import { BackHandler, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { type Nav, NavContext, type Screen, type Tab } from './navigation';
+import { CycleHistoryScreen } from './screens/CycleHistoryScreen';
+import { CycleLogScreen } from './screens/CycleLogScreen';
 import { CycleScreen } from './screens/CycleScreen';
 import { HealthRecordsScreen } from './screens/HealthRecordsScreen';
 import { InsightScreen } from './screens/InsightScreen';
 import { JournalScreen } from './screens/JournalScreen';
+import { JourneyScreen } from './screens/JourneyScreen';
 import { MedicationsScreen } from './screens/MedicationsScreen';
 import { MyHealthScreen } from './screens/MyHealthScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
@@ -14,11 +17,12 @@ import { SleepScreen } from './screens/SleepScreen';
 import { SymptomsScreen } from './screens/SymptomsScreen';
 import { TodayScreen } from './screens/TodayScreen';
 import { C } from './theme';
-import { BottomNav } from './ui/kit';
+import { BottomNav } from './ui/chrome';
 
 const TAB_SCREENS: Record<Tab, ComponentType> = {
   today: TodayScreen,
   myhealth: MyHealthScreen,
+  journey: JourneyScreen,
   profile: ProfileScreen,
 };
 
@@ -30,9 +34,11 @@ const DETAIL_SCREENS: Record<Screen, ComponentType> = {
   medications: MedicationsScreen,
   journal: JournalScreen,
   healthrecords: HealthRecordsScreen,
+  cycleLog: CycleLogScreen,
+  cycleHistory: CycleHistoryScreen,
 };
 
-// Three tabs, each with its own stack of detail screens. The tab bar stays
+// Four tabs, each with its own stack of detail screens. The tab bar stays
 // visible on detail screens, as in the reference design.
 export function Root() {
   const insets = useSafeAreaInsets();

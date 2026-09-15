@@ -1,44 +1,88 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActionSheetIOS, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { cycle, journal, medications, records, sleep, symptoms } from '../data/sample';
-import { type Screen, useNav } from '../navigation';
-import { C, GUTTER, sans, serif } from '../theme';
+import { healthCards } from '../data/sample';
+import { displayCopy } from '../lib/displayCopy';
+import { useNav } from '../navigation';
+import { useCycle } from '../state/cycleStore';
+import { C, font, GUTTER, RADIUS } from '../theme';
+import { LargeTitle, ListGroup, ListRow, SyncStatus, ToolbarButton } from '../ui/chrome';
+import { Icon } from '../ui/icons';
+import { images } from '../ui/images';
 import { ChevronRight } from '../ui/kit';
+
+const TONE = { coral: C.coral, mint: C.mint, lavender: C.lavender } as const;
 
 export function MyHealthScreen() {
   const nav = useNav();
-  const items: { label: string; sub: string; screen: Screen }[] = [
-    { label: 'Your health', sub: '1 new insight', screen: 'insight' },
-    { label: 'Sleep', sub: `${sleep.averageLabel} avg · 12M`, screen: 'sleep' },
-    { label: 'Cycle', sub: `Day ${cycle.day} · started ${cycle.started}`, screen: 'cycle' },
-    { label: 'Symptoms', sub: `${symptoms.timeline.length} tracked`, screen: 'symptoms' },
-    { label: 'Medications', sub: `${medications.current.length} current`, screen: 'medications' },
-    { label: 'What you told Ciatta', sub: `${journal.count} entries · since January`, screen: 'journal' },
-    { label: 'Health records', sub: `${records.draws.length + 1} lab draws`, screen: 'healthrecords' },
-  ];
+  const { startDraft } = useCycle();
+
+  const logCycle = () => {
+    startDraft();
+    nav.push('cycleLog');
+  };
+  // Add to the record: a cycle experience or a note.
+  const teach = () => {
+    if (Platform.OS !== 'ios') return logCycle();
+    ActionSheetIOS.showActionSheetWithOptions(
+      { title: 'Add to Your Record', options: ['Log Cycle Experience', 'Add a Note', 'Cancel'], cancelButtonIndex: 2 },
+      (i) => {
+        if (i === 0) logCycle();
+        if (i === 1) nav.push('journal');
+      },
+    );
+  };
 
   return (
-    <ScrollView style={h.fill}>
-      <View style={h.titleWrap}>
-        <Text style={[serif(24), { color: C.text }]} accessibilityRole="header">
-          My Health
+    <ScrollView style={h.fill} contentContainerStyle={h.body}>
+      <LargeTitle
+        title="Health"
+        trailing={
+          <>
+            <SyncStatus />
+            <ToolbarButton icon="plus" label="Add to Your Record" onPress={teach} />
+          </>
+        }
+      />
+
+      <View style={h.pad}>
+        <Text style={[font('subhead'), { color: C.secondary, marginBottom: 20 }]}>
+          Everything about your health, in one place.
         </Text>
-      </View>
-      <View style={h.list}>
-        {items.map((item) => (
+
+        {healthCards.map((card) => (
           <Pressable
-            key={item.screen}
-            onPress={() => nav.push(item.screen)}
+            key={card.screen}
+            onPress={() => nav.push(card.screen)}
             accessibilityRole="button"
-            style={({ pressed }) => [h.row, pressed && h.pressed]}
+            style={({ pressed }) => [h.card, pressed && h.pressed]}
           >
-            <View style={h.rowText}>
-              <Text style={[sans(16), { color: C.text }]}>{item.label}</Text>
-              <Text style={[sans(13), { color: C.muted, marginTop: 2 }]}>{item.sub}</Text>
+            <Image source={images[card.image]} style={h.photo} resizeMode="cover" accessibilityIgnoresInvertColors />
+            <View style={h.cardText}>
+              <Text style={[font('headline'), { color: C.text }]}>{displayCopy(card.title)}</Text>
+              <Text style={[font('subhead'), { color: C.text, marginTop: 2 }]}>{displayCopy(card.value)}</Text>
+              <Text style={[font('footnote'), { color: C.secondary }]}>{displayCopy(card.period)}</Text>
+              <View style={h.meta}>
+                <Icon name={card.metaIcon} size={14} color={TONE[card.tone]} weight={1.8} />
+                <Text style={[font('caption1'), { color: C.secondary, flex: 1 }]} numberOfLines={2}>
+                  {displayCopy(card.meta)}
+                </Text>
+              </View>
             </View>
             <ChevronRight />
           </Pressable>
         ))}
+
+        <ListGroup style={{ marginTop: 16 }}>
+          <ListRow
+            first
+            icon="layers"
+            tint={C.indigo}
+            title="Connected Sources"
+            sub="Apple Health · Lab Records · Manual Entries"
+            value="3"
+            onPress={() => nav.goTab('profile')}
+          />
+        </ListGroup>
       </View>
     </ScrollView>
   );
@@ -46,17 +90,21 @@ export function MyHealthScreen() {
 
 const h = StyleSheet.create({
   fill: { flex: 1 },
-  titleWrap: { paddingHorizontal: GUTTER, paddingTop: 20, paddingBottom: 12 },
-  list: { borderTopWidth: 1, borderTopColor: C.border },
-  row: {
+  body: { paddingBottom: 32 },
+  pad: { paddingHorizontal: GUTTER, paddingTop: 4 },
+  pressed: { opacity: 0.55 },
+
+  card: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: GUTTER,
-    borderBottomWidth: 1,
-    borderBottomColor: C.borderSub,
+    gap: 12,
+    backgroundColor: C.card,
+    borderRadius: RADIUS,
+    padding: 12,
+    paddingRight: 16,
+    marginBottom: 12,
   },
-  rowText: { flex: 1, paddingRight: 12 },
-  pressed: { backgroundColor: C.surface },
+  photo: { width: 88, height: 88, borderRadius: 8 },
+  cardText: { flex: 1 },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
 });

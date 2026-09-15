@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { insight } from '../data/sample';
 import { displayCopy } from '../lib/displayCopy';
 import { useNav } from '../navigation';
-import { C, caps, sans, serif } from '../theme';
+import { C, font } from '../theme';
 import { InsightLineChart, Legend } from '../ui/charts';
 import { Card, DetailScreen, Facts, LinkButton, PrimaryButton, Row, SecLabel, Tag } from '../ui/kit';
 
@@ -14,7 +14,7 @@ export function InsightScreen() {
   const [showMethod, setShowMethod] = useState(false);
 
   return (
-    <DetailScreen title="Your health" onBack={nav.back}>
+    <DetailScreen title="Insight" onBack={nav.back}>
       <View style={i.between}>
         <Tag label="Personalized insight" tone="amber" upper />
         <Pressable
@@ -23,19 +23,19 @@ export function InsightScreen() {
           accessibilityState={{ checked: watching }}
           style={i.watch}
         >
-          <Text style={[sans(13, 500), { color: watching ? C.secondary : C.text }]}>
+          <Text style={[font('footnote', 'semibold'), { color: watching ? C.secondary : C.text }]}>
             {watching ? 'Watching' : 'Watch'}
           </Text>
         </Pressable>
       </View>
 
-      <Text style={[serif(28), { color: C.text, lineHeight: 32, marginBottom: 12 }]} accessibilityRole="header">
+      <Text style={[font('title1'), { color: C.text, marginBottom: 12 }]} accessibilityRole="header">
         {displayCopy(insight.headline)}
       </Text>
 
       <View style={i.meta}>
-        <Tag label="Ciatta" tone="orange" />
-        <Text style={[sans(12), { color: C.muted, flex: 1 }]}>{insight.meta}</Text>
+        <Tag label="Pattern" tone="orange" />
+        <Text style={[font('caption1'), { color: C.muted, flex: 1 }]}>{insight.meta}</Text>
       </View>
 
       <Card style={i.chartCard}>
@@ -63,20 +63,20 @@ export function InsightScreen() {
       ))}
 
       <View style={i.evidence}>
-        <Text style={[sans(11, 600), caps, { color: C.amber, marginBottom: 8 }]}>Relevant evidence</Text>
-        <Text style={[sans(14), { color: C.secondary, marginBottom: 4 }]}>{insight.evidence.claim}</Text>
-        <Text style={[sans(12), { color: C.muted }]}>{insight.evidence.meta}</Text>
+        <Text style={[font('caption2', 'semibold'), { color: C.amber, marginBottom: 8 }]}>Relevant evidence</Text>
+        <Text style={[font('subhead'), { color: C.secondary, marginBottom: 4 }]}>{insight.evidence.claim}</Text>
+        <Text style={[font('caption1'), { color: C.muted }]}>{insight.evidence.meta}</Text>
       </View>
 
-      <Text style={[sans(14), { color: C.secondary, marginBottom: 6 }]}>
-        <Text style={[sans(14, 600), { color: C.text }]}>STILL OPEN </Text>
+      <Text style={[font('subhead'), { color: C.secondary, marginBottom: 6 }]}>
+        <Text style={[font('subhead', 'semibold'), { color: C.text }]}>STILL OPEN </Text>
         {insight.stillOpen}
       </Text>
-      <Text style={[sans(13), { color: C.muted, marginBottom: 20 }]}>
+      <Text style={[font('footnote'), { color: C.muted, marginBottom: 20 }]}>
         Things that move together are not one causing the other.
       </Text>
 
-      <PrimaryButton label="Prepare for your appointment" />
+      <PrimaryButton label="Prepare for Your Appointment" />
       <LinkButton
         center
         size={14}
