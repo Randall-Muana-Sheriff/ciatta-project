@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Cycle tracking that adapts to each person's declared situations (Regular, Irregular, Endometriosis, PCOS / PMOS, Postpartum, Perimenopause, Hormonal contraception, No periods right now), plus bowel movements as their own log type.
+**Goal:** Cycle tracking that adapts to each person's declared situations (Regular, Irregular, Endometriosis, PCOS / PMOS, Postpartum, Perimenopause, Hormonal contraception, No periods right now), plus bowel movements as their own log type, plus a fertile window and ovulation estimate built from logged periods, nightly temperature and logged ovulation signs.
 
 **Architecture:** Cycles are built from logged Period episodes (`src/lib/cycleModel.ts`), not a fixed 27 day length. A `CycleProfile` (`src/lib/cycleProfile.ts`) holds the situations the person chose. `src/lib/cycleLens.ts` turns profile plus cycle windows into a `Lens`: the header, chart, extra log options and notes each screen shows. All three are pure TypeScript and unit tested in node. Screens read `lens` from `useCycleInsights()`.
 
@@ -15,7 +15,8 @@
 - All app code lives in `ciatta-mobile-app/`. Paths below are relative to it. Run commands from it.
 - Keep Jost and the existing design. Reuse `Panel`, `ListGroup`, `ListRow` (`src/ui/chrome.tsx`), `DetailScreen`, `PrimaryButton`, `SecondaryButton`, `LinkButton`, `Tag`, `SecLabel` (`src/ui/kit.tsx`), `ChoiceChips`, `FieldLabel`, `StepHeader`, `Stepper` (`src/ui/cycleInputs.tsx`). Text styles only through `font()` from `src/theme.ts`.
 - UI copy never contains an em dash, en dash or hyphen. Compound words become separate words.
-- The app never names a diagnosis or cause; situations are "what you told us". No fertility or ovulation prediction is ever shown.
+- The app never names a diagnosis or cause; situations are "what you told us".
+- Every fertility or ovulation estimate shows its confidence in words (Higher, Medium, Low; never a score) and the exact line `This is an estimate, not birth control. Don't rely on it to prevent pregnancy.` (`FERTILITY_DISCLAIMER` in `src/lib/fertility.ts`).
 - Tap targets are at least 44 pt.
 - Saved data key stays `ciatta.cycle.v1`; older saves must still load.
 - Type check: `npx tsc --noEmit -p .` must print nothing. Tests: `npm test` must pass.
@@ -45,6 +46,10 @@
 | `src/screens/CycleHistoryScreen.tsx` | modify | timing rows without a phase |
 | `src/screens/JourneyScreen.tsx` | modify | bowel movement row in month detail |
 | `src/lib/bodyMap.ts` | modify | bowel pain point |
+| `src/data/daily.ts` | modify (Task 12) | nightly `tempDeviation` in daily data |
+| `src/lib/fertility.ts` | create | temperature confirmation, luteal length, fertile window estimate |
+| `src/ui/lineCharts.tsx` | modify (Task 14) | `FertilityStrip` |
+| `src/screens/CycleScreen.tsx`, `src/screens/JourneyScreen.tsx`, `src/screens/CycleProfileScreen.tsx` | modify (Task 14) | fertile window panel, Ovulation row, Show Fertile Window switch |
 
 ---
 
@@ -75,7 +80,7 @@ Then add to `scripts` in `package.json`:
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { EMPTY_PROFILE, SAMPLE_PROFILE, toggleSituation } from './cycleProfile';
+import { EMPTY_PROFILE, fertilityOn, SAMPLE_PROFILE, toggleSituation } from './cycleProfile';
 
 test('situations combine freely', () => {
   const p = toggleSituation(toggleSituation(EMPTY_PROFILE, 'Endometriosis'), 'Perimenopause');
@@ -103,6 +108,13 @@ test('tapping a selected situation removes it', () => {
 
 test('sample profile is endometriosis plus irregular', () => {
   assert.deepEqual(SAMPLE_PROFILE, { situations: ['Endometriosis', 'Irregular'], setupDone: true });
+});
+
+test('fertility is on unless switched off, on hormonal contraception, or without periods', () => {
+  assert.equal(fertilityOn(SAMPLE_PROFILE), true);
+  assert.equal(fertilityOn({ ...SAMPLE_PROFILE, showFertility: false }), false);
+  assert.equal(fertilityOn({ ...SAMPLE_PROFILE, situations: ['Hormonal contraception'] }), false);
+  assert.equal(fertilityOn({ ...SAMPLE_PROFILE, situations: ['No periods right now'] }), false);
 });
 ```
 
@@ -139,6 +151,7 @@ export type CycleProfile = {
   breastfeeding?: boolean; // Postpartum
   lastPeriod?: string; // ISO day, Perimenopause, used when no period is logged
   contraception?: Contraception;
+  showFertility?: boolean; // undefined means on
   setupDone: boolean;
 };
 
@@ -159,12 +172,20 @@ export function toggleSituation(p: CycleProfile, s: Situation): CycleProfile {
 }
 
 export const has = (p: CycleProfile, s: Situation) => p.situations.includes(s);
+
+// Signs someone can log that point to ovulation.
+export const FERTILITY_SIGNS = ['Positive ovulation test', 'Egg white discharge', 'Ovulation pain'];
+
+// The fertile window applies unless it is switched off, or hormonal
+// contraception or no periods make it meaningless.
+export const fertilityOn = (p: CycleProfile) =>
+  p.showFertility !== false && !has(p, 'Hormonal contraception') && !has(p, 'No periods right now');
 ```
 
 - [ ] **Step 5: Run the tests**
 
 Run: `npm test`
-Expected: 6 tests pass.
+Expected: 7 tests pass.
 
 - [ ] **Step 6: Commit** (only if the user agreed to commits)
 
@@ -960,6 +981,7 @@ test('irregular endometriosis: days since period, length dots, endometriosis pai
   assert.equal(l.painSplit, true);
   assert.ok(l.contexts.includes('Pain with bowel movements'));
   assert.ok(l.kinds.includes('Bowel movement'));
+  assert.ok(l.symptoms.includes('Positive ovulation test'));
 });
 
 test('regular steady cycles show the day and a likely next period', () => {
@@ -995,6 +1017,7 @@ test('hormonal contraception adds its bleed types and drops ovulation', () => {
   assert.ok(l.kinds.includes('Period'));
   assert.ok(!l.contexts.includes('Ovulation'));
   assert.ok(l.contexts.includes('Missed pill'));
+  assert.ok(!l.symptoms.includes('Positive ovulation test'));
 });
 
 test('no periods right now tracks symptoms by month', () => {
@@ -1054,7 +1077,7 @@ import {
   WHAT_HAPPENED,
 } from '../data/cycleLog';
 import { completedLengths, type CycleWindow, medianLength, type Regularity } from './cycleModel';
-import { type CycleProfile, has, type Situation } from './cycleProfile';
+import { type CycleProfile, FERTILITY_SIGNS, fertilityOn, has, type Situation } from './cycleProfile';
 
 // How the Cycle experience reads for one person: the header, the chart, the
 // extra things worth logging, and short notes. Every situation they chose
@@ -1082,7 +1105,7 @@ export type Lens = {
 };
 
 const EXTRA_SYMPTOMS: Partial<Record<Situation, string[]>> = {
-  'PCOS / PMOS': ['Acne', 'Hair growth', 'Hair loss', 'Ovulation signs'],
+  'PCOS / PMOS': ['Acne', 'Hair growth', 'Hair loss'],
   Postpartum: ['Low mood', 'Anxious or on edge'],
   Perimenopause: ['Hot flashes', 'Night sweats', 'Brain fog', 'Joint pain'],
 };
@@ -1106,7 +1129,7 @@ function kindsFor(p: CycleProfile): string[] {
 }
 
 function symptomsFor(p: CycleProfile): string[] {
-  const extra = p.situations.flatMap((s) => EXTRA_SYMPTOMS[s] ?? []);
+  const extra = [...p.situations.flatMap((s) => EXTRA_SYMPTOMS[s] ?? []), ...(fertilityOn(p) ? FERTILITY_SIGNS : [])];
   return unique([...SYMPTOMS.filter((s) => s !== 'Other'), ...extra, 'Other']);
 }
 
@@ -2031,7 +2054,654 @@ git commit -m "Carry cycle situations and bowel movements into Health, History a
 
 ---
 
-### Task 12: Verify every situation on screen
+### Task 12: Nightly temperature in the daily data
+
+**Files:**
+- Modify: `src/data/daily.ts`
+- Test: `src/data/daily.test.ts`
+
+**Interfaces:**
+- Consumes: `sampleCycleStarts` (Task 3).
+- Produces: `Day.tempDeviation: number | null` (nightly skin temperature change from usual, °C).
+
+- [ ] **Step 1: Write the failing test** `src/data/daily.test.ts`
+
+```ts
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+
+import { addDays, isoDay, sampleCycleStarts } from './cycleLog';
+import { sampleDays } from './daily';
+
+const NOW = new Date(2026, 8, 15);
+
+test('every sample night has a temperature', () => {
+  assert.ok(sampleDays(NOW).every((d) => typeof d.tempDeviation === 'number'));
+});
+
+test('temperature rises 12 days before each completed cycle ends', () => {
+  const days = sampleDays(NOW);
+  const byDate = new Map(days.map((d) => [d.date, d.tempDeviation!]));
+  const starts = sampleCycleStarts(NOW);
+  for (const next of starts.slice(1)) {
+    const risen = byDate.get(isoDay(addDays(next, -12)))!;
+    const before = [13, 14, 15, 16, 17, 18].map((n) => byDate.get(isoDay(addDays(next, -n)))!);
+    const base = before.reduce((a, b) => a + b, 0) / before.length;
+    assert.ok(risen >= base + 0.2, `rise before ${isoDay(next)}`);
+  }
+});
+```
+
+- [ ] **Step 2: Run it to verify it fails**
+
+Run: `npm test`
+Expected: FAIL, `tempDeviation` is undefined.
+
+- [ ] **Step 3: Implement.** In the `Day` type, after `hrv: number;` add:
+
+```ts
+  // Nightly skin temperature change from usual, in °C. Null when not recorded.
+  tempDeviation: number | null;
+```
+
+In `sampleDays`, after `const stageRng = rng(7);` add `const tempRng = rng(11);`. Just before `days.push({` add:
+
+```ts
+    // Temperature has its own seed so every other value stays the same. It
+    // sits about 0.3 °C higher from 12 days before each logged cycle start,
+    // the shift that confirms ovulation. The current cycle hasn't risen yet.
+    const next = starts.find((s) => s > date);
+    const risen = next != null && daysBetween(date, next) <= 12;
+    const tempDeviation = Math.round(((risen ? 0.25 : -0.08) + (tempRng() * 2 - 1) * 0.05) * 100) / 100;
+```
+
+and add `tempDeviation,` after `hrv: Math.round(hrv),` in the pushed object.
+
+- [ ] **Step 4: Run the tests and type check**
+
+Run: `npm test && npx tsc --noEmit -p .`
+Expected: all pass, no tsc output.
+
+- [ ] **Step 5: Commit** (only if the user agreed to commits)
+
+```bash
+git add src/data/daily.ts src/data/daily.test.ts
+git commit -m "Add nightly temperature to the daily data"
+```
+
+---
+
+### Task 13: Fertile window and ovulation estimate
+
+**Files:**
+- Create: `src/lib/fertility.ts`
+- Test: `src/lib/fertility.test.ts`
+
+**Interfaces:**
+- Consumes: `CycleWindow`, `Regularity`, `completedLengths`, `medianLength`, `windowFor` (Task 2); `CycleProfile`, `has` (Task 1); `Day.tempDeviation` (Task 12).
+- Produces:
+
+```ts
+const FERTILITY_DISCLAIMER: string;
+type Confidence = 'Higher' | 'Medium' | 'Low';
+type Ovulation = { cycle: number; date: Date; source: 'temperature' | 'test' };
+type Span = { start: Date; end: Date };
+type Fertility = {
+  show: boolean;
+  hiddenReason: string | null;
+  fertile: Span | null;
+  ovulation: Span | null;
+  confirmedThisCycle: boolean;
+  confidence: Confidence | null;
+  why: string | null;
+  past: Ovulation[];
+  luteal: number;
+  notes: string[];
+};
+temperatureOvulation(days: Pick<Day, 'date' | 'tempDeviation'>[], w: CycleWindow): Date | null
+lutealLength(windows: CycleWindow[], past: Ovulation[]): number
+fmtRange(a: Date, b: Date): string
+estimateFertility(input: {
+  profile: CycleProfile; windows: CycleWindow[]; regularity: Regularity;
+  days: Pick<Day, 'date' | 'tempDeviation'>[]; episodes: Episode[]; now?: Date;
+}): Fertility
+```
+
+- [ ] **Step 1: Write the failing test** `src/lib/fertility.test.ts`
+
+```ts
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+
+import { addDays, emptyForm, formToEpisode, isoDay, sampleCycleStarts, sampleEpisodes } from '../data/cycleLog';
+import { sampleDays } from '../data/daily';
+import { cycleWindows, periodStarts, regularity } from './cycleModel';
+import { type CycleProfile, SAMPLE_PROFILE } from './cycleProfile';
+import { estimateFertility, fmtRange, lutealLength, temperatureOvulation } from './fertility';
+
+const NOW = new Date(2026, 8, 15);
+const day = (ago: number) => addDays(NOW, -ago);
+const profile = (p: Partial<CycleProfile>): CycleProfile => ({ situations: [], setupDone: true, ...p });
+// Nightly temperatures from `from` days ago to today, 0.3 higher from `riseAgo`.
+const temps = (from: number, riseAgo: number | null) =>
+  Array.from({ length: from + 1 }, (_, i) => {
+    const ago = from - i;
+    return { date: isoDay(day(ago)), tempDeviation: riseAgo != null && ago <= riseAgo ? 0.25 : -0.05 };
+  });
+function steady(lengths: number[], currentAgo = 11) {
+  let ago = currentAgo;
+  const starts = [day(ago)];
+  for (const l of [...lengths].reverse()) {
+    ago += l;
+    starts.unshift(day(ago));
+  }
+  return cycleWindows(starts);
+}
+const estimate = (p: CycleProfile, windows: ReturnType<typeof cycleWindows>, days = [] as ReturnType<typeof temps>, episodes = [] as ReturnType<typeof sampleEpisodes>) =>
+  estimateFertility({ profile: p, windows, regularity: regularity(windows, p), days, episodes, now: NOW });
+
+test('a sustained rise confirms ovulation the day before it', () => {
+  const [w] = cycleWindows([day(40), day(10)]);
+  assert.equal(isoDay(temperatureOvulation(temps(45, 22), w)!), isoDay(day(23)));
+});
+
+test('no rise, or one warm night, confirms nothing', () => {
+  const [w] = cycleWindows([day(40), day(10)]);
+  assert.equal(temperatureOvulation(temps(45, null), w), null);
+  const spike = temps(45, null).map((d) => (d.date === isoDay(day(20)) ? { ...d, tempDeviation: 0.4 } : d));
+  assert.equal(temperatureOvulation(spike, w), null);
+});
+
+test('luteal length is learned from confirmed cycles, 14 without them', () => {
+  const windows = cycleWindows([day(70), day(40), day(10)]);
+  assert.equal(lutealLength(windows, []), 14);
+  const past = [
+    { cycle: 0, date: day(52), source: 'temperature' as const },
+    { cycle: 1, date: day(22), source: 'temperature' as const },
+  ];
+  assert.equal(lutealLength(windows, past), 12);
+});
+
+test('steady cycles without confirmations give a medium calendar estimate', () => {
+  const f = estimate(profile({ situations: ['Regular'] }), steady([28, 28, 28]));
+  assert.equal(f.show, true);
+  assert.equal(f.confidence, 'Medium');
+  assert.equal(isoDay(f.ovulation!.start), isoDay(addDays(day(11), 13)));
+  assert.equal(isoDay(f.ovulation!.end), isoDay(addDays(day(11), 15)));
+  assert.equal(isoDay(f.fertile!.start), isoDay(addDays(day(11), 9)));
+  assert.equal(isoDay(f.fertile!.end), isoDay(addDays(day(11), 15)));
+});
+
+test('the sample record learns a 13 day luteal length and gives a wide low window', () => {
+  const episodes = sampleEpisodes(NOW);
+  const windows = cycleWindows(periodStarts(episodes));
+  const f = estimateFertility({
+    profile: SAMPLE_PROFILE,
+    windows,
+    regularity: regularity(windows, SAMPLE_PROFILE),
+    days: sampleDays(NOW),
+    episodes,
+    now: NOW,
+  });
+  const current = sampleCycleStarts(NOW)[4];
+  assert.equal(f.luteal, 13);
+  assert.equal(f.past.filter((o) => o.source === 'temperature').length, 4);
+  assert.equal(f.confidence, 'Low');
+  assert.equal(isoDay(f.ovulation!.start), isoDay(addDays(current, 26 - 13)));
+  assert.equal(isoDay(f.ovulation!.end), isoDay(addDays(current, 41 - 13)));
+});
+
+test('a positive ovulation test this cycle narrows the window', () => {
+  const test = formToEpisode({ ...emptyForm(), kinds: ['Symptoms'], symptoms: ['Positive ovulation test'], day: 3 }, false, NOW);
+  const f = estimate(profile({ situations: ['Irregular'] }), steady([26, 41, 30]), [], [test]);
+  assert.equal(f.confidence, 'Higher');
+  assert.equal(isoDay(f.ovulation!.start), isoDay(day(2)));
+  assert.equal(isoDay(f.ovulation!.end), isoDay(day(1)));
+});
+
+test('a temperature rise this cycle confirms it', () => {
+  const f = estimate(profile({ situations: ['Irregular'] }), steady([26, 41, 30], 20), temps(40, 3));
+  assert.equal(f.confirmedThisCycle, true);
+  assert.equal(isoDay(f.ovulation!.start), isoDay(day(4)));
+});
+
+test('hidden with a reason on hormonal contraception or with no periods, silently when switched off', () => {
+  assert.match(estimate(profile({ situations: ['Hormonal contraception'] }), steady([28, 28, 28])).hiddenReason!, /stops ovulation/);
+  assert.equal(estimate(profile({ situations: ['No periods right now'] }), steady([28, 28, 28])).show, false);
+  const off = estimate(profile({ situations: ['Regular'], showFertility: false }), steady([28, 28, 28]));
+  assert.equal(off.show, false);
+  assert.equal(off.hiddenReason, null);
+});
+
+test('postpartum shows no calendar window until two periods return', () => {
+  // Periods started 95, 67, 39 and 11 days ago; only the last is after birth.
+  const f = estimate(profile({ situations: ['Postpartum'], birthDate: isoDay(day(30)) }), steady([28, 28, 28]));
+  assert.equal(f.show, true);
+  assert.equal(f.fertile, null);
+  assert.match(f.notes[0], /before your first period/);
+});
+
+test('PCOS / PMOS adds a note about ovulation tests', () => {
+  const f = estimate(profile({ situations: ['PCOS / PMOS'] }), steady([26, 41, 30]));
+  assert.ok(f.notes.some((n) => /read positive without ovulation/.test(n)));
+});
+
+test('fmtRange writes ranges in plain words', () => {
+  assert.equal(fmtRange(new Date(2026, 8, 18), new Date(2026, 8, 23)), '18 to 23 Sep');
+  assert.equal(fmtRange(new Date(2026, 8, 28), new Date(2026, 9, 3)), '28 Sep to 3 Oct');
+  assert.equal(fmtRange(new Date(2026, 8, 28), new Date(2026, 8, 28)), '28 Sep');
+});
+```
+
+- [ ] **Step 2: Run it to verify it fails**
+
+Run: `npm test`
+Expected: FAIL, cannot find module `./fertility`.
+
+- [ ] **Step 3: Implement** `src/lib/fertility.ts`
+
+```ts
+import { addDays, daysBetween, type Episode, isoDay, parseDay, shortDate } from '../data/cycleLog';
+import type { Day } from '../data/daily';
+import { completedLengths, type CycleWindow, medianLength, type Regularity, windowFor } from './cycleModel';
+import { type CycleProfile, has } from './cycleProfile';
+
+// An estimate of the fertile window and ovulation for the current cycle, from
+// logged periods, nightly temperature and logged ovulation tests. It always
+// says how sure it is, and it is never presented as birth control.
+
+export const FERTILITY_DISCLAIMER = "This is an estimate, not birth control. Don't rely on it to prevent pregnancy.";
+
+const DEFAULT_LUTEAL = 14;
+const RISE = 0.2;
+
+export type Confidence = 'Higher' | 'Medium' | 'Low';
+export type Ovulation = { cycle: number; date: Date; source: 'temperature' | 'test' };
+export type Span = { start: Date; end: Date };
+export type Fertility = {
+  show: boolean;
+  hiddenReason: string | null;
+  fertile: Span | null;
+  ovulation: Span | null;
+  confirmedThisCycle: boolean;
+  confidence: Confidence | null;
+  why: string | null;
+  past: Ovulation[];
+  luteal: number;
+  notes: string[];
+};
+
+type Night = Pick<Day, 'date' | 'tempDeviation'>;
+
+// Three nights in a row at least 0.2 °C above the average of the six nights
+// before. Ovulation is the day before the rise. This confirms; it never predicts.
+export function temperatureOvulation(days: Night[], w: CycleWindow): Date | null {
+  const inside = days.filter((d) => {
+    const t = parseDay(d.date);
+    return d.tempDeviation != null && t >= w.start && (!w.end || t < w.end);
+  });
+  for (let i = 6; i + 2 < inside.length; i++) {
+    const base = inside.slice(i - 6, i).reduce((a, d) => a + d.tempDeviation!, 0) / 6;
+    if ([0, 1, 2].every((k) => inside[i + k].tempDeviation! >= base + RISE)) return addDays(parseDay(inside[i].date), -1);
+  }
+  return null;
+}
+
+// A positive ovulation test points to ovulation about a day later.
+function testOvulations(episodes: Episode[], windows: CycleWindow[]): Ovulation[] {
+  return episodes
+    .filter((e) => e.symptoms.includes('Positive ovulation test'))
+    .map((e) => {
+      const date = addDays(parseDay(e.date), 1);
+      const w = windowFor(parseDay(e.date), windows);
+      return w ? { cycle: w.index, date, source: 'test' as const } : null;
+    })
+    .filter((o): o is Ovulation => o != null);
+}
+
+// Her own gap from ovulation to the next period, once temperature has
+// confirmed it in completed cycles.
+export function lutealLength(windows: CycleWindow[], past: Ovulation[]): number {
+  const gaps = windows
+    .filter((w) => w.end)
+    .map((w) => {
+      const o = past.find((p) => p.cycle === w.index && p.source === 'temperature');
+      return o ? daysBetween(o.date, w.end!) : null;
+    })
+    .filter((n): n is number => n != null && n >= 9 && n <= 17)
+    .sort((a, b) => a - b);
+  return gaps.length ? gaps[Math.floor(gaps.length / 2)] : DEFAULT_LUTEAL;
+}
+
+export function fmtRange(a: Date, b: Date): string {
+  if (isoDay(a) === isoDay(b)) return shortDate(a);
+  return a.getMonth() === b.getMonth() ? `${a.getDate()} to ${shortDate(b)}` : `${shortDate(a)} to ${shortDate(b)}`;
+}
+
+export function estimateFertility({
+  profile,
+  windows,
+  regularity,
+  days,
+  episodes,
+}: {
+  profile: CycleProfile;
+  windows: CycleWindow[];
+  regularity: Regularity;
+  days: Night[];
+  episodes: Episode[];
+  now?: Date;
+}): Fertility {
+  const hidden = (reason: string | null): Fertility => ({
+    show: false,
+    hiddenReason: reason,
+    fertile: null,
+    ovulation: null,
+    confirmedThisCycle: false,
+    confidence: null,
+    why: null,
+    past: [],
+    luteal: DEFAULT_LUTEAL,
+    notes: [],
+  });
+  if (profile.showFertility === false) return hidden(null);
+  if (has(profile, 'Hormonal contraception')) return hidden('Most hormonal contraception stops ovulation, so no fertile window is shown.');
+  if (has(profile, 'No periods right now')) return hidden('A fertile window isn’t shown while your periods have stopped.');
+  const current = windows[windows.length - 1];
+  if (!current) return hidden('Log a period to see a fertile window.');
+
+  const past: Ovulation[] = [
+    ...windows
+      .map((w) => {
+        const date = temperatureOvulation(days, w);
+        return date ? { cycle: w.index, date, source: 'temperature' as const } : null;
+      })
+      .filter((o): o is Ovulation => o != null),
+    ...testOvulations(episodes, windows),
+  ];
+  const luteal = lutealLength(windows, past);
+  const notes: string[] = [];
+  if (has(profile, 'PCOS / PMOS')) {
+    notes.push('With PCOS / PMOS, ovulation tests can read positive without ovulation, so a temperature rise is the stronger sign.');
+  }
+  const base = { show: true, hiddenReason: null, past, luteal, notes };
+
+  // This cycle already has a sign.
+  const mine = past.filter((o) => o.cycle === current.index);
+  const temp = mine.find((o) => o.source === 'temperature');
+  if (temp) {
+    return {
+      ...base,
+      fertile: { start: addDays(temp.date, -5), end: addDays(temp.date, 1) },
+      ovulation: { start: temp.date, end: temp.date },
+      confirmedThisCycle: true,
+      confidence: 'Higher',
+      why: 'your temperature rise confirmed ovulation this cycle',
+    };
+  }
+  const test = mine.find((o) => o.source === 'test');
+  if (test) {
+    return {
+      ...base,
+      fertile: { start: addDays(test.date, -5), end: addDays(test.date, 2) },
+      ovulation: { start: test.date, end: addDays(test.date, 1) },
+      confirmedThisCycle: false,
+      confidence: 'Higher',
+      why: 'you logged a positive ovulation test',
+    };
+  }
+
+  // After birth, no calendar estimate until two periods have returned.
+  if (has(profile, 'Postpartum')) {
+    const birth = profile.birthDate ? parseDay(profile.birthDate) : null;
+    const back = birth ? windows.filter((w) => w.start >= birth).length : 0;
+    if (back < 2) {
+      return {
+        ...base,
+        notes: [
+          'Fertility can return before your first period after birth, so only a positive ovulation test or a temperature rise is shown until two periods have returned.',
+          ...notes,
+        ],
+        fertile: null,
+        ovulation: null,
+        confirmedThisCycle: false,
+        confidence: null,
+        why: null,
+      };
+    }
+  }
+
+  if (regularity === 'predictable') {
+    const ov = addDays(current.start, medianLength(windows)! - luteal);
+    const confirmed = new Set(past.filter((o) => o.source === 'temperature' && o.cycle !== current.index).map((o) => o.cycle)).size;
+    return {
+      ...base,
+      fertile: { start: addDays(ov, -5), end: addDays(ov, 1) },
+      ovulation: { start: addDays(ov, -1), end: addDays(ov, 1) },
+      confirmedThisCycle: false,
+      confidence: confirmed >= 2 ? 'Higher' : 'Medium',
+      why: confirmed >= 2 ? 'your cycles are steady and your temperature confirmed ovulation in past cycles' : 'your cycles are steady',
+    };
+  }
+
+  const lengths = completedLengths(windows).slice(-6);
+  const ovStart = addDays(current.start, (lengths.length ? Math.min(...lengths) : 21) - luteal);
+  const ovEnd = addDays(current.start, (lengths.length ? Math.max(...lengths) : 35) - luteal);
+  return {
+    ...base,
+    fertile: { start: addDays(ovStart, -5), end: addDays(ovEnd, 1) },
+    ovulation: { start: ovStart, end: ovEnd },
+    confirmedThisCycle: false,
+    confidence: 'Low',
+    why: lengths.length ? 'your cycles vary, so the window is wide' : 'there are no full cycles logged yet',
+  };
+}
+```
+
+(The steady test expects ovulation on start + 28 − 14 = day 14 of the cycle, so the window is start + 13 to start + 15 and the fertile window start + 9 to start + 15.)
+
+- [ ] **Step 4: Run the tests**
+
+Run: `npm test`
+Expected: all pass.
+
+- [ ] **Step 5: Commit** (only if the user agreed to commits)
+
+```bash
+git add src/lib/fertility.ts src/lib/fertility.test.ts
+git commit -m "Estimate the fertile window and ovulation"
+```
+
+---
+
+### Task 14: Fertile window on screen
+
+**Files:**
+- Modify: `src/state/cycleStore.tsx`
+- Modify: `src/ui/lineCharts.tsx`
+- Modify: `src/screens/CycleScreen.tsx`
+- Modify: `src/screens/JourneyScreen.tsx`
+- Modify: `src/screens/CycleProfileScreen.tsx`
+
+**Interfaces:**
+- Consumes: `estimateFertility`, `fmtRange`, `FERTILITY_DISCLAIMER`, `Fertility`, `Ovulation` (Task 13); `fertilityOn` (Task 1).
+- Produces: `useCycleInsights().fertility: Fertility`; `FertilityStrip` component.
+
+- [ ] **Step 1: Store.** In `src/state/cycleStore.tsx` change the daily import to `import { loadDays, WALK_PLAN_AGO } from '../data/daily';`, add `import { estimateFertility } from '../lib/fertility';`, and add to the object `useCycleInsights` returns:
+
+```ts
+      fertility: estimateFertility({ profile, windows, regularity: reg, days: loadDays(), episodes }),
+```
+
+- [ ] **Step 2: Strip chart.** In `src/ui/lineCharts.tsx` add `import { daysBetween } from '../data/cycleLog';` and, above `const s = StyleSheet.create`:
+
+```tsx
+// The current cycle as a line of days: period days, the fertile window as an
+// outline, the likely ovulation days, and today. An estimate is dashed; a
+// confirmed ovulation is filled.
+export function FertilityStrip({
+  start,
+  fertile,
+  ovulation,
+  confirmed,
+  today = new Date(),
+}: {
+  start: Date;
+  fertile: { start: Date; end: Date };
+  ovulation: { start: Date; end: Date };
+  confirmed: boolean;
+  today?: Date;
+}) {
+  const W = 320;
+  const H = 48;
+  const pad = 12;
+  const y = 18;
+  const dayOf = (d: Date) => daysBetween(start, d);
+  const total = Math.max(28, dayOf(fertile.end) + 12, dayOf(today) + 3);
+  const x = (n: number) => pad + (Math.max(0, Math.min(n, total)) / total) * (W - pad * 2);
+  const t = dayOf(today);
+  return (
+    <View style={{ width: '100%', aspectRatio: W / H }} importantForAccessibility="no-hide-descendants">
+      <Svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`}>
+        <Line x1={pad} x2={W - pad} y1={y} y2={y} stroke={C.separator} strokeWidth={1} />
+        <Rect x={x(0)} y={y - 3} width={x(5) - x(0)} height={6} rx={3} fill={M.reported} />
+        <Rect
+          x={x(dayOf(fertile.start))}
+          y={y - 8}
+          width={x(dayOf(fertile.end) + 1) - x(dayOf(fertile.start))}
+          height={16}
+          rx={8}
+          fill="none"
+          stroke={M.timeDepth}
+          strokeWidth={1.5}
+          strokeDasharray={confirmed ? undefined : '4 3'}
+        />
+        <Rect
+          x={x(dayOf(ovulation.start))}
+          y={y - 4}
+          width={Math.max(6, x(dayOf(ovulation.end) + 1) - x(dayOf(ovulation.start)))}
+          height={8}
+          rx={4}
+          fill={confirmed ? M.timeDepth : 'none'}
+          stroke={M.timeDepth}
+          strokeWidth={1.5}
+        />
+        {t >= 0 && t <= total ? <Line x1={x(t)} x2={x(t)} y1={y - 12} y2={y + 12} stroke={C.text} strokeWidth={1.5} /> : null}
+        <SvgText x={pad} y={H - 3} fontSize={11} fill={C.secondary} fontFamily={fonts.regular}>Day 1</SvgText>
+        <SvgText x={W - pad} y={H - 3} fontSize={11} fill={C.secondary} fontFamily={fonts.regular} textAnchor="end">{`Day ${total}`}</SvgText>
+      </Svg>
+    </View>
+  );
+}
+```
+
+- [ ] **Step 3: Cycle screen panel.** In `src/screens/CycleScreen.tsx` add
+`import { FERTILITY_DISCLAIMER, fmtRange } from '../lib/fertility';`, add `FertilityStrip` to the `lineCharts` import, add `fertility` to the `useCycleInsights()` destructure, and insert right after the pain split panel (`{split ? ( … ) : null}`):
+
+```tsx
+      {fertility.show ? (
+        <Panel style={cy.below}>
+          <Text style={[font('headline'), { color: C.text }]}>Fertile window</Text>
+          {fertility.fertile && fertility.ovulation && current ? (
+            <>
+              <View style={{ marginVertical: 8 }}>
+                <FertilityStrip
+                  start={current.window.start}
+                  fertile={fertility.fertile}
+                  ovulation={fertility.ovulation}
+                  confirmed={fertility.confirmedThisCycle}
+                />
+              </View>
+              <Text style={[font('subhead'), { color: C.text }]}>
+                {fertility.confirmedThisCycle
+                  ? `Ovulation confirmed around ${fmtRange(fertility.ovulation.start, fertility.ovulation.end)}.`
+                  : `Fertile window likely ${fmtRange(fertility.fertile.start, fertility.fertile.end)}. Ovulation most likely ${fmtRange(fertility.ovulation.start, fertility.ovulation.end)}.`}
+              </Text>
+              <Text style={[font('footnote'), cy.fertileLine]}>
+                {fertility.confidence} confidence: {fertility.why}.
+              </Text>
+            </>
+          ) : null}
+          {fertility.notes.map((n) => (
+            <Text key={n} style={[font('footnote'), cy.fertileLine]}>
+              {n}
+            </Text>
+          ))}
+          <Text style={[font('footnote'), cy.fertileLine]}>{FERTILITY_DISCLAIMER}</Text>
+        </Panel>
+      ) : fertility.hiddenReason ? (
+        <Text style={[font('footnote'), cy.note]}>{fertility.hiddenReason}</Text>
+      ) : null}
+```
+
+Add to `cy`: `fertileLine: { color: C.secondary, marginTop: 6 },`.
+
+- [ ] **Step 4: Journey row.** In `src/screens/JourneyScreen.tsx` add `import { shortDate } from '../data/cycleLog';` and `import type { Ovulation } from '../lib/fertility';`. Change `MonthDetail` to take `ovulations: Ovulation[] | null`:
+
+```tsx
+function MonthDetail({ index, signals, ovulations }: { index: number; signals: Signal[]; ovulations: Ovulation[] | null }) {
+```
+
+Inside it, before `return (`, add:
+
+```tsx
+  const ov = ovulations?.find((o) => o.date.getFullYear() === d.getFullYear() && o.date.getMonth() === d.getMonth());
+```
+
+and after the Bowel movements row add:
+
+```tsx
+      {ovulations ? (
+        <Row
+          title="Ovulation"
+          value={ov ? `${ov.source === 'temperature' ? 'Confirmed by temperature' : 'Positive test'}, around ${shortDate(ov.date)}` : 'Not confirmed'}
+        />
+      ) : null}
+```
+
+Change line 280 to `const { signals, fertility } = useCycleInsights();` and the call site to
+`<MonthDetail index={shown} signals={signals} ovulations={fertility.show ? fertility.past : null} />`.
+
+- [ ] **Step 5: Switch in Your Cycle.** In `src/screens/CycleProfileScreen.tsx` add `Switch` to the `react-native` import, `fertilityOn` to the `cycleProfile` import, and `import { FERTILITY_DISCLAIMER } from '../lib/fertility';`. After the situations `</ListGroup>` add:
+
+```tsx
+      {fertilityOn({ ...draft, showFertility: true }) ? (
+        <View style={{ marginTop: 24 }}>
+          <ListGroup header="Fertility" footer={FERTILITY_DISCLAIMER}>
+            <ListRow
+              first
+              title="Show Fertile Window"
+              sub="Estimated from your periods, temperature and ovulation tests"
+              right={
+                <Switch
+                  value={draft.showFertility !== false}
+                  onValueChange={(on) => setDraft((d) => ({ ...d, showFertility: on }))}
+                  accessibilityLabel="Show fertile window"
+                />
+              }
+            />
+          </ListGroup>
+        </View>
+      ) : null}
+```
+
+- [ ] **Step 6: Type check and tests**
+
+Run: `npx tsc --noEmit -p . && npm test`
+Expected: no tsc output; all tests pass.
+
+- [ ] **Step 7: Look at it.** Temporarily set Root to tab `'myhealth'`, stack `['cycle']`, relaunch and screenshot. Expect a Fertile window panel with a dashed wide window starting 2 days from today, "Low confidence: your cycles vary, so the window is wide.", and the disclaimer. Restore the defaults.
+
+- [ ] **Step 8: Commit** (only if the user agreed to commits)
+
+```bash
+git add src/state/cycleStore.tsx src/ui/lineCharts.tsx src/screens/CycleScreen.tsx src/screens/JourneyScreen.tsx src/screens/CycleProfileScreen.tsx
+git commit -m "Show the fertile window and ovulation"
+```
+
+---
+
+### Task 15: Verify every situation on screen
 
 **Files:** none changed permanently.
 
@@ -2056,4 +2726,17 @@ Also open the Health tab Dashboard (stack `[]`) once to check the Cycle card, an
 
 - [ ] **Step 3: Restore.** Put back the `SAMPLE_PROFILE` default, uncomment the saved profile line, restore Root to `'today'` and `[]`. Run `npx tsc --noEmit -p . && npm test` and `git diff --stat` to confirm no preview edits remain.
 
-- [ ] **Step 4: Report** to the user with the screenshots' findings, including anything that looked wrong.
+- [ ] **Step 4: Fertility on each screenshot.** In the Step 2 screenshots also check the Fertile window panel:
+
+| Name | Expect |
+|---|---|
+| endo, pcos | Dashed wide window, "Low confidence", disclaimer; pcos also shows the ovulation test note |
+| regular | Same wide Low window (the sample cycles vary) |
+| postpartum | Panel with the "Fertility can return before your first period" note and the disclaimer, no strip |
+| peri | Wide Low window |
+| pill | No panel; the "stops ovulation" line instead |
+| none | No panel; the "periods have stopped" line |
+
+Then open Your Cycle (stack `['cycleProfile']`), check the Show Fertile Window switch and its disclaimer footer, and open Journey to check the Ovulation row in a past month shows "Confirmed by temperature".
+
+- [ ] **Step 5: Report** to the user with the screenshots' findings, including anything that looked wrong.

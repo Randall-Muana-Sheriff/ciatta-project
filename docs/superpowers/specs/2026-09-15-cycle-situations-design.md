@@ -17,7 +17,9 @@ their situation. Bowel movements become their own loggable type.
   components (Panel, ListGroup, ListRow, SegmentedControl, Tag, PrimaryButton).
 - UI copy has no em dash, en dash or hyphen, and passes through `displayCopy()`.
 - The app never names a diagnosis or cause. Situations are what the user told us.
-- No fertility or ovulation predictions are ever shown.
+- Fertility and ovulation estimates always show their confidence in words and
+  the line "This is an estimate, not birth control. Don't rely on it to
+  prevent pregnancy." (see revision 10).
 - Existing saved data (`ciatta.cycle.v1`) must still load.
 
 ## 1. Cycle profile
@@ -113,7 +115,7 @@ selected situation are unioned.
 |---|---|---|---|---|
 | Regular | Day X of cycle; recent range | none | none | existing phase patterns |
 | Irregular | Day X since your last period; longest gap | lengthDots | Spotting between periods (existing kind) | gaps over 35 days; length variation |
-| PCOS / PMOS | as Irregular | lengthDots | Acne, Hair growth, Hair loss, Ovulation signs | long gaps; skin and hair symptom counts per cycle |
+| PCOS / PMOS | as Irregular | lengthDots | Acne, Hair growth, Hair loss (fertility signs come from revision 10) | long gaps; skin and hair symptom counts per cycle |
 | Endometriosis | adds Pain days in and outside your period | none | Pain with bowel movements, Pain when urinating, Pain during sex (pain contexts) | pain outside period days; bowel pain by phase or band; flare ups |
 | Postpartum | Week N since birth; then Periods back: N | postpartumTimeline | Postpartum bleeding (bleeding word), Mood check (symptom); breastfeeding is a profile answer, not a log field | no predictions until 3 periods |
 | Perimenopause | N months since your last period; note that 12 months marks menopause | monthsSince | Hot flashes, Night sweats, Brain fog, Joint pain | skipped periods; hot flashes against sleep |
@@ -205,8 +207,40 @@ These override the sections above where they differ.
    `bowelFlags: string[]`, matching the rest of the form.
 9. **Tests** run with `node:test` through `tsx` (`npm test`), covering
    `cycleProfile`, `cycleModel`, `cycleLog`, `cyclePatterns` and `cycleLens`.
+10. **Fertility and ovulation prediction is in scope** (approved 2026-09-15).
+    `src/lib/fertility.ts` estimates, for the current cycle:
+    - **Calendar:** ovulation is the luteal length (default 14 days) before
+      the next start. Predictable cycles use the median length and give an
+      ovulation window of that day plus or minus 1. Unpredictable cycles use
+      the shortest and longest recent lengths (21 and 35 when none), giving a
+      wide window. The fertile window is 5 days before the ovulation window
+      through 1 day after.
+    - **Temperature:** `Day` gains `tempDeviation` (nightly °C change, Oura).
+      Three nights in a row at least 0.2 °C above the average of the six
+      nights before confirm ovulation on the day before the rise. This only
+      confirms, never predicts. Sample data rises 12 days before each start.
+    - **Logged signs:** Positive ovulation test, Egg white discharge and
+      Ovulation pain join the Symptoms options whenever fertility is on. A
+      positive test puts ovulation 1 to 2 days later.
+    - **Learning:** the median gap from temperature confirmed ovulation to the
+      next start (kept between 9 and 17) replaces 14.
+    - **Confidence:** Higher (confirmed this cycle, a positive test, or steady
+      cycles with 2 or more past confirmations), Medium (steady, calendar
+      only), Low (irregular or no full cycles).
+    - **By situation:** Hormonal contraception and No periods right now hide
+      it with a reason. Postpartum shows only temperature or test signs until
+      2 periods have returned, with a note that fertility can return before
+      the first period. PCOS / PMOS adds a note that tests can read positive
+      without ovulation. Irregular and Perimenopause get the wide Low window.
+    - **Screens:** a Fertile window panel on Cycle with a strip (period days,
+      fertile window outline, ovulation days, today; filled when confirmed),
+      the dates, the confidence line, notes and the disclaimer. Journey month
+      detail gains an Ovulation row. Your Cycle gains a "Show Fertile Window"
+      switch, on by default (`CycleProfile.showFertility`, undefined means on).
+    - PCOS / PMOS no longer adds an "Ovulation signs" chip; the fertility
+      signs replace it.
 
 ## Out of scope
 
-- Fertility, ovulation prediction or pregnancy tracking.
+- Pregnancy tracking, and any use of the fertile window as contraception.
 - Any server sync; everything stays on device as today.
