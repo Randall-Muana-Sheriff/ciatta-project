@@ -633,7 +633,7 @@ function movementSummary(days: Day[]): MovementSummary {
     active: { recent: mean(last7.map((d) => d.activeMinutes)), usual: median(base.map((d) => d.activeMinutes)) },
     workouts: {
       recent: last7.reduce((n, d) => n + d.workouts.length, 0),
-      usual: base.reduce((n, d) => n + d.workouts.length, 0) / (base.length / 7),
+      usual: base.length ? base.reduce((n, d) => n + d.workouts.length, 0) / (base.length / 7) : 0,
     },
     series: days.slice(-28).map((d) => ({ date: d.date, steps: d.steps })),
     band: b,

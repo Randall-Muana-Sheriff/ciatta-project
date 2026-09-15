@@ -3,12 +3,12 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { daysBetween, parseDay, shortDate, type Episode } from '../data/cycleLog';
 import type { Day } from '../data/daily';
-import { medications, records } from '../data/sample';
 import type { Lens } from '../lib/cycleLens';
 import { type CycleSummary, type Signal, tally } from '../lib/cyclePatterns';
 import { displayCopy } from '../lib/displayCopy';
 import { fmtCount, fmtHours, type MovementSummary } from '../lib/engine';
 import type { Screen } from '../navigation';
+import { useData } from '../state/session';
 import { C, font, M, numeral, RADIUS } from '../theme';
 import { ListGroup, ListRow } from './chrome';
 import { BarRow } from './cycleInputs';
@@ -90,8 +90,10 @@ export function HealthDashboard({
   openProfile: () => void;
 }) {
   const [stage, setStage] = useState<Stage>('Deep');
+  const { records, medications } = useData();
   const now = new Date();
-  const last = days[days.length - 1];
+  // Undefined until her record holds a day; the day based cards wait for one.
+  const last: Day | undefined = days[days.length - 1];
   const last14 = days.slice(-14);
   const last28 = days.slice(-28);
   const base = days.slice(Math.max(0, days.length - 91), days.length - 35);
@@ -114,11 +116,12 @@ export function HealthDashboard({
   symptomTally.sort((a, b) => b.count - a.count);
   const symptomMax = Math.max(1, ...symptomTally.map((t) => t.count));
 
-  const latestDraw = records.draws[0];
+  const latestDraw = records?.draws[0];
 
   return (
     <View style={d.stack}>
       {/* Sleep */}
+      {last ? (
       <Card title="Sleep" meta={`Last night, ${dateOf(last)}`} onPress={() => open('sleep')}>
         <View style={d.sleepTop}>
           <StageRings stages={last.stages} active={stage} />
@@ -154,8 +157,10 @@ export function HealthDashboard({
         />
         <Text style={[font('caption1'), d.note]}>Dashed line: your usual. Sleep stages are sample data for now.</Text>
       </Card>
+      ) : null}
 
       {/* Movement */}
+      {movement.series.length ? (
       <Card title="Movement" meta="Last 7 days" onPress={() => open('movement')}>
         <View style={d.row3}>
           <Stat label="Steps a day" value={fmtCount(movement.steps.recent)} sub={`Usual ${fmtCount(movement.steps.usual)}`} />
@@ -171,8 +176,10 @@ export function HealthDashboard({
           last="Today"
         />
       </Card>
+      ) : null}
 
       {/* Recovery */}
+      {last ? (
       <Card title="Recovery" meta="Last 28 days" onPress={() => openInsight('rhrHigh')}>
         <View style={d.tiles}>
           <View style={d.tile}>
@@ -185,6 +192,7 @@ export function HealthDashboard({
           </View>
         </View>
       </Card>
+      ) : null}
 
       {/* Cycle */}
       <Card title="Cycle" meta={lens.header.value} onPress={() => open('cycle')}>
@@ -220,6 +228,7 @@ export function HealthDashboard({
       </Card>
 
       {/* Check ins */}
+      {last ? (
       <Card title="Stress, Energy, Mood" meta="Last 14 days" onPress={() => open('journal')}>
         {(
           [
@@ -243,6 +252,7 @@ export function HealthDashboard({
           );
         })}
       </Card>
+      ) : null}
 
       {/* Symptoms and digestion */}
       <Card title="Symptoms" meta="Last 60 days" onPress={() => open('symptoms')}>
@@ -252,6 +262,7 @@ export function HealthDashboard({
       </Card>
 
       {/* Medications */}
+      {medications ? (
       <Card title="Medications" meta={`${medications.current.length} current`} onPress={() => open('medications')}>
         {medications.current.map((m, n) => (
           <View key={m.name} style={[d.medRow, n > 0 && d.sep]}>
@@ -267,8 +278,10 @@ export function HealthDashboard({
           </View>
         ))}
       </Card>
+      ) : null}
 
       {/* Lab results */}
+      {latestDraw ? (
       <Card title="Lab Results" meta={latestDraw.date} onPress={() => open('healthrecords')}>
         {latestDraw.results.map((r, n) => {
           const value = parseFloat(r.value);
@@ -294,6 +307,7 @@ export function HealthDashboard({
           );
         })}
       </Card>
+      ) : null}
 
       <ListGroup>
         <ListRow first icon="doc" tint={C.green} title="Health Records" sub="Results and documents" onPress={() => open('healthrecords')} />

@@ -1,13 +1,12 @@
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, G, Line, LinearGradient, Path, Rect, Stop, Text as SvgText } from 'react-native-svg';
 
-import { loadDays } from '../data/daily';
-import { person, today } from '../data/sample';
 import { displayCopy } from '../lib/displayCopy';
 import { type CyclePoint, cycleTrend, fmtHours } from '../lib/engine';
 import { type Screen, useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
+import { useData } from '../state/session';
 import { C, font, fonts, GUTTER, numeral, RADIUS } from '../theme';
 import { LargeTitle, ListGroup, ListRow } from '../ui/chrome';
 import type { IconName } from '../ui/icons';
@@ -82,12 +81,13 @@ export function TodayScreen() {
   const { startDraft, accept, setFocus, watching, setWatching } = useCycle();
   const { today: brief } = useInsights();
   const { windows } = useCycleInsights();
+  const { person, today, days } = useData();
   const go = (screen: Screen) => () => nav.push(screen);
   const now = new Date();
 
   // The first and latest of the recent completed cycles, and the sleep of
   // their final weeks.
-  const points = cycleTrend(windows, loadDays());
+  const points = cycleTrend(windows, days);
   const first = points[0];
   const latest = points[points.length - 1];
   const sleepFrom = first?.sleep != null ? fmtHours(first.sleep) : null;
@@ -151,7 +151,7 @@ export function TodayScreen() {
 
       <View style={t.pad}>
         <Text style={[font('body'), { color: C.secondary, marginTop: 12 }]}>
-          {greeting(now)}, {person.firstName}.
+          {displayCopy(person ? `${greeting(now)}, ${person.firstName}.` : `${greeting(now)}.`)}
         </Text>
         <Text style={[font('title1'), { color: C.text, marginTop: 4 }]}>{displayCopy(today.headline)}</Text>
         <Text style={[font('footnote', 'semibold'), t.kicker]}>{today.kicker}</Text>

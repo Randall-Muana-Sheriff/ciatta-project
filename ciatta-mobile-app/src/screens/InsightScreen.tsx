@@ -1,17 +1,26 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { insight } from '../data/sample';
 import { displayCopy } from '../lib/displayCopy';
 import { useNav } from '../navigation';
+import { useData } from '../state/session';
 import { C, font } from '../theme';
 import { InsightLineChart, Legend } from '../ui/charts';
-import { Card, DetailScreen, Facts, LinkButton, PrimaryButton, Row, SecLabel, Tag } from '../ui/kit';
+import { Card, DetailScreen, EmptyNote, Facts, LinkButton, PrimaryButton, Row, SecLabel, Tag } from '../ui/kit';
 
 export function InsightScreen() {
   const nav = useNav();
+  const { insight } = useData();
   const [watching, setWatching] = useState(true);
   const [showMethod, setShowMethod] = useState(false);
+
+  if (!insight) {
+    return (
+      <DetailScreen title="Insight" onBack={nav.back}>
+        <EmptyNote text="Nothing here yet. This fills in as you log and connect sources." />
+      </DetailScreen>
+    );
+  }
 
   return (
     <DetailScreen title="Insight" onBack={nav.back}>

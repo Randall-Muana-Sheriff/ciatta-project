@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, Path, RadialGradient, Stop } from 'react-native-svg';
 
-import { profile } from '../data/sample';
+import { bodySystems } from '../data/adapter';
 import {
   type BodyPoint,
   type BodyReading,
@@ -69,8 +69,10 @@ export function BodySystemView({
     return r.x == null || r.y == null ? null : { x: (r.x / 100) * WIDTH, y: (r.y / 100) * HEIGHT };
   };
 
-  const icons = new Map(profile.bodySystems.map((s) => [s.label, s.icon]));
-  const systems = useMemo(() => readSystems(reading, profile.bodySystems.map((s) => s.label)), [reading]);
+  // The list of systems is structure; what lights each one comes only from
+  // the reading, so a system with nothing logged shows as nothing recorded.
+  const icons = new Map(bodySystems.map((s) => [s.label, s.icon]));
+  const systems = useMemo(() => readSystems(reading, bodySystems.map((s) => s.label)), [reading]);
   const [selected, setSelected] = useState<string>(
     () =>
       systems.find((s) => reading.lead && s.regions.includes(reading.lead))?.label ??

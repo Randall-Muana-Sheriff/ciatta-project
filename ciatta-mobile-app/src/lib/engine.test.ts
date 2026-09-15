@@ -57,3 +57,18 @@ test('the lead holds on other days too', () => {
     assert.equal(sampleInsights(now).today.lead?.id, 'combined', isoDay(now));
   }
 });
+
+test('with no data the engine says only the opening line', () => {
+  const out = buildInsights({
+    days: [], episodes: [], windows: [], summaries: [], signals: [], cycleObservations: [],
+    draws: [], interventions: [], watching: {}, opening: 'Nothing to compare yet.',
+  });
+  assert.deepEqual(out.ranked, []);
+  assert.equal(out.today.lead, null);
+  assert.equal(out.today.text, 'Nothing to compare yet.');
+  const m = out.movement;
+  for (const v of [m.steps.recent, m.steps.usual, m.active.recent, m.active.usual, m.workouts.recent, m.workouts.usual]) {
+    assert.ok(Number.isFinite(v), 'movement figures stay finite with no days');
+  }
+  assert.deepEqual(m.series, []);
+});

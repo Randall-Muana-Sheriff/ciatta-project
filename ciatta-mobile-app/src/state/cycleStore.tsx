@@ -2,13 +2,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { addDays, type Episode, type EpisodeForm, isoDay, normalizeEpisode, recordEpisodes, startOfDay } from '../data/cycleLog';
-import { loadDays, WALK_PLAN_AGO } from '../data/daily';
+import { WALK_PLAN_AGO } from '../data/daily';
 import { lensFor } from '../lib/cycleLens';
 import { countedWindows, cycleWindows, medianLength, periodStarts, regularity } from '../lib/cycleModel';
 import { cycleSummaries, observations, signals, similarTemplate } from '../lib/cyclePatterns';
 import { type CycleProfile, normalizeProfile, SAMPLE_PROFILE } from '../lib/cycleProfile';
 import type { Intervention } from '../lib/engine';
 import { estimateFertility } from '../lib/fertility';
+import { useData } from './session';
 
 // The record on this device: cycle episodes, which relationships to keep
 // watching, and actions the person chose to try. Everything persists between
@@ -120,6 +121,7 @@ export function useCycle(): Store {
 // signals, per cycle summaries, observations, and the usual episode shape.
 export function useCycleInsights() {
   const { episodes, profile } = useCycle();
+  const { days } = useData();
   const today = isoDay(new Date());
   return useMemo(() => {
     const windows = cycleWindows(periodStarts(episodes));
@@ -135,7 +137,7 @@ export function useCycleInsights() {
       profile,
       regularity: reg,
       lens: lensFor({ profile, windows, regularity: reg }),
-      fertility: estimateFertility({ profile, windows, regularity: reg, days: loadDays(), episodes }),
+      fertility: estimateFertility({ profile, windows, regularity: reg, days, episodes }),
     };
-  }, [episodes, profile, today]);
+  }, [episodes, profile, days, today]);
 }

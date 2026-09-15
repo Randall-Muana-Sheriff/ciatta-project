@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react';
 import { ActionSheetIOS, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { loadDays } from '../data/daily';
-import { records } from '../data/sample';
 import { type BodyPoint, readBody, REGION_LOCATION, type RegionId } from '../lib/bodyMap';
 import { useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
+import { useData } from '../state/session';
 import { C, font, GUTTER } from '../theme';
 import { BodySystemView } from '../ui/BodySystemView';
 import { LargeTitle, ToolbarButton } from '../ui/chrome';
@@ -21,9 +20,9 @@ export function MyHealthScreen() {
   const { startDraft, setFocus } = useCycle();
   const { movement, ranked } = useInsights();
   const { signals, summaries, lens } = useCycleInsights();
-  const days = loadDays();
+  const { days, records } = useData();
   const [view, setView] = useState<(typeof VIEWS)[number]>('Dashboard');
-  const body = useMemo(() => readBody({ signals, days, ranked, draws: records.draws }), [signals, days, ranked]);
+  const body = useMemo(() => readBody({ signals, days, ranked, draws: records?.draws ?? [] }), [signals, days, ranked, records]);
 
   const logCycle = () => {
     startDraft();

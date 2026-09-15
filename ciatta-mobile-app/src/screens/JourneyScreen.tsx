@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
-import { journey } from '../data/sample';
+import { type Data, journeyAxis } from '../data/adapter';
 import { addDays, shortDate } from '../data/cycleLog';
 import { countedWindows, type CycleWindow, medianLength } from '../lib/cycleModel';
 import { displayCopy } from '../lib/displayCopy';
@@ -10,6 +10,7 @@ import { monthSummary, type Signal } from '../lib/cyclePatterns';
 import type { Ovulation } from '../lib/fertility';
 import { useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
+import { useData } from '../state/session';
 import { C, font, fonts, GUTTER, RADIUS } from '../theme';
 import { LargeTitle, Panel } from '../ui/chrome';
 import { Icon, type IconName } from '../ui/icons';
@@ -36,11 +37,11 @@ const LANES: { key: Lane; title: string; sub: string; icon: IconName; color: str
 
 const SIDE = 8;
 const LABEL_W = 124;
-const NOW = journey.now;
+const NOW = journeyAxis.now;
 
 // Where a date sits on the month axis, in the same units as the lanes.
 function monthPos(d: Date): number {
-  const base = journey.monthDate(0);
+  const base = journeyAxis.monthDate(0);
   const index = (d.getFullYear() - base.getFullYear()) * 12 + d.getMonth() - base.getMonth();
   const days = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
   return index + (d.getDate() - 0.5) / days - 0.5;
@@ -56,7 +57,7 @@ function cycleLane(windows: CycleWindow[], current: CycleWindow | null, usual: n
     .filter((w) => w.end && w.length != null)
     .map((w) => ({ m: monthPos(w.end!), days: w.length! }));
   if (current && usual != null) points.push({ m: monthPos(addDays(current.start, usual)), days: usual, expected: true });
-  return points.filter((p) => p.m >= -0.5 && p.m < journey.months.length - 0.5);
+  return points.filter((p) => p.m >= -0.5 && p.m < journeyAxis.months.length - 0.5);
 }
 
 const sameMonth = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
@@ -90,7 +91,21 @@ function Glow({ x, y, color }: { x: number; y: number; color: string }) {
   );
 }
 
-function LaneMarks({ lane, x, signals, cycle }: { lane: Lane; x: (m: number) => number; signals: Signal[]; cycle: CyclePoint[] }) {
+// Cycle, pain and flare ups come from her episodes. The other lanes are drawn
+// from the sample journey, so they stay empty without it.
+function LaneMarks({
+  lane,
+  x,
+  signals,
+  cycle,
+  journey,
+}: {
+  lane: Lane;
+  x: (m: number) => number;
+  signals: Signal[];
+  cycle: CyclePoint[];
+  journey: Data['journey'];
+}) {
   switch (lane) {
     case 'cycle': {
       // Lengths fill the lane, longer cycles higher.
@@ -177,6 +192,7 @@ function LaneMarks({ lane, x, signals, cycle }: { lane: Lane; x: (m: number) => 
         </G>
       );
     case 'sleep':
+      if (!journey) return null;
       return (
         <G>
           {journey.sleep.map((s, i) => {
@@ -203,6 +219,7 @@ function LaneMarks({ lane, x, signals, cycle }: { lane: Lane; x: (m: number) => 
         </G>
       );
     case 'symptoms':
+      if (!journey) return null;
       return (
         <G>
           {journey.symptoms.map((s, i) => (
@@ -211,6 +228,7 @@ function LaneMarks({ lane, x, signals, cycle }: { lane: Lane; x: (m: number) => 
         </G>
       );
     case 'medications':
+      if (!journey) return null;
       return (
         <G>
           {journey.medications.map((med) => {
@@ -235,6 +253,7 @@ function LaneMarks({ lane, x, signals, cycle }: { lane: Lane; x: (m: number) => 
         </G>
       );
     case 'records':
+      if (!journey) return null;
       return (
         <G>
           {journey.records.map((r) => (
@@ -248,6 +267,7 @@ function LaneMarks({ lane, x, signals, cycle }: { lane: Lane; x: (m: number) => 
         </G>
       );
     case 'notes':
+      if (!journey) return null;
       return (
         <G>
           {journey.notes.map((n) => (
@@ -273,18 +293,20 @@ function MonthDetail({
   signals,
   windows,
   ovulations,
+  journey,
 }: {
   index: number;
   signals: Signal[];
   windows: CycleWindow[];
   ovulations: Ovulation[] | null;
+  journey: Data['journey'];
 }) {
-  const d = journey.monthDate(index);
-  const prev = journey.monthDate(index - 1);
+  const d = journeyAxis.monthDate(index);
+  const prev = journeyAxis.monthDate(index - 1);
   const ms = monthSummary(signals, d.getFullYear(), d.getMonth());
   const before = monthSummary(signals, prev.getFullYear(), prev.getMonth());
   const ended = windows.filter((w) => w.end && w.length != null && sameMonth(w.end, d)).map((w) => w.length!);
-  const sleep = journey.sleep.find((s) => s.label && Math.round(s.m) === index);
+  const sleep = journey?.sleep.find((s) => s.label && Math.round(s.m) === index);
   const change =
     ms.maxSeverity != null && before.maxSeverity != null && ms.maxSeverity !== before.maxSeverity
       ? `, ${ms.maxSeverity > before.maxSeverity ? 'up' : 'down'} from ${before.maxSeverity}/10`
@@ -320,6 +342,7 @@ export function JourneyScreen() {
   const nav = useNav();
   const { startDraft } = useCycle();
   const { signals, fertility, windows, lens, profile } = useCycleInsights();
+  const { journey } = useData();
   const { width } = useWindowDimensions();
   const current = windows[windows.length - 1] ?? null;
   const cycle = cycleLane(windows, current, lens.predicts ? medianLength(countedWindows(windows, profile)) : null);
@@ -328,7 +351,7 @@ export function JourneyScreen() {
   const [picked, setPicked] = useState(NOW);
 
   const start = RANGES[range];
-  const months = journey.months.slice(start);
+  const months = journeyAxis.months.slice(start);
   const plotW = width - SIDE * 2 - LABEL_W;
   const col = plotW / months.length;
   const x = (m: number) => (m - start) * col + col / 2;
@@ -353,7 +376,7 @@ export function JourneyScreen() {
         <View style={[j.monthRow, { marginLeft: SIDE + LABEL_W }]}>
           {months.map((m, i) => {
             const idx = start + i;
-            const year = i === 0 || m === 'Jan' ? journey.yearOf(idx) : '';
+            const year = i === 0 || m === 'Jan' ? journeyAxis.yearOf(idx) : '';
             const on = idx === shown;
             return (
               <Pressable
@@ -361,7 +384,7 @@ export function JourneyScreen() {
                 onPress={() => setPicked(idx)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
-                accessibilityLabel={`${m} ${journey.yearOf(idx)}`}
+                accessibilityLabel={`${m} ${journeyAxis.yearOf(idx)}`}
                 style={{ width: col, alignItems: 'center', minHeight: 44, justifyContent: 'flex-end' }}
               >
                 <Text style={[font('caption2'), { color: C.secondary, height: 14 }]}>{year}</Text>
@@ -385,7 +408,7 @@ export function JourneyScreen() {
               {months.map((m, i) => (
                 <Line key={m} x1={i * col} y1={0} x2={i * col} y2={lane.height} stroke={C.white} opacity={0.06} />
               ))}
-              <LaneMarks lane={lane.key} x={x} signals={signals} cycle={cycle} />
+              <LaneMarks lane={lane.key} x={x} signals={signals} cycle={cycle} journey={journey} />
             </Svg>
           </View>
         ))}
@@ -412,21 +435,29 @@ export function JourneyScreen() {
       </ScrollView>
 
       <View style={j.pad}>
-        <MonthDetail index={shown} signals={signals} windows={windows} ovulations={fertility.show ? fertility.past : null} />
+        <MonthDetail
+          index={shown}
+          signals={signals}
+          windows={windows}
+          ovulations={fertility.show ? fertility.past : null}
+          journey={journey}
+        />
 
-        <Pressable onPress={() => nav.push('insight')} accessibilityRole="button" style={({ pressed }) => pressed && j.pressed}>
-          <Panel style={j.insight}>
-            <Icon name="sparkle" size={24} color={C.tint} weight={1.8} />
-            <View style={{ flex: 1 }}>
-              <Text style={[font('footnote', 'semibold'), { color: C.tint }]}>
-                Something changed in {monthName(journey.monthDate(NOW))}
-              </Text>
-              <Text style={[font('headline'), { color: C.text, marginTop: 2 }]}>{displayCopy(journey.insight.headline)}</Text>
-              <Text style={[font('subhead'), { color: C.secondary, marginTop: 2 }]}>See what happened during this time.</Text>
-            </View>
-            <ChevronRight />
-          </Panel>
-        </Pressable>
+        {journey ? (
+          <Pressable onPress={() => nav.push('insight')} accessibilityRole="button" style={({ pressed }) => pressed && j.pressed}>
+            <Panel style={j.insight}>
+              <Icon name="sparkle" size={24} color={C.tint} weight={1.8} />
+              <View style={{ flex: 1 }}>
+                <Text style={[font('footnote', 'semibold'), { color: C.tint }]}>
+                  Something changed in {monthName(journeyAxis.monthDate(NOW))}
+                </Text>
+                <Text style={[font('headline'), { color: C.text, marginTop: 2 }]}>{displayCopy(journey.insight.headline)}</Text>
+                <Text style={[font('subhead'), { color: C.secondary, marginTop: 2 }]}>See what happened during this time.</Text>
+              </View>
+              <ChevronRight />
+            </Panel>
+          </Pressable>
+        ) : null}
 
         <View style={{ marginTop: 16, gap: 12 }}>
           <SecondaryButton

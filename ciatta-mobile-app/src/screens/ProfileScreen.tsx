@@ -3,15 +3,21 @@ import { Image, ScrollView, StyleSheet, Switch, Text, useWindowDimensions, View 
 import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { expo } from '../../app.json';
-import { profile, sources, type SourceKind, type Tone } from '../data/sample';
+import type { Data } from '../data/adapter';
+// Sources feed Settings, which Task 10 moves onto her record.
+import { sources } from '../data/sample';
+import type { SourceKind, Tone } from '../data/sample';
 import { displayCopy } from '../lib/displayCopy';
 import { type Screen, useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
+import { useData } from '../state/session';
 import { C, font, GUTTER, numeral, RADIUS } from '../theme';
 import { LargeTitle, ListGroup, ListRow, Panel, TextButton } from '../ui/chrome';
 import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
-import { Expandable, Facts, LinkButton, SecondaryButton, SegmentedControl, Tag } from '../ui/kit';
+import { EmptyNote, Expandable, Facts, LinkButton, SecondaryButton, SegmentedControl, Tag } from '../ui/kit';
+
+type Profile = NonNullable<Data['profile']>;
 
 const SEGMENTS = ['Overview', 'Health Info', 'Biomarkers', 'Care', 'Settings'] as const;
 type Segment = (typeof SEGMENTS)[number];
@@ -29,7 +35,7 @@ const notYet = () => {};
 
 // ── Overview pieces ────────────────────────────────────────────
 
-function StatTiles({ cols }: { cols: 2 | 4 }) {
+function StatTiles({ cols, profile }: { cols: 2 | 4; profile: Profile }) {
   return (
     <View style={p.grid}>
       {profile.stats.map((s) => (
@@ -49,7 +55,7 @@ function StatTiles({ cols }: { cols: 2 | 4 }) {
   );
 }
 
-function CareGroup() {
+function CareGroup({ profile }: { profile: Profile }) {
   return (
     <ListGroup header="Care and Coverage">
       {profile.care.map((c, n) => (
@@ -101,7 +107,7 @@ function ScoreRing({ score }: { score: number }) {
 
 const OVERVIEW_TONE: Record<Tone, string> = { coral: C.coral, mint: C.mint, lavender: C.lavender, indigo: C.lavender, text: C.gray };
 
-function HealthOverview() {
+function HealthOverview({ profile }: { profile: Profile }) {
   return (
     <Panel>
       <View style={p.overviewTop}>
@@ -137,7 +143,7 @@ function HealthOverview() {
   );
 }
 
-function DetailsGroup({ onOpen }: { onOpen: (screen: Screen) => void }) {
+function DetailsGroup({ onOpen, profile }: { onOpen: (screen: Screen) => void; profile: Profile }) {
   return (
     <ListGroup header="Health Details">
       {profile.records.map((r, n) => (
@@ -186,7 +192,7 @@ function Sparkline({ points, color }: { points: number[]; color: string }) {
   );
 }
 
-function Biomarkers({ onOpen }: { onOpen: (screen: Screen) => void }) {
+function Biomarkers({ onOpen, profile }: { onOpen: (screen: Screen) => void; profile: Profile }) {
   return (
     <View>
       <View style={p.sectionHead}>
@@ -217,7 +223,7 @@ function Biomarkers({ onOpen }: { onOpen: (screen: Screen) => void }) {
   );
 }
 
-function BodySystems() {
+function BodySystems({ profile }: { profile: Profile }) {
   return (
     <View>
       <Text style={[font('title3', 'semibold'), { color: C.text, marginBottom: 8 }]} accessibilityRole="header">
@@ -330,7 +336,10 @@ export function ProfileScreen() {
   const nav = useNav();
   const { width } = useWindowDimensions();
   const [seg, setSeg] = useState<Segment>('Overview');
+  const { profile, person } = useData();
   const cols = width >= 430 ? 4 : 2;
+  // Her own first name until her record holds a full profile.
+  const name = profile?.name ?? person?.firstName ?? null;
 
   return (
     <ScrollView style={p.fill} contentContainerStyle={p.body}>
@@ -340,10 +349,12 @@ export function ProfileScreen() {
         <View style={p.identity}>
           <Image source={images.avatar} style={p.avatar} accessibilityIgnoresInvertColors />
           <View style={{ flex: 1 }}>
-            <Text style={[font('title2', 'semibold'), { color: C.text }]}>{profile.name}</Text>
-            <Text style={[font('subhead'), { color: C.secondary }]}>
-              {profile.age} · {profile.born}
-            </Text>
+            {name ? <Text style={[font('title2', 'semibold'), { color: C.text }]}>{displayCopy(name)}</Text> : null}
+            {profile ? (
+              <Text style={[font('subhead'), { color: C.secondary }]}>
+                {profile.age} · {profile.born}
+              </Text>
+            ) : null}
           </View>
         </View>
       </View>
@@ -351,32 +362,38 @@ export function ProfileScreen() {
       <SegmentedControl segments={SEGMENTS} active={seg} onChange={setSeg} scroll style={p.segs} />
 
       <View style={[p.pad, p.stack]}>
-        {seg === 'Overview' ? (
+        {!profile && seg !== 'Settings' ? (
           <>
-            <StatTiles cols={cols} />
-            <HealthOverview />
-            <CareGroup />
-            <DetailsGroup onOpen={nav.push} />
             <CycleGroup onOpen={nav.push} />
-            <Biomarkers onOpen={nav.push} />
-            <BodySystems />
+            <EmptyNote text="Nothing here yet. This fills in as you log and connect sources." />
           </>
         ) : null}
-        {seg === 'Health Info' ? (
+        {profile && seg === 'Overview' ? (
           <>
-            <StatTiles cols={cols} />
-            <DetailsGroup onOpen={nav.push} />
+            <StatTiles cols={cols} profile={profile} />
+            <HealthOverview profile={profile} />
+            <CareGroup profile={profile} />
+            <DetailsGroup onOpen={nav.push} profile={profile} />
+            <CycleGroup onOpen={nav.push} />
+            <Biomarkers onOpen={nav.push} profile={profile} />
+            <BodySystems profile={profile} />
+          </>
+        ) : null}
+        {profile && seg === 'Health Info' ? (
+          <>
+            <StatTiles cols={cols} profile={profile} />
+            <DetailsGroup onOpen={nav.push} profile={profile} />
             <CycleGroup onOpen={nav.push} />
           </>
         ) : null}
-        {seg === 'Biomarkers' ? (
+        {profile && seg === 'Biomarkers' ? (
           <>
-            <HealthOverview />
-            <Biomarkers onOpen={nav.push} />
-            <BodySystems />
+            <HealthOverview profile={profile} />
+            <Biomarkers onOpen={nav.push} profile={profile} />
+            <BodySystems profile={profile} />
           </>
         ) : null}
-        {seg === 'Care' ? <CareGroup /> : null}
+        {profile && seg === 'Care' ? <CareGroup profile={profile} /> : null}
         {seg === 'Settings' ? <Settings onOpen={nav.push} /> : null}
       </View>
     </ScrollView>

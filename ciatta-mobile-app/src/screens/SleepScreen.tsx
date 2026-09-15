@@ -1,18 +1,27 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { sleep } from '../data/sample';
 import { useNav } from '../navigation';
+import { useData } from '../state/session';
 import { C, font, numeral } from '../theme';
 import { MiniWeekChart, SleepBarChart } from '../ui/charts';
-import { DetailScreen, Expandable, Facts, SegmentedControl, SecLabel, SourceFooter } from '../ui/kit';
+import { DetailScreen, EmptyNote, Expandable, Facts, SegmentedControl, SecLabel, SourceFooter } from '../ui/kit';
 
 const PERIODS = ['3M', '6M', '12M', 'All'] as const;
 
 export function SleepScreen() {
   const nav = useNav();
+  const { sleep } = useData();
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>('12M');
-  const [open, setOpen] = useState<string | null>(sleep.lowest[0].week);
+  const [open, setOpen] = useState<string | null>(sleep?.lowest[0].week ?? null);
+
+  if (!sleep) {
+    return (
+      <DetailScreen title="Sleep" onBack={nav.back}>
+        <EmptyNote text="Nothing here yet. This fills in as you log and connect sources." />
+      </DetailScreen>
+    );
+  }
 
   return (
     <DetailScreen title="Sleep" onBack={nav.back} footer={<SourceFooter kind="measured" text={sleep.source} />}>

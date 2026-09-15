@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { medications } from '../data/sample';
+import type { Data } from '../data/adapter';
 import { useNav } from '../navigation';
+import { useData } from '../state/session';
 import { C, font } from '../theme';
 import { MedTimeline } from '../ui/charts';
-import { DetailScreen, Expandable, Facts, SegmentedControl, LinkButton, SecLabel, SourceFooter } from '../ui/kit';
+import { DetailScreen, EmptyNote, Expandable, Facts, SegmentedControl, LinkButton, SecLabel, SourceFooter } from '../ui/kit';
 
 const TABS = ['Current', 'All'] as const;
 
-type Med = (typeof medications.current)[number];
+type Med = NonNullable<Data['medications']>['current'][number];
 
 function MedCard({ med, past = false }: { med: Med; past?: boolean }) {
   return (
@@ -29,8 +30,17 @@ function MedCard({ med, past = false }: { med: Med; past?: boolean }) {
 
 export function MedicationsScreen() {
   const nav = useNav();
+  const { medications } = useData();
   const [tab, setTab] = useState<(typeof TABS)[number]>('Current');
-  const [open, setOpen] = useState<string | null>(medications.changes[0].label);
+  const [open, setOpen] = useState<string | null>(medications?.changes[0].label ?? null);
+
+  if (!medications) {
+    return (
+      <DetailScreen title="Medications" onBack={nav.back}>
+        <EmptyNote text="Nothing here yet. This fills in as you log and connect sources." />
+      </DetailScreen>
+    );
+  }
 
   return (
     <DetailScreen

@@ -2,14 +2,15 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 
-import { records } from '../data/sample';
+import type { Data } from '../data/adapter';
 import { useNav } from '../navigation';
+import { useData } from '../state/session';
 import { C, font, numeral } from '../theme';
-import { DetailScreen, SegmentedControl, Row, SecondaryButton, SourceFooter, Tag } from '../ui/kit';
+import { DetailScreen, EmptyNote, SegmentedControl, Row, SecondaryButton, SourceFooter, Tag } from '../ui/kit';
 
 const TABS = ['Results', 'Documents'] as const;
 
-type Draw = (typeof records.draws)[number];
+type Draw = NonNullable<Data['records']>['draws'][number];
 
 function DrawGroup({ draw }: { draw: Draw }) {
   return (
@@ -42,7 +43,17 @@ function Dashes() {
 
 export function HealthRecordsScreen() {
   const nav = useNav();
+  const { records } = useData();
   const [tab, setTab] = useState<(typeof TABS)[number]>('Results');
+
+  if (!records) {
+    return (
+      <DetailScreen title="Health Records" onBack={nav.back}>
+        <EmptyNote text="Nothing here yet. This fills in as you log and connect sources." />
+      </DetailScreen>
+    );
+  }
+
   const hl = records.highlight;
 
   return (

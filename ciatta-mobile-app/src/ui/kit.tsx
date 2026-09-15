@@ -396,3 +396,8 @@ export const s = StyleSheet.create({
   },
   factValue: { color: C.text, flexShrink: 1, textAlign: 'right' },
 });
+
+// What a screen shows while her record has nothing for it yet.
+export function EmptyNote({ text }: { text: string }) {
+  return <Text style={[font('body'), { color: C.secondary, lineHeight: 25 }]}>{displayCopy(text)}</Text>;
+}

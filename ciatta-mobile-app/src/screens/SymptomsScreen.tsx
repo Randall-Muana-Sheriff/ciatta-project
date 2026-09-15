@@ -1,17 +1,27 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { symptoms } from '../data/sample';
 import { useNav } from '../navigation';
+import { useData } from '../state/session';
 import { SymptomTimeline } from '../ui/charts';
-import { DetailScreen, Expandable, Facts, SegmentedControl, SecLabel, SecondaryButton, SourceFooter } from '../ui/kit';
+import { DetailScreen, EmptyNote, Expandable, Facts, SegmentedControl, SecLabel, SecondaryButton, SourceFooter } from '../ui/kit';
 
 const FILTERS = ['All', 'Sleep', 'Energy', 'Temperature'] as const;
 
 export function SymptomsScreen() {
   const nav = useNav();
+  const { symptoms } = useData();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('All');
-  const [open, setOpen] = useState<string | null>(symptoms.list[0].name);
+  const [open, setOpen] = useState<string | null>(symptoms?.list[0].name ?? null);
+
+  if (!symptoms) {
+    return (
+      <DetailScreen title="Symptoms" onBack={nav.back}>
+        <EmptyNote text="Nothing here yet. This fills in as you log and connect sources." />
+      </DetailScreen>
+    );
+  }
+
   const shown = symptoms.list.filter((s) => filter === 'All' || s.group === filter);
 
   return (
