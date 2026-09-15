@@ -102,7 +102,7 @@ normalize → baselines → changes → temporal links → upsert threads by key
 
 ## 8. Export and delete
 
-- `export-data` returns every owned row with provenance and sources as one JSON document, shared through the native share sheet.
+- Export reads every owned row as her, under RLS, with provenance and sources, as one JSON document shared through the native share sheet. Ruling (Slice 1 plan): this runs in the app rather than as an `export-data` function; RLS gives the same only-her-rows guarantee with one less server surface.
 - `delete-account` deletes Storage objects, then the auth user; every table cascades from `auth.users`. One function, idempotent, reports failure honestly.
 
 ## 9. Slices
