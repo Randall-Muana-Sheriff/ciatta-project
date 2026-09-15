@@ -19,3 +19,17 @@ test('a cancel is not an error', () => {
 test('fallback copy has no dashes', () => {
   assert.equal(userFacingError('', 'Sign in did not finish — try again.').includes('—'), false);
 });
+
+test('an unmapped backend message never reaches the screen', () => {
+  assert.equal(
+    userFacingError(
+      new Error('duplicate key value violates unique constraint "episodes_user_id_client_id_key"'),
+      'That did not save.'
+    ),
+    'That did not save.'
+  );
+});
+
+test('an unmapped plain message still falls back', () => {
+  assert.equal(userFacingError(new Error('Something odd happened'), 'That did not save.'), 'That did not save.');
+});

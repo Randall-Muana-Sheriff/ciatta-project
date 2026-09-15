@@ -49,7 +49,7 @@ export function isAppleSignInAvailable(): Promise<boolean> {
 /**
  * Native Sign in with Apple. Apple only returns the user's name on the very
  * first authorization for a given Apple ID, never again, even after the app
- * is deleted and reinstalled, so we persist it to the profile immediately
+ * is deleted and reinstalled, so the caller must persist it immediately
  * rather than assuming it can be re-fetched later.
  */
 export async function signInWithApple() {
@@ -65,7 +65,7 @@ export async function signInWithApple() {
     if ((e as { code?: string }).code === 'ERR_REQUEST_CANCELED') {
       throw new SocialAuthCancelled();
     }
-    throw e;
+    throw new Error(userFacingError(e, 'Apple sign in did not finish. Try again.'));
   }
 
   if (!credential.identityToken) {

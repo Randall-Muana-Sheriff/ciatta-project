@@ -5,7 +5,8 @@ const TECHNICAL =
 
 /**
  * Turns auth, network, and backend failures into short copy a person can act on.
- * Technical strings never reach the screen.
+ * Technical strings never reach the screen: anything not explicitly mapped to a
+ * known, safe message falls back to the caller supplied copy.
  */
 export function userFacingError(error: unknown, fallback: string): string {
   const safeFallback = displayCopy(fallback);
@@ -48,5 +49,7 @@ export function userFacingError(error: unknown, fallback: string): string {
   if (TECHNICAL.test(text) || text.length > 140 || text.includes('{') || text.includes('  at ')) {
     return safeFallback;
   }
-  return displayCopy(text);
+  // Anything else is still unvetted backend or system text (a raw Postgres
+  // constraint message, for example): never let it reach the screen.
+  return safeFallback;
 }
