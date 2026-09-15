@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(9);
+select plan(10);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -32,11 +32,20 @@ select throws_ok($$
   values ('00000000-0000-0000-0000-00000000000a', 'cycle', 'cycle_length', 26, now(), 'DERIVED', 'x')
 $$, '42501', null, 'a client cannot write a derived observation');
 
+-- Fix round 1, item 5: a duplicate, a blank and a null symptom must not
+-- produce more than one observation (or error on the unique dedupe_key).
+insert into public.episodes (user_id, client_id, logged_at, occurred_on, occurred_at, kinds, symptoms)
+values ('00000000-0000-0000-0000-00000000000a', 'ep-dupe-symptoms', now(), '2026-09-14', now(), '{}', '{Bloating,Bloating,"",NULL}');
+select is((select count(*)::int from public.observations
+  where origin_table = 'episodes' and metric = 'symptom'
+  and origin_id = (select id from public.episodes where client_id = 'ep-dupe-symptoms')), 1,
+  'duplicate, blank and null symptoms collapse to exactly one observation');
+
 set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-00000000000b","role":"authenticated"}';
 select is((select count(*)::int from public.observations), 0, 'B cannot see A''s observations');
 
 set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}';
-delete from public.episodes where client_id = 'ep-1';
+delete from public.episodes where client_id in ('ep-1', 'ep-dupe-symptoms');
 select is((select count(*)::int from public.observations), 0, 'deleting the episode deletes its observations');
 
 select * from finish();

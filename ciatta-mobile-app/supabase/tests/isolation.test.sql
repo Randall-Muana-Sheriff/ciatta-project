@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(37);
+select plan(56);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -81,6 +81,100 @@ reset role;
 select is((select note from public.episodes where client_id = 'ep-b'), 'original', 'A updating B''s episode affects zero rows');
 select is((select count(*)::int from public.episodes where client_id = 'ep-b'), 1, 'A deleting B''s episode affects zero rows');
 
+-- Finding 6: the same "affects zero rows" proof, for every other owner-RLS
+-- table (episodes already covered above). Each row is seeded as the table
+-- owner (bypasses RLS), attacked as A, then checked as postgres.
+insert into public.health_sources (user_id, kind, name, status) values
+  ('00000000-0000-0000-0000-00000000000b', 'manual', 'B-source', 'active');
+insert into public.raw_inputs (user_id, text, input_mode) values
+  ('00000000-0000-0000-0000-00000000000b', 'B raw input', 'typed');
+insert into public.journal_entries (user_id, client_id, text, kind, occurred_at) values
+  ('00000000-0000-0000-0000-00000000000b', 'j-b', 'B note', 'Notes', now());
+insert into public.medications (user_id, name, dose) values
+  ('00000000-0000-0000-0000-00000000000b', 'B-med', 'B-dose');
+insert into public.supplements (user_id, name, dose) values
+  ('00000000-0000-0000-0000-00000000000b', 'B-supp', 'B-dose');
+insert into public.documents (user_id, storage_path, title) values
+  ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-00000000000b/b-doc.pdf', 'B-title');
+insert into public.results (user_id, test_name, value, panel, occurred_at) values
+  ('00000000-0000-0000-0000-00000000000b', 'B-test', 1, 'B-panel', now());
+insert into public.observations (user_id, domain, metric, value_text, occurred_at, provenance, dedupe_key) values
+  ('00000000-0000-0000-0000-00000000000b', 'x', 'x', 'B-value', now(), 'REPORTED', 'iso-b-obs');
+
+set local role authenticated;
+set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}';
+update public.health_sources set error = 'hacked' where user_id = '00000000-0000-0000-0000-00000000000b' and name = 'B-source';
+delete from public.health_sources where user_id = '00000000-0000-0000-0000-00000000000b' and name = 'B-source';
+update public.raw_inputs set metadata = '{"hacked":true}' where user_id = '00000000-0000-0000-0000-00000000000b';
+delete from public.raw_inputs where user_id = '00000000-0000-0000-0000-00000000000b';
+update public.journal_entries set text = 'hacked' where user_id = '00000000-0000-0000-0000-00000000000b';
+delete from public.journal_entries where user_id = '00000000-0000-0000-0000-00000000000b';
+update public.medications set dose = 'hacked' where user_id = '00000000-0000-0000-0000-00000000000b';
+delete from public.medications where user_id = '00000000-0000-0000-0000-00000000000b';
+update public.supplements set dose = 'hacked' where user_id = '00000000-0000-0000-0000-00000000000b';
+delete from public.supplements where user_id = '00000000-0000-0000-0000-00000000000b';
+update public.documents set title = 'hacked' where user_id = '00000000-0000-0000-0000-00000000000b';
+delete from public.documents where user_id = '00000000-0000-0000-0000-00000000000b';
+update public.results set panel = 'hacked' where user_id = '00000000-0000-0000-0000-00000000000b';
+delete from public.results where user_id = '00000000-0000-0000-0000-00000000000b';
+
+-- observations has no update/delete policy at all (only select and a
+-- provenance-constrained insert), so authenticated has no update/delete
+-- grant on it either -- unlike the tables above, the attempt itself errors
+-- (42501) rather than silently affecting zero rows.
+select throws_ok($$
+  update public.observations set value_text = 'hacked' where user_id = '00000000-0000-0000-0000-00000000000b'
+$$, '42501', null, 'A cannot update B''s observation');
+select throws_ok($$
+  delete from public.observations where user_id = '00000000-0000-0000-0000-00000000000b'
+$$, '42501', null, 'A cannot delete B''s observation');
+
+reset role;
+select is((select error from public.health_sources where user_id = '00000000-0000-0000-0000-00000000000b' and name = 'B-source'), null,
+  'A updating B''s health source affects zero rows');
+select is((select count(*)::int from public.health_sources where user_id = '00000000-0000-0000-0000-00000000000b' and name = 'B-source'), 1,
+  'A deleting B''s health source affects zero rows');
+select is((select metadata from public.raw_inputs where user_id = '00000000-0000-0000-0000-00000000000b'), '{}'::jsonb,
+  'A updating B''s raw input affects zero rows');
+select is((select count(*)::int from public.raw_inputs where user_id = '00000000-0000-0000-0000-00000000000b'), 1,
+  'A deleting B''s raw input affects zero rows');
+select is((select text from public.journal_entries where user_id = '00000000-0000-0000-0000-00000000000b' and client_id = 'j-b'), 'B note',
+  'A updating B''s journal entry affects zero rows');
+select is((select count(*)::int from public.journal_entries where user_id = '00000000-0000-0000-0000-00000000000b' and client_id = 'j-b'), 1,
+  'A deleting B''s journal entry affects zero rows');
+select is((select dose from public.medications where user_id = '00000000-0000-0000-0000-00000000000b'), 'B-dose',
+  'A updating B''s medication affects zero rows');
+select is((select count(*)::int from public.medications where user_id = '00000000-0000-0000-0000-00000000000b'), 1,
+  'A deleting B''s medication affects zero rows');
+select is((select dose from public.supplements where user_id = '00000000-0000-0000-0000-00000000000b'), 'B-dose',
+  'A updating B''s supplement affects zero rows');
+select is((select count(*)::int from public.supplements where user_id = '00000000-0000-0000-0000-00000000000b'), 1,
+  'A deleting B''s supplement affects zero rows');
+select is((select title from public.documents where user_id = '00000000-0000-0000-0000-00000000000b'), 'B-title',
+  'A updating B''s document affects zero rows');
+select is((select count(*)::int from public.documents where user_id = '00000000-0000-0000-0000-00000000000b'), 1,
+  'A deleting B''s document affects zero rows');
+select is((select panel from public.results where user_id = '00000000-0000-0000-0000-00000000000b'), 'B-panel',
+  'A updating B''s result affects zero rows');
+select is((select count(*)::int from public.results where user_id = '00000000-0000-0000-0000-00000000000b'), 1,
+  'A deleting B''s result affects zero rows');
+select is((select value_text from public.observations where user_id = '00000000-0000-0000-0000-00000000000b' and dedupe_key = 'iso-b-obs'), 'B-value',
+  'B''s observation is unchanged after A''s update attempt');
+select is((select count(*)::int from public.observations where user_id = '00000000-0000-0000-0000-00000000000b' and dedupe_key = 'iso-b-obs'), 1,
+  'B''s observation still exists after A''s delete attempt');
+
+-- Clean up B's rows from the finding-6 block above, as the table owner --
+-- otherwise B legitimately owning one row in each of these tables would
+-- make the "B cannot see A's ..." counts below trivially nonzero.
+delete from public.health_sources where user_id = '00000000-0000-0000-0000-00000000000b' and name = 'B-source';
+delete from public.raw_inputs where user_id = '00000000-0000-0000-0000-00000000000b';
+delete from public.journal_entries where user_id = '00000000-0000-0000-0000-00000000000b' and client_id = 'j-b';
+delete from public.medications where user_id = '00000000-0000-0000-0000-00000000000b';
+delete from public.supplements where user_id = '00000000-0000-0000-0000-00000000000b';
+delete from public.documents where user_id = '00000000-0000-0000-0000-00000000000b';
+delete from public.results where user_id = '00000000-0000-0000-0000-00000000000b';
+delete from public.observations where user_id = '00000000-0000-0000-0000-00000000000b' and dedupe_key = 'iso-b-obs';
+
 -- Give A one row in each of the tables B should not be able to read.
 set local role authenticated;
 set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}';
@@ -91,6 +185,8 @@ insert into public.results (user_id, test_name, value, occurred_at) values ('000
 insert into public.raw_inputs (user_id, text, input_mode) values ('00000000-0000-0000-0000-00000000000a', 'felt off today', 'typed');
 insert into public.episodes (user_id, client_id, logged_at, occurred_on, occurred_at, kinds, period_start)
 values ('00000000-0000-0000-0000-00000000000a', 'ep-cycle', now(), '2026-09-14', now(), '{Period}', '2026-09-14');
+insert into public.journal_entries (user_id, client_id, text, kind, occurred_at)
+values ('00000000-0000-0000-0000-00000000000a', 'j-early', 'A early note.', 'Notes', now());
 
 -- A document outside her own folder is refused, even though the row's user_id is correct.
 select throws_ok($$
@@ -105,19 +201,24 @@ select is((select count(*)::int from public.documents), 0, 'B cannot see A''s do
 select is((select count(*)::int from public.results), 0, 'B cannot see A''s results');
 select is((select count(*)::int from public.raw_inputs), 0, 'B cannot see A''s raw inputs');
 select is((select count(*)::int from public.cycle_events), 0, 'B cannot see A''s cycle events');
+select is((select count(*)::int from public.journal_entries), 0, 'B cannot see A''s journal entries');
 
+-- Fix round 2: anon now has no grant at all on any of these (round 1 left
+-- anon with select, so RLS -- correctly -- returned an empty set; now the
+-- Data API role itself has nothing to work with, so every read is a
+-- permission error before RLS is ever evaluated).
 reset role;
 set local role anon;
-select is((select count(*)::int from public.profiles), 0, 'anon reads no profiles');
-select is((select count(*)::int from public.health_sources), 0, 'anon reads no health sources');
-select is((select count(*)::int from public.raw_inputs), 0, 'anon reads no raw inputs');
-select is((select count(*)::int from public.episodes), 0, 'anon reads no episodes');
-select is((select count(*)::int from public.journal_entries), 0, 'anon reads no journal entries');
-select is((select count(*)::int from public.medications), 0, 'anon reads no medications');
-select is((select count(*)::int from public.supplements), 0, 'anon reads no supplements');
-select is((select count(*)::int from public.documents), 0, 'anon reads no documents');
-select is((select count(*)::int from public.results), 0, 'anon reads no results');
-select is((select count(*)::int from public.observations), 0, 'anon reads no observations');
+select throws_ok($$ select count(*)::int from public.profiles $$, '42501', null, 'anon cannot read profiles');
+select throws_ok($$ select count(*)::int from public.health_sources $$, '42501', null, 'anon cannot read health sources');
+select throws_ok($$ select count(*)::int from public.raw_inputs $$, '42501', null, 'anon cannot read raw inputs');
+select throws_ok($$ select count(*)::int from public.episodes $$, '42501', null, 'anon cannot read episodes');
+select throws_ok($$ select count(*)::int from public.journal_entries $$, '42501', null, 'anon cannot read journal entries');
+select throws_ok($$ select count(*)::int from public.medications $$, '42501', null, 'anon cannot read medications');
+select throws_ok($$ select count(*)::int from public.supplements $$, '42501', null, 'anon cannot read supplements');
+select throws_ok($$ select count(*)::int from public.documents $$, '42501', null, 'anon cannot read documents');
+select throws_ok($$ select count(*)::int from public.results $$, '42501', null, 'anon cannot read results');
+select throws_ok($$ select count(*)::int from public.observations $$, '42501', null, 'anon cannot read observations');
 
 reset role;
 set local role authenticated;
@@ -141,18 +242,25 @@ select is((select count(*)::int from storage.objects where name = '00000000-0000
 -- The journal trigger writes a context/note observation, and removes it when the note is deleted.
 insert into public.journal_entries (user_id, client_id, text, kind, occurred_at)
 values ('00000000-0000-0000-0000-00000000000a', 'j-iso', 'Feeling anxious.', 'Notes', now());
-select is((select value_text from public.observations where origin_table = 'journal_entries' and domain = 'context' and metric = 'note'),
+create temporary table _iso_j_iso as select id from public.journal_entries where client_id = 'j-iso';
+select is((select value_text from public.observations where origin_table = 'journal_entries' and domain = 'context' and metric = 'note'
+  and origin_id = (select id from _iso_j_iso)),
   'Feeling anxious.', 'the journal trigger writes a context note observation');
 delete from public.journal_entries where client_id = 'j-iso';
-select is((select count(*)::int from public.observations where origin_table = 'journal_entries'), 0,
+select is((select count(*)::int from public.observations where origin_table = 'journal_entries'
+  and origin_id = (select id from _iso_j_iso)), 0,
   'deleting the note removes its observation');
 
 -- Fix round 1, item 4: an episode and a note that point at her own You
 -- source must not block account deletion (the cascade from auth.users into
 -- health_sources sets their source_id to null, which used to re-fire the
 -- observation triggers for a user whose account was mid-deletion).
-insert into public.episodes (user_id, client_id, logged_at, occurred_on, occurred_at, kinds, source_id)
-values ('00000000-0000-0000-0000-00000000000a', 'ep-src', now(), '2026-09-14', now(), '{}',
+-- Real content (a Pain kind and a symptom), so this episode actually
+-- produces observations at insert time -- otherwise the account-deletion
+-- cascade below never re-fires the trigger with anything to reinsert, and
+-- this regression test would pass even without the fix.
+insert into public.episodes (user_id, client_id, logged_at, occurred_on, occurred_at, kinds, symptoms, source_id)
+values ('00000000-0000-0000-0000-00000000000a', 'ep-src', now(), '2026-09-14', now(), '{Pain}', '{Bloating}',
         (select id from public.health_sources where user_id = '00000000-0000-0000-0000-00000000000a' and kind = 'user_report'));
 insert into public.journal_entries (user_id, client_id, text, kind, occurred_at, source_id)
 values ('00000000-0000-0000-0000-00000000000a', 'j-src', 'Sourced note.', 'Notes', now(),
