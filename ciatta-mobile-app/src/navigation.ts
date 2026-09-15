@@ -19,7 +19,10 @@ export type Screen =
   | 'journal'
   | 'healthrecords'
   | 'cycleLog'
-  | 'cycleHistory';
+  | 'cycleHistory'
+  | 'evidence'
+  | 'movement'
+  | 'cycleProfile';
 
 export type Nav = {
   tab: Tab;

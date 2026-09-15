@@ -104,6 +104,21 @@ export function numeral(size: number, weight: Weight = 'semibold'): TextStyle {
   return { fontFamily: fonts[weight], fontSize: size, lineHeight: Math.round(size * 1.2), fontVariant: ['tabular-nums'] };
 }
 
+// The eight meanings from the Ciatta design system, at their Dark step (the
+// base re-lit for a dark ground). Colour carries meaning, never decoration.
+export const M = {
+  measured: '#789AF3', // Sky: anything instrumented
+  timeDepth: '#B188F3', // Lavender: long horizons, receded periods
+  reported: '#F46EB4', // Rose: what she said, felt or wrote
+  escalation: '#EC5D4A', // Flare: gated, never casual
+  change: '#EC9658', // Ember: where something turned, and every relationship
+  evidence: '#F2B863', // Amber: ranges and research, never about her
+  uncertainty: '#E4C058', // Mustard: a gap, always drawn dashed
+  attention: '#CECB47', // Citron: worth raising, marks only
+  historical: '#83868D',
+  unlit: '#3A3E47',
+} as const;
+
 // iPhone layout margin and the corner radius shared by cards and groups.
 export const GUTTER = 16;
 export const RADIUS = 12;

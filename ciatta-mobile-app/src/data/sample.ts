@@ -250,17 +250,17 @@ export const aboutYou = [
 
 export type Tone = 'coral' | 'mint' | 'lavender' | 'indigo' | 'text';
 
+// Today's cycle and sleep figures are drawn live from the cycle record and
+// daily data (see cycleTrend in engine.ts); only the words live here. Both
+// claims are what the engine's combined insight says of the sample record:
+// the shortest cycle ended in a low sleep stretch, and the same combination
+// closed the next shortest cycle.
 export const today = {
-  headline: 'Your two shortest cycles occurred after your two lowest sleep weeks.',
-  kicker: 'A pattern worth watching',
-  cycle: { from: 29, to: 26 },
-  sleep: { from: '7h 05m', to: '6h 12m' },
-  months: ['Jan', 'Feb', 'Mar', 'Apr'],
-  cycleDays: [29, 28, 27, 26],
-  sleepHours: [7.08, 6.98, 6.72, 6.2],
-  // Opens Today's Pattern; the live patterns follow it in the same paragraph.
+  headline: 'Your two shortest cycles both ended during weeks of lower sleep.',
+  kicker: 'Today’s pattern',
+  // Opens Today's Pattern when nothing is ready to surface.
   brief:
-    'Over the last four months your cycle has shortened from 29 to 26 days, and both of your shortest cycles followed your lowest sleep weeks, a stretch when you also logged more stress. That has happened twice so far, which is enough to keep watching but not enough to say lower sleep caused the change.',
+    'Your two shortest cycles both ended during weeks when your sleep was lower than usual, a stretch when you also logged more stress. That has happened twice so far, which is enough to keep watching but not enough to say lower sleep caused the change.',
 };
 
 export const healthCards: {
@@ -276,6 +276,8 @@ export const healthCards: {
   { title: 'Health Records', value: '14 results · 3 documents', period: 'Results and documents', meta: '2 new since last visit', metaIcon: 'ring', tone: 'mint', image: 'records', screen: 'healthrecords' },
   { title: 'Cycle', value: '26 to 29 days', period: 'Last 4 cycles', meta: 'Slightly shorter recently', metaIcon: 'wave', tone: 'coral', image: 'cycle', screen: 'cycle' },
   { title: 'Sleep', value: '6h 12m average', period: 'Last 7 days', meta: '12% lower than your usual', metaIcon: 'bars', tone: 'coral', image: 'sleep', screen: 'sleep' },
+  // Value and meta are filled in live from the insight layer.
+  { title: 'Movement', value: 'Steps a day', period: 'Last 7 days', meta: 'Against your usual', metaIcon: 'bars', tone: 'coral', image: 'movement', screen: 'movement' },
   { title: 'Symptoms', value: '3 observations', period: 'This month', meta: 'Fatigue, sleep disruption, stress', metaIcon: 'ring', tone: 'coral', image: 'symptoms', screen: 'symptoms' },
   { title: 'Medications & Supplements', value: '4 active', period: '2 changes this year', meta: 'Levothyroxine · Magnesium · Vitamin D', metaIcon: 'pill', tone: 'coral', image: 'medications', screen: 'medications' },
   { title: 'Your Notes', value: '38 entries', period: 'Last 30 days', meta: '“Work has been stressful lately…”', metaIcon: 'chat', tone: 'lavender', image: 'journal', screen: 'journal' },
@@ -295,14 +297,7 @@ export const journey = {
   yearOf: (month: number) => String(journeyMonth(month).getFullYear()),
   monthDate: journeyMonth,
   now: 5,
-  cycle: [
-    { m: 0, days: 28 },
-    { m: 1.1, days: 29 },
-    { m: 2.4, days: 28 },
-    { m: 3.8, days: 27 },
-    { m: 5, days: 26 },
-    { m: 6.3, days: 27, expected: true },
-  ] as { m: number; days: number; expected?: boolean }[],
+  // The cycle lane is drawn from logged periods (see JourneyScreen).
   sleep: [
     { m: 0, hours: 7.47, label: '7h 28m' },
     { m: 1.1, hours: 7.2, label: '7h 12m' },
@@ -342,7 +337,6 @@ export const profile = {
   name: 'Maya Chen',
   age: '28 years',
   born: 'Born Apr 14, 1996',
-  tagline: 'Continuous understanding for my changing health.',
   stats: [
     { icon: 'person', tone: 'coral', label: 'Age', value: '28 years', sub: 'Born Apr 14, 1996' },
     { icon: 'ruler', tone: 'coral', label: 'Height', value: '5′ 8″', sub: '173 cm' },
@@ -377,6 +371,7 @@ export const profile = {
     { label: 'Heart Health', icon: 'heart', tone: 'coral' },
     { label: 'Kidney Function', icon: 'kidney', tone: 'coral' },
     { label: 'Liver & Pancreas', icon: 'liver', tone: 'coral' },
+    { label: 'Digestive & Gut Health', icon: 'gut', tone: 'mint' },
     { label: 'Metabolic Health', icon: 'molecule', tone: 'lavender' },
     { label: 'Reproductive Health', icon: 'uterus', tone: 'coral' },
     { label: 'Bones & Muscles', icon: 'bone', tone: 'text' },

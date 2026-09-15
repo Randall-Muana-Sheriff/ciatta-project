@@ -1,20 +1,29 @@
-import { ActionSheetIOS, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ActionSheetIOS, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { healthCards } from '../data/sample';
-import { displayCopy } from '../lib/displayCopy';
+import { loadDays } from '../data/daily';
+import { records } from '../data/sample';
+import { type BodyPoint, readBody, REGION_LOCATION, type RegionId } from '../lib/bodyMap';
 import { useNav } from '../navigation';
-import { useCycle } from '../state/cycleStore';
-import { C, font, GUTTER, RADIUS } from '../theme';
-import { LargeTitle, ListGroup, ListRow, SyncStatus, ToolbarButton } from '../ui/chrome';
-import { Icon } from '../ui/icons';
-import { images } from '../ui/images';
-import { ChevronRight } from '../ui/kit';
+import { useCycle, useCycleInsights } from '../state/cycleStore';
+import { useInsights } from '../state/insights';
+import { C, font, GUTTER } from '../theme';
+import { BodySystemView } from '../ui/BodySystemView';
+import { LargeTitle, ToolbarButton } from '../ui/chrome';
+import { HealthDashboard } from '../ui/HealthDashboard';
+import { SegmentedControl } from '../ui/kit';
 
-const TONE = { coral: C.coral, mint: C.mint, lavender: C.lavender } as const;
+const VIEWS = ['Dashboard', 'Body'] as const;
 
+// Health: every metric as a dashboard, or located on the body.
 export function MyHealthScreen() {
   const nav = useNav();
-  const { startDraft } = useCycle();
+  const { startDraft, setFocus } = useCycle();
+  const { movement, ranked } = useInsights();
+  const { signals, summaries, lens } = useCycleInsights();
+  const days = loadDays();
+  const [view, setView] = useState<(typeof VIEWS)[number]>('Dashboard');
+  const body = useMemo(() => readBody({ signals, days, ranked, draws: records.draws }), [signals, days, ranked]);
 
   const logCycle = () => {
     startDraft();
@@ -32,57 +41,43 @@ export function MyHealthScreen() {
     );
   };
 
+  const openInsight = (id: string) => {
+    setFocus(id);
+    nav.push('evidence');
+  };
+  const openPoint = (p: BodyPoint) => {
+    if (p.insightId) openInsight(p.insightId);
+    else if (p.screen) nav.push(p.screen);
+  };
+  // Logging from the body starts with that place already chosen.
+  const logAt = (region: RegionId) => {
+    const location = REGION_LOCATION[region];
+    startDraft({ form: location ? { kinds: ['Pain'], locations: [location] } : { kinds: ['Symptoms'] } });
+    nav.push('cycleLog');
+  };
+
   return (
     <ScrollView style={h.fill} contentContainerStyle={h.body}>
-      <LargeTitle
-        title="Health"
-        trailing={
-          <>
-            <SyncStatus />
-            <ToolbarButton icon="plus" label="Add to Your Record" onPress={teach} />
-          </>
-        }
-      />
+      <LargeTitle title="Health" trailing={<ToolbarButton icon="plus" label="Add to Your Record" onPress={teach} />} />
 
       <View style={h.pad}>
-        <Text style={[font('subhead'), { color: C.secondary, marginBottom: 20 }]}>
-          Everything about your health, in one place.
-        </Text>
+        <Text style={[font('subhead'), { color: C.secondary, marginBottom: 16 }]}>Everything about your health, in one place.</Text>
+        <SegmentedControl segments={VIEWS} active={view} onChange={setView} />
 
-        {healthCards.map((card) => (
-          <Pressable
-            key={card.screen}
-            onPress={() => nav.push(card.screen)}
-            accessibilityRole="button"
-            style={({ pressed }) => [h.card, pressed && h.pressed]}
-          >
-            <Image source={images[card.image]} style={h.photo} resizeMode="cover" accessibilityIgnoresInvertColors />
-            <View style={h.cardText}>
-              <Text style={[font('headline'), { color: C.text }]}>{displayCopy(card.title)}</Text>
-              <Text style={[font('subhead'), { color: C.text, marginTop: 2 }]}>{displayCopy(card.value)}</Text>
-              <Text style={[font('footnote'), { color: C.secondary }]}>{displayCopy(card.period)}</Text>
-              <View style={h.meta}>
-                <Icon name={card.metaIcon} size={14} color={TONE[card.tone]} weight={1.8} />
-                <Text style={[font('caption1'), { color: C.secondary, flex: 1 }]} numberOfLines={2}>
-                  {displayCopy(card.meta)}
-                </Text>
-              </View>
-            </View>
-            <ChevronRight />
-          </Pressable>
-        ))}
-
-        <ListGroup style={{ marginTop: 16 }}>
-          <ListRow
-            first
-            icon="layers"
-            tint={C.indigo}
-            title="Connected Sources"
-            sub="Apple Health · Lab Records · Manual Entries"
-            value="3"
-            onPress={() => nav.goTab('profile')}
+        {view === 'Dashboard' ? (
+          <HealthDashboard
+            days={days}
+            movement={movement}
+            summaries={summaries}
+            signals={signals}
+            lens={lens}
+            open={nav.push}
+            openInsight={openInsight}
+            openProfile={() => nav.goTab('profile')}
           />
-        </ListGroup>
+        ) : (
+          <BodySystemView reading={body} onOpen={openPoint} onLog={logAt} />
+        )}
       </View>
     </ScrollView>
   );
@@ -92,19 +87,4 @@ const h = StyleSheet.create({
   fill: { flex: 1 },
   body: { paddingBottom: 32 },
   pad: { paddingHorizontal: GUTTER, paddingTop: 4 },
-  pressed: { opacity: 0.55 },
-
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: C.card,
-    borderRadius: RADIUS,
-    padding: 12,
-    paddingRight: 16,
-    marginBottom: 12,
-  },
-  photo: { width: 88, height: 88, borderRadius: 8 },
-  cardText: { flex: 1 },
-  meta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
 });

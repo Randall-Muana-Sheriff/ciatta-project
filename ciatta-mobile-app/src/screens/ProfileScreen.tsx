@@ -6,7 +6,8 @@ import { expo } from '../../app.json';
 import { profile, sources, type SourceKind, type Tone } from '../data/sample';
 import { displayCopy } from '../lib/displayCopy';
 import { type Screen, useNav } from '../navigation';
-import { C, font, fonts, GUTTER, numeral, RADIUS } from '../theme';
+import { useCycle } from '../state/cycleStore';
+import { C, font, GUTTER, numeral, RADIUS } from '../theme';
 import { LargeTitle, ListGroup, ListRow, Panel, TextButton } from '../ui/chrome';
 import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
@@ -150,6 +151,22 @@ function DetailsGroup({ onOpen }: { onOpen: (screen: Screen) => void }) {
           onPress={r.screen ? () => onOpen(r.screen!) : undefined}
         />
       ))}
+    </ListGroup>
+  );
+}
+
+function CycleGroup({ onOpen }: { onOpen: (screen: Screen) => void }) {
+  const { profile } = useCycle();
+  return (
+    <ListGroup header="Your Cycle">
+      <ListRow
+        first
+        icon="drop"
+        tint={C.coral}
+        title="Cycle Situation"
+        sub={profile.situations.join(' · ') || 'Not set yet'}
+        onPress={() => onOpen('cycleProfile')}
+      />
     </ListGroup>
   );
 }
@@ -329,7 +346,6 @@ export function ProfileScreen() {
             </Text>
           </View>
         </View>
-        <Text style={[font('subhead'), { color: C.secondary, fontFamily: fonts.italic, marginTop: 12 }]}>{profile.tagline}</Text>
       </View>
 
       <SegmentedControl segments={SEGMENTS} active={seg} onChange={setSeg} scroll style={p.segs} />
@@ -341,6 +357,7 @@ export function ProfileScreen() {
             <HealthOverview />
             <CareGroup />
             <DetailsGroup onOpen={nav.push} />
+            <CycleGroup onOpen={nav.push} />
             <Biomarkers onOpen={nav.push} />
             <BodySystems />
           </>
@@ -349,6 +366,7 @@ export function ProfileScreen() {
           <>
             <StatTiles cols={cols} />
             <DetailsGroup onOpen={nav.push} />
+            <CycleGroup onOpen={nav.push} />
           </>
         ) : null}
         {seg === 'Biomarkers' ? (

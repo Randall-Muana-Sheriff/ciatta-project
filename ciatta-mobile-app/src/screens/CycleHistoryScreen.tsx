@@ -2,7 +2,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 
 import { AFFECT, dayLabel, shortDate } from '../data/cycleLog';
+import { BANDS, bandOf } from '../lib/cycleModel';
 import { PHASES, tally } from '../lib/cyclePatterns';
+import { displayCopy } from '../lib/displayCopy';
 import { useNav } from '../navigation';
 import { useCycleInsights } from '../state/cycleStore';
 import { C, font } from '../theme';
@@ -31,7 +33,14 @@ export function CycleHistoryScreen() {
   const locations = tally(pain.map((s) => s.episode.locations));
   const sensations = tally(pain.map((s) => s.episode.sensations));
   const impact = tally(pain.map((s) => s.episode.affect)).sort((a, b) => AFFECT.indexOf(a.label as never) - AFFECT.indexOf(b.label as never));
-  const timing = PHASES.map((phase) => ({ label: phase, count: pain.filter((s) => s.phase === phase).length }));
+  const unplaced = pain.filter((s) => s.phase == null && s.daysSincePeriod != null);
+  const timing = [
+    ...PHASES.map((phase) => ({ label: phase, count: pain.filter((s) => s.phase === phase).length })),
+    ...BANDS.map((b) => ({
+      label: displayCopy(`${b.label} after a period`),
+      count: unplaced.filter((s) => bandOf(s.daysSincePeriod!) === b).length,
+    })).filter((x) => x.count > 0),
+  ];
   const flares = signals.filter((s) => s.episode.flareUpUserReported).reverse();
   const maxOf = (xs: { count: number }[]) => Math.max(1, ...xs.map((x) => x.count));
 

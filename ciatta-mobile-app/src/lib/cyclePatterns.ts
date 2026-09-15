@@ -1,46 +1,15 @@
-import {
-  addDays,
-  cycleStartDates,
-  daysBetween,
-  type EpisodeForm,
-  type Episode,
-  parseDay,
-  TYPICAL_LENGTH,
-} from '../data/cycleLog';
+import { daysBetween, type Episode, type EpisodeForm, parseDay } from '../data/cycleLog';
+import { bandOf, type CycleWindow, type Phase, phaseOf, windowFor } from './cycleModel';
 
-// Ciatta's reading of the Cycle record. It describes what recurred; it never
+export { type CycleWindow, type Phase, PHASES } from './cycleModel';
+
+// The reading of the Cycle record. It describes what recurred; it never
 // names a cause or a condition. A pattern is only surfaced once it has shown
 // up in at least MIN_CYCLES separate cycles.
 
 const MIN_CYCLES = 3;
+const MIN_BOWEL = 3;
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-export type Phase = 'Before period' | 'During period' | 'After period' | 'Between periods';
-export const PHASES: Phase[] = ['Before period', 'During period', 'After period', 'Between periods'];
-
-export type CycleWindow = { index: number; start: Date; end: Date | null; length: number | null };
-
-export function cycleWindows(now = new Date()): CycleWindow[] {
-  const starts = cycleStartDates(now);
-  return starts.map((start, index) => {
-    const end = starts[index + 1] ?? null;
-    return { index, start, end, length: end ? daysBetween(start, end) : null };
-  });
-}
-
-function windowFor(date: Date, windows: CycleWindow[]): CycleWindow | null {
-  for (let i = windows.length - 1; i >= 0; i--) if (date >= windows[i].start) return windows[i];
-  return null;
-}
-
-export function phaseOf(date: Date, w: CycleWindow): Phase {
-  const sinceStart = daysBetween(w.start, date);
-  const untilNext = daysBetween(date, w.end ?? addDays(w.start, TYPICAL_LENGTH));
-  if (sinceStart <= 4) return 'During period';
-  if (untilNext >= 1 && untilNext <= 3) return 'Before period';
-  if (sinceStart <= 7) return 'After period';
-  return 'Between periods';
-}
 
 // All day counts as 12 waking hours; an episode without times has no length.
 export function hoursOf(e: Episode): number | null {
@@ -57,25 +26,32 @@ export type Signal = {
   date: Date;
   cycle: CycleWindow | null;
   phase: Phase | null;
+  daysSincePeriod: number | null;
+  bowel: boolean;
+  bowelPain: boolean;
   hours: number | null;
   pain: boolean;
   sleepDisrupted: boolean;
   stress: boolean;
 };
 
-export function signals(episodes: Episode[], windows: CycleWindow[]): Signal[] {
+export function signals(episodes: Episode[], windows: CycleWindow[], predicted: number | null = null): Signal[] {
   return episodes
     .map((episode) => {
       const date = parseDay(episode.date);
       const cycle = windowFor(date, windows);
       const said = [...episode.context, ...episode.noteContext];
+      const bowel = episode.kinds.includes('Bowel movement');
       return {
         episode,
         date,
         cycle,
-        phase: cycle ? phaseOf(date, cycle) : null,
+        phase: cycle ? phaseOf(date, cycle, predicted) : null,
+        daysSincePeriod: cycle ? daysBetween(cycle.start, date) : null,
         hours: hoursOf(episode),
         pain: episode.kinds.includes('Pain'),
+        bowel,
+        bowelPain: (bowel && episode.bowelPain != null && episode.bowelPain !== 'None') || said.includes('Pain with bowel movements'),
         sleepDisrupted:
           said.includes('Poor sleep') ||
           episode.changes.includes('Could not sleep') ||
@@ -122,7 +98,7 @@ export function cycleSummaries(sigs: Signal[], windows: CycleWindow[]): CycleSum
 }
 
 export type Observation = {
-  id: 'beforePeriod' | 'flareSleep' | 'duration';
+  id: 'beforePeriod' | 'flareSleep' | 'duration' | 'bowelPain';
   text: string;
   detail?: string;
   context?: string;
@@ -131,6 +107,13 @@ export type Observation = {
 };
 
 const round = (h: number) => Math.round(h);
+
+const PHASE_PHRASE: Record<Phase, string> = {
+  'During period': 'during your period',
+  'Before period': 'in the days before your period',
+  'After period': 'in the days after your period',
+  'Between periods': 'between periods',
+};
 
 export function observations(sigs: Signal[], windows: CycleWindow[], summaries: CycleSummary[], now = new Date()): Observation[] {
   const out: Observation[] = [];
@@ -197,7 +180,31 @@ export function observations(sigs: Signal[], windows: CycleWindow[], summaries: 
     }
   }
 
+  // Pain with bowel movements, by phase, or by days since a period when
+  // there is no phase.
+  const bowel = sigs.filter((s) => s.bowelPain);
+  if (bowel.length >= MIN_BOWEL) {
+    const where = (s: Signal) =>
+      s.phase ? PHASE_PHRASE[s.phase] : s.daysSincePeriod != null ? bandOf(s.daysSincePeriod).phrase : 'with no period logged before it';
+    const top = tally(bowel.map((s) => [where(s)]))[0];
+    out.push({
+      id: 'bowelPain',
+      text: `Pain with bowel movements showed up most ${top.label}: ${top.count} of the ${bowel.length} times you logged it.`,
+      brief: `Pain with bowel movements has come up most ${top.label}, ${top.count} of the ${bowel.length} times you logged it.`,
+    });
+  }
+
   return out;
+}
+
+// Pain days in the last 90 days, during a period and outside one.
+export function painSplit(sigs: Signal[], now = new Date()): { during: number; outside: number } {
+  const recent = sigs.filter((s) => s.pain && daysBetween(s.date, now) >= 0 && daysBetween(s.date, now) <= 90);
+  const days = (xs: Signal[]) => new Set(xs.map((s) => s.episode.date)).size;
+  return {
+    during: days(recent.filter((s) => s.phase === 'During period')),
+    outside: days(recent.filter((s) => s.phase !== 'During period')),
+  };
 }
 
 // The usual shape of a pain episode, for "Log similar episode".
@@ -233,6 +240,8 @@ export type MonthSummary = {
   maxSeverity: number | null;
   flares: number;
   stress: number;
+  bowel: number;
+  bowelPain: number;
 };
 
 export function monthSummary(sigs: Signal[], year: number, month: number): MonthSummary {
@@ -245,15 +254,7 @@ export function monthSummary(sigs: Signal[], year: number, month: number): Month
     maxSeverity: severities.length ? Math.max(...severities) : null,
     flares: mine.filter((s) => s.episode.flareUpUserReported).length,
     stress: mine.filter((s) => s.stress).length,
+    bowel: mine.filter((s) => s.bowel).length,
+    bowelPain: mine.filter((s) => s.bowel && s.bowelPain).length,
   };
-}
-
-// Today's brief: the day's finding, then each pattern currently showing,
-// written as one continuous piece of prose.
-const BRIEF_ORDER: Observation['id'][] = ['duration', 'beforePeriod', 'flareSleep'];
-
-export function dailyBrief(opening: string, found: Observation[]): string {
-  const middle = BRIEF_ORDER.map((id) => found.find((o) => o.id === id)?.brief).filter((b): b is string => !!b);
-  const closing = middle.length ? ['All of this is still being watched to see whether it holds over your next cycles.'] : [];
-  return [opening, ...middle, ...closing].join(' ');
 }

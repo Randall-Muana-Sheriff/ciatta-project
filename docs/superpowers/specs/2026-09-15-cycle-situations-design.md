@@ -181,9 +181,10 @@ Shown as a Panel on the review step of the log only when triggered:
 
 These override the sections above where they differ.
 
-1. **Sample cycle lengths** are 34, 26, 41 and 30 days (five starts, the last
+1. **Sample cycle lengths** are 34, 41, 30 and 26 days (five starts, the last
    being the current cycle). The earlier 31, 44, 29, 52, 33 reached 200 days
-   back, past the 150 days of sample daily data. The sample record also logs a
+   back, past the 150 days of sample daily data. The last completed cycle is
+   the shortest, which keeps Today's combined insight in the lead. The sample record also logs a
    Period at every cycle start and three painful bowel movements during
    periods.
 2. **Completed cycles keep all four phases**, because their next start is a
@@ -202,7 +203,9 @@ These override the sections above where they differ.
 6. **Picking Regular or Irregular** also clears `No periods right now`.
 7. **Stored sample episodes are rebuilt on load**; only the person's own
    episodes (ids not starting with `sample-`) come from storage, passed
-   through `normalizeEpisode`.
+   through `normalizeEpisode`. The store holds and saves only the person's
+   own episodes, and the sample record steps aside once they include a
+   Period of their own.
 8. **Bowel fields** are typed `stool: number | null`, `bowelPain: string | null`,
    `bowelFlags: string[]`, matching the rest of the form.
 9. **Tests** run with `node:test` through `tsx` (`npm test`), covering

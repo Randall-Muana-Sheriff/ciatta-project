@@ -8,4 +8,7 @@ export const images = {
   symptoms: require('../../assets/images/cia/symptoms.jpg'),
   medications: require('../../assets/images/cia/medications.jpg'),
   journal: require('../../assets/images/cia/journal.jpg'),
+  movement: require('../../assets/images/cia/movement.jpg'),
+  // Canonical front view from the Ciatta design system (07 · Body).
+  body: require('../../assets/images/cia/body.png'),
 };

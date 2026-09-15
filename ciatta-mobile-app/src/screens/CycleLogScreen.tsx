@@ -4,8 +4,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import {
   ACUTE,
   AFFECT,
+  BLEEDING_KINDS,
+  BOWEL_FLAGS,
+  BOWEL_PAIN,
   CHANGES,
-  CONTEXT,
   DAY_IMPACT,
   dayAgoLabel,
   emptyForm,
@@ -19,11 +21,11 @@ import {
   PAIN_PATTERN,
   SENSATIONS,
   summarize,
-  SYMPTOMS,
   TIMING_STATES,
   TRAJECTORY,
-  WHAT_HAPPENED,
 } from '../data/cycleLog';
+import { safetyNotes } from '../lib/cycleLens';
+import { displayCopy } from '../lib/displayCopy';
 import { useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { C, font } from '../theme';
@@ -32,10 +34,12 @@ import { Panel } from '../ui/chrome';
 import { ChoiceChips, FieldLabel, NoteField, SeverityScale, StepHeader, Stepper, StepProgress } from '../ui/cycleInputs';
 import { Icon } from '../ui/icons';
 import { DetailScreen, LinkButton, PrimaryButton, SecondaryButton } from '../ui/kit';
+import { StoolScale } from '../ui/stoolScale';
 
 type StepId =
   | 'what'
   | 'period'
+  | 'bowel'
   | 'when'
   | 'where'
   | 'feel'
@@ -56,7 +60,8 @@ type Mode = 'new' | 'similar';
 function stepsFor(mode: Mode, kinds: string[]): StepId[] {
   if (mode === 'similar') return ['changed', 'severity', 'when', 'impact', 'around', 'flare', 'helped', 'summary'];
   const steps: StepId[] = ['what'];
-  if (kinds.includes('Period') || kinds.includes('Spotting')) steps.push('period');
+  if (kinds.some((k) => BLEEDING_KINDS.includes(k))) steps.push('period');
+  if (kinds.includes('Bowel movement')) steps.push('bowel');
   if (kinds.includes('Pain')) steps.push('when', 'where', 'feel', 'severity', 'change', 'changed', 'impact');
   if (kinds.includes('Symptoms')) steps.push('symptoms');
   steps.push('around', 'flare');
@@ -80,7 +85,7 @@ const stepTime = (h: number | null, delta: number, fallback: number) => (h == nu
 export function CycleLogScreen() {
   const nav = useNav();
   const { draft, add } = useCycle();
-  const { template } = useCycleInsights();
+  const { template, lens, profile } = useCycleInsights();
   const [mode, setMode] = useState<Mode>(draft.mode);
   const [form, setForm] = useState<EpisodeForm>(() => ({ ...emptyForm(), ...draft.form }));
   const [index, setIndex] = useState(0);
@@ -123,12 +128,12 @@ export function CycleLogScreen() {
     what: () => (
       <>
         <StepHeader title="What happened?" hint="Choose everything that applies." />
-        <ChoiceChips options={WHAT_HAPPENED} selected={form.kinds} onToggle={(v) => toggle('kinds', v)} />
+        <ChoiceChips options={lens.kinds} selected={form.kinds} onToggle={(v) => toggle('kinds', v)} />
         {template && mode === 'new' ? (
           <Panel style={l.gap}>
             <Text style={[font('headline'), { color: C.text }]}>Pain again?</Text>
             <Text style={[font('subhead'), { color: C.secondary, marginTop: 4 }]}>
-              Start from your usual episode: {[...(template.locations ?? []), ...(template.sensations ?? [])].join(', ')}
+              Start from your usual episode: {displayCopy([...(template.locations ?? []), ...(template.sensations ?? [])].join(', '))}
               {template.severity != null ? `, ${template.severity} of 10` : ''}.
             </Text>
             <View style={{ marginTop: 12 }}>
@@ -140,10 +145,13 @@ export function CycleLogScreen() {
     ),
 
     period: () => {
-      const spotting = !form.kinds.includes('Period');
+      const kind = BLEEDING_KINDS.find((k) => form.kinds.includes(k)) ?? 'Period';
       return (
         <>
-          <StepHeader title={spotting ? 'When was the spotting?' : 'When was your period?'} hint="Rough dates are fine." />
+          <StepHeader
+            title={kind === 'Period' ? 'When was your period?' : displayCopy(`When was the ${kind.toLowerCase()}?`)}
+            hint="Rough dates are fine."
+          />
           <Stepper
             label="Started"
             value={dayAgoLabel(form.periodStart)}
@@ -165,6 +173,35 @@ export function CycleLogScreen() {
           />
           <FieldLabel>Flow</FieldLabel>
           <ChoiceChips single options={FLOW} selected={form.flow ? [form.flow] : []} onToggle={(v) => pick('flow', v)} />
+        </>
+      );
+    },
+
+    bowel: () => {
+      const ownDay = !form.kinds.includes('Pain') && !form.kinds.some((k) => BLEEDING_KINDS.includes(k));
+      return (
+        <>
+          <StepHeader title="Tell us about the bowel movement" hint="Pick the picture closest to what you saw." />
+          {ownDay ? (
+            <Stepper
+              label="Day"
+              value={dayAgoLabel(form.day)}
+              onEarlier={() => set('day', form.day + 1)}
+              onLater={() => set('day', Math.max(0, form.day - 1))}
+              laterDisabled={form.day === 0}
+            />
+          ) : null}
+          <FieldLabel>Type</FieldLabel>
+          <StoolScale value={form.stool} onChange={(n) => set('stool', form.stool === n ? null : n)} />
+          <FieldLabel>Pain</FieldLabel>
+          <ChoiceChips
+            single
+            options={BOWEL_PAIN}
+            selected={form.bowelPain ? [form.bowelPain] : []}
+            onToggle={(v) => set('bowelPain', form.bowelPain === v ? null : v)}
+          />
+          <FieldLabel>Also true</FieldLabel>
+          <ChoiceChips options={BOWEL_FLAGS} selected={form.bowelFlags} onToggle={(v) => toggle('bowelFlags', v)} />
         </>
       );
     },
@@ -253,7 +290,7 @@ export function CycleLogScreen() {
           <Panel style={{ marginBottom: 20 }}>
             <Text style={[font('footnote', 'semibold'), { color: C.tint }]}>Filled in from your usual episode</Text>
             <Text style={[font('subhead'), { color: C.text, marginTop: 4 }]}>
-              {[...form.locations, ...form.sensations].join(', ')}
+              {displayCopy([...form.locations, ...form.sensations].join(', '))}
               {form.severity != null ? `, ${form.severity} of 10` : ''}
               {form.start != null && form.end != null ? `, ${fmtHour(form.start)} to ${fmtHour(form.end)}` : ''}
             </Text>
@@ -290,14 +327,14 @@ export function CycleLogScreen() {
     symptoms: () => (
       <>
         <StepHeader title="Which symptoms did you notice?" hint="Choose all that apply." />
-        <ChoiceChips options={SYMPTOMS} selected={form.symptoms} onToggle={(v) => toggle('symptoms', v)} />
+        <ChoiceChips options={lens.symptoms} selected={form.symptoms} onToggle={(v) => toggle('symptoms', v)} />
       </>
     ),
 
     around: () => (
       <>
         <StepHeader title="What was happening around the time?" hint="Anything that was going on, whether or not it seems related." />
-        <ChoiceChips options={CONTEXT} selected={form.context} onToggle={(v) => toggle('context', v, 'No obvious trigger')} />
+        <ChoiceChips options={lens.contexts} selected={form.context} onToggle={(v) => toggle('context', v, 'No obvious trigger')} />
         {triggerCandidates.length ? (
           <>
             <FieldLabel hint="Optional. Only mark these if it feels true to you. Everything else is treated as happening at the same time, not as a cause.">
@@ -348,20 +385,29 @@ export function CycleLogScreen() {
 
     summary: () => (
       <>
-        <Text style={[font('footnote', 'semibold'), { color: C.tint }]}>{episodeTitle(episode)}</Text>
+        <Text style={[font('footnote', 'semibold'), { color: C.tint }]}>{displayCopy(episodeTitle(episode))}</Text>
         <StepHeader title="Check this before saving" hint="You can change anything with Edit." />
         <Panel>
           {summarize(episode).map((section, n) => (
             <View key={section.label} style={[l.summaryRow, n > 0 && l.summarySep]}>
-              <Text style={[font('footnote'), { color: C.secondary }]}>{section.label}</Text>
+              <Text style={[font('footnote'), { color: C.secondary }]}>{displayCopy(section.label)}</Text>
               {section.lines.map((line) => (
                 <Text key={line} style={[font('body'), { color: C.text }]}>
-                  {line}
+                  {displayCopy(line)}
                 </Text>
               ))}
             </View>
           ))}
         </Panel>
+        {safetyNotes(form, profile).map((note) => (
+          <Panel key={note} style={[l.gap, l.care]}>
+            <Icon name="info" size={20} color={C.secondary} weight={1.8} />
+            <View style={{ flex: 1 }}>
+              <Text style={[font('headline'), { color: C.text }]}>Worth knowing</Text>
+              <Text style={[font('subhead'), { color: C.secondary, marginTop: 4 }]}>{displayCopy(note)}</Text>
+            </View>
+          </Panel>
+        ))}
       </>
     ),
   };

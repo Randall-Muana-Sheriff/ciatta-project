@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle } from 'react-native-svg';
 
 import { displayCopy } from '../lib/displayCopy';
 import type { Tab } from '../navigation';
@@ -10,30 +9,6 @@ import { Icon, type IconName } from './icons';
 import { ChevronRight } from './kit';
 
 // ── Navigation bar items ───────────────────────────────────────
-
-export function SyncStatus({ percent = 87 }: { percent?: number }) {
-  const r = 11;
-  const len = 2 * Math.PI * r;
-  return (
-    <View style={s.sync} accessible accessibilityLabel={`${percent} percent of your data synced`}>
-      <Svg width={28} height={28} viewBox="0 0 28 28">
-        <Circle cx={14} cy={14} r={r} stroke={C.fill} strokeWidth={3} fill="none" />
-        <Circle
-          cx={14}
-          cy={14}
-          r={r}
-          stroke={C.mint}
-          strokeWidth={3}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={`${(len * percent) / 100} ${len}`}
-          transform="rotate(-90 14 14)"
-        />
-      </Svg>
-      <Text style={[font('footnote', 'semibold'), { color: C.secondary }]}>{percent}%</Text>
-    </View>
-  );
-}
 
 // Circular icon button for a navigation bar, 44 pt square.
 export function ToolbarButton({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
@@ -58,16 +33,26 @@ export function TextButton({ label, onPress }: { label: string; onPress: () => v
 }
 
 // Large title for a tab's root screen, with navigation bar items trailing.
-export function LargeTitle({ title, eyebrow, trailing }: { title: string; eyebrow?: string; trailing?: ReactNode }) {
+// Without a title the eyebrow stands alone and serves as the screen's header.
+export function LargeTitle({ title, eyebrow, trailing }: { title?: string; eyebrow?: string; trailing?: ReactNode }) {
   return (
-    <View style={s.largeTitle}>
+    <View style={[s.largeTitle, !title && s.eyebrowOnly]}>
       <View style={{ flex: 1 }}>
-        {eyebrow ? <Text style={[font('footnote', 'semibold'), { color: C.secondary }]}>{eyebrow}</Text> : null}
-        <Text style={[font('largeTitle', 'bold'), { color: C.text }]} accessibilityRole="header">
-          {title}
-        </Text>
+        {eyebrow ? (
+          <Text
+            style={[font('footnote', 'semibold'), { color: C.secondary }]}
+            accessibilityRole={title ? undefined : 'header'}
+          >
+            {eyebrow}
+          </Text>
+        ) : null}
+        {title ? (
+          <Text style={[font('largeTitle', 'bold'), { color: C.text }]} accessibilityRole="header">
+            {title}
+          </Text>
+        ) : null}
       </View>
-      <View style={s.trailing}>{trailing ?? <SyncStatus />}</View>
+      {trailing ? <View style={s.trailing}>{trailing}</View> : null}
     </View>
   );
 }
@@ -133,6 +118,7 @@ export function ListRow({
   first = false,
   destructive = false,
   right,
+  selected,
 }: {
   icon?: IconName;
   tint?: string;
@@ -143,12 +129,16 @@ export function ListRow({
   first?: boolean;
   destructive?: boolean;
   right?: ReactNode;
+  // When set, the row is a toggle: a check mark stands in for `right` and
+  // the chevron, and the selected state is exposed to VoiceOver.
+  selected?: boolean;
 }) {
   return (
     <Pressable
       onPress={onPress}
       disabled={!onPress}
       accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityState={selected === undefined ? undefined : { selected }}
       style={({ pressed }) => [s.row, pressed && { backgroundColor: C.cardHi }]}
     >
       {icon ? <IconSquare icon={icon} color={tint ?? C.tint} /> : null}
@@ -158,8 +148,8 @@ export function ListRow({
           {sub ? <Text style={[font('footnote'), { color: C.secondary, marginTop: 2 }]}>{displayCopy(sub)}</Text> : null}
         </View>
         {value ? <Text style={[font('body'), { color: C.secondary }]}>{displayCopy(value)}</Text> : null}
-        {right}
-        {onPress && !destructive ? <ChevronRight /> : null}
+        {selected === undefined ? right : selected ? <Icon name="check" size={20} color={C.tint} weight={2} /> : <View style={s.checkBlank} />}
+        {selected === undefined && onPress && !destructive ? <ChevronRight /> : null}
       </View>
     </Pressable>
   );
@@ -168,7 +158,7 @@ export function ListRow({
 // ── Tab bar ────────────────────────────────────────────────────
 
 const TABS: { key: Tab; label: string; icon: IconName }[] = [
-  { key: 'today', label: 'Today', icon: 'sparkle' },
+  { key: 'today', label: 'Today', icon: 'home' },
   { key: 'myhealth', label: 'Health', icon: 'heart' },
   { key: 'journey', label: 'Journey', icon: 'journey' },
   { key: 'profile', label: 'Profile', icon: 'person' },
@@ -211,8 +201,8 @@ const s = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 4,
   },
+  eyebrowOnly: { alignItems: 'center' },
   trailing: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sync: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 },
   toolbarButton: {
     width: 44,
     height: 44,
@@ -231,6 +221,7 @@ const s = StyleSheet.create({
   group: { backgroundColor: C.card, borderRadius: RADIUS, overflow: 'hidden' },
   groupFooter: { color: C.secondary, marginTop: 6, paddingHorizontal: 16 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 16, minHeight: 44 },
+  checkBlank: { width: 20 },
   rowBody: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingVertical: 11, paddingRight: 16 },
   rowSep: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.separator },
 

@@ -7,7 +7,25 @@ import { cycle } from './sample';
 
 // ── Options ────────────────────────────────────────────────────
 
-export const WHAT_HAPPENED = ['Period', 'Spotting', 'Pain', 'Symptoms', 'Other'] as const;
+export const WHAT_HAPPENED = ['Period', 'Spotting', 'Pain', 'Symptoms', 'Bowel movement', 'Other'] as const;
+
+// Every kind of bleeding someone can log. Only a Period starts a new cycle.
+export const BLEEDING_KINDS: readonly string[] = [
+  'Period', 'Spotting', 'Postpartum bleeding', 'Withdrawal bleed', 'Breakthrough bleeding',
+];
+
+// The seven stool types of the Bristol scale, in plain words.
+export const STOOL_TYPES = [
+  { type: 1, word: 'Hard lumps' },
+  { type: 2, word: 'Lumpy' },
+  { type: 3, word: 'Cracked' },
+  { type: 4, word: 'Smooth' },
+  { type: 5, word: 'Soft pieces' },
+  { type: 6, word: 'Mushy' },
+  { type: 7, word: 'Watery' },
+] as const;
+export const BOWEL_PAIN = ['None', 'During', 'After', 'During and after'] as const;
+export const BOWEL_FLAGS = ['Blood', 'Urgency', 'Straining', 'Felt incomplete'] as const;
 export const FLOW = ['Light', 'Moderate', 'Heavy', 'Very heavy', 'Variable', 'Not sure'] as const;
 export const TIMING_STATES = ['Still happening', 'Started during the night', 'Comes and goes'] as const;
 export const PAIN_PATTERN = ['Constant', 'Comes and goes', 'Comes in waves', 'Sudden episodes'] as const;
@@ -56,13 +74,13 @@ export const ACUTE = ['Fainted or passed out', 'Went to the ER', 'Went to urgent
 
 export const CONTEXT = [
   'Period', 'Before period', 'After period', 'Ovulation', 'Stress', 'Poor sleep', 'Travel', 'Physical activity',
-  'Food', 'Alcohol', 'Sex', 'Illness', 'Medication change', 'Supplement change', 'Treatment', 'Major life event',
+  'Food', 'Caffeine', 'Alcohol', 'Sex', 'Illness', 'Medication change', 'Supplement change', 'Treatment', 'Major life event',
   'No obvious trigger', 'Other',
 ] as const;
 
 export const SYMPTOMS = [
   'Fatigue', 'Bloating', 'Sleep disruption', 'Nausea', 'Headache', 'Mood changes', 'Breast tenderness',
-  'Digestive changes', 'Dizziness', 'Other',
+  'Digestive changes', 'Bowel changes', 'Abdominal discomfort', 'Dizziness', 'Other',
 ] as const;
 
 export const HELPED = [
@@ -101,6 +119,9 @@ export type EpisodeForm = {
   helped: string[];
   helpedAmount: string | null;
   note: string;
+  stool: number | null;
+  bowelPain: string | null;
+  bowelFlags: string[];
 };
 
 // A saved episode. `flareUpUserReported` is the person's own designation and
@@ -123,9 +144,17 @@ export function emptyForm(): EpisodeForm {
     kinds: [], periodStart: 0, periodEnd: null, flow: null, day: 0, allDay: false, start: null, end: null,
     states: [], pattern: null, locations: [], sensations: [], severity: null, affect: [], trajectory: [],
     changes: [], dayImpact: [], symptoms: [], context: [], triggers: [], flare: null, helped: [],
-    helpedAmount: null, note: '',
+    helpedAmount: null, note: '', stool: null, bowelPain: null, bowelFlags: [],
   };
 }
+
+// Episodes saved before bowel movements existed.
+export const normalizeEpisode = (e: Episode): Episode => ({
+  ...e,
+  stool: e.stool ?? null,
+  bowelPain: e.bowelPain ?? null,
+  bowelFlags: e.bowelFlags ?? [],
+});
 
 // ── Dates ──────────────────────────────────────────────────────
 
@@ -159,14 +188,15 @@ export function fmtHour(h: number): string {
 
 // ── Cycles ─────────────────────────────────────────────────────
 
-export const TYPICAL_LENGTH = 27;
-// Completed cycle lengths, oldest first, from the sample record.
-const PAST_LENGTHS = [29, 28, 27, 26];
+// Completed cycle lengths in the sample record, oldest first. They vary by
+// more than a week, as they do for the sample profile.
+const SAMPLE_LENGTHS = [34, 41, 30, 26];
 
-// Start of each cycle, oldest first. The last one is the current cycle.
-export function cycleStartDates(now = new Date()): Date[] {
+// Start of each sample cycle, oldest first. The last one is the current cycle.
+// Only sample data uses this; real cycles come from logged periods.
+export function sampleCycleStarts(now = new Date()): Date[] {
   const starts = [addDays(startOfDay(now), -(cycle.day - 1))];
-  for (const len of [...PAST_LENGTHS].reverse()) starts.unshift(addDays(starts[0], -len));
+  for (const len of [...SAMPLE_LENGTHS].reverse()) starts.unshift(addDays(starts[0], -len));
   return starts;
 }
 
@@ -175,7 +205,7 @@ export function cycleStartDates(now = new Date()): Date[] {
 export function formToEpisode(form: EpisodeForm, similar: boolean, now = new Date()): Episode {
   const { day, periodStart, periodEnd, flare, ...rest } = form;
   const today = startOfDay(now);
-  const bleeding = form.kinds.includes('Period') || form.kinds.includes('Spotting');
+  const bleeding = form.kinds.some((k) => BLEEDING_KINDS.includes(k));
   const startAgo = form.kinds.includes('Pain') || !bleeding ? day : periodStart;
   return {
     ...rest,
@@ -195,8 +225,9 @@ export type SummarySection = { label: string; lines: string[] };
 
 export function episodeTitle(ep: Pick<Episode, 'kinds'>): string {
   if (ep.kinds.includes('Pain')) return 'Pain Episode';
-  if (ep.kinds.includes('Period')) return 'Period';
-  if (ep.kinds.includes('Spotting')) return 'Spotting';
+  const bleed = BLEEDING_KINDS.find((k) => ep.kinds.includes(k));
+  if (bleed) return bleed;
+  if (ep.kinds.includes('Bowel movement')) return 'Bowel movement';
   if (ep.kinds.includes('Symptoms')) return 'Symptoms';
   return 'Cycle Experience';
 }
@@ -221,11 +252,21 @@ export function summarize(ep: Episode, now = new Date()): SummarySection[] {
         : [],
     },
     {
-      label: ep.kinds.includes('Period') ? 'Period' : 'Spotting',
+      label: BLEEDING_KINDS.find((k) => ep.kinds.includes(k)) ?? 'Period',
       lines: ep.periodStart
         ? [
             ep.periodEnd ? `${dayLabel(ep.periodStart, now)} to ${dayLabel(ep.periodEnd, now)}` : `Since ${dayLabel(ep.periodStart, now)}, still going`,
             ...(ep.flow ? [`Flow: ${ep.flow}`] : []),
+          ]
+        : [],
+    },
+    {
+      label: 'Bowel movement',
+      lines: ep.kinds.includes('Bowel movement')
+        ? [
+            ...(ep.stool != null && STOOL_TYPES[ep.stool - 1] ? [`Type ${ep.stool}, ${STOOL_TYPES[ep.stool - 1].word}`] : []),
+            ...(ep.bowelPain ? [ep.bowelPain === 'None' ? 'No pain' : `Pain ${ep.bowelPain.toLowerCase()}`] : []),
+            ...(ep.bowelFlags ?? []),
           ]
         : [],
     },
@@ -313,41 +354,71 @@ const SEEDS: Seed[] = [
   [4, 9, 13, 19, 6, ['Lower back', 'Right hip'], ['Aching', 'Pulling'], ['Disruptive'], ['Stress', 'Travel'], true, ['Stretching', 'Rest'], 'A little', ['Changed plans'], ['Gradual worsening'], ['Fatigue']],
 ];
 
+function blankEpisode(id: string, date: Date): Episode {
+  const { day: _day, periodStart: _start, periodEnd: _end, flare: _flare, ...rest } = emptyForm();
+  return {
+    ...rest,
+    id,
+    loggedAt: date.toISOString(),
+    date: isoDay(date),
+    periodStart: null,
+    periodEnd: null,
+    flareUpUserReported: null,
+    noteContext: [],
+    similar: false,
+  };
+}
+
+// The record every screen reads: the person's own episodes, with the sample
+// record around them until they log a period of their own.
+export function recordEpisodes(own: Episode[], now = new Date()): Episode[] {
+  return own.some((e) => e.kinds.includes('Period')) ? own : [...sampleEpisodes(now), ...own];
+}
+
 export function sampleEpisodes(now = new Date()): Episode[] {
-  const starts = cycleStartDates(now);
-  return SEEDS.map(
-    ([c, d, start, end, severity, locations, sensations, affect, context, flare, helped, helpedAmount, dayImpact = [], trajectory = [], symptoms = []], i) => {
-      const date = addDays(starts[c], d);
-      return {
-        id: `sample-${i}`,
-        loggedAt: date.toISOString(),
-        date: isoDay(date),
-        kinds: symptoms.length ? ['Pain', 'Symptoms'] : ['Pain'],
-        periodStart: null,
-        periodEnd: null,
-        flow: null,
-        allDay: false,
-        start,
-        end,
-        states: [],
-        pattern: null,
-        locations,
-        sensations,
-        severity,
-        affect,
-        trajectory,
-        changes: [],
-        dayImpact,
-        symptoms,
-        context,
-        triggers: [],
-        flareUpUserReported: flare,
-        helped,
-        helpedAmount,
-        note: '',
-        noteContext: [],
-        similar: false,
-      };
-    },
+  const starts = sampleCycleStarts(now);
+  const today = startOfDay(now);
+
+  // A logged period at the start of every sample cycle.
+  const periods = starts.map((start, i) => {
+    const end = addDays(start, 4);
+    return {
+      ...blankEpisode(`sample-period-${i}`, start),
+      kinds: ['Period'],
+      periodStart: isoDay(start),
+      periodEnd: end <= today ? isoDay(end) : null,
+      flow: i === starts.length - 1 ? 'Heavy' : 'Moderate',
+    };
+  });
+
+  // Painful bowel movements during three recent periods.
+  const bowel = [2, 3, 4].map((c, i) => ({
+    ...blankEpisode(`sample-bowel-${i}`, addDays(starts[c], 1)),
+    kinds: ['Bowel movement'],
+    stool: 6,
+    bowelPain: 'During',
+    bowelFlags: ['Urgency'],
+  }));
+
+  const pain = SEEDS.map(
+    ([c, d, start, end, severity, locations, sensations, affect, context, flare, helped, helpedAmount, dayImpact = [], trajectory = [], symptoms = []], i) => ({
+      ...blankEpisode(`sample-${i}`, addDays(starts[c], d)),
+      kinds: symptoms.length ? ['Pain', 'Symptoms'] : ['Pain'],
+      start,
+      end,
+      locations,
+      sensations,
+      severity,
+      affect,
+      trajectory,
+      dayImpact,
+      symptoms,
+      context,
+      flareUpUserReported: flare,
+      helped,
+      helpedAmount,
+    }),
   );
+
+  return [...periods, ...bowel, ...pain];
 }

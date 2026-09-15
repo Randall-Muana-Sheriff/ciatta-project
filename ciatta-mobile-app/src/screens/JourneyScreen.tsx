@@ -3,8 +3,11 @@ import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } fr
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
 import { journey } from '../data/sample';
+import { addDays, shortDate } from '../data/cycleLog';
+import { countedWindows, type CycleWindow, medianLength } from '../lib/cycleModel';
 import { displayCopy } from '../lib/displayCopy';
 import { monthSummary, type Signal } from '../lib/cyclePatterns';
+import type { Ovulation } from '../lib/fertility';
 import { useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { C, font, fonts, GUTTER, RADIUS } from '../theme';
@@ -43,6 +46,21 @@ function monthPos(d: Date): number {
   return index + (d.getDate() - 0.5) / days - 0.5;
 }
 
+type CyclePoint = { m: number; days: number; expected?: boolean };
+
+// Each completed cycle sits at the month it ended, at its length. The expected
+// point is the current cycle's start plus the usual length, only when timing
+// is predictable. Points off the seven month axis are left out.
+function cycleLane(windows: CycleWindow[], current: CycleWindow | null, usual: number | null): CyclePoint[] {
+  const points: CyclePoint[] = windows
+    .filter((w) => w.end && w.length != null)
+    .map((w) => ({ m: monthPos(w.end!), days: w.length! }));
+  if (current && usual != null) points.push({ m: monthPos(addDays(current.start, usual)), days: usual, expected: true });
+  return points.filter((p) => p.m >= -0.5 && p.m < journey.months.length - 0.5);
+}
+
+const sameMonth = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+
 function Label({
   x,
   y,
@@ -72,12 +90,16 @@ function Glow({ x, y, color }: { x: number; y: number; color: string }) {
   );
 }
 
-function LaneMarks({ lane, x, signals }: { lane: Lane; x: (m: number) => number; signals: Signal[] }) {
+function LaneMarks({ lane, x, signals, cycle }: { lane: Lane; x: (m: number) => number; signals: Signal[]; cycle: CyclePoint[] }) {
   switch (lane) {
     case 'cycle': {
-      const y = (v: number) => 38 + (29 - v) * 12;
-      const past = journey.cycle.filter((c) => !c.expected);
-      const next = journey.cycle.find((c) => c.expected);
+      // Lengths fill the lane, longer cycles higher.
+      const all = cycle.map((c) => c.days);
+      const lo = Math.min(...all);
+      const hi = Math.max(...all);
+      const y = (v: number) => (hi === lo ? 52 : 26 + ((hi - v) / (hi - lo)) * 52);
+      const past = cycle.filter((c) => !c.expected);
+      const next = cycle.find((c) => c.expected);
       const nowPt = past[past.length - 1];
       return (
         <G>
@@ -87,7 +109,7 @@ function LaneMarks({ lane, x, signals }: { lane: Lane; x: (m: number) => number;
             strokeWidth={2}
             fill="none"
           />
-          {next ? (
+          {next && nowPt ? (
             <G>
               <Line x1={x(nowPt.m)} y1={y(nowPt.days)} x2={x(next.m)} y2={y(next.days)} stroke={C.gray} strokeDasharray="2 3" />
               <Circle cx={x(next.m)} cy={y(next.days)} r={3} fill={C.gray} />
@@ -246,17 +268,28 @@ function LaneMarks({ lane, x, signals }: { lane: Lane; x: (m: number) => number;
 const monthName = (d: Date) => d.toLocaleDateString('en-US', { month: 'long' });
 
 // What a month looked like, next to the month before it.
-function MonthDetail({ index, signals }: { index: number; signals: Signal[] }) {
+function MonthDetail({
+  index,
+  signals,
+  windows,
+  ovulations,
+}: {
+  index: number;
+  signals: Signal[];
+  windows: CycleWindow[];
+  ovulations: Ovulation[] | null;
+}) {
   const d = journey.monthDate(index);
   const prev = journey.monthDate(index - 1);
   const ms = monthSummary(signals, d.getFullYear(), d.getMonth());
   const before = monthSummary(signals, prev.getFullYear(), prev.getMonth());
-  const cyc = journey.cycle.find((c) => !c.expected && Math.round(c.m) === index);
+  const ended = windows.filter((w) => w.end && w.length != null && sameMonth(w.end, d)).map((w) => w.length!);
   const sleep = journey.sleep.find((s) => s.label && Math.round(s.m) === index);
   const change =
     ms.maxSeverity != null && before.maxSeverity != null && ms.maxSeverity !== before.maxSeverity
       ? `, ${ms.maxSeverity > before.maxSeverity ? 'up' : 'down'} from ${before.maxSeverity}/10`
       : '';
+  const ov = ovulations?.find((o) => o.date.getFullYear() === d.getFullYear() && o.date.getMonth() === d.getMonth());
 
   return (
     <Panel style={j.detail}>
@@ -264,10 +297,19 @@ function MonthDetail({ index, signals }: { index: number; signals: Signal[] }) {
         {monthName(d)} {d.getFullYear()}
       </Text>
       <Text style={[font('footnote'), { color: C.secondary, marginBottom: 4 }]}>Tap a month above to compare.</Text>
-      <Row first title="Cycle" value={cyc ? `${cyc.days} days` : 'No cycle ended'} />
+      <Row first title="Cycle" value={ended.length ? `${ended.join(' and ')} days` : 'No cycle ended'} />
       <Row title="Pain" value={ms.locations.length ? ms.locations.join(' · ') : 'None logged'} />
       <Row title="Severity" value={ms.maxSeverity != null ? `${ms.maxSeverity}/10${change}` : 'None logged'} />
       <Row title="Flare up" value={ms.flares ? `Yes, user reported (${ms.flares})` : 'None reported'} />
+      {ms.bowel ? (
+        <Row title="Bowel movements" value={`${ms.bowel} logged${ms.bowelPain ? `, ${ms.bowelPain} with pain` : ''}`} />
+      ) : null}
+      {ovulations ? (
+        <Row
+          title="Ovulation"
+          value={ov ? `${ov.source === 'temperature' ? 'Confirmed by temperature' : 'Positive test'}, around ${shortDate(ov.date)}` : 'Not confirmed'}
+        />
+      ) : null}
       <Row title="Sleep" value={sleep?.label ?? 'No data'} />
       <Row title="Stress" value={ms.stress ? `Noted in ${ms.stress} ${ms.stress === 1 ? 'episode' : 'episodes'}` : 'Not logged'} />
     </Panel>
@@ -277,8 +319,10 @@ function MonthDetail({ index, signals }: { index: number; signals: Signal[] }) {
 export function JourneyScreen() {
   const nav = useNav();
   const { startDraft } = useCycle();
-  const { signals } = useCycleInsights();
+  const { signals, fertility, windows, lens, profile } = useCycleInsights();
   const { width } = useWindowDimensions();
+  const current = windows[windows.length - 1] ?? null;
+  const cycle = cycleLane(windows, current, lens.predicts ? medianLength(countedWindows(windows, profile)) : null);
   const [range, setRange] = useState<Range>('All');
   const [hidden, setHidden] = useState<Lane[]>([]);
   const [picked, setPicked] = useState(NOW);
@@ -341,7 +385,7 @@ export function JourneyScreen() {
               {months.map((m, i) => (
                 <Line key={m} x1={i * col} y1={0} x2={i * col} y2={lane.height} stroke={C.white} opacity={0.06} />
               ))}
-              <LaneMarks lane={lane.key} x={x} signals={signals} />
+              <LaneMarks lane={lane.key} x={x} signals={signals} cycle={cycle} />
             </Svg>
           </View>
         ))}
@@ -368,7 +412,7 @@ export function JourneyScreen() {
       </ScrollView>
 
       <View style={j.pad}>
-        <MonthDetail index={shown} signals={signals} />
+        <MonthDetail index={shown} signals={signals} windows={windows} ovulations={fertility.show ? fertility.past : null} />
 
         <Pressable onPress={() => nav.push('insight')} accessibilityRole="button" style={({ pressed }) => pressed && j.pressed}>
           <Panel style={j.insight}>
