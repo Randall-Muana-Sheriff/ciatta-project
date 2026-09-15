@@ -175,6 +175,37 @@ Shown as a Panel on the review step of the log only when triggered:
   sample profile temporarily), the profile screen, the bowel movement step and
   each safety prompt. Defaults restored afterwards.
 
+## Revisions during planning
+
+These override the sections above where they differ.
+
+1. **Sample cycle lengths** are 34, 26, 41 and 30 days (five starts, the last
+   being the current cycle). The earlier 31, 44, 29, 52, 33 reached 200 days
+   back, past the 150 days of sample daily data. The sample record also logs a
+   Period at every cycle start and three painful bowel movements during
+   periods.
+2. **Completed cycles keep all four phases**, because their next start is a
+   logged fact. Only an open cycle without a prediction loses phases after its
+   first week (During period and After period still apply).
+3. **Bleeding words are log kinds**, not relabels. Period always stays.
+   Postpartum adds `Postpartum bleeding`; Hormonal contraception adds
+   `Withdrawal bleed` and `Breakthrough bleeding`. All route to the dates and
+   flow step; only Period starts a cycle. The Lens exposes `kinds`, `symptoms`
+   and `contexts` lists instead of `bleedingWords`.
+4. **Postpartum symptoms** are `Low mood` and `Anxious or on edge` instead of
+   a "Mood check" chip.
+5. **Setup is offered, not forced**: when `setupDone` is false, Cycle shows a
+   "Tell us about your cycle" panel with a button, rather than opening the
+   profile screen automatically.
+6. **Picking Regular or Irregular** also clears `No periods right now`.
+7. **Stored sample episodes are rebuilt on load**; only the person's own
+   episodes (ids not starting with `sample-`) come from storage, passed
+   through `normalizeEpisode`.
+8. **Bowel fields** are typed `stool: number | null`, `bowelPain: string | null`,
+   `bowelFlags: string[]`, matching the rest of the form.
+9. **Tests** run with `node:test` through `tsx` (`npm test`), covering
+   `cycleProfile`, `cycleModel`, `cycleLog`, `cyclePatterns` and `cycleLens`.
+
 ## Out of scope
 
 - Fertility, ovulation prediction or pregnancy tracking.
