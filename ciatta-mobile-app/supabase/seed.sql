@@ -1,0 +1,1 @@
+-- No seed data. Demo mode reads the sample record inside the app, never the database.
