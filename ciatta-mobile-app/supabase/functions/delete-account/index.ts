@@ -4,6 +4,8 @@
 // and then her auth user removes everything.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
+import { chunk, collectPaths } from './drain.ts';
+
 const url = Deno.env.get('SUPABASE_URL')!;
 const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -22,11 +24,16 @@ Deno.serve(async (req) => {
 
   const admin = createClient(url, serviceKey);
   try {
-    for (;;) {
-      const { data: files, error } = await admin.storage.from('documents').list(uid, { limit: 100 });
+    // list() reports a nested prefix as an entry with a null id; removing a
+    // prefix like that is a no op, so a naive one level loop over it would
+    // spin forever and never reach the account deletion below.
+    const paths = await collectPaths(async (prefix, limit, offset) => {
+      const { data, error } = await admin.storage.from('documents').list(prefix, { limit, offset });
       if (error) throw error;
-      if (!files?.length) break;
-      const { error: removeError } = await admin.storage.from('documents').remove(files.map((f) => `${uid}/${f.name}`));
+      return (data ?? []).map((f) => ({ name: f.name, id: f.id }));
+    }, uid);
+    for (const batch of chunk(paths, 100)) {
+      const { error: removeError } = await admin.storage.from('documents').remove(batch);
       if (removeError) throw removeError;
     }
     const { error } = await admin.auth.admin.deleteUser(uid);

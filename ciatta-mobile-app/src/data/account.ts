@@ -1,6 +1,7 @@
 import { Share } from 'react-native';
 
 import { supabase } from '../lib/supabase';
+import { paginateAll } from './pagination';
 
 // Everything she owns, read as her, so RLS guarantees it is only hers.
 export const EXPORT_TABLES = [
@@ -11,10 +12,11 @@ export const EXPORT_TABLES = [
 export async function exportAndShare(userId: string): Promise<void> {
   const out: Record<string, unknown> = { exported_at: new Date().toISOString(), user_id: userId };
   for (const table of EXPORT_TABLES) {
-    const query = table === 'profiles' ? supabase.from(table).select('*').eq('id', userId) : supabase.from(table).select('*');
-    const { data, error } = await query;
-    if (error) throw error;
-    out[table] = data ?? [];
+    out[table] = await paginateAll((from, to) =>
+      table === 'profiles'
+        ? supabase.from(table).select('*').eq('id', userId).order('id').range(from, to)
+        : supabase.from(table).select('*').order('id').range(from, to),
+    );
   }
   await Share.share({ message: JSON.stringify(out, null, 2), title: 'Your data' });
 }

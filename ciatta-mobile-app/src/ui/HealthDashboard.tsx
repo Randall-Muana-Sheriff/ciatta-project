@@ -103,7 +103,7 @@ export function HealthDashboard({
     let ignore = false;
     repo.loadSources().then((rows) => {
       if (!ignore) setSourceNames(rows.map((r) => r.name).join(' · '));
-    });
+    }).catch(() => {});
     return () => {
       ignore = true;
     };

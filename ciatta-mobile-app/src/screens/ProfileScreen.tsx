@@ -267,7 +267,7 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
     let ignore = false;
     repo.loadSources().then((rows) => {
       if (!ignore) setList(rows);
-    });
+    }).catch(() => {});
     return () => {
       ignore = true;
     };
@@ -343,7 +343,7 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
         <View style={{ marginTop: 12 }}>
           <SecondaryButton label="Connect a Source" onPress={onConnectSource} />
         </View>
-        {sourceNote ? <Text style={[font('footnote'), { color: C.secondary, marginTop: 8 }]}>{sourceNote}</Text> : null}
+        {sourceNote ? <Text style={[font('footnote'), { color: C.secondary, marginTop: 8 }]}>{displayCopy(sourceNote)}</Text> : null}
       </View>
 
       <ListGroup header="Notifications" footer="No nudges to log, and no reminders to take anything.">
