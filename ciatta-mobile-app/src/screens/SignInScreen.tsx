@@ -37,7 +37,11 @@ export function SignInScreen() {
     setError('');
     try {
       const { fullName } = await signIn();
-      await keepFirstName(fullName);
+      try {
+        await keepFirstName(fullName);
+      } catch {
+        // Best effort: a failed name save should not read as a failed sign in.
+      }
     } catch (e) {
       if (!(e instanceof SocialAuthCancelled)) setError(userFacingError(e, 'That sign in did not go through. Try again.'));
     } finally {

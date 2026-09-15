@@ -35,8 +35,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const mode: Mode = demo ? 'demo' : session === undefined ? 'loading' : userId ? 'real' : 'signedOut';
 
   useEffect(() => {
+    let ignore = false;
     setFirstName(null);
-    repo?.firstName().then(setFirstName).catch(() => {});
+    repo?.firstName().then((name) => {
+      if (!ignore) setFirstName(name);
+    }).catch(() => {});
+    return () => {
+      ignore = true;
+    };
   }, [repo]);
 
   const value = useMemo<SessionValue>(
