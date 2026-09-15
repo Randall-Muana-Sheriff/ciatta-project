@@ -27,7 +27,10 @@ export type CycleProfile = {
   setupDone: boolean;
 };
 
-export const EMPTY_PROFILE: CycleProfile = { situations: [], setupDone: false };
+// Where a brand new person starts before her own record has anything to
+// estimate from: no situation chosen and no fertile window shown until she
+// turns it on herself.
+export const EMPTY_PROFILE: CycleProfile = { situations: [], setupDone: false, showFertility: false };
 export const SAMPLE_PROFILE: CycleProfile = { situations: ['Endometriosis', 'Irregular'], setupDone: true };
 
 // Choices that can't be true at the same time.

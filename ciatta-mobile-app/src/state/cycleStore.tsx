@@ -1,21 +1,26 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-import { addDays, type Episode, type EpisodeForm, isoDay, normalizeEpisode, recordEpisodes, startOfDay } from '../data/cycleLog';
+import { addDays, type Episode, type EpisodeForm, isoDay, recordEpisodes, startOfDay } from '../data/cycleLog';
+import { importDeviceRecord } from '../data/deviceImport';
+import { enqueue, flush } from '../data/outbox';
 import { WALK_PLAN_AGO } from '../data/daily';
 import { lensFor } from '../lib/cycleLens';
 import { countedWindows, cycleWindows, medianLength, periodStarts, regularity } from '../lib/cycleModel';
 import { cycleSummaries, observations, signals, similarTemplate } from '../lib/cyclePatterns';
-import { type CycleProfile, normalizeProfile, SAMPLE_PROFILE } from '../lib/cycleProfile';
+import { type CycleProfile, EMPTY_PROFILE, SAMPLE_PROFILE } from '../lib/cycleProfile';
 import type { Intervention } from '../lib/engine';
 import { estimateFertility } from '../lib/fertility';
-import { useData } from './session';
+import { useData, useRepo } from './session';
 
 // The record on this device: cycle episodes, which relationships to keep
-// watching, and actions the person chose to try. Everything persists between
-// launches; until someone logs their own, the sample record stands in.
+// watching, and actions the person chose to try. In real mode, episodes and
+// the cycle profile live in her record and are loaded and saved through the
+// repo; in demo mode the sample record stands in, held only in memory.
 
-const KEY = 'ciatta.cycle.v1';
+// The watch flags and planned actions stay on this phone until Slice 4 turns
+// them into threads and actions. Real mode only; the demo keeps nothing.
+const LOOP_KEY = 'ciatta.loop.v1';
 
 export type Draft = { mode: 'new' | 'similar'; form: Partial<EpisodeForm>; focusNote?: boolean };
 
@@ -45,50 +50,59 @@ const sampleInterventions = (): Intervention[] => [
 ];
 
 export function CycleStoreProvider({ children }: { children: ReactNode }) {
-  // Only the person's own episodes are held and saved. The sample record is
-  // added around them until they log a period of their own.
+  const repo = useRepo();
+  const real = repo.mode === 'real';
   const [own, setOwn] = useState<Episode[]>([]);
-  const episodes = useMemo(() => recordEpisodes(own), [own]);
+  const episodes = useMemo(() => (real ? own : recordEpisodes(own)), [own, real]);
   const [watching, setWatchingMap] = useState<Record<string, boolean>>({});
-  const [interventions, setInterventions] = useState<Intervention[]>(sampleInterventions);
+  const [interventions, setInterventions] = useState<Intervention[]>(real ? [] : sampleInterventions);
   const [draft, setDraft] = useState<Draft>({ mode: 'new', form: {} });
   const [focus, setFocus] = useState<string | null>(null);
-  const [profile, setProfile] = useState<CycleProfile>(SAMPLE_PROFILE);
+  const [profile, setProfileState] = useState<CycleProfile>(real ? EMPTY_PROFILE : SAMPLE_PROFILE);
   const loaded = useRef(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(KEY)
-      .then((raw) => {
-        if (!raw) return;
-        const saved = JSON.parse(raw) as {
-          episodes?: Episode[];
-          watching?: Record<string, boolean>;
-          interventions?: Intervention[];
-          profile?: unknown;
-        };
-        // The sample record is rebuilt around today; only the person's own
-        // episodes come from storage. Older saves also held sample episodes.
-        if (saved.episodes) setOwn(saved.episodes.filter((e) => !e.id.startsWith('sample-')).map(normalizeEpisode));
+    if (!real) return;
+    let alive = true;
+    (async () => {
+      try {
+        await importDeviceRecord(AsyncStorage, (e, extra) => repo.saveEpisode(e, extra), (p) => repo.saveCycleProfile(p));
+      } catch {
+        // The device record stays in place and is tried again next launch.
+      }
+      await flush(AsyncStorage, (e) => repo.saveEpisode(e)).catch(() => 0);
+      const [mine, savedProfile, loop] = await Promise.all([
+        repo.loadEpisodes().catch(() => [] as Episode[]),
+        repo.loadCycleProfile().catch(() => null),
+        AsyncStorage.getItem(LOOP_KEY).catch(() => null),
+      ]);
+      if (!alive) return;
+      setOwn(mine);
+      if (savedProfile) setProfileState(savedProfile);
+      if (loop) {
+        const saved = JSON.parse(loop) as { watching?: Record<string, boolean>; interventions?: Intervention[] };
         if (saved.watching) setWatchingMap(saved.watching);
-        if (saved.interventions?.length) setInterventions(saved.interventions);
-        const savedProfile = normalizeProfile(saved.profile);
-        if (savedProfile) setProfile(savedProfile);
-      })
-      .catch(() => {})
-      .finally(() => {
-        loaded.current = true;
-      });
-  }, []);
+        if (saved.interventions) setInterventions(saved.interventions);
+      }
+      loaded.current = true;
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [real, repo]);
 
   useEffect(() => {
-    if (!loaded.current) return;
-    AsyncStorage.setItem(KEY, JSON.stringify({ episodes: own, watching, interventions, profile })).catch(() => {});
-  }, [own, watching, interventions, profile]);
+    if (!real || !loaded.current) return;
+    AsyncStorage.setItem(LOOP_KEY, JSON.stringify({ watching, interventions })).catch(() => {});
+  }, [real, watching, interventions]);
 
   const store = useMemo<Store>(
     () => ({
       episodes,
-      add: (episode) => setOwn((list) => [...list, episode]),
+      add: (episode) => {
+        setOwn((list) => [...list.filter((e) => e.id !== episode.id), episode]);
+        repo.saveEpisode(episode).catch(() => enqueue(AsyncStorage, episode));
+      },
       draft,
       startDraft: (next) => setDraft({ mode: 'new', form: {}, ...next }),
       watching,
@@ -103,9 +117,12 @@ export function CycleStoreProvider({ children }: { children: ReactNode }) {
       focus,
       setFocus,
       profile,
-      setProfile,
+      setProfile: (next) => {
+        setProfileState(next);
+        repo.saveCycleProfile(next).catch(() => {});
+      },
     }),
-    [episodes, draft, watching, interventions, focus, profile],
+    [episodes, draft, watching, interventions, focus, profile, repo],
   );
 
   return <CycleContext.Provider value={store}>{children}</CycleContext.Provider>;

@@ -59,3 +59,8 @@ test('normalizeProfile drops unknown situations, duplicates and mistyped fields'
 test('normalizeProfile round trips the sample profile unchanged', () => {
   assert.deepEqual(normalizeProfile(SAMPLE_PROFILE), SAMPLE_PROFILE);
 });
+
+test('a new person starts with no situation and no fertility estimate', () => {
+  assert.deepEqual(EMPTY_PROFILE.situations, []);
+  assert.equal(fertilityOn(EMPTY_PROFILE), false);
+});
