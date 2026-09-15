@@ -1,6 +1,8 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Share } from 'react-native';
 
 import { supabase } from '../lib/supabase';
+import { clearLocalRecord } from './localKeys';
 import { paginateAll } from './pagination';
 
 // Everything she owns, read as her, so RLS guarantees it is only hers.
@@ -22,9 +24,14 @@ export async function exportAndShare(userId: string): Promise<void> {
 }
 
 // Deletes her files, then her account; every row cascades from the account.
-export async function deleteAccount(): Promise<void> {
+// Then this phone: the imported device record is a full copy of every episode
+// ever logged here, and the outbox and loop keys are hers too. "Deleted for
+// good" has to be true of the phone in her hand as well as the server.
+// Returns the keys that could not be cleared, so the screen can say so.
+export async function deleteAccount(userId: string): Promise<string[]> {
   const { data, error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
   await supabase.auth.signOut();
+  return clearLocalRecord(AsyncStorage, userId);
 }

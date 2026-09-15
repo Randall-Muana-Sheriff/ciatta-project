@@ -1,7 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 
-import { type Data, dataFor } from '../data/adapter';
+import { type Data, dataForSession } from '../data/adapter';
 import { demoRepo, realRepo, type Repo } from '../data/repo';
 import { supabase } from '../lib/supabase';
 
@@ -70,10 +70,11 @@ export function useSession(): SessionValue {
   return value;
 }
 
-// What screens read. Anything but a signed in session reads as the demo.
+// What screens read. Only the demo reads as the sample person; loading and
+// signed out read as an empty record, never as somebody else's.
 export function useData(): Data {
   const { mode, firstName } = useSession();
-  return useMemo(() => dataFor(mode === 'real' ? 'real' : 'demo', firstName), [mode, firstName]);
+  return useMemo(() => dataForSession(mode, firstName), [mode, firstName]);
 }
 
 export function useRepo(): Repo {

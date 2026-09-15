@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { type CycleProfile, normalizeProfile } from '../lib/cycleProfile';
 import type { Episode } from './cycleLog';
+import { paginateAll } from './pagination';
 import { episodeToRow, type EpisodeRow, type JournalRow, type JournalView, journalView, rowToEpisode, type SourceRow, sourceView, type SourceView } from './rows';
 import { type EntryKind, journal, person, sources } from './sample';
 
@@ -51,11 +52,20 @@ function must<T>(res: { data: T; error: unknown }): T {
   return res.data;
 }
 
+// PostgREST caps one response at max_rows (1000), so a plain select would
+// quietly hand back only part of her record once she has logged more than
+// that. Every list read is paged, in an order that cannot shift between
+// pages: the time it happened, then her own id for anything logged in the
+// same moment.
+type Page<T> = PromiseLike<{ data: T[] | null; error: unknown }>;
+
 export function realRepo(db: SupabaseClient, userId: string): Repo {
   return {
     mode: 'real',
     async loadEpisodes() {
-      const rows = must(await db.from('episodes').select('*').order('occurred_at')) as EpisodeRow[];
+      const rows = await paginateAll<EpisodeRow>(
+        (from, to) => db.from('episodes').select('*').order('occurred_at').order('client_id').range(from, to) as unknown as Page<EpisodeRow>,
+      );
       return rows.map(rowToEpisode);
     },
     async saveEpisode(e, extra = {}) {
@@ -69,7 +79,15 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       must(await db.from('profiles').update({ cycle_profile: p }).eq('id', userId));
     },
     async loadJournal() {
-      const rows = must(await db.from('journal_entries').select('client_id, text, kind, tag, occurred_at')) as JournalRow[];
+      const rows = await paginateAll<JournalRow>(
+        (from, to) =>
+          db
+            .from('journal_entries')
+            .select('client_id, text, kind, tag, occurred_at')
+            .order('occurred_at')
+            .order('client_id')
+            .range(from, to) as unknown as Page<JournalRow>,
+      );
       return journalView(rows);
     },
     async addJournal(text, kind) {

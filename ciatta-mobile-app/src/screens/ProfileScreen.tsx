@@ -16,6 +16,7 @@ import { C, font, GUTTER, numeral, RADIUS } from '../theme';
 import { LargeTitle, ListGroup, ListRow, Panel, TextButton } from '../ui/chrome';
 import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
+import { avatarInitial } from '../ui/initial';
 import { EmptyNote, Expandable, Facts, LinkButton, SecondaryButton, SegmentedControl, Tag } from '../ui/kit';
 
 type Profile = NonNullable<Data['profile']>;
@@ -301,12 +302,22 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
   };
 
   const onDelete = () => {
+    if (!userId) return;
     Alert.alert('Delete your account?', 'Your record, notes, sources and files are deleted for good. This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => deleteAccount().catch((e) => setAccountNote(userFacingError(e, 'Your account was not deleted. Try again.'))),
+        onPress: () =>
+          deleteAccount(userId)
+            .then((keptOnThisPhone) => {
+              // Her account is gone either way; only say the phone is clean
+              // when it is.
+              if (keptOnThisPhone.length) {
+                setAccountNote(displayCopy('Your account is deleted. Some of what was saved on this phone could not be removed.'));
+              }
+            })
+            .catch((e) => setAccountNote(userFacingError(e, 'Your account was not deleted. Try again.'))),
       },
     ]);
   };
@@ -382,10 +393,13 @@ export function ProfileScreen() {
   const nav = useNav();
   const { width } = useWindowDimensions();
   const [seg, setSeg] = useState<Segment>('Overview');
-  const { profile, person } = useData();
+  const { profile, person, mode } = useData();
   const cols = width >= 430 ? 4 : 2;
   // Her own first name until her record holds a full profile.
   const name = profile?.name ?? person?.firstName ?? null;
+  // The sample portrait is a photograph of one particular woman. It belongs
+  // to the example person and nobody else: her own circle is her initial.
+  const initial = avatarInitial(name);
 
   return (
     <ScrollView style={p.fill} contentContainerStyle={p.body}>
@@ -393,7 +407,17 @@ export function ProfileScreen() {
 
       <View style={p.pad}>
         <View style={p.identity}>
-          <Image source={images.avatar} style={p.avatar} accessibilityIgnoresInvertColors />
+          {mode === 'demo' ? (
+            <Image source={images.avatar} style={p.avatar} accessibilityIgnoresInvertColors />
+          ) : (
+            <View style={[p.avatar, p.initial]} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+              {initial ? (
+                <Text style={[font('title2', 'semibold'), { color: C.secondary }]}>{initial}</Text>
+              ) : (
+                <Icon name="person" size={34} color={C.secondary} weight={1.8} />
+              )}
+            </View>
+          )}
           <View style={{ flex: 1 }}>
             {name ? <Text style={[font('title2', 'semibold'), { color: C.text }]}>{displayCopy(name)}</Text> : null}
             {profile ? (
@@ -454,6 +478,7 @@ const p = StyleSheet.create({
 
   identity: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 12 },
   avatar: { width: 72, height: 72, borderRadius: 36 },
+  initial: { backgroundColor: C.fill, alignItems: 'center', justifyContent: 'center' },
   segs: { marginTop: 20, marginBottom: 20 },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },

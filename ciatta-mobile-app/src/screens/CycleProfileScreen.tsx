@@ -5,6 +5,7 @@ import { addDays, daysBetween, isoDay, parseDay, startOfDay } from '../data/cycl
 import { CONTRACEPTION, type Contraception, type CycleProfile, fertilityOn, has, SITUATIONS, toggleSituation } from '../lib/cycleProfile';
 import { displayCopy } from '../lib/displayCopy';
 import { FERTILITY_DISCLAIMER } from '../lib/fertility';
+import { userFacingError } from '../lib/userFacingError';
 import { useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
 import { C, font } from '../theme';
@@ -20,15 +21,25 @@ export function CycleProfileScreen() {
   const nav = useNav();
   const { profile, setProfile } = useCycle();
   const [draft, setDraft] = useState<CycleProfile>(profile);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const now = new Date();
   const birth = weeksAgo(draft.birthDate, now);
   const last = weeksAgo(draft.lastPeriod, now);
 
   const setWeeks = (key: 'birthDate' | 'lastPeriod', n: number) =>
     setDraft((d) => ({ ...d, [key]: isoDay(addDays(startOfDay(now), -Math.max(0, n) * 7)) }));
+  // Only leave once the change is actually kept. A save that failed used to
+  // look applied and then come back undone on the next launch.
   const save = () => {
-    setProfile({ ...draft, setupDone: true });
-    nav.back();
+    if (saving) return;
+    setSaving(true);
+    setError(null);
+    setProfile({ ...draft, setupDone: true }, (e) => {
+      setSaving(false);
+      if (e) setError(userFacingError(e, 'That did not save. Try again.'));
+      else nav.back();
+    });
   };
 
   return (
@@ -37,7 +48,8 @@ export function CycleProfileScreen() {
       onBack={nav.back}
       footer={
         <View style={p.footer}>
-          <PrimaryButton label="Save" onPress={save} />
+          {error ? <Text style={[font('footnote'), { color: C.tint, marginBottom: 8 }]}>{error}</Text> : null}
+          <PrimaryButton label="Save" onPress={save} disabled={saving} />
         </View>
       }
     >

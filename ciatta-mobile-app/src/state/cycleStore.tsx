@@ -4,6 +4,7 @@ import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, 
 import { addDays, type Episode, type EpisodeForm, isoDay, recordEpisodes, startOfDay } from '../data/cycleLog';
 import { importDeviceRecord } from '../data/deviceImport';
 import { mergeEpisodes, mergeInterventions, mergeWatching } from '../data/cycleMerge';
+import { loopKey } from '../data/localKeys';
 import { enqueue, flush } from '../data/outbox';
 import { WALK_PLAN_AGO } from '../data/daily';
 import { lensFor } from '../lib/cycleLens';
@@ -12,7 +13,7 @@ import { cycleSummaries, observations, signals, similarTemplate } from '../lib/c
 import { type CycleProfile, EMPTY_PROFILE, SAMPLE_PROFILE } from '../lib/cycleProfile';
 import type { Intervention } from '../lib/engine';
 import { estimateFertility } from '../lib/fertility';
-import { useData, useRepo } from './session';
+import { useData, useRepo, useSession } from './session';
 
 // The record on this device: cycle episodes, which relationships to keep
 // watching, and actions the person chose to try. In real mode, episodes and
@@ -21,7 +22,9 @@ import { useData, useRepo } from './session';
 
 // The watch flags and planned actions stay on this phone until Slice 4 turns
 // them into threads and actions. Real mode only; the demo keeps nothing.
-const LOOP_KEY = 'ciatta.loop.v1';
+// They are kept under the account that chose them (see loopKey), so a second
+// person signing in on this phone never inherits what the first watched or
+// agreed to try.
 
 export type Draft = { mode: 'new' | 'similar'; form: Partial<EpisodeForm>; focusNote?: boolean };
 
@@ -41,7 +44,10 @@ type Store = {
   setFocus: (id: string | null) => void;
   // What the person told us about their cycle.
   profile: CycleProfile;
-  setProfile: (profile: CycleProfile) => void;
+  // done is called once the save has settled: with null when it was kept, or
+  // with the error when it was not, so the screen she changed it on can say
+  // so instead of showing a change that was quietly dropped.
+  setProfile: (profile: CycleProfile, done?: (error: unknown) => void) => void;
 };
 
 const CycleContext = createContext<Store | null>(null);
@@ -52,6 +58,7 @@ const sampleInterventions = (): Intervention[] => [
 
 export function CycleStoreProvider({ children }: { children: ReactNode }) {
   const repo = useRepo();
+  const { userId } = useSession();
   const real = repo.mode === 'real';
   const [own, setOwn] = useState<Episode[]>([]);
   const episodes = useMemo(() => (real ? own : recordEpisodes(own)), [own, real]);
@@ -66,7 +73,8 @@ export function CycleStoreProvider({ children }: { children: ReactNode }) {
   const profileTouched = useRef(false);
 
   useEffect(() => {
-    if (!real) return;
+    if (!real || !userId) return;
+    loaded.current = false;
     let alive = true;
     (async () => {
       try {
@@ -74,11 +82,11 @@ export function CycleStoreProvider({ children }: { children: ReactNode }) {
       } catch {
         // The device record stays in place and is tried again next launch.
       }
-      await flush(AsyncStorage, (e) => repo.saveEpisode(e)).catch(() => 0);
+      await flush(AsyncStorage, userId, (e) => repo.saveEpisode(e)).catch(() => 0);
       const [mine, savedProfile, loop] = await Promise.all([
         repo.loadEpisodes().catch(() => [] as Episode[]),
         repo.loadCycleProfile().catch(() => null),
-        AsyncStorage.getItem(LOOP_KEY).catch(() => null),
+        AsyncStorage.getItem(loopKey(userId)).catch(() => null),
       ]);
       if (!alive) return;
       setOwn((prev) => mergeEpisodes(mine, prev));
@@ -93,19 +101,22 @@ export function CycleStoreProvider({ children }: { children: ReactNode }) {
     return () => {
       alive = false;
     };
-  }, [real, repo]);
+  }, [real, repo, userId]);
 
   useEffect(() => {
-    if (!real || !loaded.current) return;
-    AsyncStorage.setItem(LOOP_KEY, JSON.stringify({ watching, interventions })).catch(() => {});
-  }, [real, watching, interventions]);
+    if (!real || !userId || !loaded.current) return;
+    AsyncStorage.setItem(loopKey(userId), JSON.stringify({ watching, interventions })).catch(() => {});
+  }, [real, userId, watching, interventions]);
 
   const store = useMemo<Store>(
     () => ({
       episodes,
       add: (episode) => {
         setOwn((list) => [...list.filter((e) => e.id !== episode.id), episode]);
-        repo.saveEpisode(episode).catch(() => enqueue(AsyncStorage, episode).catch(() => {}));
+        repo.saveEpisode(episode).catch(() => {
+          // Queued under the account that logged it, never device wide.
+          if (userId) enqueue(AsyncStorage, userId, episode).catch(() => {});
+        });
       },
       draft,
       startDraft: (next) => setDraft({ mode: 'new', form: {}, ...next }),
@@ -121,13 +132,16 @@ export function CycleStoreProvider({ children }: { children: ReactNode }) {
       focus,
       setFocus,
       profile,
-      setProfile: (next) => {
+      setProfile: (next, done) => {
         profileTouched.current = true;
         setProfileState(next);
-        repo.saveCycleProfile(next).catch(() => {});
+        repo
+          .saveCycleProfile(next)
+          .then(() => done?.(null))
+          .catch((e) => done?.(e));
       },
     }),
-    [episodes, draft, watching, interventions, focus, profile, repo],
+    [episodes, draft, watching, interventions, focus, profile, repo, userId],
   );
 
   return <CycleContext.Provider value={store}>{children}</CycleContext.Provider>;

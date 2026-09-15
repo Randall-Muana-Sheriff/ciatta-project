@@ -37,6 +37,14 @@ const REAL_TODAY_TEXT = {
   brief: 'As your cycles, notes and sources build up, what changes will show here with the evidence behind it.',
 };
 
+// What the session hands screens. Only the demo ever serves the sample
+// person: while a session is loading, or once she has signed out, a screen
+// mounted outside the Gate reads her own (empty) record rather than falling
+// open to somebody else's data.
+export function dataForSession(mode: 'loading' | 'signedOut' | 'demo' | 'real', firstName: string | null): Data {
+  return dataFor(mode === 'demo' ? 'demo' : 'real', firstName);
+}
+
 export function dataFor(mode: 'demo' | 'real', firstName: string | null): Data {
   if (mode === 'demo') {
     return {

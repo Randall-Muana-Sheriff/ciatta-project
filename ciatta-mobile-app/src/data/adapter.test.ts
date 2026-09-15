@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { dataFor } from './adapter';
+import { dataFor, dataForSession } from './adapter';
 import { loadDays } from './daily';
 import * as sample from './sample';
 
@@ -17,6 +17,16 @@ test('real mode carries no sample data', () => {
 
 test('real mode without a name greets without one', () => {
   assert.equal(dataFor('real', null).person, null);
+});
+
+test('only the demo reads as the sample person', () => {
+  for (const mode of ['loading', 'signedOut', 'real'] as const) {
+    const d = dataForSession(mode, null);
+    assert.equal(d.mode, 'real', `${mode} must not fall open to the sample`);
+    assert.equal(d.profile, null, `${mode} must carry no sample profile`);
+    assert.deepEqual(d.days, [], `${mode} must carry no sample days`);
+  }
+  assert.equal(dataForSession('demo', null).profile, sample.profile);
 });
 
 test('demo mode is the sample, unchanged', () => {

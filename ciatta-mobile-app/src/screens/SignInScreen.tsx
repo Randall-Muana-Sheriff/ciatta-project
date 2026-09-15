@@ -1,6 +1,6 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { displayCopy } from '../lib/displayCopy';
 import { isAppleSignInAvailable, signInWithApple, signInWithGoogle, SocialAuthCancelled } from '../lib/socialAuth';
@@ -30,6 +30,12 @@ export function SignInScreen() {
   useEffect(() => {
     isAppleSignInAvailable().then(setApple);
   }, []);
+
+  // accessibilityLiveRegion below is Android only, so on iOS VoiceOver says
+  // nothing at all when a sign in fails. Announce it here as well.
+  useEffect(() => {
+    if (error) AccessibilityInfo.announceForAccessibility(displayCopy(error));
+  }, [error]);
 
   const run = (signIn: () => Promise<{ fullName: string | null }>) => async () => {
     if (busy) return;
