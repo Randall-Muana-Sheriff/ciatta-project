@@ -8,10 +8,27 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Root } from './src/Root';
+import { SignInScreen } from './src/screens/SignInScreen';
 import { CycleStoreProvider } from './src/state/cycleStore';
+import { SessionProvider, useSession } from './src/state/session';
+import { C } from './src/theme';
+
+// Signed out sees sign in; the example person and her own record each get a
+// fresh store, so nothing carries from one into the other.
+function Gate() {
+  const { mode, userId } = useSession();
+  if (mode === 'loading') return <View style={{ flex: 1, backgroundColor: C.bg }} />;
+  if (mode === 'signedOut') return <SignInScreen />;
+  return (
+    <CycleStoreProvider key={`${mode}:${userId ?? ''}`}>
+      <Root />
+    </CycleStoreProvider>
+  );
+}
 
 export default function App() {
   const [loaded, error] = useFonts({
@@ -34,9 +51,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
-      <CycleStoreProvider>
-        <Root />
-      </CycleStoreProvider>
+      <SessionProvider>
+        <Gate />
+      </SessionProvider>
     </SafeAreaProvider>
   );
 }
