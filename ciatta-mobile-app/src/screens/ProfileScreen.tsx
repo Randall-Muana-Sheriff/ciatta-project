@@ -1,16 +1,17 @@
-import { useState } from 'react';
-import { Image, ScrollView, StyleSheet, Switch, Text, useWindowDimensions, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Image, ScrollView, StyleSheet, Switch, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { expo } from '../../app.json';
+import { deleteAccount, exportAndShare } from '../data/account';
 import type { Data } from '../data/adapter';
-// Sources feed Settings, which Task 10 moves onto her record.
-import { sources } from '../data/sample';
 import type { SourceKind, Tone } from '../data/sample';
+import type { SourceView } from '../data/rows';
 import { displayCopy } from '../lib/displayCopy';
+import { userFacingError } from '../lib/userFacingError';
 import { type Screen, useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
-import { useData } from '../state/session';
+import { useData, useRepo, useSession } from '../state/session';
 import { C, font, GUTTER, numeral, RADIUS } from '../theme';
 import { LargeTitle, ListGroup, ListRow, Panel, TextButton } from '../ui/chrome';
 import { Icon } from '../ui/icons';
@@ -255,6 +256,22 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
   const [open, setOpen] = useState<string | null>(null);
   const [newFindings, setNewFindings] = useState(true);
   const [appointments, setAppointments] = useState(false);
+  const [list, setList] = useState<SourceView[]>([]);
+  const [sourceNote, setSourceNote] = useState<string | null>(null);
+  const [dataFooter, setDataFooter] = useState<string | null>(null);
+  const [accountNote, setAccountNote] = useState<string | null>(null);
+  const { mode, userId, signOut } = useSession();
+  const repo = useRepo();
+
+  useEffect(() => {
+    let ignore = false;
+    repo.loadSources().then((rows) => {
+      if (!ignore) setList(rows);
+    });
+    return () => {
+      ignore = true;
+    };
+  }, [repo]);
 
   const toggle = (value: boolean, onChange: (v: boolean) => void, label: string) => (
     <Switch
@@ -266,13 +283,41 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
     />
   );
 
+  const onConnectSource = () => {
+    setSourceNote(
+      mode === 'demo'
+        ? 'This is an example person. Sign in to connect your own sources.'
+        : 'Apple Health connects in the next update. Until then, everything you log here is saved to your record.',
+    );
+  };
+
+  const onDownload = () => {
+    if (mode === 'demo') {
+      setDataFooter('The example person has no data to download.');
+      return;
+    }
+    if (!userId) return;
+    exportAndShare(userId).catch((e) => setDataFooter(userFacingError(e, 'Your data did not download. Try again.')));
+  };
+
+  const onDelete = () => {
+    Alert.alert('Delete your account?', 'Your record, notes, sources and files are deleted for good. This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => deleteAccount().catch((e) => setAccountNote(userFacingError(e, 'Your account was not deleted. Try again.'))),
+      },
+    ]);
+  };
+
   return (
     <View style={p.stack}>
       <View>
         <Text style={[font('title3', 'semibold'), { color: C.text, marginBottom: 4 }]} accessibilityRole="header">
           Sources
         </Text>
-        {sources.map((src, n) => {
+        {list.map((src, n) => {
           const link = SOURCE_LINK[src.kind];
           return (
             <Expandable
@@ -296,8 +341,9 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
           );
         })}
         <View style={{ marginTop: 12 }}>
-          <SecondaryButton label="Connect a Source" onPress={notYet} />
+          <SecondaryButton label="Connect a Source" onPress={onConnectSource} />
         </View>
+        {sourceNote ? <Text style={[font('footnote'), { color: C.secondary, marginTop: 8 }]}>{sourceNote}</Text> : null}
       </View>
 
       <ListGroup header="Notifications" footer="No nudges to log, and no reminders to take anything.">
@@ -314,15 +360,15 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
         />
       </ListGroup>
 
-      <ListGroup header="Privacy and Data">
+      <ListGroup header="Privacy and Data" footer={dataFooter ?? undefined}>
         <ListRow first title="Who Can See This" sub="Only you. Nothing is sold or shared." onPress={notYet} />
         <ListRow title="Share with a Clinician" sub="A summary to bring to an appointment" onPress={notYet} />
-        <ListRow title="Download Your Data" sub="Everything you and your sources have shared" onPress={notYet} />
+        <ListRow title="Download Your Data" sub="Everything you and your sources have shared" onPress={onDownload} />
       </ListGroup>
 
-      <ListGroup>
-        <ListRow first title="Sign Out" onPress={notYet} />
-        <ListRow title="Delete Account and Data" destructive onPress={notYet} />
+      <ListGroup footer={accountNote ?? undefined}>
+        <ListRow first title="Sign Out" onPress={signOut} />
+        {mode === 'real' ? <ListRow title="Delete Account and Data" destructive onPress={onDelete} /> : null}
       </ListGroup>
 
       <Text style={[font('footnote'), p.version]}>Version {expo.version}</Text>

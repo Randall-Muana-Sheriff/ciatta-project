@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { daysBetween, parseDay, shortDate, type Episode } from '../data/cycleLog';
@@ -8,7 +8,7 @@ import { type CycleSummary, type Signal, tally } from '../lib/cyclePatterns';
 import { displayCopy } from '../lib/displayCopy';
 import { fmtCount, fmtHours, type MovementSummary } from '../lib/engine';
 import type { Screen } from '../navigation';
-import { useData } from '../state/session';
+import { useData, useRepo, useSession } from '../state/session';
 import { C, font, M, numeral, RADIUS } from '../theme';
 import { ListGroup, ListRow } from './chrome';
 import { BarRow } from './cycleInputs';
@@ -91,7 +91,25 @@ export function HealthDashboard({
 }) {
   const [stage, setStage] = useState<Stage>('Deep');
   const { records, medications } = useData();
+  const { mode } = useSession();
+  const repo = useRepo();
+  const [sourceNames, setSourceNames] = useState<string | null>(null);
   const now = new Date();
+
+  // Real mode shows what she actually connected, not the sample list; nothing
+  // renders while that loads rather than claiming a source she never added.
+  useEffect(() => {
+    if (mode === 'demo') return;
+    let ignore = false;
+    repo.loadSources().then((rows) => {
+      if (!ignore) setSourceNames(rows.map((r) => r.name).join(' · '));
+    });
+    return () => {
+      ignore = true;
+    };
+  }, [mode, repo]);
+
+  const connectedSourcesSub = mode === 'demo' ? 'Apple Health · Lab Records · Manual Entries' : (sourceNames ?? undefined);
   // Undefined until her record holds a day; the day based cards wait for one.
   const last: Day | undefined = days[days.length - 1];
   const last14 = days.slice(-14);
@@ -312,7 +330,7 @@ export function HealthDashboard({
       <ListGroup>
         <ListRow first icon="doc" tint={C.green} title="Health Records" sub="Results and documents" onPress={() => open('healthrecords')} />
         <ListRow icon="chat" tint={C.indigo} title="Your Notes" sub="Everything you've written down" onPress={() => open('journal')} />
-        <ListRow icon="layers" tint={C.blue} title="Connected Sources" sub="Apple Health · Lab Records · Manual Entries" onPress={openProfile} />
+        <ListRow icon="layers" tint={C.blue} title="Connected Sources" sub={connectedSourcesSub} onPress={openProfile} />
       </ListGroup>
     </View>
   );
