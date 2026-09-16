@@ -241,3 +241,151 @@ test('a day foldDay left a field out of is posted with that field still absent',
   const day = stepPost.days[0] as Record<string, unknown>;
   assert.deepEqual(Object.keys(day).sort(), ['day', 'steps']);
 });
+
+// ── Fix round 1: the anchor store itself can fail ───────────────────
+
+const RESTING_HR = QUANTITY_SPECS.find((s) => s.identifier === 'HKQuantityTypeIdentifierRestingHeartRate')!;
+
+test('a storage failure setting the anchor does not abort the run: the metric is marked failed, and later metrics are still attempted', async () => {
+  const { anchors, store } = memoryAnchors();
+  const failingKey = anchorKey(USER_ID, STEPS.identifier);
+  const throwingAnchors: AnchorStore = {
+    get: anchors.get,
+    async set(key, anchor) {
+      if (key === failingKey) throw new Error('disk full');
+      await anchors.set(key, anchor);
+    },
+  };
+  const { port } = fakePort({
+    responses: {
+      [STEPS.identifier]: {
+        samples: [stepsSample('2026-01-01T08:00:00Z', '2026-01-01T08:01:00Z', 500, 'a')],
+        newAnchor: 'anchor.steps.new',
+      },
+      [RESTING_HR.identifier]: {
+        samples: [stepsSample('2026-01-01T08:00:00Z', '2026-01-01T08:01:00Z', 58, 'b')],
+        newAnchor: 'anchor.rhr.new',
+      },
+    },
+  });
+
+  const result = await runHealthSync(USER_ID, { port, anchors: throwingAnchors, mode: 'recovery' });
+
+  // The whole run completed: every spec got an outcome, not just the ones
+  // before the one whose anchor write failed.
+  assert.equal(result.metrics.length, 12);
+  assert.ok(result.failed.includes(STEPS.identifier));
+  assert.equal(store[failingKey], undefined);
+
+  const stepsOutcome = result.metrics.find((m) => m.identifier === STEPS.identifier)!;
+  assert.equal(stepsOutcome.ok, false);
+  assert.ok(stepsOutcome.error);
+  assert.equal(stepsOutcome.posted, 1);
+
+  // A metric that comes later in the spec list was still queried and posted.
+  const rhrOutcome = result.metrics.find((m) => m.identifier === RESTING_HR.identifier)!;
+  assert.equal(rhrOutcome.ok, true);
+  assert.equal(store[anchorKey(USER_ID, RESTING_HR.identifier)], 'anchor.rhr.new');
+});
+
+test('a storage failure reading the anchor does not abort the run', async () => {
+  const { anchors, store } = memoryAnchors();
+  const failingKey = anchorKey(USER_ID, STEPS.identifier);
+  const throwingAnchors: AnchorStore = {
+    async get(key) {
+      if (key === failingKey) throw new Error('read failed');
+      return anchors.get(key);
+    },
+    set: anchors.set,
+  };
+  const { port } = fakePort({
+    responses: {
+      [RESTING_HR.identifier]: {
+        samples: [stepsSample('2026-01-01T08:00:00Z', '2026-01-01T08:01:00Z', 58, 'b')],
+        newAnchor: 'anchor.rhr.new',
+      },
+    },
+  });
+
+  const result = await runHealthSync(USER_ID, { port, anchors: throwingAnchors, mode: 'incremental' });
+
+  assert.equal(result.metrics.length, 12);
+  assert.ok(result.failed.includes(STEPS.identifier));
+  const stepsOutcome = result.metrics.find((m) => m.identifier === STEPS.identifier)!;
+  assert.equal(stepsOutcome.ok, false);
+  assert.ok(stepsOutcome.error);
+
+  const rhrOutcome = result.metrics.find((m) => m.identifier === RESTING_HR.identifier)!;
+  assert.equal(rhrOutcome.ok, true);
+  assert.equal(store[anchorKey(USER_ID, RESTING_HR.identifier)], 'anchor.rhr.new');
+});
+
+// ── Fix round 1: the partial batch failure the anchor rule protects ──
+
+test('a partial batch failure leaves the anchor at its old value, and a retry re-reads from there and re-posts the same dedupe keys', async () => {
+  const OLD_ANCHOR = 'anchor.steps.old';
+  const { anchors, store } = memoryAnchors({ [anchorKey(USER_ID, STEPS.identifier)]: OLD_ANCHOR });
+  const samples = manySteps(600);
+  const queryCalls: Array<{ identifier: string; anchor?: string }> = [];
+
+  let postCallCount = 0;
+  let failSecondBatch = true;
+  const firstPosts: Array<{ observations: unknown[]; days: unknown[] }> = [];
+
+  const query = async (identifier: string, opts: { anchor?: string; limit: number; since?: Date }) => {
+    queryCalls.push({ identifier, anchor: opts.anchor });
+    return {
+      samples: identifier === STEPS.identifier ? samples : [],
+      newAnchor: 'anchor.steps.new',
+    };
+  };
+
+  const firstPort: SyncPort = {
+    query,
+    async post(batch) {
+      postCallCount += 1;
+      const isSteps = batch.observations.some((o) => (o as { metric?: string }).metric === 'steps');
+      if (failSecondBatch && isSteps && postCallCount === 2) {
+        throw new Error('network dropped');
+      }
+      firstPosts.push(batch);
+    },
+  };
+
+  const firstRun = await runHealthSync(USER_ID, { port: firstPort, anchors, mode: 'incremental' });
+  const firstOutcome = firstRun.metrics.find((m) => m.identifier === STEPS.identifier)!;
+
+  // Batch 1 of 3 landed durably; batch 2 threw; batch 3 was never attempted.
+  assert.equal(firstOutcome.ok, false);
+  assert.equal(firstOutcome.posted, 250);
+  assert.equal(firstPosts.filter((b) => b.observations.some((o) => (o as { metric?: string }).metric === 'steps')).length, 1);
+  // The anchor did not move: it is still the one this run started from.
+  assert.equal(store[anchorKey(USER_ID, STEPS.identifier)], OLD_ANCHOR);
+
+  // Retry: the next run re-reads from the same old anchor, and this time
+  // every batch lands.
+  failSecondBatch = false;
+  postCallCount = 0;
+  const secondPosts: Array<{ observations: unknown[]; days: unknown[] }> = [];
+  const retryPort: SyncPort = {
+    query,
+    async post(batch) {
+      secondPosts.push(batch);
+    },
+  };
+  await runHealthSync(USER_ID, { port: retryPort, anchors, mode: 'incremental' });
+
+  const stepsQueryCalls = queryCalls.filter((c) => c.identifier === STEPS.identifier);
+  assert.equal(stepsQueryCalls.length, 2);
+  assert.equal(stepsQueryCalls[0].anchor, OLD_ANCHOR);
+  assert.equal(stepsQueryCalls[1].anchor, OLD_ANCHOR);
+  assert.equal(store[anchorKey(USER_ID, STEPS.identifier)], 'anchor.steps.new');
+
+  const firstKeys = firstPosts.flatMap((b) => b.observations as { dedupe_key: string }[]).map((o) => o.dedupe_key);
+  const secondKeys = secondPosts
+    .filter((b) => b.observations.some((o) => (o as { metric?: string }).metric === 'steps'))
+    .flatMap((b) => b.observations as { dedupe_key: string }[])
+    .map((o) => o.dedupe_key);
+  assert.equal(secondKeys.length, 600);
+  for (const key of firstKeys) assert.ok(secondKeys.includes(key));
+});

@@ -139,12 +139,46 @@ export async function runHealthSync(
   for (let i = 0; i < SYNC_SPECS.length; i++) {
     const { kind, spec } = SYNC_SPECS[i];
     const key = anchorKey(userId, spec.identifier);
+    const index = i + 1;
+    const total = SYNC_SPECS.length;
+
+    // A storage failure (reading or writing an anchor) gets exactly the
+    // same treatment as a failed post: this metric is marked failed and
+    // recorded, and the loop moves on. Letting either throw out of this
+    // function would abort the whole run, silently skipping every metric
+    // later in SYNC_SPECS than the one that hit the failure, with no trace
+    // of that in the result the caller gets back.
+    const recordFailure = (
+      error: unknown,
+      counts: { samples?: number; observations?: number; posted?: number } = {},
+    ) => {
+      const outcome: MetricOutcome = {
+        identifier: spec.identifier,
+        metric: spec.metric,
+        samples: counts.samples ?? 0,
+        observations: counts.observations ?? 0,
+        posted: counts.posted ?? 0,
+        ok: false,
+        error: describeError(error),
+      };
+      metrics.push(outcome);
+      failed.push(spec.identifier);
+      totalSamples += outcome.samples;
+      totalPosted += outcome.posted;
+      onProgress?.({ ...outcome, index, total });
+    };
 
     const opts: { anchor?: string; limit: number; since?: Date } = { limit: 0 };
     if (mode === 'recovery') {
       opts.since = since;
     } else {
-      const stored = await anchors.get(key);
+      let stored: string | null;
+      try {
+        stored = await anchors.get(key);
+      } catch (error) {
+        recordFailure(error);
+        continue;
+      }
       if (stored) opts.anchor = stored;
     }
 
@@ -152,23 +186,11 @@ export async function runHealthSync(
     try {
       queried = await port.query(spec.identifier, opts);
     } catch (error) {
-      const outcome: MetricOutcome = {
-        identifier: spec.identifier,
-        metric: spec.metric,
-        samples: 0,
-        observations: 0,
-        posted: 0,
-        ok: false,
-        error: describeError(error),
-      };
-      metrics.push(outcome);
-      failed.push(spec.identifier);
-      onProgress?.({ ...outcome, index: i + 1, total: SYNC_SPECS.length });
+      recordFailure(error);
       continue;
     }
 
     const rawSamples = queried.samples;
-    totalSamples += rawSamples.length;
     const observations = rawSamples.map((raw) => toObservation(kind, spec, raw));
     // foldDay's output is passed through untouched below: a field it left
     // out for a day never gets reintroduced, not even as a zero.
@@ -192,11 +214,20 @@ export async function runHealthSync(
     }
 
     if (ok) {
-      await anchors.set(key, queried.newAnchor);
-    } else {
-      failed.push(spec.identifier);
+      try {
+        await anchors.set(key, queried.newAnchor);
+      } catch (e) {
+        // What already posted stays posted (dedupe keys make a retry
+        // harmless); the anchor must not appear to have advanced, and the
+        // run must not abort here either.
+        ok = false;
+        error = describeError(e);
+      }
     }
 
+    if (!ok) failed.push(spec.identifier);
+
+    totalSamples += rawSamples.length;
     totalPosted += posted;
     const outcome: MetricOutcome = {
       identifier: spec.identifier,
@@ -208,7 +239,7 @@ export async function runHealthSync(
       error,
     };
     metrics.push(outcome);
-    onProgress?.({ ...outcome, index: i + 1, total: SYNC_SPECS.length });
+    onProgress?.({ ...outcome, index, total });
   }
 
   return { observations: totalPosted, samples: totalSamples, metrics, failed };

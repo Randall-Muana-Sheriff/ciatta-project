@@ -230,7 +230,14 @@ export function computeMetric(dates: string[], values: (number | null)[]): Metri
       toValue: run.recent,
       direction: run.direction,
       deviation: run.recent - b.median,
-      detectedOn: dates[dates.length - 1],
+      // The last day that actually carries a value, not calendar today:
+      // today may have no daily_metrics row yet because the day is not
+      // over, and detectRun already found this index for free walking
+      // backward past that trailing null. Stamping today here would be
+      // the same fault runQuality was fixed for in the prior round, in a
+      // different field: a date asserting detection on a day nothing was
+      // measured on.
+      detectedOn: dates[run.endIndex],
       quality: runQuality(values, run.firstIndex, run.endIndex),
     },
   };

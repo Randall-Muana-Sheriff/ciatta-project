@@ -189,6 +189,22 @@ test('more than one trailing null does not change the verdict either', () => {
   assert.equal(result!.change!.quality, 'ok', 'two not-yet-measured trailing days are excused the same as one');
 });
 
+// Fix round 1 (further review): detectedOn used to be hardcoded to
+// dates[dates.length - 1], calendar today, even when today has no reading
+// yet and the run's own evidence ends yesterday. That is the exact same
+// fault runQuality was fixed for above, in a different field: a date
+// asserting something happened today when nothing was measured today.
+// detectRun already exposes endIndex, the last index that actually carries
+// a value, for exactly this purpose.
+test('detectedOn is the last day that actually has a value, not calendar today, when today has not been measured yet', () => {
+  const dates = fixedDates();
+  const values = fixedWindow(10, 10, { 0: null, 1: 5, 2: 5, 3: 5, 4: 5, 5: 5 });
+  const result = computeMetric(dates, values);
+  assert.ok(result?.change, 'still a change: streak counts only non-null days');
+  assert.equal(result!.change!.detectedOn, dates[dates.length - 2], 'the last measured day, yesterday');
+  assert.notEqual(result!.change!.detectedOn, dates[dates.length - 1], 'never calendar today when today was not measured');
+});
+
 test('a metric with no values at all yields no result, not an insufficient row full of nulls', () => {
   const values = new Array(WINDOW_SIZE).fill(null);
   const result = computeMetric(fixedDates(), values);
