@@ -84,7 +84,9 @@ export function resend(apiKey: string) {
     },
 
     updateTopics(email: string, topics: TopicSubscription[]) {
-      return call<unknown>('PATCH', `${contactPath(email)}/topics`, { topics });
+      // A bare array. Wrapping it as { topics } is rejected with a 422, which
+      // the Node SDK's examples suggest but the HTTP API does not accept.
+      return call<unknown>('PATCH', `${contactPath(email)}/topics`, topics);
     },
 
     sendEmail(

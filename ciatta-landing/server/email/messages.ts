@@ -18,7 +18,7 @@ export function confirmationEmail(confirmUrl: string, topics: TopicKey[], postal
   const subject = 'Confirm your subscription to Ciatta';
   const bodyHtml = [
     heading('One click to confirm'),
-    paragraph(`Someone, hopefully you, asked for ${escapeHtml(describe(topics))} to be sent to this address.`),
+    paragraph(`Someone, hopefully you, entered this address on ciatta.io to receive ${escapeHtml(describe(topics))}.`),
     paragraph('Confirm and you are on the list. If you did not ask, ignore this and nothing more will arrive.'),
     button(confirmUrl, 'Confirm subscription'),
     paragraph(
