@@ -7,10 +7,12 @@
 // by the app.
 //
 // Claiming, completing and failing a job all go through RPC functions
-// (supabase/migrations/20260916100000_claim_baselines_job.sql) rather than
-// the Data API's table routes, because "claim the oldest pending job,
-// skipping any another run already has locked" needs one atomic SQL
-// statement that a REST filter can't express.
+// (supabase/migrations/20260916100000_claim_baselines_job.sql,
+// amended by .../20260916100200_baselines_fix_round_1.sql to also reclaim
+// a crashed run and clear a stale last_error) rather than the Data API's
+// table routes, because "claim the oldest pending job, skipping any
+// another run already has locked" needs one atomic SQL statement that a
+// REST filter can't express.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 import {
@@ -136,16 +138,19 @@ async function runJob(admin: any, job: JobRow): Promise<{ metrics: string[] }> {
   const { dates: tempDates, values: tempValues } = buildDenseWindow(tempAverages, today, WINDOW_SIZE);
   const deviations = computeTempDeviations(tempDates, tempValues);
   if (deviations.length > 0) {
-    // Every row here shares exactly the same three keys, so one bulk
-    // upsert is safe: unlike ingest-health's per-day rows (which vary in
-    // which columns they carry, and so must go one at a time), a shared
-    // SET clause here can only ever touch temp_deviation.
-    const { error: tempWriteError } = await admin
-      .from('daily_metrics')
-      .upsert(
-        deviations.map((d) => ({ user_id: job.user_id, day: d.day, temp_deviation: d.value })),
-        { onConflict: 'user_id,day' }
-      );
+    // Goes through the write_temp_deviations RPC
+    // (supabase/migrations/20260916100200_baselines_fix_round_1.sql)
+    // rather than a plain upsert: a plain upsert always writes, even when
+    // the recomputed value is identical to what is already stored, which
+    // this table's insert-or-update trigger would then see as a change.
+    // The RPC's ON CONFLICT ... WHERE clause makes an unchanged value a
+    // true no op (no row version written), and only stamps DERIVED
+    // provenance on a row it creates fresh, leaving a day that already
+    // has real measurements exactly as it found it.
+    const { error: tempWriteError } = await admin.rpc('write_temp_deviations', {
+      p_user_id: job.user_id,
+      p_deviations: deviations,
+    });
     if (tempWriteError) throw tempWriteError;
   }
 

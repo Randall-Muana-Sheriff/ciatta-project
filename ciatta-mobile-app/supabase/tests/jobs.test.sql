@@ -5,7 +5,7 @@
 -- otherwise attacks.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(27);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -57,6 +57,44 @@ select is((select count(*)::int from public.jobs where user_id = '00000000-0000-
   'a new pending job is created once the old one is done');
 select is((select count(*)::int from public.jobs where user_id = '00000000-0000-0000-0000-00000000000a'), 2,
   'the done job and the new pending job both exist');
+
+-- Review fix: the function must not feed itself. A write that only
+-- touches temp_deviation (what the baselines function itself derives)
+-- must not enqueue another run while one is already in flight; a genuine
+-- new day still must.
+set local role service_role;
+select lives_ok($$
+  insert into public.daily_metrics (user_id, day, steps) values ('00000000-0000-0000-0000-00000000000b', '2026-09-14', 100)
+$$, 'service_role logs a day for B');
+select is((select count(*)::int from public.jobs where user_id = '00000000-0000-0000-0000-00000000000b' and status = 'pending'), 1,
+  'B''s day queues exactly one pending job');
+
+-- Simulate the baselines function holding that job (claim_baselines_job
+-- marks it running, not done), the exact state the bug needed to loop.
+select lives_ok($$
+  update public.jobs set status = 'running', started_at = now()
+  where user_id = '00000000-0000-0000-0000-00000000000b' and status = 'pending'
+$$, 'B''s job is claimed (simulated): running, not pending');
+select is((select count(*)::int from public.jobs where user_id = '00000000-0000-0000-0000-00000000000b' and status = 'pending'), 0,
+  'no pending job while the one job is running');
+
+select lives_ok($$
+  update public.daily_metrics set temp_deviation = 0.3
+  where user_id = '00000000-0000-0000-0000-00000000000b' and day = '2026-09-14'
+$$, 'service_role writes B''s temp_deviation, as the baselines function would');
+select is((select count(*)::int from public.jobs where user_id = '00000000-0000-0000-0000-00000000000b' and status = 'pending'), 0,
+  'writing temp_deviation alone leaves zero pending jobs behind, even with a run already in flight');
+
+select lives_ok($$
+  insert into public.daily_metrics (user_id, day, steps) values ('00000000-0000-0000-0000-00000000000b', '2026-09-15', 200)
+$$, 'service_role logs a genuine new day for B');
+select is((select count(*)::int from public.jobs where user_id = '00000000-0000-0000-0000-00000000000b' and status = 'pending'), 1,
+  'a genuine new day still enqueues one pending job');
+
+-- Clear B's jobs before the later block below inserts one directly for
+-- her: the unique partial index (rightly) refuses a second pending job.
+update public.jobs set status = 'done', finished_at = now()
+  where user_id = '00000000-0000-0000-0000-00000000000b' and status in ('pending', 'running');
 
 -- She never sees the queue: no select, insert or update, even on her own would-be row.
 set local role authenticated;

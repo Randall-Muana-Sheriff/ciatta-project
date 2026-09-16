@@ -128,11 +128,22 @@ export function band(xs: number[]): Band {
 // by becoming part of what's usual.
 const baselineDays = (days: Day[]) => days.slice(Math.max(0, days.length - 91), days.length - 35);
 
-type Change = { streak: number; recent: number; usual: Band; direction: 'lower' | 'higher' };
+// Exported (like median/band above) only so baselines.test.ts can cross
+// check this against compute.ts's detectRun() on the same series.
+export type Change = { streak: number; recent: number; usual: Band; direction: 'lower' | 'higher' };
 
 // How many of the most recent days sit outside the usual range on the same
-// side, allowing one day back inside.
-function sustained(days: Day[], get: (d: Day) => number | null): Change | null {
+// side, allowing one day back inside. `recent` is the mean over the run's
+// true span, from the earliest day that contributed to the streak through
+// today, not `days.slice(-streak)`: a null day is skipped in place rather
+// than shortening the span (see the loop below), so under a gap those two
+// can differ, and `slice(-streak)` would average a shorter, recency
+// biased window than the run it claims to describe. This matches
+// supabase/functions/baselines/compute.ts's detectRun(), which reproduces
+// this same loop over a sparse per metric array where such gaps are
+// common; the two are cross checked in src/data/baselines.test.ts so this
+// stays the one definition of "recent" for a sustained change.
+export function sustained(days: Day[], get: (d: Day) => number | null): Change | null {
   const base = nums(baselineDays(days).map(get));
   if (base.length < 20) return null;
   const b = band(base);
@@ -140,6 +151,7 @@ function sustained(days: Day[], get: (d: Day) => number | null): Change | null {
   let direction: 'lower' | 'higher' | null = null;
   let streak = 0;
   let pending = 0;
+  let firstIndex = -1;
   for (let i = days.length - 1; i >= 0; i--) {
     const v = get(days[i]);
     if (v == null) continue;
@@ -148,16 +160,18 @@ function sustained(days: Day[], get: (d: Day) => number | null): Change | null {
       if (!s) break;
       direction = s;
       streak = 1;
+      firstIndex = i;
       continue;
     }
     if (s === direction) {
       streak += 1 + pending;
       pending = 0;
+      firstIndex = i;
     } else if (pending === 0) pending = 1;
     else break;
   }
   if (!direction) return null;
-  return { streak, recent: mean(nums(days.slice(-streak).map(get))), usual: b, direction };
+  return { streak, recent: mean(nums(days.slice(firstIndex).map(get))), usual: b, direction };
 }
 
 // ── Single measures that have changed ──────────────────────────

@@ -6,11 +6,12 @@
 -- because it exercises the RPC surface rather than the table's RLS.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(13);
+select plan(16);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000c1', 'c1@test.local'),
-  ('00000000-0000-0000-0000-0000000000c2', 'c2@test.local');
+  ('00000000-0000-0000-0000-0000000000c2', 'c2@test.local'),
+  ('00000000-0000-0000-0000-0000000000c3', 'c3@test.local');
 
 -- Neither Data API role can call any of the four functions at all.
 set local role anon;
@@ -51,6 +52,12 @@ select is((select status from public.jobs where user_id = '00000000-0000-0000-00
 select is((select last_error from public.jobs where user_id = '00000000-0000-0000-0000-0000000000c2'), 'TypeError',
   'the error name is recorded');
 
+-- Fix 2: claiming again clears the stale last_error, so a job that failed
+-- once and then succeeds doesn't end up done with an old error attached.
+select public.claim_baselines_job();
+select is((select last_error from public.jobs where user_id = '00000000-0000-0000-0000-0000000000c2'), null,
+  'claiming again clears the stale last_error');
+
 -- A failure on the third attempt fails for good.
 update public.jobs set attempts = 2, status = 'pending' where user_id = '00000000-0000-0000-0000-0000000000c2';
 select public.claim_baselines_job();
@@ -71,6 +78,20 @@ select is((select count(*)::int from public.jobs where user_id = '00000000-0000-
 -- old job just inserted: both inside 7 days, both left alone.
 select is((select count(*)::int from public.jobs where user_id = '00000000-0000-0000-0000-0000000000c1' and finished_at > now() - interval '7 days'), 2,
   'cleanup leaves recently finished jobs alone');
+
+-- Fix 3: a crashed run must not leave a job stuck in 'running' forever.
+-- A job less than 15 minutes into 'running' is left alone (it may still be
+-- genuinely in progress); one stuck longer is treated as crashed and
+-- reclaimed.
+insert into public.jobs (user_id, kind, status, started_at, attempts)
+  values ('00000000-0000-0000-0000-0000000000c3', 'baselines', 'running', now() - interval '5 minutes', 1);
+select is((select count(*)::int from public.claim_baselines_job() where user_id = '00000000-0000-0000-0000-0000000000c3'), 0,
+  'a running job less than 15 minutes old is left alone');
+
+update public.jobs set started_at = now() - interval '16 minutes' where user_id = '00000000-0000-0000-0000-0000000000c3';
+select is((select count(*)::int from public.claim_baselines_job()
+  where user_id = '00000000-0000-0000-0000-0000000000c3' and status = 'running' and attempts = 2), 1,
+  'a running job stuck for over 15 minutes is reclaimed, attempts bumped again');
 
 reset role;
 select * from finish();

@@ -5,7 +5,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { band as engineBand, median as engineMedian } from '../lib/engine';
+import type { Day } from './daily';
+import { addDays, isoDay as dayIso } from './cycleLog';
+import { band as engineBand, median as engineMedian, sustained } from '../lib/engine';
 import {
   band,
   baselineWindow,
@@ -15,6 +17,7 @@ import {
   detectRun,
   median,
   MIN_BASELINE_N,
+  MIN_RUN_STREAK,
   recentWindow,
   WINDOW_SIZE,
 } from '../../supabase/functions/baselines/compute';
@@ -90,6 +93,19 @@ test('a 6 day dip below the band yields one change row with direction lower', ()
   assert.equal(result!.change!.fromValue, 10);
   assert.equal(result!.change!.toValue, 5);
   assert.equal(result!.change!.quality, 'ok');
+});
+
+test('a 4 day dip yields no change row; a 5 day dip yields one (pinning the threshold from below)', () => {
+  const fourDays = fixedWindow(10, 10, { 0: 5, 1: 5, 2: 5, 3: 5 });
+  const fourResult = computeMetric(fixedDates(), fourDays);
+  assert.ok(fourResult?.baseline.sufficient);
+  assert.equal(fourResult!.change, null, `a ${MIN_RUN_STREAK - 1} day run must not be a change`);
+
+  const fiveDays = fixedWindow(10, 10, { 0: 5, 1: 5, 2: 5, 3: 5, 4: 5 });
+  const fiveResult = computeMetric(fixedDates(), fiveDays);
+  assert.ok(fiveResult?.baseline.sufficient);
+  assert.ok(fiveResult!.change, `a ${MIN_RUN_STREAK} day run must be a change`);
+  assert.equal(fiveResult!.change!.direction, 'lower');
 });
 
 test('one day back inside the band does not break a run, two do', () => {
@@ -189,4 +205,61 @@ test('the temperature deviation is null (no entries) when the baseline is insuff
   for (let i = 5; i < WINDOW_SIZE - 35; i++) values[i] = null;
   const deviations = computeTempDeviations(fixedDates(), values);
   assert.equal(deviations.length, 0);
+});
+
+// A minimal but fully typed Day, so this test can call the engine's own
+// sustained() rather than a stand in. tempDeviation is the getter under
+// test here (not sleepHours/steps/restingHR, the fields sustained() is
+// actually called with in engine.ts) only because it is the one nullable
+// numeric field Day already has; the loop being tested does not care which
+// field it reads.
+function mkDay(date: string, tempDeviation: number | null): Day {
+  return {
+    date,
+    sleepHours: 7,
+    stages: { awake: 0, rem: 0, light: 0, deep: 0 },
+    timeInBed: 7,
+    steps: 5000,
+    activeMinutes: 30,
+    workouts: [],
+    restingHR: 60,
+    hrv: 50,
+    tempDeviation,
+    energy: null,
+    mood: null,
+    stress: null,
+    caffeine: 0,
+    alcohol: 0,
+    foods: [],
+    digestion: [],
+  };
+}
+
+test('sustained() (engine) and detectRun() (compute) agree on recent across a gap in the run', () => {
+  const start = new Date('2026-01-01T00:00:00.000Z');
+  const days: Day[] = Array.from({ length: WINDOW_SIZE }, (_, i) => mkDay(dayIso(addDays(start, i)), 8));
+
+  // The same "one missing day tucked inside a run" fixture as the quality
+  // test above: a real gap, which is where days.slice(-streak) and the
+  // true run span used to disagree.
+  const fromEnd: Record<number, number | null> = { 0: 5, 1: 5, 2: 5, 3: null, 4: 5, 5: 5 };
+  for (const [k, v] of Object.entries(fromEnd)) {
+    const i = days.length - 1 - Number(k);
+    days[i] = mkDay(days[i].date, v);
+  }
+
+  const engineChange = sustained(days, (d) => d.tempDeviation);
+  assert.ok(engineChange, 'expected the engine to find a sustained change');
+
+  const values = days.map((d) => d.tempDeviation);
+  const baselineValues = baselineWindow(values).filter((v): v is number => v != null);
+  const run = detectRun(values, band(baselineValues));
+  assert.ok(run, 'expected compute.ts to find the same run');
+
+  assert.equal(engineChange!.direction, run!.direction);
+  assert.equal(engineChange!.streak, run!.streak);
+  assert.ok(
+    Math.abs(engineChange!.recent - run!.recent) < 1e-9,
+    `engine recent ${engineChange!.recent} should match compute recent ${run!.recent}`
+  );
 });

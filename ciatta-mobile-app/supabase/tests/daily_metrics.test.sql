@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(25);
+select plan(32);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -114,6 +114,40 @@ $$, 'service_role can update a daily metrics row');
 select lives_ok($$
   delete from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-18'
 $$, 'service_role can delete a daily metrics row');
+
+-- Review fix 4: write_temp_deviations() is what the baselines function
+-- calls to write this column. A row created solely to hold a derived
+-- deviation should not claim MEASURED provenance; a row that already has
+-- real measurements keeps whatever provenance it already has.
+select lives_ok($$
+  select public.write_temp_deviations('00000000-0000-0000-0000-00000000000a', '[{"day":"2026-09-20","value":0.4}]'::jsonb)
+$$, 'write_temp_deviations creates a brand new row for a day with no other data');
+select is((select provenance::text from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-20'),
+  'DERIVED', 'a row created solely to hold a deviation is stamped DERIVED');
+
+select lives_ok($$
+  insert into public.daily_metrics (user_id, day, sleep_hours) values ('00000000-0000-0000-0000-00000000000a', '2026-09-21', 7)
+$$, 'service_role logs a measured day for A');
+select lives_ok($$
+  select public.write_temp_deviations('00000000-0000-0000-0000-00000000000a', '[{"day":"2026-09-21","value":0.2}]'::jsonb)
+$$, 'write_temp_deviations writes onto the same row a measured day already has');
+select is((select provenance::text from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-21'),
+  'MEASURED', 'a row with real measurements keeps its own provenance, not DERIVED');
+select is((select temp_deviation from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-21'), 0.2,
+  'the deviation is written onto the existing row');
+
+-- Calling again with the identical value is a true no op: no new row
+-- version is written at all (ctid unchanged), not merely "no visible
+-- change" -- this is the other half of the review fix, alongside the
+-- trigger WHEN clause that stops temp_deviation writes from re-enqueuing.
+create temporary table t_ctid as
+  select ctid as before_ctid from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-21';
+select public.write_temp_deviations('00000000-0000-0000-0000-00000000000a', '[{"day":"2026-09-21","value":0.2}]'::jsonb);
+select is(
+  (select ctid from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-21'),
+  (select before_ctid from t_ctid),
+  'writing the identical value again touches no row at all'
+);
 
 reset role;
 
