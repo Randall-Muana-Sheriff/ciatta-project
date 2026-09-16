@@ -1,10 +1,18 @@
 // Works out what is usual for one person from her own history, and what
-// has moved against it. This function is server only: there is no caller
-// identity to verify, because the job it claims already carries the user
-// id it was queued for (a daily_metrics write enqueues it through a
-// database trigger; see supabase/migrations/20260915100900_jobs.sql). It
-// is meant to be invoked by a scheduler holding the service role key, not
-// by the app.
+// has moved against it. This function is server only, and enforces that
+// rather than assuming it: every request must present the service role key
+// as its bearer token, and anything else is refused with a 401 before a
+// job is claimed. That check is the whole of the authorization here,
+// because the job it claims carries the user id it was queued for rather
+// than taking one from the caller (a daily_metrics write enqueues it
+// through a database trigger; see
+// supabase/migrations/20260915100900_jobs.sql).
+//
+// The check is not optional: claim_baselines_job() claims the oldest
+// pending job for any user at all, so without it any signed in user could
+// make this server read, compute over and write another person's record.
+// supabase/config.toml sets verify_jwt = false for this function, so the
+// bearer check below is the only gate in front of that.
 //
 // Claiming, completing and failing a job all go through RPC functions
 // (supabase/migrations/20260916100000_claim_baselines_job.sql,
@@ -31,6 +39,25 @@ const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+
+// Compares the presented bearer against the service role key in constant
+// time. A plain === stops at the first byte that differs, so how long it
+// takes says how much of a guess was right, one byte at a time, and a
+// caller who can measure that can walk the key out of this function. This
+// walks the whole expected key every call and folds every difference into
+// one accumulator instead, so the work done is the same whether the first
+// byte is wrong or only the last one is. Nothing here is logged.
+function bearerIsServiceRole(given: string): boolean {
+  const encoder = new TextEncoder();
+  const presented = encoder.encode(given);
+  const expected = encoder.encode(serviceKey);
+  // No key configured is never a match, or an unset env would let an empty
+  // bearer through.
+  if (expected.length === 0) return false;
+  let difference = presented.length ^ expected.length;
+  for (let i = 0; i < expected.length; i++) difference |= (presented[i] ?? 0) ^ expected[i];
+  return difference === 0;
+}
 
 type JobRow = {
   id: string;
@@ -159,6 +186,13 @@ async function runJob(admin: any, job: JobRow): Promise<{ metrics: string[] }> {
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Not supported' }, 405);
+
+  // Before anything is claimed: the job this would pick up belongs to
+  // whoever is next in the queue, not to the caller, so a caller who is not
+  // the scheduler has no business reaching it.
+  const authorization = req.headers.get('Authorization') ?? '';
+  const bearer = authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length) : '';
+  if (!bearerIsServiceRole(bearer)) return json({ error: 'Not allowed' }, 401);
 
   const admin: any = createClient(url, serviceKey);
 

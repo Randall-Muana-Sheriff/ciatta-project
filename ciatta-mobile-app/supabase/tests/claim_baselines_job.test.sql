@@ -6,12 +6,13 @@
 -- because it exercises the RPC surface rather than the table's RLS.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(21);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000c1', 'c1@test.local'),
   ('00000000-0000-0000-0000-0000000000c2', 'c2@test.local'),
-  ('00000000-0000-0000-0000-0000000000c3', 'c3@test.local');
+  ('00000000-0000-0000-0000-0000000000c3', 'c3@test.local'),
+  ('00000000-0000-0000-0000-0000000000c4', 'c4@test.local');
 
 -- Neither Data API role can call any of the four functions at all.
 set local role anon;
@@ -92,6 +93,31 @@ update public.jobs set started_at = now() - interval '16 minutes' where user_id 
 select is((select count(*)::int from public.claim_baselines_job()
   where user_id = '00000000-0000-0000-0000-0000000000c3' and status = 'running' and attempts = 2), 1,
   'a running job stuck for over 15 minutes is reclaimed, attempts bumped again');
+
+-- Slice 2 review: a daily_metrics write that lands while a job is running
+-- queues a second pending row for the same person and kind. Sending the
+-- running job back to 'pending' on failure would then collide with the
+-- jobs_one_pending index, and the edge function's error path would swallow
+-- that and leave the job stuck 'running'. The pending sibling already
+-- carries the work, so the failing job is marked done instead.
+insert into public.jobs (user_id, kind, status, started_at, attempts)
+  values ('00000000-0000-0000-0000-0000000000c4', 'baselines', 'running', now(), 1);
+insert into public.jobs (user_id, kind, status)
+  values ('00000000-0000-0000-0000-0000000000c4', 'baselines', 'pending');
+
+select lives_ok($$
+  select public.fail_baselines_job(
+    (select id from public.jobs where user_id = '00000000-0000-0000-0000-0000000000c4' and status = 'running'),
+    'TypeError')
+$$, 'failing a job whose sibling is already pending raises nothing');
+select is((select count(*)::int from public.jobs where user_id = '00000000-0000-0000-0000-0000000000c4' and status = 'running'), 0,
+  'the failed job is not left stuck running');
+select is((select count(*)::int from public.jobs where user_id = '00000000-0000-0000-0000-0000000000c4' and status = 'done'), 1,
+  'it is marked done, because the pending sibling carries the work');
+select isnt((select finished_at from public.jobs where user_id = '00000000-0000-0000-0000-0000000000c4' and status = 'done'), null,
+  'and stamped finished_at, so cleanup can sweep it later');
+select is((select count(*)::int from public.jobs where user_id = '00000000-0000-0000-0000-0000000000c4' and status = 'pending'), 1,
+  'the pending sibling is left alone, still waiting to be claimed');
 
 reset role;
 select * from finish();

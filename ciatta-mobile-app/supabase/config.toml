@@ -385,6 +385,16 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# The baselines function is called by a scheduler holding the service role
+# key, never by the app, and it checks that bearer itself before it claims
+# anything (supabase/functions/baselines/index.ts). Platform JWT
+# verification is therefore off here deliberately, recorded in this file
+# rather than left to whatever the default happens to be: the function's own
+# check is the gate, and a service role key is not an end user JWT for the
+# platform to verify anyway.
+[functions.baselines]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

@@ -16,9 +16,13 @@ grant all on public.daily_metrics to service_role;
 -- insert on public.daily_metrics to authenticated` would do nothing while
 -- these policies are gone, whereas it would silently reopen writes if the
 -- policies were still sitting here from enable_owner_rls).
-drop policy "owner insert" on public.daily_metrics;
-drop policy "owner update" on public.daily_metrics;
-drop policy "owner delete" on public.daily_metrics;
+-- `if exists` on all three: this migration has not been applied anywhere
+-- yet, and on the live project a single name that does not match would
+-- abort the whole file part way through, leaving the grants above applied
+-- and the policies behind them still standing.
+drop policy if exists "owner insert" on public.daily_metrics;
+drop policy if exists "owner update" on public.daily_metrics;
+drop policy if exists "owner delete" on public.daily_metrics;
 -- "owner select" stays: she still reads her own rows.
 
 -- When self reported check ins are built, the columns she fills in herself

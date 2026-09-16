@@ -414,7 +414,12 @@ function hardWorkoutsAndPelvicPain(days: Day[], episodes: Episode[]): Candidate 
     brief: `You reported pelvic pain on ${word(followed.length)} days following higher intensity workouts.`,
     domains: ['Movement', 'Pain'],
     evidence: {
-      supports: followed.map((d) => `Hard workout on ${shortDate(parseDay(d.date))}, pelvic pain the next day`),
+      // Not "hard workout": nothing measured a workout as hard. Intensity
+      // here is our own reading of the workout's average heart rate
+      // (workoutIntensity in src/lib/healthMetrics.ts), and Apple Health
+      // reports no intensity of its own, so the sentence attributes the
+      // reading rather than stating it as something the watch recorded.
+      supports: followed.map((d) => `Workout on ${shortDate(parseDay(d.date))} we read as higher intensity from its heart rate, pelvic pain the next day`),
       notEstablished: [`${followed.length} occasions can’t separate the workouts from where you were in your cycle.`],
       alternatives: ['Both happened in the days around your period, when pain is already more common for you.'],
     },

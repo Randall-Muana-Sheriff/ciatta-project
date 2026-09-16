@@ -90,8 +90,11 @@ test('buildDayRow omits absent list columns rather than defaulting them to empty
 });
 
 test('buildDayRow carries a list column through when it is present, even an empty one', () => {
-  const row = buildDayRow({ day: '2026-06-01', foods: [] }, { user_id: 'u1', source_id: 's1' });
-  assert.deepEqual(row.foods, []);
+  // workouts, not foods: foods and digestion are hers to fill in and no
+  // longer arrive on this endpoint at all, so workouts is the only list
+  // column a device sync still writes.
+  const row = buildDayRow({ day: '2026-06-01', workouts: [] }, { user_id: 'u1', source_id: 's1' });
+  assert.deepEqual(row.workouts, []);
 });
 
 test('buildDayRow drops temp_deviation even when a device payload carries it: it is derived by the baselines function, not device sync', () => {
@@ -101,6 +104,17 @@ test('buildDayRow drops temp_deviation even when a device payload carries it: it
   );
   assert.equal('temp_deviation' in row, false);
   assert.equal(row.steps, 3500);
+});
+
+test('buildDayRow drops the fields she fills in herself: a device sync has no measurement of stress or a note', () => {
+  const row = buildDayRow(
+    { day: '2026-06-01', steps: 3500, sleep_hours: 7.5, stress: 4, note: 'a rough one' },
+    { user_id: 'u1', source_id: 's1' }
+  );
+  assert.equal('stress' in row, false);
+  assert.equal('note' in row, false);
+  assert.equal(row.steps, 3500);
+  assert.equal(row.sleep_hours, 7.5);
 });
 
 test('rejects an observation with both value and value_text null', () => {

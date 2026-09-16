@@ -21,7 +21,12 @@ function StepsChart({ movement }: { movement: MovementSummary }) {
   const base = 124;
   const { series, band } = movement;
   if (!series.length) return null;
-  const max = Math.max(band?.high ?? 0, ...series.map((d) => d.steps)) * 1.1;
+  // Every day in the window can be a genuine measured zero (a fortnight in
+  // bed, a phone left at home), and with no band either the peak is 0,
+  // which would make every y() a NaN and draw nothing at all. Fall back to
+  // a scale of 1 so the axis still draws and each real zero sits flat on it.
+  const peak = Math.max(band?.high ?? 0, ...series.map((d) => d.steps));
+  const max = peak > 0 ? peak * 1.1 : 1;
   const y = (v: number) => base - (v / max) * (base - 8);
   const gap = W / series.length;
   const label = band ? 'Daily steps for the last four weeks against your usual range' : 'Daily steps for the last four weeks';

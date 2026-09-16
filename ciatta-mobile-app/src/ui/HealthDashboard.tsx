@@ -339,8 +339,12 @@ export function HealthDashboard({
           <Stat label="Flare ups" value={current?.flares != null ? `${current.flares}` : 'None'} sub="you reported" color={M.reported} />
           <Stat label="Avg length" value={current?.hours != null ? `${Math.round(current.hours)}h` : 'None'} sub="per episode" />
         </View>
-        <Text style={[font('footnote'), d.chartLabel]}>Highest severity, each cycle</Text>
-        <HairlineChart values={summaries.map((c) => c.maxSeverity)} color={M.reported} dots height={52} first="Earliest" last="This cycle" />
+        {summaries.some((c) => c.maxSeverity != null) ? (
+          <>
+            <Text style={[font('footnote'), d.chartLabel]}>Highest severity, each cycle</Text>
+            <HairlineChart values={summaries.map((c) => c.maxSeverity)} color={M.reported} dots height={52} first="Earliest" last="This cycle" />
+          </>
+        ) : null}
       </Card>
 
       {/* Check ins */}
@@ -376,11 +380,13 @@ export function HealthDashboard({
       ) : null}
 
       {/* Symptoms and digestion */}
+      {symptomTally.length ? (
       <Card title="Symptoms" meta="Last 60 days" onPress={() => open('symptoms')}>
         {symptomTally.slice(0, 5).map((t) => (
           <BarRow key={t.label} label={t.label} count={t.count} max={symptomMax} color={M.reported} unit=" days" />
         ))}
       </Card>
+      ) : null}
 
       {/* Medications */}
       {medications ? (

@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(10);
+select plan(11);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -31,6 +31,15 @@ select throws_ok($$
   insert into public.observations (user_id, domain, metric, value, occurred_at, provenance, dedupe_key)
   values ('00000000-0000-0000-0000-00000000000a', 'cycle', 'cycle_length', 26, now(), 'DERIVED', 'x')
 $$, '42501', null, 'a client cannot write a derived observation');
+
+-- Slice 2 review: the insert grant is per column
+-- (20260916100300_observations_column_grants.sql), so the origin columns
+-- that record which trigger materialised a row cannot be forged by a client
+-- posting straight to the Data API, only by the triggers themselves.
+select throws_ok($$
+  insert into public.observations (user_id, domain, metric, value, occurred_at, provenance, dedupe_key, origin_table)
+  values ('00000000-0000-0000-0000-00000000000a', 'activity', 'steps', 900, now(), 'MEASURED', 'forged-origin', 'episodes')
+$$, '42501', null, 'a client cannot name origin_table on an insert');
 
 -- Fix round 1, item 5: a duplicate, a blank and a null symptom must not
 -- produce more than one observation (or error on the unique dedupe_key).
