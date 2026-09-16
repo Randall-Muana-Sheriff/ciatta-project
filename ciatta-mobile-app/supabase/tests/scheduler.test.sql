@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(25);
+select plan(27);
 
 -- The extensions this rests on are actually installed.
 select has_extension('pg_cron', 'pg_cron is installed');
@@ -62,6 +62,24 @@ select ok(not has_table_privilege('authenticated', 'public.scheduler_health', 'S
 select lives_ok(
   $$ select * from public.scheduler_health $$,
   'scheduler health answers before the first run'
+);
+
+-- The column that separates a healthy pipeline from a dead one, because
+-- every other column reports health either way. baselines_tick returns 0
+-- and posts nothing when either Vault secret is missing, and the tick still
+-- records 'succeeded' for having done so.
+--
+-- This stack has no secrets at all, so false is the correct answer here and
+-- is asserted rather than merely allowed. It is also the state a live
+-- project is in until the deploy step creates the two secrets by hand,
+-- which is why it is worth a test: it is the ordinary deploy day failure,
+-- not an exotic one.
+select has_column('public', 'scheduler_health', 'scheduler_configured',
+  'scheduler health reports whether the pipeline is configured at all');
+select is(
+  (select bool_or(scheduler_configured) from public.scheduler_health),
+  false,
+  'with no vault secrets it reads false, so a dead pipeline cannot report green'
 );
 
 -- The one positive privilege assertion in this file, and the load bearing
