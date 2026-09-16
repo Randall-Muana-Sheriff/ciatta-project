@@ -770,7 +770,9 @@ Do not start without the user's explicit go.
 
 - [ ] Confirm the live project holds exactly the sixteen migrations through `20260916100400` and none of this slice's.
 - [ ] Create the two Vault secrets on the live project, `service_role_key` and `project_url`. These are secrets: they are created through a direct statement against the live database and never committed to a migration file, which is why Task 1's migration does not create them.
-- [ ] Apply `20260917100000_scheduler.sql`, `20260917100100_scheduler_observability.sql`, `20260917100200_temporal_links.sql` and `20260917100300_temporal_links_gap_and_pair.sql` through the Supabase API, in that order, then rewrite the recorded versions to match the filenames, as both previous pushes did.
+- [ ] Apply `20260917100000_scheduler.sql`, `20260917100100_scheduler_observability.sql`, `20260917100200_temporal_links.sql`, `20260917100300_temporal_links_gap_and_pair.sql` and `20260917100400_scheduler_configured.sql` through the Supabase API, in that order, then rewrite the recorded versions to match the filenames, as both previous pushes did.
+
+  Five, not three. This list has now been short twice, both times because a later fix round added a migration and nothing came back to update it. Before pushing, check this list against `ls ciatta-mobile-app/supabase/migrations` rather than trusting it, and count: the slice adds five files, the live project holds sixteen, so a correct push ends at twenty one.
 
   `20260917100300` is not optional and is easy to miss, because it was written by a later fix round than the one that drafted this list. It adds the two guards that have to be in place **before** anything writes a row: `temporal_links_gap_matches_relation`, which stops a row claiming `same_day` while carrying a gap of 900 hours, and the unique index `temporal_links_pair_once`, which stops the same pair landing twice when it arrives the other way round. `links.ts` names the second one in a comment and relies on it: the generator's sort is what keeps a pair stable across runs, and that index is what catches the sort going unstable, by raising 23505 rather than quietly storing the pair twice.
 - [ ] Redeploy `baselines` with `verify_jwt = true` and the links step included.
@@ -788,7 +790,12 @@ Do not start without the user's explicit go.
   ```
 
   Both must return 1. A zero in either column means `20260917100300` was skipped, and the fix is to apply it before any job is allowed to write links, not after.
-- [ ] Confirm the scheduler actually ran: wait for one five minute tick, then `select * from public.scheduler_health`, and report what it says rather than assuming it worked. A `last_status` other than `succeeded`, or a `pending_jobs` count that does not fall, means it did not.
+- [ ] Verify `20260917100400` landed too, the same way and for the same reason: `select scheduler_configured from public.scheduler_health` must return the column rather than erroring. An error here means the view is still the old eight column one, and the next step cannot be trusted.
+- [ ] Confirm the scheduler actually ran: wait for one five minute tick, then `select * from public.scheduler_health`, and report what it says rather than assuming it worked.
+
+  Read `scheduler_configured` FIRST. If it is false, the two Vault secrets were not created, or were created under the wrong names, and nothing has ever been posted no matter how green the rest of the row looks: `last_status` will read `succeeded` and every queue column will read 0, because the tick ran and correctly decided there was nothing it could do. Fix the secrets and wait for the next tick before reading anything else here.
+
+  With `scheduler_configured` true: a `last_status` other than `succeeded`, or a `queue_pending_jobs` count that does not fall, means it did not work. The queue columns carry a `queue_` prefix (`20260917100100` renamed them); `pending_jobs` is not a column and a query using that name will error.
 - [ ] On a real phone: connect Apple Health, then confirm within ten minutes that `baselines` and `changes` hold rows and that `temporal_links` holds plausible pairs.
 
 ---
