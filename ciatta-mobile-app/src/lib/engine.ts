@@ -410,16 +410,19 @@ function hardWorkoutsAndPelvicPain(days: Day[], episodes: Episode[]): Candidate 
   if (followed.length < 2) return null;
   return {
     id: 'hardWorkoutPelvic',
-    title: 'Pelvic pain after hard workouts',
-    brief: `You reported pelvic pain on ${word(followed.length)} days following higher intensity workouts.`,
+    // No string this candidate shows her calls a workout hard, or states an
+    // intensity as something that was measured. Intensity is our own
+    // reading of the workout's average heart rate (workoutIntensity in
+    // src/lib/healthMetrics.ts) and Apple Health reports none of its own,
+    // so the title, the brief and the evidence lines all name the heart
+    // rate, which was genuinely measured, instead of the label we derived
+    // from it. No bpm figure appears in any of them: the number is not in
+    // scope here, and a stated one would be invented.
+    title: 'Pelvic pain after your higher heart rate workouts',
+    brief: `You reported pelvic pain on ${word(followed.length)} days following workouts where your average heart rate was higher.`,
     domains: ['Movement', 'Pain'],
     evidence: {
-      // Not "hard workout": nothing measured a workout as hard. Intensity
-      // here is our own reading of the workout's average heart rate
-      // (workoutIntensity in src/lib/healthMetrics.ts), and Apple Health
-      // reports no intensity of its own, so the sentence attributes the
-      // reading rather than stating it as something the watch recorded.
-      supports: followed.map((d) => `Workout on ${shortDate(parseDay(d.date))} we read as higher intensity from its heart rate, pelvic pain the next day`),
+      supports: followed.map((d) => `Workout on ${shortDate(parseDay(d.date))} with a higher average heart rate, pelvic pain the next day`),
       notEstablished: [`${followed.length} occasions can’t separate the workouts from where you were in your cycle.`],
       alternatives: ['Both happened in the days around your period, when pain is already more common for you.'],
     },
