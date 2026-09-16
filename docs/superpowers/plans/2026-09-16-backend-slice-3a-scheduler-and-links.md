@@ -812,3 +812,19 @@ Do not start without the user's explicit go.
 - UTC day bucketing: `isoDay` uses UTC, so `same_day` follows UTC days rather than her local ones. This is the same limitation Slice 2 recorded for `temp_deviation`, and fixing it properly means carrying her local day from the phone at ingest, which is a schema change.
 - `pg_net` is fire and forget, so `baselines_tick` cannot report what the edge function did. Task 2's view is how that is answered instead.
 - A tick fires ten posts whether or not there are ten jobs. Extra posts return `{processed: false}` cheaply. If that ever shows up as noise in the function logs, the fix is for the tick to read `pending_jobs` first, which is one query and was left out deliberately as premature.
+
+---
+
+## Binding constraint carried to Slice 3b
+
+`temporal_links` records only the links that exist. It does not record whether the
+links step ran at all: `buildLinks` is skipped above `MAX_LINKED_OBSERVATIONS`
+observations in the window, and the only trace of that skip is an edge function log
+line, which is not queryable state.
+
+So an empty result for a person is **unknown**, never "none". Slice 3b must say
+nothing at all rather than render an absence as a finding, and it may only state
+that nothing occurred alongside something once a per user, per window coverage
+record exists saying the links step actually ran for that window. Rendering the
+current absence as a statement would report "we declined to look" as "nothing
+happened", which is the one thing this record must never do.
