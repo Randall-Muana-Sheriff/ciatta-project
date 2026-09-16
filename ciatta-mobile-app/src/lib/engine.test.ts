@@ -68,16 +68,16 @@ test('with no data the engine says only the opening line', () => {
   assert.equal(out.today.lead, null);
   assert.equal(out.today.text, 'Nothing to compare yet.');
   const m = out.movement;
-  // recent and workouts.usual are unaffected by this review: with no days at
-  // all there is nothing to average, so they fall back to the shared mean()/
-  // 0 convention documented at movementSummary. steps.usual and active.usual
-  // are different: with no baseline days, there is no usual, and it must
-  // say so rather than fabricate one (Fix round 1, item 3).
-  for (const v of [m.steps.recent, m.active.recent, m.workouts.recent, m.workouts.usual]) {
-    assert.ok(Number.isFinite(v), 'movement figures stay finite with no days');
+  // workouts.recent is a genuine count over zero days (an empty sum is
+  // truly 0, not an unknown average), so it alone stays finite. Every mean
+  // or median over an empty set (steps and active, recent and usual, and
+  // the workouts usual) is absent rather than a fabricated zero
+  // (Fix round 1, item 3; Fix round 2, sweep for the same fault beyond the
+  // fields Fix round 1 happened to name).
+  assert.ok(Number.isFinite(m.workouts.recent), 'a count over zero days is genuinely zero, not absent');
+  for (const v of [m.steps.recent, m.steps.usual, m.active.recent, m.active.usual, m.workouts.usual]) {
+    assert.equal(v, null, 'a mean or median over an empty set is absent, not a fabricated zero');
   }
-  assert.equal(m.steps.usual, null, 'no baseline days means no usual, not a fabricated zero');
-  assert.equal(m.active.usual, null);
   assert.equal(m.band, null, 'no baseline days means no band either');
   assert.deepEqual(m.series, []);
 });
@@ -102,8 +102,41 @@ test('with too little history for a baseline, the usual is absent rather than a 
   });
   assert.equal(out.movement.steps.usual, null);
   assert.equal(out.movement.active.usual, null);
+  assert.equal(out.movement.workouts.usual, null, 'no baseline days means no usual week of workouts either');
   assert.equal(out.movement.band, null);
   assert.ok(Number.isFinite(out.movement.steps.recent), 'recent still reports over the days that exist');
+});
+
+// Fix round 2: the review named steps.recent as an instance of the same
+// fault (mean() of an empty set standing in for a real zero) and asked for
+// a sweep rather than another named list, since it had already missed
+// active.recent and workouts.usual the first time. A week with real steps
+// history overall, but nothing in the most recent seven days (a watch left
+// uncharged, or Motion access revoked after being granted), must report no
+// recent figure at all rather than "Steps a day 0".
+test('steps.recent and active.recent are absent, not a fabricated zero, for a week with nothing measured', () => {
+  const now = new Date(2026, 8, 16);
+  // 83 days of real steps and active minutes history, so usual is real,
+  // then the most recent 7 days carry neither: a real gap (a watch left
+  // uncharged, or Motion access revoked), not a new record.
+  const rows = [
+    ...Array.from({ length: 83 }, (_, i) => ({
+      day: isoDay(addDays(now, -(89 - i))),
+      steps: 8000,
+      active_minutes: 40,
+    })),
+    ...Array.from({ length: 7 }, (_, i) => ({ day: isoDay(addDays(now, -(6 - i))) })),
+  ];
+  const days = daysFromRows(rows, now);
+
+  const out = buildInsights({
+    days, episodes: [], windows: [], summaries: [], signals: [], cycleObservations: [],
+    draws: [], interventions: [], watching: {}, opening: 'x', now,
+  });
+  assert.equal(out.movement.steps.recent, null, 'nothing measured this week, so no recent figure, not 0');
+  assert.equal(out.movement.active.recent, null);
+  assert.ok(out.movement.steps.usual != null, 'the 83 day history still gives a real usual');
+  assert.ok(out.movement.active.usual != null);
 });
 
 // Fix round 1, item 2: daysFromRows always extends the array through today,
@@ -157,9 +190,11 @@ test('the engine tolerates real days where only sleep is present', () => {
   });
   assert.ok(out.today.text.length > 0);
   assert.doesNotMatch(out.today.text, /steps/i, 'nothing measured about steps, so nothing is said about it');
-  for (const v of [out.movement.steps.recent, out.movement.active.recent]) {
-    assert.ok(Number.isFinite(v));
-  }
+  // Steps and active minutes were never once measured across all 90 days,
+  // so there is nothing to average: both figures are absent, not a
+  // fabricated "0 steps a day" (Fix round 2).
+  assert.equal(out.movement.steps.recent, null);
+  assert.equal(out.movement.active.recent, null);
 });
 
 test('a day with every measured field null contributes nothing to any average the engine reports', () => {
@@ -184,4 +219,95 @@ test('a day with every measured field null contributes nothing to any average th
   const gapped = insightsFor(withGap).movement.steps.recent;
   assert.equal(full, 8000);
   assert.equal(gapped, 8000, 'the missing day is skipped, not averaged in as a zero');
+});
+
+// Fix round 2: the coordinator's list named specific dashboard fields
+// (workouts.usual, steps.recent, several captions), but the underlying
+// fault, a mean or rate computed over an empty comparison group standing in
+// for zero, recurs several more times inside the insight generating
+// functions below buildInsights. Found by sweeping every mean()/rate style
+// division in engine.ts for a branch that returns 0 rather than null when
+// its input is empty, then checking whether that 0 could change whether an
+// insight fires or what it claims.
+
+test('a suggested walk never fabricates an energy reading it does not have', () => {
+  const now = new Date(2026, 8, 16);
+  // A real 8 day drop in steps below a steady 90 day baseline, but not one
+  // energy check in anywhere in the record.
+  const rows = Array.from({ length: 90 }, (_, i) => {
+    const ago = 89 - i;
+    return { day: isoDay(addDays(now, -ago)), steps: ago <= 7 ? 3000 : 9000 };
+  });
+  const days = daysFromRows(rows, now);
+  assert.ok(days.every((d) => d.energy == null));
+
+  const out = buildInsights({
+    days, episodes: [], windows: [], summaries: [], signals: [], cycleObservations: [],
+    draws: [], interventions: [], watching: {}, opening: 'x', now,
+  });
+  const walk = out.ranked.find((i) => i.id === 'walk');
+  assert.ok(walk, 'a real drop in steps still suggests a walk; absent energy data must not veto it');
+  assert.ok(
+    !walk!.evidence.supports.some((s) => s.includes('Energy averaged')),
+    'no energy check ins this week, so none is claimed as evidence',
+  );
+});
+
+test('a walk outcome never fabricates an energy change it cannot show', () => {
+  const now = new Date(2026, 8, 16);
+  // Ten days, a walk logged on day index 5, three real days of steps
+  // before and after it, but no energy check ins anywhere.
+  const rows = Array.from({ length: 10 }, (_, i) => ({
+    day: isoDay(addDays(now, -(9 - i))),
+    steps: i < 5 ? 4000 : 6000,
+  }));
+  const days = daysFromRows(rows, now);
+  const walkDate = days[5].date;
+  assert.ok(days.every((d) => d.energy == null));
+
+  const out = buildInsights({
+    days, episodes: [], windows: [], summaries: [], signals: [], cycleObservations: [],
+    draws: [], interventions: [{ id: 'w1', kind: 'walk', date: walkDate }], watching: {}, opening: 'x', now,
+  });
+  const outcome = out.ranked.find((i) => i.id === 'walkOutcome');
+  assert.ok(outcome, 'a real rise in steps after the walk still surfaces the outcome');
+  assert.ok(!outcome!.brief.toLowerCase().includes('energy'), 'no energy check ins around the walk, so nothing is claimed about it');
+  assert.ok(!outcome!.evidence.supports.some((s) => s.toLowerCase().includes('energy')));
+});
+
+test('fatigue after short sleep is not claimed when there is nothing to compare it to', () => {
+  const now = new Date(2026, 8, 16);
+  // Every single night is short; energy the next day is low often enough
+  // that the unguarded rate comparison this fixes, against a fabricated
+  // "0% of full nights", would have surfaced this.
+  const rows = Array.from({ length: 20 }, (_, i) => ({
+    day: isoDay(addDays(now, -(19 - i))),
+    sleep_hours: 5,
+    energy: i % 2 === 0 ? 1 : 4,
+  }));
+  const days = daysFromRows(rows, now);
+  assert.ok(days.every((d) => d.sleepHours != null && d.sleepHours < 6), 'no night in this fixture is a full night');
+
+  const out = buildInsights({
+    days, episodes: [], windows: [], summaries: [], signals: [], cycleObservations: [],
+    draws: [], interventions: [], watching: {}, opening: 'x', now,
+  });
+  assert.ok(!out.ranked.some((i) => i.id === 'fatigueShortSleep'), 'no full nights logged at all, so no comparison can be made');
+});
+
+test('bloating after a food is not claimed when every day includes it, leaving no comparison group', () => {
+  const now = new Date(2026, 8, 16);
+  const rows = Array.from({ length: 10 }, (_, i) => ({
+    day: isoDay(addDays(now, -(9 - i))),
+    foods: ['Dairy'],
+    digestion: i < 4 ? ['Bloating'] : [],
+  }));
+  const days = daysFromRows(rows, now);
+  assert.ok(days.every((d) => d.foods.includes('Dairy')), 'every day mentions the food, so there are no other days to compare against');
+
+  const out = buildInsights({
+    days, episodes: [], windows: [], summaries: [], signals: [], cycleObservations: [],
+    draws: [], interventions: [], watching: {}, opening: 'x', now,
+  });
+  assert.ok(!out.ranked.some((i) => i.id === 'food:Dairy'), 'no days without dairy, so nothing to compare bloating against');
 });

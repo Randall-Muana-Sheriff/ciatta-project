@@ -74,12 +74,15 @@ export type Band = { usual: number; low: number; high: number };
 
 export type MovementSummary = {
   // usual is null when there are no baseline days to compute one from yet
-  // (a new real record, or a metric no source has ever measured); recent
-  // still reports over whatever recent days exist, per mean()'s existing
-  // convention.
-  steps: { recent: number; usual: number | null };
-  active: { recent: number; usual: number | null };
-  workouts: { recent: number; usual: number };
+  // (a new real record, or a metric no source has ever measured). recent is
+  // null when the last 7 days themselves carry nothing for that field (a
+  // watch left uncharged, a permission revoked); workouts.recent is the one
+  // exception, since it is a count over real per day values (never null,
+  // 0 when nothing was logged that day) rather than a mean that can be
+  // computed over an empty set.
+  steps: { recent: number | null; usual: number | null };
+  active: { recent: number | null; usual: number | null };
+  workouts: { recent: number; usual: number | null };
   series: { date: string; steps: number }[];
   band: Band | null;
 };
@@ -128,14 +131,21 @@ export function band(xs: number[]): Band {
   return { usual, low: usual - spread, high: usual + spread };
 }
 
-// median()/band() return 0 (or all zeros) for an empty input, which is the
-// right shared contract for those two: they're cross checked byte for byte
-// against compute.ts and other callers (sustained()'s own MIN_BASELINE_N
-// gate, for one) already rely on that exact 0. But a "usual" shown to her is
-// a different claim: a real night above "Usual 0h 00m" reads as false, not
-// absent. Anywhere a usual can be empty (no baseline days at all, which is
-// every metric for the first several weeks of a real record) calls these
-// instead, so absence stays absence rather than becoming a fabricated zero.
+// mean()/median()/band() return 0 (or all zeros) for an empty input, which
+// is the right shared contract for those three: they're cross checked byte
+// for byte against compute.ts, and other callers (sustained()'s own
+// MIN_BASELINE_N gate, for one) already rely on that exact 0. But a figure
+// shown to her, whether it's a "usual" baseline or a "recent" average, is a
+// different claim: a real night above "Usual 0h 00m", or a real week above
+// "Steps a day 0", reads as false, not absent. Anywhere a figure can be
+// empty (no baseline days at all, which is every metric for the first
+// several weeks of a real record; or nothing in the recent window, a watch
+// left uncharged or a permission revoked) calls these instead, so absence
+// stays absence rather than becoming a fabricated zero.
+function meanOrNull(xs: number[]): number | null {
+  return xs.length ? mean(xs) : null;
+}
+
 function medianOrNull(xs: number[]): number | null {
   return xs.length ? median(xs) : null;
 }
@@ -297,9 +307,13 @@ function fatigueAfterShortSleep(days: Day[]): Candidate | null {
       if (e <= 2) fullTired++;
     }
   }
+  // A rate with no full nights to compare against at all is not "0% of
+  // full nights had low energy"; there is no comparison to make, so the
+  // insight can't be established rather than firing on an easier,
+  // fabricated threshold.
   const rateShort = short ? shortTired / short : 0;
-  const rateFull = full ? fullTired / full : 0;
-  if (shortTired < 3 || rateShort < 2 * rateFull + 0.1) return null;
+  const rateFull = full ? fullTired / full : null;
+  if (shortTired < 3 || rateFull == null || rateShort < 2 * rateFull + 0.1) return null;
   return {
     id: 'fatigueShortSleep',
     title: 'Fatigue after short nights',
@@ -324,20 +338,30 @@ function activityAndWeeks(days: Day[]): Candidate[] {
   for (let end = days.length; end - 7 >= 0; end -= 7) weeks.unshift(days.slice(end - 7, end));
   if (weeks.length < 9) return [];
   const rows = weeks
-    .map((w) => ({
-      steps: mean(nums(w.map((d) => d.steps))),
-      energy: mean(nums(w.map((d) => d.energy))),
-      sleep: mean(nums(w.map((d) => d.sleepHours))),
-    }))
+    .map((w) => ({ steps: nums(w.map((d) => d.steps)), energy: nums(w.map((d) => d.energy)), sleep: nums(w.map((d) => d.sleepHours)) }))
+    // A week with no step reading at all is not a data point for this
+    // ranking: it can't honestly be called more or less active than
+    // another week, only unmeasured, and must never sort to an extreme
+    // (steps is the sort key below) and read as one.
+    .filter((w) => w.steps.length > 0)
+    .map((w) => ({ steps: mean(w.steps), energy: w.energy.length ? mean(w.energy) : null, sleep: w.sleep.length ? mean(w.sleep) : null }))
     .sort((a, b) => b.steps - a.steps);
+  // Fewer than 9 weeks with any step reading at all is the same as fewer
+  // than 9 weeks of history for this comparison.
+  if (rows.length < 9) return [];
   const k = Math.floor(rows.length / 3);
   const top = rows.slice(0, k);
   const bottom = rows.slice(-k);
   const out: Candidate[] = [];
 
-  const eTop = mean(top.map((r) => r.energy));
-  const eBottom = mean(bottom.map((r) => r.energy));
-  if (eTop - eBottom >= 0.4) {
+  // A week within the top or bottom third that has no energy (or sleep)
+  // reading of its own is left out of that particular average, the same
+  // way a day with nothing measured is left out of a daily one.
+  const topEnergy = nums(top.map((r) => r.energy));
+  const bottomEnergy = nums(bottom.map((r) => r.energy));
+  const eTop = topEnergy.length && bottomEnergy.length ? mean(topEnergy) : null;
+  const eBottom = topEnergy.length && bottomEnergy.length ? mean(bottomEnergy) : null;
+  if (eTop != null && eBottom != null && eTop - eBottom >= 0.4) {
     out.push({
       id: 'activityEnergy',
       title: 'Energy and activity',
@@ -354,9 +378,11 @@ function activityAndWeeks(days: Day[]): Candidate[] {
     });
   }
 
-  const sTop = mean(top.map((r) => r.sleep));
-  const sBottom = mean(bottom.map((r) => r.sleep));
-  if (sTop - sBottom >= 0.25) {
+  const topSleep = nums(top.map((r) => r.sleep));
+  const bottomSleep = nums(bottom.map((r) => r.sleep));
+  const sTop = topSleep.length && bottomSleep.length ? mean(topSleep) : null;
+  const sBottom = topSleep.length && bottomSleep.length ? mean(bottomSleep) : null;
+  if (sTop != null && sBottom != null && sTop - sBottom >= 0.25) {
     out.push({
       id: 'activitySleep',
       title: 'Sleep and activity',
@@ -405,7 +431,10 @@ function foodAndBloating(days: Day[]): Candidate[] {
     const withFood = days.filter((d) => d.foods.includes(label));
     const hits = withFood.filter(bloated).length;
     const others = days.filter((d) => !d.foods.includes(label));
-    const otherRate = others.length ? others.filter(bloated).length / others.length : 0;
+    // No days without this food logged at all means there is no comparison
+    // group, not a 0% baseline to compare a favourably low bar against.
+    if (!others.length) continue;
+    const otherRate = others.filter(bloated).length / others.length;
     if (hits < 3 || hits / withFood.length < 2 * otherRate + 0.2) continue;
     const food = label.toLowerCase();
     out.push({
@@ -498,9 +527,12 @@ function combined(input: EngineInput, sleep: Change | null, steps: Change | null
   if (stretchStart >= last.end!) return null;
 
   const recent = days.slice(-span);
-  const usualStress = mean(nums(baselineDays(days).map((d) => d.stress)));
-  const recentStress = mean(nums(recent.map((d) => d.stress)));
-  const higherStress = recentStress - usualStress >= 1;
+  // A stress baseline (or a recent reading) built from zero check ins is
+  // not "0 of 5", it's unknown, and comparing a real recent reading against
+  // a fabricated 0 usual would call almost any stretch "higher stress".
+  const usualStress = meanOrNull(nums(baselineDays(days).map((d) => d.stress)));
+  const recentStress = meanOrNull(nums(recent.map((d) => d.stress)));
+  const higherStress = usualStress != null && recentStress != null && recentStress - usualStress >= 1;
   const tired = recent.filter((d) => d.energy != null && d.energy <= 2).length;
   const note = recent.find((d) => d.note)?.note;
   const locs = tally(signals.filter((s) => s.pain && s.date >= stretchStart).map((s) => s.episode.locations))
@@ -514,11 +546,13 @@ function combined(input: EngineInput, sleep: Change | null, steps: Change | null
   const byDate = new Map(days.map((d) => [d.date, d]));
   const matches = done.slice(0, -1).filter((w) => {
     const week = Array.from({ length: 7 }, (_, k) => byDate.get(isoDay(addDays(w.end!, -(k + 1))))).filter((d): d is Day => !!d);
-    if (week.length < 5) return false;
+    if (week.length < 5 || usualStress == null) return false;
+    const weekStress = nums(week.map((d) => d.stress));
     return (
       mean(nums(week.map((d) => d.sleepHours))) < sleep.usual.low &&
       mean(nums(week.map((d) => d.steps))) < steps.usual.low &&
-      mean(nums(week.map((d) => d.stress))) >= usualStress + 1
+      weekStress.length > 0 &&
+      mean(weekStress) >= usualStress + 1
     );
   });
 
@@ -552,7 +586,9 @@ function combined(input: EngineInput, sleep: Change | null, steps: Change | null
         `Cycle length ${last.length} days, the shortest of your last ${done.length}`,
         `Sleep averaged ${fmtHours(sleepAvg)} over ${span} days; your usual is ${fmtHours(sleep.usual.usual)}`,
         `Steps averaged ${fmtCount(stepsAvg)} a day; your usual is ${fmtCount(steps.usual.usual)}`,
-        ...(higherStress ? [`Stress averaged ${recentStress.toFixed(1)} of 5; usually ${usualStress.toFixed(1)}`] : []),
+        ...(higherStress && recentStress != null && usualStress != null
+          ? [`Stress averaged ${recentStress.toFixed(1)} of 5; usually ${usualStress.toFixed(1)}`]
+          : []),
         ...(tired >= 3 ? [`Low energy on ${tired} of ${span} days`] : []),
         ...(note ? [`You wrote “${note}”`] : []),
         ...(painText ? [`You reported ${painText}`] : []),
@@ -618,22 +654,31 @@ function walkOutcomes(days: Day[], interventions: Intervention[]): Candidate | n
       const beforeSteps = nums(before.map((d) => d.steps));
       const afterSteps = nums(after.map((d) => d.steps));
       if (!beforeSteps.length || !afterSteps.length) return null;
+      const beforeEnergy = nums(before.map((d) => d.energy));
+      const afterEnergy = nums(after.map((d) => d.energy));
       return {
         date: v.date,
         steps: mean(afterSteps) / mean(beforeSteps) - 1,
-        energy: mean(nums(after.map((d) => d.energy))) - mean(nums(before.map((d) => d.energy))),
+        // A before or after stretch with no energy check ins at all gives
+        // no real delta to report; null, not a fabricated swing built from
+        // one real mean and one zero.
+        energy: beforeEnergy.length && afterEnergy.length ? mean(afterEnergy) - mean(beforeEnergy) : null,
       };
     })
-    .filter((x): x is { date: string; steps: number; energy: number } => !!x && x.steps > 0.1);
+    .filter((x): x is { date: string; steps: number; energy: number | null } => !!x && x.steps > 0.1);
   if (!results.length) return null;
   const last = results[results.length - 1];
+  const energyClause = last.energy != null ? ` and your reported energy was ${last.energy >= 0.5 ? 'higher' : 'about the same'}` : '';
   return {
     id: 'walkOutcome',
     title: 'After your planned walks',
-    brief: `After you planned a short walk on ${shortDate(parseDay(last.date))}, your steps rose about ${pct(last.steps)} and your reported energy was ${last.energy >= 0.5 ? 'higher' : 'about the same'} over the next three days.`,
+    brief: `After you planned a short walk on ${shortDate(parseDay(last.date))}, your steps rose about ${pct(last.steps)}${energyClause} over the next three days.`,
     domains: ['Movement', 'Energy', 'Interventions'],
     evidence: {
-      supports: results.map((r) => `${shortDate(parseDay(r.date))}: steps up ${pct(r.steps)}, energy ${r.energy >= 0 ? 'up' : 'down'} ${Math.abs(r.energy).toFixed(1)} of 5`),
+      supports: results.map(
+        (r) =>
+          `${shortDate(parseDay(r.date))}: steps up ${pct(r.steps)}${r.energy != null ? `, energy ${r.energy >= 0 ? 'up' : 'down'} ${Math.abs(r.energy).toFixed(1)} of 5` : ''}`,
+      ),
       notEstablished: [results.length < 2 ? 'One walk can’t show that walking lifts your energy.' : 'A few walks still can’t show that walking lifts your energy.'],
       alternatives: ['Energy often recovers on its own after a low stretch.'],
     },
@@ -644,16 +689,22 @@ function walkOutcomes(days: Day[], interventions: Intervention[]): Candidate | n
 }
 
 function walkSuggestion(days: Day[], steps: Change | null, signals: Signal[], now: Date): Candidate | null {
-  const energy = mean(nums(days.slice(-7).map((d) => d.energy)));
+  // No energy check ins this week is not "0 of 5": it can't veto the
+  // suggestion (there's nothing to say her energy is already fine), and it
+  // must not appear in the evidence as if it were a real, low reading.
+  const energy = meanOrNull(nums(days.slice(-7).map((d) => d.energy)));
   const inPain = signals.some((s) => s.pain && (s.episode.severity ?? 0) >= 8 && daysBetween(s.date, now) <= 2);
-  if (!steps || steps.direction !== 'lower' || steps.streak < 7 || energy > 2.8 || inPain) return null;
+  if (!steps || steps.direction !== 'lower' || steps.streak < 7 || (energy != null && energy > 2.8) || inPain) return null;
   return {
     id: 'walk',
     title: 'A short walk today',
     brief: 'If it feels appropriate, a short walk today could be worth trying, and the next few days will show whether your energy or sleep follow.',
     domains: ['Movement', 'Energy', 'Interventions'],
     evidence: {
-      supports: [`Activity below your usual for ${steps.streak} days`, `Energy averaged ${energy.toFixed(1)} of 5 over the last week`],
+      supports: [
+        `Activity below your usual for ${steps.streak} days`,
+        ...(energy != null ? [`Energy averaged ${energy.toFixed(1)} of 5 over the last week`] : []),
+      ],
       notEstablished: ['It isn’t known yet whether walking changes your energy; that is what the next few days will show.'],
       alternatives: ['If you’re in pain or unwell, rest may be the better choice.'],
     },
@@ -689,11 +740,11 @@ function movementSummary(days: Day[]): MovementSummary {
   const last7 = days.slice(-7);
   const b = bandOrNull(nums(base.map((d) => d.steps)));
   return {
-    steps: { recent: mean(nums(last7.map((d) => d.steps))), usual: b?.usual ?? null },
-    active: { recent: mean(nums(last7.map((d) => d.activeMinutes))), usual: medianOrNull(nums(base.map((d) => d.activeMinutes))) },
+    steps: { recent: meanOrNull(nums(last7.map((d) => d.steps))), usual: b?.usual ?? null },
+    active: { recent: meanOrNull(nums(last7.map((d) => d.activeMinutes))), usual: medianOrNull(nums(base.map((d) => d.activeMinutes))) },
     workouts: {
       recent: last7.reduce((n, d) => n + d.workouts.length, 0),
-      usual: base.length ? base.reduce((n, d) => n + d.workouts.length, 0) / (base.length / 7) : 0,
+      usual: base.length ? base.reduce((n, d) => n + d.workouts.length, 0) / (base.length / 7) : null,
     },
     // A day with no step count contributes no point to the chart rather than
     // a fabricated zero; MovementSummary.series stays non nullable so every

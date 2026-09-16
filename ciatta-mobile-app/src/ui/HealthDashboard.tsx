@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { daysBetween, parseDay, shortDate, type Episode } from '../data/cycleLog';
+import { dayLabel, daysBetween, parseDay, shortDate, type Episode } from '../data/cycleLog';
 import type { Day } from '../data/daily';
 import type { Lens } from '../lib/cycleLens';
 import { type CycleSummary, type Signal, tally } from '../lib/cyclePatterns';
@@ -182,7 +182,7 @@ export function HealthDashboard({
           placeholder before her first sync), and nothing shown for a night
           nothing measured, rather than a fabricated "0h 00m". */}
       {sleepEntry ? (
-      <Card title="Sleep" meta={`Last night, ${dateOf(sleepEntry.day)}`} onPress={() => open('sleep')}>
+      <Card title="Sleep" meta={dayLabel(sleepEntry.day.date, now)} onPress={() => open('sleep')}>
         {stages ? (
         <View style={d.sleepTop}>
           <StageRings stages={stages} active={stage} />
@@ -221,27 +221,41 @@ export function HealthDashboard({
           usual={usual.sleep ?? undefined}
           color={M.measured}
           first={dateOf(last14[0])}
-          last="Last night"
+          last={dayLabel(sleepEntry.day.date, now)}
         />
-        <Text style={[font('caption1'), d.note]}>Dashed line: your usual. Sleep stages are sample data for now.</Text>
+        {usual.sleep != null || (stages && mode === 'demo') ? (
+        <Text style={[font('caption1'), d.note]}>
+          {[usual.sleep != null ? 'Dashed line: your usual.' : null, stages && mode === 'demo' ? 'Sleep stages are sample data for now.' : null]
+            .filter(Boolean)
+            .join(' ')}
+        </Text>
+        ) : null}
       </Card>
       ) : null}
 
-      {/* Movement */}
+      {/* Movement: a tile only draws for a figure the week actually has. */}
       {movement.series.length ? (
       <Card title="Movement" meta="Last 7 days" onPress={() => open('movement')}>
         <View style={d.row3}>
+          {movement.steps.recent != null ? (
           <Stat
             label="Steps a day"
             value={fmtCount(movement.steps.recent)}
             sub={movement.steps.usual != null ? `Usual ${fmtCount(movement.steps.usual)}` : undefined}
           />
+          ) : null}
+          {movement.active.recent != null ? (
           <Stat
             label="Active min"
             value={`${Math.round(movement.active.recent)}`}
             sub={movement.active.usual != null ? `Usual ${Math.round(movement.active.usual)}` : undefined}
           />
-          <Stat label="Workouts" value={`${movement.workouts.recent}`} sub={`Usually ${Math.round(movement.workouts.usual)}`} />
+          ) : null}
+          <Stat
+            label="Workouts"
+            value={`${movement.workouts.recent}`}
+            sub={movement.workouts.usual != null ? `Usually ${Math.round(movement.workouts.usual)}` : undefined}
+          />
         </View>
         <Text style={[font('footnote'), d.chartLabel]}>Daily steps, last 28 days</Text>
         <HairlineChart
@@ -249,14 +263,20 @@ export function HealthDashboard({
           usual={movement.steps.usual ?? undefined}
           color={M.measured}
           first={shortDate(parseDay(movement.series[0].date))}
-          last="Today"
+          last={dayLabel(movement.series[movement.series.length - 1].date, now)}
         />
       </Card>
       ) : null}
 
       {/* Recovery: a tile only draws for a measure the day actually has, and
           each reads independently from whenever it was last measured, since
-          resting heart rate and HRV are on their own cadences in real data. */}
+          resting heart rate and HRV are on their own cadences in real data.
+          The card's own meta describes the chart below it (a fixed 28 day
+          window, always accurate), but the headline value can come from any
+          day mostRecentValue found; each tile's own date goes in its sub
+          line rather than letting "Last 28 days" imply a recency the value
+          may not have (Fix round 2: date led rather than a staleness bound,
+          since hiding a real value would undo Fix round 1, item 2). */}
       {rhrEntry || hrvEntry ? (
       <Card title="Recovery" meta="Last 28 days" onPress={() => openInsight('rhrHigh')}>
         <View style={d.tiles}>
@@ -265,14 +285,18 @@ export function HealthDashboard({
             <Stat
               label="Resting heart rate"
               value={`${Math.round(rhrEntry.value)} bpm`}
-              sub={usual.rhr != null ? `Usual ${Math.round(usual.rhr)}` : undefined}
+              sub={[usual.rhr != null ? `Usual ${Math.round(usual.rhr)}` : null, dayLabel(rhrEntry.day.date, now)].filter(Boolean).join(' · ')}
             />
             <HairlineChart values={last28.map((x) => x.restingHR)} usual={usual.rhr ?? undefined} color={M.measured} height={44} />
           </View>
           ) : null}
           {hrvEntry ? (
           <View style={d.tile}>
-            <Stat label="HRV" value={`${Math.round(hrvEntry.value)} ms`} sub={usual.hrv != null ? `Usual ${Math.round(usual.hrv)}` : undefined} />
+            <Stat
+              label="HRV"
+              value={`${Math.round(hrvEntry.value)} ms`}
+              sub={[usual.hrv != null ? `Usual ${Math.round(usual.hrv)}` : null, dayLabel(hrvEntry.day.date, now)].filter(Boolean).join(' · ')}
+            />
             <HairlineChart values={last28.map((x) => x.hrv)} usual={usual.hrv ?? undefined} color={M.measured} height={44} />
           </View>
           ) : null}
