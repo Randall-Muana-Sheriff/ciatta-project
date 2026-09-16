@@ -5,7 +5,7 @@ import { addDays, sampleCycleStarts, daysBetween, isoDay, startOfDay } from './c
 // Health is connected, a deterministic sample stands in, shaped to match the
 // Cycle sample record.
 
-export type Workout = { type: string; minutes: number; intensity: 'Low' | 'Moderate' | 'High' };
+export type Workout = { type: string; minutes: number; intensity?: 'Low' | 'Moderate' | 'High' };
 
 export type SleepStages = { awake: number; rem: number; light: number; deep: number };
 

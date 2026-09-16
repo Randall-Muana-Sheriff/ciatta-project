@@ -82,6 +82,7 @@ export function sampleToObservation(
   if (spec.identifier === WORKOUT_SPEC.identifier) {
     const workout = sample as WorkoutSample;
     const minutes = workoutDurationMinutes(workout.duration, workout.startDate, workout.endDate);
+    const intensity = workoutIntensity(workout.averageHeartRate);
     return {
       domain: spec.domain,
       metric: spec.metric,
@@ -91,7 +92,8 @@ export function sampleToObservation(
       occurred_at: toIso(workout.endDate),
       provenance: 'MEASURED',
       dedupe_key: dedupeKey(spec.metric, workout),
-      metadata: { intensity: workoutIntensity(workout.averageHeartRate) },
+      // Absent, not defaulted, when nothing about effort was measured.
+      metadata: intensity == null ? {} : { intensity },
     };
   }
 
@@ -148,6 +150,12 @@ type SleepMinutes = {
   stage_rem: number;
   stage_light: number;
   stage_deep: number;
+  // True once a sample with an actual stage classification (awake, core,
+  // deep, rem) lands that night. Sleep trackers that are not an Apple Watch
+  // commonly report only the generic unstaged "asleep" category, in which
+  // case this stays false and the four stage fields are never written: they
+  // would otherwise read as a measured zero for a stage nothing ever tested.
+  hasStagedSample: boolean;
 };
 
 // Groups samples by local calendar day and folds each metric into the
@@ -180,21 +188,28 @@ export function foldDay(samples: readonly FoldableSample[]): Record<string, Part
         stage_rem: 0,
         stage_light: 0,
         stage_deep: 0,
+        hasStagedSample: false,
       });
       const minutes = (sample.endDate.getTime() - sample.startDate.getTime()) / 60000;
       const stage = sleepStageLabel(sample.value);
       bucket.time_in_bed += minutes;
-      if (stage === 'awake') bucket.stage_awake += minutes;
-      else if (stage === 'asleep_deep') {
+      if (stage === 'awake') {
+        bucket.stage_awake += minutes;
+        bucket.hasStagedSample = true;
+      } else if (stage === 'asleep_deep') {
         bucket.stage_deep += minutes;
         bucket.sleep_hours += minutes;
+        bucket.hasStagedSample = true;
       } else if (stage === 'asleep_rem') {
         bucket.stage_rem += minutes;
         bucket.sleep_hours += minutes;
+        bucket.hasStagedSample = true;
       } else if (stage === 'asleep_core') {
         bucket.stage_light += minutes;
         bucket.sleep_hours += minutes;
+        bucket.hasStagedSample = true;
       } else if (stage === 'asleep') {
+        // The generic unstaged category: real sleep, but no stage claim.
         bucket.sleep_hours += minutes;
       }
       // 'in_bed' contributes only to time_in_bed, already added above.
@@ -203,11 +218,15 @@ export function foldDay(samples: readonly FoldableSample[]): Record<string, Part
 
     const { sample } = item;
     const day = isoDay(sample.startDate);
-    (workouts[day] ??= []).push({
+    const intensity = workoutIntensity(sample.averageHeartRate);
+    const entry: Workout = {
       type: workoutTypeLabel(sample.workoutActivityType),
       minutes: workoutDurationMinutes(sample.duration, sample.startDate, sample.endDate),
-      intensity: workoutIntensity(sample.averageHeartRate),
-    });
+    };
+    // Set the key only when a value came back: absent means absent, never
+    // an emitted `intensity: undefined`.
+    if (intensity != null) entry.intensity = intensity;
+    (workouts[day] ??= []).push(entry);
   }
 
   const days: Record<string, Partial<DailyRow>> = {};
@@ -231,10 +250,15 @@ export function foldDay(samples: readonly FoldableSample[]): Record<string, Part
     const row = rowFor(day);
     row.sleep_hours = minutes.sleep_hours / 60;
     row.time_in_bed = minutes.time_in_bed / 60;
-    row.stage_awake = minutes.stage_awake;
-    row.stage_rem = minutes.stage_rem;
-    row.stage_light = minutes.stage_light;
-    row.stage_deep = minutes.stage_deep;
+    // Stage keys are written together, only when at least one sample that
+    // night actually classified a stage. A night with no staged sample never
+    // gets these keys: sleep_hours and time_in_bed alone were measured.
+    if (minutes.hasStagedSample) {
+      row.stage_awake = minutes.stage_awake;
+      row.stage_rem = minutes.stage_rem;
+      row.stage_light = minutes.stage_light;
+      row.stage_deep = minutes.stage_deep;
+    }
   }
 
   for (const [day, list] of Object.entries(workouts)) {

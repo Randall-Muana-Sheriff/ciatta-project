@@ -44,13 +44,18 @@ test('resting heart rate and hrv average into their own day fields', () => {
   assert.equal(hrv.dayField, 'hrv');
 });
 
-test('wrist and basal body temperature both average into temp deviation', () => {
+test('wrist and basal body temperature are observation only, in degrees, never folded into temp deviation', () => {
+  // Both readings are absolute skin temperature, roughly 36 to 38 degrees.
+  // temp_deviation is a nightly change from a personal baseline, a small
+  // number around zero, so an absolute reading must never land there.
   const wrist = specFor('HKQuantityTypeIdentifierAppleSleepingWristTemperature');
   const basal = specFor('HKQuantityTypeIdentifierBasalBodyTemperature');
   assert.equal(wrist.fold, 'mean');
-  assert.equal(wrist.dayField, 'temp_deviation');
+  assert.equal(wrist.dayField, undefined);
+  assert.equal(wrist.unit, 'degC');
   assert.equal(basal.fold, 'mean');
-  assert.equal(basal.dayField, 'temp_deviation');
+  assert.equal(basal.dayField, undefined);
+  assert.equal(basal.unit, 'degC');
 });
 
 test('heart rate, respiratory rate and oxygen saturation are observation only', () => {
@@ -95,9 +100,13 @@ test('workout type labels map known activity types and fall back to Other', () =
   assert.equal(workoutTypeLabel('HKWorkoutActivityTypeSomethingUnknown'), 'Other');
 });
 
-test('workout intensity reads off average heart rate, defaulting to Moderate', () => {
-  assert.equal(workoutIntensity(undefined), 'Moderate');
-  assert.equal(workoutIntensity(null), 'Moderate');
+test('workout intensity is undefined with no average heart rate, never a guessed label', () => {
+  // Nothing about effort was measured, so nothing is claimed.
+  assert.equal(workoutIntensity(undefined), undefined);
+  assert.equal(workoutIntensity(null), undefined);
+});
+
+test('workout intensity reads off average heart rate when one was measured', () => {
   assert.equal(workoutIntensity(100), 'Low');
   assert.equal(workoutIntensity(135), 'Moderate');
   assert.equal(workoutIntensity(165), 'High');

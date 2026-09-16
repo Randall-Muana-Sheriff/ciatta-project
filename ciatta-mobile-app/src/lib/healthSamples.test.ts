@@ -28,8 +28,20 @@ function sleepSegment(startIso: string, endIso: string, value: number, uuid?: st
   };
 }
 
-function workout(startIso: string, endIso: string, activityType: string, uuid?: string): FoldableSample {
-  const sample: WorkoutSample = { uuid, startDate: new Date(startIso), endDate: new Date(endIso), workoutActivityType: activityType };
+function workout(
+  startIso: string,
+  endIso: string,
+  activityType: string,
+  averageHeartRate?: number | null,
+  uuid?: string,
+): FoldableSample {
+  const sample: WorkoutSample = {
+    uuid,
+    startDate: new Date(startIso),
+    endDate: new Date(endIso),
+    workoutActivityType: activityType,
+    averageHeartRate,
+  };
   return { kind: 'workout', sample };
 }
 
@@ -73,12 +85,66 @@ test('a sleep night spanning midnight is counted on the wake day, stages sum, an
   assert.notEqual(day.time_in_bed, day.sleep_hours);
 });
 
-test('a workout is mapped with type, minutes and intensity', () => {
-  const days = foldDay([workout('2026-06-01T07:00:00', '2026-06-01T07:40:00', 'HKWorkoutActivityTypeRunning')]);
+test('a night whose only sleep sample is unstaged folds with hours and time in bed, and no stage keys', () => {
+  // Category 1 (and anything else HealthKit doesn't classify) is the generic
+  // "asleep" fallback: real sleep trackers that are not an Apple Watch
+  // commonly report only this, never a stage breakdown.
+  const days = foldDay([sleepSegment('2026-06-03T22:00:00', '2026-06-04T06:00:00', 1)]);
+  const day = days['2026-06-04'];
+  assert.ok(day);
+  assert.equal(day.sleep_hours, 8);
+  assert.equal(day.time_in_bed, 8);
+  assert.equal('stage_awake' in day, false);
+  assert.equal('stage_rem' in day, false);
+  assert.equal('stage_light' in day, false);
+  assert.equal('stage_deep' in day, false);
+});
+
+test('a night with one staged sample writes all four stages, including genuine zeros', () => {
+  const days = foldDay([sleepSegment('2026-06-05T23:00:00', '2026-06-06T00:00:00', 3)]);
+  const day = days['2026-06-06'];
+  assert.ok(day);
+  assert.equal(day.stage_light, 60);
+  assert.equal(day.stage_awake, 0);
+  assert.equal(day.stage_rem, 0);
+  assert.equal(day.stage_deep, 0);
+});
+
+test('a workout with a heart rate is mapped with type, minutes and the derived intensity', () => {
+  const days = foldDay([workout('2026-06-01T07:00:00', '2026-06-01T07:40:00', 'HKWorkoutActivityTypeRunning', 135)]);
   const day = days['2026-06-01'];
   assert.ok(day.workouts);
   assert.equal(day.workouts!.length, 1);
   assert.deepEqual(day.workouts![0], { type: 'Run', minutes: 40, intensity: 'Moderate' });
+});
+
+test('a workout with no average heart rate folds with no intensity key at all', () => {
+  const days = foldDay([workout('2026-06-01T07:00:00', '2026-06-01T07:30:00', 'HKWorkoutActivityTypeWalking')]);
+  const day = days['2026-06-01'];
+  assert.ok(day.workouts);
+  const folded = day.workouts![0];
+  assert.equal(folded.type, 'Walk');
+  assert.equal(folded.minutes, 30);
+  assert.equal('intensity' in folded, false);
+
+  // The observation's metadata makes the same claim: nothing measured, so
+  // nothing recorded, rather than a default sitting beside real data.
+  const obs = sampleToObservation(WORKOUT_SPEC, {
+    startDate: new Date('2026-06-01T07:00:00'),
+    endDate: new Date('2026-06-01T07:30:00'),
+    workoutActivityType: 'HKWorkoutActivityTypeWalking',
+  });
+  assert.equal('intensity' in obs.metadata, false);
+});
+
+test('a workout with a heart rate still gets the derived label in observation metadata', () => {
+  const obs = sampleToObservation(WORKOUT_SPEC, {
+    startDate: new Date('2026-06-01T07:00:00'),
+    endDate: new Date('2026-06-01T07:30:00'),
+    workoutActivityType: 'HKWorkoutActivityTypeWalking',
+    averageHeartRate: 100,
+  });
+  assert.equal(obs.metadata.intensity, 'Low');
 });
 
 test('active minutes come from exercise time alone; active energy stays kilocalories, never minutes', () => {
@@ -103,12 +169,27 @@ test('active minutes come from exercise time alone; active energy stays kilocalo
   assert.equal(obs.value, 400);
 });
 
-test('temperature is averaged, and a negative deviation is preserved', () => {
+test('a wrist temperature sample has no temp_deviation key, and still appears as an observation in degrees', () => {
+  // wrist_temperature is an absolute reading (roughly 36 to 38 degrees), not
+  // a deviation, so it must never land in temp_deviation. It stays real data
+  // as its own observation until a later task derives a deviation from a
+  // personal baseline.
   const days = foldDay([
-    quantity(TEMP, '2026-06-01T02:00:00', '2026-06-01T02:01:00', -0.1),
-    quantity(TEMP, '2026-06-01T04:00:00', '2026-06-01T04:01:00', -0.3),
+    quantity(STEPS, '2026-06-01T08:00:00', '2026-06-01T08:01:00', 500),
+    quantity(TEMP, '2026-06-01T02:00:00', '2026-06-01T02:01:00', 36.8),
+    quantity(TEMP, '2026-06-01T04:00:00', '2026-06-01T04:01:00', 36.6),
   ]);
-  assert.equal(days['2026-06-01'].temp_deviation, -0.2);
+  const day = days['2026-06-01'];
+  assert.ok(day);
+  assert.equal('temp_deviation' in day, false);
+
+  const obs = sampleToObservation(TEMP, {
+    startDate: new Date('2026-06-01T02:00:00'),
+    endDate: new Date('2026-06-01T02:01:00'),
+    value: 36.8,
+  });
+  assert.equal(obs.unit, 'degC');
+  assert.equal(obs.value, 36.8);
 });
 
 test('a metric with no samples produces no key at all, and never an empty workouts list', () => {

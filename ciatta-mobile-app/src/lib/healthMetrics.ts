@@ -26,7 +26,9 @@ export type DayNumbers = {
   alcohol: number;
 };
 
-export type Workout = { type: string; minutes: number; intensity: 'Low' | 'Moderate' | 'High' };
+// Intensity is absent, never defaulted, when nothing about effort was
+// measured (no average heart rate on the workout sample).
+export type Workout = { type: string; minutes: number; intensity?: 'Low' | 'Moderate' | 'High' };
 
 // One row of public.daily_metrics. Every field but `day` is left out
 // entirely when we have nothing to say about it that day.
@@ -54,12 +56,19 @@ export const QUANTITY_SPECS: readonly MetricSpec[] = [
   { identifier: 'HKQuantityTypeIdentifierAppleExerciseTime', metric: 'exercise_time', domain: 'activity', unit: 'min', fold: 'sum', dayField: 'active_minutes' },
   { identifier: 'HKQuantityTypeIdentifierRestingHeartRate', metric: 'resting_heart_rate', domain: 'vitals', unit: 'count/min', fold: 'mean', dayField: 'resting_hr' },
   { identifier: 'HKQuantityTypeIdentifierHeartRateVariabilitySDNN', metric: 'hrv', domain: 'vitals', unit: 'ms', fold: 'mean', dayField: 'hrv' },
-  { identifier: 'HKQuantityTypeIdentifierAppleSleepingWristTemperature', metric: 'wrist_temperature', domain: 'vitals', unit: 'degC', fold: 'mean', dayField: 'temp_deviation' },
-  { identifier: 'HKQuantityTypeIdentifierBasalBodyTemperature', metric: 'basal_body_temperature', domain: 'vitals', unit: 'degC', fold: 'mean', dayField: 'temp_deviation' },
   // Observations only: no row in daily_metrics carries these on its own.
   // Active energy is kilocalories, not a duration, so it never folds into
   // active_minutes; it is kept only as its own observation, in kcal.
   { identifier: 'HKQuantityTypeIdentifierActiveEnergyBurned', metric: 'active_energy', domain: 'activity', unit: 'kcal', fold: 'sum' },
+  // wrist_temperature and basal_body_temperature are absolute skin
+  // temperature readings, roughly 36 to 38 degrees. temp_deviation is a
+  // nightly change from a personal baseline, a small number around zero, so
+  // an absolute reading must never be written there (it would be as wrong as
+  // folding active energy kilocalories into active_minutes). Both stay real
+  // data as observations only, in degrees, until a later task computes an
+  // actual deviation from the person's own baseline.
+  { identifier: 'HKQuantityTypeIdentifierAppleSleepingWristTemperature', metric: 'wrist_temperature', domain: 'vitals', unit: 'degC', fold: 'mean' },
+  { identifier: 'HKQuantityTypeIdentifierBasalBodyTemperature', metric: 'basal_body_temperature', domain: 'vitals', unit: 'degC', fold: 'mean' },
   { identifier: 'HKQuantityTypeIdentifierHeartRate', metric: 'heart_rate', domain: 'vitals', unit: 'count/min', fold: 'mean' },
   { identifier: 'HKQuantityTypeIdentifierRespiratoryRate', metric: 'respiratory_rate', domain: 'vitals', unit: 'count/min', fold: 'mean' },
   { identifier: 'HKQuantityTypeIdentifierOxygenSaturation', metric: 'oxygen_saturation', domain: 'vitals', unit: '%', fold: 'mean' },
@@ -127,10 +136,13 @@ export function workoutTypeLabel(activityType: string): string {
 }
 
 // HealthKit carries no notion of intensity, so it is read off average heart
-// rate when the sample has one. Without a heart rate, Moderate is the
-// unclaimed middle ground rather than a guess at either extreme.
-export function workoutIntensity(averageHeartRate: number | null | undefined): 'Low' | 'Moderate' | 'High' {
-  if (averageHeartRate == null) return 'Moderate';
+// rate when the sample has one. Without a heart rate, nothing about effort
+// was measured, so nothing is returned: no guess, high or low or in between,
+// stands in for a fact we don't have.
+export function workoutIntensity(averageHeartRate: number | null | undefined): 'Low' | 'Moderate' | 'High' | undefined {
+  if (averageHeartRate == null) return undefined;
+  // 120 and 150 bpm are our own derivation, not an Apple Health value:
+  // HealthKit reports no intensity thresholds of its own.
   if (averageHeartRate < 120) return 'Low';
   if (averageHeartRate < 150) return 'Moderate';
   return 'High';
