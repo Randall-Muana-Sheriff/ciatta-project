@@ -36,6 +36,7 @@ import {
   WINDOW_SIZE,
   type Metric,
 } from './compute.ts';
+import { buildLinks, type LinkInput } from './links.ts';
 
 const url = Deno.env.get('SUPABASE_URL')!;
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -182,6 +183,39 @@ async function runJob(admin: any, job: JobRow): Promise<{ metrics: string[] }> {
       p_deviations: deviations,
     });
     if (tempWriteError) throw tempWriteError;
+  }
+
+  // Which of her measurements happened near which others, over the same
+  // window the baselines above were computed from. Written with the same
+  // upsert discipline as everything else in this function: the unique key
+  // is (user_id, a_observation_id, b_observation_id, relation), so a second
+  // run over the same window reproduces the same rows rather than
+  // duplicating them.
+  const { data: linkRows, error: linkError } = await admin
+    .from('observations')
+    .select('id, metric, occurred_at')
+    .eq('user_id', job.user_id)
+    .gte('occurred_at', start.toISOString())
+    .lte('occurred_at', today.toISOString())
+    .order('occurred_at');
+  if (linkError) throw linkError;
+
+  const links = buildLinks(
+    (linkRows ?? []).map((row: { id: string; metric: string; occurred_at: string }): LinkInput => ({
+      id: row.id,
+      metric: row.metric,
+      occurredAt: row.occurred_at,
+    }))
+  );
+
+  if (links.length > 0) {
+    const { error: linkWriteError } = await admin
+      .from('temporal_links')
+      .upsert(
+        links.map((link) => ({ ...link, user_id: job.user_id })),
+        { onConflict: 'user_id,a_observation_id,b_observation_id,relation' }
+      );
+    if (linkWriteError) throw linkWriteError;
   }
 
   return { metrics: computed };
