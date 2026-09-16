@@ -2,9 +2,9 @@
 //
 // The rule this file exists to enforce: every read in runJob over her
 // observations must be complete by construction, never by a server default.
-// PostgREST caps one response at max_rows (1000, in supabase/config.toml),
-// so a select that does not page comes back silently short once she has
-// logged more than that in the window. There is no error and no flag. The
+// PostgREST caps one response at max_rows, so a select that does not page
+// comes back silently short once she has logged more than that in the
+// window. There is no error and no flag. The
 // run simply computes over part of her record and reports success, and the
 // woman who has logged the most is the one who gets the least complete
 // answer. That is incomplete input presented as a finished job, which is
@@ -38,10 +38,21 @@ export type PageResult<T> = { data: T[] | null; error: unknown };
 
 export type FetchPage<T> = (after: Cursor | null, limit: number) => PromiseLike<PageResult<T>>;
 
-// Exactly max_rows. Asking for more would be truncated to max_rows by the
-// server, and a full page would then look short against what was asked for,
-// ending the loop early and reintroducing the silent truncation this whole
-// file exists to remove.
+// A hint about the server's row ceiling, never a contract with it.
+//
+// It cannot be a contract, and that is a fact about where the setting
+// lives rather than a shortcoming here. max_rows is a server setting: the
+// 1000 in supabase/config.toml governs the LOCAL stack only, the hosted
+// project's value lives in its dashboard, and a db push never carries one
+// to the other. Nothing in this repository can read the live number, and no
+// test run here can catch the two disagreeing.
+//
+// So this value only decides how many round trips a complete read costs. If
+// the live ceiling is lower, pages come back smaller and the loop makes
+// more of them; if it is higher, the extra is simply never asked for.
+// Correctness rests on the loop's termination instead, which is why that
+// ends on an empty page rather than a short one: a short page cannot be
+// told apart from a server ceiling below what was requested.
 export const OBSERVATION_PAGE_SIZE = 1000;
 
 // The filter that makes a page begin strictly after the last row of the one
@@ -65,8 +76,21 @@ export function keysetFilter(after: Cursor): string {
   return `occurred_at.gt."${after.occurredAt}",and(occurred_at.eq."${after.occurredAt}",id.gt.${after.id})`;
 }
 
-// Pages until a page comes back short of what was asked for, which is the
-// only signal the Data API gives that there is nothing after it.
+// Pages until a page comes back empty, which is the only signal the Data
+// API gives that can be trusted to mean there is nothing after it.
+//
+// Ending on a SHORT page was the obvious reading and was wrong in exactly
+// one place, production. A short page means either the end of the table or
+// a server row ceiling below the size requested, and the two are
+// indistinguishable from here. Since the live max_rows cannot be read from
+// this repository (see OBSERVATION_PAGE_SIZE), a live ceiling under the
+// requested size would have ended the loop after one page and truncated
+// both observation reads silently, which is the fault this file exists to
+// prevent, reachable only where nothing could test for it.
+//
+// Ending on empty costs one extra round trip per read and is correct for
+// any ceiling: the cursor advances from the last row actually returned, so
+// a page of any size at all still carries the loop forward correctly.
 export async function readAllPages<T extends KeyedRow>(
   fetchPage: FetchPage<T>,
   pageSize: number = OBSERVATION_PAGE_SIZE
@@ -83,7 +107,7 @@ export async function readAllPages<T extends KeyedRow>(
 
     const rows = data ?? [];
     out.push(...rows);
-    if (rows.length < pageSize) return out;
+    if (rows.length === 0) return out;
 
     const last = rows[rows.length - 1];
     after = { occurredAt: last.occurred_at, id: last.id };

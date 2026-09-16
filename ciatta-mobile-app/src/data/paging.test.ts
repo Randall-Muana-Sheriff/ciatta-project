@@ -133,6 +133,57 @@ test('a page that errors throws rather than returning what already arrived', asy
   });
 });
 
+// Serves pages the way a server with its own row ceiling does: it honours
+// the cursor exactly as fakeTable does, but never returns more than
+// serverMax rows however many were asked for.
+function cappedTable(rows: Row[], serverMax: number) {
+  const all = ordered(rows);
+  let requests = 0;
+  return {
+    get requests() {
+      return requests;
+    },
+    fetchPage: (after: Cursor | null, limit: number) => {
+      requests += 1;
+      const start = after
+        ? all.findIndex(
+            (r) => r.occurred_at > after.occurredAt || (r.occurred_at === after.occurredAt && r.id > after.id)
+          )
+        : 0;
+      const from = start === -1 ? all.length : start;
+      return Promise.resolve({ data: all.slice(from, from + Math.min(limit, serverMax)), error: null });
+    },
+  };
+}
+
+// The case OBSERVATION_PAGE_SIZE cannot be trusted to prevent, and the
+// reason the loop no longer ends on a short page. max_rows is a server
+// setting: the value in supabase/config.toml governs the local stack only,
+// the hosted one lives in the project's dashboard, and a db push never
+// carries one to the other. So the page size this file asks for is a hint
+// about the server's ceiling and can never be a contract with it.
+//
+// Ending on a page shorter than the one requested made that hint load
+// bearing. A server ceiling below the requested size returns a short first
+// page, the loop reads it as the end of the table, and both observation
+// reads come back truncated with no error and no flag, in production only,
+// which is the exact fault this file exists to remove. Ending on an empty
+// page instead costs one extra round trip and is correct for any ceiling.
+test('a server that caps a page below the requested limit still pages to the end', () => {
+  const rows: Row[] = [];
+  for (let i = 0; i < 9; i++) rows.push(row(`2026-09-${String(10 + i).padStart(2, '0')}T06:00:00+00:00`, `id${i}`));
+  const table = cappedTable(rows, 2);
+
+  // Asks for five and is handed two, every time. A loop ending on a short
+  // page stops after the first and returns two of the nine.
+  return readAllPages<Row>(table.fetchPage, 5).then((out) => {
+    assert.deepEqual(out, ordered(rows));
+    assert.equal(new Set(out.map((r) => r.id)).size, 9);
+    // Four pages of two, one of one, then the empty page that ends it.
+    assert.equal(table.requests, 6);
+  });
+});
+
 test('the keyset filter asks for the tuple after the cursor, not merely a later instant', () => {
   const filter = keysetFilter({ occurredAt: '2026-09-10T06:00:00+00:00', id: 'abc' });
   // Strictly later instants, or the same instant with a larger id. Never
