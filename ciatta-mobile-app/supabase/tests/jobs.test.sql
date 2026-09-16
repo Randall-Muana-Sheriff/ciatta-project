@@ -11,13 +11,16 @@ insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
   ('00000000-0000-0000-0000-00000000000b', 'b@test.local');
 
-set local role authenticated;
-set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}';
+-- daily_metrics is server written only (review fix, see
+-- daily_metrics_read_only.sql): device data arrives through the
+-- ingest-health edge function under service_role, so that is the role that
+-- exercises the trigger here too, not authenticated.
+set local role service_role;
 
 -- Writing a day row queues exactly one pending baselines job for her.
 select lives_ok($$
   insert into public.daily_metrics (user_id, day, steps) values ('00000000-0000-0000-0000-00000000000a', '2026-09-14', 8000)
-$$, 'A logs a day');
+$$, 'service_role logs a day for A');
 
 reset role;
 select is((select count(*)::int from public.jobs where user_id = '00000000-0000-0000-0000-00000000000a' and status = 'pending'), 1,
@@ -27,14 +30,13 @@ select is((select kind from public.jobs where user_id = '00000000-0000-0000-0000
 
 -- A second day row (or an update to the first) does not create a second
 -- pending job: the partial unique index holds.
-set local role authenticated;
-set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}';
+set local role service_role;
 select lives_ok($$
   insert into public.daily_metrics (user_id, day, steps) values ('00000000-0000-0000-0000-00000000000a', '2026-09-15', 4000)
-$$, 'A logs a second day');
+$$, 'service_role logs a second day for A');
 select lives_ok($$
   update public.daily_metrics set steps = 9000 where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-14'
-$$, 'A updates her first day');
+$$, 'service_role updates her first day');
 
 reset role;
 select is((select count(*)::int from public.jobs where user_id = '00000000-0000-0000-0000-00000000000a' and status = 'pending'), 1,
@@ -45,11 +47,10 @@ select is((select count(*)::int from public.jobs where user_id = '00000000-0000-
 -- A completed job does not block a new pending one.
 update public.jobs set status = 'done', finished_at = now() where user_id = '00000000-0000-0000-0000-00000000000a' and status = 'pending';
 
-set local role authenticated;
-set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}';
+set local role service_role;
 select lives_ok($$
   update public.daily_metrics set steps = 9500 where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-14'
-$$, 'A updates her day again after the job finished');
+$$, 'service_role updates her day again after the job finished');
 
 reset role;
 select is((select count(*)::int from public.jobs where user_id = '00000000-0000-0000-0000-00000000000a' and status = 'pending'), 1,
