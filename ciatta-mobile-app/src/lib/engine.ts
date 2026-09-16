@@ -95,7 +95,11 @@ const clamp = (x: number) => Math.max(0, Math.min(1, x));
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const nums = (xs: (number | null)[]) => xs.filter((v): v is number => v != null);
 
-function median(xs: number[]): number {
+// Exported so the baselines edge function's compute.ts can cross check its
+// own copy of this maths against the reference (see that file's header
+// comment): median() and band() have no Deno or React Native dependency,
+// but stay otherwise private to this module.
+export function median(xs: number[]): number {
   if (!xs.length) return 0;
   const s = [...xs].sort((a, b) => a - b);
   const m = Math.floor(s.length / 2);
@@ -113,7 +117,7 @@ const spanText = (days: number) => (days >= 14 && days % 7 === 0 ? `${word(days 
 
 // Usual range: the median, widened by the spread of values (MAD), and never
 // narrower than 8% either side.
-function band(xs: number[]): Band {
+export function band(xs: number[]): Band {
   const usual = median(xs);
   const mad = median(xs.map((x) => Math.abs(x - usual)));
   const spread = Math.max(1.5 * 1.4826 * mad, 0.08 * Math.abs(usual));
