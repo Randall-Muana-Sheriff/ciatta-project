@@ -311,3 +311,36 @@ test('bloating after a food is not claimed when every day includes it, leaving n
   });
   assert.ok(!out.ranked.some((i) => i.id === 'food:Dairy'), 'no days without dairy, so nothing to compare bloating against');
 });
+
+// Fix round 3, item 4: the ranking filter change in activityAndWeeks isn't
+// pure null propagation (tsc is equally happy with it deleted), so unlike
+// combined()'s stress guard it needs a fixture that shows the filter
+// actually changing which weeks get compared, not only that a null value
+// stays null.
+test('activityAndWeeks does not let an unmeasured week sort to the bottom and be narrated as her least active', () => {
+  const now = new Date(2026, 8, 16);
+  // 84 days: eleven flat weeks (steps 9000, energy 3 every day) then one
+  // blanked week, no steps at all, energy 1, as the seven most recent
+  // days. With every real week's steps identical there is no genuine
+  // ranking among them; the only week that would ever stand out is the
+  // unmeasured one, which an unfiltered ranking (mean([]) read as 0) would
+  // place alone at the very bottom, letting its low energy check ins read
+  // as a real "least active week" finding rather than an absence.
+  const rows = Array.from({ length: 84 }, (_, i) => {
+    const ago = 83 - i;
+    const day = isoDay(addDays(now, -ago));
+    return ago < 7 ? { day, energy: 1 } : { day, steps: 9000, energy: 3 };
+  });
+  const days = daysFromRows(rows, now);
+  assert.equal(days.length, 84);
+  assert.ok(days.slice(-7).every((d) => d.steps == null), 'the most recent week has no steps at all');
+
+  const out = buildInsights({
+    days, episodes: [], windows: [], summaries: [], signals: [], cycleObservations: [],
+    draws: [], interventions: [], watching: {}, opening: 'x', now,
+  });
+  assert.ok(
+    !out.ranked.some((i) => i.id === 'activityEnergy'),
+    'steps never actually varied across any measured week; an unmeasured week must not read as a genuine low',
+  );
+});

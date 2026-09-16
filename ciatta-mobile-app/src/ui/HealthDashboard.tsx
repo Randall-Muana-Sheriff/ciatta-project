@@ -156,6 +156,12 @@ export function HealthDashboard({
   const sleepEntry = mostRecentValue(days, (x) => x.sleepHours);
   const stages = sleepEntry ? completeStages(sleepEntry.day.stages) : null;
   const timeInBed = sleepEntry?.day.timeInBed ?? null;
+  // The 14 night chart's own rightmost drawn point, which can differ from
+  // sleepEntry when the most recent real night falls outside this window
+  // (sleepEntry searches the whole record); the edge label must name that
+  // point, the same one HairlineChart itself finds as lastIdx, not
+  // wherever the headline figure happens to come from.
+  const last14SleepDay = [...last14].reverse().find((x) => x.sleepHours != null);
   // Resting heart rate and HRV are genuinely on their own cadences in real
   // data, so each looks back independently.
   const rhrEntry = mostRecentValue(days, (x) => x.restingHR);
@@ -221,7 +227,7 @@ export function HealthDashboard({
           usual={usual.sleep ?? undefined}
           color={M.measured}
           first={dateOf(last14[0])}
-          last={dayLabel(sleepEntry.day.date, now)}
+          last={last14SleepDay ? dayLabel(last14SleepDay.date, now) : undefined}
         />
         {usual.sleep != null || (stages && mode === 'demo') ? (
         <Text style={[font('caption1'), d.note]}>
@@ -309,7 +315,7 @@ export function HealthDashboard({
         <View style={d.row3}>
           <Stat label={lens.header.label} value={lens.header.value} />
           {lens.secondary ? <Stat label={lens.secondary.label} value={lens.secondary.value} /> : null}
-          <Stat label="Pain days" value={`${current?.painDays ?? 0}`} sub="this cycle" color={M.reported} />
+          <Stat label="Pain days" value={current?.painDays != null ? `${current.painDays}` : 'None'} sub="this cycle" color={M.reported} />
         </View>
         {done.length ? (
           <>
@@ -330,7 +336,7 @@ export function HealthDashboard({
       <Card title="Pain and Flare Ups" meta="By cycle" onPress={() => open('cycleHistory')}>
         <View style={d.row3}>
           <Stat label="Highest this cycle" value={current?.maxSeverity != null ? `${current.maxSeverity} of 10` : 'None'} color={M.reported} />
-          <Stat label="Flare ups" value={`${current?.flares ?? 0}`} sub="you reported" color={M.reported} />
+          <Stat label="Flare ups" value={current?.flares != null ? `${current.flares}` : 'None'} sub="you reported" color={M.reported} />
           <Stat label="Avg length" value={current?.hours != null ? `${Math.round(current.hours)}h` : 'None'} sub="per episode" />
         </View>
         <Text style={[font('footnote'), d.chartLabel]}>Highest severity, each cycle</Text>
@@ -348,12 +354,17 @@ export function HealthDashboard({
           ] as const
         ).map((row) => {
           const values = last14.map((x) => x[row.key]);
-          const latest = [...values].reverse().find((v) => v != null);
+          // The day the most recent check in came from, not just its
+          // value: a check in from earlier in the window is never spoken
+          // as today's (the same fault the sleep note above it had).
+          const latestDay = [...last14].reverse().find((x) => x[row.key] != null);
           return (
             <View key={row.key} style={d.checkRow}>
               <View style={{ width: 84 }}>
                 <Text style={[font('subhead'), { color: C.text }]}>{row.label}</Text>
-                <Text style={[font('caption1'), { color: C.secondary }]}>{latest != null ? `${latest} of 5 today` : 'Not logged'}</Text>
+                <Text style={[font('caption1'), { color: C.secondary }]}>
+                  {latestDay ? `${latestDay[row.key]} of 5, ${dayLabel(latestDay.date, now)}` : 'Not logged'}
+                </Text>
               </View>
               <View style={{ flex: 1 }}>
                 <HairlineChart values={values} color={M.reported} height={34} />

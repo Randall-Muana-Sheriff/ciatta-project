@@ -39,11 +39,11 @@ export function outcomeForConnectAttempt(attempt: ConnectAttempt): ConnectOutcom
   if (succeeded > 0) {
     return {
       status: 'active',
-      message: 'Apple Health is connected. Some of your data has been read and sent, but some did not arrive. It will be tried again.',
+      message: 'Apple Health is connected. Some of your data has been read and sent, but some did not arrive. You can try again from this screen.',
     };
   }
   return {
     status: 'error',
-    message: 'Apple Health connected, but none of your data could be sent right now. It will be tried again.',
+    message: 'Apple Health connected, but none of your data could be sent right now. You can try again from this screen.',
   };
 }

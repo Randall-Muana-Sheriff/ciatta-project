@@ -35,16 +35,19 @@ test('every metric succeeding maps to active with no warning', () => {
   assert.doesNotMatch(out.message, /did not arrive/);
 });
 
-test('some metrics failing still maps to active, but says so', () => {
+test('some metrics failing still maps to active, but says so, and promises no automatic retry that does not exist', () => {
   const out = outcomeForConnectAttempt({ kind: 'synced', result: result([outcome(true, 'a'), outcome(false, 'b')]) });
   assert.equal(out.status, 'active');
   assert.match(out.message, /did not arrive/);
-  assert.match(out.message, /tried again/);
+  assert.match(out.message, /try again/);
+  assert.doesNotMatch(out.message, /tried again/, 'nothing retries automatically; only she can, from this screen');
 });
 
-test('every metric failing maps to error, not a false active', () => {
+test('every metric failing maps to error, not a false active, and promises no automatic retry that does not exist', () => {
   const out = outcomeForConnectAttempt({ kind: 'synced', result: result([outcome(false, 'a'), outcome(false, 'b')]) });
   assert.equal(out.status, 'error');
+  assert.match(out.message, /try again/);
+  assert.doesNotMatch(out.message, /tried again/, 'nothing retries automatically; only she can, from this screen');
 });
 
 test('no user facing copy uses an em dash, en dash or hyphen', () => {
