@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { emptyForm, formToEpisode } from './cycleLog';
+import { addDays, emptyForm, formToEpisode, isoDay } from './cycleLog';
 import { demoRepo, realRepo } from './repo';
 import { episodeToRow } from './rows';
 import { journal, sources } from './sample';
@@ -32,10 +32,14 @@ const MAX_ROWS = 1000;
 
 function fakeDb(tables: Record<string, Row[]>) {
   const calls: PageCall[] = [];
+  const selects: string[] = [];
   const from = (table: string) => {
     const order: string[] = [];
     const builder = {
-      select: () => builder,
+      select: (columns?: string) => {
+        selects.push(columns ?? '*');
+        return builder;
+      },
       eq: () => builder,
       maybeSingle: async () => ({ data: null, error: null }),
       order: (column: string) => {
@@ -53,7 +57,7 @@ function fakeDb(tables: Record<string, Row[]>) {
     };
     return builder;
   };
-  return { db: { from } as unknown as SupabaseClient, calls };
+  return { db: { from } as unknown as SupabaseClient, calls, selects };
 }
 
 const base = formToEpisode({ ...emptyForm(), kinds: ['Pain'] }, false, new Date(Date.UTC(2020, 0, 1)));
@@ -103,4 +107,34 @@ test('a short first page is the end of the record, not the start of a loop', asy
   const { db, calls } = fakeDb({ episodes: episodeRows.slice(0, 3) });
   assert.equal((await realRepo(db, 'user-a').loadEpisodes()).length, 3);
   assert.equal(calls.length, 1);
+});
+
+// Fix round 1, item 7: daily_metrics carries eight columns (id, user_id,
+// source_id, provenance, metadata, occurred_at, created_at, updated_at)
+// nothing here reads, and every other realRepo method already names its
+// columns rather than asking for '*'.
+test('daily rows are read by named column, not select star, and project into Day', async () => {
+  const today = new Date();
+  const dailyRows: Row[] = [
+    { day: isoDay(addDays(today, -1)), steps: 4000 },
+    { day: isoDay(today), sleep_hours: 7.2 },
+  ];
+  const { db, calls, selects } = fakeDb({ daily_metrics: dailyRows });
+  const days = await realRepo(db, 'user-a').loadDays();
+
+  assert.ok(selects.length > 0);
+  for (const columns of selects) {
+    assert.notEqual(columns, '*', 'daily_metrics is read by named column, like every other realRepo method');
+  }
+  for (const column of ['day', 'sleep_hours', 'steps', 'workouts', 'foods', 'digestion', 'note']) {
+    assert.ok(selects[0].includes(column), `expected ${column} among the named columns`);
+  }
+  for (const column of ['id', 'user_id', 'source_id', 'provenance', 'metadata', 'occurred_at', 'created_at', 'updated_at']) {
+    assert.ok(!selects[0].includes(column), `${column} is never read here`);
+  }
+  assert.deepEqual(calls[0].order, ['day']);
+  assert.equal(days.length, 2);
+  assert.equal(days[0].steps, 4000);
+  assert.equal(days[0].sleepHours, null);
+  assert.equal(days[1].sleepHours, 7.2);
 });

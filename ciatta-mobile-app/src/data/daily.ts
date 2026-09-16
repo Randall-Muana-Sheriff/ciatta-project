@@ -31,8 +31,11 @@ export type Day = {
   energy: number | null;
   mood: number | null;
   stress: number | null;
-  caffeine: number;
-  alcohol: number;
+  // Null when nothing was logged, not zero cups or zero drinks: nothing
+  // reads these yet, but the first card that does must not inherit a
+  // fabricated "none" for a day she simply didn't log.
+  caffeine: number | null;
+  alcohol: number | null;
   foods: string[];
   digestion: string[];
   note?: string;

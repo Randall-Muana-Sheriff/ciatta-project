@@ -169,8 +169,9 @@ export function StageLegend({
 }
 
 // A line from 4 to 10 hours: the gray ring is her usual, the white point is
-// this value.
-export function DotScale({ value, usual }: { value: number; usual: number }) {
+// this value. usual is null with no baseline days to compute one from yet;
+// the ring is left out rather than drawn at a fabricated position.
+export function DotScale({ value, usual }: { value: number; usual: number | null }) {
   const W = 140;
   const H = 30;
   const x = (h: number) => 10 + (Math.max(4, Math.min(10, h)) - 4) / 6 * (W - 20);
@@ -178,7 +179,7 @@ export function DotScale({ value, usual }: { value: number; usual: number }) {
     <Svg width={W} height={H}>
       <Line x1={10} x2={W - 10} y1={H / 2} y2={H / 2} stroke={C.separator} strokeWidth={1} />
       <Circle cx={10} cy={H / 2} r={3} fill={C.secondary} />
-      <Circle cx={x(usual)} cy={H / 2} r={7} fill="none" stroke={C.secondary} strokeWidth={1.5} />
+      {usual != null ? <Circle cx={x(usual)} cy={H / 2} r={7} fill="none" stroke={C.secondary} strokeWidth={1.5} /> : null}
       <Circle cx={x(value)} cy={H / 2} r={9} fill={C.text} />
     </Svg>
   );

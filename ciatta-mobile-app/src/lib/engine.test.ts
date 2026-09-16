@@ -8,7 +8,7 @@ import { records, today } from '../data/sample';
 import { cycleWindows, medianLength, periodStarts, regularity } from './cycleModel';
 import { cycleSummaries, observations, signals } from './cyclePatterns';
 import { SAMPLE_PROFILE } from './cycleProfile';
-import { buildInsights, cycleTrend } from './engine';
+import { buildInsights, cycleTrend, mostRecentValue } from './engine';
 
 const NOW = new Date(2026, 8, 15);
 
@@ -68,10 +68,66 @@ test('with no data the engine says only the opening line', () => {
   assert.equal(out.today.lead, null);
   assert.equal(out.today.text, 'Nothing to compare yet.');
   const m = out.movement;
-  for (const v of [m.steps.recent, m.steps.usual, m.active.recent, m.active.usual, m.workouts.recent, m.workouts.usual]) {
+  // recent and workouts.usual are unaffected by this review: with no days at
+  // all there is nothing to average, so they fall back to the shared mean()/
+  // 0 convention documented at movementSummary. steps.usual and active.usual
+  // are different: with no baseline days, there is no usual, and it must
+  // say so rather than fabricate one (Fix round 1, item 3).
+  for (const v of [m.steps.recent, m.active.recent, m.workouts.recent, m.workouts.usual]) {
     assert.ok(Number.isFinite(v), 'movement figures stay finite with no days');
   }
+  assert.equal(m.steps.usual, null, 'no baseline days means no usual, not a fabricated zero');
+  assert.equal(m.active.usual, null);
+  assert.equal(m.band, null, 'no baseline days means no band either');
   assert.deepEqual(m.series, []);
+});
+
+// Fix round 1, item 1: median()/band() return 0/all zeros for an empty
+// input, which is correct for those two shared, cross checked helpers, but
+// wrong as a "usual" to show her: a real day above "Usual 0h 00m" reads as a
+// false claim, not an absent one. A short history (here, far short of the
+// 35 to 90 day baseline window) must report no usual at all.
+test('with too little history for a baseline, the usual is absent rather than a fabricated zero', () => {
+  const now = new Date(2026, 8, 16);
+  const rows = Array.from({ length: 10 }, (_, i) => ({
+    day: isoDay(addDays(now, -(9 - i))),
+    steps: 8000,
+    active_minutes: 40,
+  }));
+  const days = daysFromRows(rows, now);
+
+  const out = buildInsights({
+    days, episodes: [], windows: [], summaries: [], signals: [], cycleObservations: [],
+    draws: [], interventions: [], watching: {}, opening: 'x', now,
+  });
+  assert.equal(out.movement.steps.usual, null);
+  assert.equal(out.movement.active.usual, null);
+  assert.equal(out.movement.band, null);
+  assert.ok(Number.isFinite(out.movement.steps.recent), 'recent still reports over the days that exist');
+});
+
+// Fix round 1, item 2: daysFromRows always extends the array through today,
+// so days[days.length - 1] is often an empty placeholder from midnight
+// until her first sync of the day. A card must read whatever she last
+// measured, not "today", which mostRecentValue provides.
+test('mostRecentValue finds the latest day carrying a field, skipping trailing empty days', () => {
+  const now = new Date(2026, 8, 16);
+  const rows = [{ day: isoDay(addDays(now, -2)), sleep_hours: 7.5 }];
+  // today and yesterday have no row at all: an empty placeholder each.
+  const days = daysFromRows(rows, now);
+  assert.equal(days.length, 3);
+  assert.equal(days[days.length - 1].sleepHours, null, 'today has not synced yet');
+
+  const entry = mostRecentValue(days, (d) => d.sleepHours);
+  assert.ok(entry);
+  assert.equal(entry!.day.date, isoDay(addDays(now, -2)));
+  assert.equal(entry!.value, 7.5);
+});
+
+test('mostRecentValue returns null when a field has never once been measured', () => {
+  const now = new Date(2026, 8, 16);
+  const days = daysFromRows([{ day: isoDay(now), steps: 100 }], now);
+  assert.equal(mostRecentValue(days, (d) => d.sleepHours), null);
 });
 
 // Real Apple Health data leaves most fields of most days null; the engine

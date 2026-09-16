@@ -73,11 +73,15 @@ export type EngineInput = {
 export type Band = { usual: number; low: number; high: number };
 
 export type MovementSummary = {
-  steps: { recent: number; usual: number };
-  active: { recent: number; usual: number };
+  // usual is null when there are no baseline days to compute one from yet
+  // (a new real record, or a metric no source has ever measured); recent
+  // still reports over whatever recent days exist, per mean()'s existing
+  // convention.
+  steps: { recent: number; usual: number | null };
+  active: { recent: number; usual: number | null };
   workouts: { recent: number; usual: number };
   series: { date: string; steps: number }[];
-  band: Band;
+  band: Band | null;
 };
 
 export type Brief = { text: string; lead: Insight | null; recommendation: Insight | null; walkPlanned: boolean };
@@ -122,6 +126,22 @@ export function band(xs: number[]): Band {
   const mad = median(xs.map((x) => Math.abs(x - usual)));
   const spread = Math.max(1.5 * 1.4826 * mad, 0.08 * Math.abs(usual));
   return { usual, low: usual - spread, high: usual + spread };
+}
+
+// median()/band() return 0 (or all zeros) for an empty input, which is the
+// right shared contract for those two: they're cross checked byte for byte
+// against compute.ts and other callers (sustained()'s own MIN_BASELINE_N
+// gate, for one) already rely on that exact 0. But a "usual" shown to her is
+// a different claim: a real night above "Usual 0h 00m" reads as false, not
+// absent. Anywhere a usual can be empty (no baseline days at all, which is
+// every metric for the first several weeks of a real record) calls these
+// instead, so absence stays absence rather than becoming a fabricated zero.
+function medianOrNull(xs: number[]): number | null {
+  return xs.length ? median(xs) : null;
+}
+
+function bandOrNull(xs: number[]): Band | null {
+  return xs.length ? band(xs) : null;
 }
 
 // The baseline is days 35 to 90 back, so a recent change can't hide itself
@@ -571,6 +591,19 @@ export function cycleTrend(windows: CycleWindow[], days: Day[], n = 4): CyclePoi
     });
 }
 
+// The day whose date a card should read a field's value from. daysFromRows
+// always extends the record through today, so days[days.length - 1] is
+// often an empty placeholder from midnight until her first sync of the day;
+// a card must read whatever she last measured, and say when that was,
+// rather than reading "today" and finding nothing there.
+export function mostRecentValue(days: Day[], get: (d: Day) => number | null): { day: Day; value: number } | null {
+  for (let i = days.length - 1; i >= 0; i--) {
+    const value = get(days[i]);
+    if (value != null) return { day: days[i], value };
+  }
+  return null;
+}
+
 // ── Actions and what happened after ────────────────────────────
 
 function walkOutcomes(days: Day[], interventions: Intervention[]): Candidate | null {
@@ -654,10 +687,10 @@ function triageOf(c: Candidate, score: number, watching: Record<string, boolean>
 function movementSummary(days: Day[]): MovementSummary {
   const base = baselineDays(days);
   const last7 = days.slice(-7);
-  const b = band(nums(base.map((d) => d.steps)));
+  const b = bandOrNull(nums(base.map((d) => d.steps)));
   return {
-    steps: { recent: mean(nums(last7.map((d) => d.steps))), usual: b.usual },
-    active: { recent: mean(nums(last7.map((d) => d.activeMinutes))), usual: median(nums(base.map((d) => d.activeMinutes))) },
+    steps: { recent: mean(nums(last7.map((d) => d.steps))), usual: b?.usual ?? null },
+    active: { recent: mean(nums(last7.map((d) => d.activeMinutes))), usual: medianOrNull(nums(base.map((d) => d.activeMinutes))) },
     workouts: {
       recent: last7.reduce((n, d) => n + d.workouts.length, 0),
       usual: base.length ? base.reduce((n, d) => n + d.workouts.length, 0) / (base.length / 7) : 0,

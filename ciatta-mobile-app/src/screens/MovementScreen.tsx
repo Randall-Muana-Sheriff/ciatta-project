@@ -10,20 +10,28 @@ import { C, font, fonts, RADIUS } from '../theme';
 import { ListGroup, ListRow, Panel } from '../ui/chrome';
 import { DetailScreen, SecLabel, SourceFooter } from '../ui/kit';
 
-// Daily steps for four weeks against the usual range. Coral days sit below it.
+// Daily steps for four weeks against the usual range. Coral days sit below
+// it. With no baseline days yet (a new real record, or a source that has
+// never reported steps), band is null: nothing is compared against a
+// fabricated usual, and every bar draws the same neutral colour.
 function StepsChart({ movement }: { movement: MovementSummary }) {
   const W = 336;
   const H = 150;
   const base = 124;
   const { series, band } = movement;
-  const max = Math.max(band.high, ...series.map((d) => d.steps)) * 1.1;
+  if (!series.length) return null;
+  const max = Math.max(band?.high ?? 0, ...series.map((d) => d.steps)) * 1.1;
   const y = (v: number) => base - (v / max) * (base - 8);
   const gap = W / series.length;
   return (
     <View style={{ width: '100%', aspectRatio: W / H }} accessible accessibilityLabel="Daily steps for the last four weeks against your usual range">
       <Svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`}>
-        <Rect x={0} y={y(band.high)} width={W} height={y(band.low) - y(band.high)} fill={C.white} opacity={0.07} />
-        <Line x1={0} y1={y(band.usual)} x2={W} y2={y(band.usual)} stroke={C.secondary} strokeDasharray="3 4" opacity={0.6} />
+        {band ? (
+          <>
+            <Rect x={0} y={y(band.high)} width={W} height={y(band.low) - y(band.high)} fill={C.white} opacity={0.07} />
+            <Line x1={0} y1={y(band.usual)} x2={W} y2={y(band.usual)} stroke={C.secondary} strokeDasharray="3 4" opacity={0.6} />
+          </>
+        ) : null}
         <Line x1={0} y1={base} x2={W} y2={base} stroke={C.separator} />
         {series.map((d, i) => (
           <Rect
@@ -33,7 +41,7 @@ function StepsChart({ movement }: { movement: MovementSummary }) {
             width={gap * 0.6}
             height={base - y(d.steps)}
             rx={2}
-            fill={d.steps < band.low ? C.coral : C.lavender}
+            fill={band && d.steps < band.low ? C.coral : C.lavender}
           />
         ))}
         <SvgText x={0} y={H - 6} fontSize={11} fill={C.secondary} fontFamily={fonts.regular}>
@@ -57,9 +65,15 @@ export function MovementScreen() {
     nav.push('evidence');
   };
 
-  const tiles = [
-    { label: 'Steps a day', value: fmtCount(movement.steps.recent), sub: `Usual ${fmtCount(movement.steps.usual)}` },
-    { label: 'Active minutes', value: `${Math.round(movement.active.recent)}`, sub: `Usual ${Math.round(movement.active.usual)}` },
+  // sub is left out entirely (rather than "Usual" over a fabricated zero)
+  // for a figure with no baseline days to compute one from yet.
+  const tiles: { label: string; value: string; sub?: string }[] = [
+    { label: 'Steps a day', value: fmtCount(movement.steps.recent), sub: movement.steps.usual != null ? `Usual ${fmtCount(movement.steps.usual)}` : undefined },
+    {
+      label: 'Active minutes',
+      value: `${Math.round(movement.active.recent)}`,
+      sub: movement.active.usual != null ? `Usual ${Math.round(movement.active.usual)}` : undefined,
+    },
     { label: 'Workouts', value: `${movement.workouts.recent}`, sub: `Usually ${Math.round(movement.workouts.usual)} a week` },
   ];
 
@@ -72,14 +86,15 @@ export function MovementScreen() {
       <Text style={[font('footnote'), { color: C.secondary, marginBottom: 8 }]}>Last 7 days</Text>
       <View style={m.tiles}>
         {tiles.map((t) => (
-          <View key={t.label} style={m.tile} accessible accessibilityLabel={`${t.label}, ${t.value}, ${t.sub}`}>
+          <View key={t.label} style={m.tile} accessible accessibilityLabel={`${t.label}, ${t.value}${t.sub ? `, ${t.sub}` : ''}`}>
             <Text style={[font('footnote'), { color: C.secondary }]}>{t.label}</Text>
             <Text style={[font('title2', 'semibold'), { color: C.text }]}>{t.value}</Text>
-            <Text style={[font('caption1'), { color: C.secondary }]}>{t.sub}</Text>
+            {t.sub ? <Text style={[font('caption1'), { color: C.secondary }]}>{t.sub}</Text> : null}
           </View>
         ))}
       </View>
 
+      {movement.series.length ? (
       <View style={m.section}>
         <SecLabel right="Last 28 days">Daily Steps</SecLabel>
         <Panel>
@@ -89,6 +104,7 @@ export function MovementScreen() {
           </Text>
         </Panel>
       </View>
+      ) : null}
 
       <View style={m.section}>
         <SecLabel>How It Lines Up</SecLabel>

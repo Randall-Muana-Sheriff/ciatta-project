@@ -35,12 +35,18 @@ function TrendChart({ points }: { points: CyclePoint[] }) {
   const base = 122;
   const xs = points.map((_, i) => (points.length === 1 ? W / 2 : 26 + (i * 138) / (points.length - 1)));
   const days = points.map((p) => p.length);
-  const hours = points.map((p) => p.sleep ?? 0);
+  const hours = points.map((p) => p.sleep);
+  // Only the cycles that actually have a sleep figure set the scale's
+  // range: a cycle with no nights recorded must not drag the floor toward a
+  // fabricated zero for every other point on the same chart. The dots and
+  // path themselves are already gated on p.sleep != null below, so a
+  // missing entry's placeholder position is never drawn.
+  const knownHours = hours.filter((h): h is number => h != null);
   const cy = scale(days, 24, 64);
-  const sy = scale(hours, 76, 104);
+  const sy = knownHours.length ? scale(knownHours, 76, 104) : () => 90;
   const line = (ys: number[]) => ys.map((y, i) => `${i ? 'L' : 'M'}${xs[i]},${y}`).join(' ');
   const cys = days.map(cy);
-  const sys = hours.map(sy);
+  const sys = hours.map((h) => (h != null ? sy(h) : 90));
   const last = xs.length - 1;
   const label = { fontSize: 11, textAnchor: 'middle' } as const;
 

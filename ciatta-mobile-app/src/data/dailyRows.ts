@@ -25,8 +25,8 @@ function emptyDay(date: string): Day {
     energy: null,
     mood: null,
     stress: null,
-    caffeine: 0,
-    alcohol: 0,
+    caffeine: null,
+    alcohol: null,
     foods: [],
     digestion: [],
   };
@@ -52,27 +52,42 @@ export function rowToDay(row: DailyRow): Day {
     energy: row.energy ?? null,
     mood: row.mood ?? null,
     stress: row.stress ?? null,
-    caffeine: row.caffeine ?? 0,
-    alcohol: row.alcohol ?? 0,
+    caffeine: row.caffeine ?? null,
+    alcohol: row.alcohol ?? null,
     foods: row.foods ?? [],
     digestion: row.digestion ?? [],
     note: row.note ?? undefined,
   };
 }
 
-// One entry per calendar day from the earliest row through `today`, oldest
-// first, with a day that has no row present as an entirely empty Day rather
-// than skipped. That density is what lets a screen's `slice(-14)` span 14
-// calendar days rather than 14 rows: a week with no wearable worn stays a
-// week, not a gap that quietly pulls older days into "the last 14".
-// Mirrors buildDenseWindow in supabase/functions/baselines/compute.ts, which
-// does the same for a single metric's sparse values rather than a full Day.
+// Nothing downstream reads further back than the 35 to 90 day baseline
+// window (see baselineDays in src/lib/engine.ts and WINDOW_SIZE in
+// supabase/functions/baselines/compute.ts), so the density below never
+// needs to reach back further than this, however long her record actually
+// is: a build stays roughly this many objects rather than growing with
+// years of history.
+const WINDOW_DAYS = 91;
+
+// One entry per calendar day, oldest first, with a day that has no row
+// present as an entirely empty Day rather than skipped. That density is what
+// lets a screen's `slice(-14)` span 14 calendar days rather than 14 rows: a
+// week with no wearable worn stays a week, not a gap that quietly pulls
+// older days into "the last 14". Mirrors buildDenseWindow in
+// supabase/functions/baselines/compute.ts, which does the same for a single
+// metric's sparse values rather than a full Day.
+//
+// The window ends at the later of `today` and the most recent row's day, so
+// a row a device clock (or a timezone ahead of hers) dated past today still
+// gets an entry instead of being silently dropped off the end.
 export function daysFromRows(rows: DailyRow[], today: Date): Day[] {
   if (!rows.length) return [];
   const byDay = new Map(rows.map((r) => [r.day, r]));
-  const earliest = [...byDay.keys()].sort()[0];
-  const start = parseDay(earliest);
-  const end = startOfDay(today);
+  const sortedDays = [...byDay.keys()].sort();
+  const earliest = parseDay(sortedDays[0]);
+  const latestRow = parseDay(sortedDays[sortedDays.length - 1]);
+  const todayStart = startOfDay(today);
+  const end = latestRow.getTime() > todayStart.getTime() ? latestRow : todayStart;
+  const start = daysBetween(earliest, end) >= WINDOW_DAYS ? addDays(end, -(WINDOW_DAYS - 1)) : earliest;
   const span = daysBetween(start, end);
 
   const out: Day[] = [];

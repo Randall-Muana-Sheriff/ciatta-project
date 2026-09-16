@@ -9,6 +9,14 @@ import { paginateAll } from './pagination';
 import { episodeToRow, type EpisodeRow, type JournalRow, type JournalView, journalView, rowToEpisode, type SourceRow, sourceView, type SourceView } from './rows';
 import { type EntryKind, journal, person, sources } from './sample';
 
+// Every daily_metrics column daysFromRows/rowToDay actually reads. Named
+// explicitly, like every other realRepo method, rather than select('*'),
+// which would also pull id, user_id, source_id, provenance, metadata,
+// occurred_at, created_at and updated_at: real columns, just not ones this
+// projection has any use for.
+const DAILY_COLUMNS =
+  'day, sleep_hours, stage_awake, stage_rem, stage_light, stage_deep, time_in_bed, steps, active_minutes, workouts, resting_hr, hrv, temp_deviation, energy, mood, stress, caffeine, alcohol, foods, digestion, note';
+
 // Where screens get their record. Demo serves the sample person and keeps
 // nothing; real reads and writes her own rows, protected by RLS.
 export type Repo = {
@@ -104,7 +112,12 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
     },
     async loadDays() {
       const rows = await paginateAll<DailyRow>(
-        (from, to) => db.from('daily_metrics').select('*').order('day').range(from, to) as unknown as Page<DailyRow>,
+        (from, to) =>
+          db
+            .from('daily_metrics')
+            .select(DAILY_COLUMNS)
+            .order('day')
+            .range(from, to) as unknown as Page<DailyRow>,
       );
       return daysFromRows(rows, new Date());
     },

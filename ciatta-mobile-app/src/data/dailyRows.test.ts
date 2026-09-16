@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { addDays, isoDay } from './cycleLog';
 import { daysFromRows, rowToDay } from './dailyRows';
 
 // A row from daily_metrics: every measured column is nullable, and a sync
@@ -19,6 +20,8 @@ test('a row carrying only steps projects to a Day whose sleepHours is null, not 
   assert.equal(day.energy, null);
   assert.equal(day.mood, null);
   assert.equal(day.stress, null);
+  assert.equal(day.caffeine, null, 'caffeine unmeasured is null, not a fabricated zero cups');
+  assert.equal(day.alcohol, null, 'alcohol unmeasured is null, not a fabricated zero drinks');
   assert.deepEqual(day.stages, { awake: null, rem: null, light: null, deep: null });
   assert.deepEqual(day.workouts, [], 'an absent list is an empty array at this layer');
   assert.deepEqual(day.foods, []);
@@ -50,6 +53,8 @@ test('a missing calendar day appears as an entirely empty day, so slice(-14) spa
   assert.ok(gapDay, 'a day with no row still gets an entry');
   assert.equal(gapDay!.steps, null);
   assert.equal(gapDay!.sleepHours, null);
+  assert.equal(gapDay!.caffeine, null);
+  assert.equal(gapDay!.alcohol, null);
   assert.deepEqual(gapDay!.workouts, []);
   assert.deepEqual(gapDay!.foods, []);
 
@@ -74,4 +79,39 @@ test('rows come back oldest first, regardless of the order they were fetched in'
 
 test('no rows at all projects to no days', () => {
   assert.deepEqual(daysFromRows([], new Date(2026, 8, 16)), []);
+});
+
+// Review fix: nothing downstream reads further back than baselineDays' 91
+// day window, so a record with years of history should not rebuild an
+// object per day back to the very first sync every time the app loads.
+test('daysFromRows caps the window at roughly 91 days, even with years of history', () => {
+  const today = new Date(2026, 8, 16);
+  const rows = Array.from({ length: 1200 }, (_, i) => ({
+    day: isoDay(addDays(today, -(1199 - i))),
+    steps: 1000 + i,
+  }));
+  const days = daysFromRows(rows, today);
+  assert.equal(days.length, 91, 'capped, not one entry per row ever synced');
+  assert.equal(days[days.length - 1].date, isoDay(today));
+  assert.equal(days[0].date, isoDay(addDays(today, -90)));
+  // The oldest kept row still carries its real value; nothing outside the
+  // window is silently corrupted, it is just not built.
+  assert.equal(days[0].steps, 1000 + (1200 - 91));
+});
+
+// Review fix: a row a day ahead of the client's clock (device clock skew, or
+// a timezone ahead of hers) must still get an entry rather than being
+// silently dropped because the window used to always end at `today`.
+test('a row dated after today still gets an entry, rather than being dropped', () => {
+  const today = new Date(2026, 8, 16);
+  const tomorrow = addDays(today, 1);
+  const rows = [
+    { day: isoDay(addDays(today, -1)), steps: 4000 },
+    { day: isoDay(today), steps: 4500 },
+    { day: isoDay(tomorrow), steps: 5000 },
+  ];
+  const days = daysFromRows(rows, today);
+  assert.equal(days.length, 3, 'the window extends to the latest row, not just to today');
+  assert.equal(days[days.length - 1].date, isoDay(tomorrow));
+  assert.equal(days[days.length - 1].steps, 5000);
 });
