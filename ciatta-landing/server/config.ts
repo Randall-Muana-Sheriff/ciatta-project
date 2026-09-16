@@ -13,6 +13,9 @@ export const newsletter = {
     launch: 'bdd4b7d7-8283-4308-a0ac-eab3086f64ed',
   },
   from: 'Ciatta Briefs <briefs@ciatta.io>',
+  /** Where replies go. Cloudflare Email Routing forwards it to the team inbox.
+      NEWSLETTER_REPLY_TO overrides it. */
+  replyTo: 'briefs@ciatta.io',
   siteUrl: 'https://ciatta.io',
   /** How long a confirmation link stays valid. */
   confirmTtlSeconds: 7 * 24 * 60 * 60,

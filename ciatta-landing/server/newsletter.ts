@@ -134,7 +134,7 @@ export function newsletterService(env: Env, client: ResendClient = resend(env.RE
           subject: message.subject,
           html: message.html,
           text: message.text,
-          replyTo: env.NEWSLETTER_REPLY_TO,
+          replyTo: env.NEWSLETTER_REPLY_TO || newsletter.replyTo,
           tags: [
             { name: 'category', value: 'newsletter_confirmation' },
             { name: 'source', value: source },
@@ -196,7 +196,7 @@ export function newsletterService(env: Env, client: ResendClient = resend(env.RE
             subject: message.subject,
             html: message.html,
             text: message.text,
-            replyTo: env.NEWSLETTER_REPLY_TO,
+            replyTo: env.NEWSLETTER_REPLY_TO || newsletter.replyTo,
             headers: {
               'List-Unsubscribe': `<${unsub.replace('/newsletter/unsubscribe/', '/api/newsletter/unsubscribe')}>`,
               'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
