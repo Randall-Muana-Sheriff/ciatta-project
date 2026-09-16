@@ -157,12 +157,16 @@ export const healthKitPort: SyncPort = {
 // is a plain pass through to storage; the account boundary is baked into
 // the key it is handed, not decided here.
 export const healthKitAnchors: AnchorStore = {
+  // A real AsyncStorage failure here must not be swallowed into "no
+  // anchor": that reads to runHealthSync as a fresh start and triggers a
+  // full RECOVERY_WINDOW_DAYS re-read every single incremental sync, with
+  // nothing recorded anywhere to show it happened. Re-reading is safe (the
+  // dedupe key on every observation makes a repeat harmless), so no data is
+  // lost, but the repeated full sync is an invisible cost in battery and
+  // bandwidth. Letting the failure throw here means healthSync.ts's own
+  // try/catch around anchors.get records it as a failed metric instead.
   async get(key) {
-    try {
-      return await AsyncStorage.getItem(key);
-    } catch {
-      return null;
-    }
+    return await AsyncStorage.getItem(key);
   },
   async set(key, anchor) {
     await AsyncStorage.setItem(key, anchor);

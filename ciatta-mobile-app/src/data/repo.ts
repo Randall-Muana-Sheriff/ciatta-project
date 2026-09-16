@@ -6,7 +6,19 @@ import { type Day, loadDays as loadSampleDays } from './daily';
 import { daysFromRows } from './dailyRows';
 import type { Episode } from './cycleLog';
 import { paginateAll } from './pagination';
-import { episodeToRow, type EpisodeRow, type JournalRow, type JournalView, journalView, rowToEpisode, type SourceRow, sourceView, type SourceView } from './rows';
+import {
+  type DbSourceKind,
+  type DbSourceStatus,
+  episodeToRow,
+  type EpisodeRow,
+  type JournalRow,
+  type JournalView,
+  journalView,
+  rowToEpisode,
+  type SourceRow,
+  sourceView,
+  type SourceView,
+} from './rows';
 import { type EntryKind, journal, person, sources } from './sample';
 
 // Every daily_metrics column daysFromRows/rowToDay actually reads. Named
@@ -16,6 +28,18 @@ import { type EntryKind, journal, person, sources } from './sample';
 // projection has any use for.
 const DAILY_COLUMNS =
   'day, sleep_hours, stage_awake, stage_rem, stage_light, stage_deep, time_in_bed, steps, active_minutes, workouts, resting_hr, hrv, temp_deviation, energy, mood, stress, caffeine, alcohol, foods, digestion, note';
+
+// The name each source kind is stored and shown under. Only apple_health is
+// ever written by saveSourceStatus today; the rest are named so the mapping
+// is total, not because anything else calls it yet.
+const SOURCE_NAME: Record<DbSourceKind, string> = {
+  apple_health: 'Apple Health',
+  health_connect: 'Health Connect',
+  lab: 'Lab',
+  document: 'Document',
+  manual: 'Manual',
+  user_report: 'You',
+};
 
 // Where screens get their record. Demo serves the sample person and keeps
 // nothing; real reads and writes her own rows, protected by RLS.
@@ -29,6 +53,11 @@ export type Repo = {
   addJournal(text: string, kind: EntryKind): Promise<void>;
   loadSources(): Promise<SourceView[]>;
   loadDays(): Promise<Day[]>;
+  // Real mode only: writes or updates the row for one source kind, keyed by
+  // (user_id, kind, name) so a repeat call updates the same row instead of
+  // creating a duplicate. Omitting lastSyncedAt leaves whatever was already
+  // stored there untouched, rather than clearing it.
+  saveSourceStatus(kind: DbSourceKind, status: DbSourceStatus, lastSyncedAt?: string): Promise<void>;
   firstName(): Promise<string | null>;
 };
 
@@ -56,6 +85,7 @@ export function demoRepo(): Repo {
     },
     loadSources: async () => sources,
     loadDays: async () => loadSampleDays(),
+    saveSourceStatus: async () => {},
     firstName: async () => person.firstName,
   };
 }
@@ -120,6 +150,11 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
             .range(from, to) as unknown as Page<DailyRow>,
       );
       return daysFromRows(rows, new Date());
+    },
+    async saveSourceStatus(kind, status, lastSyncedAt) {
+      const payload: Record<string, unknown> = { user_id: userId, kind, name: SOURCE_NAME[kind], status };
+      if (lastSyncedAt) payload.last_synced_at = lastSyncedAt;
+      must(await db.from('health_sources').upsert(payload, { onConflict: 'user_id,kind,name' }));
     },
     async firstName() {
       const row = must(await db.from('profiles').select('first_name').eq('id', userId).maybeSingle()) as { first_name: string | null } | null;

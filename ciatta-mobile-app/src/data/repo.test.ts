@@ -22,6 +22,13 @@ test('demo mode serves the sample and keeps writes in memory', async () => {
   assert.deepEqual(await demoRepo().loadEpisodes(), [], 'a fresh demo starts clean');
 });
 
+test('demo mode writes nothing when a source status is saved', async () => {
+  const repo = demoRepo();
+  const before = await repo.loadSources();
+  await repo.saveSourceStatus('apple_health', 'active', new Date().toISOString());
+  assert.deepEqual(await repo.loadSources(), before, 'the example person is never changed');
+});
+
 // ── A query builder that caps a page the way PostgREST does ────
 
 type Row = Record<string, unknown>;
@@ -137,4 +144,40 @@ test('daily rows are read by named column, not select star, and project into Day
   assert.equal(days[0].steps, 4000);
   assert.equal(days[0].sleepHours, null);
   assert.equal(days[1].sleepHours, 7.2);
+});
+
+// ── saveSourceStatus ─────────────────────────────────────────────
+
+type UpsertCall = { table: string; payload: Record<string, unknown>; onConflict?: string };
+
+function fakeUpsertDb() {
+  const upserts: UpsertCall[] = [];
+  const from = (table: string) => ({
+    upsert: async (payload: Record<string, unknown>, opts?: { onConflict?: string }) => {
+      upserts.push({ table, payload, onConflict: opts?.onConflict });
+      return { data: null, error: null };
+    },
+  });
+  return { db: { from } as unknown as SupabaseClient, upserts };
+}
+
+test('saveSourceStatus writes a real source row keyed by user, kind and name', async () => {
+  const { db, upserts } = fakeUpsertDb();
+  await realRepo(db, 'user-a').saveSourceStatus('apple_health', 'active', '2026-09-16T00:00:00.000Z');
+  assert.equal(upserts.length, 1);
+  assert.equal(upserts[0].table, 'health_sources');
+  assert.deepEqual(upserts[0].payload, {
+    user_id: 'user-a',
+    kind: 'apple_health',
+    name: 'Apple Health',
+    status: 'active',
+    last_synced_at: '2026-09-16T00:00:00.000Z',
+  });
+  assert.equal(upserts[0].onConflict, 'user_id,kind,name');
+});
+
+test('saveSourceStatus without a synced time leaves last_synced_at out, rather than clearing it', async () => {
+  const { db, upserts } = fakeUpsertDb();
+  await realRepo(db, 'user-a').saveSourceStatus('apple_health', 'refused');
+  assert.equal('last_synced_at' in upserts[0].payload, false, 'an existing last_synced_at must not be nulled out by a status only update');
 });
