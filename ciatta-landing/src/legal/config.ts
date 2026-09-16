@@ -7,7 +7,7 @@
 
 export const LEGAL = {
   /** The legal name of whoever operates ciatta.io, e.g. "Ciatta Health, Inc.". */
-  operator: 'Ciatta',
+  operator: 'Ciatta LLC',
   /** Where requests about personal data go. This mailbox must exist and be read. */
   privacyEmail: 'privacy@ciatta.io',
   /** General questions about the terms. */
