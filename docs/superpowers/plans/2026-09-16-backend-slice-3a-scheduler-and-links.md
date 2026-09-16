@@ -770,9 +770,24 @@ Do not start without the user's explicit go.
 
 - [ ] Confirm the live project holds exactly the sixteen migrations through `20260916100400` and none of this slice's.
 - [ ] Create the two Vault secrets on the live project, `service_role_key` and `project_url`. These are secrets: they are created through a direct statement against the live database and never committed to a migration file, which is why Task 1's migration does not create them.
-- [ ] Apply `20260917100000_scheduler.sql`, `20260917100100_scheduler_observability.sql` and `20260917100200_temporal_links.sql` through the Supabase API, then rewrite the recorded versions to match the filenames, as both previous pushes did.
+- [ ] Apply `20260917100000_scheduler.sql`, `20260917100100_scheduler_observability.sql`, `20260917100200_temporal_links.sql` and `20260917100300_temporal_links_gap_and_pair.sql` through the Supabase API, in that order, then rewrite the recorded versions to match the filenames, as both previous pushes did.
+
+  `20260917100300` is not optional and is easy to miss, because it was written by a later fix round than the one that drafted this list. It adds the two guards that have to be in place **before** anything writes a row: `temporal_links_gap_matches_relation`, which stops a row claiming `same_day` while carrying a gap of 900 hours, and the unique index `temporal_links_pair_once`, which stops the same pair landing twice when it arrives the other way round. `links.ts` names the second one in a comment and relies on it: the generator's sort is what keeps a pair stable across runs, and that index is what catches the sort going unstable, by raising 23505 rather than quietly storing the pair twice.
 - [ ] Redeploy `baselines` with `verify_jwt = true` and the links step included.
 - [ ] Verify: `get_advisors` security, a grants query proving `anon` holds nothing on `temporal_links` and `authenticated` holds select only, and a function sweep proving neither Data API role can execute `baselines_tick` or `enqueue_baselines_reconciliation`.
+- [ ] Verify both of `20260917100300`'s objects actually exist on the live `temporal_links`, by name rather than by assuming the migration ran. A missing one is invisible until her rows are already wrong, so this is asserted here alongside the grants:
+
+  ```sql
+  select
+    (select count(*) from pg_constraint
+      where conrelid = 'public.temporal_links'::regclass
+        and conname = 'temporal_links_gap_matches_relation') as gap_matches_relation,
+    (select count(*) from pg_class
+      where relname = 'temporal_links_pair_once'
+        and relkind = 'i') as pair_once;
+  ```
+
+  Both must return 1. A zero in either column means `20260917100300` was skipped, and the fix is to apply it before any job is allowed to write links, not after.
 - [ ] Confirm the scheduler actually ran: wait for one five minute tick, then `select * from public.scheduler_health`, and report what it says rather than assuming it worked. A `last_status` other than `succeeded`, or a `pending_jobs` count that does not fall, means it did not.
 - [ ] On a real phone: connect Apple Health, then confirm within ten minutes that `baselines` and `changes` hold rows and that `temporal_links` holds plausible pairs.
 
