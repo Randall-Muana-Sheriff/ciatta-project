@@ -23,13 +23,16 @@ test('steps sums into the steps day field', () => {
   assert.equal(spec.dayField, 'steps');
 });
 
-test('active energy and exercise time both sum into active minutes', () => {
-  const energy = specFor('HKQuantityTypeIdentifierActiveEnergyBurned');
+test('active minutes comes from exercise time alone', () => {
   const exercise = specFor('HKQuantityTypeIdentifierAppleExerciseTime');
-  assert.equal(energy.fold, 'sum');
-  assert.equal(energy.dayField, 'active_minutes');
   assert.equal(exercise.fold, 'sum');
   assert.equal(exercise.dayField, 'active_minutes');
+});
+
+test('active energy is kept only as an observation, in kilocalories, never folded into a minutes field', () => {
+  const energy = specFor('HKQuantityTypeIdentifierActiveEnergyBurned');
+  assert.equal(energy.unit, 'kcal');
+  assert.equal(energy.dayField, undefined);
 });
 
 test('resting heart rate and hrv average into their own day fields', () => {

@@ -51,13 +51,15 @@ export type MetricSpec = {
 
 export const QUANTITY_SPECS: readonly MetricSpec[] = [
   { identifier: 'HKQuantityTypeIdentifierStepCount', metric: 'steps', domain: 'activity', unit: 'count', fold: 'sum', dayField: 'steps' },
-  { identifier: 'HKQuantityTypeIdentifierActiveEnergyBurned', metric: 'active_energy', domain: 'activity', unit: 'kcal', fold: 'sum', dayField: 'active_minutes' },
   { identifier: 'HKQuantityTypeIdentifierAppleExerciseTime', metric: 'exercise_time', domain: 'activity', unit: 'min', fold: 'sum', dayField: 'active_minutes' },
   { identifier: 'HKQuantityTypeIdentifierRestingHeartRate', metric: 'resting_heart_rate', domain: 'vitals', unit: 'count/min', fold: 'mean', dayField: 'resting_hr' },
   { identifier: 'HKQuantityTypeIdentifierHeartRateVariabilitySDNN', metric: 'hrv', domain: 'vitals', unit: 'ms', fold: 'mean', dayField: 'hrv' },
   { identifier: 'HKQuantityTypeIdentifierAppleSleepingWristTemperature', metric: 'wrist_temperature', domain: 'vitals', unit: 'degC', fold: 'mean', dayField: 'temp_deviation' },
   { identifier: 'HKQuantityTypeIdentifierBasalBodyTemperature', metric: 'basal_body_temperature', domain: 'vitals', unit: 'degC', fold: 'mean', dayField: 'temp_deviation' },
   // Observations only: no row in daily_metrics carries these on its own.
+  // Active energy is kilocalories, not a duration, so it never folds into
+  // active_minutes; it is kept only as its own observation, in kcal.
+  { identifier: 'HKQuantityTypeIdentifierActiveEnergyBurned', metric: 'active_energy', domain: 'activity', unit: 'kcal', fold: 'sum' },
   { identifier: 'HKQuantityTypeIdentifierHeartRate', metric: 'heart_rate', domain: 'vitals', unit: 'count/min', fold: 'mean' },
   { identifier: 'HKQuantityTypeIdentifierRespiratoryRate', metric: 'respiratory_rate', domain: 'vitals', unit: 'count/min', fold: 'mean' },
   { identifier: 'HKQuantityTypeIdentifierOxygenSaturation', metric: 'oxygen_saturation', domain: 'vitals', unit: '%', fold: 'mean' },

@@ -13,6 +13,8 @@ import {
 const STEPS = QUANTITY_SPECS.find((s) => s.identifier === 'HKQuantityTypeIdentifierStepCount')!;
 const TEMP = QUANTITY_SPECS.find((s) => s.identifier === 'HKQuantityTypeIdentifierAppleSleepingWristTemperature')!;
 const HEART_RATE = QUANTITY_SPECS.find((s) => s.identifier === 'HKQuantityTypeIdentifierHeartRate')!;
+const ACTIVE_ENERGY = QUANTITY_SPECS.find((s) => s.identifier === 'HKQuantityTypeIdentifierActiveEnergyBurned')!;
+const EXERCISE_TIME = QUANTITY_SPECS.find((s) => s.identifier === 'HKQuantityTypeIdentifierAppleExerciseTime')!;
 
 function quantity(spec = STEPS, startIso: string, endIso: string, value: number, uuid?: string): FoldableSample {
   const sample: QuantitySample = { uuid, startDate: new Date(startIso), endDate: new Date(endIso), value };
@@ -77,6 +79,28 @@ test('a workout is mapped with type, minutes and intensity', () => {
   assert.ok(day.workouts);
   assert.equal(day.workouts!.length, 1);
   assert.deepEqual(day.workouts![0], { type: 'Run', minutes: 40, intensity: 'Moderate' });
+});
+
+test('active minutes come from exercise time alone; active energy stays kilocalories, never minutes', () => {
+  const days = foldDay([
+    // 400 kcal is not a duration, and must never be added into a minutes
+    // field even though both metrics share a day.
+    quantity(ACTIVE_ENERGY, '2026-06-01T07:00:00', '2026-06-01T07:01:00', 400),
+    quantity(EXERCISE_TIME, '2026-06-01T07:00:00', '2026-06-01T07:01:00', 30),
+  ]);
+  assert.equal(days['2026-06-01'].active_minutes, 30);
+
+  // Active energy has no dayField at all: it is real data, kept only as an
+  // observation, in its own unit.
+  assert.equal(ACTIVE_ENERGY.dayField, undefined);
+  assert.equal(ACTIVE_ENERGY.unit, 'kcal');
+  const obs = sampleToObservation(ACTIVE_ENERGY, {
+    startDate: new Date('2026-06-01T07:00:00'),
+    endDate: new Date('2026-06-01T07:01:00'),
+    value: 400,
+  });
+  assert.equal(obs.unit, 'kcal');
+  assert.equal(obs.value, 400);
 });
 
 test('temperature is averaged, and a negative deviation is preserved', () => {
