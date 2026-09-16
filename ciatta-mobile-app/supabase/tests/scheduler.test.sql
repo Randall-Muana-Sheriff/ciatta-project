@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(12);
+select plan(21);
 
 -- The extensions this rests on are actually installed.
 select has_extension('pg_cron', 'pg_cron is installed');
@@ -49,6 +49,61 @@ select lives_ok(
   $$ select public.enqueue_baselines_reconciliation() $$,
   'the reconciliation enqueuer runs without error on an empty database'
 );
+
+-- The health view exists and is server only.
+select has_view('public', 'scheduler_health', 'scheduler_health exists');
+select ok(not has_table_privilege('anon', 'public.scheduler_health', 'SELECT'),
+  'anon cannot read scheduler health');
+select ok(not has_table_privilege('authenticated', 'public.scheduler_health', 'SELECT'),
+  'authenticated cannot read scheduler health');
+
+-- It answers on an empty database rather than erroring, because the first
+-- person to ask "is this running" will ask before it has ever run.
+select lives_ok(
+  $$ select * from public.scheduler_health $$,
+  'scheduler health answers before the first run'
+);
+
+-- The safety net, actually exercised. The lives_ok above runs it on an
+-- empty database, which would pass even if it enqueued nothing at all, so
+-- this gives it real rows to work on.
+--
+-- Worth knowing before reading the counts: inserting a daily_metrics row
+-- fires daily_metrics_enqueue_baselines_insert, so the two pending jobs
+-- below already exist before the reconciliation is ever called. That is
+-- the normal path working, not a flaw in the test. What is being proved
+-- here is that the reconciliation agrees with it rather than duplicating
+-- it: three day rows across two people collapse to one pending job each,
+-- because jobs_one_pending plus the on conflict do nothing in enqueue_job
+-- refuse a second. The return value counts people considered, never rows
+-- inserted, so it stays 2 whether or not anything new was written.
+insert into auth.users (id, email) values
+  ('00000000-0000-0000-0000-0000000000c1', 'c1@test.local'),
+  ('00000000-0000-0000-0000-0000000000c2', 'c2@test.local');
+
+-- service_role writes day rows, not authenticated: the client's write on
+-- daily_metrics is revoked (see daily_metrics_read_only.sql).
+set local role service_role;
+insert into public.daily_metrics (user_id, day, steps) values
+  ('00000000-0000-0000-0000-0000000000c1', '2026-09-14', 1000),
+  ('00000000-0000-0000-0000-0000000000c1', '2026-09-15', 2000),
+  ('00000000-0000-0000-0000-0000000000c2', '2026-09-14', 3000);
+reset role;
+
+select is((select count(*)::int from public.jobs where status = 'pending' and kind = 'baselines'), 2,
+  'the insert trigger alone already queued one pending job per person');
+
+select is(public.enqueue_baselines_reconciliation(), 2,
+  'the reconciliation considers both people who have day rows');
+select is((select count(*)::int from public.jobs where status = 'pending' and kind = 'baselines'), 2,
+  'it leaves exactly one pending job per person, not one per day row');
+
+-- Immediately again: the proof that on conflict do nothing makes this
+-- safe to run twice, which is what a nightly safety net needs to be.
+select is(public.enqueue_baselines_reconciliation(), 2,
+  'running it a second time still considers both people');
+select is((select count(*)::int from public.jobs where status = 'pending' and kind = 'baselines'), 2,
+  'and still leaves exactly two pending jobs, so it is idempotent');
 
 select * from finish();
 rollback;
