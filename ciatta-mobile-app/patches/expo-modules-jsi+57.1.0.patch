@@ -37,54 +37,76 @@ index 6115e87..cf946c0 100644
    RuntimeScheduler(const RuntimeScheduler &) = delete;
  
 diff --git a/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI/Runtime/JavaScriptRuntime.swift b/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI/Runtime/JavaScriptRuntime.swift
-index 00f7329..b0ebce5 100644
+index 3d796ee..4076d49 100644
 --- a/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI/Runtime/JavaScriptRuntime.swift
 +++ b/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI/Runtime/JavaScriptRuntime.swift
-@@ -760,8 +760,8 @@ private func createFunctionClosure(
+@@ -185,12 +185,12 @@ open class JavaScriptRuntime: Equatable, Identifiable, @unchecked Sendable {
+       resultPtr: UnsafeMutablePointer<facebook.jsi.Value>
+     ) -> Bool {
+       let propertyName = String(cString: propertyName)
+-      nonisolated(unsafe) let resultPtr = resultPtr
++      let resultPtr = UnsafeSendableBox(resultPtr)
+ 
+       return withGuaranteedContext(context) { (context: HostObjectContext, runtime) in
+         return JavaScriptActor.assumeIsolated {
+           return forwardingSwiftErrorsToJS(runtime: runtime) {
+-            try context.get(propertyName).writeJSIValue(to: resultPtr)
++            try context.get(propertyName).writeJSIValue(to: resultPtr.value)
+           }
+         }
+       }
+@@ -774,19 +774,19 @@ private func createFunctionClosure(
      // synchronous call, so the `nonisolated(unsafe)` capture is sound. This removes a per-call class
      // allocation + retain/release + dealloc that profiling showed dominating the no-op `@JS` host-call
      // floor.
 -    nonisolated(unsafe) let thisPtr = thisPtr
 -    nonisolated(unsafe) let argumentsPtr = argumentsPtr
+-    nonisolated(unsafe) let resultPtr = resultPtr
 +    let thisPtr = UnsafeSendableBox(thisPtr)
 +    let argumentsPtr = UnsafeSendableBox(argumentsPtr)
-     nonisolated(unsafe) let resultPtr = resultPtr
++    let resultPtr = UnsafeSendableBox(resultPtr)
  
      // See `withGuaranteedContext` for why neither the context nor the runtime is retained here, and
-@@ -769,8 +769,8 @@ private func createFunctionClosure(
-     withGuaranteedContext(context) { (context: HostFunctionContext, runtime) in
-       resultPtr.pointee = JavaScriptActor.assumeIsolated {
+     // why the result is written to the caller's slot instead of being returned.
+     return withGuaranteedContext(context) { (context: HostFunctionContext, runtime) in
+       return JavaScriptActor.assumeIsolated {
          return forwardingSwiftErrorsToJS(runtime: runtime) {
 -          let this = UnsafeMutablePointer(mutating: thisPtr).move()
 -          let arguments = JavaScriptValuesBuffer(runtime, start: argumentsPtr, count: argumentsCount)
 +          let this = UnsafeMutablePointer(mutating: thisPtr.value).move()
 +          let arguments = JavaScriptValuesBuffer(runtime, start: argumentsPtr.value, count: argumentsCount)
            let thisValue = JavaScriptValue(runtime, this)
-           return try context.call(thisValue, consume arguments).asJSIValue()
+-          try context.call(thisValue, consume arguments).writeJSIValue(to: resultPtr)
++          try context.call(thisValue, consume arguments).writeJSIValue(to: resultPtr.value)
          }
-@@ -803,8 +803,8 @@ private func createFunctionClosure(
+       }
+     }
+@@ -817,18 +817,18 @@ private func createFunctionClosure(
      // handed in as a borrowed `JavaScriptUnownedValue` pointing straight at the C++-owned `this` slot:
      // it is not moved out and no owning `JavaScriptValue` is allocated, so the closure avoids the
      // per-call `weak`-runtime form/destroy and heap object that the owning `this` pays.
 -    nonisolated(unsafe) let thisPtr = thisPtr
 -    nonisolated(unsafe) let argumentsPtr = argumentsPtr
+-    nonisolated(unsafe) let resultPtr = resultPtr
 +    let thisPtr = UnsafeSendableBox(thisPtr)
 +    let argumentsPtr = UnsafeSendableBox(argumentsPtr)
-     nonisolated(unsafe) let resultPtr = resultPtr
++    let resultPtr = UnsafeSendableBox(resultPtr)
  
      // See `withGuaranteedContext` for why neither the context nor the runtime is retained here, and
-@@ -812,8 +812,8 @@ private func createFunctionClosure(
-     withGuaranteedContext(context) { (context: UnownedThisHostFunctionContext, runtime) in
-       resultPtr.pointee = JavaScriptActor.assumeIsolated {
+     // why the result is written to the caller's slot instead of being returned.
+     return withGuaranteedContext(context) { (context: UnownedThisHostFunctionContext, runtime) in
+       return JavaScriptActor.assumeIsolated {
          return forwardingSwiftErrorsToJS(runtime: runtime) {
 -          let arguments = JavaScriptValuesBuffer(runtime, start: argumentsPtr, count: argumentsCount)
 -          let thisValue = JavaScriptUnownedValue(runtime.pointee, thisPtr)
+-          try context.call(thisValue, consume arguments).writeJSIValue(to: resultPtr)
 +          let arguments = JavaScriptValuesBuffer(runtime, start: argumentsPtr.value, count: argumentsCount)
 +          let thisValue = JavaScriptUnownedValue(runtime.pointee, thisPtr.value)
-           return try context.call(thisValue, consume arguments).asJSIValue()
++          try context.call(thisValue, consume arguments).writeJSIValue(to: resultPtr.value)
          }
        }
-@@ -841,3 +841,12 @@ extension JavaScriptRuntime {
+     }
+@@ -855,3 +855,12 @@ extension JavaScriptRuntime {
      }
    }
  }
