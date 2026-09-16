@@ -78,3 +78,64 @@ failure.
   promises about data handling.
 - **No confirmation email.** Joining writes a row; nobody is emailed. Wiring
   that up needs an edge function and a sending domain.
+
+## Newsletter: Ciatta Briefs
+
+Every email form on the site signs people up through `functions/api/newsletter/*`
+(Cloudflare Pages Functions) into Resend. The flow is double opt-in:
+
+1. **Subscribe** (`POST /api/newsletter/subscribe`): validates the address, rejects
+   other origins, traps bots (honeypot field plus a minimum fill time),
+   rate-limits by IP and address, and emails a signed confirmation link. Nothing
+   is stored yet, and the answer is the same whether or not the address is
+   already on the list.
+2. **Confirm** (`/newsletter/confirm/`): the page POSTs the token, so mail
+   scanners that pre-open links cannot confirm for someone. Confirming adds the
+   contact to the *Newsletter subscribers* segment, opts them in to their topics,
+   records the consent (source, wording, time), and sends one welcome email.
+3. **Unsubscribe** (`/newsletter/unsubscribe/`, plus RFC 8058 one-click from the
+   mail client): the page asks first. Broadcasts also carry Resend's own
+   preference link, where a subscriber can drop one topic and keep the other.
+
+| Form | Topics |
+| --- | --- |
+| Home hero, home closing, Briefs page | Ciatta Briefs + Launch news |
+| Member page | Launch news, plus Briefs only if the unticked box is ticked |
+
+Resource IDs and senders live in `server/config.ts`: waitlist signups hear from `waitlist@ciatta.io`, newsletter signups from `briefs@ciatta.io`, and replies to each are forwarded by Cloudflare Email Routing. Secrets are Pages secrets:
+
+```bash
+npx wrangler pages secret put RESEND_API_KEY --project-name ciatta
+npx wrangler pages secret put NEWSLETTER_SIGNING_SECRET --project-name ciatta   # openssl rand -base64 48
+```
+
+Optional: `NEWSLETTER_POSTAL_ADDRESS`, and a KV namespace bound
+as `NEWSLETTER_KV` (without it, rate limiting is off; the other guards still apply).
+
+`npm test` runs the flow against an in-memory Resend.
+
+### Sending twice a week
+
+Issues are Markdown files in `content/briefs/issues/` (start from `_template.md`).
+
+```bash
+npm run newsletter -- new "What changes first in perimenopause"
+npm run newsletter -- preview content/briefs/issues/<file>.md     # writes .newsletter-preview/
+npm run newsletter -- test content/briefs/issues/<file>.md you@example.com
+# set `status: ready` in the file, then:
+npm run newsletter -- schedule --dry-run
+npm run newsletter -- schedule
+npm run newsletter -- status        # warns when a Tuesday or Friday in the next two weeks is empty
+```
+
+`schedule` books each ready issue into the next free Tuesday or Friday slot at
+13:00 UTC as a Resend scheduled broadcast to the Briefs topic, then writes the
+broadcast id back into the file. Commit the file after scheduling.
+
+### Deploying
+
+The site is the Cloudflare Pages project `ciatta` (direct upload, not Git-connected):
+
+```bash
+npm run deploy
+```

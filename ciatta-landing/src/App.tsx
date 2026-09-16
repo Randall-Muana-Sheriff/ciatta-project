@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { HeroFilm } from './components/HeroFilm';
-import { WaitlistForm } from './components/WaitlistForm';
+import { SubscribeForm } from './components/SubscribeForm';
 import { ProductShowcase } from './components/ProductShowcase';
+import { ExploreSection } from './components/ExploreSection';
 import { Wordmark } from './components/Wordmark';
 
 /**
@@ -105,6 +106,67 @@ const COMPARE_ROWS: [string, string, string, string][] = [
 
 /* -- Questions. The ones a careful person asks before handing over a health
       record, answered without hedging into meaninglessness. -------------- */
+/* -- "Grounded in evidence, built for the questioner." --------------------
+      Shaped after the "Backed by PHDs, worn by MVPs" mosaic on whoop.com:
+      a headline, a lede, and a grid mixing photographic tiles with written
+      ones. WHOOP fills the written ones with member quotes. Ciatta has no
+      members yet, but it does have sixty women who answered its study, so
+      the quotes are theirs.
+
+      Every one is a verbatim answer from
+      ciatta-understanding-your-health-over-time-study-results.csv, August
+      2026, n=60, all finished responses. Five different respondents, one
+      quote each. Nothing is composited and nothing is paraphrased: the only
+      changes are sentence capitalisation, apostrophes, and trims marked with
+      an ellipsis. An attribution is the age band the study asked in and the
+      life stage she selected, and nothing else: both come straight off her
+      row, so they are as specific as the data actually is and no further.
+      No names, no initials, none invented. If these are
+      ever re-cut, re-cut them from the CSV — do not edit them here.
+
+      The photographic tiles carry the other half of WHOOP's headline: who
+      this is for. ------------------------------------------------------- */
+type WhoTile =
+  | { kind: 'photo'; line: string; img: string; alt: string; wide?: boolean }
+  | { kind: 'quote'; line: string; who: string; wide?: boolean };
+
+const WHO_TILES: WhoTile[] = [
+  { kind: 'photo', line: 'Reads the study, not the summary.',
+    img: '/images/who/reads.jpg',
+    alt: 'A woman in an infinity pool, facing an open sea.' },
+  // row 24, col 22 — what made it difficult to connect information
+  { kind: 'quote',
+    line: 'So many doctors told me that the symptoms I was having were not related to one another.',
+    who: '45–54, in perimenopause' },
+  { kind: 'photo', wide: true, line: 'Has been told her results are normal.',
+    img: '/images/who/normal.jpg',
+    alt: 'A black and white photograph of a woman in a downward-facing dog position.' },
+
+  // row 2, col 34 — what connected information would have helped her understand
+  { kind: 'quote', wide: true,
+    line: 'Having my complete health history, especially the last 10 years — I believe the patterns would be evident instead of me feeling unheard, and just waiting for whatever is really going on to get to a point that it’s 100% obvious.',
+    who: '55+, in perimenopause' },
+  { kind: 'photo', line: 'Arrives with a list, and wants it answered.',
+    img: '/images/who/list.jpg',
+    alt: 'A woman sitting on a wooden bench in warm, low light.' },
+  // row 19, col 39 — what would change about her response
+  { kind: 'quote',
+    line: 'I wouldn’t be so likely to start googling and freaking out if I knew it already changed before and had the proof of that.',
+    who: '35–44, currently cycling' },
+
+  { kind: 'photo', line: 'Keeps her own notes, because no one else does.',
+    img: '/images/who/notes-own.jpg',
+    alt: 'A close frame of a woman’s back and shoulder against a plain wall.' },
+  // row 34, col 34
+  { kind: 'quote', wide: true,
+    line: 'It would have saved me hours searching portals, printing documents, hunting old medical records and trying to find old records that no one seems to have now.',
+    who: '45–54, currently cycling' },
+  // row 14, col 34
+  { kind: 'quote',
+    line: 'I could have avoided multiple unhelpful doctors and a range of medications that did not help.',
+    who: '35–44, cycle changing' },
+];
+
 const QUESTIONS: [string, string][] = [
   ['What does Ciatta actually do?',
    'It brings your health information into one place and reads it together. It shows what changed, what was happening around it, what you told it, and what published evidence says about that kind of pattern. It does not diagnose, prescribe, or tell you what to do.'],
@@ -160,7 +222,7 @@ export default function App() {
                 brings them together so you can see what changed and what to ask.
               </p>
               <div id="join">
-                <WaitlistForm id="waitlist-hero" source="hero" />
+                <SubscribeForm id="waitlist-hero" source="hero" kind="waitlist" />
               </div>
             </div>
           </div>
@@ -171,15 +233,16 @@ export default function App() {
         {/* -------------------------- WHAT YOU GET -------------------------- */}
         <section className="section get" aria-labelledby="get-heading">
           <div className="shell">
-            <h2 id="get-heading" className="band-title">What you get</h2>
-            <p className="band-sub">
-              Six parts, and they only work because they are in the same place.
-            </p>
-          </div>
-          {/* The rail breaks out of the shell so the cards run to the edge of
-              the screen and the next one is always half-visible. That peek is
-              the only thing telling anyone there is more than three. */}
-          <ul className="get-rail">
+            <div className="band-head">
+              <h2 id="get-heading" className="band-title">What you get</h2>
+              <p className="band-sub">
+                Six parts, and they only work because they are in the same place.
+              </p>
+            </div>
+            {/* A grid from a tablet up, so all six are on the page at once. On
+                a phone it is a rail that runs to the screen's edge, and the
+                next card is always partly visible. */}
+            <ul className="get-rail">
             {WHAT_YOU_GET.map(([title, body, img, alt]) => (
               <li className="get-card" key={title}>
                 <img src={img} alt={alt} width={900} height={1200} loading="lazy" decoding="async" />
@@ -188,18 +251,23 @@ export default function App() {
                 <p>{body}</p>
               </li>
             ))}
-          </ul>
+            </ul>
+          </div>
         </section>
 
+        {/* ----------------------------- EXPLORE ---------------------------- */}
+        <ExploreSection />
 
         {/* ------------------------ HOW CIATTA COMPARES --------------------- */}
         <section className="section" aria-labelledby="compare-heading">
           <div className="shell">
-            <h2 id="compare-heading" className="band-title">How Ciatta compares</h2>
-            <p className="band-sub">
-              Three places your health information already lives. Only one of them
-              reads it together.
-            </p>
+            <div className="band-head">
+              <h2 id="compare-heading" className="band-title">How Ciatta compares</h2>
+              <p className="band-sub">
+                Three places your health information already lives. Only one of them
+                reads it together.
+              </p>
+            </div>
             <div className="compare-wrap">
               <table className="compare">
                 <thead>
@@ -214,9 +282,9 @@ export default function App() {
                   {COMPARE_ROWS.map(([label, a, b, c]) => (
                     <tr key={label}>
                       <th scope="row">{label}</th>
-                      <td className="is-ours">{a}</td>
-                      <td>{b}</td>
-                      <td>{c}</td>
+                      <td className="is-ours" data-col={COMPARE_COLS[0]}>{a}</td>
+                      <td data-col={COMPARE_COLS[1]}>{b}</td>
+                      <td data-col={COMPARE_COLS[2]}>{c}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -229,11 +297,57 @@ export default function App() {
           </div>
         </section>
 
+        {/* ------------------- GROUNDED IN EVIDENCE ------------------------- */}
+        <section className="section who" aria-labelledby="who-heading">
+          <div className="shell">
+            <div className="band-head">
+              <h2 id="who-heading" className="band-title">
+                Grounded in evidence, built for the questioner
+              </h2>
+              <p className="band-sub">
+                The health intelligence platform for women who question, research,
+                and take their health into their own hands.
+              </p>
+            </div>
+
+            <ul className="who-grid">
+              {WHO_TILES.map((tile) => (
+                <li
+                  key={tile.line}
+                  className={`who-tile is-${tile.kind}${tile.wide ? ' is-wide' : ''}`}
+                >
+                  {tile.kind === 'photo' ? (
+                    <>
+                      <img src={tile.img} alt={tile.alt} width={900} height={900}
+                           loading="lazy" decoding="async" />
+                      <span className="who-scrim" aria-hidden="true" />
+                      <p>{tile.line}</p>
+                    </>
+                  ) : (
+                    <figure>
+                      <blockquote><p>{tile.line}</p></blockquote>
+                      <figcaption>{tile.who}</figcaption>
+                    </figure>
+                  )}
+                </li>
+              ))}
+            </ul>
+
+            <p className="who-note">
+              Quotations are answers given by women in Ciatta&rsquo;s
+              <em> Understanding your health over time</em> study, August 2026,
+              sixty respondents.
+            </p>
+          </div>
+        </section>
+
         {/* ---------------------------- QUESTIONS --------------------------- */}
         <section className="section" aria-labelledby="q-heading">
-          <div className="shell">
-            <h2 id="q-heading" className="band-title">Questions</h2>
-            <div className="qa">
+          <div className="shell split">
+            <div className="split-lead">
+              <h2 id="q-heading" className="band-title">Questions</h2>
+            </div>
+            <div className="qa split-body">
               {QUESTIONS.map(([q, a]) => (
                 <details className="qa-item" key={q}>
                   <summary>
@@ -249,19 +363,27 @@ export default function App() {
 
         {/* -------------------------------- CTA ---------------------------- */}
         <section className="section" aria-labelledby="cta-heading">
-          <div className="shell close-inner">
-            {/* The line people actually read is the heading now, so the
-                section keeps an accessible name without a label above it
-                restating what the sentence already says. */}
-            <h2 id="cta-heading" className="display">
-              Something feels different, and you cannot quite explain it.
-            </h2>
-            <p className="close-lines">
-              Ciatta turns that into what changed, what was happening around it, and what
-              you have noticed since.
-            </p>
-            <div className="surface is-shell is-lifted">
-              <WaitlistForm id="waitlist-close" source="closing" />
+          <div className="shell split is-centred">
+            <div className="split-lead close-inner">
+              {/* The line people actually read is the heading now, so the
+                  section keeps an accessible name without a label above it
+                  restating what the sentence already says. */}
+              <h2 id="cta-heading" className="display">
+                Something feels different, and you cannot quite explain it.
+              </h2>
+              <p className="close-lines">
+                Ciatta turns that into what changed, what was happening around it, and what
+                you have noticed since.
+              </p>
+              {/* The hero reserves a place; this one is the newsletter, so it
+                  says what it sends before asking for an address. */}
+              <p className="close-lines" id="subscribe">
+                Until then, read along. <b>Ciatta Briefs</b> is one short piece every Tuesday
+                and Friday: a guide, a comparison or a plain definition.
+              </p>
+            </div>
+            <div className="surface is-shell is-lifted split-body">
+              <SubscribeForm id="subscribe-close" source="closing" kind="newsletter" />
             </div>
           </div>
         </section>
@@ -275,9 +397,8 @@ export default function App() {
             host answers 308 first and the click costs a round trip. */}
         <nav className="footer-nav" aria-label="Footer">
           <a href="/briefs/">Briefs</a>
-          <a href="/privacy">Privacy</a>
-          <a href="/terms">Terms</a>
-          <a href="mailto:hello@ciatta.app">Contact</a>
+          <a href="/privacy/">Privacy</a>
+          <a href="/terms/">Terms</a>
         </nav>
         <p className="footer-copy">© {new Date().getFullYear()} Ciatta</p>
       </footer>
