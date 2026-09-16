@@ -22,9 +22,11 @@ create table public.baselines (
   unique (user_id, metric, window_days),
   -- Null means unknown; a baseline with too little history is sufficient
   -- false, never a fabricated number. So a sufficient baseline must carry
-  -- a median, and an insufficient one must carry none of the derived figures.
+  -- all four derived figures and rest on at least 20 samples -- the
+  -- engine's own minimum (src/lib/engine.ts sustained(): "if (base.length
+  -- < 20) return null") -- and an insufficient one must carry none of them.
   constraint baselines_sufficiency_check check (
-    (sufficient and median is not null)
+    (sufficient and median is not null and low is not null and high is not null and variability is not null and n >= 20)
     or (not sufficient and median is null and low is null and high is null and variability is null)
   )
 );

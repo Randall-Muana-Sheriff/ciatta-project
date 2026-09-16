@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(20);
+select plan(23);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -30,10 +30,26 @@ select throws_ok($$
   values ('00000000-0000-0000-0000-00000000000a', 'steps', 7, true)
 $$, '23514', null, 'a sufficient baseline must carry a median');
 
+-- A sufficient baseline must carry all four derived figures, not just a
+-- median, and must rest on at least 20 samples -- the engine's own
+-- minimum (src/lib/engine.ts sustained(): "if (base.length < 20) return null").
+select throws_ok($$
+  insert into public.baselines (user_id, metric, window_days, sufficient, median, low, high, variability, n)
+  values ('00000000-0000-0000-0000-00000000000a', 'metric_missing_low', 28, true, 7.5, null, 8.5, 0.6, 28)
+$$, '23514', null, 'a sufficient baseline cannot have a null low');
+select throws_ok($$
+  insert into public.baselines (user_id, metric, window_days, sufficient, median, low, high, variability, n)
+  values ('00000000-0000-0000-0000-00000000000a', 'metric_too_few', 28, true, 7.5, 6.5, 8.5, 0.6, 19)
+$$, '23514', null, 'a sufficient baseline needs at least 20 samples');
+select lives_ok($$
+  insert into public.baselines (user_id, metric, window_days, sufficient, median, low, high, variability, n)
+  values ('00000000-0000-0000-0000-00000000000a', 'metric_just_enough', 28, true, 7.5, 6.5, 8.5, 0.6, 20)
+$$, 'a sufficient baseline with 20 samples and all four figures is accepted');
+
 set local role authenticated;
 set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}';
 
-select is((select count(*)::int from public.baselines), 1, 'A can read her own baseline');
+select is((select count(*)::int from public.baselines where metric = 'sleep_hours'), 1, 'A can read her own baseline');
 select is((select sufficient from public.baselines where metric = 'sleep_hours'), true, 'A sees her baseline is sufficient');
 select is((select count(*)::int from public.changes), 1, 'A can read her own change');
 select is((select direction from public.changes where metric = 'sleep_hours'), 'lower', 'A sees her change''s direction');
