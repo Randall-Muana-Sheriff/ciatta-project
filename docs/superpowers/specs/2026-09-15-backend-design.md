@@ -81,11 +81,37 @@ New data → `jobs` row per user (insert trigger, deduplicated while pending) �
 
 normalize → baselines → changes → temporal links → upsert threads by key → insight gate → recommendations → Today state.
 
-- **Insight gate**: the prompt's eleven questions, in code. "No insight" is a valid, common result, and nothing else is written.
+- **Insight gate**: there is no list of gate questions in the design system, and an
+  earlier version of this line claimed one ("the prompt's eleven questions"). That was
+  a paraphrase error: what the Decision Register locks is **eleven product states**, not
+  eleven questions, and the production gate it describes is a readiness checklist of
+  seventeen conditions (Brand, Colour, Typography, States and so on), not a test applied
+  to a finding. The correction is recorded here rather than silently replaced, because a
+  plan was nearly written against the invented version.
+
+  What actually governs, quoted from the Decision Register (`01 · AUTHORITY`), all three
+  locked:
+  - **The eleven product states**: loading, empty, disabled, success, error, partial data,
+    missing data, no applicable interpretation, no relationship found, waiting for new
+    evidence, offline. Five clauses each. **Four of them are not failures** — no applicable
+    interpretation, no relationship found, waiting for new evidence, and missing data exist
+    precisely to say what cannot be established.
+  - **Absence**: "never shown as a value. No zeroes, no flat lines through gaps, no
+    interpolation, no carried-forward value, no reference midpoint, no dash that could read
+    as a measurement. An absence ages: it is reported as older, not smaller."
+  - **Confidence**: "carried by the claim register and by naming what is missing. No scale,
+    no percentage, no score."
+
+  So the gate is not a questionnaire. A finding may be stated when the chain below can be
+  completed from stored evidence; when it cannot, the pipeline writes nothing and the screen
+  resolves to whichever of the four honest states applies. Saying nothing is the ordinary
+  outcome, not a failure path.
+- **The chain** (locked, and it is also the reading order): finding, relationship,
+  interpretation, her context, evidence, source.
 - **Cadence**: her own entries invoke the function immediately; HealthKit batches are queued; `pg_cron` runs a nightly reconciliation and a morning refresh.
 - **Language**: a single wording module produces every sentence from structured fields ("followed", "occurred alongside", "does not establish that one caused the other"). No cause, diagnosis or "you have".
 - **AI**: only in `parse-input` (Tell) and optional narrative, always over structured evidence, validated before any row is written, with the on device parser as the fallback. AI never invents severity, values, research or diagnosis.
-- **Observability**: development logs for the eleven events in the prompt, with ids and counts, never health content.
+- **Observability**: development logs for each pipeline stage, with ids and counts, never health content. An earlier version of this line said "the eleven events in the prompt", which was the same paraphrase error as the gate above: there is no list of eleven events in the design system, and the only eleven it locks are the product states. The stages to log are the ones this section already names: normalize, baselines, changes, temporal links, threads, insight, recommendations, Today state.
 
 ## 7. Frontend to backend map
 
