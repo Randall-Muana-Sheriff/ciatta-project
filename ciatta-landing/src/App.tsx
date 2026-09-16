@@ -233,15 +233,16 @@ export default function App() {
         {/* -------------------------- WHAT YOU GET -------------------------- */}
         <section className="section get" aria-labelledby="get-heading">
           <div className="shell">
-            <h2 id="get-heading" className="band-title">What you get</h2>
-            <p className="band-sub">
-              Six parts, and they only work because they are in the same place.
-            </p>
-          </div>
-          {/* The rail breaks out of the shell so the cards run to the edge of
-              the screen and the next one is always half-visible. That peek is
-              the only thing telling anyone there is more than three. */}
-          <ul className="get-rail">
+            <div className="band-head">
+              <h2 id="get-heading" className="band-title">What you get</h2>
+              <p className="band-sub">
+                Six parts, and they only work because they are in the same place.
+              </p>
+            </div>
+            {/* A grid from a tablet up, so all six are on the page at once. On
+                a phone it is a rail that runs to the screen's edge, and the
+                next card is always partly visible. */}
+            <ul className="get-rail">
             {WHAT_YOU_GET.map(([title, body, img, alt]) => (
               <li className="get-card" key={title}>
                 <img src={img} alt={alt} width={900} height={1200} loading="lazy" decoding="async" />
@@ -250,9 +251,9 @@ export default function App() {
                 <p>{body}</p>
               </li>
             ))}
-          </ul>
+            </ul>
+          </div>
         </section>
-
 
         {/* ----------------------------- EXPLORE ---------------------------- */}
         <ExploreSection />
@@ -260,11 +261,13 @@ export default function App() {
         {/* ------------------------ HOW CIATTA COMPARES --------------------- */}
         <section className="section" aria-labelledby="compare-heading">
           <div className="shell">
-            <h2 id="compare-heading" className="band-title">How Ciatta compares</h2>
-            <p className="band-sub">
-              Three places your health information already lives. Only one of them
-              reads it together.
-            </p>
+            <div className="band-head">
+              <h2 id="compare-heading" className="band-title">How Ciatta compares</h2>
+              <p className="band-sub">
+                Three places your health information already lives. Only one of them
+                reads it together.
+              </p>
+            </div>
             <div className="compare-wrap">
               <table className="compare">
                 <thead>
@@ -279,9 +282,9 @@ export default function App() {
                   {COMPARE_ROWS.map(([label, a, b, c]) => (
                     <tr key={label}>
                       <th scope="row">{label}</th>
-                      <td className="is-ours">{a}</td>
-                      <td>{b}</td>
-                      <td>{c}</td>
+                      <td className="is-ours" data-col={COMPARE_COLS[0]}>{a}</td>
+                      <td data-col={COMPARE_COLS[1]}>{b}</td>
+                      <td data-col={COMPARE_COLS[2]}>{c}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -297,13 +300,15 @@ export default function App() {
         {/* ------------------- GROUNDED IN EVIDENCE ------------------------- */}
         <section className="section who" aria-labelledby="who-heading">
           <div className="shell">
-            <h2 id="who-heading" className="band-title is-centred">
-              Grounded in evidence, built for the questioner
-            </h2>
-            <p className="band-sub is-centred">
-              The health intelligence platform for women who question, research,
-              and take their health into their own hands.
-            </p>
+            <div className="band-head">
+              <h2 id="who-heading" className="band-title">
+                Grounded in evidence, built for the questioner
+              </h2>
+              <p className="band-sub">
+                The health intelligence platform for women who question, research,
+                and take their health into their own hands.
+              </p>
+            </div>
 
             <ul className="who-grid">
               {WHO_TILES.map((tile) => (
@@ -338,9 +343,11 @@ export default function App() {
 
         {/* ---------------------------- QUESTIONS --------------------------- */}
         <section className="section" aria-labelledby="q-heading">
-          <div className="shell">
-            <h2 id="q-heading" className="band-title">Questions</h2>
-            <div className="qa">
+          <div className="shell split">
+            <div className="split-lead">
+              <h2 id="q-heading" className="band-title">Questions</h2>
+            </div>
+            <div className="qa split-body">
               {QUESTIONS.map(([q, a]) => (
                 <details className="qa-item" key={q}>
                   <summary>
@@ -356,24 +363,26 @@ export default function App() {
 
         {/* -------------------------------- CTA ---------------------------- */}
         <section className="section" aria-labelledby="cta-heading">
-          <div className="shell close-inner">
-            {/* The line people actually read is the heading now, so the
-                section keeps an accessible name without a label above it
-                restating what the sentence already says. */}
-            <h2 id="cta-heading" className="display">
-              Something feels different, and you cannot quite explain it.
-            </h2>
-            <p className="close-lines">
-              Ciatta turns that into what changed, what was happening around it, and what
-              you have noticed since.
-            </p>
-            {/* The hero reserves a place; this one is the newsletter, so it
-                says what it sends before asking for an address. */}
-            <p className="close-lines" id="subscribe">
-              Until then, read along. <b>Ciatta Briefs</b> is one short piece every Tuesday
-              and Friday: a guide, a comparison or a plain definition.
-            </p>
-            <div className="surface is-shell is-lifted">
+          <div className="shell split is-centred">
+            <div className="split-lead close-inner">
+              {/* The line people actually read is the heading now, so the
+                  section keeps an accessible name without a label above it
+                  restating what the sentence already says. */}
+              <h2 id="cta-heading" className="display">
+                Something feels different, and you cannot quite explain it.
+              </h2>
+              <p className="close-lines">
+                Ciatta turns that into what changed, what was happening around it, and what
+                you have noticed since.
+              </p>
+              {/* The hero reserves a place; this one is the newsletter, so it
+                  says what it sends before asking for an address. */}
+              <p className="close-lines" id="subscribe">
+                Until then, read along. <b>Ciatta Briefs</b> is one short piece every Tuesday
+                and Friday: a guide, a comparison or a plain definition.
+              </p>
+            </div>
+            <div className="surface is-shell is-lifted split-body">
               <SubscribeForm id="subscribe-close" source="closing" kind="newsletter" />
             </div>
           </div>

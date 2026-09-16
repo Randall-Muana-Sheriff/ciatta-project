@@ -87,13 +87,16 @@ export default function Legal({ doc, current }: { doc: LegalDoc; current: 'priva
       </header>
 
       <main id="legal-main" className="legal">
-        <div className="shell legal-shell">
-          <header className="legal-head">
+        <div className="shell">
+          <header className="legal-head band-head">
             <h1 className="band-title">{doc.title}</h1>
-            <p className="band-sub">{doc.summary}</p>
-            <p className="legal-updated">Last updated {LEGAL.updated}</p>
+            <div>
+              <p className="band-sub">{doc.summary}</p>
+              <p className="legal-updated">Last updated {LEGAL.updated}</p>
+            </div>
           </header>
 
+          <div className="legal-body">
           <section className="legal-plainly" aria-labelledby="plainly">
             <h2 id="plainly">In short</h2>
             <ul>
@@ -114,12 +117,15 @@ export default function Legal({ doc, current }: { doc: LegalDoc; current: 'priva
             </ol>
           </nav>
 
-          {doc.sections.map((s) => (
-            <section key={s.id} id={s.id} className="legal-section" aria-labelledby={`${s.id}-title`}>
-              <h2 id={`${s.id}-title`}>{s.title}</h2>
-              {s.blocks.map(renderBlock)}
-            </section>
-          ))}
+          <div className="legal-doc">
+            {doc.sections.map((s) => (
+              <section key={s.id} id={s.id} className="legal-section" aria-labelledby={`${s.id}-title`}>
+                <h2 id={`${s.id}-title`}>{s.title}</h2>
+                {s.blocks.map(renderBlock)}
+              </section>
+            ))}
+          </div>
+          </div>
         </div>
       </main>
 

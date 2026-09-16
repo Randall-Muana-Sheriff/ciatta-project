@@ -88,12 +88,14 @@ export default function Member() {
         {/* ---- what the membership is ------------------------------------ */}
         <section className="m-band">
           <div className="m-wrap">
-            <h2 className="m-h2">Where membership starts</h2>
-            <p className="m-h2-sub">
-              Core is the tier that opens. Others will follow as Ciatta does
-              more, and nothing moves you onto a different one without you
-              choosing it.
-            </p>
+            <div className="band-head">
+              <h2 className="m-h2">Where membership starts</h2>
+              <p className="m-h2-sub">
+                Core is the tier that opens. Others will follow as Ciatta does
+                more, and nothing moves you onto a different one without you
+                choosing it.
+              </p>
+            </div>
             <div className="m-plan">
               <div className="m-plan-head">
                 <span className="m-plan-name">Ciatta Core</span>
@@ -118,31 +120,35 @@ export default function Member() {
 
         {/* ---- start free, choose later. The one dark band, and the ask. -- */}
         <section className="m-free m-dark" id="join">
-          <div className="m-wrap">
-            <h2 className="m-free-title">Start free, choose later</h2>
-            <p className="m-free-sub">Nothing is decided the day you join</p>
-            <p className="m-free-body">
-              Reserving a place costs nothing and commits you to nothing. Bring
-              your results, your cycle, your sleep, your symptoms and your own
-              notes into one place when it opens, see what they say read
-              together, and decide about membership after that — with the price
-              in front of you and the choice to stop there.
-            </p>
-
-            <SubscribeForm id="waitlist-member" source="member" kind="waitlist" offerBriefs cta="Try Ciatta for free" note="" />
-
-            <p className="m-free-note">
-              No card is taken and nothing is charged. Joining reserves your
-              place and tells you when it opens.
-            </p>
+          <div className="m-wrap split is-centred">
+            <div className="split-lead">
+              <h2 className="m-free-title">Start free, choose later</h2>
+              <p className="m-free-sub">Nothing is decided the day you join</p>
+              <p className="m-free-body">
+                Reserving a place costs nothing and commits you to nothing. Bring
+                your results, your cycle, your sleep, your symptoms and your own
+                notes into one place when it opens, see what they say read
+                together, and decide about membership after that — with the price
+                in front of you and the choice to stop there.
+              </p>
+            </div>
+            <div className="split-body">
+              <SubscribeForm id="waitlist-member" source="member" kind="waitlist" offerBriefs cta="Try Ciatta for free" note="" />
+              <p className="m-free-note">
+                No card is taken and nothing is charged. Joining reserves your
+                place and tells you when it opens.
+              </p>
+            </div>
           </div>
         </section>
 
         {/* ---- questions -------------------------------------------------- */}
         <section className="m-band">
-          <div className="m-wrap">
-            <h2 className="m-h2">Membership questions</h2>
-            <div className="m-faq">
+          <div className="m-wrap split">
+            <div className="split-lead">
+              <h2 className="m-h2">Membership questions</h2>
+            </div>
+            <div className="m-faq split-body">
               {QUESTIONS.map(([q, a]) => (
                 <details className="qa-item" key={q}>
                   <summary>

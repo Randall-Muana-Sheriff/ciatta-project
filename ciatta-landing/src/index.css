@@ -112,16 +112,27 @@
   --font: 'Jost', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   /* The canvas breathes at its edges or the float reads as an accident.
      40 desktop, 20 mobile. */
-  --gutter: clamp(20px, 3vw, 48px);
-  /* 1180 fixed put 370px of empty margin either side of a 1920 screen. The
-     container is the page's outer bound now; text is held to --reading
-     separately, so a wide screen gains layout rather than margin. */
-  --measure: 1520px;
+  --gutter: clamp(20px, 3.5vw, 64px);
+  /* The container is fluid: a wide screen gains layout rather than margin.
+     Text is held to --reading separately, and every section is composed as a
+     full row (heading beside its intro, content across the whole width), so
+     nothing leaves its right half empty. 1920 is only a stop for ultrawide. */
+  --measure: 1920px;
   --reading: 62ch;
   --header-h: 4rem;
   /* One fluid step for section rhythm. 72px top and bottom put 144px between
      every section regardless of viewport. */
-  --section-y: clamp(2.25rem, 3.4vw, 3.75rem);
+  --section-y: clamp(3rem, 5vw, 6.5rem);
+  /* --- the type scale. Four steps, fluid, shared by every page ------------
+       display   the hero and the showcase title
+       title     every section heading
+       statement the light closing lines
+       lede      the sentence under a heading                                */
+  --t-display: clamp(2.125rem, 1rem + 4.2vw, 5rem);
+  --t-title: clamp(1.875rem, 1.15rem + 2.5vw, 3.5rem);
+  --t-statement: clamp(2rem, 1.2rem + 3vw, 4rem);
+  --t-lede: clamp(1.0625rem, 1rem + 0.35vw, 1.3125rem);
+  --t-body: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -173,13 +184,13 @@ body {
      avoid Ultralight, Thin and Light, especially when text is small. Light
      survives only where the type is large enough to carry it. */
   font-weight: 400;
-  font-size: 1.0625rem;
+  font-size: var(--t-body);
   line-height: 1.6;
   font-variant-numeric: tabular-nums;
 }
 
 /* --- type roles, unchanged by the specimen ------------------------------- */
-.display   { font-size: clamp(1.75rem, 0.85rem + 3.6vw, 3.75rem); font-weight: 300; letter-spacing: -0.024em; line-height: 1.05; text-wrap: balance; margin: 0; }
+.display   { font-size: var(--t-statement); font-weight: 300; letter-spacing: -0.024em; line-height: 1.05; text-wrap: balance; margin: 0; }
 p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 
 .shell { width: 100%; max-width: var(--measure); margin: 0 auto; padding-inline: var(--gutter); }
@@ -302,7 +313,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   align-items: flex-end;
   /* Sized to what it holds, not to the viewport: a 100vh opener would push
      the page itself out of the first frame. */
-  min-height: clamp(560px, 84vh, 860px);
+  min-height: clamp(600px, 88vh, 960px);
   /* The film runs to the very top of the page and the sticky header sits over
      it, which is what lets the header go transparent and take white type. The
      padding puts the copy back below where the header sits. */
@@ -343,7 +354,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   display: flex; flex-direction: column; gap: var(--s5);
   /* The headline now sets larger than the copy, so the column widens to hold
      it. The lede keeps its own 58ch measure and does not follow. */
-  max-width: 47rem; min-width: 0;
+  max-width: 60rem; min-width: 0;
   color: #F7F4EE;
 }
 /* The hero headline sits on moving film, where Light strokes lose their edges
@@ -352,10 +363,10 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
    so both halves of the sentence carry. */
 .hero-title {
   color: #F7F4EE; font-weight: 500;
-  font-size: clamp(1.625rem, 0.75rem + 3.9vw, 4rem);
+  font-size: var(--t-display);
   letter-spacing: -0.03em; line-height: 1.02;
 }
-.hero-lede { color: rgba(247,244,238,0.88); max-width: 58ch; }
+.hero-lede { color: rgba(247,244,238,0.88); max-width: 58ch; font-size: var(--t-lede); }
 
 /* On the film the ground is inverted, so the filled action inverts with it:
    Paper fill, Graphite label. Ember still never becomes a button. */
@@ -378,7 +389,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
    Waitlist. The input is one of the three places a hairline survives: a
    White field on a White surface has no tone to distinguish it.
    =========================================================================== */
-.waitlist { display: flex; flex-direction: column; gap: var(--s3); max-width: 520px; }
+.waitlist { display: flex; flex-direction: column; gap: var(--s3); max-width: 620px; }
 .waitlist-row { display: flex; flex-direction: column; gap: var(--s3); }
 /* flex-end, not stretch: the button matches the input it sits beside, rather
    than stretching to cover the label above it too. */
@@ -418,7 +429,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .waitlist-note.is-error { color: var(--flare-deep); }
 @media (prefers-color-scheme: dark) { .waitlist-note.is-error { color: var(--flare-dark); } }
 
-.joined { display: flex; gap: var(--s3); align-items: flex-start; max-width: 520px; }
+.joined { display: flex; gap: var(--s3); align-items: flex-start; max-width: 620px; }
 .joined-mark { width: 8px; height: 8px; border-radius: 50%; background: var(--change); flex: none; margin-top: 9px; }
 .joined-title { font-size: 1.0625rem; font-weight: 500; color: var(--ink); }
 .joined-sub { color: var(--meta-ink); font-size: 0.9375rem; }
@@ -434,7 +445,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
    =========================================================================== */
 
 .close-inner { display: flex; flex-direction: column; gap: var(--s5); }
-.close-lines { color: var(--body-ink); }
+.close-lines { color: var(--body-ink); font-size: var(--t-lede); line-height: 1.5; }
 .close-lines b { color: var(--ink); font-weight: 400; }
 
 .footer {
@@ -528,7 +539,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
    lockup rather than a line. */
 .showcase-title {
   font-family: var(--font);
-  font-weight: 600; font-size: clamp(2rem, 1rem + 3.4vw, 4rem);
+  font-weight: 600; font-size: var(--t-display);
   line-height: 1.04; letter-spacing: -0.03em; color: var(--ink);
   margin: 0; max-width: 20ch; text-wrap: balance;
 }
@@ -1033,12 +1044,49 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
    =========================================================================== */
 .band-title {
   font-family: var(--font); font-weight: 600;
-  font-size: clamp(1.75rem, 1.1rem + 2.1vw, 2.75rem);
-  line-height: 1.08; letter-spacing: -0.026em; color: var(--ink);
-  margin: 0; max-width: 20ch; text-wrap: balance;
+  font-size: var(--t-title);
+  line-height: 1.06; letter-spacing: -0.026em; color: var(--ink);
+  margin: 0; max-width: 16ch; text-wrap: balance;
 }
 .band-sub {
-  margin: var(--s3) 0 var(--s6); color: var(--body-ink); max-width: 56ch;
+  margin: var(--s3) 0 var(--s6); color: var(--body-ink); max-width: 58ch;
+  font-size: var(--t-lede); line-height: 1.5;
+}
+
+/* --- the section header as a row. The heading takes the left of the row and
+       the sentence under it takes the right, so the two sit side by side and
+       the row is full before the content starts beneath them. On a phone the
+       sentence simply follows the heading. --------------------------------- */
+.band-head { display: grid; gap: var(--s3); margin-bottom: var(--s6); align-items: start; }
+.band-head .band-title, .band-head .band-sub { margin: 0; }
+@media (min-width: 900px) {
+  .band-head { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s5) var(--s8); margin-bottom: var(--s7); }
+  /* the intro starts level with the heading's first line, not its cap top */
+  .band-head .band-sub { padding-top: 0.45em; justify-self: start; }
+}
+@media (min-width: 1400px) {
+  .band-head { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); }
+}
+
+/* --- the two-column section. Where the content is a list, a form or a card
+       rather than a grid, the heading and its intro keep the left of the row
+       and the content takes the right. The left column stays put while the
+       right one scrolls, so the heading is always in view beside its list. */
+.split { display: grid; gap: var(--s6); align-items: start; }
+.split-lead { display: flex; flex-direction: column; gap: var(--s4); }
+.split-lead .band-title, .split-lead .band-sub, .split-lead .display { margin: 0; }
+.split-body { min-width: 0; }
+@media (min-width: 1000px) {
+  .split { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s6) var(--s8); }
+  .split-lead { position: sticky; top: calc(var(--header-h) + var(--s6)); }
+  /* a statement beside a form: even halves, and the form fills its card */
+  .split.is-centred { align-items: center; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .split.is-centred .split-lead { position: static; }
+  .split.is-centred .split-body .waitlist,
+  .split.is-centred .split-body .joined { max-width: none; }
+}
+@media (min-width: 1400px) {
+  .split:not(.is-centred) { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); }
 }
 
 /* --- the comparison. A table, because it is one: five dimensions against
@@ -1046,14 +1094,15 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
        page sideways on a phone. ------------------------------------------ */
 .compare-wrap { overflow-x: auto; scrollbar-width: thin; }
 .compare {
-  width: 100%; min-width: 44rem; border-collapse: collapse;
-  font-size: 0.9375rem; line-height: 1.45;
+  width: 100%; min-width: 44rem; border-collapse: collapse; table-layout: fixed;
+  font-size: var(--t-body); line-height: 1.5;
 }
 .compare th, .compare td {
   text-align: left; vertical-align: top;
-  padding: var(--s4) var(--s4) var(--s4) 0;
+  padding: var(--s5) var(--s5) var(--s5) 0;
   border-top: var(--hairline) solid var(--rule);
 }
+.compare td:last-child { padding-right: 0; }
 .compare thead th {
   border-top: 0; border-bottom: var(--strong) solid var(--ink);
   padding-top: 0; font-size: 0.8125rem; font-weight: 600;
@@ -1061,13 +1110,31 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 }
 .compare thead th.is-ours { color: var(--ink); }
 .compare tbody th {
-  font-weight: 500; color: var(--ink); width: 11rem; padding-right: var(--s5);
+  font-weight: 500; color: var(--ink); width: 18%; padding-right: var(--s5);
 }
 .compare td { color: var(--body-ink); }
 /* Ciatta's column is the subject of the table, so it carries the ink. The
    others are context and stay at body weight. */
 .compare td.is-ours { color: var(--ink); }
-.compare-note { margin-top: var(--s4); color: var(--meta-ink); font-size: 0.875rem; max-width: 62ch; }
+.compare-note { margin-top: var(--s4); color: var(--meta-ink); font-size: 0.9375rem; max-width: 62ch; }
+/* On a phone the table is three columns wide and only one fits, so each row
+   becomes a block: the dimension as its heading, then the three answers each
+   named by the tool they describe. Nothing is hidden off the edge. */
+@media (max-width: 720px) {
+  .compare-wrap { overflow: visible; }
+  .compare { min-width: 0; display: block; }
+  .compare thead { display: none; }
+  .compare tbody, .compare tr { display: block; }
+  .compare tr { padding: var(--s4) 0; border-top: var(--hairline) solid var(--rule); }
+  .compare tbody th, .compare td { display: block; width: auto; border: 0; padding: 0; }
+  .compare tbody th { font-weight: 600; font-size: 1.125rem; margin-bottom: var(--s3); }
+  .compare td { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: var(--s3); padding: var(--s2) 0; }
+  .compare td::before {
+    content: attr(data-col); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--meta-ink); padding-top: 0.2em;
+  }
+  .compare td.is-ours::before { color: var(--ink); }
+}
 
 /* --- questions. Native details/summary: it opens without JavaScript, it is
        keyboard operable for free, and find-in-page reaches closed answers. */
@@ -1076,8 +1143,8 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .qa-item:last-child { border-bottom: var(--hairline) solid var(--rule); }
 .qa-item summary {
   display: flex; align-items: flex-start; gap: var(--s4);
-  padding: var(--s4) 0; cursor: pointer; list-style: none;
-  font-size: 1.0625rem; font-weight: 500; color: var(--ink); line-height: 1.4;
+  padding: var(--s5) 0; cursor: pointer; list-style: none;
+  font-size: 1.125rem; font-weight: 500; color: var(--ink); line-height: 1.4;
 }
 .qa-item summary::-webkit-details-marker { display: none; }
 .qa-item summary span { flex: 1; }
@@ -1106,8 +1173,17 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
    and grounds; what is new is the two-axis filter and the card.
    =========================================================================== */
 .briefs-head { padding-top: calc(var(--header-h) + var(--section-y)); padding-bottom: 0; }
-.briefs-head .band-sub { max-width: 62ch; margin-bottom: 0; }
-.briefs-body { padding-top: var(--s6); }
+.briefs-head .band-head { margin-bottom: 0; }
+.briefs-body { padding-top: var(--s7); }
+/* the search is the broad net and the chips narrow it, so they share a row:
+   search on the left, the two filter rows on the right */
+.briefs-tools { display: grid; gap: var(--s5); margin-bottom: var(--s5); }
+@media (min-width: 1000px) {
+  .briefs-tools { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s8); align-items: start; }
+}
+@media (min-width: 1400px) {
+  .briefs-tools { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); }
+}
 
 .filters { display: flex; flex-direction: column; gap: var(--s3); }
 .filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
@@ -1127,7 +1203,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .chip:hover { color: var(--ink); border-color: var(--meta-ink); }
 .chip.is-on { background: var(--ink); border-color: var(--ink); color: var(--on-ink); font-weight: 500; }
 .chip:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 2px; }
-.filter-count { margin: var(--s5) 0 var(--s6); color: var(--meta-ink); font-size: 0.875rem; }
+.filter-count { margin: 0 0 var(--s6); color: var(--meta-ink); font-size: 0.875rem; }
 
 .briefs-group { margin-bottom: var(--s8); }
 .briefs-group-head {
@@ -1143,6 +1219,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .briefs-grid { display: grid; gap: var(--s5) var(--s6); grid-template-columns: 1fr; }
 @media (min-width: 620px)  { .briefs-grid { grid-template-columns: 1fr 1fr; } }
 @media (min-width: 1100px) { .briefs-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1500px) { .briefs-grid { grid-template-columns: repeat(4, 1fr); gap: var(--s6) var(--s7); } }
 
 /* No card fill and no border: a hairline and the type carry it, the same way
    the sections above do. Filled cards here would make 24 boxes on one page. */
@@ -1155,10 +1232,10 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   text-transform: uppercase; color: var(--meta-ink);
 }
 .briefs-card h4 {
-  margin: 0; font-size: 1.0625rem; font-weight: 600; line-height: 1.32;
+  margin: 0; font-size: 1.125rem; font-weight: 600; line-height: 1.32;
   letter-spacing: -0.008em; color: var(--ink); text-wrap: balance;
 }
-.briefs-card p { color: var(--body-ink); font-size: 0.9375rem; line-height: 1.5; }
+.briefs-card p { color: var(--body-ink); font-size: var(--t-body); line-height: 1.5; }
 .briefs-soon {
   margin-top: auto; padding-top: var(--s2);
   font-size: 0.8125rem; color: var(--meta-ink);
@@ -1170,10 +1247,10 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
        to clear. -------------------------------------------------------- */
 .briefs-search {
   display: flex; align-items: center; gap: var(--s3);
-  margin: var(--s6) 0 var(--s5);
+  margin: 0;
   padding: 0 var(--s4);
   border: var(--hairline) solid var(--rule); border-radius: var(--r-control);
-  background: var(--surface); max-width: 34rem;
+  background: var(--surface); max-width: 36rem;
   transition: border-color var(--transition) var(--ease-body);
 }
 .briefs-search:focus-within { border-color: var(--ink); }
@@ -1201,23 +1278,31 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
    next card is always partly visible: that peek is the only affordance
    saying there is more than what fits. -------------------------------- */
 .get { overflow: hidden; }
+/* Six cards. From a tablet up they are a grid that fills the row, so all six
+   are on the page at once and none is cut off at the edge: two across, then
+   three, then all six in one band on a wide screen. On a phone a grid of six
+   tall photographs is a long scroll, so there it stays a rail that snaps. */
 .get-rail {
-  list-style: none; margin: var(--s6) 0 0;
-  display: grid; grid-auto-flow: column;
-  grid-auto-columns: min(78vw, 21rem);
-  gap: var(--s4);
-  overflow-x: auto; overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory; scrollbar-width: none;
-  /* the rail starts where the shell starts and ends past the right edge */
-  padding: 0 var(--gutter) var(--s2);
-  padding-inline-start: max(var(--gutter), (100vw - var(--measure)) / 2 + var(--gutter));
-  /* scroll-snap aligns to the scrollport's padding edge, so without this the
-     rail scrolls straight past its own inset and card one sits at x=0 rather
-     than under the heading. */
-  scroll-padding-inline-start: max(var(--gutter), (100vw - var(--measure)) / 2 + var(--gutter));
+  list-style: none; margin: 0; padding: 0;
+  display: grid; gap: var(--s4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-.get-rail::-webkit-scrollbar { display: none; }
-@media (min-width: 1100px) { .get-rail { grid-auto-columns: 23rem; } }
+@media (min-width: 1000px) { .get-rail { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s5); } }
+@media (min-width: 1500px) { .get-rail { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--s4); } }
+@media (max-width: 699px) {
+  .get-rail {
+    grid-template-columns: none; grid-auto-flow: column;
+    grid-auto-columns: min(78vw, 21rem);
+    overflow-x: auto; overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory; scrollbar-width: none;
+    /* the rail runs to both screen edges so the next card is always partly
+       visible; the padding puts card one back under the heading */
+    margin-inline: calc(var(--gutter) * -1);
+    padding: 0 var(--gutter) var(--s2);
+    scroll-padding-inline-start: var(--gutter);
+  }
+  .get-rail::-webkit-scrollbar { display: none; }
+}
 
 .get-card {
   position: relative; scroll-snap-align: start;
@@ -1241,7 +1326,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 }
 .get-card h3 {
   margin: 0; padding: var(--s5) var(--s5) 0;
-  font-size: 1.25rem; font-weight: 600; line-height: 1.22;
+  font-size: clamp(1.125rem, 1rem + 0.4vw, 1.375rem); font-weight: 600; line-height: 1.22;
   letter-spacing: -0.014em; color: #F7F4EE; text-wrap: balance;
 }
 .get-card p {
@@ -1376,30 +1461,33 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .m-band.is-alt { background: var(--surface); }
 .m-h2 {
   margin: 0 0 var(--s6); color: var(--ink); font-weight: 500;
-  font-size: clamp(1.625rem, 1rem + 2.1vw, 3rem);
-  line-height: 1.04; letter-spacing: -0.03em; text-wrap: balance;
+  font-size: var(--t-title);
+  line-height: 1.04; letter-spacing: -0.03em; text-wrap: balance; max-width: 16ch;
 }
 /* a deck under a heading, where the heading alone would leave something
    material unsaid. It takes the heading's bottom margin over from it. */
 .m-h2:has(+ .m-h2-sub) { margin-bottom: var(--s3); }
 .m-h2-sub {
   margin: 0 0 var(--s6); color: var(--body-ink);
-  max-width: 56ch; font-size: 1.0625rem; line-height: 1.6;
+  max-width: 58ch; font-size: var(--t-lede); line-height: 1.5;
 }
+.band-head .m-h2, .band-head .m-h2-sub, .split-lead .m-h2, .split-lead .m-h2-sub { margin: 0; }
 
 /* --- the membership ------------------------------------------------------ */
-/* One card, held to its own measure rather than the page's — stretched to
-   1520px its right half is empty. Left-aligned, so it starts on the same
-   gutter as every heading on the page. */
+/* One card across the whole row. The head keeps the left; the list takes the
+   rest, and on a wide screen runs in two columns so it fills what it is given. */
 .m-plan {
-  display: grid; gap: var(--s6); max-width: 66rem;
+  display: grid; gap: var(--s6);
   background: var(--surface); border-radius: var(--r-shell);
   padding: clamp(var(--s5), 3.2vw, var(--s7));
   box-shadow: var(--float-lifted);
 }
 .m-band.is-alt .m-plan { background: var(--canvas); }
 @media (min-width: 880px) {
-  .m-plan { grid-template-columns: minmax(0, 19rem) minmax(0, 1fr); gap: var(--s8); align-items: start; }
+  .m-plan { grid-template-columns: minmax(0, 22rem) minmax(0, 1fr); gap: var(--s8); align-items: start; }
+}
+@media (min-width: 1100px) {
+  .m-ticks { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s7); }
 }
 .m-plan-head { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s3); }
 .m-plan-name {
@@ -1418,7 +1506,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .m-ticks { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s4); }
 .m-ticks li {
   display: grid; grid-template-columns: 1.25rem 1fr; gap: var(--s3);
-  align-items: start; color: var(--body-ink); font-size: 1rem; line-height: 1.5;
+  align-items: start; color: var(--body-ink); font-size: var(--t-body); line-height: 1.5;
 }
 /* the tick, drawn rather than an icon font: two strokes rotated into a check */
 .m-ticks i {
@@ -1433,9 +1521,10 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 
 /* --- start free, choose later. The page's one dark ground. --------------- */
 .m-free { background: var(--ink); color: #F7F4EE; padding-block: clamp(3.5rem, 6vw, 6.5rem); }
+.m-free .split-lead { gap: 0; }
 .m-free-title {
   margin: 0; color: #F7F4EE; font-weight: 500;
-  font-size: clamp(2rem, 1.1rem + 3.1vw, 4rem);
+  font-size: var(--t-statement);
   line-height: 1.02; letter-spacing: -0.03em; text-wrap: balance;
 }
 .m-free-sub {
@@ -1443,9 +1532,10 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   font-size: clamp(1.0625rem, 0.98rem + 0.4vw, 1.375rem);
 }
 .m-free-body {
-  margin: var(--s5) 0 var(--s6); color: rgba(247,244,238,0.88);
-  max-width: 56ch; font-size: 1.0625rem; line-height: 1.6;
+  margin: var(--s5) 0 0; color: rgba(247,244,238,0.88);
+  max-width: 56ch; font-size: var(--t-lede); line-height: 1.5;
 }
+@media (max-width: 999px) { .m-free-body { margin-bottom: var(--s6); } }
 .m-free-note { margin: var(--s4) 0 0; color: rgba(247,244,238,0.72); font-size: 0.875rem; max-width: 48ch; }
 
 /* The shared form is built for Paper. On this band the ground inverts and the
@@ -1467,9 +1557,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .m-dark .joined-sub { color: rgba(247,244,238,0.72); }
 
 /* --- questions ----------------------------------------------------------- */
-.m-faq { max-width: 60rem; }
-.m-band .qa-item summary { font-size: 1.0625rem; padding: var(--s4) 0; }
-.m-band .qa-item p { margin-bottom: var(--s5); padding-right: var(--s5); font-size: 0.9375rem; }
+.m-band .qa-item p { margin-bottom: var(--s5); padding-right: var(--s5); }
 
 /* --- footer -------------------------------------------------------------- */
 .m-foot { background: var(--canvas); padding-block: var(--s6) var(--s7); border-top: var(--hairline) solid var(--rule); }
@@ -1567,6 +1655,11 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
     grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
     gap: var(--s7); align-items: center;
   }
+}
+@media (min-width: 1400px) {
+  .ex-panel { grid-template-columns: minmax(0, 1fr) minmax(0, 28rem); min-height: 30rem; }
+  .ex-copy, .ex-chat { max-width: 40rem; }
+  .ex-lede { max-width: 52ch; font-size: var(--t-lede); }
 }
 .ex-panel:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 3px; }
 .ex-panel-img {
@@ -1717,7 +1810,9 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   display: grid; gap: var(--gap-surface);
   grid-template-columns: 1fr;
 }
-@media (min-width: 640px) { .who-grid { grid-template-columns: repeat(2, 1fr); } }
+/* Two columns cannot hold the 1+1+2 rhythm without holes, so the grid packs
+   densely there: a later single tile fills the gap a wide one leaves. */
+@media (min-width: 640px) { .who-grid { grid-template-columns: repeat(2, 1fr); grid-auto-flow: dense; } }
 @media (min-width: 1040px) { .who-grid { grid-template-columns: repeat(4, 1fr); } }
 /* a wide tile is only wide where there is more than one column to be wide in */
 @media (min-width: 640px) { .who-tile.is-wide { grid-column: span 2; } }
@@ -1776,8 +1871,11 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
    evidence, so it says where the evidence came from. */
 .who-note {
   margin: var(--s5) 0 0; color: var(--meta-ink);
-  font-size: 0.8125rem; line-height: 1.6; max-width: 68ch;
-  margin-inline: auto; text-align: center;
+  font-size: 0.875rem; line-height: 1.6; max-width: 68ch;
+}
+@media (max-width: 639px) {
+  .who-tile { min-height: 12rem; }
+  .who-tile.is-quote { min-height: 0; padding: var(--s5); }
 }
 .who-note em { font-style: italic; }
 
@@ -1805,8 +1903,8 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 
 /* --- /newsletter/confirm and /newsletter/unsubscribe --------------------- */
 .nl-main { min-height: 100vh; display: flex; align-items: center; padding-block: calc(var(--header-h) + var(--s6)) var(--s6); }
-.nl-card { max-width: 560px; display: flex; flex-direction: column; gap: var(--s4); }
-.nl-card h1 { font-size: clamp(1.75rem, 1.2rem + 2vw, 2.5rem); font-weight: 300; letter-spacing: -0.02em; line-height: 1.1; margin: 0; }
+.nl-card { max-width: 640px; display: flex; flex-direction: column; gap: var(--s4); }
+.nl-card h1 { font-size: var(--t-statement); font-weight: 300; letter-spacing: -0.02em; line-height: 1.1; margin: 0; }
 .nl-card p { color: var(--body-ink); margin: 0; }
 .nl-actions { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; }
 .nl-actions a.btn-primary { display: inline-flex; align-items: center; text-decoration: none; }
@@ -1816,20 +1914,26 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
    A document, so it reads like one: a single column at a comfortable measure,
    generous rhythm between sections, and nothing decorative. */
 .legal { padding-top: calc(var(--header-h) + var(--section-y)); padding-bottom: var(--section-y); }
-.legal-shell { max-width: 760px; }
 .legal-head { margin-bottom: var(--s7); }
-.legal-head .band-sub { margin-bottom: var(--s3); }
 .legal-updated { color: var(--meta-ink); font-size: 0.9375rem; margin: 0; }
+.legal-body { display: grid; gap: var(--s6); align-items: start; }
+.legal-doc { min-width: 0; max-width: 72ch; }
+@media (min-width: 1000px) {
+  .legal-body { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--s6) var(--s8); }
+  .legal-toc { grid-column: 1; grid-row: 1 / span 2; position: sticky; top: calc(var(--header-h) + var(--s6)); margin: 0; padding: 0; border: 0; }
+  .legal-plainly, .legal-doc { grid-column: 2; }
+  .legal-body .legal-toc ol { columns: 1; }
+}
 .legal h2 { font-size: 1.375rem; font-weight: 500; letter-spacing: -0.01em; line-height: 1.25; color: var(--ink); margin: 0 0 var(--s4); scroll-margin-top: calc(var(--header-h) + var(--s5)); }
-.legal p, .legal li { color: var(--body-ink); font-size: 1.0625rem; line-height: 1.7; }
+.legal p, .legal li { color: var(--body-ink); font-size: var(--t-body); line-height: 1.7; }
 .legal p { margin: 0 0 var(--s4); max-width: 68ch; }
 .legal ul, .legal ol { margin: 0 0 var(--s4); padding-left: 1.25rem; max-width: 68ch; }
 .legal li { margin-bottom: var(--s2); }
 .legal a { color: var(--ink); text-underline-offset: 0.2em; }
-.legal-plainly { background: var(--surface); border-radius: var(--r-shell, 20px); padding: var(--s6); margin-bottom: var(--s7); box-shadow: var(--float-lifted); }
+.legal-plainly { background: var(--surface); border-radius: var(--r-shell, 20px); padding: var(--s6); margin-bottom: var(--s6); box-shadow: var(--float-lifted); }
 .legal-plainly ul { margin-bottom: 0; }
 .legal-plainly li:last-child { margin-bottom: 0; }
-.legal-toc { margin-bottom: var(--s7); padding-bottom: var(--s6); border-bottom: var(--hairline) solid var(--rule); }
+.legal-toc { margin-bottom: var(--s6); padding-bottom: var(--s6); border-bottom: var(--hairline) solid var(--rule); }
 .legal-toc h2 { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--meta-ink); }
 .legal-toc ol { columns: 2; column-gap: var(--s6); }
 @media (max-width: 560px) { .legal-toc ol { columns: 1; } .legal-plainly { padding: var(--s5); } }

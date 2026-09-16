@@ -280,13 +280,15 @@ export function ExploreSection() {
   return (
     <section className="section explore" aria-labelledby="explore-heading">
       <div className="shell">
-        <h2 id="explore-heading" className="band-title is-centred">
+        <div className="band-head">
+        <h2 id="explore-heading" className="band-title">
           See it, connect it, and understand why.
         </h2>
-        <p className="band-sub is-centred">
+        <p className="band-sub">
           A tracking app watches one thing and stops there. Ciatta holds six
           parts of your record and shows you what they say together.
         </p>
+        </div>
 
         <div className="ex-tabs" role="tablist" aria-label="Parts of your record" onKeyDown={onKeyDown}>
           {TOPICS.map((x, i) => (

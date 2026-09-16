@@ -125,12 +125,14 @@ export default function Briefs() {
       <main id="briefs-main">
         <section className="section briefs-head">
           <div className="shell">
-            <h1 className="band-title">Briefs</h1>
-            <p className="band-sub">
-              What we have had to look up, written down properly. Guides for the
-              long questions, comparisons for the two things that get confused,
-              and definitions for the word someone used without explaining it.
-            </p>
+            <div className="band-head">
+              <h1 className="band-title">Briefs</h1>
+              <p className="band-sub">
+                What we have had to look up, written down properly. Guides for the
+                long questions, comparisons for the two things that get confused,
+                and definitions for the word someone used without explaining it.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -138,8 +140,9 @@ export default function Briefs() {
           <div className="shell">
             <h2 id="briefs-list" className="sr-only">All writing</h2>
 
-            {/* Search sits above the chips because it is the broader net: the
-                chips narrow what search already found, not the other way round. */}
+            {/* Search and the chips share a row: search is the broader net, and
+                the chips narrow what search already found. */}
+            <div className="briefs-tools">
             <form className="briefs-search" role="search" onSubmit={(e) => e.preventDefault()}>
               <label htmlFor="briefs-q" className="sr-only">Search the briefs</label>
               <svg viewBox="0 0 16 16" aria-hidden="true" className="briefs-search-i"
@@ -185,6 +188,7 @@ export default function Briefs() {
                 ))}
               </div>
             </div>
+            </div>
 
             <p className="filter-count" aria-live="polite">
               {shown.length} {shown.length === 1 ? 'piece' : 'pieces'}
@@ -226,12 +230,14 @@ export default function Briefs() {
         {/* The same writing, delivered. Last on the page because the index is
             what she came for; the ask comes after she has seen what it is. */}
         <section className="section" aria-labelledby="briefs-subscribe">
-          <div className="shell close-inner">
-            <h2 id="briefs-subscribe" className="display">Get Ciatta Briefs by email.</h2>
-            <p className="close-lines">
-              One short piece every Tuesday and Friday: a guide, a comparison or a plain definition.
-            </p>
-            <div className="surface is-shell is-lifted">
+          <div className="shell split is-centred">
+            <div className="split-lead close-inner">
+              <h2 id="briefs-subscribe" className="display">Get Ciatta Briefs by email.</h2>
+              <p className="close-lines">
+                One short piece every Tuesday and Friday: a guide, a comparison or a plain definition.
+              </p>
+            </div>
+            <div className="surface is-shell is-lifted split-body">
               <SubscribeForm id="subscribe-briefs" source="briefs" kind="newsletter" />
             </div>
           </div>
