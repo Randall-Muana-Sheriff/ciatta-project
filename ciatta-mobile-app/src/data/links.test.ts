@@ -141,6 +141,44 @@ test('two observations at the same instant tie on the smaller id, in either inpu
   assert.equal(forwards[0].relation, 'same_day');
 });
 
+// The cap makes the output sort load bearing, so the sort has to be total.
+// Two links that tie on both relation and gap must be separated by the ids
+// rather than by the sort's implementation, or a later run over the same
+// window keeps a different pair at the cutoff and strands a row.
+//
+// This case is built so that stability alone cannot produce the right
+// answer: the tying pair that the double loop reaches FIRST is the one with
+// the larger a id, so a comparator that returns 0 for the tie leaves it in
+// front and the wrong pair survives the cap. Only the id clauses reorder it.
+test('the cap is decided by a total order, not by where a tie happened to sit', () => {
+  const p = at('99999999-9999-9999-9999-999999999999', 'sleep_hours', '2026-09-10T00:00:00.000Z');
+  const q = at('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'steps', '2026-09-10T00:00:00.000Z');
+  const r = at('11111111-1111-1111-1111-111111111111', 'hrv', '2026-09-10T01:00:00.000Z');
+  const s = at('22222222-2222-2222-2222-222222222222', 'active_minutes', '2026-09-10T01:00:00.000Z');
+  const input = [p, q, r, s];
+
+  // Six pairs in all, well over the cap. Two of them tie exactly: (p, q)
+  // and (r, s) are both same_day with a zero hour gap.
+  assert.equal(buildLinks(input).length, 6);
+
+  const one = buildLinks(input, 1);
+  assert.equal(one.length, 1);
+  assert.equal(one[0].gap_hours, 0);
+  assert.equal(one[0].a_observation_id, r.id);
+  assert.equal(one[0].b_observation_id, s.id);
+
+  // And the tie is ordered, not merely resolved: both zero gap links come
+  // out ahead of every one hour link, smaller a id first.
+  const two = buildLinks(input, 2);
+  assert.deepEqual(
+    two.map((link) => [link.a_observation_id, link.b_observation_id]),
+    [
+      [r.id, s.id],
+      [p.id, q.id],
+    ]
+  );
+});
+
 // Every relation the generator can emit has to satisfy
 // temporal_links_gap_matches_relation, or the upsert fails at the end of a
 // run that otherwise did all its work.

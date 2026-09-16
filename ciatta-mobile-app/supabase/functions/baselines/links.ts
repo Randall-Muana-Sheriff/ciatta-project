@@ -77,6 +77,20 @@ export function buildLinks(observations: LinkInput[], maxPairs = 2000): BuiltLin
     }
   }
 
-  out.sort((x, y) => RANK[x.relation] - RANK[y.relation] || x.gap_hours - y.gap_hours);
+  // The ids are part of this comparator on purpose, overruling the brief
+  // that specified rank and gap alone. The cap below makes this sort load
+  // bearing: which links survive slice(0, maxPairs) must not depend on the
+  // sort's implementation. Rank and gap alone leave two links that tie on
+  // both in whatever order the sort happens to produce, so a later run over
+  // the same window can keep a different pair at the cutoff and strand a row
+  // that nothing removes. With the ids the order is total, and the same
+  // window yields the same rows every time.
+  out.sort(
+    (x, y) =>
+      RANK[x.relation] - RANK[y.relation] ||
+      x.gap_hours - y.gap_hours ||
+      (x.a_observation_id < y.a_observation_id ? -1 : x.a_observation_id > y.a_observation_id ? 1 : 0) ||
+      (x.b_observation_id < y.b_observation_id ? -1 : x.b_observation_id > y.b_observation_id ? 1 : 0)
+  );
   return out.slice(0, maxPairs);
 }

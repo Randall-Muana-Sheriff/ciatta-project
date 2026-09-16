@@ -191,17 +191,50 @@ async function runJob(admin: any, job: JobRow): Promise<{ metrics: string[] }> {
   // is (user_id, a_observation_id, b_observation_id, relation), so a second
   // run over the same window reproduces the same rows rather than
   // duplicating them.
-  const { data: linkRows, error: linkError } = await admin
-    .from('observations')
-    .select('id, metric, occurred_at')
-    .eq('user_id', job.user_id)
-    .gte('occurred_at', start.toISOString())
-    .lte('occurred_at', today.toISOString())
-    .order('occurred_at');
-  if (linkError) throw linkError;
+  //
+  // The read is paged explicitly. PostgREST caps one response at max_rows
+  // (1000, in supabase/config.toml), so a plain select returns only the
+  // first page once she has logged more than that in the window, with no
+  // error: the run would then compute links over part of her record and
+  // report success. A woman with more data would silently get fewer links
+  // than a woman with less, which is incomplete evidence presented as
+  // complete rather than wrong data. Completeness should not rest on a
+  // server default nobody chose.
+  //
+  // The page size is exactly max_rows. Asking for more would be truncated
+  // to max_rows by the server, and a full page would then look short
+  // against what was asked for, ending the loop early and reintroducing
+  // the very truncation it exists to remove.
+  //
+  // Ordered by occurred_at and then id, because occurred_at alone is not
+  // unique (a device posts a night's readings with one timestamp) and an
+  // order that can shift between requests may skip or repeat a row at a
+  // page boundary. id is the primary key, so the two together are total
+  // and every page picks up exactly where the last one stopped.
+  const LINK_PAGE_SIZE = 1000;
+  type ObservationRow = { id: string; metric: string; occurred_at: string };
+  const linkRows: ObservationRow[] = [];
+  for (let from = 0; ; from += LINK_PAGE_SIZE) {
+    const { data: page, error: linkError } = await admin
+      .from('observations')
+      .select('id, metric, occurred_at')
+      .eq('user_id', job.user_id)
+      .gte('occurred_at', start.toISOString())
+      .lte('occurred_at', today.toISOString())
+      .order('occurred_at')
+      .order('id')
+      .range(from, from + LINK_PAGE_SIZE - 1);
+    // A page that fails ends the run, the same as every other read here.
+    // Carrying on with what already arrived would produce exactly the
+    // partial set this loop exists to prevent.
+    if (linkError) throw linkError;
+    const rows = (page ?? []) as ObservationRow[];
+    linkRows.push(...rows);
+    if (rows.length < LINK_PAGE_SIZE) break;
+  }
 
   const links = buildLinks(
-    (linkRows ?? []).map((row: { id: string; metric: string; occurred_at: string }): LinkInput => ({
+    linkRows.map((row): LinkInput => ({
       id: row.id,
       metric: row.metric,
       occurredAt: row.occurred_at,
