@@ -158,6 +158,37 @@ test('quality is partial when some days in the run are missing, low when fewer t
   assert.equal(lowQualityResult!.change!.quality, 'low');
 });
 
+// Review fix: buildDenseWindow's window ends at calendar today, which has
+// no daily_metrics row yet while the day is still in progress. detectRun
+// correctly skips that trailing null when walking backward (the run
+// starts at the last day that has a value), but runQuality used to
+// measure the span all the way to values.length - 1 regardless, so a run
+// with complete evidence read as partial until the day ended. None of the
+// quality tests above could have caught this: every one of them carries a
+// value on the final (today) entry.
+test('a trailing null (today has not been measured yet) does not by itself make quality worse than ok', () => {
+  // Same 5 day run as the "6 day dip" test, but today (position 0) has no
+  // reading yet: the run genuinely starts yesterday.
+  const values = fixedWindow(10, 10, { 0: null, 1: 5, 2: 5, 3: 5, 4: 5, 5: 5 });
+  const result = computeMetric(fixedDates(), values);
+  assert.ok(result?.change, 'still a change: streak counts only non-null days');
+  assert.equal(result!.change!.quality, 'ok', 'no internal gap, so a trailing not-yet-measured day must not read as partial');
+});
+
+test('a genuine internal gap still reads as partial even with a trailing null on top', () => {
+  const values = fixedWindow(10, 10, { 0: null, 1: 5, 2: 5, 3: 5, 4: null, 5: 5, 6: 5 });
+  const result = computeMetric(fixedDates(), values);
+  assert.ok(result?.change);
+  assert.equal(result!.change!.quality, 'partial', 'the internal gap still counts; only the trailing null is excused');
+});
+
+test('more than one trailing null does not change the verdict either', () => {
+  const values = fixedWindow(10, 10, { 0: null, 1: null, 2: 5, 3: 5, 4: 5, 5: 5, 6: 5 });
+  const result = computeMetric(fixedDates(), values);
+  assert.ok(result?.change);
+  assert.equal(result!.change!.quality, 'ok', 'two not-yet-measured trailing days are excused the same as one');
+});
+
 test('a metric with no values at all yields no result, not an insufficient row full of nulls', () => {
   const values = new Array(WINDOW_SIZE).fill(null);
   const result = computeMetric(fixedDates(), values);

@@ -100,7 +100,7 @@ export function recentWindow<T>(values: T[]): T[] {
   return values.slice(Math.max(0, values.length - 35));
 }
 
-export type Run = { streak: number; direction: 'lower' | 'higher'; recent: number; firstIndex: number };
+export type Run = { streak: number; direction: 'lower' | 'higher'; recent: number; firstIndex: number; endIndex: number };
 
 // The most recent run of days sitting outside the band on the same side,
 // allowing a single day back inside without breaking it. This reproduces
@@ -109,15 +109,29 @@ export type Run = { streak: number; direction: 'lower' | 'higher'; recent: numbe
 // null day is skipped in place (it neither extends nor breaks a run,
 // matching `if (v == null) continue;`), one day back inside the band is
 // tolerated (`pending`), and a second one in a row ends the run.
+//
+// `endIndex` is the last (most recent) index in the whole array that
+// carries a value, which is always the very first non-null value this
+// loop finds scanning backward from today -- everything after it was
+// skipped as null on the way in. It's tracked separately from `firstIndex`
+// because a review of a live run caught runQuality() (below) measuring the
+// run's span all the way to `values.length - 1` (calendar today), even
+// when today has no daily_metrics row yet because the day isn't over: that
+// trailing, not-yet-measured null was being counted as missing evidence,
+// understating quality for every complete run until the day ended.
+// `endIndex` lets the caller measure the span against the last day that
+// actually has a value instead.
 export function detectRun(values: (number | null)[], b: Band): Run | null {
   const side = (v: number): 'lower' | 'higher' | null => (v < b.low ? 'lower' : v > b.high ? 'higher' : null);
   let direction: 'lower' | 'higher' | null = null;
   let streak = 0;
   let pending = 0;
   let firstIndex = -1;
+  let endIndex = -1;
   for (let i = values.length - 1; i >= 0; i--) {
     const v = values[i];
     if (v == null) continue;
+    if (endIndex === -1) endIndex = i;
     const s = side(v);
     if (!direction) {
       if (!s) break;
@@ -140,7 +154,7 @@ export function detectRun(values: (number | null)[], b: Band): Run | null {
   const span = values.slice(firstIndex);
   const nonNullSpan = span.filter((v): v is number => v != null);
   const recent = nonNullSpan.reduce((a, x) => a + x, 0) / nonNullSpan.length;
-  return { streak, direction, recent, firstIndex };
+  return { streak, direction, recent, firstIndex, endIndex };
 }
 
 export type MetricBaseline = {
@@ -166,11 +180,17 @@ export type MetricChange = {
 export type MetricResult = { baseline: MetricBaseline; change: MetricChange | null };
 
 // Every day in the run this change covers, from the earliest day that
-// contributed to the streak through today. Quality describes how complete
-// the evidence for that span is, never how strong the change is: ok when
+// contributed to the streak through the last day that actually carries a
+// value (not necessarily calendar today: today may have no reading yet
+// because the day isn't over). Quality describes how complete the
+// evidence for that span is, never how strong the change is: ok when
 // every day has a value, low when fewer than half do, partial otherwise.
-function runQuality(values: (number | null)[], firstIndex: number): Quality {
-  const span = values.slice(firstIndex);
+// Deliberately ends the span at `endIndex` rather than trimming trailing
+// nulls off `values` first: `detectRun` already finds that index for free
+// while walking backward, so this stays a plain slice instead of a second
+// scan.
+function runQuality(values: (number | null)[], firstIndex: number, endIndex: number): Quality {
+  const span = values.slice(firstIndex, endIndex + 1);
   const total = span.length;
   const missing = span.filter((v) => v == null).length;
   const present = total - missing;
@@ -211,7 +231,7 @@ export function computeMetric(dates: string[], values: (number | null)[]): Metri
       direction: run.direction,
       deviation: run.recent - b.median,
       detectedOn: dates[dates.length - 1],
-      quality: runQuality(values, run.firstIndex),
+      quality: runQuality(values, run.firstIndex, run.endIndex),
     },
   };
 }
