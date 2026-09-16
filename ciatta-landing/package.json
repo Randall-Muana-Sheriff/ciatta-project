@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && tsc -p functions/tsconfig.json && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p functions/tsconfig.json",
+    "newsletter": "node scripts/newsletter.mjs",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name ciatta --branch main",
+    "test": "tsx server/newsletter.test.mts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.2",
@@ -15,9 +18,12 @@
     "react-dom": "^19.2.3"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260702.1",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.0.4",
+    "marked": "^16.4.2",
+    "tsx": "^4.23.13",
     "typescript": "~5.9.2",
     "vite": "^7.1.5"
   }

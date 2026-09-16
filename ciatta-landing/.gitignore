@@ -11,3 +11,8 @@ dist/
 # deployed site would serve them. Buy a webfont licence and swap these for
 # .woff2 before shipping the current typography.
 public/fonts/*.otf
+
+# Local secrets for `wrangler pages dev`, and rendered newsletter previews.
+.dev.vars*
+.newsletter-preview/
+.wrangler/

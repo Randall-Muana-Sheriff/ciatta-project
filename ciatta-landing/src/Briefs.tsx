@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SubscribeForm } from './components/SubscribeForm';
 import { Wordmark } from './components/Wordmark';
 
 /**
@@ -221,6 +222,20 @@ export default function Briefs() {
             )}
           </div>
         </section>
+
+        {/* The same writing, delivered. Last on the page because the index is
+            what she came for; the ask comes after she has seen what it is. */}
+        <section className="section" aria-labelledby="briefs-subscribe">
+          <div className="shell close-inner">
+            <h2 id="briefs-subscribe" className="display">Get Ciatta Briefs by email.</h2>
+            <p className="close-lines">
+              One short piece every Tuesday and Friday: a guide, a comparison or a plain definition.
+            </p>
+            <div className="surface is-shell is-lifted">
+              <SubscribeForm id="subscribe-briefs" source="briefs" />
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer className="footer shell">
@@ -228,9 +243,8 @@ export default function Briefs() {
         <Wordmark size="sm" />
         <nav className="footer-nav" aria-label="Legal">
           <a href="/">Home</a>
-          <a href="/privacy">Privacy</a>
-          <a href="/terms">Terms</a>
-          <a href="mailto:hello@ciatta.app">Contact</a>
+          <a href="/privacy/">Privacy</a>
+          <a href="/terms/">Terms</a>
         </nav>
         <p className="footer-copy">&copy; {new Date().getFullYear()} Ciatta</p>
       </footer>

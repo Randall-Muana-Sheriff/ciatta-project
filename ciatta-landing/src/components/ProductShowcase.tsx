@@ -726,12 +726,6 @@ export function ProductShowcase() {
           })}
         </div>
       </div>
-
-      <div className="shell">
-        <p className="showcase-foot">
-          The insight is what the other six say when they are read together.
-        </p>
-      </div>
     </section>
   );
 }
