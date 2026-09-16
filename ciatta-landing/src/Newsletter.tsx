@@ -93,7 +93,7 @@ export default function Newsletter({ mode }: { mode: Mode }) {
               )}
               {view.kind === 'done' && (
                 <>
-                  <a className="btn-primary" href={failed ? '/#join' : '/briefs/'}>
+                  <a className="btn-primary" href={failed ? '/' : '/briefs/'}>
                     {failed ? 'Sign up again' : 'Read Briefs'}
                   </a>
                   <a className="nl-link" href="/">Home</a>

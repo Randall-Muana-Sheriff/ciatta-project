@@ -4,7 +4,7 @@ import type { LegalDoc } from './types';
 // Written from what the site does today, which was checked in the code:
 //   · forms: email, which form, chosen topics, consent wording and time
 //     (functions/api/newsletter, server/newsletter.ts)
-//   · waitlist reservations from the member page, stored in Supabase
+//   · waitlist reservations from the home hero and member page, stored in Supabase
 //     (src/lib/waitlist.ts)
 //   · email sent through Resend, with open and click tracking switched off
 //     on the ciatta.io sending domain
@@ -57,7 +57,7 @@ export const privacy: LegalDoc = {
               ],
               [
                 'Your waitlist reservation (email address and the page you joined from)',
-                'You join from the member page',
+                'You join the waitlist on the home page or the member page',
                 'To tell you when Ciatta opens',
                 'Your consent',
               ],
@@ -87,8 +87,9 @@ export const privacy: LegalDoc = {
         },
         {
           list: [
-            'Ciatta Briefs arrives twice a week, on Tuesday and Friday.',
-            'Launch news is occasional: when Ciatta opens and when membership changes.',
+            'The waitlist form at the top of the home page, and the member page, send launch news only: when Ciatta opens and when membership changes. That is occasional.',
+            'The newsletter form at the foot of the home page, and on the Briefs page, sends Ciatta Briefs, twice a week on Tuesday and Friday.',
+            'Signing up for one is not signing up for the other. The member page offers Briefs as a separate box you can tick.',
             'Every email has an unsubscribe link, and supports one-click unsubscribe in mail apps that offer it. The preference page lets you stop one kind and keep the other.',
             'We have switched off open and click tracking, so we do not know whether you read an email or which links you follow.',
           ],
@@ -145,7 +146,7 @@ export const privacy: LegalDoc = {
       blocks: [
         {
           list: [
-            'Unconfirmed signups: we store nothing. The confirmation link stops working after 7 days.',
+            'Unconfirmed newsletter signups: nothing is added to our mailing list, and the confirmation link stops working after 7 days. A waitlist reservation is recorded when you submit the form, and we email you only once you confirm.',
             'Subscribers: for as long as you stay subscribed.',
             'After you unsubscribe: we keep your address marked as unsubscribed, so that we never email you again by mistake. Ask us to delete it entirely and we will.',
             'Waitlist reservations: until Ciatta opens and we have told you, then for no more than 12 months unless you become a member.',

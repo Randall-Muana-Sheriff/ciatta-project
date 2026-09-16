@@ -15,9 +15,10 @@ function describe(topics: TopicKey[]): string {
 
 /** Sent the moment someone submits the form. Nothing is subscribed until they click. */
 export function confirmationEmail(confirmUrl: string, topics: TopicKey[], postalAddress?: string): Built {
-  const subject = 'Confirm your subscription to Ciatta';
+  const briefs = topics.includes('briefs');
+  const subject = briefs ? 'Confirm your subscription to Ciatta Briefs' : 'Confirm your place on the Ciatta waitlist';
   const bodyHtml = [
-    heading('One click to confirm'),
+    heading(briefs ? 'One click to confirm' : 'Confirm your place'),
     paragraph(`Someone, hopefully you, entered this address on ciatta.io to receive ${escapeHtml(describe(topics))}.`),
     paragraph('Confirm and you are on the list. If you did not ask, ignore this and nothing more will arrive.'),
     button(confirmUrl, 'Confirm subscription'),
@@ -29,7 +30,9 @@ export function confirmationEmail(confirmUrl: string, topics: TopicKey[], postal
   const footerHtml = footer('You received this because this address was entered on ciatta.io.', postalAddress);
   const html = renderEmail({
     title: subject,
-    preheader: 'Confirm to start receiving Ciatta Briefs. The link works for 7 days.',
+    preheader: briefs
+      ? 'Confirm to start receiving Ciatta Briefs. The link works for 7 days.'
+      : 'Confirm to hear from us when Ciatta opens. The link works for 7 days.',
     bodyHtml,
     footerHtml,
     siteUrl: newsletter.siteUrl,
@@ -40,7 +43,7 @@ export function confirmationEmail(confirmUrl: string, topics: TopicKey[], postal
 /** Sent once, when a subscription is confirmed for the first time. */
 export function welcomeEmail(unsubscribeUrl: string, topics: TopicKey[], postalAddress?: string): Built {
   const briefs = topics.includes('briefs');
-  const subject = briefs ? 'You are subscribed to Ciatta Briefs' : 'You are on the Ciatta list';
+  const subject = briefs ? 'You are subscribed to Ciatta Briefs' : 'You are on the Ciatta waitlist';
   const bodyHtml = [
     heading(briefs ? 'You are subscribed' : 'You are on the list'),
     briefs
@@ -63,7 +66,7 @@ export function welcomeEmail(unsubscribeUrl: string, topics: TopicKey[], postalA
   );
   const html = renderEmail({
     title: subject,
-    preheader: briefs ? 'The first issue arrives on Tuesday or Friday, whichever comes first.' : 'We will write when Ciatta opens.',
+    preheader: briefs ? 'The first issue arrives on Tuesday or Friday, whichever comes first.' : 'You are on the waitlist. We will write when Ciatta opens.',
     bodyHtml,
     footerHtml,
     siteUrl: newsletter.siteUrl,

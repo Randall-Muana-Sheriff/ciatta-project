@@ -90,6 +90,6 @@ ok('tokens: sign, verify, wrong secret, wrong purpose, tampered, expired');
   await s.subscribe({ email: 'w@x.io', source: 'member', topics: ['launch'], elapsedMs: 4000 }, null);
   const tok = decodeURIComponent(f.sent[0].html.match(/token=([^"&]+)/)[1]); await s.confirm(tok);
   const c = f.contacts.get('w@x.io')!; assert.equal(c.topics.get(newsletter.topics.launch), 'opt_in'); assert.equal(c.topics.has(newsletter.topics.briefs), false);
-  assert.match(f.sent[1].subject, /on the Ciatta list/);
+  assert.match(f.sent[1].subject, /on the Ciatta waitlist/);
   ok('member-page waitlist signup opts in to launch news only, never Briefs'); }
 console.log('all passed');

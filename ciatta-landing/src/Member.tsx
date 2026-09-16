@@ -129,7 +129,7 @@ export default function Member() {
               in front of you and the choice to stop there.
             </p>
 
-            <SubscribeForm id="waitlist-member" source="member" kind="waitlist" cta="Try Ciatta for free" note="" />
+            <SubscribeForm id="waitlist-member" source="member" kind="waitlist" offerBriefs cta="Try Ciatta for free" note="" />
 
             <p className="m-free-note">
               No card is taken and nothing is charged. Joining reserves your

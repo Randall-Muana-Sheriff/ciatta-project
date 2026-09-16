@@ -7,12 +7,16 @@ import { joinWaitlist } from '../lib/waitlist';
  *
  * Two kinds, because they ask for different consent:
  *
- *   newsletter  Ciatta Briefs twice a week, plus a note when Ciatta opens.
- *               The note under the field says exactly that, because what she
- *               reads there is what she is agreeing to.
- *   waitlist    Reserve a place: news when Ciatta opens. The newsletter is a
- *               separate, unticked choice. Consent to one is not consent to
- *               the other.
+ *   waitlist    Reserve a place: product and launch news only (the Launch
+ *               news topic). Used in the home hero and on the member page.
+ *               The member page may also offer Briefs as a separate, unticked
+ *               choice (`offerBriefs`); consent to one is not consent to the
+ *               other.
+ *   newsletter  Ciatta Briefs only, every Tuesday and Friday. Used at the
+ *               foot of the home page and on the Briefs page.
+ *
+ * The note under the field says exactly what each one sends, because what she
+ * reads there is what she is agreeing to.
  *
  * Either way the address is not added until she clicks the link we email
  * (double opt-in). So the success state asks her to check her inbox; it never
@@ -28,12 +32,15 @@ export function SubscribeForm({
   id,
   source,
   kind = 'newsletter',
+  offerBriefs = false,
   cta,
   note,
 }: {
   id: string;
   source: Source;
   kind?: 'newsletter' | 'waitlist';
+  /** Waitlist only: show the unticked "also send me Briefs" box. */
+  offerBriefs?: boolean;
   /** The button's label. */
   cta?: string;
   /** The line under the field. Defaults to what she is signing up for. */
@@ -49,15 +56,16 @@ export function SubscribeForm({
   const line =
     note ??
     (kind === 'newsletter'
-      ? 'Ciatta Briefs every Tuesday and Friday, and a note when Ciatta opens. Unsubscribe anytime.'
-      : 'One email when Ciatta opens. Unsubscribe anytime.');
+      ? 'Ciatta Briefs, one short piece every Tuesday and Friday. Unsubscribe anytime.'
+      : 'Waitlist updates only: when Ciatta opens and what membership includes. Unsubscribe anytime.');
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (state.kind === 'saving') return;
     setState({ kind: 'saving' });
 
-    const topics: Topic[] = kind === 'newsletter' ? ['briefs', 'launch'] : alsoBriefs ? ['launch', 'briefs'] : ['launch'];
+    const topics: Topic[] =
+      kind === 'newsletter' ? ['briefs'] : offerBriefs && alsoBriefs ? ['launch', 'briefs'] : ['launch'];
     const submitted = email.trim();
 
     // The waitlist table predates the newsletter and still holds the member
@@ -149,7 +157,7 @@ export function SubscribeForm({
         />
       </div>
 
-      {kind === 'waitlist' && (
+      {kind === 'waitlist' && offerBriefs && (
         <label className="waitlist-opt" htmlFor={`${id}-briefs`}>
           <input
             id={`${id}-briefs`}

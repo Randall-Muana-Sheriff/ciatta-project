@@ -232,7 +232,7 @@ export default function Briefs() {
               One short piece every Tuesday and Friday: a guide, a comparison or a plain definition.
             </p>
             <div className="surface is-shell is-lifted">
-              <SubscribeForm id="subscribe-briefs" source="briefs" />
+              <SubscribeForm id="subscribe-briefs" source="briefs" kind="newsletter" />
             </div>
           </div>
         </section>
