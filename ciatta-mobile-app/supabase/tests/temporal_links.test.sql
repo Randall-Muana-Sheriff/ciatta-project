@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(15);
+select plan(19);
 
 select has_type('public', 'link_relation', 'the relation enum exists');
 select has_table('public', 'temporal_links', 'temporal_links exists');
@@ -120,6 +120,49 @@ select throws_ok($$
          (select id from tl_obs where k = 'tl-o1'),
          'within_7d', 5, '2026-09-16'
 $$, '23505', null, 'the same pair reversed is refused');
+
+-- The owner select policy, actually exercised.
+--
+-- Everything above proves the GRANTs: that authenticated holds select and
+-- holds nothing else. None of it touches the policy predicate. With no role
+-- switch and no jwt claims in the file, weakening
+-- using (user_id = (select auth.uid())) to using (true) left every
+-- assertion above green while every woman read every other woman's links.
+-- That is the one rule this table cannot get wrong, so it is proved here
+-- the same way baselines.test.sql proves it.
+--
+-- A second person, with a different number of links from the first on
+-- purpose: if the predicate were dropped, both would see three, so neither
+-- count could come out right by coincidence.
+insert into auth.users (id, email) values
+  ('00000000-0000-0000-0000-00000000000b', 'b@test.local');
+insert into public.observations (user_id, domain, metric, value, occurred_at, provenance, dedupe_key) values
+  ('00000000-0000-0000-0000-00000000000b', 'activity', 'steps', 1, now(), 'MEASURED', 'tl-p1'),
+  ('00000000-0000-0000-0000-00000000000b', 'activity', 'steps', 2, now(), 'MEASURED', 'tl-p2');
+
+insert into public.temporal_links (user_id, a_observation_id, b_observation_id, relation, gap_hours, occurred_on)
+select '00000000-0000-0000-0000-00000000000b',
+       (select id from public.observations where dedupe_key = 'tl-p1'),
+       (select id from public.observations where dedupe_key = 'tl-p2'),
+       'same_day', 3, '2026-09-16';
+
+-- A holds the two links that landed above; B holds the one just inserted.
+set local role authenticated;
+set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}';
+select is((select count(*)::int from public.temporal_links), 2,
+  'A reads her own two links');
+select is((select count(*)::int from public.temporal_links
+             where user_id <> '00000000-0000-0000-0000-00000000000a'), 0,
+  'and cannot reach a single one of B''s');
+
+set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-00000000000b","role":"authenticated"}';
+select is((select count(*)::int from public.temporal_links), 1,
+  'B reads her own one link');
+select is((select count(*)::int from public.temporal_links
+             where user_id <> '00000000-0000-0000-0000-00000000000b'), 0,
+  'and cannot reach a single one of A''s');
+
+reset role;
 
 select * from finish();
 rollback;
