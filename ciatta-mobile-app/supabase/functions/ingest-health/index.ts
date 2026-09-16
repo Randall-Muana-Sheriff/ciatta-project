@@ -4,7 +4,7 @@
 // trigger, so this function never enqueues anything itself.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-import { buildDayRow, validateBatch } from './batch.ts';
+import { buildDayRow, buildObservationRow, validateBatch } from './batch.ts';
 
 const url = Deno.env.get('SUPABASE_URL')!;
 const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
 
     let observationCount = 0;
     if (observations.length > 0) {
-      const rows = observations.map((observation) => ({ ...observation, user_id: uid, source_id: sourceId }));
+      const rows = observations.map((observation) => buildObservationRow(observation, { user_id: uid, source_id: sourceId }));
       const { data, error } = await admin.from('observations').upsert(rows, { onConflict: 'user_id,dedupe_key' }).select('id');
       if (error) throw error;
       observationCount = data?.length ?? rows.length;

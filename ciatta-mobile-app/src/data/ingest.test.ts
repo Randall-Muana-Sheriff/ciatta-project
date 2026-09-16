@@ -5,7 +5,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildDayRow, MAX_DAYS, MAX_OBSERVATIONS, validateBatch, type IncomingObservation } from '../../supabase/functions/ingest-health/batch';
+import {
+  buildDayRow,
+  buildObservationRow,
+  MAX_DAYS,
+  MAX_OBSERVATIONS,
+  validateBatch,
+  type IncomingObservation,
+} from '../../supabase/functions/ingest-health/batch';
 
 function observation(overrides: Partial<IncomingObservation> = {}): IncomingObservation {
   return {
@@ -85,4 +92,62 @@ test('buildDayRow omits absent list columns rather than defaulting them to empty
 test('buildDayRow carries a list column through when it is present, even an empty one', () => {
   const row = buildDayRow({ day: '2026-06-01', foods: [] }, { user_id: 'u1', source_id: 's1' });
   assert.deepEqual(row.foods, []);
+});
+
+test('buildDayRow drops temp_deviation even when a device payload carries it: it is derived by the baselines function, not device sync', () => {
+  const row = buildDayRow(
+    { day: '2026-06-01', steps: 3500, temp_deviation: 0.4 },
+    { user_id: 'u1', source_id: 's1' }
+  );
+  assert.equal('temp_deviation' in row, false);
+  assert.equal(row.steps, 3500);
+});
+
+test('rejects an observation with both value and value_text null', () => {
+  const result = validateBatch({
+    observations: [observation({ value: null, value_text: null })],
+    days: [],
+  });
+  assert.equal(result.ok, false);
+});
+
+test('accepts an observation with value_text set and value null', () => {
+  const result = validateBatch({
+    observations: [observation({ value: null, value_text: 'spotting' })],
+    days: [],
+  });
+  assert.equal(result.ok, true);
+});
+
+test('buildObservationRow drops any key not on the allowlist, even ones that look like server owned columns', () => {
+  const row = buildObservationRow(
+    observation({
+      // Not part of IncomingObservation, but a hostile or buggy caller can
+      // still send these on the wire; the cast mirrors what validateBatch
+      // hands back at runtime.
+      ...({ origin_table: 'episodes', origin_id: 'e1', id: 'forged-id', data_quality: 'low' } as unknown as Partial<IncomingObservation>),
+    }),
+    { user_id: 'u1', source_id: 's1' }
+  );
+  assert.equal('origin_table' in row, false);
+  assert.equal('origin_id' in row, false);
+  assert.equal('id' in row, false);
+  assert.equal('data_quality' in row, false);
+});
+
+test('buildObservationRow keeps every permitted key', () => {
+  const row = buildObservationRow(observation(), { user_id: 'u1', source_id: 's1' });
+  assert.deepEqual(row, {
+    user_id: 'u1',
+    source_id: 's1',
+    domain: 'activity',
+    metric: 'steps',
+    value: 100,
+    value_text: null,
+    unit: 'count',
+    occurred_at: '2026-06-01T08:00:00.000Z',
+    provenance: 'MEASURED',
+    dedupe_key: 'healthkit:steps:1',
+    metadata: {},
+  });
 });

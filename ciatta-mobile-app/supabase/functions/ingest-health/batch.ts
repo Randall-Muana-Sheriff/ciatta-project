@@ -59,6 +59,12 @@ export function validateBatch(body: unknown): ValidationResult {
     if (typeof observation.dedupe_key !== 'string' || observation.dedupe_key.length === 0) {
       return { ok: false, error: 'Invalid observation' };
     }
+    // Mirrors the database check constraint (value is not null or value_text
+    // is not null) so a malformed payload is rejected here with a 400,
+    // rather than reaching the insert and raising a 500 from the constraint.
+    if (observation.value == null && observation.value_text == null) {
+      return { ok: false, error: 'Invalid observation' };
+    }
   }
 
   for (const day of days) {
@@ -87,7 +93,11 @@ const DAY_FIELDS = [
   'workouts',
   'resting_hr',
   'hrv',
-  'temp_deviation',
+  // temp_deviation is deliberately absent: it is derived, a night's wrist
+  // temperature minus her own median across the baseline window, and is
+  // written only by the baselines function under the service role. A
+  // device sync has no measurement of it, so it is never in this
+  // allowlist even if a client payload carries it.
   'energy',
   'mood',
   'stress',
@@ -109,6 +119,36 @@ export function buildDayRow(day: IncomingDay, extra: { user_id: string; source_i
   const row: Record<string, unknown> = { day: day.day, ...extra };
   for (const field of DAY_FIELDS) {
     if (field in day && day[field] !== undefined) row[field] = day[field];
+  }
+  return row;
+}
+
+// Every field an incoming observation may carry. A caller can still send
+// other keys on the wire (origin_table, origin_id, id, data_quality,
+// created_at, updated_at, ...) since validateBatch only checks shape, not
+// an allowlist; this is what keeps them out of the insert. origin_table and
+// origin_id in particular record which database trigger materialised a row
+// (Slice 3's evidence trail from a finding back to the measurement behind
+// it), and a client able to forge them makes that trail unreliable.
+const OBSERVATION_FIELDS = [
+  'domain',
+  'metric',
+  'value',
+  'value_text',
+  'unit',
+  'occurred_at',
+  'provenance',
+  'dedupe_key',
+  'metadata',
+] as const;
+
+export function buildObservationRow(
+  observation: IncomingObservation,
+  extra: { user_id: string; source_id: string }
+): Record<string, unknown> {
+  const row: Record<string, unknown> = { ...extra };
+  for (const field of OBSERVATION_FIELDS) {
+    row[field] = observation[field];
   }
   return row;
 }
