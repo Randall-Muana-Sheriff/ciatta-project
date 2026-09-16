@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(25);
 
 -- The extensions this rests on are actually installed.
 select has_extension('pg_cron', 'pg_cron is installed');
@@ -64,6 +64,21 @@ select lives_ok(
   'scheduler health answers before the first run'
 );
 
+-- The one positive privilege assertion in this file, and the load bearing
+-- one. Every other check here is negative, so a future migration that
+-- recreated the view without its grant, or that dropped security_invoker,
+-- would leave the suite green while the view became unreadable by the only
+-- role meant to read it. Reading it as service_role is not obvious either:
+-- service_role has select on the cron tables but no usage on schema cron,
+-- so it cannot reach cron.job by name at all, and this succeeds only
+-- because a view stores resolved OIDs and never re-does that name lookup.
+set local role service_role;
+select lives_ok(
+  $$ select * from public.scheduler_health $$,
+  'service_role, the only role granted it, can actually read scheduler health'
+);
+reset role;
+
 -- The safety net, actually exercised. The lives_ok above runs it on an
 -- empty database, which would pass even if it enqueued nothing at all, so
 -- this gives it real rows to work on.
@@ -104,6 +119,26 @@ select is(public.enqueue_baselines_reconciliation(), 2,
   'running it a second time still considers both people');
 select is((select count(*)::int from public.jobs where status = 'pending' and kind = 'baselines'), 2,
   'and still leaves exactly two pending jobs, so it is idempotent');
+
+-- The standing start, and the only part of this file that proves the
+-- function enqueues anything at all. Everything above stays green even if
+-- the perform public.enqueue_job(...) line is deleted from the function
+-- body: the insert trigger already queued both jobs, and the return value
+-- comes from a separate select count(distinct user_id) statement that does
+-- not depend on the enqueue at all. So the assertions above prove the
+-- function agrees with the trigger and is idempotent, and nothing more.
+--
+-- This is the state the nightly safety net actually exists for, and the one
+-- inserting rows can never reach: a person with day rows and no job
+-- waiting, left behind by a job that exhausted its attempts, a row written
+-- before the trigger existed, or a restore.
+delete from public.jobs;
+select is((select count(*)::int from public.jobs where status = 'pending' and kind = 'baselines'), 0,
+  'the queue is empty, so what follows cannot pass on jobs the trigger left behind');
+select is(public.enqueue_baselines_reconciliation(), 2,
+  'the reconciliation considers both people from a standing start');
+select is((select count(*)::int from public.jobs where status = 'pending' and kind = 'baselines'), 2,
+  'and queues a pending baselines job for each of them out of nothing');
 
 select * from finish();
 rollback;
