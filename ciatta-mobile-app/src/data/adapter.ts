@@ -41,11 +41,11 @@ const REAL_TODAY_TEXT = {
 // person: while a session is loading, or once she has signed out, a screen
 // mounted outside the Gate reads her own (empty) record rather than falling
 // open to somebody else's data.
-export function dataForSession(mode: 'loading' | 'signedOut' | 'demo' | 'real', firstName: string | null): Data {
-  return dataFor(mode === 'demo' ? 'demo' : 'real', firstName);
+export function dataForSession(mode: 'loading' | 'signedOut' | 'demo' | 'real', firstName: string | null, days: Day[] = []): Data {
+  return dataFor(mode === 'demo' ? 'demo' : 'real', firstName, days);
 }
 
-export function dataFor(mode: 'demo' | 'real', firstName: string | null): Data {
+export function dataFor(mode: 'demo' | 'real', firstName: string | null, days: Day[] = []): Data {
   if (mode === 'demo') {
     return {
       mode,
@@ -63,7 +63,7 @@ export function dataFor(mode: 'demo' | 'real', firstName: string | null): Data {
   }
   return {
     mode,
-    days: [],
+    days,
     person: firstName ? { firstName } : null,
     today: { ...sample.today, ...REAL_TODAY_TEXT },
     records: null,

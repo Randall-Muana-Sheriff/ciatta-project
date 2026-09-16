@@ -3,6 +3,7 @@ import { test } from 'node:test';
 
 import { dataFor, dataForSession } from './adapter';
 import { loadDays } from './daily';
+import { daysFromRows } from './dailyRows';
 import * as sample from './sample';
 
 test('real mode carries no sample data', () => {
@@ -17,6 +18,15 @@ test('real mode carries no sample data', () => {
 
 test('real mode without a name greets without one', () => {
   assert.equal(dataFor('real', null).person, null);
+});
+
+test('real mode carries the days her record loaded while every sample piece stays null', () => {
+  const days = daysFromRows([{ day: '2026-09-10', steps: 4000 }], new Date(2026, 8, 10));
+  const d = dataFor('real', 'Ada', days);
+  assert.deepEqual(d.days, days);
+  for (const key of ['records', 'sleep', 'symptoms', 'medications', 'journey', 'insight', 'profile'] as const) {
+    assert.equal(d[key], null, `${key} must be empty in real mode`);
+  }
 });
 
 test('only the demo reads as the sample person', () => {

@@ -3,6 +3,7 @@ import { test } from 'node:test';
 
 import { addDays, isoDay, sampleEpisodes, shortDate, startOfDay } from '../data/cycleLog';
 import { sampleDays, WALK_PLAN_AGO } from '../data/daily';
+import { daysFromRows } from '../data/dailyRows';
 import { records, today } from '../data/sample';
 import { cycleWindows, medianLength, periodStarts, regularity } from './cycleModel';
 import { cycleSummaries, observations, signals } from './cyclePatterns';
@@ -71,4 +72,60 @@ test('with no data the engine says only the opening line', () => {
     assert.ok(Number.isFinite(v), 'movement figures stay finite with no days');
   }
   assert.deepEqual(m.series, []);
+});
+
+// Real Apple Health data leaves most fields of most days null; the engine
+// must never crash on that, and must never claim something about a measure
+// it has no numbers for.
+test('the engine tolerates real days where only sleep is present', () => {
+  const now = new Date(2026, 8, 16);
+  const rows = Array.from({ length: 90 }, (_, i) => ({
+    day: isoDay(addDays(now, -(89 - i))),
+    sleep_hours: 7,
+  }));
+  const days = daysFromRows(rows, now);
+  assert.equal(days.length, 90);
+
+  const out = buildInsights({
+    days,
+    episodes: [],
+    windows: [],
+    summaries: [],
+    signals: [],
+    cycleObservations: [],
+    draws: [],
+    interventions: [],
+    watching: {},
+    opening: 'Nothing to compare yet.',
+    now,
+  });
+  assert.ok(out.today.text.length > 0);
+  assert.doesNotMatch(out.today.text, /steps/i, 'nothing measured about steps, so nothing is said about it');
+  for (const v of [out.movement.steps.recent, out.movement.active.recent]) {
+    assert.ok(Number.isFinite(v));
+  }
+});
+
+test('a day with every measured field null contributes nothing to any average the engine reports', () => {
+  const now = new Date(2026, 8, 16);
+  const rowsComplete = Array.from({ length: 10 }, (_, i) => ({
+    day: isoDay(addDays(now, -(9 - i))),
+    steps: 8000,
+  }));
+  const rowsWithGap = rowsComplete.filter((_, i) => i !== 5);
+
+  const complete = daysFromRows(rowsComplete, now);
+  const withGap = daysFromRows(rowsWithGap, now);
+  assert.equal(complete.length, withGap.length, 'the gap day still gets a calendar entry');
+
+  const insightsFor = (days: typeof complete) =>
+    buildInsights({
+      days, episodes: [], windows: [], summaries: [], signals: [], cycleObservations: [],
+      draws: [], interventions: [], watching: {}, opening: 'x', now,
+    });
+
+  const full = insightsFor(complete).movement.steps.recent;
+  const gapped = insightsFor(withGap).movement.steps.recent;
+  assert.equal(full, 8000);
+  assert.equal(gapped, 8000, 'the missing day is skipped, not averaged in as a zero');
 });

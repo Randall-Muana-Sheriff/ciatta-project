@@ -7,19 +7,24 @@ import { addDays, sampleCycleStarts, daysBetween, isoDay, startOfDay } from './c
 
 export type Workout = { type: string; minutes: number; intensity?: 'Low' | 'Moderate' | 'High' };
 
-export type SleepStages = { awake: number; rem: number; light: number; deep: number };
+// Null in any of these four means that stage was never measured for the
+// night, not that she spent no time in it.
+export type SleepStages = { awake: number | null; rem: number | null; light: number | null; deep: number | null };
 
 export type Day = {
   date: string;
-  sleepHours: number;
+  // Null when nothing measured sleep that night: a wearable not worn, a
+  // permission never granted, a night with no data at all. Never a
+  // fabricated zero, which would read as "you slept zero hours."
+  sleepHours: number | null;
   // Minutes in each stage of the night before, and hours in bed.
   stages: SleepStages;
-  timeInBed: number;
-  steps: number;
-  activeMinutes: number;
+  timeInBed: number | null;
+  steps: number | null;
+  activeMinutes: number | null;
   workouts: Workout[];
-  restingHR: number;
-  hrv: number;
+  restingHR: number | null;
+  hrv: number | null;
   // Nightly skin temperature change from usual, in °C. Null when not recorded.
   tempDeviation: number | null;
   // Check ins on a 1 to 5 scale.
@@ -68,6 +73,11 @@ export function sampleDays(now = new Date()): Day[] {
   const hard = new Set([isoDay(addDays(starts[3], 1)), isoDay(addDays(starts[4], -4))]);
   const weekFactor = new Map<number, number>();
   const days: Day[] = [];
+  // Every sample night has a real value, so this mirrors days[i].sleepHours
+  // exactly; kept alongside it only so the pass below never has to read a
+  // field the exported Day type allows to be null (real data can leave it
+  // that way; the generator never does).
+  const sleepAt: number[] = [];
 
   for (let ago = LENGTH - 1; ago >= 0; ago--) {
     const date = addDays(today, -ago);
@@ -164,12 +174,13 @@ export function sampleDays(now = new Date()): Day[] {
       digestion,
       note,
     });
+    sleepAt.push(asleep);
   }
 
   // Low energy the day after a short night.
   for (let i = 0; i < days.length - 1; i++) {
     const ago = LENGTH - 1 - i;
-    if (TIRED_AFTER.has(ago) || (ago <= 21 && days[i].sleepHours < 6)) days[i + 1].energy = 2;
+    if (TIRED_AFTER.has(ago) || (ago <= 21 && sleepAt[i] < 6)) days[i + 1].energy = 2;
   }
   return days;
 }

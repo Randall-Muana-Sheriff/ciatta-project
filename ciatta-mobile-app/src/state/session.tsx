@@ -2,6 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 
 import { type Data, dataForSession } from '../data/adapter';
+import type { Day } from '../data/daily';
 import { demoRepo, realRepo, type Repo } from '../data/repo';
 import { supabase } from '../lib/supabase';
 
@@ -12,6 +13,7 @@ type SessionValue = {
   userId: string | null;
   repo: Repo | null;
   firstName: string | null;
+  days: Day[];
   enterDemo: () => void;
   signOut: () => Promise<void>;
 };
@@ -24,6 +26,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [demo, setDemo] = useState(false);
   const [firstName, setFirstName] = useState<string | null>(null);
+  const [days, setDays] = useState<Day[]>([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -46,19 +49,35 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     };
   }, [repo]);
 
+  // Real days come from her own record, loaded once here so every screen
+  // that reads useData() shares one fetch rather than each mounting its own.
+  useEffect(() => {
+    let ignore = false;
+    setDays([]);
+    if (mode === 'real' && repo) {
+      repo.loadDays().then((d) => {
+        if (!ignore) setDays(d);
+      }).catch(() => {});
+    }
+    return () => {
+      ignore = true;
+    };
+  }, [mode, repo]);
+
   const value = useMemo<SessionValue>(
     () => ({
       mode,
       userId,
       repo,
       firstName,
+      days,
       enterDemo: () => setDemo(true),
       signOut: async () => {
         if (demo) setDemo(false);
         else await supabase.auth.signOut();
       },
     }),
-    [mode, userId, repo, firstName, demo],
+    [mode, userId, repo, firstName, days, demo],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
@@ -73,8 +92,8 @@ export function useSession(): SessionValue {
 // What screens read. Only the demo reads as the sample person; loading and
 // signed out read as an empty record, never as somebody else's.
 export function useData(): Data {
-  const { mode, firstName } = useSession();
-  return useMemo(() => dataForSession(mode, firstName), [mode, firstName]);
+  const { mode, firstName, days } = useSession();
+  return useMemo(() => dataForSession(mode, firstName, days), [mode, firstName, days]);
 }
 
 export function useRepo(): Repo {

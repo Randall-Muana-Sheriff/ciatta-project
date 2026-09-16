@@ -1,6 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { type CycleProfile, normalizeProfile } from '../lib/cycleProfile';
+import type { DailyRow } from '../lib/healthMetrics';
+import { type Day, loadDays as loadSampleDays } from './daily';
+import { daysFromRows } from './dailyRows';
 import type { Episode } from './cycleLog';
 import { paginateAll } from './pagination';
 import { episodeToRow, type EpisodeRow, type JournalRow, type JournalView, journalView, rowToEpisode, type SourceRow, sourceView, type SourceView } from './rows';
@@ -17,6 +20,7 @@ export type Repo = {
   loadJournal(): Promise<JournalView>;
   addJournal(text: string, kind: EntryKind): Promise<void>;
   loadSources(): Promise<SourceView[]>;
+  loadDays(): Promise<Day[]>;
   firstName(): Promise<string | null>;
 };
 
@@ -43,6 +47,7 @@ export function demoRepo(): Repo {
       view = { ...view, count: view.count + 1, months: [{ month, items: [item, ...(current?.items ?? [])] }, ...rest] };
     },
     loadSources: async () => sources,
+    loadDays: async () => loadSampleDays(),
     firstName: async () => person.firstName,
   };
 }
@@ -96,6 +101,12 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
     async loadSources() {
       const rows = must(await db.from('health_sources').select('kind, name, status, last_synced_at, created_at').order('created_at')) as SourceRow[];
       return rows.map(sourceView);
+    },
+    async loadDays() {
+      const rows = await paginateAll<DailyRow>(
+        (from, to) => db.from('daily_metrics').select('*').order('day').range(from, to) as unknown as Page<DailyRow>,
+      );
+      return daysFromRows(rows, new Date());
     },
     async firstName() {
       const row = must(await db.from('profiles').select('first_name').eq('id', userId).maybeSingle()) as { first_name: string | null } | null;

@@ -12,7 +12,7 @@ import { useData, useRepo, useSession } from '../state/session';
 import { C, font, M, numeral, RADIUS } from '../theme';
 import { ListGroup, ListRow } from './chrome';
 import { BarRow } from './cycleInputs';
-import { BedArc, DotScale, HairlineChart, RangeBar, type Stage, StageLegend, StageRings } from './lineCharts';
+import { BedArc, type CompleteStages, DotScale, HairlineChart, RangeBar, type Stage, StageLegend, StageRings } from './lineCharts';
 import { ChevronRight } from './kit';
 
 // Every metric on one organised page, drawn in hairlines. Colours follow the
@@ -26,7 +26,21 @@ function median(xs: number[]): number {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
+// A day's own measured values are never treated as zero when absent: every
+// baseline below is a median over the days that actually carry that field,
+// not over every day in the window.
+const nums = (xs: (number | null)[]) => xs.filter((v): v is number => v != null);
+
 const dateOf = (d: Day) => shortDate(parseDay(d.date));
+
+// A night only draws its stage rings once all four are known; a wearable
+// that measured total sleep but not stage breakdown leaves this null rather
+// than drawing three empty rings and one full one.
+function completeStages(s: Day['stages']): CompleteStages | null {
+  return s.awake != null && s.rem != null && s.light != null && s.deep != null
+    ? { awake: s.awake, rem: s.rem, light: s.light, deep: s.deep }
+    : null;
+}
 
 function Card({
   title,
@@ -116,11 +130,18 @@ export function HealthDashboard({
   const last28 = days.slice(-28);
   const base = days.slice(Math.max(0, days.length - 91), days.length - 35);
   const usual = {
-    sleep: median(base.map((x) => x.sleepHours)),
-    bed: median(base.map((x) => x.timeInBed)),
-    rhr: median(base.map((x) => x.restingHR)),
-    hrv: median(base.map((x) => x.hrv)),
+    sleep: median(nums(base.map((x) => x.sleepHours))),
+    bed: median(nums(base.map((x) => x.timeInBed))),
+    rhr: median(nums(base.map((x) => x.restingHR))),
+    hrv: median(nums(base.map((x) => x.hrv))),
   };
+  const stages = last ? completeStages(last.stages) : null;
+  // Narrowed once here so the Sleep card below reads a plain number rather
+  // than re-checking (or asserting past) last.sleepHours at every use.
+  const sleepHours = last?.sleepHours ?? null;
+  const timeInBed = last?.timeInBed ?? null;
+  const restingHR = last?.restingHR ?? null;
+  const hrv = last?.hrv ?? null;
 
   // Cycle
   const done = summaries.filter((c) => c.window.length != null);
@@ -138,32 +159,37 @@ export function HealthDashboard({
 
   return (
     <View style={d.stack}>
-      {/* Sleep */}
-      {last ? (
+      {/* Sleep: nothing shown for a night nothing measured, rather than a
+          fabricated "0h 00m". */}
+      {last && sleepHours != null ? (
       <Card title="Sleep" meta={`Last night, ${dateOf(last)}`} onPress={() => open('sleep')}>
+        {stages ? (
         <View style={d.sleepTop}>
-          <StageRings stages={last.stages} active={stage} />
-          <StageLegend stages={last.stages} active={stage} onPick={setStage} />
+          <StageRings stages={stages} active={stage} />
+          <StageLegend stages={stages} active={stage} onPick={setStage} />
         </View>
+        ) : null}
         <View style={d.tiles}>
-          <View style={d.tile} accessible accessibilityLabel={`Total sleep ${fmtHours(last.sleepHours)}, usual ${fmtHours(usual.sleep)}`}>
+          <View style={d.tile} accessible accessibilityLabel={`Total sleep ${fmtHours(sleepHours)}, usual ${fmtHours(usual.sleep)}`}>
             <Text style={[font('footnote'), { color: C.secondary }]}>Total Sleep</Text>
-            <DotScale value={last.sleepHours} usual={usual.sleep} />
-            <Text style={[numeral(20, 'medium'), { color: C.text }]}>{fmtHours(last.sleepHours)}</Text>
+            <DotScale value={sleepHours} usual={usual.sleep} />
+            <Text style={[numeral(20, 'medium'), { color: C.text }]}>{fmtHours(sleepHours)}</Text>
             <Text style={[font('caption1'), { color: C.secondary }]}>Usual {fmtHours(usual.sleep)}</Text>
           </View>
+          {timeInBed != null ? (
           <View
             style={d.tile}
             accessible
-            accessibilityLabel={`Time in bed ${fmtHours(last.timeInBed)}, asleep ${Math.round((last.sleepHours / last.timeInBed) * 100)} percent of it`}
+            accessibilityLabel={`Time in bed ${fmtHours(timeInBed)}, asleep ${Math.round((sleepHours / timeInBed) * 100)} percent of it`}
           >
             <Text style={[font('footnote'), { color: C.secondary }]}>Time in Bed</Text>
-            <BedArc inBed={last.timeInBed} asleep={last.sleepHours} />
-            <Text style={[numeral(20, 'medium'), { color: C.text }]}>{fmtHours(last.timeInBed)}</Text>
+            <BedArc inBed={timeInBed} asleep={sleepHours} />
+            <Text style={[numeral(20, 'medium'), { color: C.text }]}>{fmtHours(timeInBed)}</Text>
             <Text style={[font('caption1'), { color: C.secondary }]}>
-              Asleep {Math.round((last.sleepHours / last.timeInBed) * 100)}% of it
+              Asleep {Math.round((sleepHours / timeInBed) * 100)}% of it
             </Text>
           </View>
+          ) : null}
         </View>
         <Text style={[font('footnote'), d.chartLabel]}>Total sleep, last 14 nights</Text>
         <HairlineChart
@@ -196,18 +222,22 @@ export function HealthDashboard({
       </Card>
       ) : null}
 
-      {/* Recovery */}
-      {last ? (
+      {/* Recovery: a tile only draws for a measure the day actually has. */}
+      {restingHR != null || hrv != null ? (
       <Card title="Recovery" meta="Last 28 days" onPress={() => openInsight('rhrHigh')}>
         <View style={d.tiles}>
+          {restingHR != null ? (
           <View style={d.tile}>
-            <Stat label="Resting heart rate" value={`${Math.round(last.restingHR)} bpm`} sub={`Usual ${Math.round(usual.rhr)}`} />
+            <Stat label="Resting heart rate" value={`${Math.round(restingHR)} bpm`} sub={`Usual ${Math.round(usual.rhr)}`} />
             <HairlineChart values={last28.map((x) => x.restingHR)} usual={usual.rhr} color={M.measured} height={44} />
           </View>
+          ) : null}
+          {hrv != null ? (
           <View style={d.tile}>
-            <Stat label="HRV" value={`${Math.round(last.hrv)} ms`} sub={`Usual ${Math.round(usual.hrv)}`} />
+            <Stat label="HRV" value={`${Math.round(hrv)} ms`} sub={`Usual ${Math.round(usual.hrv)}`} />
             <HairlineChart values={last28.map((x) => x.hrv)} usual={usual.hrv} color={M.measured} height={44} />
           </View>
+          ) : null}
         </View>
       </Card>
       ) : null}

@@ -2,7 +2,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Ellipse, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
 import { daysBetween } from '../data/cycleLog';
-import type { SleepStages } from '../data/daily';
 import { fmtHours } from '../lib/engine';
 import { C, font, fonts, M } from '../theme';
 
@@ -90,12 +89,19 @@ export function HairlineChart({
 export const STAGE_ORDER = ['Awake', 'REM', 'Light', 'Deep'] as const;
 export type Stage = (typeof STAGE_ORDER)[number];
 
-const stageMinutes = (s: SleepStages, stage: Stage) =>
+// Day.stages allows a stage to be null (a night no wearable measured), but
+// these two components only ever draw a night whose four stages are all
+// known; the caller (HealthDashboard) decides whether that's the case and
+// only renders them once it is, so the maths in here never has to treat an
+// absence as zero minutes.
+export type CompleteStages = { awake: number; rem: number; light: number; deep: number };
+
+const stageMinutes = (s: CompleteStages, stage: Stage) =>
   stage === 'Awake' ? s.awake : stage === 'REM' ? s.rem : stage === 'Light' ? s.light : s.deep;
 
 // Nested outlines, one per stage, sized by share of the night. The chosen
 // stage is drawn heavier; nothing is filled.
-export function StageRings({ stages, active }: { stages: SleepStages; active: Stage }) {
+export function StageRings({ stages, active }: { stages: CompleteStages; active: Stage }) {
   const total = stages.awake + stages.rem + stages.light + stages.deep || 1;
   const W = 150;
   const H = 110;
@@ -132,7 +138,7 @@ export function StageLegend({
   active,
   onPick,
 }: {
-  stages: SleepStages;
+  stages: CompleteStages;
   active: Stage;
   onPick: (stage: Stage) => void;
 }) {

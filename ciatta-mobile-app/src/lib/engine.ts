@@ -267,6 +267,7 @@ function fatigueAfterShortSleep(days: Day[]): Candidate | null {
     const e = days[i + 1].energy;
     if (e == null) continue;
     const s = days[i].sleepHours;
+    if (s == null) continue;
     if (s < 6) {
       short++;
       if (e <= 2) shortTired++;
@@ -303,7 +304,11 @@ function activityAndWeeks(days: Day[]): Candidate[] {
   for (let end = days.length; end - 7 >= 0; end -= 7) weeks.unshift(days.slice(end - 7, end));
   if (weeks.length < 9) return [];
   const rows = weeks
-    .map((w) => ({ steps: mean(w.map((d) => d.steps)), energy: mean(nums(w.map((d) => d.energy))), sleep: mean(w.map((d) => d.sleepHours)) }))
+    .map((w) => ({
+      steps: mean(nums(w.map((d) => d.steps))),
+      energy: mean(nums(w.map((d) => d.energy))),
+      sleep: mean(nums(w.map((d) => d.sleepHours))),
+    }))
     .sort((a, b) => b.steps - a.steps);
   const k = Math.floor(rows.length / 3);
   const top = rows.slice(0, k);
@@ -481,8 +486,8 @@ function combined(input: EngineInput, sleep: Change | null, steps: Change | null
   const locs = tally(signals.filter((s) => s.pain && s.date >= stretchStart).map((s) => s.episode.locations))
     .slice(0, 2)
     .map((x) => x.label.toLowerCase());
-  const sleepAvg = mean(recent.map((d) => d.sleepHours));
-  const stepsAvg = mean(recent.map((d) => d.steps));
+  const sleepAvg = mean(nums(recent.map((d) => d.sleepHours)));
+  const stepsAvg = mean(nums(recent.map((d) => d.steps)));
   const below = Math.round((1 - stepsAvg / steps.usual.usual) * 100);
 
   // Earlier cycles whose final week carried the same combination.
@@ -491,8 +496,8 @@ function combined(input: EngineInput, sleep: Change | null, steps: Change | null
     const week = Array.from({ length: 7 }, (_, k) => byDate.get(isoDay(addDays(w.end!, -(k + 1))))).filter((d): d is Day => !!d);
     if (week.length < 5) return false;
     return (
-      mean(week.map((d) => d.sleepHours)) < sleep.usual.low &&
-      mean(week.map((d) => d.steps)) < steps.usual.low &&
+      mean(nums(week.map((d) => d.sleepHours))) < sleep.usual.low &&
+      mean(nums(week.map((d) => d.steps))) < steps.usual.low &&
       mean(nums(week.map((d) => d.stress))) >= usualStress + 1
     );
   });
@@ -561,7 +566,8 @@ export function cycleTrend(windows: CycleWindow[], days: Day[], n = 4): CyclePoi
     .slice(-n)
     .map((w) => {
       const week = Array.from({ length: 7 }, (_, k) => byDate.get(isoDay(addDays(w.end!, -(k + 1))))).filter((d): d is Day => !!d);
-      return { start: w.start, length: w.length!, sleep: week.length ? mean(week.map((d) => d.sleepHours)) : null };
+      const nights = nums(week.map((d) => d.sleepHours));
+      return { start: w.start, length: w.length!, sleep: nights.length ? mean(nights) : null };
     });
 }
 
@@ -576,9 +582,12 @@ function walkOutcomes(days: Day[], interventions: Intervention[]): Candidate | n
       if (i == null || i < 3 || i + 3 > days.length) return null;
       const before = days.slice(i - 3, i);
       const after = days.slice(i, i + 3);
+      const beforeSteps = nums(before.map((d) => d.steps));
+      const afterSteps = nums(after.map((d) => d.steps));
+      if (!beforeSteps.length || !afterSteps.length) return null;
       return {
         date: v.date,
-        steps: mean(after.map((d) => d.steps)) / mean(before.map((d) => d.steps)) - 1,
+        steps: mean(afterSteps) / mean(beforeSteps) - 1,
         energy: mean(nums(after.map((d) => d.energy))) - mean(nums(before.map((d) => d.energy))),
       };
     })
@@ -645,15 +654,21 @@ function triageOf(c: Candidate, score: number, watching: Record<string, boolean>
 function movementSummary(days: Day[]): MovementSummary {
   const base = baselineDays(days);
   const last7 = days.slice(-7);
-  const b = band(base.map((d) => d.steps));
+  const b = band(nums(base.map((d) => d.steps)));
   return {
-    steps: { recent: mean(last7.map((d) => d.steps)), usual: b.usual },
-    active: { recent: mean(last7.map((d) => d.activeMinutes)), usual: median(base.map((d) => d.activeMinutes)) },
+    steps: { recent: mean(nums(last7.map((d) => d.steps))), usual: b.usual },
+    active: { recent: mean(nums(last7.map((d) => d.activeMinutes))), usual: median(nums(base.map((d) => d.activeMinutes))) },
     workouts: {
       recent: last7.reduce((n, d) => n + d.workouts.length, 0),
       usual: base.length ? base.reduce((n, d) => n + d.workouts.length, 0) / (base.length / 7) : 0,
     },
-    series: days.slice(-28).map((d) => ({ date: d.date, steps: d.steps })),
+    // A day with no step count contributes no point to the chart rather than
+    // a fabricated zero; MovementSummary.series stays non nullable so every
+    // reader of it keeps treating a point on the chart as a real day.
+    series: days
+      .slice(-28)
+      .map((d) => ({ date: d.date, steps: d.steps }))
+      .filter((x): x is { date: string; steps: number } => x.steps != null),
     band: b,
   };
 }
