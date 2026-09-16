@@ -210,7 +210,7 @@ const commands = {
       subject: `[Test] ${issue.meta.subject}`,
       html: html.replaceAll('{{{RESEND_UNSUBSCRIBE_URL}}}', `${CONFIG.siteUrl}/newsletter/unsubscribe/`),
       text: text.replaceAll('{{{RESEND_UNSUBSCRIBE_URL}}}', `${CONFIG.siteUrl}/newsletter/unsubscribe/`),
-      reply_to: process.env.NEWSLETTER_REPLY_TO || CONFIG.replyTo,
+      reply_to: CONFIG.replyTo,
     });
     console.log(`Test sent to ${to} (${sent.id}).`);
   },
@@ -246,7 +246,7 @@ const commands = {
         segment_id: CONFIG.segmentId,
         topic_id: CONFIG.briefsTopicId,
         from: CONFIG.from,
-        reply_to: process.env.NEWSLETTER_REPLY_TO || CONFIG.replyTo,
+        reply_to: CONFIG.replyTo,
         subject: issue.meta.subject,
         html,
         text,

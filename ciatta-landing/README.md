@@ -102,14 +102,14 @@ Every email form on the site signs people up through `functions/api/newsletter/*
 | Home hero, home closing, Briefs page | Ciatta Briefs + Launch news |
 | Member page | Launch news, plus Briefs only if the unticked box is ticked |
 
-Resource IDs live in `server/config.ts`. Secrets are Pages secrets:
+Resource IDs and senders live in `server/config.ts`: waitlist signups hear from `waitlist@ciatta.io`, newsletter signups from `briefs@ciatta.io`, and replies to each are forwarded by Cloudflare Email Routing. Secrets are Pages secrets:
 
 ```bash
 npx wrangler pages secret put RESEND_API_KEY --project-name ciatta
 npx wrangler pages secret put NEWSLETTER_SIGNING_SECRET --project-name ciatta   # openssl rand -base64 48
 ```
 
-Optional: `NEWSLETTER_REPLY_TO`, `NEWSLETTER_POSTAL_ADDRESS`, and a KV namespace bound
+Optional: `NEWSLETTER_POSTAL_ADDRESS`, and a KV namespace bound
 as `NEWSLETTER_KV` (without it, rate limiting is off; the other guards still apply).
 
 `npm test` runs the flow against an in-memory Resend.

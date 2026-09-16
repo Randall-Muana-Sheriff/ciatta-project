@@ -16,7 +16,7 @@
 //                  off. Broadcasts carry Resend's own unsubscribe link too,
 //                  which lets a subscriber drop one topic and keep the other.
 
-import { consentText, newsletter, SOURCES, TOPIC_KEYS, type Env, type Source, type TopicKey } from './config';
+import { consentText, newsletter, senderFor, SOURCES, TOPIC_KEYS, type Env, type Source, type TopicKey } from './config';
 import { confirmationEmail, welcomeEmail } from './email/messages';
 import { resend, type ResendClient } from './resend';
 import { emailHash, signToken, verifyToken } from './tokens';
@@ -127,14 +127,15 @@ export function newsletterService(env: Env, client: ResendClient = resend(env.RE
 
       const token = await signToken({ p: 'confirm', e: email, t: topics, s: source }, secret);
       const message = confirmationEmail(link('/newsletter/confirm/', token), topics, env.NEWSLETTER_POSTAL_ADDRESS);
+      const sender = senderFor(topics);
       await client.sendEmail(
         {
-          from: newsletter.from,
+          from: sender.from,
           to: email,
           subject: message.subject,
           html: message.html,
           text: message.text,
-          replyTo: env.NEWSLETTER_REPLY_TO || newsletter.replyTo,
+          replyTo: sender.replyTo,
           tags: [
             { name: 'category', value: 'newsletter_confirmation' },
             { name: 'source', value: source },
@@ -191,12 +192,12 @@ export function newsletterService(env: Env, client: ResendClient = resend(env.RE
         const message = welcomeEmail(unsub, allTopics, env.NEWSLETTER_POSTAL_ADDRESS);
         await client.sendEmail(
           {
-            from: newsletter.from,
+            from: senderFor(topics).from,
             to: email,
             subject: message.subject,
             html: message.html,
             text: message.text,
-            replyTo: env.NEWSLETTER_REPLY_TO || newsletter.replyTo,
+            replyTo: senderFor(topics).replyTo,
             headers: {
               'List-Unsubscribe': `<${unsub.replace('/newsletter/unsubscribe/', '/api/newsletter/unsubscribe')}>`,
               'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',

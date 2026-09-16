@@ -53,7 +53,8 @@ ok('tokens: sign, verify, wrong secret, wrong purpose, tampered, expired');
 { const f = fake(); const s = newsletterService(env, f.client);
   const r = await s.subscribe({ email: 'Maya@Example.com', source: 'hero', topics: ['briefs', 'launch'], elapsedMs: 4000 }, '1.1.1.1');
   assert.equal(r.status, 'pending'); assert.equal(f.contacts.size, 0, 'nothing stored before confirmation'); assert.equal(f.sent.length, 1);
-  const m = f.sent[0]; assert.equal(m.to, 'maya@example.com'); assert.match(m.subject, /Confirm/); assert.ok(m.text.length > 50);
+  const m = f.sent[0]; assert.equal(m.to, 'maya@example.com');
+  assert.equal(m.from, 'Ciatta Waitlist <waitlist@ciatta.io>'); assert.equal(m.replyTo, 'waitlist@ciatta.io'); assert.match(m.subject, /Confirm/); assert.ok(m.text.length > 50);
   const link = m.html.match(/https:\/\/ciatta\.io\/newsletter\/confirm\/\?token=([^"&]+)/); assert.ok(link, 'confirm link present');
   ok('subscribe sends one confirmation with a /newsletter/confirm/ link, stores nothing');
 
@@ -90,6 +91,15 @@ ok('tokens: sign, verify, wrong secret, wrong purpose, tampered, expired');
   await s.subscribe({ email: 'w@x.io', source: 'member', topics: ['launch'], elapsedMs: 4000 }, null);
   const tok = decodeURIComponent(f.sent[0].html.match(/token=([^"&]+)/)[1]); await s.confirm(tok);
   const c = f.contacts.get('w@x.io')!; assert.equal(c.topics.get(newsletter.topics.launch), 'opt_in'); assert.equal(c.topics.has(newsletter.topics.briefs), false);
-  assert.match(f.sent[1].subject, /on the Ciatta waitlist/);
+  assert.match(f.sent[1].subject, /on the Ciatta waitlist/); assert.match(f.sent[1].from, /waitlist@ciatta\.io/);
   ok('member-page waitlist signup opts in to launch news only, never Briefs'); }
+
+// newsletter-only
+{ const f = fake(); const s = newsletterService(env, f.client);
+  await s.subscribe({ email: 'n@x.io', source: 'closing', topics: ['briefs'], elapsedMs: 4000 }, null);
+  assert.equal(f.sent[0].from, 'Ciatta Briefs <briefs@ciatta.io>'); assert.equal(f.sent[0].replyTo, 'briefs@ciatta.io');
+  const tok = decodeURIComponent(f.sent[0].html.match(/token=([^"&]+)/)[1]); await s.confirm(tok);
+  assert.equal(f.sent[1].from, 'Ciatta Briefs <briefs@ciatta.io>');
+  const c = f.contacts.get('n@x.io')!; assert.equal(c.topics.has(newsletter.topics.launch), false);
+  ok('newsletter signup comes from briefs@, waitlist signup from waitlist@'); }
 console.log('all passed');

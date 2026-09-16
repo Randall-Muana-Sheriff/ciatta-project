@@ -12,16 +12,24 @@ export const newsletter = {
     /** Launch news: when Ciatta opens and changes to membership. A few a year. */
     launch: 'bdd4b7d7-8283-4308-a0ac-eab3086f64ed',
   },
-  from: 'Ciatta Briefs <briefs@ciatta.io>',
-  /** Where replies go. Cloudflare Email Routing forwards it to the team inbox.
-      NEWSLETTER_REPLY_TO overrides it. */
-  replyTo: 'briefs@ciatta.io',
+  /** Who each kind of email comes from. Replies go back to the same address,
+      which Cloudflare Email Routing forwards to the team inbox. */
+  senders: {
+    briefs: { from: 'Ciatta Briefs <briefs@ciatta.io>', replyTo: 'briefs@ciatta.io' },
+    waitlist: { from: 'Ciatta Waitlist <waitlist@ciatta.io>', replyTo: 'waitlist@ciatta.io' },
+  },
   siteUrl: 'https://ciatta.io',
   /** How long a confirmation link stays valid. */
   confirmTtlSeconds: 7 * 24 * 60 * 60,
 } as const;
 
 export type TopicKey = keyof typeof newsletter.topics;
+
+/** A waitlist signup (launch news, even with Briefs ticked on the member page)
+    hears from waitlist@; a newsletter-only signup hears from briefs@. */
+export function senderFor(topics: TopicKey[]) {
+  return topics.includes('launch') ? newsletter.senders.waitlist : newsletter.senders.briefs;
+}
 export const TOPIC_KEYS = Object.keys(newsletter.topics) as TopicKey[];
 
 /** Where each form on the site is allowed to say a signup came from. */
@@ -40,8 +48,6 @@ export interface Env {
   RESEND_API_KEY: string;
   /** HMAC key for confirmation and unsubscribe links. 32+ random bytes. */
   NEWSLETTER_SIGNING_SECRET: string;
-  /** Optional. A monitored inbox for replies; omitted from mail when unset. */
-  NEWSLETTER_REPLY_TO?: string;
   /** Optional. The postal address CAN-SPAM requires in commercial email. */
   NEWSLETTER_POSTAL_ADDRESS?: string;
   /** Rate-limit counters. Optional so local runs work without it. */
