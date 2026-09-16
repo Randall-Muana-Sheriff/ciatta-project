@@ -49,6 +49,39 @@ function byNarrowness(x: BuiltLink, y: BuiltLink): number {
   );
 }
 
+// The most observations in one window this will generate pairs over at all.
+//
+// maxPairs bounds the memory and nothing else: every pair inside the seven
+// day window is still formed and compared before the cap discards any of
+// it. That work is the other axis, and it was left unbounded. Over a 91 day
+// window the inner loop runs about n * (7/91) * n times, or n squared over
+// thirteen, so a wearable posting overnight wrist temperature at roughly
+// 500 readings a day reaches 45,500 rows in the window and upwards of 150
+// million iterations: seconds of CPU against a per request budget.
+//
+// That matters more than it would elsewhere because of WHERE it happens.
+// The links step runs after her baselines and temperature deviations are
+// already written, so a run killed here retries, writes them again, is
+// killed again, and ends as a permanently failed job. It is the same
+// outcome the memory bound was added to prevent, reached along the other
+// axis, by the same heavy user.
+//
+// 10,000 keeps the loop under about eight million iterations, which is
+// milliseconds. It is roughly 110 observations a day averaged over the
+// window, well above anyone logging by hand or syncing ordinary daily
+// metrics, and below the density only a high frequency device produces.
+//
+// Past it the step is SKIPPED, never computed over a truncated input.
+// Truncating would compute over part of her record and then write the
+// result as though it were the whole of it, which is an inference
+// presented as a measured fact. Skipping writes nothing, and nothing
+// written is at least not something false.
+export const MAX_LINKED_OBSERVATIONS = 10000;
+
+export function linksAreAffordable(observationCount: number): boolean {
+  return observationCount <= MAX_LINKED_OBSERVATIONS;
+}
+
 // How many times maxPairs may accumulate before the working set is sorted
 // and cut back. Four is a compromise: compacting at exactly maxPairs would
 // re-sort on nearly every push once the cap is reached, and a large

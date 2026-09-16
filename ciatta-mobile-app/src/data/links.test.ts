@@ -5,7 +5,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildLinks, type LinkInput } from '../../supabase/functions/baselines/links';
+import {
+  buildLinks,
+  linksAreAffordable,
+  MAX_LINKED_OBSERVATIONS,
+  type LinkInput,
+} from '../../supabase/functions/baselines/links';
 
 const at = (id: string, metric: string, iso: string): LinkInput => ({ id, metric, occurredAt: iso });
 
@@ -215,6 +220,41 @@ test('compacting while generating changes only the memory used, never the result
   assert.deepEqual(compacted, uncompacted);
   // And both agree with the head of the fully sorted set.
   assert.deepEqual(compacted, everyPair.slice(0, cap));
+});
+
+// maxPairs bounds the memory and nothing else. The generation loop is
+// untouched by it: every pair inside the seven day window is still formed
+// and compared before the cap discards any of it, so the work grows with
+// the count of observations in the window times how many of them fall
+// within the following week of each. That is a CPU cost, it lands on the
+// same heavy user the memory bound protects, and it lands AFTER her
+// baselines and deviations are written, so a run killed there retries,
+// fails and retries into a permanently failed job.
+//
+// So the count is checked before the loop is entered at all. Truncating the
+// input instead would be worse than skipping: it would compute over part of
+// her record and write the result as though it were the whole of it.
+test('a window too dense to afford is refused before the loop, rather than computed over part of it', () => {
+  assert.equal(linksAreAffordable(0), true);
+  assert.equal(linksAreAffordable(1), true);
+  assert.equal(linksAreAffordable(MAX_LINKED_OBSERVATIONS - 1), true);
+  // The threshold itself is affordable; only past it is refused.
+  assert.equal(linksAreAffordable(MAX_LINKED_OBSERVATIONS), true);
+  assert.equal(linksAreAffordable(MAX_LINKED_OBSERVATIONS + 1), false);
+});
+
+// The threshold is a budget, not a preference, so the arithmetic behind it
+// is pinned here rather than left in a comment nobody re-checks. The inner
+// loop runs once per pair within seven days of each other, which over a 91
+// day window is about n * 7/91 * n, or n squared over thirteen. At the
+// threshold that is under ten million iterations; a wearable posting
+// overnight temperature at roughly 500 readings a day reaches 45,500 rows
+// in the window, which is over 150 million and is what this refuses.
+test('the threshold keeps the pair loop inside the budget it was chosen for', () => {
+  const iterations = (n: number) => (n * n) / 13;
+  assert.ok(iterations(MAX_LINKED_OBSERVATIONS) <= 10_000_000);
+  assert.ok(iterations(500 * 91) > 100_000_000);
+  assert.equal(linksAreAffordable(500 * 91), false);
 });
 
 test('a cap of zero or less produces no links rather than a negative slice', () => {

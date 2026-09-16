@@ -36,7 +36,7 @@ import {
   WINDOW_SIZE,
   type Metric,
 } from './compute.ts';
-import { buildLinks, type LinkInput } from './links.ts';
+import { buildLinks, linksAreAffordable, type LinkInput } from './links.ts';
 import { keysetFilter, readAllPages } from './paging.ts';
 
 const url = Deno.env.get('SUPABASE_URL')!;
@@ -231,22 +231,37 @@ async function runJob(admin: any, job: JobRow): Promise<{ metrics: string[] }> {
       .limit(limit);
   });
 
-  const links = buildLinks(
-    linkRows.map((row): LinkInput => ({
-      id: row.id,
-      metric: row.metric,
-      occurredAt: row.occurred_at,
-    }))
-  );
+  // Past a certain density the pair loop costs more CPU than one request
+  // has, so the step is skipped and the job completes normally on the work
+  // it has already done. See MAX_LINKED_OBSERVATIONS in links.ts for the
+  // arithmetic and for why skipping beats computing over a truncated input.
+  //
+  // Completing rather than failing is the deliberate part. Her baselines
+  // and temperature deviations are written by this point and they are
+  // correct; throwing here would discard a finished, honest result and turn
+  // it into a retry that would reach exactly this point and throw again.
+  if (!linksAreAffordable(linkRows.length)) {
+    // A count and the fact it was skipped. No ids, no metrics, no values,
+    // nothing about what she measured or when.
+    console.log('baselines links skipped, window too dense', linkRows.length);
+  } else {
+    const links = buildLinks(
+      linkRows.map((row): LinkInput => ({
+        id: row.id,
+        metric: row.metric,
+        occurredAt: row.occurred_at,
+      }))
+    );
 
-  if (links.length > 0) {
-    const { error: linkWriteError } = await admin
-      .from('temporal_links')
-      .upsert(
-        links.map((link) => ({ ...link, user_id: job.user_id })),
-        { onConflict: 'user_id,a_observation_id,b_observation_id,relation' }
-      );
-    if (linkWriteError) throw linkWriteError;
+    if (links.length > 0) {
+      const { error: linkWriteError } = await admin
+        .from('temporal_links')
+        .upsert(
+          links.map((link) => ({ ...link, user_id: job.user_id })),
+          { onConflict: 'user_id,a_observation_id,b_observation_id,relation' }
+        );
+      if (linkWriteError) throw linkWriteError;
+    }
   }
 
   return { metrics: computed };
