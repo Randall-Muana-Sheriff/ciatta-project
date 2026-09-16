@@ -171,6 +171,19 @@ export function HealthDashboard({
   const done = summaries.filter((c) => c.window.length != null);
   const current = summaries[summaries.length - 1] ?? null;
 
+  // A pain figure can be missing for two different reasons and they must not
+  // read the same. With no pain logged in this cycle there is genuinely none
+  // to report, which is a measured none and may say so. With pain logged but
+  // never rated or never timed, the figure is simply not known, and calling
+  // that "None" would tell her she had no pain on a day she recorded some.
+  // painDays is what separates the two: it counts the distinct days she
+  // logged pain, so above zero means the episodes exist and only the figure
+  // is missing.
+  const painFigure = (value: number | null, format: (v: number) => string): string => {
+    if (value != null) return format(value);
+    return current?.painDays === 0 ? 'None' : 'Not logged';
+  };
+
   // Symptoms she logged in the last two months, plus bloating from daily notes.
   const recentEpisodes: Episode[] = signals.filter((s) => daysBetween(s.date, now) <= 60).map((s) => s.episode);
   const symptomTally = tally(recentEpisodes.map((e) => e.symptoms));
@@ -315,7 +328,10 @@ export function HealthDashboard({
         <View style={d.row3}>
           <Stat label={lens.header.label} value={lens.header.value} />
           {lens.secondary ? <Stat label={lens.secondary.label} value={lens.secondary.value} /> : null}
-          <Stat label="Pain days" value={current?.painDays != null ? `${current.painDays}` : 'None'} sub="this cycle" color={M.reported} />
+          {/* A logged cycle always has a real count here, zero included.
+              No cycle logged at all is not a count of zero pain days, it is
+              no record to count, so it says so rather than asserting none. */}
+          <Stat label="Pain days" value={current ? `${current.painDays}` : 'Not logged'} sub="this cycle" color={M.reported} />
         </View>
         {done.length ? (
           <>
@@ -332,12 +348,21 @@ export function HealthDashboard({
         ) : null}
       </Card>
 
-      {/* Pain and flare ups */}
+      {/* Pain and flare ups. With no cycle logged at all there is nothing on
+          this card that is a finding about her: every figure would be an
+          absence of a record, and four of them reading "None" would tell her
+          she had no pain, no flare ups and no episodes when in truth nothing
+          was ever written down. The severity chart below draws from the same
+          empty summaries, so the whole card stays hidden until there is a
+          cycle, the same way Sleep, Movement, Recovery, Check ins and
+          Symptoms already handle having nothing to show. */}
+      {current ? (
       <Card title="Pain and Flare Ups" meta="By cycle" onPress={() => open('cycleHistory')}>
         <View style={d.row3}>
-          <Stat label="Highest this cycle" value={current?.maxSeverity != null ? `${current.maxSeverity} of 10` : 'None'} color={M.reported} />
-          <Stat label="Flare ups" value={current?.flares != null ? `${current.flares}` : 'None'} sub="you reported" color={M.reported} />
-          <Stat label="Avg length" value={current?.hours != null ? `${Math.round(current.hours)}h` : 'None'} sub="per episode" />
+          <Stat label="Highest this cycle" value={painFigure(current.maxSeverity, (v) => `${v} of 10`)} color={M.reported} />
+          {/* Both counts are real within a logged cycle, zero included. */}
+          <Stat label="Flare ups" value={`${current.flares}`} sub="you reported" color={M.reported} />
+          <Stat label="Avg length" value={painFigure(current.hours, (v) => `${Math.round(v)}h`)} sub="per episode" />
         </View>
         {summaries.some((c) => c.maxSeverity != null) ? (
           <>
@@ -346,6 +371,7 @@ export function HealthDashboard({
           </>
         ) : null}
       </Card>
+      ) : null}
 
       {/* Check ins */}
       {last ? (

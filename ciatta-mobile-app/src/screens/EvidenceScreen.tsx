@@ -1,5 +1,6 @@
 import { StyleSheet, Switch, Text, View } from 'react-native';
 
+import { displayCopy } from '../lib/displayCopy';
 import type { Triage } from '../lib/engine';
 import { useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
@@ -44,9 +45,9 @@ export function EvidenceScreen() {
     >
       <Text style={[font('footnote', 'semibold'), { color: C.tint }]}>{TRIAGE_LABEL[item.triage]}</Text>
       <Text style={[font('title2', 'semibold'), { color: C.text, marginTop: 2 }]} accessibilityRole="header">
-        {item.title}
+        {displayCopy(item.title)}
       </Text>
-      <Text style={[font('body'), e.brief]}>{item.brief}</Text>
+      <Text style={[font('body'), e.brief]}>{displayCopy(item.brief)}</Text>
       <View style={e.tags}>
         {item.domains.map((d) => (
           <Tag key={d} label={d} tone="neutral" />
