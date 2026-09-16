@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(11);
+select plan(18);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -36,6 +36,29 @@ select is(
       null::numeric, null::numeric, null::numeric, null::smallint, null::smallint, null::smallint,
       null::numeric, null::numeric, null::text),
   'every other measured column stays null');
+
+-- Review fix: workouts, foods and digestion have no default any more, so a
+-- day written with only steps leaves them null (unknown), not an empty list
+-- (which would fabricate "checked, found nothing").
+select is((select workouts from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-15'), null::jsonb,
+  'a day with only steps leaves workouts null, not an empty list');
+select is((select foods from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-15'), null::text[],
+  'a day with only steps leaves foods null, not an empty list');
+select is((select digestion from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-15'), null::text[],
+  'a day with only steps leaves digestion null, not an empty list');
+
+-- An explicit empty list is a fact ("checked, found nothing") and must be
+-- stored and read back as such, distinct from null ("not checked").
+select lives_ok($$
+  insert into public.daily_metrics (user_id, day, steps, workouts, foods, digestion)
+  values ('00000000-0000-0000-0000-00000000000a', '2026-09-16', 100, '[]'::jsonb, '{}'::text[], '{}'::text[])
+$$, 'A logs a day with explicit empty lists');
+select is((select workouts from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-16'), '[]'::jsonb,
+  'an explicit empty workouts list is stored as empty, not null');
+select is((select foods from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-16'), '{}'::text[],
+  'an explicit empty foods list is stored as empty, not null');
+select is((select digestion from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-16'), '{}'::text[],
+  'an explicit empty digestion list is stored as empty, not null');
 
 -- B cannot see A's rows.
 set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-00000000000b","role":"authenticated"}';
