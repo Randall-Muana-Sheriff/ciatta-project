@@ -22,9 +22,38 @@ export type BuiltLink = {
 
 const HOUR_MS = 60 * 60 * 1000;
 
-// Narrowest first. The cap below keeps this order, so what it discards is
-// the weakest evidence rather than an arbitrary slice.
+// Narrowest first, and narrowness is all this is. The cap keeps this order
+// so that what it discards is the pairs furthest apart in time rather than
+// an arbitrary slice. Nothing here establishes that a wider gap is a weaker
+// anything: the ordering is over the size of a time gap, which is measured,
+// and not over how much a pair is worth, which is not.
 const RANK: Record<Relation, number> = { same_day: 0, within_24h: 1, within_3d: 2, within_7d: 3 };
+
+// The one total order used for both the running compaction and the final
+// selection. They have to be the same comparator or compacting early could
+// discard a pair the final sort would have kept.
+function byNarrowness(x: BuiltLink, y: BuiltLink): number {
+  // The ids are part of this comparator on purpose, overruling the brief
+  // that specified rank and gap alone. The cap makes this sort load
+  // bearing: which links survive must not depend on the sort's
+  // implementation. Rank and gap alone leave two links that tie on both in
+  // whatever order the sort happens to produce, so a later run over the
+  // same window can keep a different pair at the cutoff and strand a row
+  // that nothing removes. With the ids the order is total, and the same
+  // window yields the same rows every time.
+  return (
+    RANK[x.relation] - RANK[y.relation] ||
+    x.gap_hours - y.gap_hours ||
+    (x.a_observation_id < y.a_observation_id ? -1 : x.a_observation_id > y.a_observation_id ? 1 : 0) ||
+    (x.b_observation_id < y.b_observation_id ? -1 : x.b_observation_id > y.b_observation_id ? 1 : 0)
+  );
+}
+
+// How many times maxPairs may accumulate before the working set is sorted
+// and cut back. Four is a compromise: compacting at exactly maxPairs would
+// re-sort on nearly every push once the cap is reached, and a large
+// multiple gives most of the memory back to the problem this bounds.
+const COMPACTION_HEADROOM = 4;
 
 function isoDay(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10);
@@ -43,7 +72,16 @@ function relationFor(earlierMs: number, laterMs: number): Relation | null {
   return 'within_7d';
 }
 
-export function buildLinks(observations: LinkInput[], maxPairs = 2000): BuiltLink[] {
+// maxPairs bounds the output, and headroom bounds the work in progress.
+// headroom is a parameter only so a test can set it high enough never to
+// fire and compare the two paths; nothing in the function should pass it.
+export function buildLinks(
+  observations: LinkInput[],
+  maxPairs = 2000,
+  headroom = COMPACTION_HEADROOM
+): BuiltLink[] {
+  const limit = Math.max(0, Math.floor(maxPairs));
+  if (limit === 0) return [];
   // The comparator is total on purpose: the instant first, then the id.
   // Equal instants are ordinary in her record (a device posts a night's
   // readings with one timestamp), and with only the instant to go on the
@@ -56,7 +94,32 @@ export function buildLinks(observations: LinkInput[], maxPairs = 2000): BuiltLin
     .filter((o) => Number.isFinite(o.ms))
     .sort((x, y) => x.ms - y.ms || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
 
+  // The pair count grows with the square of how much she has logged: 1001
+  // observations in the window is 63,700 pairs, 4550 is 1,338,925, and 9100
+  // is 5,358,150, each one a fresh object carrying its own occurred_on
+  // string. Materialising all of them before sorting would exhaust the
+  // isolate's memory for the woman who has logged the most, and because the
+  // baselines and deviations above are already written by then, the job
+  // would die, retry, and die again. So the generation is bounded, not only
+  // the read.
+  //
+  // Discarding early is exact rather than approximate, and this is why: the
+  // result is the first `limit` links under byNarrowness, which is a total
+  // order over every pair. Once `limit` links already rank above some pair,
+  // that pair cannot reach the final set no matter what is generated later,
+  // because nothing generated later can displace links that already beat
+  // it. Cutting back to exactly `limit` therefore removes only pairs that
+  // could never have been returned, and the output is identical to sorting
+  // the whole set at the end. links.test.ts pins that equivalence.
+  const threshold = Math.max(limit, Math.floor(limit * headroom));
   const out: BuiltLink[] = [];
+  const compact = () => {
+    out.sort(byNarrowness);
+    // Truncates in place: the discarded objects become garbage here rather
+    // than being copied into a second array.
+    out.length = limit;
+  };
+
   for (let i = 0; i < parsed.length; i++) {
     for (let j = i + 1; j < parsed.length; j++) {
       const a = parsed[i];
@@ -74,23 +137,10 @@ export function buildLinks(observations: LinkInput[], maxPairs = 2000): BuiltLin
         gap_hours: (b.ms - a.ms) / HOUR_MS,
         occurred_on: isoDay(b.ms),
       });
+      if (out.length > threshold) compact();
     }
   }
 
-  // The ids are part of this comparator on purpose, overruling the brief
-  // that specified rank and gap alone. The cap below makes this sort load
-  // bearing: which links survive slice(0, maxPairs) must not depend on the
-  // sort's implementation. Rank and gap alone leave two links that tie on
-  // both in whatever order the sort happens to produce, so a later run over
-  // the same window can keep a different pair at the cutoff and strand a row
-  // that nothing removes. With the ids the order is total, and the same
-  // window yields the same rows every time.
-  out.sort(
-    (x, y) =>
-      RANK[x.relation] - RANK[y.relation] ||
-      x.gap_hours - y.gap_hours ||
-      (x.a_observation_id < y.a_observation_id ? -1 : x.a_observation_id > y.a_observation_id ? 1 : 0) ||
-      (x.b_observation_id < y.b_observation_id ? -1 : x.b_observation_id > y.b_observation_id ? 1 : 0)
-  );
-  return out.slice(0, maxPairs);
+  out.sort(byNarrowness);
+  return out.slice(0, limit);
 }

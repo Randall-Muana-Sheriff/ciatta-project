@@ -37,6 +37,7 @@ import {
   type Metric,
 } from './compute.ts';
 import { buildLinks, type LinkInput } from './links.ts';
+import { keysetFilter, readAllPages } from './paging.ts';
 
 const url = Deno.env.get('SUPABASE_URL')!;
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -81,6 +82,11 @@ async function runJob(admin: any, job: JobRow): Promise<{ metrics: string[] }> {
   const startIso = isoDay(start);
   const todayIso = isoDay(today);
 
+  // This one read needs no paging, and that is a fact about the table
+  // rather than luck: daily_metrics holds at most one row per day per
+  // person, so a 91 day window can return at most 91 rows and can never
+  // reach max_rows. The reads over her observations below have no such
+  // bound and all go through readAllPages.
   const { data: rows, error: rowsError } = await admin
     .from('daily_metrics')
     .select('day, sleep_hours, steps, resting_hr, hrv, active_minutes')
@@ -144,18 +150,32 @@ async function runJob(admin: any, job: JobRow): Promise<{ metrics: string[] }> {
   // review found both temperature specs are absolute readings, not the
   // small nightly change from usual temp_deviation means), so it is read
   // from her observations directly rather than from the rows above.
-  const { data: tempRows, error: tempError } = await admin
-    .from('observations')
-    .select('occurred_at, value')
-    .eq('user_id', job.user_id)
-    .eq('domain', 'vitals')
-    .eq('metric', 'wrist_temperature')
-    .gte('occurred_at', start.toISOString())
-    .lte('occurred_at', today.toISOString());
-  if (tempError) throw tempError;
+  //
+  // Paged, for the same reason the links read below is. A wrist temperature
+  // is not one reading a day: a wearable posts them through the night, so
+  // 91 days of them passes max_rows long before the window is unusual. An
+  // unpaged read here would silently drop the oldest part of the window and
+  // compute her temperature baseline from a truncated history, which is the
+  // more damaging version of the fault, because unlike a missing link a
+  // wrong deviation is a number she is shown.
+  type TempRow = { id: string; occurred_at: string; value: number | null };
+  const tempRows = await readAllPages<TempRow>((after, limit) => {
+    const query = admin
+      .from('observations')
+      .select('id, occurred_at, value')
+      .eq('user_id', job.user_id)
+      .eq('domain', 'vitals')
+      .eq('metric', 'wrist_temperature')
+      .gte('occurred_at', start.toISOString())
+      .lte('occurred_at', today.toISOString());
+    return (after ? query.or(keysetFilter(after)) : query)
+      .order('occurred_at')
+      .order('id')
+      .limit(limit);
+  });
 
   const tempByDay = new Map<string, { sum: number; count: number }>();
-  for (const row of tempRows ?? []) {
+  for (const row of tempRows) {
     if (row.value == null) continue;
     const day = isoDay(new Date(row.occurred_at as string));
     const bucket = tempByDay.get(day) ?? { sum: 0, count: 0 };
@@ -192,46 +212,24 @@ async function runJob(admin: any, job: JobRow): Promise<{ metrics: string[] }> {
   // run over the same window reproduces the same rows rather than
   // duplicating them.
   //
-  // The read is paged explicitly. PostgREST caps one response at max_rows
-  // (1000, in supabase/config.toml), so a plain select returns only the
-  // first page once she has logged more than that in the window, with no
-  // error: the run would then compute links over part of her record and
-  // report success. A woman with more data would silently get fewer links
-  // than a woman with less, which is incomplete evidence presented as
-  // complete rather than wrong data. Completeness should not rest on a
-  // server default nobody chose.
-  //
-  // The page size is exactly max_rows. Asking for more would be truncated
-  // to max_rows by the server, and a full page would then look short
-  // against what was asked for, ending the loop early and reintroducing
-  // the very truncation it exists to remove.
-  //
-  // Ordered by occurred_at and then id, because occurred_at alone is not
-  // unique (a device posts a night's readings with one timestamp) and an
-  // order that can shift between requests may skip or repeat a row at a
-  // page boundary. id is the primary key, so the two together are total
-  // and every page picks up exactly where the last one stopped.
-  const LINK_PAGE_SIZE = 1000;
+  // The read is complete by construction rather than by a server default:
+  // see paging.ts for why every read here over her observations is paged,
+  // why the paging is keyset rather than offset, and why the page boundary
+  // is a tuple comparison. buildLinks then bounds the work that follows,
+  // since the pair count grows with the square of what this returns.
   type ObservationRow = { id: string; metric: string; occurred_at: string };
-  const linkRows: ObservationRow[] = [];
-  for (let from = 0; ; from += LINK_PAGE_SIZE) {
-    const { data: page, error: linkError } = await admin
+  const linkRows = await readAllPages<ObservationRow>((after, limit) => {
+    const query = admin
       .from('observations')
       .select('id, metric, occurred_at')
       .eq('user_id', job.user_id)
       .gte('occurred_at', start.toISOString())
-      .lte('occurred_at', today.toISOString())
+      .lte('occurred_at', today.toISOString());
+    return (after ? query.or(keysetFilter(after)) : query)
       .order('occurred_at')
       .order('id')
-      .range(from, from + LINK_PAGE_SIZE - 1);
-    // A page that fails ends the run, the same as every other read here.
-    // Carrying on with what already arrived would produce exactly the
-    // partial set this loop exists to prevent.
-    if (linkError) throw linkError;
-    const rows = (page ?? []) as ObservationRow[];
-    linkRows.push(...rows);
-    if (rows.length < LINK_PAGE_SIZE) break;
-  }
+      .limit(limit);
+  });
 
   const links = buildLinks(
     linkRows.map((row): LinkInput => ({

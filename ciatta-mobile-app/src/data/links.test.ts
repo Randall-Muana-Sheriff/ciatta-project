@@ -81,7 +81,7 @@ test('exactly seven days apart is still within_7d, and eight days is nothing', (
   assert.deepEqual(eight, []);
 });
 
-test('the cap keeps the narrowest links and discards the weakest, not an arbitrary slice', () => {
+test('the cap keeps the narrowest links and discards the furthest apart, not an arbitrary slice', () => {
   const input: LinkInput[] = [
     at('s1', 'sleep_hours', '2026-09-10T06:00:00.000Z'),
     at('h1', 'hrv', '2026-09-10T07:00:00.000Z'),        // same_day with s1
@@ -177,6 +177,53 @@ test('the cap is decided by a total order, not by where a tie happened to sit', 
       [p.id, q.id],
     ]
   );
+});
+
+// The pair count grows with the square of how much she has logged, so
+// buildLinks compacts its working set as it goes rather than materialising
+// every pair and sorting at the end. That is only allowed because it cannot
+// change the answer: the result is the top maxPairs under a total order, so
+// a pair already ranking below maxPairs others can never reach the final
+// set and discarding it early is invisible. This pins that claim. If the
+// two paths ever diverge the optimisation is wrong, and this test is what
+// should say so.
+test('compacting while generating changes only the memory used, never the result', () => {
+  // Twenty observations on one day, every metric distinct, so all 190 pairs
+  // qualify and none is dropped as a series.
+  const input: LinkInput[] = [];
+  for (let i = 0; i < 20; i++) {
+    const hour = String(i).padStart(2, '0');
+    input.push(at(`obs${hour}`, `metric_${i}`, `2026-09-10T${hour}:00:00.000Z`));
+  }
+
+  const everyPair = buildLinks(input, Number.MAX_SAFE_INTEGER);
+  assert.equal(everyPair.length, 190);
+
+  const cap = 5;
+  const headroom = 4;
+  // Compaction fires whenever the working set passes cap * headroom, which
+  // is 20, and 190 pairs are generated, so it fires far more than the two
+  // times this needs to be a real exercise of the path.
+  assert.ok(everyPair.length > cap * headroom * 2);
+
+  const compacted = buildLinks(input, cap, headroom);
+  // A headroom this large cannot be reached, so this path sorts once at the
+  // end exactly as the unbounded version did.
+  const uncompacted = buildLinks(input, cap, Number.MAX_SAFE_INTEGER);
+
+  assert.equal(compacted.length, cap);
+  assert.deepEqual(compacted, uncompacted);
+  // And both agree with the head of the fully sorted set.
+  assert.deepEqual(compacted, everyPair.slice(0, cap));
+});
+
+test('a cap of zero or less produces no links rather than a negative slice', () => {
+  const input = [
+    at('a', 'sleep_hours', '2026-09-10T06:00:00.000Z'),
+    at('b', 'hrv', '2026-09-10T07:00:00.000Z'),
+  ];
+  assert.deepEqual(buildLinks(input, 0), []);
+  assert.deepEqual(buildLinks(input, -1), []);
 });
 
 // Every relation the generator can emit has to satisfy
