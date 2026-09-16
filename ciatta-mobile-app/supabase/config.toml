@@ -388,12 +388,14 @@ deno_version = 2
 # The baselines function is called by a scheduler holding the service role
 # key, never by the app, and it checks that bearer itself before it claims
 # anything (supabase/functions/baselines/index.ts). Platform JWT
-# verification is therefore off here deliberately, recorded in this file
-# rather than left to whatever the default happens to be: the function's own
-# check is the gate, and a service role key is not an end user JWT for the
-# platform to verify anyway.
+# verification is on as well, as a second gate in front of that check: the
+# project issues both key eras and a legacy service role key is itself a
+# project signed JWT, so this admits the scheduler while turning away
+# unauthenticated traffic before it ever reaches the function. The
+# function's own constant time bearer check still decides whether the
+# caller is the service role specifically.
 [functions.baselines]
-verify_jwt = false
+verify_jwt = true
 
 [analytics]
 enabled = true

@@ -11,8 +11,11 @@
 // The check is not optional: claim_baselines_job() claims the oldest
 // pending job for any user at all, so without it any signed in user could
 // make this server read, compute over and write another person's record.
-// supabase/config.toml sets verify_jwt = false for this function, so the
-// bearer check below is the only gate in front of that.
+// supabase/config.toml sets verify_jwt = true for this function, so there
+// are two gates: the platform verifies the bearer is a valid project
+// signed JWT at all, and the check below verifies it is the service role
+// key specifically. The platform gate turns away unauthenticated traffic;
+// only this one can tell the service role from any other project token.
 //
 // Claiming, completing and failing a job all go through RPC functions
 // (supabase/migrations/20260916100000_claim_baselines_job.sql,
