@@ -154,7 +154,13 @@ export default function App() {
                 brings them together so you can see what changed and what to ask.
               </p>
               <div id="join">
-                <SubscribeForm id="waitlist-hero" source="hero" kind="waitlist" />
+                <SubscribeForm
+                  id="waitlist-hero"
+                  source="hero"
+                  kind="waitlist"
+                  note=""
+                  consent="I agree to receive emails about early access and product updates."
+                />
               </div>
             </div>
           </div>
@@ -248,15 +254,15 @@ export default function App() {
                 Ciatta turns that into what changed, what was happening around it, and what
                 you have noticed since.
               </p>
-              {/* The hero reserves a place; this one is the newsletter, so it
-                  says what it sends before asking for an address. */}
-              <p className="close-lines" id="subscribe">
-                Until then, read along. <b>Ciatta Briefs</b> is one short piece every Tuesday:
-                a guide, a comparison or a plain definition.
-              </p>
             </div>
             <div className="surface is-shell is-lifted split-body">
-              <SubscribeForm id="subscribe-close" source="closing" kind="newsletter" />
+              <SubscribeForm
+                id="waitlist-close"
+                source="closing"
+                kind="waitlist"
+                note=""
+                consent="I agree to receive emails about early access and product updates."
+              />
             </div>
           </div>
         </section>

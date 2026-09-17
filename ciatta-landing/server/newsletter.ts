@@ -165,7 +165,7 @@ export function newsletterService(env: Env, client: ResendClient = resend(env.RE
       const properties = {
         signup_source: s ?? 'unknown',
         confirmed_at: now,
-        consent_text: consentText(allTopics),
+        consent_text: consentText(allTopics, s),
         signup_topics: allTopics.join(','),
       };
 

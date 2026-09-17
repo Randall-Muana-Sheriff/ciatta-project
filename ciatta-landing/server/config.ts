@@ -36,11 +36,17 @@ export const TOPIC_KEYS = Object.keys(newsletter.topics) as TopicKey[];
 export const SOURCES = ['hero', 'closing', 'member', 'briefs'] as const;
 export type Source = (typeof SOURCES)[number];
 
-/** The sentence each subscriber agreed to, stored on their contact as the consent record. */
-export function consentText(topics: TopicKey[]): string {
+/** The sentence each subscriber agreed to, stored on their contact as the consent record.
+    Both home page forms ask her to tick a box with its own wording, so a launch
+    signup from there records that wording rather than the member page's. */
+export function consentText(topics: TopicKey[], source?: string): string {
   const parts = [];
   if (topics.includes('briefs')) parts.push('Ciatta Briefs by email every Tuesday');
-  if (topics.includes('launch')) parts.push('occasional news about Ciatta opening and membership');
+  if (topics.includes('launch')) {
+    parts.push(source === 'hero' || source === 'closing'
+      ? 'emails about early access and product updates'
+      : 'occasional news about Ciatta opening and membership');
+  }
   return `Agreed to receive ${parts.join(' and ')}. Can unsubscribe at any time.`;
 }
 

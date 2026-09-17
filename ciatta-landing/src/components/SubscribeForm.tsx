@@ -8,12 +8,12 @@ import { joinWaitlist } from '../lib/waitlist';
  * Two kinds, because they ask for different consent:
  *
  *   waitlist    Reserve a place: product and launch news only (the Launch
- *               news topic). Used in the home hero and on the member page.
+ *               news topic). Used twice on the home page, where she ticks a box
+ *               agreeing to it (`consent`), and on the member page.
  *               The member page may also offer Briefs as a separate, unticked
  *               choice (`offerBriefs`); consent to one is not consent to the
  *               other.
- *   newsletter  Ciatta Briefs only, every Tuesday. Used at the
- *               foot of the home page and on the Briefs page.
+ *   newsletter  Ciatta Briefs only, every Tuesday. Used on the Briefs page.
  *
  * The note under the field says exactly what each one sends, because what she
  * reads there is what she is agreeing to.
@@ -35,6 +35,7 @@ export function SubscribeForm({
   offerBriefs = false,
   cta,
   note,
+  consent,
 }: {
   id: string;
   source: Source;
@@ -45,6 +46,8 @@ export function SubscribeForm({
   cta?: string;
   /** The line under the field. Defaults to what she is signing up for. */
   note?: string;
+  /** A box she has to tick before the form will send, reading this sentence. */
+  consent?: string;
 }) {
   const [email, setEmail] = useState('');
   const [alsoBriefs, setAlsoBriefs] = useState(false);
@@ -156,6 +159,13 @@ export function SubscribeForm({
           onChange={(e) => setCompany(e.target.value)}
         />
       </div>
+
+      {consent && (
+        <label className="waitlist-opt" htmlFor={`${id}-consent`}>
+          <input id={`${id}-consent`} name="consent" type="checkbox" required />
+          <span>{consent}</span>
+        </label>
+      )}
 
       {kind === 'waitlist' && offerBriefs && (
         <label className="waitlist-opt" htmlFor={`${id}-briefs`}>

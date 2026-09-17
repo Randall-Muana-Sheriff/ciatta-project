@@ -87,8 +87,8 @@ export const privacy: LegalDoc = {
         },
         {
           list: [
-            'The waitlist form at the top of the home page, and the member page, send launch news only: when Ciatta opens and when membership changes. That is occasional.',
-            'The newsletter form at the foot of the home page, and on the Briefs page, sends Ciatta Briefs every Tuesday.',
+            'The waitlist form in the home page hero, the one at its foot, and the member page, send launch news only: when Ciatta opens and when membership changes. That is occasional. On the home page you tick a box agreeing to emails about early access and product updates before either form will send.',
+            'The newsletter form on the Briefs page sends Ciatta Briefs every Tuesday.',
             'Signing up for one is not signing up for the other. The member page offers Briefs as a separate box you can tick.',
             'Every email has an unsubscribe link, and supports one-click unsubscribe in mail apps that offer it. The preference page lets you stop one kind and keep the other.',
             'We have switched off open and click tracking, so we do not know whether you read an email or which links you follow.',
