@@ -179,7 +179,7 @@ git commit -m "Add the standard vocabulary her record is described in"
 
 **The distinction this task turns on.** A `code` is a claim that a specific LOINC or SNOMED identifier is correct. A `term` is a search string handed to UMLS so it can tell us the code. Codes that are stable and well known are written down; everything else carries only a term and is resolved in Task 3. Writing a guessed code would be exactly the fabrication this project forbids, in a new place.
 
-The five codes below are stable LOINC identifiers for device measurements and are written down with confidence. Everything in `SYMPTOM_TERMS` is a term, not a code, because SNOMED identifiers for symptom phrases are not something to recall from memory.
+The eight LOINC codes below are for device measurements and are written down because those observation codes are stable and well known. Everything in `SYMPTOM_TERMS` is a term, not a code, because SNOMED identifiers for symptom phrases are not something to recall from memory. Written down is not the same as trusted: every one of the eight is confirmed against UMLS at seed time in Task 4, and a disagreement writes nothing and reports both codes.
 
 - [ ] **Step 1: Write the failing test**
 
