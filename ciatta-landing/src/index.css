@@ -415,10 +415,10 @@ p { margin: 0; text-wrap: pretty; }
    White field on a White surface has no tone to distinguish it.
    =========================================================================== */
 .waitlist { display: flex; flex-direction: column; gap: var(--s3); max-width: 620px; }
-.waitlist-row { display: flex; flex-direction: column; gap: var(--s3); }
-/* flex-end, not stretch: the button matches the input it sits beside, rather
-   than stretching to cover the label above it too. */
-@media (min-width: 560px) { .waitlist-row { flex-direction: row; align-items: flex-end; } }
+ /* One line at every width, phone included: the field takes the room that is
+   left and the button takes only what its label needs. flex-end, not stretch,
+   so the button matches the input beside it rather than the label above it. */
+.waitlist-row { display: flex; flex-direction: row; align-items: flex-end; gap: var(--s3); }
 .waitlist-field { display: flex; flex-direction: column; gap: var(--s2); flex: 1 1 auto; min-width: 0; }
 .waitlist-field label { color: var(--meta-ink); font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; }
 .waitlist input {
@@ -441,7 +441,9 @@ p { margin: 0; text-wrap: pretty; }
   background: var(--ink); color: var(--on-ink);
   font: inherit; font-size: var(--t-small); font-weight: 500;
   border: 0; border-radius: var(--r-control);
-  padding: 0 var(--s5);
+  /* narrower sides on a phone, where the field needs the width more */
+  padding: 0 clamp(var(--s3), 2.2vw, var(--s5));
+  white-space: nowrap;
   height: var(--control-h);
   transition: opacity var(--instant) var(--ease-caused);
 }
