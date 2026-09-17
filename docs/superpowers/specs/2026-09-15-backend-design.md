@@ -53,6 +53,43 @@ Postgres, UUID keys, `created_at` and `updated_at` everywhere, RLS on every tabl
 - `documents` (Storage path, type, source, uploaded_at, `extraction_status`: pending, extracted, failed). Extraction is not faked; until built, documents stay pending.
 - `results` (test_name, panel, value, unit, reference_low, reference_high, collected_at, provider, `document_id`).
 
+### 5.2a Two founder decisions, 16 September 2026
+
+Both were taken after the gap analysis against `Ciatta MVP — Technical Stack &
+Architecture v0.1`, and both are recorded here rather than applied silently.
+
+**Confidence keeps its scale.** `threads.confidence` and `insights.confidence` stay
+as specified, with components, a scale, a percentage and a score.
+
+This **supersedes a locked decision**. The Ciatta Decision Register (`01 · AUTHORITY`,
+7 September 2026) locks Confidence as "carried by the claim register and by naming
+what is missing. No scale, no percentage, no score." That lock is changeable only by
+explicit revision, and this is that revision, made by the founder on 16 September 2026.
+
+The Register's own change protocol says what still owes doing, and none of it is done
+yet: name the canonical decision affected (done, here), update the authoritative source
+rather than the screen (the Register itself, not this file), propagate downstream and
+mark what is superseded in place, re-run the affected audit, and record the change and
+its date. **Until the Register is updated, two documents disagree and this one is the
+junior.** Carry that into any slice that builds threads.
+
+What does not change, because it was never the same rule: absence is still never shown
+as a value, and confidence in a finding is still not a substitute for saying what is
+missing. A score may accompany a claim; it may not replace the naming of what is unknown.
+
+**The standards layer is in the MVP.** OMOP CDM concepts and HL7 FHIR resources are
+built as the architecture document specifies, and the MVP hypotheses are tested with
+them rather than around them. Normalization sits where that document puts it, second in
+the flow, directly after ingestion and before evidence extraction.
+
+The consequence, stated plainly so it is not discovered later: every table already
+written stores a bespoke vocabulary, so this is a retrofit across `observations`,
+`daily_metrics`, `episodes`, `results` and `medications`, not a greenfield layer beneath
+them. It also has prerequisites that are not engineering. LOINC requires registration,
+RxNorm is open, SNOMED CT requires a licence (free in the United States through the UMLS
+Metathesaurus, not free everywhere), and UMLS itself requires an account and a licence
+agreement. **No slice can start against SNOMED or UMLS until those are held.**
+
 ### 5.3 Common language
 `observations`: domain, metric, value numeric, value_text, unit, occurred_at, source_id, `provenance` (MEASURED, REPORTED, RECORDED, IMPORTED, DOCUMENT, DERIVED, INFERRED, RESEARCH), data_quality, `origin_table` and `origin_id` back to the domain row, and a unique `dedupe_key` (from the old `observationIdentity`). Domain rows write their observations in the same transaction. Sleep, activity, heart and temperature arrive from HealthKit as observations directly.
 
