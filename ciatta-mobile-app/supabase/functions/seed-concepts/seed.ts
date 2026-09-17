@@ -224,7 +224,13 @@ export function planBatch(requested: readonly unknown[] | null): Plan {
     // correctly. JSON.stringify gives ["Heart rate"], which collides with
     // nothing, because no vocabulary term contains a bracket or a quote.
     if (typeof term !== 'string') {
-      refused.push(JSON.stringify(term));
+      // The String fallback is not redundant. JSON.stringify returns undefined
+      // rather than a string for undefined, a function and a symbol, and
+      // refused is a string[] that must stay one. Nothing arriving from
+      // JSON.parse can be any of those three, so this is unreachable over the
+      // wire, but planBatch and runSeed are exported and the next caller may
+      // not come over the wire.
+      refused.push(JSON.stringify(term) ?? String(term));
       continue;
     }
 

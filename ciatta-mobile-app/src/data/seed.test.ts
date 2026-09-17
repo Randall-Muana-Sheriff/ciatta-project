@@ -427,6 +427,22 @@ test('a refused non string is labelled so it cannot be mistaken for a vocabulary
   assert.equal(plan.planned.length, 1);
 });
 
+test('a value with no JSON rendering is still labelled as a string', () => {
+  // JSON.stringify returns undefined rather than a string for undefined, a
+  // function and a symbol, which would put a non string into the
+  // refused: string[] it is pushed onto. This is unreachable over the wire,
+  // because requested arrives from JSON.parse and JSON has no undefined, no
+  // function and no symbol. It is reachable here, because planBatch and
+  // runSeed are exported and the next caller may not come over the wire.
+  const plan = planBatch([undefined, () => {}]);
+  assert.equal(plan.refused.length, 2);
+  for (const label of plan.refused) {
+    assert.equal(typeof label, 'string', 'a value that is not a string reached refused: string[]');
+  }
+  assert.equal(plan.refused[0], 'undefined');
+  assert.deepEqual(plan.planned, []);
+});
+
 test('an off list string is still labelled as itself, not as a quoted value', () => {
   // Only a non string gets the JSON rendering. A genuine off list term is
   // reported exactly as the caller sent it, because that is what they need to
