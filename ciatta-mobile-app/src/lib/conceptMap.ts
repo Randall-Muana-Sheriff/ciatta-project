@@ -37,8 +37,20 @@ export const METRIC_CONCEPTS: ConceptSeed[] = [
   { system: 'loinc', code: '93832-4', display: 'Sleep duration',                 domain: 'sleep',    term: 'Sleep duration' },
 ];
 
-// Units, so a value carries a machine readable unit rather than a label.
-// UCUM codes are short and stable.
+// UCUM codes for the units her measurements are recorded in. Short, stable,
+// and readable by inspection, which is why they are written down here rather
+// than resolved: SABS has no UCUM entry, so no UMLS search could confirm one.
+//
+// What these are not, yet: nothing reads them. The intent was that a value
+// carries a machine readable unit rather than a label, and that is not what
+// ships. public.fhir_observation renders valueQuantity from
+// observations.unit, the free text column, with no system and no code on the
+// Quantity, so these eight rows are written to public.concepts and then never
+// consulted. The debt is recorded at the rendering site in
+// 20260918100200_fhir_observation.sql, which is where a reader would be
+// misled, and the claim is qualified here so this comment does not assert a
+// capability the slice does not deliver.
+
 export const UNIT_CONCEPTS: ConceptSeed[] = [
   { system: 'ucum', code: '/min',  display: 'per minute', domain: 'unit', term: 'per minute' },
   { system: 'ucum', code: 'ms',    display: 'millisecond', domain: 'unit', term: 'millisecond' },

@@ -39,6 +39,41 @@ language sql stable security invoker set search_path = '' as $$
     -- value_text, so emitting the two independently produced a resource no
     -- conforming reader accepts. The quantity is the measurement, so the
     -- quantity wins.
+    -- The unit travels as free text, and that is a deliberate stop rather than
+    -- an oversight.
+    --
+    -- Debt, recorded at the line. A UCUM coded Quantity carries system, code
+    -- and unit; this one carries unit alone. That is still valid FHIR, and a
+    -- reader is told the unit as a display string rather than told something
+    -- false, which is the only reason it is acceptable to ship. UNIT_CONCEPTS
+    -- in conceptMap.ts seeds eight UCUM rows into public.concepts and nothing
+    -- here reads them.
+    --
+    -- What is owed, and why it is not a join added here. o.unit is one free
+    -- text column written by three different producers. The device path writes
+    -- a closed set (count/min, count, degC, ms, min, %, kcal), the episode
+    -- triggers write 'of 10' and 'Bristol type', which are not units in any
+    -- vocabulary, and imported results write whatever a laboratory document
+    -- said. Joining concepts on a normalised o.unit would need a crosswalk
+    -- written in SQL, because three of the device values are not their own
+    -- UCUM code: count/min is /min, count is {count}, degC is Cel. That
+    -- crosswalk would be a third copy of unit knowledge, beside
+    -- src/lib/healthMetrics.ts and conceptMap.ts, with nothing checking it
+    -- against either, and this slice already carries a test whose whole job is
+    -- catching drift between the two copies that exist.
+    --
+    -- Worse, it would make coded_ness mean the wrong thing. A Quantity would
+    -- carry a UCUM code when its unit string happened to be in the seed list
+    -- and not otherwise, so a clinician comparing two heart rate resources
+    -- would be reading a fact about seeding coverage rather than about the
+    -- measurement. A partly coded unit is harder to trust than an honestly
+    -- uncoded one.
+    --
+    -- The honest fix is a unit_concept_id on observations, the same shape as
+    -- concept_id, set by the producer that already knows which unit it is
+    -- writing, so the code is recorded at the point the fact is known instead
+    -- of guessed back out of a string at render time. That is a schema change
+    -- this slice is not making.
     'valueQuantity', case when o.value is null then null else jsonb_build_object(
       'value', o.value,
       'unit', o.unit

@@ -28,9 +28,23 @@ create table public.concepts (
   -- it defends against is a typo in one file under review, not anything
   -- that can happen at run time.
   domain text,
-  -- The UMLS Concept Unique Identifier. This is the join that lets one term
-  -- be recognised across vocabularies, and storing it is what makes the
-  -- crosswalk a local lookup rather than a network call on every question.
+  -- The UMLS Concept Unique Identifier, the join that would let one term be
+  -- recognised across vocabularies.
+  --
+  -- Provisioned and not yet populated. Nothing writes this column today: the
+  -- seeder's row shape has no cui field, and its upsert sends system, code,
+  -- display, domain and seeded_at only, so the value is null in every row and
+  -- the partial index below currently covers nothing. Nothing may read a null
+  -- here as evidence that a concept has no CUI, because no attempt to learn
+  -- one has ever been made.
+  --
+  -- What will populate it is a crosswalk fetch in the seeding function.
+  -- umls.ts already carries crosswalkUrl and parseCrosswalk, which build and
+  -- read that request, and they have no fetching companion and no caller yet.
+  -- When a seeded concept's CUI is fetched and stored here, a crosswalk
+  -- becomes a local lookup rather than a network call per question. Until
+  -- then it is neither, and this comment says so rather than describing the
+  -- capability as though it shipped.
   cui text,
   -- When UMLS last confirmed this row. Nullable on purpose: a concept
   -- entered by hand has never been confirmed by UMLS, and writing a date
@@ -40,6 +54,9 @@ create table public.concepts (
   updated_at timestamptz not null default now(),
   unique (system, code)
 );
+-- Partial, so while cui is null in every row this index holds nothing and
+-- costs nothing. It is created now rather than later because the column is
+-- the right shape and the cost of carrying it empty is nil.
 create index concepts_cui on public.concepts (cui) where cui is not null;
 create index concepts_domain on public.concepts (domain);
 
