@@ -95,14 +95,40 @@ export function parseCrosswalk(body: unknown): UmlsHit[] {
 // absence caused by a network error as a fact about the vocabulary.
 //
 // The key is never in the thrown message: an error reaches a log, and a log
-// is exactly where a key must not be.
+// is exactly where a key must not be. That rule covers the cause chain as
+// well as the message, which is why the two awaits below are wrapped.
 export async function searchTerm(
   fetcher: Fetcher,
   term: string,
   sab: string,
   apiKey: string
 ): Promise<UmlsHit[]> {
-  const response = await fetcher(searchUrl(term, sab, apiKey));
+  const url = searchUrl(term, sab, apiKey);
+
+  let response;
+  try {
+    response = await fetcher(url);
+  } catch {
+    // Deliberately discards the original error rather than chaining it. On
+    // Deno, which is what this function actually deploys to, a network level
+    // rejection carries the full request URL in `cause`, and that URL carries
+    // the API key as a query parameter, so attaching the original here would
+    // put the key one `console.error(e)` away from the function logs. Node's
+    // undici does not leak this way, which is exactly why no test in the app
+    // suite could have caught it. The transport detail is not worth a key.
+    throw new Error('UMLS search failed: the request did not complete');
+  }
+
   if (!response.ok) throw new Error(`UMLS search failed with status ${response.status}`);
-  return parseSearch(await response.json());
+
+  // Reading the body is the same hazard by a second route: a body that fails
+  // mid stream rejects from the same client and carries the same URL.
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    throw new Error('UMLS search failed: the response body could not be read');
+  }
+
+  return parseSearch(body);
 }
