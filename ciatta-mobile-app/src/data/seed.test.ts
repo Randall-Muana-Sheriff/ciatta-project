@@ -360,6 +360,69 @@ test('a repeated term issues one request rather than one per occurrence', async 
   assert.equal(report.written, 1);
 });
 
+// Deduplication keys on the term, and a value that is not a string has no
+// term. `String(['Heart rate'])` is `'Heart rate'`, and that value is
+// reachable over the wire: JSON.parse of `{"terms":["Heart rate",["Heart
+// rate"]]}` hands the function a nested array. Keying the seen set on a
+// stringified non string made an off list value collide with a legitimate one,
+// and the collision behaved differently depending on array order, so both
+// orders are pinned here.
+
+test('a non string that stringifies to a vocabulary term is refused, not silently dropped', () => {
+  // The dangerous order. The string is seen first, so the nested array was
+  // deduplicated away and never refused: the batch wrote as if it were clean,
+  // which loses the all or nothing guarantee for exactly this input.
+  const plan = planBatch(['Heart rate', ['Heart rate']]);
+  assert.equal(plan.refused.length, 1, 'a non string was silently dropped instead of refusing the batch');
+  assert.equal(plan.planned.length, 1);
+});
+
+test('a non string that stringifies to a vocabulary term never writes, whatever the order', async () => {
+  const writes: ConceptRow[] = [];
+  const f = answering([{ ui: '8867-4', rootSource: 'LNC', name: 'Heart rate' }]);
+  const report = await runSeed(
+    { fetcher: f, apiKey: 'KEY', sleep: noSleep, write: async (row) => { writes.push(row); } },
+    ['Heart rate', ['Heart rate']]
+  );
+  assert.deepEqual(writes, [], 'an off list value rode in beside a legitimate one and the batch still wrote');
+  assert.equal(report.written, 0);
+  assert.equal(report.refused.length, 1);
+});
+
+test('a non string does not cause a term that is in the vocabulary to be reported as off list', () => {
+  // The other order. Here the nested array was seen first, so the genuine
+  // 'Heart rate' that followed was deduplicated away and never planned, and
+  // the operator was told a term that is in the vocabulary is not in it.
+  const plan = planBatch([['Heart rate'], 'Heart rate']);
+  assert.equal(
+    plan.planned.length,
+    1,
+    'a term that is in the vocabulary was dropped because a non string stringified to it'
+  );
+  assert.equal(plan.refused.length, 1);
+});
+
+test('both orderings of the same two values agree, so behaviour does not depend on array order', () => {
+  const a = planBatch(['Heart rate', ['Heart rate']]);
+  const b = planBatch([['Heart rate'], 'Heart rate']);
+  assert.equal(a.planned.length, b.planned.length);
+  assert.equal(a.refused.length, b.refused.length);
+});
+
+test('a refused non string is labelled by its stringification, which can collide with a real term', () => {
+  // Pinned deliberately, as a known rough edge rather than as a fix. The batch
+  // is refused correctly and the legitimate term is planned correctly, but the
+  // label an operator reads for the refused value is String(['Heart rate']),
+  // which is indistinguishable from the real term 'Heart rate'. So the
+  // sentence the operator sees is still capable of naming a term that is in
+  // the vocabulary. JSON.stringify would render it as ["Heart rate"] and
+  // remove the ambiguity entirely. Left as it is pending a decision, and
+  // pinned here so the ambiguity is visible rather than discovered later.
+  const plan = planBatch([['Heart rate'], 'Heart rate']);
+  assert.deepEqual(plan.refused, ['Heart rate']);
+  assert.equal(plan.planned.length, 1);
+});
+
 test('a repeated off list term is refused once rather than once per occurrence', () => {
   const plan = planBatch(['Sudden inexplicable dread', 'Sudden inexplicable dread']);
   assert.deepEqual(plan.refused, ['Sudden inexplicable dread']);

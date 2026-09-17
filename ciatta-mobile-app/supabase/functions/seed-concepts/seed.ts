@@ -21,23 +21,34 @@ export type SeedInput = {
   expectedCode?: string;
 };
 
-export type SeedOutcome = {
+type SeedOutcomeBase = {
   term: string;
   domain: string;
   system: string;
   code: string | null;
   display: string | null;
   confirmed: boolean;
-  // not_found means UMLS answered and had nothing. unavailable means the
-  // attempt did not complete, which is not evidence about the vocabulary at
-  // all. Keeping them apart is the difference between telling an operator
-  // "UMLS has no code for this" and "we could not find out", and only one of
-  // those is true when a request or a write fails.
-  reason: 'resolved' | 'confirmed' | 'mismatch' | 'not_found' | 'unavailable';
-  // Which attempt did not complete, set only when reason is unavailable. A
-  // failed search means retry; a failed write means look at the database.
-  stage?: 'search' | 'write';
 };
+
+// not_found means UMLS answered and had nothing. unavailable means the attempt
+// did not complete, which is not evidence about the vocabulary at all. Keeping
+// them apart is the difference between telling an operator "UMLS has no code
+// for this" and "we could not find out", and only one of those is true when a
+// request or a write fails.
+//
+// A union rather than one type carrying an optional stage. The optional
+// version permitted `{ reason: 'unavailable' }` with no stage, and an outcome
+// shaped like that falls out of every list in the response and is reported
+// nowhere at all. No test can catch it: a test would have to construct an
+// outcome the code never builds, so it would be asserting against a hand
+// rolled object and testing the test rather than the code. A defect no test
+// can express is one only the compiler can prevent, so the compiler is given
+// what it needs to prevent it.
+export type SeedOutcome =
+  | (SeedOutcomeBase & { reason: 'resolved' | 'confirmed' | 'mismatch' | 'not_found' })
+  // Which attempt did not complete. A failed search means retry; a failed
+  // write means look at the database.
+  | (SeedOutcomeBase & { reason: 'unavailable'; stage: 'search' | 'write' });
 
 // A row as it is written to public.concepts. seeded_at is nullable and the
 // nullability carries meaning: see the unit branch in planBatch below.
@@ -195,13 +206,27 @@ export function planBatch(requested: readonly unknown[] | null): Plan {
   // a limit of twenty a second.
   const seen = new Set<string>();
   for (const term of requested) {
-    const key = typeof term === 'string' ? term : String(term);
-    if (seen.has(key)) continue;
-    seen.add(key);
+    // A value that is not a string has no term, so it is refused here, before
+    // the deduplication, rather than being stringified into one.
+    // String(['Heart rate']) is 'Heart rate', and that value arrives over the
+    // wire from a plain JSON.parse of {"terms":["Heart rate",["Heart rate"]]}.
+    // Keying the seen set on a stringified non string let an off list value
+    // collide with a legitimate one, and the collision behaved differently
+    // depending on array order: in one order the off list value was
+    // deduplicated away and silently dropped, losing the all or nothing
+    // guarantee, and in the other the legitimate term was dropped and the
+    // operator was told a term that is in the vocabulary is not in it.
+    if (typeof term !== 'string') {
+      refused.push(String(term));
+      continue;
+    }
 
-    const entry = typeof term === 'string' ? BY_TERM.get(term) : undefined;
+    if (seen.has(term)) continue;
+    seen.add(term);
+
+    const entry = BY_TERM.get(term);
     if (!entry) {
-      refused.push(key);
+      refused.push(term);
       continue;
     }
     planned.push(entry);
