@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(24);
 
 select has_type('public', 'code_system', 'the code system enum exists');
 select has_table('public', 'concepts', 'concepts exists');
@@ -58,6 +58,20 @@ select ok(has_table_privilege('service_role', 'public.concepts', 'UPDATE'),
   'service_role can update concepts');
 select ok(has_table_privilege('service_role', 'public.concepts', 'DELETE'),
   'service_role can delete concepts');
+
+-- The link from her record to the vocabulary.
+select has_column('public', 'observations', 'concept_id', 'observations can carry a concept');
+select col_is_null('public', 'observations', 'concept_id',
+  'concept_id is nullable, because an unmapped observation is ordinary, not broken');
+select col_is_fk('public', 'observations', 'concept_id', 'concept_id is a foreign key');
+
+-- The metric string is untouched. Anything reading it today keeps working.
+select has_column('public', 'observations', 'metric', 'the metric string stays');
+
+-- The lookup, and it is server only like every other function here.
+select has_function('public', 'concept_for', 'concept_for exists');
+select ok(not has_function_privilege('authenticated', 'public.concept_for(public.code_system, text)', 'EXECUTE'),
+  'authenticated cannot execute concept_for');
 
 select * from finish();
 rollback;
