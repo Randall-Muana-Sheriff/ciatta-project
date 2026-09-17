@@ -1192,9 +1192,25 @@ git commit -m "Render an observation as FHIR, and carry provenance across the tr
 Controller task, after the user says go.
 
 - [ ] Confirm `umls_api_key` is in Supabase Vault on the live project and `UMLS_API_KEY` is set as a secret on the `seed-concepts` function. Neither is created by a migration, because a migration lives in git.
-- [ ] Apply `20260918100000_concepts.sql`, `20260918100100_observation_concepts.sql` and `20260918100200_fhir_observation.sql`, then rewrite the recorded versions to match the filenames, as all three previous pushes did.
+- [ ] Record the live `observations` row count before touching anything, and apply off peak. The count is the before picture; without it a later "did the apply lose rows" question has no answer.
+- [ ] Apply with `set lock_timeout = '3s';` in the session, and apply the three in order: `20260918100000_concepts.sql`, then `20260918100100_observation_concepts.sql`, then `20260918100200_fhir_observation.sql`. Then rewrite the recorded versions to match the filenames, as all three previous pushes did.
+
+  The guard is not ceremony. `20260918100100` adds a column and a foreign key to `observations`, which is the table her HealthKit ingestion writes to and the one every scheduled baseline run reads. Postgres takes an `access exclusive` lock to add the column, and that lock queues behind any open transaction on the table and then blocks every reader and writer behind itself. Without a timeout, one long running read can turn a millisecond apply into an outage that stalls her writes for as long as that read lasts. With `lock_timeout` the apply fails fast and harmlessly instead, and can simply be run again a minute later. A failed apply is recoverable; a queue of blocked writers during ingestion is what loses data.
+
+  If the apply fails on the timeout, that is the guard working. Re run it. Do not raise the timeout to get past it.
 - [ ] Deploy `seed-concepts` with `verify_jwt = true`.
-- [ ] Run the seeding once with the full term list from `conceptMap.ts`, and **report the three counts plainly**: written, mismatched, missing. A mismatch means a code written down in `conceptMap.ts` disagrees with UMLS and a person has to choose. A missing term means part of her vocabulary has no standard concept, which is a finding about the vocabulary rather than a failure of the run.
+- [ ] Run the seeding once with the full term list from `conceptMap.ts`, and **report every list the response carries, by name, with the count and the action each one asks of a person**. There are four failure lists, not one, and they are not interchangeable:
+
+  - `mismatched` — UMLS answered with a different code than `conceptMap.ts` writes down. Somebody has to look at both and choose. The written code is not necessarily the wrong one: an exact search can match a short name atom on more than one code, so read a mismatch as "look at both", never as "what we wrote is wrong".
+  - `missing` — UMLS answered, and the answer was that it has no such concept. This is a finding about her vocabulary rather than a failure of the run, and the honest response is to decide whether the term needs a different phrasing or genuinely has no standard concept.
+  - `unreached` — the request never completed. UMLS said nothing at all. Nothing whatever is known about these terms and the fix is to run it again.
+  - `unwritten` — UMLS answered with a usable code and the database refused the row. The vocabulary is fine and the write path is not. Investigate the database, not the term.
+
+  **Report all four even when a list is empty**, and name them in the report as the response names them, so the report cannot drift from the code again.
+
+  Then check the conservation identity before believing any of it: `written` plus the length of every failure list must equal `considered`. If it does not, an outcome went somewhere none of these lists describe, and the run's report is incomplete rather than clean. Do not read a total as a result until this balances.
+
+  The reason this step is written out at this length: it previously said "report the three counts plainly: written, mismatched, missing", which was written before `unavailable` was split out of `missing`. Under that instruction, a run in which the network failed on every single term reports `written: 0, mismatched: 0, missing: 0`, and a person following the checklist literally would report **a clean no op**, when in truth nothing at all is known. Pooling "we asked and the answer was no" with "we never got to ask" is the exact fault four rounds of fixes removed from the code. It must not survive in the instruction that reads the code's output.
 - [ ] Verify: `anon` holds nothing on `concepts`; `authenticated` holds `select` only; neither Data API role can execute `concept_for`; `fhir_observation` called as one user cannot render another user's observation.
 - [ ] Record in the ledger how many of her symptom terms resolved and how many did not. That number is the honest measure of how much of her record the standards layer actually reaches, and it belongs in writing rather than in a summary.
 
