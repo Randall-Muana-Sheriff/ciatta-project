@@ -543,6 +543,27 @@ test('nothing but a vocabulary term is ever sent to UMLS', async () => {
 // refused is excluded because a refused batch considers nothing: the run
 // returns considered: 0 before any term is touched, so refused entries are not
 // outcomes and counting them would break the identity in the other direction.
+//
+// What this does NOT catch, written down because an assertion that looks total
+// and is not is worse than one whose limits are known:
+//
+//   - An outcome routed into a scalar rather than an array. Only arrays are
+//     summed, so a future field that counts outcomes as a number is invisible
+//     here and the identity still balances.
+//   - written is an independent counter, not a length. A double increment paired
+//     with a lost term cancels out and this stays quiet.
+//   - refused is excluded BY NAME. A future list that happens to be called
+//     refused would be skipped without a word.
+//   - Two lists carrying the same outcome would mask a third carrying none.
+//     Not reachable today, because the filters key on distinct reasons and are
+//     mutually exclusive, but nothing here enforces that.
+//
+// All four have the same root: this is a law ASSERTED OVER a report built from
+// independent filters, not a law the construction obeys by shape. Building the
+// report as a partition, each outcome routed to exactly one bucket once, would
+// make every case above structurally impossible instead of merely untested.
+// That is a rewrite of the report construction rather than a fix, so it is
+// recorded here rather than done.
 function accountedFor(report: SeedReport): number {
   const lists = Object.entries(report).filter(
     ([name, value]) => name !== 'refused' && Array.isArray(value)

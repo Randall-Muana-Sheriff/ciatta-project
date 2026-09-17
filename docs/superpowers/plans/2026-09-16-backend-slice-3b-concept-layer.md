@@ -42,7 +42,9 @@
 
 **What this table is.** Reference data, not her data. A LOINC code for heart rate is the same fact for everyone, so this table has no `user_id`, and that is the one deliberate departure from this project's rule that every table carries RLS and an owner policy. It is readable by any signed in user and writable only by the service role, which is exactly the shape `anon` already has nowhere and `authenticated` has on `baselines`.
 
-**Why `cui` is stored.** The UMLS Concept Unique Identifier is what lets one term be recognised across vocabularies. Storing it is what makes Task 5's crosswalk a local lookup rather than a network call.
+**Why `cui` is provisioned.** The UMLS Concept Unique Identifier is what lets one term be recognised across vocabularies. The column and its index exist so a later slice can fetch the CUI once and make the crosswalk a local lookup instead of a network call on every question.
+
+**This slice writes nothing to it.** The seeder's row shape carries `system`, `code`, `display`, `domain` and `seeded_at` and no CUI, so the column is null in every row the seeding run creates, and the partial index covers nothing. `crosswalkUrl` and `parseCrosswalk` ship with no caller. A null here means no attempt has been made, never that a concept has no CUI. Do not read the column as evidence of anything until something populates it.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -126,8 +128,12 @@ create table public.concepts (
   -- value is a poor trade for a column nothing branches on.
   domain text,
   -- The UMLS Concept Unique Identifier. This is the join that lets one term
-  -- be recognised across vocabularies, and storing it is what makes the
-  -- crosswalk a local lookup rather than a network call on every question.
+  -- be recognised across vocabularies. Provisioned, not populated: nothing
+  -- in this slice writes it, so it is null in every row the seeder creates
+  -- and the index below covers nothing. A later slice fetches the CUI once
+  -- and makes the crosswalk a local lookup instead of a network call on
+  -- every question. Until then a null here means no attempt has been made,
+  -- never that a concept has no CUI.
   cui text,
   -- When UMLS last confirmed this row. Nullable on purpose: a concept
   -- entered by hand has never been confirmed by UMLS, and writing a date
@@ -283,7 +289,11 @@ export const METRIC_CONCEPTS: ConceptSeed[] = [
   { system: 'loinc', code: '93832-4', display: 'Sleep duration',                 domain: 'sleep',    term: 'Sleep duration' },
 ];
 
-// Units, so a value carries a machine readable unit rather than a label.
+// Units, seeded so a value can one day carry a machine readable unit rather
+// than a label. Nothing reads these yet: fhir_observation renders
+// valueQuantity from the free text unit column, so the Quantity goes out with
+// no system and no code. Closing that needs unit_concept_id on observations,
+// because three of the seven device units are not their own UCUM code.
 // UCUM codes are short and stable.
 export const UNIT_CONCEPTS: ConceptSeed[] = [
   { system: 'ucum', code: '/min',  display: 'per minute', domain: 'unit', term: 'per minute' },
