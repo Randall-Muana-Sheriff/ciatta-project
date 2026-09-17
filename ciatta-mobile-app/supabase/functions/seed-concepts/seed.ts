@@ -48,7 +48,21 @@ export type SeedOutcome =
   | (SeedOutcomeBase & { reason: 'resolved' | 'confirmed' | 'mismatch' | 'not_found' })
   // Which attempt did not complete. A failed search means retry; a failed
   // write means look at the database.
-  | (SeedOutcomeBase & { reason: 'unavailable'; stage: 'search' | 'write' });
+  | (SeedOutcomeBase & { reason: 'unavailable'; stage: 'search' | 'write' })
+  // UMLS answered, with a code, and with no display that can be written.
+  // umls.ts sets name to '' when the field is absent or is not a string, and
+  // resolveOne turns that into display: null, while concepts.display is not
+  // null in the table.
+  //
+  // Its own reason rather than a reuse of unavailable/write, and the criterion
+  // is the one that split unreached from unwritten: what would the operator
+  // do. unwritten says look at the database, and here the database is fine and
+  // was never asked. not_found says UMLS has nothing, and here UMLS answered.
+  // Either label sends a person to a healthy system to look for a fault that
+  // is not there. What is actually needed is a look at the UMLS record for
+  // this code, or a display supplied in the vocabulary, and neither of the
+  // existing two reasons says that.
+  | (SeedOutcomeBase & { reason: 'unusable' });
 
 // A row as it is written to public.concepts. seeded_at is nullable and the
 // nullability carries meaning: see the unit branch in planBatch below.
@@ -265,6 +279,11 @@ export type SeedReport = {
   // UMLS answered but the row did not reach the database. Look at the
   // database. For a unit there was no UMLS request to begin with.
   unwritten: SeedOutcome[];
+  // UMLS answered with a code and no usable display, so there was nothing
+  // writable to send. Look at the UMLS record for the code, or give the term a
+  // display in the vocabulary. Not a fault in the database, which was never
+  // asked, and not a statement that UMLS has no code, because it gave one.
+  unusable: SeedOutcome[];
   refused: string[];
 };
 
@@ -295,6 +314,7 @@ export async function runSeed(deps: SeedDeps, requested: readonly unknown[] | nu
       missing: [],
       unreached: [],
       unwritten: [],
+      unusable: [],
       refused,
     };
   }
@@ -349,6 +369,25 @@ export async function runSeed(deps: SeedDeps, requested: readonly unknown[] | nu
       continue;
     }
 
+    // UMLS answered for this term and the answer cannot be written. Said
+    // explicitly, before the write, because the alternative is what this
+    // branch was added to fix: the write guard below simply did not fire, the
+    // outcome fell through still carrying reason: 'resolved', and 'resolved'
+    // matches none of the filters at the bottom of this function. The term was
+    // written nowhere and reported nowhere, and the run said considered: 1,
+    // written: 0 with every list empty.
+    //
+    // The compiler could not see it, because the outcome was structurally
+    // valid the whole time. Only the conservation assertion in the test suite
+    // can: written plus every list must come back to considered.
+    if ((outcome.reason === 'resolved' || outcome.reason === 'confirmed') && !(outcome.code && outcome.display)) {
+      // Only the reason changes. The code is kept so the operator holds the
+      // row, and confirmed is left as UMLS left it, because confirmed records
+      // whether UMLS confirmed the concept rather than whether it was written.
+      outcomes.push({ ...outcome, reason: 'unusable' });
+      continue;
+    }
+
     // Only a resolved or confirmed term is written. A mismatch and a not
     // found both write nothing, which is what keeps an unknown from becoming
     // a fact.
@@ -382,6 +421,7 @@ export async function runSeed(deps: SeedDeps, requested: readonly unknown[] | nu
     missing: outcomes.filter((o) => o.reason === 'not_found'),
     unreached: outcomes.filter((o) => o.reason === 'unavailable' && o.stage === 'search'),
     unwritten: outcomes.filter((o) => o.reason === 'unavailable' && o.stage === 'write'),
+    unusable: outcomes.filter((o) => o.reason === 'unusable'),
     refused: [],
   };
 }

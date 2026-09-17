@@ -7,6 +7,8 @@ import {
   runSeed,
   resolveOne,
   type ConceptRow,
+  type SeedOutcome,
+  type SeedReport,
 } from '../../supabase/functions/seed-concepts/seed';
 import { SABS, type Fetcher } from '../../supabase/functions/seed-concepts/umls';
 import {
@@ -520,6 +522,148 @@ test('nothing but a vocabulary term is ever sent to UMLS', async () => {
       `a string that is not a vocabulary term was sent to UMLS: ${string}`
     );
   }
+});
+
+// The conservation law, and it is the structural assertion rather than a test
+// of one branch.
+//
+// Every test above asserts on a list the code populates. None of them could
+// assert on the list the code forgot, because a test written from the four
+// lists can only ever check the four lists: an outcome that falls out of all
+// of them is invisible to every one of those assertions, and the run still
+// reports considered: 1, written: 0 with every list empty. That is a term
+// vanishing, and nothing in the suite said a word about it.
+//
+// So this counts the report's own shape rather than a list of names written
+// down here. Every array on the report except refused is an outcome list, so
+// summing all of them plus written must come back to considered. A new list
+// added later is counted automatically, and an outcome that reaches no list at
+// all fails here whatever the reason on it happens to be.
+//
+// refused is excluded because a refused batch considers nothing: the run
+// returns considered: 0 before any term is touched, so refused entries are not
+// outcomes and counting them would break the identity in the other direction.
+function accountedFor(report: SeedReport): number {
+  const lists = Object.entries(report).filter(
+    ([name, value]) => name !== 'refused' && Array.isArray(value)
+  ) as [string, SeedOutcome[]][];
+  return report.written + lists.reduce((total, [, list]) => total + list.length, 0);
+}
+
+function assertConserved(report: SeedReport, what: string): void {
+  assert.equal(
+    accountedFor(report),
+    report.considered,
+    `${what}: ${report.considered} considered but ${accountedFor(report)} accounted for, so a term is reported nowhere`
+  );
+}
+
+// UMLS can answer with a real code and no usable name. umls.ts sets name to ''
+// when the field is absent or not a string, which resolveOne turns into
+// display: null, and a row with no display cannot be written because display is
+// not null in the table. The term is not missing, because UMLS answered. It is
+// not unwritten either, because the database was never asked and there is
+// nothing wrong with it. It has its own reason so that the operator is sent to
+// the UMLS record rather than to a healthy database.
+test('a hit with a code but no display is reported rather than vanishing', async () => {
+  const writes: ConceptRow[] = [];
+  const f = answering([{ ui: '123456', rootSource: 'SNOMEDCT_US', name: '' }]);
+  const report = await runSeed(
+    { fetcher: f, apiKey: 'KEY', sleep: noSleep, write: async (row) => { writes.push(row); } },
+    ['Bloating']
+  );
+  assert.deepEqual(writes, [], 'a concept with no display reached the table');
+  assert.equal(report.considered, 1);
+  assert.equal(report.written, 0);
+  assert.equal(report.unusable.length, 1, 'a term UMLS answered for was reported in no list at all');
+  assert.equal(report.unusable[0].term, 'Bloating');
+  // The code is kept. UMLS did answer, and the operator needs the code to look
+  // the record up.
+  assert.equal(report.unusable[0].code, '123456');
+  assert.equal(report.unusable[0].display, null);
+  assert.equal(report.unusable[0].reason, 'unusable');
+  // What UMLS said is kept rather than rewritten, the same way the unwritten
+  // branch keeps it. confirmed records whether UMLS confirmed the concept, not
+  // whether the row reached the table, and UMLS did answer here.
+  assert.equal(report.unusable[0].confirmed, true);
+  // UMLS answered, so this is not a statement about the vocabulary having
+  // nothing, and the database is not at fault either.
+  assert.deepEqual(report.missing, [], 'a term UMLS answered for was reported as an absence');
+  assert.deepEqual(report.unwritten, [], 'a healthy database was reported as the thing to look at');
+  assertConserved(report, 'a hit with a code but no display');
+});
+
+test('a run conserves every term it considered, whatever happened to each one', async () => {
+  // One run carrying every outcome the code can produce: a clean write, a
+  // mismatch, a genuine absence, a request that did not complete, a write that
+  // failed, a unit written with no request, and a hit with no usable name.
+  const f: Fetcher = async (url) => {
+    const term = new URL(url).searchParams.get('string') ?? '';
+    if (term === 'Fatigue') throw new Error('UMLS search failed: the request did not complete');
+    if (term === 'Bloating') return { ok: true, status: 200, json: async () => ({ result: { results: [] } }) };
+    if (term === 'Nausea') {
+      // A real code with no usable name.
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ result: { results: [{ ui: '422587007', rootSource: 'SNOMEDCT_US' }] } }),
+      };
+    }
+    if (term === 'Heart rate') {
+      // Disagrees with the code written down in the vocabulary.
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ result: { results: [{ ui: '99999-9', rootSource: 'LNC', name: 'Something else' }] } }),
+      };
+    }
+    if (term === 'Headache') {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ result: { results: [{ ui: '25064002', rootSource: 'SNOMEDCT_US', name: 'Headache' }] } }),
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ result: { results: [{ ui: '9279-1', rootSource: 'LNC', name: 'Respiratory rate' }] } }),
+    };
+  };
+  const report = await runSeed(
+    {
+      fetcher: f,
+      apiKey: 'KEY',
+      sleep: noSleep,
+      // The respiratory rate write is the one that fails, so unwritten is
+      // populated too.
+      write: async (row) => { if (row.code === '9279-1') throw new Error('insert failed'); },
+    },
+    ['Headache', 'Bloating', 'Fatigue', 'Nausea', 'Heart rate', 'Respiratory rate', 'percent']
+  );
+
+  assert.equal(report.considered, 7);
+  assertConserved(report, 'a run carrying every outcome kind');
+
+  // And the terms landed where an operator would look for them, so the
+  // identity above is not satisfied by pooling two of them.
+  assert.deepEqual(report.missing.map((o) => o.term), ['Bloating']);
+  assert.deepEqual(report.unreached.map((o) => o.term), ['Fatigue']);
+  assert.deepEqual(report.unwritten.map((o) => o.term), ['Respiratory rate']);
+  assert.deepEqual(report.mismatched.map((o) => o.term), ['Heart rate']);
+  assert.deepEqual(report.unusable.map((o) => o.term), ['Nausea']);
+  // Headache resolved and wrote, percent is a unit written with no request.
+  assert.equal(report.written, 2);
+});
+
+test('the conservation law holds for a run where nothing goes wrong at all', async () => {
+  const f = answering([{ ui: '25064002', rootSource: 'SNOMEDCT_US', name: 'Headache' }]);
+  const report = await runSeed(
+    { fetcher: f, apiKey: 'KEY', sleep: noSleep, write: async () => {} },
+    ['Headache', 'percent']
+  );
+  assert.equal(report.written, 2);
+  assertConserved(report, 'a run where every term wrote');
 });
 
 test('the symptoms are sent to snomed and the metrics to loinc, which is what SABS says', () => {

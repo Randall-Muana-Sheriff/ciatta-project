@@ -97,9 +97,16 @@ Deno.serve(async (req) => {
   return json({
     considered: report.considered,
     written: report.written,
-    // Four lists rather than counts, because each one asks a different person
+    // Five lists rather than counts, because each one asks a different person
     // for a different thing, and pooling any two of them would state
     // something untrue.
+    //
+    // Together with written they also account for every term considered:
+    // written plus the five lengths equals considered, for any run. That
+    // identity is the thing worth holding, and it is asserted in the test
+    // suite. A term that satisfies none of these categories is a term written
+    // nowhere and reported nowhere, which is exactly the defect the unusable
+    // list was added to close.
     //
     // mismatched: a written code disagrees with the vocabulary. Someone needs
     //   to look at both codes and decide which is right.
@@ -111,9 +118,14 @@ Deno.serve(async (req) => {
     // unwritten: UMLS answered but the row did not reach the database. Look
     //   at the database, not at the vocabulary. A unit appears here without
     //   UMLS ever having been asked.
+    // unusable: UMLS answered with a code and no display text, so there was
+    //   nothing writable to send. Look at the UMLS record for the code, or
+    //   give the term a display in the vocabulary. The database is not at
+    //   fault and was never asked, which is why this is not unwritten.
     mismatched: report.mismatched,
     missing: report.missing,
     unreached: report.unreached,
     unwritten: report.unwritten,
+    unusable: report.unusable,
   });
 });
