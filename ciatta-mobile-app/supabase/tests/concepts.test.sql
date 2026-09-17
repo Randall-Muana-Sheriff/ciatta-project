@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(25);
+select plan(32);
 
 select has_type('public', 'code_system', 'the code system enum exists');
 select has_table('public', 'concepts', 'concepts exists');
@@ -82,6 +82,64 @@ select ok(not has_function_privilege('authenticated', 'public.concept_for(public
 -- caller that matters quietly lost the function.
 select ok(has_function_privilege('service_role', 'public.concept_for(public.code_system, text)', 'EXECUTE'),
   'service_role can execute concept_for, because the seeder is the caller that matters');
+
+select has_function('public', 'fhir_observation', 'fhir_observation exists');
+
+-- Seed one user, one concept, one observation.
+insert into auth.users (id, email) values
+  ('00000000-0000-0000-0000-0000000000f1', 'fhir@example.com') on conflict do nothing;
+insert into public.concepts (id, system, code, display, domain, seeded_at) values
+  ('00000000-0000-0000-0000-0000000000c1', 'loinc', '8867-4', 'Heart rate', 'vitals', now())
+  on conflict do nothing;
+insert into public.observations (id, user_id, domain, metric, value, unit, occurred_at, provenance, dedupe_key, concept_id)
+values ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000f1',
+        'vitals', 'heart_rate', 62, 'count/min', '2026-09-10T08:00:00Z', 'MEASURED', 'fhirtest:1',
+        '00000000-0000-0000-0000-0000000000c1');
+
+select is(
+  public.fhir_observation('00000000-0000-0000-0000-0000000000b1') ->> 'resourceType',
+  'Observation',
+  'it renders a FHIR Observation resource'
+);
+
+select is(
+  public.fhir_observation('00000000-0000-0000-0000-0000000000b1') #>> '{code,coding,0,code}',
+  '8867-4',
+  'the LOINC code travels in code.coding'
+);
+
+select is(
+  public.fhir_observation('00000000-0000-0000-0000-0000000000b1') #>> '{code,coding,0,system}',
+  'http://loinc.org',
+  'the coding system is the LOINC url, not the internal enum value'
+);
+
+select is(
+  (public.fhir_observation('00000000-0000-0000-0000-0000000000b1') #>> '{valueQuantity,value}')::numeric,
+  62::numeric,
+  'the value travels as a quantity'
+);
+
+-- Provenance has no home in FHIR, so it travels as an extension rather than
+-- being dropped. A measured fact and a reported one must not flatten into
+-- the same resource.
+select is(
+  public.fhir_observation('00000000-0000-0000-0000-0000000000b1') #>> '{extension,0,valueString}',
+  'MEASURED',
+  'provenance survives the translation'
+);
+
+-- An observation with no concept still renders, with no code rather than a
+-- fabricated one.
+insert into public.observations (id, user_id, domain, metric, value, unit, occurred_at, provenance, dedupe_key)
+values ('00000000-0000-0000-0000-0000000000b2', '00000000-0000-0000-0000-0000000000f1',
+        'symptom', 'bloating', 3, null, '2026-09-11T08:00:00Z', 'REPORTED', 'fhirtest:2');
+
+select ok(
+  public.fhir_observation('00000000-0000-0000-0000-0000000000b2') -> 'code' -> 'coding' is null
+  or jsonb_array_length(coalesce(public.fhir_observation('00000000-0000-0000-0000-0000000000b2') #> '{code,coding}', '[]'::jsonb)) = 0,
+  'an unmapped observation renders with no coding rather than an invented one'
+);
 
 select * from finish();
 rollback;
