@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(24);
+select plan(25);
 
 select has_type('public', 'code_system', 'the code system enum exists');
 select has_table('public', 'concepts', 'concepts exists');
@@ -63,7 +63,12 @@ select ok(has_table_privilege('service_role', 'public.concepts', 'DELETE'),
 select has_column('public', 'observations', 'concept_id', 'observations can carry a concept');
 select col_is_null('public', 'observations', 'concept_id',
   'concept_id is nullable, because an unmapped observation is ordinary, not broken');
-select col_is_fk('public', 'observations', 'concept_id', 'concept_id is a foreign key');
+-- fk_ok rather than col_is_fk on purpose: col_is_fk asserts only that the
+-- column sits in some foreign key, so a later migration could repoint it at
+-- another table and this file would stay green. The target is the claim worth
+-- holding, so the target is what is named here.
+select fk_ok('public', 'observations', 'concept_id', 'public', 'concepts', 'id',
+  'concept_id references public.concepts (id)');
 
 -- The metric string is untouched. Anything reading it today keeps working.
 select has_column('public', 'observations', 'metric', 'the metric string stays');
@@ -72,6 +77,11 @@ select has_column('public', 'observations', 'metric', 'the metric string stays')
 select has_function('public', 'concept_for', 'concept_for exists');
 select ok(not has_function_privilege('authenticated', 'public.concept_for(public.code_system, text)', 'EXECUTE'),
   'authenticated cannot execute concept_for');
+-- The positive beside the negative. Three assertions that nobody may execute
+-- this would all pass on a revoke shipped without its grant, while the only
+-- caller that matters quietly lost the function.
+select ok(has_function_privilege('service_role', 'public.concept_for(public.code_system, text)', 'EXECUTE'),
+  'service_role can execute concept_for, because the seeder is the caller that matters');
 
 select * from finish();
 rollback;
