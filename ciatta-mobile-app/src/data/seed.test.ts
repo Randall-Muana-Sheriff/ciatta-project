@@ -409,18 +409,29 @@ test('both orderings of the same two values agree, so behaviour does not depend 
   assert.equal(a.refused.length, b.refused.length);
 });
 
-test('a refused non string is labelled by its stringification, which can collide with a real term', () => {
-  // Pinned deliberately, as a known rough edge rather than as a fix. The batch
-  // is refused correctly and the legitimate term is planned correctly, but the
-  // label an operator reads for the refused value is String(['Heart rate']),
-  // which is indistinguishable from the real term 'Heart rate'. So the
-  // sentence the operator sees is still capable of naming a term that is in
-  // the vocabulary. JSON.stringify would render it as ["Heart rate"] and
-  // remove the ambiguity entirely. Left as it is pending a decision, and
-  // pinned here so the ambiguity is visible rather than discovered later.
+test('a refused non string is labelled so it cannot be mistaken for a vocabulary term', () => {
+  // The sentence an operator reads must not be capable of naming something
+  // that is in the vocabulary. String(['Heart rate']) is 'Heart rate', which
+  // reads as a refusal of the real term and is the whole reason this label
+  // changed. JSON.stringify renders ["Heart rate"], which collides with
+  // nothing, because no vocabulary term contains a bracket or a quote.
   const plan = planBatch([['Heart rate'], 'Heart rate']);
-  assert.deepEqual(plan.refused, ['Heart rate']);
+  assert.deepEqual(plan.refused, ['["Heart rate"]']);
+  assert.notDeepEqual(
+    plan.refused,
+    ['Heart rate'],
+    'the refused label names a term that is in the vocabulary'
+  );
+  // The legitimate term is still planned, so the refusal is about the nested
+  // array alone rather than about the term it stringified to.
   assert.equal(plan.planned.length, 1);
+});
+
+test('an off list string is still labelled as itself, not as a quoted value', () => {
+  // Only a non string gets the JSON rendering. A genuine off list term is
+  // reported exactly as the caller sent it, because that is what they need to
+  // see to correct it.
+  assert.deepEqual(planBatch(['Sudden inexplicable dread']).refused, ['Sudden inexplicable dread']);
 });
 
 test('a repeated off list term is refused once rather than once per occurrence', () => {

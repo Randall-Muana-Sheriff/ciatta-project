@@ -216,8 +216,15 @@ export function planBatch(requested: readonly unknown[] | null): Plan {
     // deduplicated away and silently dropped, losing the all or nothing
     // guarantee, and in the other the legitimate term was dropped and the
     // operator was told a term that is in the vocabulary is not in it.
+    //
+    // The label is JSON rendered rather than stringified, so that what an
+    // operator reads cannot itself name a vocabulary term. String(['Heart
+    // rate']) is 'Heart rate', which reads as a refusal of the real term and
+    // would say something untrue even though the real term is planned
+    // correctly. JSON.stringify gives ["Heart rate"], which collides with
+    // nothing, because no vocabulary term contains a bracket or a quote.
     if (typeof term !== 'string') {
-      refused.push(String(term));
+      refused.push(JSON.stringify(term));
       continue;
     }
 
