@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(12);
+select plan(18);
 
 select has_type('public', 'code_system', 'the code system enum exists');
 select has_table('public', 'concepts', 'concepts exists');
@@ -34,6 +34,30 @@ select col_not_null('public', 'concepts', 'system', 'system is required');
 -- be the same fabrication this project keeps removing.
 select col_is_null('public', 'concepts', 'seeded_at',
   'seeded_at is nullable, because a concept UMLS has never confirmed has no such date');
+
+-- Reference data carries no RLS on purpose, and that must not drift. A policy
+-- here could only be `using (true)`, which asserts a scoping this table does
+-- not have. If concepts ever gains an owner, change this assertion
+-- deliberately rather than letting a policy appear by muscle memory.
+select ok(
+  not (select relrowsecurity from pg_class where oid = 'public.concepts'::regclass),
+  'RLS is off on concepts, because reference data has no owner to scope it to'
+);
+select policies_are('public', 'concepts', array[]::name[],
+  'no policy exists on concepts, so the grant is the whole access control story');
+
+-- The revoke covers DELETE too, and a future additive grant must fail here
+-- rather than at run time.
+select ok(not has_table_privilege('authenticated', 'public.concepts', 'DELETE'),
+  'authenticated cannot delete concepts');
+
+-- The seeder runs as the service role, so its write access is load bearing.
+select ok(has_table_privilege('service_role', 'public.concepts', 'INSERT'),
+  'service_role can insert concepts');
+select ok(has_table_privilege('service_role', 'public.concepts', 'UPDATE'),
+  'service_role can update concepts');
+select ok(has_table_privilege('service_role', 'public.concepts', 'DELETE'),
+  'service_role can delete concepts');
 
 select * from finish();
 rollback;

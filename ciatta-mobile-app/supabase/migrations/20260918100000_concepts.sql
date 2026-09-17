@@ -19,9 +19,14 @@ create table public.concepts (
   code text not null,
   display text not null,
   -- The domain this concept belongs to in her record: vitals, activity,
-  -- sleep, symptom, medication, result. Free text rather than an enum
-  -- because the set grows with what she logs, and a migration to add a
-  -- value is a poor trade for a column nothing branches on.
+  -- sleep, symptom, medication, result. Free text rather than an enum or a
+  -- check constraint, and the reason is where the value comes from rather
+  -- than whether anything reads it. Code does branch on this column. What
+  -- it never does is take the value from her: every domain is written by
+  -- the seeder from a single checked in list, so a constrained column would
+  -- force a migration each time that vocabulary grows while the only thing
+  -- it defends against is a typo in one file under review, not anything
+  -- that can happen at run time.
   domain text,
   -- The UMLS Concept Unique Identifier. This is the join that lets one term
   -- be recognised across vocabularies, and storing it is what makes the
