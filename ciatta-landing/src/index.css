@@ -392,6 +392,7 @@ p { margin: 0; text-wrap: pretty; }
    narrow lines need the weight, long ones do not. */
 @media (min-aspect-ratio: 1/1) { .hero-title { font-weight: 400; } }
 .hero-lede { color: rgba(247,244,238,0.88); font-size: var(--t-lede); line-height: 1.3; }
+.hero-support { color: rgba(247,244,238,0.72); font-size: var(--t-small); line-height: 1.3; }
 
 /* On the film the ground is inverted, so the filled action inverts with it:
    Paper fill, Graphite label. Ember still never becomes a button. */

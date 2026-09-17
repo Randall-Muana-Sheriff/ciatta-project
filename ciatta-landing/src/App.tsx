@@ -142,16 +142,12 @@ export default function App() {
           <div className="shell hero-inner">
             <div className="hero-copy">
               <h1 className="display hero-title">
-                Your health is changing. See what is changing with it.
+                See what’s changing in your health.
               </h1>
-              {/* One paragraph, in the order the problem is actually met: what
-                  changes, where it ends up, and what Ciatta does with it. The
-                  value sentence closes it rather than sitting in its own block,
-                  so position carries the emphasis. */}
+              {/* One paragraph: what Ciatta holds, and what it does with it. */}
               <p className="hero-lede">
-                Your cycle changes. Your sleep changes. Symptoms come and go. The
-                pieces are scattered across apps, devices and appointments. Ciatta
-                brings them together so you can see what changed and what to ask.
+                Your health doesn’t happen in pieces. Ciatta connects your health data
+                to show what’s changing, what connects, and what may be worth exploring.
               </p>
               <div id="join">
                 <SubscribeForm
@@ -162,6 +158,9 @@ export default function App() {
                   consent="I agree to receive emails about early access and product updates."
                 />
               </div>
+              {/* Who the page is for, under the action rather than over the
+                  headline: it qualifies the invitation, so it follows it. */}
+              <p className="hero-support">Built for women navigating complex, changing health.</p>
             </div>
           </div>
         </section>
