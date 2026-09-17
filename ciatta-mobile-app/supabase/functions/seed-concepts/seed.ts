@@ -28,7 +28,15 @@ export type SeedOutcome = {
   code: string | null;
   display: string | null;
   confirmed: boolean;
-  reason: 'resolved' | 'confirmed' | 'mismatch' | 'not_found';
+  // not_found means UMLS answered and had nothing. unavailable means the
+  // attempt did not complete, which is not evidence about the vocabulary at
+  // all. Keeping them apart is the difference between telling an operator
+  // "UMLS has no code for this" and "we could not find out", and only one of
+  // those is true when a request or a write fails.
+  reason: 'resolved' | 'confirmed' | 'mismatch' | 'not_found' | 'unavailable';
+  // Which attempt did not complete, set only when reason is unavailable. A
+  // failed search means retry; a failed write means look at the database.
+  stage?: 'search' | 'write';
 };
 
 // A row as it is written to public.concepts. seeded_at is nullable and the
@@ -55,12 +63,16 @@ export async function resolveOne(
   const hits = await searchTerm(fetcher, input.term, sab, apiKey);
 
   if (hits.length === 0) {
-    // Unresolved, which is not the same fact as "this term has no code".
-    // searchTerm returns an empty list for a genuine absence and also for a
-    // shape change at NLM, a maintenance page served with a 200, or a row
-    // whose ui is not a string, and none of those are distinguishable from
-    // each other here. Nothing downstream may read this as a confirmed
-    // absence.
+    // UMLS answered, and the answer was empty. An attempt that did not
+    // complete is reported separately, as unavailable, because a network
+    // failure is not evidence about the vocabulary.
+    //
+    // A residual ambiguity remains here and is deliberate. searchTerm returns
+    // an empty list for a genuine absence and also for a shape change at NLM,
+    // a maintenance page served with a 200, or a row whose ui is not a
+    // string. Those all arrive as a successful response, so they cannot be
+    // told apart from a real absence at this point. Nothing downstream may
+    // read not_found as proof that a term has no code.
     return {
       term: input.term,
       domain: input.domain,
@@ -110,7 +122,7 @@ export async function resolveOne(
 // rxnorm, and SABS has no UCUM entry to search with.
 export type PlannedTerm =
   | { kind: 'resolve'; input: SeedInput }
-  | { kind: 'unit'; row: ConceptRow };
+  | { kind: 'unit'; term: string; row: ConceptRow };
 
 export type Plan = { planned: PlannedTerm[]; refused: string[] };
 
@@ -133,6 +145,7 @@ for (const concept of [...METRIC_CONCEPTS, ...UNIT_CONCEPTS]) {
     // eyeball, so an unconfirmed one would be a guess recorded as a fact.
     BY_TERM.set(concept.term, {
       kind: 'unit',
+      term: concept.term,
       row: {
         system: concept.system,
         code: concept.code,
@@ -175,10 +188,20 @@ export function planBatch(requested: readonly unknown[] | null): Plan {
 
   const planned: PlannedTerm[] = [];
   const refused: string[] = [];
+  // A repeated term is planned once. The vocabulary is the same for everyone
+  // and a concept is written idempotently, so a second occurrence buys
+  // nothing while spending the rate limit again: without this, an array of
+  // ten thousand copies of one term would issue ten thousand requests against
+  // a limit of twenty a second.
+  const seen = new Set<string>();
   for (const term of requested) {
+    const key = typeof term === 'string' ? term : String(term);
+    if (seen.has(key)) continue;
+    seen.add(key);
+
     const entry = typeof term === 'string' ? BY_TERM.get(term) : undefined;
     if (!entry) {
-      refused.push(typeof term === 'string' ? term : String(term));
+      refused.push(key);
       continue;
     }
     planned.push(entry);
@@ -197,9 +220,27 @@ export type SeedReport = {
   considered: number;
   written: number;
   mismatched: SeedOutcome[];
+  // UMLS answered and had nothing for these.
   missing: SeedOutcome[];
+  // The UMLS request did not complete. Retry.
+  unreached: SeedOutcome[];
+  // UMLS answered but the row did not reach the database. Look at the
+  // database. For a unit there was no UMLS request to begin with.
+  unwritten: SeedOutcome[];
   refused: string[];
 };
+
+// The name only, never the object, its message or its cause. On Deno a failed
+// request carries the request URL and that URL carries the API key, and a
+// thrown PostgREST error is a plain object whose stringification can carry a
+// row. The instanceof guard degrades anything that is not an Error to
+// 'unknown' rather than stringifying it.
+//
+// The term is health vocabulary rather than her health information, so naming
+// it is safe and is the only way to know which one failed.
+function logFailure(term: string, e: unknown): void {
+  console.error('seed-concepts failed for term', term, e instanceof Error ? e.name : 'unknown');
+}
 
 export async function runSeed(deps: SeedDeps, requested: readonly unknown[] | null): Promise<SeedReport> {
   const { planned, refused } = planBatch(requested);
@@ -209,31 +250,72 @@ export async function runSeed(deps: SeedDeps, requested: readonly unknown[] | nu
   // slipping one off list term in beside legitimate ones, and a partial run
   // would make that look like a success.
   if (refused.length > 0) {
-    return { considered: 0, written: 0, mismatched: [], missing: [], refused };
+    return {
+      considered: 0,
+      written: 0,
+      mismatched: [],
+      missing: [],
+      unreached: [],
+      unwritten: [],
+      refused,
+    };
   }
 
   const outcomes: SeedOutcome[] = [];
   let written = 0;
 
   for (const entry of planned) {
-    const term = entry.kind === 'unit' ? entry.row.display : entry.input.term;
-    const domain = entry.kind === 'unit' ? entry.row.domain : entry.input.domain;
-    const system = entry.kind === 'unit' ? entry.row.system : entry.input.system;
-
-    try {
-      if (entry.kind === 'unit') {
+    // A unit is never sent to UMLS, so a failure here can only be the write.
+    // Reporting it as a term UMLS had no answer for would be nonsense: UMLS
+    // was never asked.
+    if (entry.kind === 'unit') {
+      try {
         await deps.write(entry.row);
         written += 1;
-        continue;
+      } catch (e) {
+        logFailure(entry.term, e);
+        outcomes.push({
+          term: entry.term,
+          domain: entry.row.domain,
+          system: entry.row.system,
+          code: entry.row.code,
+          display: entry.row.display,
+          confirmed: false,
+          reason: 'unavailable',
+          stage: 'write',
+        });
       }
+      continue;
+    }
 
-      const outcome = await resolveOne(deps.fetcher, entry.input, deps.apiKey, deps.sleep);
-      outcomes.push(outcome);
+    const input = entry.input;
 
-      // Only a resolved or confirmed term is written. A mismatch and a not
-      // found both write nothing, which is what keeps an unknown from
-      // becoming a fact.
-      if ((outcome.reason === 'resolved' || outcome.reason === 'confirmed') && outcome.code && outcome.display) {
+    let outcome: SeedOutcome;
+    try {
+      outcome = await resolveOne(deps.fetcher, input, deps.apiKey, deps.sleep);
+    } catch (e) {
+      // The attempt did not complete, so nothing was learned about this term.
+      // umls.ts sanitizes its own throws, and logFailure is the second guard
+      // rather than a substitute for the first.
+      logFailure(input.term, e);
+      outcomes.push({
+        term: input.term,
+        domain: input.domain,
+        system: input.system,
+        code: null,
+        display: null,
+        confirmed: false,
+        reason: 'unavailable',
+        stage: 'search',
+      });
+      continue;
+    }
+
+    // Only a resolved or confirmed term is written. A mismatch and a not
+    // found both write nothing, which is what keeps an unknown from becoming
+    // a fact.
+    if ((outcome.reason === 'resolved' || outcome.reason === 'confirmed') && outcome.code && outcome.display) {
+      try {
         await deps.write({
           system: outcome.system,
           code: outcome.code,
@@ -242,27 +324,17 @@ export async function runSeed(deps: SeedDeps, requested: readonly unknown[] | nu
           seeded_at: new Date().toISOString(),
         });
         written += 1;
+      } catch (e) {
+        logFailure(input.term, e);
+        // What UMLS said is kept rather than nulled. The code is not in the
+        // table, but it is not unknown either, and saying otherwise would be
+        // the same false statement in the other direction.
+        outcomes.push({ ...outcome, reason: 'unavailable', stage: 'write' });
+        continue;
       }
-    } catch (e) {
-      // The name only. The error from a failed request carries the request
-      // URL on Deno and that URL carries the API key, so the object, its
-      // message and its cause are all unloggable here. umls.ts sanitizes its
-      // own throws, and this is the second guard rather than a substitute for
-      // the first.
-      //
-      // The term is health vocabulary rather than her health information, so
-      // naming it is safe and is the only way to know which one failed.
-      console.error('seed-concepts failed for term', term, e instanceof Error ? e.name : 'unknown');
-      outcomes.push({
-        term,
-        domain,
-        system,
-        code: null,
-        display: null,
-        confirmed: false,
-        reason: 'not_found',
-      });
     }
+
+    outcomes.push(outcome);
   }
 
   return {
@@ -270,6 +342,8 @@ export async function runSeed(deps: SeedDeps, requested: readonly unknown[] | nu
     written,
     mismatched: outcomes.filter((o) => o.reason === 'mismatch'),
     missing: outcomes.filter((o) => o.reason === 'not_found'),
+    unreached: outcomes.filter((o) => o.reason === 'unavailable' && o.stage === 'search'),
+    unwritten: outcomes.filter((o) => o.reason === 'unavailable' && o.stage === 'write'),
     refused: [],
   };
 }

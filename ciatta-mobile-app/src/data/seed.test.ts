@@ -240,11 +240,130 @@ test('a request that fails writes nothing for that term and does not stop the ru
     { fetcher: f, apiKey: 'KEY', sleep: noSleep, write: async (row) => { writes.push(row); } },
     ['Fatigue', 'Bloating']
   );
-  // The failed term is unresolved, not absent, and the run continued.
-  assert.equal(report.missing.length, 1);
-  assert.equal(report.missing[0].term, 'Fatigue');
+  // The failed term did not complete, which is not the same fact as UMLS
+  // having no answer for it, so it is not in missing. The run continued.
+  assert.deepEqual(report.missing, []);
+  assert.equal(report.unreached.length, 1);
+  assert.equal(report.unreached[0].term, 'Fatigue');
   assert.equal(writes.length, 1);
   assert.equal(writes[0].code, '123456');
+});
+
+// A failure to reach UMLS and a failure to write to the database are both
+// "the attempt did not complete", and neither is a fact about the vocabulary.
+// Reporting either as not_found would put a false sentence in front of the
+// operator: a claim about what UMLS says, made on evidence about something
+// else entirely. They are separated here because they need different actions,
+// a retry against a look at the database.
+
+test('a request that does not complete is unavailable, never a statement about the vocabulary', async () => {
+  const writes: ConceptRow[] = [];
+  const f: Fetcher = async () => {
+    throw new Error('UMLS search failed: the request did not complete');
+  };
+  const report = await runSeed(
+    { fetcher: f, apiKey: 'KEY', sleep: noSleep, write: async (row) => { writes.push(row); } },
+    ['Fatigue']
+  );
+  assert.deepEqual(writes, []);
+  assert.deepEqual(report.missing, [], 'a failed request was reported as UMLS having no answer');
+  assert.equal(report.unreached.length, 1);
+  assert.equal(report.unreached[0].term, 'Fatigue');
+  assert.equal(report.unreached[0].reason, 'unavailable');
+  assert.equal(report.unreached[0].stage, 'search');
+  assert.equal(report.unreached[0].code, null);
+  assert.equal(report.unreached[0].confirmed, false);
+});
+
+test('a database write that fails is never reported as UMLS having no answer', async () => {
+  const f = answering([{ ui: '8867-4', rootSource: 'LNC', name: 'Heart rate' }]);
+  const report = await runSeed(
+    { fetcher: f, apiKey: 'KEY', sleep: noSleep, write: async () => { throw new Error('insert failed'); } },
+    ['Heart rate']
+  );
+  assert.deepEqual(report.missing, [], 'a database failure was reported as a fact about the vocabulary');
+  assert.equal(report.written, 0);
+  assert.equal(report.unwritten.length, 1);
+  assert.equal(report.unwritten[0].term, 'Heart rate');
+  assert.equal(report.unwritten[0].reason, 'unavailable');
+  assert.equal(report.unwritten[0].stage, 'write');
+  // UMLS did answer, so what it said is kept rather than nulled. The code is
+  // not in the table, but it is not unknown either.
+  assert.equal(report.unwritten[0].code, '8867-4');
+});
+
+test('a unit whose write fails is not reported as a term UMLS could not resolve', async () => {
+  // UMLS is never asked about a unit at all, so a ucum row appearing in a
+  // list of terms UMLS had no answer for would be nonsense.
+  const report = await runSeed(
+    { fetcher: answering([]), apiKey: 'KEY', sleep: noSleep, write: async () => { throw new Error('insert failed'); } },
+    ['percent']
+  );
+  assert.deepEqual(report.missing, []);
+  assert.equal(report.written, 0);
+  assert.equal(report.unwritten.length, 1);
+  assert.equal(report.unwritten[0].system, 'ucum');
+  assert.equal(report.unwritten[0].stage, 'write');
+  assert.equal(report.unwritten[0].confirmed, false);
+});
+
+test('the three failure kinds land in three lists, because each needs a different action', async () => {
+  const f: Fetcher = async (url) => {
+    const term = new URL(url).searchParams.get('string') ?? '';
+    if (term === 'Fatigue') throw new Error('UMLS search failed: the request did not complete');
+    if (term === 'Bloating') return { ok: true, status: 200, json: async () => ({ result: { results: [] } }) };
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ result: { results: [{ ui: '8867-4', rootSource: 'LNC', name: 'Heart rate' }] } }),
+    };
+  };
+  const report = await runSeed(
+    {
+      fetcher: f,
+      apiKey: 'KEY',
+      sleep: noSleep,
+      write: async (row) => { if (row.code === '8867-4') throw new Error('insert failed'); },
+    },
+    ['Bloating', 'Fatigue', 'Heart rate']
+  );
+  assert.deepEqual(report.missing.map((o) => o.term), ['Bloating'], 'missing must hold only a genuine absence');
+  assert.deepEqual(report.unreached.map((o) => o.term), ['Fatigue']);
+  assert.deepEqual(report.unwritten.map((o) => o.term), ['Heart rate']);
+  assert.equal(report.written, 0);
+});
+
+// A repeated term is one concept, and the vocabulary is the same for everyone,
+// so planning it twice buys nothing and spends the rate limit twice.
+test('a repeated term is planned once, so a batch cannot multiply requests', () => {
+  const plan = planBatch(['Heart rate', 'Heart rate', 'Heart rate']);
+  assert.deepEqual(plan.refused, []);
+  assert.equal(plan.planned.length, 1);
+});
+
+test('a repeated term issues one request rather than one per occurrence', async () => {
+  let requests = 0;
+  const f: Fetcher = async () => {
+    requests += 1;
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ result: { results: [{ ui: '8867-4', rootSource: 'LNC', name: 'Heart rate' }] } }),
+    };
+  };
+  const report = await runSeed(
+    { fetcher: f, apiKey: 'KEY', sleep: noSleep, write: async () => {} },
+    new Array(50).fill('Heart rate')
+  );
+  assert.equal(requests, 1, 'a repeated term spent the rate limit once per occurrence');
+  assert.equal(report.considered, 1);
+  assert.equal(report.written, 1);
+});
+
+test('a repeated off list term is refused once rather than once per occurrence', () => {
+  const plan = planBatch(['Sudden inexplicable dread', 'Sudden inexplicable dread']);
+  assert.deepEqual(plan.refused, ['Sudden inexplicable dread']);
+  assert.deepEqual(plan.planned, []);
 });
 
 // Units never go through UMLS. SABS has no UCUM entry, so there is no search

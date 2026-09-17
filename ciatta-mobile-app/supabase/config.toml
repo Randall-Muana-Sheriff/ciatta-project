@@ -397,6 +397,19 @@ deno_version = 2
 [functions.baselines]
 verify_jwt = true
 
+# The seeding function is run by hand or by a scheduler holding the service
+# role key, never by the app, and it checks that bearer itself before it reads
+# the UMLS key or sends a single request
+# (supabase/functions/seed-concepts/index.ts). Platform JWT verification is on
+# as well, for the same reason it is on for baselines: it turns away
+# unauthenticated traffic before the function runs at all, while the
+# function's own constant time bearer check is what decides whether the caller
+# is the service role specifically. Written here rather than left to the CLI
+# default, so the posture is a decision recorded in this file rather than one
+# nobody chose.
+[functions.seed-concepts]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

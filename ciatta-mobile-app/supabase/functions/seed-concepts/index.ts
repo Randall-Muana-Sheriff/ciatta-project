@@ -97,12 +97,23 @@ Deno.serve(async (req) => {
   return json({
     considered: report.considered,
     written: report.written,
-    // Both lists are returned in full rather than counted, because a
-    // mismatch needs a person to look at it and a missing term needs a
-    // decision about whether that part of her vocabulary can be standardised
-    // at all. A missing term is unresolved rather than confirmed to have no
-    // code, and nothing downstream may read it as the latter.
+    // Four lists rather than counts, because each one asks a different person
+    // for a different thing, and pooling any two of them would state
+    // something untrue.
+    //
+    // mismatched: a written code disagrees with the vocabulary. Someone needs
+    //   to look at both codes and decide which is right.
+    // missing: UMLS answered and had nothing. Someone needs to decide whether
+    //   that part of her vocabulary can be standardised at all. This is not
+    //   proof that no code exists, and nothing downstream may read it so.
+    // unreached: the request did not complete. Retry. This says nothing about
+    //   the vocabulary, which is exactly why it is not in missing.
+    // unwritten: UMLS answered but the row did not reach the database. Look
+    //   at the database, not at the vocabulary. A unit appears here without
+    //   UMLS ever having been asked.
     mismatched: report.mismatched,
     missing: report.missing,
+    unreached: report.unreached,
+    unwritten: report.unwritten,
   });
 });
