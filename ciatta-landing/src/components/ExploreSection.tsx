@@ -302,7 +302,7 @@ export function ExploreSection() {
           See it, connect it, and understand why.
         </h2>
         <p className="band-sub">
-          A tracking app watches one thing and stops there. Ciatta holds six
+          A tracking app watches one thing and stops there. Ciatta holds all
           parts of your record and shows you what they say together.
         </p>
         </div>

@@ -175,7 +175,7 @@ export default function App() {
             <div className="band-head">
               <h2 id="get-heading" className="band-title">What you get</h2>
               <p className="band-sub">
-                Six parts, and they only work because they are in the same place.
+                All parts, and they only work because they are in the same place.
               </p>
             </div>
             {/* A grid from a tablet up, so all six are on the page at once. On
