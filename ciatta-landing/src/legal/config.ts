@@ -17,5 +17,5 @@ export const LEGAL = {
       to wording that does not name a jurisdiction. */
   governingLaw: '' as string,
   /** Shown as "Last updated". */
-  updated: '16 September 2026',
+  updated: '17 September 2026',
 } as const;

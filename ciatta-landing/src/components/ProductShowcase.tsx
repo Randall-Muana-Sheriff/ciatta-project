@@ -1,8 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-
 /**
  * The Ciatta app, seven screens of it, drawn as the product rather than as
- * pictures of the product.
+ * pictures of the product. They open from the plus in ExploreSection.
  *
  * ARCHITECTURE
  *
@@ -198,7 +196,7 @@ function Axis() {
 /* -- 1. Cycle -------------------------------------------------------------- *
  * Job: the whole cycle history, and one cycle opened to inspect.             */
 
-function CycleScreen() {
+export function CycleScreen() {
   const cycles = [
     { s: '8 Dec', e: '5 Jan', n: 29 },
     { s: '6 Jan', e: '2 Feb', n: 28 },
@@ -261,7 +259,7 @@ function CycleScreen() {
 /* -- 2. Sleep -------------------------------------------------------------- *
  * Job: duration over time, with the lowest weeks findable and openable.      */
 
-function SleepScreen() {
+export function SleepScreen() {
   const weeks = [7.5, 7.4, 7.2, 7.3, 7.1, 7.4, 6.03, 7.0, 7.2, 7.1, 6.23, 6.9, 7.3, 7.2];
   const low = [6, 10];
   const nights = [6.6, 5.4, 6.1, 5.2, 6.5, 6.0, 6.3];
@@ -317,7 +315,7 @@ function SleepScreen() {
  * Job: what she logged, when, how often, how bad. Not a diagnosis of any of
  * it: these are her reports, and the screen never says what they mean.       */
 
-function SymptomsScreen() {
+export function SymptomsScreen() {
   const lanes = [
     { name: 'Sleep disruption', at: 62, w: 30, sev: 'mod' },
     { name: 'Fatigue', at: 58, w: 34, sev: 'mod' },
@@ -373,7 +371,7 @@ function SymptomsScreen() {
  * Job: what she takes, what changed, when. Everything here she entered or
  * imported; Ciatta recommends none of it and says so.                        */
 
-function MedsScreen() {
+export function MedsScreen() {
   const spans = [
     { name: 'Ferrous sulfate', at: 0, w: 24, done: true },
     { name: 'Levothyroxine', at: 20, w: 80 },
@@ -433,7 +431,7 @@ function MedsScreen() {
  * Job: her lived context, in her words, sitting beside the measured screens
  * rather than beneath them. No chart, no axis, no units.                     */
 
-function ToldScreen() {
+export function ToldScreen() {
   return (
     <Chrome title="What you told Ciatta" action="search">
       <Chips items={['All', 'Symptoms', 'Life', 'Medication']} on="All" />
@@ -474,7 +472,7 @@ function ToldScreen() {
  * Job: the source layer. What arrived from providers and documents, with the
  * unit, the range, the date and who sent it. Ciatta concludes nothing here.  */
 
-function RecordsScreen() {
+export function RecordsScreen() {
   return (
     <Chrome title="Health Records" action="search" dense>
       <Seg items={['Results', 'Documents']} on="Results" />
@@ -526,7 +524,7 @@ function RecordsScreen() {
  * Every layer is labelled with where it came from, so the finding can be
  * taken apart. It ends on a question, not an instruction.                    */
 
-function InsightScreen() {
+export function InsightScreen() {
   const cycle = 'M4 7 L36 8 L68 11 L100 14 L132 18';
   const sleep = 'M4 30 L36 31 L68 42 L100 32 L132 40';
 
@@ -605,127 +603,5 @@ function InsightScreen() {
         Things that move together are not necessarily one causing the other.
       </p>
     </Chrome>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-
-const SLOTS = [
-  { x: -2.62, y: 16, s: 0.62, z: 3 },
-  { x: -1.96, y: 11, s: 0.70, z: 4 },
-  { x: -1.16, y: 5,  s: 0.80, z: 5 },
-  { x:  0,    y: 0,  s: 1.75, z: 8 },
-  { x:  1.16, y: 5,  s: 0.80, z: 5 },
-  { x:  1.96, y: 11, s: 0.70, z: 4 },
-  { x:  2.62, y: 16, s: 0.62, z: 3 },
-] as const;
-
-const SCREENS = [
-  { name: 'Health Records', Screen: RecordsScreen },
-  { name: 'Cycle', Screen: CycleScreen },
-  { name: 'Sleep', Screen: SleepScreen },
-  { name: 'Personalized insight', Screen: InsightScreen },
-  { name: 'Symptoms', Screen: SymptomsScreen },
-  { name: 'Medications & Supplements', Screen: MedsScreen },
-  { name: 'What you told Ciatta', Screen: ToldScreen },
-] as const;
-
-const N = SCREENS.length;
-const HALF = (N - 1) / 2;
-const INSIGHT_INDEX = 3;
-export function ProductShowcase() {
-  const [active, setActive] = useState(INSIGHT_INDEX);
-  const [held, setHeld] = useState(false);
-  const prevOffsets = useRef<number[]>([]);
-  const drag = useRef<{ x: number } | null>(null);
-  // set when a pointer gesture travelled far enough to be a swipe, so the
-  // click that follows it does not also select a screen
-  const swiped = useRef(false);
-
-  const step = (d: number) => setActive((a) => (a + d + N) % N);
-
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    if (held) return;
-    // `active` is a dependency so the timer re-arms on every change: a manual
-    // choice is never overridden by a tick already part-way through. The dwell
-    // is eight seconds because these screens are meant to be read, not
-    // glimpsed, and a click has to be able to beat the timer to a screen.
-    const id = window.setTimeout(() => step(1), 8000);
-    return () => window.clearTimeout(id);
-  }, [held, active]);
-
-  const offsets = SCREENS.map((_, i) => {
-    const raw = (i - active + N) % N;
-    return raw > HALF ? raw - N : raw;
-  });
-  const wrapped = offsets.map((o, i) => {
-    const prev = prevOffsets.current[i];
-    return prev !== undefined && Math.abs(o - prev) > 1;
-  });
-  prevOffsets.current = offsets;
-
-  return (
-    <section className="showcase" aria-labelledby="showcase-heading">
-      <div className="shell showcase-intro">
-        <h2 id="showcase-heading" className="showcase-title">
-          All the pieces. One picture.
-        </h2>
-      </div>
-
-
-      {/* The source buttons were the only keyboard path to these screens, and
-          the stage itself was aria-hidden. With them gone the stage has to
-          carry that itself, or the showcase would be reachable by mouse drag
-          alone. */}
-      <div
-        className="showcase-stage"
-        role="group"
-        aria-roledescription="carousel"
-        aria-label={`Ciatta app screens: ${SCREENS[active].name}, ${active + 1} of ${N}`}
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
-          if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
-        }}
-        onFocus={() => setHeld(true)}
-        onBlur={() => setHeld(false)}
-        onPointerDown={(e) => { drag.current = { x: e.clientX }; swiped.current = false; setHeld(true); }}
-        onPointerUp={(e) => {
-          const d = drag.current; drag.current = null; setHeld(false);
-          if (d && Math.abs(e.clientX - d.x) > 40) {
-            swiped.current = true;
-            step(e.clientX - d.x < 0 ? 1 : -1);
-          }
-        }}
-        onPointerCancel={() => { drag.current = null; setHeld(false); }}
-        onMouseEnter={() => setHeld(true)}
-        onMouseLeave={() => { if (!drag.current) setHeld(false); }}
-      >
-        <div className="ps-fan">
-          {SCREENS.map(({ name, Screen }, i) => {
-            const slot = SLOTS[offsets[i] + HALF];
-            return (
-              <div
-                key={name}
-                className={
-                  'ps-slot' +
-                  (offsets[i] === 0 ? ' is-centre' : '') +
-                  (wrapped[i] ? ' is-rejoining' : '')
-                }
-                style={{
-                  transform: `translateX(calc(-50% + var(--ps-w) * ${slot.x})) translateY(${slot.y}%) scale(${slot.s})`,
-                  zIndex: slot.z,
-                }}
-              onClick={() => { if (!swiped.current) setActive(i); }}
-              title={offsets[i] === 0 ? undefined : `Bring ${name} to the centre`}
-              >
-                <Screen />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
   );
 }

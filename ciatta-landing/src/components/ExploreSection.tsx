@@ -1,4 +1,7 @@
 import { useRef, useState } from 'react';
+import {
+  CycleScreen, InsightScreen, MedsScreen, RecordsScreen, SleepScreen, SymptomsScreen, ToldScreen,
+} from './ProductShowcase';
 
 /**
  * "See it, connect it, and understand why." — modelled on the section of the
@@ -8,9 +11,9 @@ import { useRef, useState } from 'react';
  *
  * Octo's version puts six health *categories* on the tabs. Ciatta has no
  * categories to sell, so the six are the six kinds of thing its record holds,
- * which is the same six the product showcase walks through. That keeps the
+ * which is the same six the app screens behind the plus walk through. That keeps the
  * page honest: every figure on every card comes from the one record the
- * showcase already documents — cycles 29/28/27/26 days, sleep averaging
+ * screens already document — cycles 29/28/27/26 days, sleep averaging
  * 7h 18m with its lowest weeks on 26 Jan and 23 Feb, levothyroxine 50 mcg
  * from 8 Jan and 75 from 3 Mar, and the 14 Mar Quest panel. Today is 1 Apr
  * 2026, as it is everywhere else on this site.
@@ -18,6 +21,11 @@ import { useRef, useState } from 'react';
  * Octo's thumbnails are plain clickable images. These are a real tablist with
  * arrow-key movement, because six photographs that swap a panel are tabs
  * whether or not they are built as tabs.
+ *
+ * The app screens sit behind a plus on the panel, the way WHOOP keeps the
+ * detail of "Know what your body needs, every day" behind a plus on each card:
+ * the panel says what Ciatta shows, and the plus shows it. The insight reads
+ * cycle and sleep together, so it opens from both.
  */
 
 type Card =
@@ -39,6 +47,8 @@ type Topic = {
   answer: string;
   card: Card;
   alt: string;
+  /** The app screens behind the plus, the topic's own first. */
+  screens: { name: string; Screen: () => React.ReactNode }[];
 };
 
 const TOPICS: Topic[] = [
@@ -52,6 +62,7 @@ const TOPICS: Topic[] = [
     answer:
       'Four in a row, each a day shorter: 29, 28, 27, 26. The two shortest each began within a week of your lowest-sleep weeks.',
     alt: 'A woman sitting cross-legged on a mat in a bare, bright room.',
+    screens: [{ name: 'Cycle', Screen: CycleScreen }, { name: 'Personalized insight', Screen: InsightScreen }],
     card: {
       kind: 'series',
       head: 'Cycle length',
@@ -74,6 +85,7 @@ const TOPICS: Topic[] = [
     answer:
       'Twice this year. The weeks of 26 Jan and 23 Feb were your lowest, and your two shortest cycles both began inside them.',
     alt: 'A figure silhouetted against a low sun, arms raised overhead.',
+    screens: [{ name: 'Sleep', Screen: SleepScreen }, { name: 'Personalized insight', Screen: InsightScreen }],
     card: {
       kind: 'series',
       head: 'Sleep · weekly average',
@@ -97,6 +109,7 @@ const TOPICS: Topic[] = [
     answer:
       'You logged low energy in the same two weeks your sleep was lowest. It is in your record, dated, before anyone decides anything.',
     alt: 'A woman arching backwards with one arm extended, against a plain wall.',
+    screens: [{ name: 'Symptoms', Screen: SymptomsScreen }],
     card: {
       kind: 'log',
       head: 'Symptoms',
@@ -118,6 +131,7 @@ const TOPICS: Topic[] = [
     answer:
       'Your levothyroxine went from 50 to 75 mcg on 3 Mar. Your TSH was measured eleven days later, on 14 Mar.',
     alt: 'A flat-lay of small hand weights and a jar on a pale surface.',
+    screens: [{ name: 'Medications & Supplements', Screen: MedsScreen }],
     card: {
       kind: 'log',
       head: 'Levothyroxine',
@@ -139,6 +153,7 @@ const TOPICS: Topic[] = [
     answer:
       'Ferritin 24 is inside the range and close to its floor. That is not a diagnosis. It is a number worth asking about.',
     alt: 'A woman with cropped white hair sitting outdoors, holding a cup.',
+    screens: [{ name: 'Health Records', Screen: RecordsScreen }],
     card: {
       kind: 'range',
       head: '14 Mar · Quest',
@@ -159,6 +174,7 @@ const TOPICS: Topic[] = [
     answer:
       'You wrote it on 12 Jan, and it is still dated 12 Jan. Nothing a device records overwrites what you said.',
     alt: 'A woman cooking at a kitchen counter in daylight.',
+    screens: [{ name: 'What you told Ciatta', Screen: ToldScreen }],
     card: {
       kind: 'log',
       head: 'What you told Ciatta',
@@ -255,6 +271,7 @@ function Log({ card }: { card: Extract<Card, { kind: 'log' }> }) {
 export function ExploreSection() {
   const [active, setActive] = useState(0);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+  const sheet = useRef<HTMLDialogElement>(null);
   const t = TOPICS[active];
 
   /**
@@ -318,6 +335,12 @@ export function ExploreSection() {
                width={1800} height={900} loading="lazy" decoding="async" />
           <div className="ex-panel-scrim" aria-hidden="true" />
 
+          <button type="button" className="ex-plus" aria-haspopup="dialog"
+                  aria-label={`See ${t.screens.length > 1 ? 'the screens' : 'the screen'} in the app: ${t.screens.map((x) => x.name).join(' and ')}`}
+                  onClick={() => sheet.current?.showModal()}>
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v11M2.5 8h11" /></svg>
+          </button>
+
           <div className="ex-copy">
             <span className="ex-pill">{t.pill}</span>
             <h3 className="ex-title">{t.title}</h3>
@@ -347,6 +370,32 @@ export function ExploreSection() {
             </p>
           </figure>
         </div>
+
+        {/* A native modal dialog: focus is held inside it, Escape closes it,
+            and a click on the backdrop (the dialog element itself) does too. */}
+        <dialog ref={sheet} className="ex-sheet" aria-labelledby="ex-sheet-title"
+                onClick={(e) => { if (e.target === e.currentTarget) sheet.current?.close(); }}>
+          <div className="ex-sheet-in">
+            <div className="ex-sheet-head">
+              <div>
+                <span className="ex-sheet-pill">{t.pill}</span>
+                <h3 id="ex-sheet-title" className="ex-sheet-title">{t.title}</h3>
+              </div>
+              <button type="button" className="ex-sheet-close" aria-label="Close"
+                      onClick={() => sheet.current?.close()}>
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" /></svg>
+              </button>
+            </div>
+            <div className="ex-sheet-screens">
+              {t.screens.map(({ name, Screen }) => (
+                <figure key={name} className="ex-sheet-screen">
+                  <Screen />
+                  <figcaption>{name}</figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        </dialog>
       </div>
     </section>
   );

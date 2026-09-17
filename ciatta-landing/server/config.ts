@@ -6,7 +6,7 @@ export const newsletter = {
   /** Every confirmed subscriber, whichever topics they chose. Broadcasts target this. */
   segmentId: 'b7384901-def0-400f-a167-faaf462f9e42',
   topics: {
-    /** Ciatta Briefs, the twice-weekly newsletter. Opt-out by default: a contact
+    /** Ciatta Briefs, the weekly newsletter, every Tuesday. Opt-out by default: a contact
         only receives it after confirming a subscription that included it. */
     briefs: 'd32021a0-fb82-44a7-86e0-0eb1274ef59d',
     /** Launch news: when Ciatta opens and changes to membership. A few a year. */
@@ -39,7 +39,7 @@ export type Source = (typeof SOURCES)[number];
 /** The sentence each subscriber agreed to, stored on their contact as the consent record. */
 export function consentText(topics: TopicKey[]): string {
   const parts = [];
-  if (topics.includes('briefs')) parts.push('Ciatta Briefs by email twice a week (Tuesday and Friday)');
+  if (topics.includes('briefs')) parts.push('Ciatta Briefs by email every Tuesday');
   if (topics.includes('launch')) parts.push('occasional news about Ciatta opening and membership');
   return `Agreed to receive ${parts.join(' and ')}. Can unsubscribe at any time.`;
 }

@@ -12,7 +12,7 @@ import { joinWaitlist } from '../lib/waitlist';
  *               The member page may also offer Briefs as a separate, unticked
  *               choice (`offerBriefs`); consent to one is not consent to the
  *               other.
- *   newsletter  Ciatta Briefs only, every Tuesday and Friday. Used at the
+ *   newsletter  Ciatta Briefs only, every Tuesday. Used at the
  *               foot of the home page and on the Briefs page.
  *
  * The note under the field says exactly what each one sends, because what she
@@ -56,7 +56,7 @@ export function SubscribeForm({
   const line =
     note ??
     (kind === 'newsletter'
-      ? 'Ciatta Briefs, one short piece every Tuesday and Friday. Unsubscribe anytime.'
+      ? 'Ciatta Briefs, one short piece every Tuesday. Unsubscribe anytime.'
       : 'Waitlist updates only: when Ciatta opens and what membership includes. Unsubscribe anytime.');
 
   async function onSubmit(e: React.FormEvent) {
@@ -165,7 +165,7 @@ export function SubscribeForm({
             checked={alsoBriefs}
             onChange={(e) => setAlsoBriefs(e.target.checked)}
           />
-          <span>Also send me Ciatta Briefs, every Tuesday and Friday</span>
+          <span>Also send me Ciatta Briefs, every Tuesday</span>
         </label>
       )}
 

@@ -234,7 +234,7 @@ export default function Briefs() {
             <div className="split-lead close-inner">
               <h2 id="briefs-subscribe" className="display">Get Ciatta Briefs by email.</h2>
               <p className="close-lines">
-                One short piece every Tuesday and Friday: a guide, a comparison or a plain definition.
+                One short piece every Tuesday: a guide, a comparison or a plain definition.
               </p>
             </div>
             <div className="surface is-shell is-lifted split-body">

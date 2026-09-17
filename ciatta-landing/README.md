@@ -114,7 +114,7 @@ as `NEWSLETTER_KV` (without it, rate limiting is off; the other guards still app
 
 `npm test` runs the flow against an in-memory Resend.
 
-### Sending twice a week
+### Sending every Tuesday
 
 Issues are Markdown files in `content/briefs/issues/` (start from `_template.md`).
 
@@ -125,10 +125,10 @@ npm run newsletter -- test content/briefs/issues/<file>.md you@example.com
 # set `status: ready` in the file, then:
 npm run newsletter -- schedule --dry-run
 npm run newsletter -- schedule
-npm run newsletter -- status        # warns when a Tuesday or Friday in the next two weeks is empty
+npm run newsletter -- status        # warns when a Tuesday in the next two weeks is empty
 ```
 
-`schedule` books each ready issue into the next free Tuesday or Friday slot at
+`schedule` books each ready issue into the next free Tuesday slot at
 13:00 UTC as a Resend scheduled broadcast to the Briefs topic, then writes the
 broadcast id back into the file. Commit the file after scheduling.
 

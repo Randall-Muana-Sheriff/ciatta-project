@@ -59,7 +59,7 @@ export const terms: LegalDoc = {
       title: '4. Ciatta Briefs and other emails',
       blocks: [
         {
-          p: 'Ciatta Briefs is free. We aim to send it every Tuesday and Friday, but we may change its schedule or content, or stop it. You can unsubscribe at any time using the link in any email.',
+          p: 'Ciatta Briefs is free. We aim to send it every Tuesday, but we may change its schedule or content, or stop it. You can unsubscribe at any time using the link in any email.',
         },
       ],
     },

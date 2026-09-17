@@ -63,7 +63,7 @@ ok('tokens: sign, verify, wrong secret, wrong purpose, tampered, expired');
   const c = f.contacts.get('maya@example.com')!;
   assert.equal(c.unsubscribed, false); assert.ok(c.segments.has(newsletter.segmentId));
   assert.equal(c.topics.get(newsletter.topics.briefs), 'opt_in'); assert.equal(c.topics.get(newsletter.topics.launch), 'opt_in');
-  assert.equal(c.properties.signup_source.value, 'hero'); assert.ok(c.properties.confirmed_at.value); assert.match(c.properties.consent_text.value, /twice a week/);
+  assert.equal(c.properties.signup_source.value, 'hero'); assert.ok(c.properties.confirmed_at.value); assert.match(c.properties.consent_text.value, /every Tuesday/);
   const welcome = f.sent[1]; assert.match(welcome.subject, /subscribed/); assert.ok(welcome.headers['List-Unsubscribe'].includes('/api/newsletter/unsubscribe?token='));
   assert.equal(welcome.headers['List-Unsubscribe-Post'], 'List-Unsubscribe=One-Click');
   ok('confirm creates contact: segment, both topics opted in, consent record; sends welcome with one-click unsubscribe headers');

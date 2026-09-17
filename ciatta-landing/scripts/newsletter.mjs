@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Ciatta Briefs: write in Markdown, preview, and schedule twice a week.
+// Ciatta Briefs: write in Markdown, preview, and schedule every Tuesday.
 //
 //   npm run newsletter -- new "What changes first in perimenopause"
 //   npm run newsletter -- preview content/briefs/issues/<file>.md
@@ -16,7 +16,7 @@
 //   ---
 //
 // `schedule` takes every `ready` issue that has no broadcast yet, in filename
-// order, and books it into the next free slot, Tuesday and Friday at
+// order, and books it into the next free slot, Tuesday at
 // NEWSLETTER_SEND_HOUR_UTC (13:00 UTC by default: 9am New York, 2pm London).
 // Resend holds the scheduled send, so nothing on this machine has to be
 // running when it goes out. The broadcast id and send time are written back
@@ -41,7 +41,7 @@ const CONFIG = {
   from: 'Ciatta Briefs <briefs@ciatta.io>',
   replyTo: 'briefs@ciatta.io',
   siteUrl: 'https://ciatta.io',
-  sendDays: [2, 5], // Tuesday, Friday (Date#getUTCDay)
+  sendDays: [2], // Tuesday (Date#getUTCDay)
 };
 
 loadDotEnv();
@@ -273,7 +273,7 @@ const commands = {
     for (const i of upcoming) console.log(`  ${human(new Date(i.meta.scheduled_at))}  ${i.meta.subject}`);
     console.log(`\nReady to book: ${ready.length}    Drafts: ${drafts.length}`);
 
-    // Two a week is the promise on the form. Say so plainly when it is at risk.
+    // Every Tuesday is the promise on the form. Say so plainly when it is at risk.
     const fortnight = [...slotsFrom(new Date(now))].filter((d) => d.getTime() < now + 14 * 86400 * 1000);
     const booked = new Set(upcoming.map((i) => dayKey(new Date(i.meta.scheduled_at))));
     const gaps = fortnight.filter((d) => !booked.has(dayKey(d)));

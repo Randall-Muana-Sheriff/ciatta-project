@@ -114,25 +114,42 @@
      40 desktop, 20 mobile. */
   --gutter: clamp(20px, 3.5vw, 64px);
   /* The container is fluid: a wide screen gains layout rather than margin.
-     Text is held to --reading separately, and every section is composed as a
-     full row (heading beside its intro, content across the whole width), so
-     nothing leaves its right half empty. 1920 is only a stop for ultrawide. */
+     Text reads across the row rather than down a narrow column: headings
+     take 10 of 12 columns and intros 7, as on whoop.com. 1920 is only a
+     stop for ultrawide. */
   --measure: 1920px;
-  --reading: 62ch;
   --header-h: 4rem;
   /* One fluid step for section rhythm. 72px top and bottom put 144px between
      every section regardless of viewport. */
   --section-y: clamp(3rem, 5vw, 6.5rem);
-  /* --- the type scale. Four steps, fluid, shared by every page ------------
-       display   the hero and the showcase title
-       title     every section heading
-       statement the light closing lines
-       lede      the sentence under a heading                                */
-  --t-display: clamp(2.125rem, 1rem + 4.2vw, 5rem);
-  --t-title: clamp(1.875rem, 1.15rem + 2.5vw, 3.5rem);
-  --t-statement: clamp(2rem, 1.2rem + 3vw, 4rem);
-  --t-lede: clamp(1.0625rem, 1rem + 0.35vw, 1.3125rem);
-  --t-body: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
+  /* --- the type scale, measured from whoop.com ----------------------------
+       Every step is one straight line from a 375px phone to a 1440px laptop,
+       and holds still on either side of that: a phone never gets smaller
+       type than the 375 size, and a 27" display gets the laptop's type, not
+       a bigger one. Slope and intercept are WHOOP's, copied from its
+       stylesheet; only the family is Ciatta's.
+
+       display    the hero                        40 -> 120px
+       title      every section heading           46 -> 100px
+       statement  panel and closing headlines     40 -> 65px
+       card       headings on tiles and cards     25 -> 35px
+       lede       the sentence under a heading    18 -> 24px
+       body       running text                    16 -> 20px
+       small      supporting text, controls       14 -> 16px
+       eyebrow    uppercase labels                12 -> 20px
+       caption    the smallest text, fixed        12px                     */
+  --t-display: clamp(2.5rem, 7.51vw + 0.7394rem, 7.5rem);
+  --lh-display: clamp(2.5rem, 6.61vw + 0.9507rem, 6.9rem);
+  --t-title: clamp(2.875rem, 5.07vw + 1.6866rem, 6.25rem);
+  --lh-title: clamp(2.5013rem, 4.22vw + 1.5114rem, 5.3125rem);
+  --t-statement: clamp(2.5rem, 2.35vw + 1.9498rem, 4.0625rem);
+  --lh-statement: clamp(2.5rem, 1.74vw + 2.0929rem, 3.6563rem);
+  --t-card: clamp(1.5625rem, 0.94vw + 1.3424rem, 2.1875rem);
+  --t-lede: clamp(1.125rem, 0.56vw + 0.993rem, 1.5rem);
+  --t-body: clamp(1rem, 0.38vw + 0.912rem, 1.25rem);
+  --t-small: clamp(0.875rem, 0.19vw + 0.831rem, 1rem);
+  --t-eyebrow: clamp(0.75rem, 0.75vw + 0.5739rem, 1.25rem);
+  --t-caption: 0.75rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -190,8 +207,8 @@ body {
 }
 
 /* --- type roles, unchanged by the specimen ------------------------------- */
-.display   { font-size: var(--t-statement); font-weight: 300; letter-spacing: -0.024em; line-height: 1.05; text-wrap: balance; margin: 0; }
-p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
+.display   { font-size: var(--t-statement); font-weight: 400; letter-spacing: -0.03em; line-height: var(--lh-statement); margin: 0; }
+p { margin: 0; text-wrap: pretty; }
 
 .shell { width: 100%; max-width: var(--measure); margin: 0 auto; padding-inline: var(--gutter); }
 
@@ -202,7 +219,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .skip {
   position: absolute; left: var(--s4); top: -100px; z-index: 20;
   background: var(--ink); color: var(--on-ink);
-  padding: var(--s3) var(--s4); font-size: 0.9375rem; text-decoration: none;
+  padding: var(--s3) var(--s4); font-size: var(--t-small); text-decoration: none;
   border-radius: var(--r-control);
   transition: top var(--quick) var(--ease-caused);
 }
@@ -273,7 +290,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .header-end { display: flex; align-items: center; gap: var(--s4); }
 .header-cta {
   color: var(--on-ink); background: var(--ink);
-  font-size: 0.9375rem; font-weight: 500; text-decoration: none;
+  font-size: var(--t-small); font-weight: 500; text-decoration: none;
   border-radius: var(--r-pill);
   min-height: 2.75rem; padding: 0 var(--s5);
   display: inline-flex; align-items: center;
@@ -311,14 +328,19 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   isolation: isolate;
   display: flex;
   align-items: flex-end;
-  /* Sized to what it holds, not to the viewport: a 100vh opener would push
-     the page itself out of the first frame. */
-  min-height: clamp(600px, 88vh, 960px);
+  /* The full first view, as WHOOP's hero is. svh rather than vh, so on a
+     phone the copy is not hidden behind the browser's own toolbar; min-height
+     rather than height, so a short window grows the hero instead of
+     cropping the form. */
+  min-height: 100vh;
+  min-height: 100svh;
   /* The film runs to the very top of the page and the sticky header sits over
      it, which is what lets the header go transparent and take white type. The
      padding puts the copy back below where the header sits. */
   margin-top: calc(var(--header-h) * -1);
-  padding-block: calc(var(--header-h) + var(--section-y)) var(--section-y);
+  /* Less than a section's padding: in a hero that is exactly one screen tall,
+     every pixel of padding is a pixel the form loses. */
+  padding-block: calc(var(--header-h) + clamp(var(--s5), 4vh, var(--s7))) clamp(var(--s5), 5vh, var(--s7));
   overflow: hidden;
 }
 .hero-film { position: absolute; inset: 0; z-index: -1; }
@@ -354,7 +376,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   display: flex; flex-direction: column; gap: var(--s5);
   /* The headline now sets larger than the copy, so the column widens to hold
      it. The lede keeps its own 58ch measure and does not follow. */
-  max-width: 60rem; min-width: 0;
+  min-width: 0;
   color: #F7F4EE;
 }
 /* The hero headline sits on moving film, where Light strokes lose their edges
@@ -362,11 +384,14 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
    rather than the shared display step, and the second line comes up from 72%
    so both halves of the sentence carry. */
 .hero-title {
-  color: #F7F4EE; font-weight: 500;
+  color: #F7F4EE; font-weight: 500; text-wrap: wrap;
   font-size: var(--t-display);
-  letter-spacing: -0.03em; line-height: 1.02;
+  letter-spacing: -0.04em; line-height: var(--lh-display);
 }
-.hero-lede { color: rgba(247,244,238,0.88); max-width: 58ch; font-size: var(--t-lede); }
+/* WHOOP sets its hero heavier on a tall screen and lighter on a wide one:
+   narrow lines need the weight, long ones do not. */
+@media (min-aspect-ratio: 1/1) { .hero-title { font-weight: 400; } }
+.hero-lede { color: rgba(247,244,238,0.88); font-size: var(--t-lede); line-height: 1.3; }
 
 /* On the film the ground is inverted, so the filled action inverts with it:
    Paper fill, Graphite label. Ember still never becomes a button. */
@@ -395,11 +420,11 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
    than stretching to cover the label above it too. */
 @media (min-width: 560px) { .waitlist-row { flex-direction: row; align-items: flex-end; } }
 .waitlist-field { display: flex; flex-direction: column; gap: var(--s2); flex: 1 1 auto; min-width: 0; }
-.waitlist-field label { color: var(--meta-ink); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; }
+.waitlist-field label { color: var(--meta-ink); font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; }
 .waitlist input {
   appearance: none; width: 100%;
   background: var(--surface); color: var(--ink);
-  font: inherit; font-size: 1.0625rem;
+  font: inherit; font-size: var(--t-body);
   border: var(--hairline) solid var(--rule);
   border-radius: var(--r-control);
   padding: 0 var(--s4);
@@ -414,7 +439,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .btn-primary {
   appearance: none; cursor: pointer; flex: none;
   background: var(--ink); color: var(--on-ink);
-  font: inherit; font-size: 0.9375rem; font-weight: 500;
+  font: inherit; font-size: var(--t-small); font-weight: 500;
   border: 0; border-radius: var(--r-control);
   padding: 0 var(--s5);
   height: var(--control-h);
@@ -425,14 +450,14 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .btn-primary:active { opacity: 0.78; }
 .btn-primary[disabled] { cursor: default; opacity: 0.5; }
 
-.waitlist-note { color: var(--meta-ink); font-size: 0.875rem; }
+.waitlist-note { color: var(--meta-ink); font-size: var(--t-small); line-height: 1.3; }
 .waitlist-note.is-error { color: var(--flare-deep); }
 @media (prefers-color-scheme: dark) { .waitlist-note.is-error { color: var(--flare-dark); } }
 
 .joined { display: flex; gap: var(--s3); align-items: flex-start; max-width: 620px; }
 .joined-mark { width: 8px; height: 8px; border-radius: 50%; background: var(--change); flex: none; margin-top: 9px; }
-.joined-title { font-size: 1.0625rem; font-weight: 500; color: var(--ink); }
-.joined-sub { color: var(--meta-ink); font-size: 0.9375rem; }
+.joined-title { font-size: var(--t-body); font-weight: 500; color: var(--ink); }
+.joined-sub { color: var(--meta-ink); font-size: var(--t-small); }
 
 /* ===========================================================================
    Section scaffolding — the rule under the heading survives as structure,
@@ -445,7 +470,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
    =========================================================================== */
 
 .close-inner { display: flex; flex-direction: column; gap: var(--s5); }
-.close-lines { color: var(--body-ink); font-size: var(--t-lede); line-height: 1.5; }
+.close-lines { color: var(--body-ink); font-size: var(--t-lede); line-height: 1.3; }
 .close-lines b { color: var(--ink); font-weight: 400; }
 
 .footer {
@@ -457,14 +482,14 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 /* Footer links measured 24px tall. The row keeps its rhythm; the links take
    the height as padding so the target reaches 44. */
 .footer a {
-  color: var(--body-ink); font-size: 0.9375rem; text-decoration: none;
+  color: var(--body-ink); font-size: var(--t-small); text-decoration: none;
   border-radius: var(--r-inset);
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 2.75rem; min-width: 2.75rem;
 }
 .footer-nav { margin-block: calc(var(--s3) * -1); }
 .footer a:hover { color: var(--ink); }
-.footer-copy { color: var(--meta-ink); font-size: 0.875rem; margin-left: auto; }
+.footer-copy { color: var(--meta-ink); font-size: var(--t-small); margin-left: auto; }
 
 /* Reduce Motion resolves every state to its end frame. Nothing is lost but
    the movement. */
@@ -499,9 +524,9 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 }
 
 /* ===========================================================================
-   PRODUCT SHOWCASE — seven fully rendered screens at iPhone 17 Pro
-   proportions (402 x 874 pt, layout.md > Specifications), fanned, Finding as
-   the anchor.
+   APP SCREENS — seven fully rendered screens at iPhone 17 Pro proportions
+   (402 x 874 pt, layout.md > Specifications), shown behind the plus in
+   Explore.
 
    The screens use Ciatta's own dark resolution: Graphite canvas, Raised
    surfaces, Paper ink. That is the neutral premium ground the system already
@@ -511,7 +536,8 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
    Urbanist carries the type inside the screens, which depict the app rather
    than the page. Everything else, here and everywhere, is Jost.
    =========================================================================== */
-.showcase {
+/* The screens open from the plus in Explore. */
+.ex-sheet {
   --ps-canvas: #18191B;        /* Graphite, the screen ground */
   --ps-raised: #232733;        /* Raised, panels resting on it */
   --ps-rule: #3A3F4A;
@@ -523,48 +549,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   --ps-uncertain: #E4C058;     /* Mustard, dark step */
   --ps-evidence: #F2B863;   /* Amber, dark step. Published evidence. */
   --ps-clay: #EC9658;          /* Ember, dark step. The connection. */
-  --ps-w: 14rem;
-  padding-block: var(--section-y);
-  overflow: hidden;
 }
-/* The showcase opens on a centred title: the fan beneath it is symmetrical
-   about the centre screen, so a left-aligned opening sat off its own axis. */
-.showcase-intro {
-  display: flex; flex-direction: column; align-items: center;
-  margin-bottom: var(--s6); text-align: center;
-}
-/* Jost at 600, matched in scale to the hero headline so the two display
-   moments on the page speak with one voice. One sentence in one ink: the two
-   halves used to be separate blocks in different colours, which read as a
-   lockup rather than a line. */
-.showcase-title {
-  font-family: var(--font);
-  font-weight: 600; font-size: var(--t-display);
-  line-height: 1.04; letter-spacing: -0.03em; color: var(--ink);
-  margin: 0; max-width: 20ch; text-wrap: balance;
-}
-/* --- the fan ------------------------------------------------------------- */
-.showcase-stage { width: 100%; }
-.ps-fan {
-  position: relative;
-  height: calc(var(--ps-w) * 1.75 * 874 / 402 + 1.5rem);
-  margin-inline: auto;
-}
-.ps-slot {
-  position: absolute;
-  top: 0; left: 50%;
-  transform: translateX(-50%);
-  transform-origin: top center;
-  /* The orbit. ease-in-out because the screens move on their own rather than
-     because someone touched them. */
-  transition: transform 900ms cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ps-slot { transition: none; }
-}
-
 /* --- the device ---------------------------------------------------------- */
 .ps-phone {
   width: var(--ps-w);
@@ -578,21 +563,6 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
     0 22px 48px -20px rgba(24,25,27,0.42);
   font-family: 'Urbanist', system-ui, sans-serif;
   color: var(--ps-ink);
-}
-/* The centre is a position, not a component: whichever screen arrives there
-   grows and gains the deeper contact shadow. */
-/* The centre is the value, so it is the only screen at full size and full
-   brightness. The six ingredients recede: smaller, dimmed, further back. They
-   are meant to be recognised, not read. */
-.ps-slot.is-centre .ps-phone {
-  box-shadow:
-    0 0 0 1px rgba(24,25,27,0.62),
-    0 3px 8px rgba(24,25,27,0.14),
-    0 60px 110px -34px rgba(24,25,27,0.58);
-}
-.ps-slot:not(.is-centre) .ps-phone {
-  filter: brightness(0.90) saturate(0.95);
-  transition: filter var(--transition) var(--ease-caused);
 }
 .ps-screen {
   height: 100%; border-radius: 11%/5.2%;
@@ -914,45 +884,11 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .ps-cite { font-size: 2.2cqw; color: var(--ps-meta); font-variant-numeric: tabular-nums; }
 .ps-hedge { font-size: 2.3cqw; line-height: 1.4; color: var(--ps-meta); margin: 0; }
 
-/* --- responsive ---------------------------------------------------------- */
-@media (max-width: 1240px) { .showcase { --ps-w: 11.75rem; } }
-@media (max-width: 940px)  { .showcase { --ps-w: 9.75rem; } }
-@media (max-width: 720px) {
-  /* A fan cannot survive a phone, so it becomes a set of screens you move
-     through. The insight leads, since it is the payoff. These screens are
-     dense, so the card takes as much of the viewport as it can and still
-     show the edge of the next one. */
-  .showcase { --ps-w: min(19rem, 74vw); overflow: visible; }
-  .ps-fan {
-    display: grid; grid-auto-flow: column; grid-auto-columns: max-content;
-    gap: var(--s4); overflow-x: auto; scroll-snap-type: x mandatory;
-    padding-inline: var(--gutter); padding-block: var(--s2) var(--s5);
-    scrollbar-width: none;
-  }
-  .ps-fan::-webkit-scrollbar { display: none; }
-  .ps-fan { position: static; height: auto; }
-  .ps-slot { position: static; transform: none !important; transition: none; scroll-snap-align: center; }
-  .ps-slot.is-centre { order: -1; }
-  .ps-slot.is-centre .ps-phone { width: calc(var(--ps-w) * 1.12); }
-}
 @media (prefers-reduced-transparency: reduce) { .ps-col-bar { opacity: 1; } }
 @media (prefers-contrast: more) {
-  .showcase { --ps-meta: #B4B7BA; --ps-body: #C9CCCF; }
+  .ex-sheet { --ps-meta: #B4B7BA; --ps-body: #C9CCCF; }
   .ps-col-bar { opacity: 0.7; }
-  .ps-slot:not(.is-centre) .ps-phone { filter: none; }
 }
-
-/* --- carousel: the wrap, and the controls -------------------------------- */
-.ps-slot.is-rejoining { transition: none; animation: ps-rejoin 620ms ease-out; }
-@keyframes ps-rejoin { from { opacity: 0; } to { opacity: 1; } }
-.showcase-stage { touch-action: pan-y; cursor: grab; }
-.showcase-stage:active { cursor: grabbing; }
-
-@media (prefers-reduced-motion: reduce) { .ps-slot.is-rejoining { animation: none; } }
-
-/* the guidance block on the centre screen */
-
-@media (prefers-reduced-motion: reduce) { .ps-slot:not(.is-centre) .ps-phone { transition: none; } }
 
 /* --- the record's own additions ------------------------------------------ */
 
@@ -1032,10 +968,6 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   font-size: 2.2cqw; color: var(--ps-meta); font-variant-numeric: tabular-nums;
 }
 
-/* A screen off the centre is a way back to it, so it says so on hover. The
-   centre one is already where a click would put it and stays a plain cursor. */
-.ps-slot:not(.is-centre) { cursor: pointer; }
-.ps-slot:not(.is-centre):hover .ps-phone { filter: brightness(1) saturate(1); }
 
 /* ===========================================================================
    The sections that explain rather than demonstrate. They sit below the
@@ -1043,98 +975,34 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
    heading style shared across all four so they read as one run.
    =========================================================================== */
 .band-title {
-  font-family: var(--font); font-weight: 600;
+  font-family: var(--font); font-weight: 400;
   font-size: var(--t-title);
-  line-height: 1.06; letter-spacing: -0.026em; color: var(--ink);
-  margin: 0; max-width: 16ch; text-wrap: balance;
+  line-height: var(--lh-title); letter-spacing: -0.03em; color: var(--ink);
+  margin: 0;
 }
 .band-sub {
-  margin: var(--s3) 0 var(--s6); color: var(--body-ink); max-width: 58ch;
-  font-size: var(--t-lede); line-height: 1.5;
+  margin: var(--s3) 0 var(--s6); color: var(--body-ink);
+  font-size: var(--t-lede); line-height: 1.3;
 }
 
-/* --- the section header as a row. The heading takes the left of the row and
-       the sentence under it takes the right, so the two sit side by side and
-       the row is full before the content starts beneath them. On a phone the
-       sentence simply follows the heading. --------------------------------- */
-.band-head { display: grid; gap: var(--s3); margin-bottom: var(--s6); align-items: start; }
+/* --- the section header. WHOOP stacks the sentence under the headline at
+       every width: once a heading reaches 100px there is no half-row wide
+       enough to sit beside it. --------------------------------------------- */
+.band-head { display: grid; gap: var(--s4); margin-bottom: clamp(var(--s6), 3vw, var(--s7)); align-items: start; }
 .band-head .band-title, .band-head .band-sub { margin: 0; }
-@media (min-width: 900px) {
-  .band-head { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s5) var(--s8); margin-bottom: var(--s7); }
-  /* the intro starts level with the heading's first line, not its cap top */
-  .band-head .band-sub { padding-top: 0.45em; justify-self: start; }
-}
-@media (min-width: 1400px) {
-  .band-head { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); }
-}
+/* WHOOP's headline spans 10 of 12 columns. Below a tablet it runs the full
+   width. The sentence under it always runs the full width. */
+@media (min-width: 900px) { .band-title { max-width: calc(100% * 10 / 12); } }
 
-/* --- the two-column section. Where the content is a list, a form or a card
-       rather than a grid, the heading and its intro keep the left of the row
-       and the content takes the right. The left column stays put while the
-       right one scrolls, so the heading is always in view beside its list. */
-.split { display: grid; gap: var(--s6); align-items: start; }
+/* --- the section with a list, a form or a card. Stacked at every width, like
+       the section heads: the heading reads across the row, and the content
+       follows beneath it rather than beside it. */
+.split { display: grid; gap: clamp(var(--s6), 3vw, var(--s7)); align-items: start; }
 .split-lead { display: flex; flex-direction: column; gap: var(--s4); }
 .split-lead .band-title, .split-lead .band-sub, .split-lead .display { margin: 0; }
 .split-body { min-width: 0; }
-@media (min-width: 1000px) {
-  .split { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s6) var(--s8); }
-  .split-lead { position: sticky; top: calc(var(--header-h) + var(--s6)); }
-  /* a statement beside a form: even halves, and the form fills its card */
-  .split.is-centred { align-items: center; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .split.is-centred .split-lead { position: static; }
-  .split.is-centred .split-body .waitlist,
-  .split.is-centred .split-body .joined { max-width: none; }
-}
-@media (min-width: 1400px) {
-  .split:not(.is-centred) { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); }
-}
-
-/* --- the comparison. A table, because it is one: five dimensions against
-       three kinds of tool. It scrolls in its own box rather than forcing the
-       page sideways on a phone. ------------------------------------------ */
-.compare-wrap { overflow-x: auto; scrollbar-width: thin; }
-.compare {
-  width: 100%; min-width: 44rem; border-collapse: collapse; table-layout: fixed;
-  font-size: var(--t-body); line-height: 1.5;
-}
-.compare th, .compare td {
-  text-align: left; vertical-align: top;
-  padding: var(--s5) var(--s5) var(--s5) 0;
-  border-top: var(--hairline) solid var(--rule);
-}
-.compare td:last-child { padding-right: 0; }
-.compare thead th {
-  border-top: 0; border-bottom: var(--strong) solid var(--ink);
-  padding-top: 0; font-size: 0.8125rem; font-weight: 600;
-  letter-spacing: 0.11em; text-transform: uppercase; color: var(--meta-ink);
-}
-.compare thead th.is-ours { color: var(--ink); }
-.compare tbody th {
-  font-weight: 500; color: var(--ink); width: 18%; padding-right: var(--s5);
-}
-.compare td { color: var(--body-ink); }
-/* Ciatta's column is the subject of the table, so it carries the ink. The
-   others are context and stay at body weight. */
-.compare td.is-ours { color: var(--ink); }
-.compare-note { margin-top: var(--s4); color: var(--meta-ink); font-size: 0.9375rem; max-width: 62ch; }
-/* On a phone the table is three columns wide and only one fits, so each row
-   becomes a block: the dimension as its heading, then the three answers each
-   named by the tool they describe. Nothing is hidden off the edge. */
-@media (max-width: 720px) {
-  .compare-wrap { overflow: visible; }
-  .compare { min-width: 0; display: block; }
-  .compare thead { display: none; }
-  .compare tbody, .compare tr { display: block; }
-  .compare tr { padding: var(--s4) 0; border-top: var(--hairline) solid var(--rule); }
-  .compare tbody th, .compare td { display: block; width: auto; border: 0; padding: 0; }
-  .compare tbody th { font-weight: 600; font-size: 1.125rem; margin-bottom: var(--s3); }
-  .compare td { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: var(--s3); padding: var(--s2) 0; }
-  .compare td::before {
-    content: attr(data-col); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em;
-    text-transform: uppercase; color: var(--meta-ink); padding-top: 0.2em;
-  }
-  .compare td.is-ours::before { color: var(--ink); }
-}
+/* a form card is as wide as an intro, not the whole row around a short form */
+@media (min-width: 900px) { .split.is-centred .split-body { max-width: calc(100% * 7 / 12); } }
 
 /* --- questions. Native details/summary: it opens without JavaScript, it is
        keyboard operable for free, and find-in-page reaches closed answers. */
@@ -1144,12 +1012,12 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .qa-item summary {
   display: flex; align-items: flex-start; gap: var(--s4);
   padding: var(--s5) 0; cursor: pointer; list-style: none;
-  font-size: 1.125rem; font-weight: 500; color: var(--ink); line-height: 1.4;
+  font-size: var(--t-lede); font-weight: 500; color: var(--ink); line-height: 1.3;
 }
 .qa-item summary::-webkit-details-marker { display: none; }
 .qa-item summary span { flex: 1; }
 .qa-item summary i {
-  flex: none; width: 0.875rem; height: 0.875rem; margin-top: 0.3rem;
+  flex: none; width: 0.875rem; height: 0.875rem; margin-top: 0.4em;
   position: relative;
 }
 .qa-item summary i::before,
@@ -1163,7 +1031,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .qa-item[open] summary { color: var(--ink); }
 .qa-item p {
   margin: 0 0 var(--s5); padding-right: var(--s7);
-  color: var(--body-ink); max-width: 68ch;
+  color: var(--body-ink);
 }
 .qa-item summary:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .qa-item summary i::after { transition: none; } }
@@ -1326,12 +1194,12 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 }
 .get-card h3 {
   margin: 0; padding: var(--s5) var(--s5) 0;
-  font-size: clamp(1.125rem, 1rem + 0.4vw, 1.375rem); font-weight: 600; line-height: 1.22;
-  letter-spacing: -0.014em; color: #F7F4EE; text-wrap: balance;
+  font-size: var(--t-card); font-weight: 600; line-height: 1;
+  letter-spacing: -0.04em; color: #F7F4EE; text-wrap: balance;
 }
 .get-card p {
   margin: auto 0 0; padding: 0 var(--s5) var(--s5);
-  color: rgba(247,244,238,0.92); font-size: 0.9375rem; line-height: 1.5;
+  color: rgba(247,244,238,0.92); font-size: var(--t-small); line-height: 1.3;
   max-width: none;
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -1630,7 +1498,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   align-self: flex-start; margin: var(--s3) var(--s3) 0;
   padding: 0.22rem 0.5rem; border-radius: var(--r-pill);
   background: rgba(247,244,238,0.22); color: #F7F4EE;
-  font-size: 0.625rem; font-weight: 600; letter-spacing: 0.1em;
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.1em;
   text-transform: uppercase; line-height: 1.4;
   /* one line, and never wider than the tab it sits on: a nowrap label that
      outgrows its card spills its text onto the page behind it */
@@ -1638,7 +1506,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 }
 .ex-tab-cap {
   margin: 0 var(--s3) var(--s3);
-  font-size: 0.8125rem; font-weight: 500; line-height: 1.24; color: #F7F4EE;
+  font-size: var(--t-small); font-weight: 500; line-height: 1.3; color: #F7F4EE;
 }
 
 /* --- the panel ----------------------------------------------------------- */
@@ -1658,8 +1526,6 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 }
 @media (min-width: 1400px) {
   .ex-panel { grid-template-columns: minmax(0, 1fr) minmax(0, 28rem); min-height: 30rem; }
-  .ex-copy, .ex-chat { max-width: 40rem; }
-  .ex-lede { max-width: 52ch; font-size: var(--t-lede); }
 }
 .ex-panel:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 3px; }
 .ex-panel-img {
@@ -1684,11 +1550,11 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   }
 }
 
-.ex-copy { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s4); max-width: 34rem; }
+.ex-copy { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s4); }
 .ex-pill {
   padding: 0.28rem 0.62rem; border-radius: var(--r-pill);
   background: rgba(247,244,238,0.20); color: #F7F4EE;
-  font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
 }
 /* Octo sets this headline in a serif. Ciatta is one family, so this is Jost
    at Medium — the same treatment the band titles take, one step larger,
@@ -1696,25 +1562,25 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 .ex-title {
   margin: 0; color: #F7F4EE;
   font-family: var(--font);
-  font-weight: 500; font-size: clamp(2rem, 1.2rem + 2.6vw, 3.25rem);
-  line-height: 1.02; letter-spacing: -0.03em; text-wrap: balance;
+  font-weight: 400; font-size: var(--t-statement);
+  line-height: var(--lh-statement); letter-spacing: -0.03em; text-wrap: balance;
 }
-.ex-lede { margin: 0; color: rgba(247,244,238,0.86); max-width: 46ch; line-height: 1.6; }
+.ex-lede { margin: 0; color: rgba(247,244,238,0.86); font-size: var(--t-lede); line-height: 1.3; }
 
 /* the exchange. A question in her words, and what Ciatta says back. */
-.ex-chat { display: flex; flex-direction: column; gap: var(--s3); align-items: flex-start; max-width: 34rem; }
+.ex-chat { display: flex; flex-direction: column; gap: var(--s3); align-items: flex-start; }
 .ex-ask {
   margin: 0; padding: var(--s3) var(--s4);
   border-radius: var(--r-control) var(--r-control) var(--r-control) var(--s1);
   background: rgba(247,244,238,0.16); color: #F7F4EE;
-  font-size: 0.9375rem; line-height: 1.45;
+  font-size: var(--t-body); line-height: 1.3;
 }
 .ex-ans {
   display: grid; grid-template-columns: 1.5rem 1fr; gap: var(--s3); align-items: start;
   padding: var(--s4); border-radius: var(--r-control);
   background: rgba(247,244,238,0.94); color: var(--ink);
 }
-.ex-ans p { margin: 0; font-size: 0.9375rem; line-height: 1.5; }
+.ex-ans p { margin: 0; font-size: var(--t-body); line-height: 1.3; }
 .ex-ans-mark {
   width: 1.5rem; height: 1.5rem; border-radius: 50%;
   background: var(--change); opacity: 0.9;
@@ -1731,13 +1597,13 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 }
 .ex-card-head {
   display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3);
-  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.12em;
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.12em;
   text-transform: uppercase; color: rgba(247,244,238,0.82);
 }
 .ex-card-head i { font-style: normal; letter-spacing: 0.08em; color: rgba(247,244,238,0.66); }
 .ex-card-body { color: #F7F4EE; }
 .ex-card-note {
-  margin: 0; color: rgba(247,244,238,0.70); font-size: 0.75rem; line-height: 1.5;
+  margin: 0; color: rgba(247,244,238,0.70); font-size: var(--t-caption); line-height: 1.3;
   padding-top: var(--s3); border-top: var(--hairline) solid rgba(247,244,238,0.20);
 }
 
@@ -1759,9 +1625,9 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 /* a value against the range it was reported in */
 .ex-ranges { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s4); }
 .ex-range-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); }
-.ex-range-head span { color: rgba(247,244,238,0.86); font-size: 0.875rem; }
+.ex-range-head span { color: rgba(247,244,238,0.86); font-size: var(--t-small); }
 .ex-range-head b {
-  color: #F7F4EE; font-size: 1.0625rem; font-weight: 600; font-variant-numeric: tabular-nums;
+  color: #F7F4EE; font-size: var(--t-body); font-weight: 600; font-variant-numeric: tabular-nums;
 }
 .ex-range-head i { font-style: normal; font-weight: 400; font-size: 0.6875rem; color: rgba(247,244,238,0.66); margin-left: 0.3em; }
 .ex-range-bar {
@@ -1786,49 +1652,103 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   color: rgba(247,244,238,0.62); font-size: 0.6875rem;
   letter-spacing: 0.08em; text-transform: uppercase; font-variant-numeric: tabular-nums;
 }
-.ex-log-what { color: #F7F4EE; font-size: 0.9375rem; line-height: 1.4; }
+.ex-log-what { color: #F7F4EE; font-size: var(--t-body); line-height: 1.3; }
 .ex-log-src { color: rgba(247,244,238,0.66); font-size: 0.6875rem; letter-spacing: 0.04em; }
 
+/* --- the plus, and the screens behind it ---------------------------------
+   WHOOP's "Know what your body needs, every day" keeps the detail of each
+   card behind a plus in its corner. Here the plus sits in the panel's corner
+   and opens the app screens for the chosen topic. */
+.ex-plus {
+  position: absolute; top: var(--s4); right: var(--s4); z-index: 1;
+  appearance: none; border: 0; padding: 0; cursor: pointer;
+  width: 2.75rem; height: 2.75rem; border-radius: 50%;
+  display: grid; place-items: center;
+  background: rgba(247,244,238,0.94); color: var(--ink);
+  transition: background var(--quick) var(--ease-caused);
+}
+.ex-plus:hover { background: #F7F4EE; }
+.ex-plus:focus-visible { outline: var(--strong) solid #F7F4EE; outline-offset: 3px; }
+.ex-plus svg, .ex-sheet-close svg {
+  width: 1rem; height: 1rem; fill: none; stroke: currentColor;
+  stroke-width: 1.6; stroke-linecap: round;
+}
+/* below the split the copy runs full width, so the title keeps clear of it */
+@media (max-width: 899px) { .ex-copy { padding-right: var(--s7); } }
+
+.ex-sheet {
+  /* one phone as tall as the viewport allows, never wider than the screen */
+  --ps-w: min(17rem, calc((100dvh - 12rem) * 402 / 874), calc(100vw - 6rem));
+  width: min(calc(100vw - 2 * var(--gutter)), 52rem);
+  max-height: calc(100dvh - 2 * var(--s5));
+  margin: auto; padding: 0; border: 0;
+  border-radius: var(--r-shell);
+  background: var(--canvas); color: var(--ink);
+  box-shadow: var(--float-above);
+  overflow: auto;
+}
+.ex-sheet::backdrop { background: rgba(24,25,27,0.62); }
+html:has(.ex-sheet[open]) { overflow: hidden; }
+.ex-sheet-in { padding: clamp(var(--s5), 3vw, var(--s6)); }
+.ex-sheet-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--s4); margin-bottom: var(--s5);
+}
+.ex-sheet-pill {
+  display: inline-block; margin-bottom: var(--s2);
+  padding: 0.28rem 0.62rem; border-radius: var(--r-pill);
+  background: var(--surface); color: var(--meta-ink);
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+}
+.ex-sheet-title {
+  margin: 0; font-family: var(--font); font-weight: 400;
+  font-size: var(--t-statement);
+  line-height: var(--lh-statement); letter-spacing: -0.03em; text-wrap: balance;
+}
+.ex-sheet-close {
+  appearance: none; border: 0; padding: 0; cursor: pointer; flex: none;
+  width: 2.75rem; height: 2.75rem; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--surface); color: var(--ink);
+}
+.ex-sheet-close:hover { background: var(--rule); }
+.ex-sheet-close:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 3px; }
+.ex-sheet-screens {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s6);
+}
+.ex-sheet-screen { margin: 0; display: flex; flex-direction: column; align-items: center; gap: var(--s3); }
+.ex-sheet-screen figcaption { color: var(--meta-ink); font-size: var(--t-small); }
+
 @media (prefers-reduced-motion: reduce) {
-  .ex-tab, .ex-tab img { transition: none; }
+  .ex-tab, .ex-tab img, .ex-plus { transition: none; }
 }
 
 /* ===========================================================================
    "Grounded in evidence, built for the questioner."
 
-   The mosaic from whoop.com's "Backed by PHDs, worn by MVPs": a grid of tiles
-   that alternates photographs with written cards, some spanning two columns
-   so the grid reads as a mosaic rather than a table. WHOOP's written cards
-   are member quotes; these are statements about how the product works, which
-   is the only half of that section Ciatta can fill honestly.
-
-   Twelve cells over three rows at the top size, and the spans are chosen so
-   there is never a hole: 1+1+2 / 2+1+1 / 1+2+1.
+   After whoop.com's "Backed by PHDs, worn by MVPs", photographs only: who
+   this is for. Four tiles, so the grid is one row of four at the top size
+   and two by two on a tablet, and never has a hole.
    =========================================================================== */
 .who-grid {
   list-style: none; margin: 0; padding: 0;
   display: grid; gap: var(--gap-surface);
   grid-template-columns: 1fr;
 }
-/* Two columns cannot hold the 1+1+2 rhythm without holes, so the grid packs
-   densely there: a later single tile fills the gap a wide one leaves. */
-@media (min-width: 640px) { .who-grid { grid-template-columns: repeat(2, 1fr); grid-auto-flow: dense; } }
+@media (min-width: 640px) { .who-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 1040px) { .who-grid { grid-template-columns: repeat(4, 1fr); } }
-/* a wide tile is only wide where there is more than one column to be wide in */
-@media (min-width: 640px) { .who-tile.is-wide { grid-column: span 2; } }
 
 .who-tile {
   position: relative; isolation: isolate; overflow: hidden;
   border-radius: var(--r-surface);
   display: flex; align-items: flex-end;
   min-height: 15rem;
+  /* the photographs are square, so the tiles are too once there is room */
   padding: var(--pad-surface);
+  background: #2E2A24;
 }
-.who-tile p { margin: 0; text-wrap: pretty; }
-
-/* the photographic half: who this is for */
-.who-tile.is-photo { background: #2E2A24; }
-.who-tile.is-photo img {
+@media (min-width: 640px) { .who-tile { aspect-ratio: 1; } }
+.who-tile img {
   position: absolute; inset: 0; z-index: -2;
   width: 100%; height: 100%; object-fit: cover; display: block;
 }
@@ -1836,55 +1756,20 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
   position: absolute; inset: 0; z-index: -1;
   background: linear-gradient(to top, rgba(24,25,27,0.90) 0%, rgba(24,25,27,0.52) 46%, rgba(24,25,27,0.24) 100%);
 }
-.who-tile.is-photo p {
-  color: #F7F4EE; font-weight: 500;
-  font-size: clamp(1.125rem, 1rem + 0.5vw, 1.375rem);
-  line-height: 1.2; letter-spacing: -0.018em; max-width: 18ch;
+.who-tile p {
+  margin: 0; text-wrap: pretty;
+  color: #F7F4EE; font-weight: 600;
+  font-size: var(--t-card);
+  line-height: 1; letter-spacing: -0.04em;
 }
-
-/* the written half: what the women in the study actually said. WHOOP's
-   member-quote card, and the quotation mark is honest here because someone
-   did say it. */
-.who-tile.is-quote {
-  background: var(--surface); box-shadow: var(--float-lifted);
-  align-items: center;
-}
-.who-tile.is-quote figure { margin: 0; display: flex; flex-direction: column; gap: var(--s4); }
-.who-tile.is-quote blockquote {
-  margin: 0; position: relative; padding-top: var(--s5);
-}
-/* the mark sits above the quote rather than beside it, so the first line of
-   every card starts on the same left edge whatever its length */
-.who-tile.is-quote blockquote::before {
-  content: '\201C'; position: absolute; top: -0.24em; left: -0.04em;
-  font-size: 3rem; line-height: 1; color: var(--change); opacity: 0.55;
-}
-.who-tile.is-quote blockquote p {
-  color: var(--ink); font-size: clamp(1rem, 0.95rem + 0.25vw, 1.1875rem);
-  line-height: 1.45; letter-spacing: -0.008em; max-width: 42ch;
-}
-.who-tile.is-quote figcaption {
-  color: var(--meta-ink); font-size: 0.8125rem; letter-spacing: 0.02em;
-}
-
-/* the provenance of the quotations. The section claims to be grounded in
-   evidence, so it says where the evidence came from. */
-.who-note {
-  margin: var(--s5) 0 0; color: var(--meta-ink);
-  font-size: 0.875rem; line-height: 1.6; max-width: 68ch;
-}
-@media (max-width: 639px) {
-  .who-tile { min-height: 12rem; }
-  .who-tile.is-quote { min-height: 0; padding: var(--s5); }
-}
-.who-note em { font-style: italic; }
+@media (max-width: 639px) { .who-tile { min-height: 12rem; } }
 
 /* --- newsletter form additions ------------------------------------------
    The honeypot is off-screen rather than display:none, because some bots
    skip fields they can tell are hidden. */
 .hp { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
 .waitlist { position: relative; }
-.waitlist-opt { display: flex; gap: var(--s2); align-items: flex-start; color: var(--body-ink); font-size: 0.9375rem; cursor: pointer; }
+.waitlist-opt { display: flex; gap: var(--s2); align-items: flex-start; color: var(--body-ink); font-size: var(--t-small); cursor: pointer; }
 /* `.waitlist input` styles the email field; the checkbox has to undo it, at
    higher specificity, including inside the hero and the dark band. */
 .waitlist .waitlist-opt input[type="checkbox"],
@@ -1895,7 +1780,7 @@ p { margin: 0; max-width: var(--reading); text-wrap: pretty; }
 }
 .joined-reset {
   appearance: none; background: none; border: 0; padding: 0; margin-top: var(--s2);
-  font: inherit; font-size: 0.9375rem; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+  font: inherit; font-size: var(--t-small); color: var(--ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
 }
 .hero .joined-reset, .m-dark .joined-reset { color: #F7F4EE; }
 .hero .waitlist-opt, .m-dark .waitlist-opt { color: rgba(247,244,238,0.8); }

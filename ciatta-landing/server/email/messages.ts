@@ -7,9 +7,9 @@ type Built = { subject: string; html: string; text: string };
 
 function describe(topics: TopicKey[]): string {
   if (topics.includes('briefs') && topics.includes('launch')) {
-    return 'Ciatta Briefs twice a week, and a note when Ciatta opens';
+    return 'Ciatta Briefs every Tuesday, and a note when Ciatta opens';
   }
-  if (topics.includes('briefs')) return 'Ciatta Briefs, twice a week';
+  if (topics.includes('briefs')) return 'Ciatta Briefs, every Tuesday';
   return 'a note when Ciatta opens, and news about membership';
 }
 
@@ -48,7 +48,7 @@ export function welcomeEmail(unsubscribeUrl: string, topics: TopicKey[], postalA
     heading(briefs ? 'You are subscribed' : 'You are on the list'),
     briefs
       ? paragraph(
-          'Ciatta Briefs arrives on <strong style="color:#18191B;font-weight:500;">Tuesday and Friday</strong>. Each one is short and about one thing: what tends to change first in perimenopause, what a lab result can and cannot say, what is worth bringing to an appointment.',
+          'Ciatta Briefs arrives every <strong style="color:#18191B;font-weight:500;">Tuesday</strong>. Each one is short and about one thing: what tends to change first in perimenopause, what a lab result can and cannot say, what is worth bringing to an appointment.',
         )
       : paragraph('We will write when Ciatta opens, and when anything about membership changes. That is all.'),
     briefs
@@ -66,7 +66,7 @@ export function welcomeEmail(unsubscribeUrl: string, topics: TopicKey[], postalA
   );
   const html = renderEmail({
     title: subject,
-    preheader: briefs ? 'The first issue arrives on Tuesday or Friday, whichever comes first.' : 'You are on the waitlist. We will write when Ciatta opens.',
+    preheader: briefs ? 'The first issue arrives on Tuesday.' : 'You are on the waitlist. We will write when Ciatta opens.',
     bodyHtml,
     footerHtml,
     siteUrl: newsletter.siteUrl,
