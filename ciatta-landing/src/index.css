@@ -1811,40 +1811,58 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .nl-link { color: var(--ink); text-underline-offset: 3px; }
 
 /* --- /privacy and /terms --------------------------------------------------
-   A document, so it reads like one: a single column at a comfortable measure,
-   generous rhythm between sections, and nothing decorative. */
-.legal { padding-top: calc(var(--header-h) + var(--section-y)); padding-bottom: var(--section-y); }
-.legal-head { margin-bottom: var(--s7); }
-.legal-updated { color: var(--meta-ink); font-size: 0.9375rem; margin: 0; }
-.legal-body { display: grid; gap: var(--s6); align-items: start; }
-.legal-doc { min-width: 0; max-width: 72ch; }
-@media (min-width: 1000px) {
-  .legal-body { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--s6) var(--s8); }
-  .legal-toc { grid-column: 1; grid-row: 1 / span 2; position: sticky; top: calc(var(--header-h) + var(--s6)); margin: 0; padding: 0; border: 0; }
-  .legal-plainly, .legal-doc { grid-column: 2; }
-  .legal-body .legal-toc ol { columns: 1; }
+   whoop.com's Terms of Use, which is a document rather than a page about one:
+   a black band carrying the title on two staggered lines, then a single column
+   indented two of twelve columns and eight wide. Inside the column there is
+   one size of type, WHOOP's 20px body step; a heading is the same size as the
+   text it introduces and is told apart by weight. No contents list and no
+   summary card, because that page has neither. */
+.legal-band {
+  background: #18191B; color: #F7F4EE;
+  /* the header is a solid bar on these pages, so the band starts under it
+     rather than running behind it */
+  padding-block: clamp(var(--s5), 4.4vw, 4rem);
 }
-.legal h2 { font-size: 1.375rem; font-weight: 500; letter-spacing: -0.01em; line-height: 1.25; color: var(--ink); margin: 0 0 var(--s4); scroll-margin-top: calc(var(--header-h) + var(--s5)); }
-.legal p, .legal li { color: var(--body-ink); font-size: var(--t-body); line-height: 1.7; }
-.legal p { margin: 0 0 var(--s4); max-width: 68ch; }
-.legal ul, .legal ol { margin: 0 0 var(--s4); padding-left: 1.25rem; max-width: 68ch; }
-.legal li { margin-bottom: var(--s2); }
+.legal-band-title {
+  margin: 0; font-family: var(--font); font-weight: 400;
+  font-size: var(--t-title); line-height: var(--lh-title); letter-spacing: -0.03em;
+  display: flex; flex-direction: column;
+}
+/* WHOOP staggers the second line by a tenth of the row */
+.legal-band-title span:last-child { padding-left: 10%; }
+
+.legal { padding-block: clamp(var(--s6), 5vw, 5rem) var(--section-y); }
+.legal-doc { max-width: none; }
+@media (min-width: 900px) {
+  .legal-doc { margin-left: calc(100% * 2 / 12); max-width: calc(100% * 8 / 12); }
+}
+.legal-updated, .legal-summary { margin: 0 0 1.5em; }
+.legal-updated { color: var(--meta-ink); }
+.legal-section { margin-bottom: 2.5em; }
+/* the same size as the text, and 600 against its 400 */
+.legal h2 {
+  font-size: var(--t-body); font-weight: 600; letter-spacing: -0.03em;
+  line-height: 1.3; color: var(--ink); margin: 0 0 1.5em;
+  scroll-margin-top: calc(var(--header-h) + var(--s5));
+}
+.legal p, .legal li { color: var(--ink); font-size: var(--t-body); line-height: 1.3; letter-spacing: -0.03em; }
+.legal p { margin: 0 0 1.5em; max-width: none; }
+.legal ul, .legal ol { margin: 0 0 1.5em; padding-left: 1.5em; max-width: none; }
+.legal li { margin-bottom: 1em; }
 .legal a { color: var(--ink); text-underline-offset: 0.2em; }
-.legal-plainly { background: var(--surface); border-radius: var(--r-shell, 20px); padding: var(--s6); margin-bottom: var(--s6); box-shadow: var(--float-lifted); }
-.legal-plainly ul { margin-bottom: 0; }
-.legal-plainly li:last-child { margin-bottom: 0; }
-.legal-toc { margin-bottom: var(--s6); padding-bottom: var(--s6); border-bottom: var(--hairline) solid var(--rule); }
-.legal-toc h2 { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--meta-ink); }
-.legal-toc ol { columns: 2; column-gap: var(--s6); }
-@media (max-width: 560px) { .legal-toc ol { columns: 1; } .legal-plainly { padding: var(--s5); } }
-.legal-toc li { break-inside: avoid; }
-.legal-section { margin-bottom: var(--s7); }
-.legal-table { overflow-x: auto; margin: 0 0 var(--s5); border-radius: 12px; background: var(--surface); }
+.legal-table { overflow-x: auto; margin: 0 0 1.5em; }
 .legal-table:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 2px; }
-.legal table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 0.9375rem; line-height: 1.55; }
-.legal th, .legal td { text-align: left; vertical-align: top; padding: var(--s3) var(--s4); border-bottom: var(--hairline) solid var(--rule); color: var(--body-ink); }
-.legal thead th { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--meta-ink); }
-.legal tbody th { color: var(--ink); font-weight: 500; }
+.legal table {
+  width: 100%; min-width: 34rem; border-collapse: collapse;
+  font-size: var(--t-body); line-height: 1.3; letter-spacing: -0.03em;
+}
+.legal th, .legal td {
+  text-align: left; vertical-align: top;
+  padding: var(--s4) var(--s5) var(--s4) 0;
+  border-bottom: var(--hairline) solid var(--rule); color: var(--ink);
+}
+.legal thead th { font-weight: 600; }
+.legal tbody th { font-weight: 600; }
 .legal tbody tr:last-child > * { border-bottom: 0; }
 .footer-nav a[aria-current="page"] { color: var(--ink); }
 .waitlist-note a { color: inherit; text-underline-offset: 0.2em; }

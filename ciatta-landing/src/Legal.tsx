@@ -4,11 +4,12 @@ import { LEGAL } from './legal/config';
 import type { Block, LegalDoc } from './legal/types';
 
 /**
- * The privacy notice and the terms, one layout for both.
- *
- * Built to be read, not scrolled past: a plain summary first, a contents list
- * that links to each section, a readable measure, and tables that scroll on a
- * phone rather than crushing their columns.
+ * The privacy notice and the terms, one layout for both, built to the shape of
+ * whoop.com's Terms of Use: a black band carrying the title on two staggered
+ * lines, then the document in a single column indented from the left edge of
+ * the row. Inside that column there is one size of type — headings are the
+ * same size as the text and are told apart by weight alone — which is what
+ * makes it read as a legal document rather than as a page about one.
  */
 
 // An address in running text becomes a mail link; everything else stays text.
@@ -86,45 +87,27 @@ export default function Legal({ doc, current }: { doc: LegalDoc; current: 'priva
         </div>
       </header>
 
+      <div className="legal-band">
+        <div className="shell">
+          <h1 className="legal-band-title">
+            <span>Ciatta</span>
+            <span>{doc.title}</span>
+          </h1>
+        </div>
+      </div>
+
       <main id="legal-main" className="legal">
         <div className="shell">
-          <header className="legal-head band-head">
-            <h1 className="band-title">{doc.title}</h1>
-            <div>
-              <p className="band-sub">{doc.summary}</p>
-              <p className="legal-updated">Last updated {LEGAL.updated}</p>
-            </div>
-          </header>
-
-          <div className="legal-body">
-          <section className="legal-plainly" aria-labelledby="plainly">
-            <h2 id="plainly">In short</h2>
-            <ul>
-              {doc.plainly.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          </section>
-
-          <nav className="legal-toc" aria-label="Contents">
-            <h2>Contents</h2>
-            <ol>
-              {doc.sections.map((s) => (
-                <li key={s.id}>
-                  <a href={`#${s.id}`}>{s.title.replace(/^\d+\.\s*/, '')}</a>
-                </li>
-              ))}
-            </ol>
-          </nav>
-
           <div className="legal-doc">
+            <p className="legal-updated">Last updated {LEGAL.updated}</p>
+            <p className="legal-summary">{doc.summary}</p>
+
             {doc.sections.map((s) => (
               <section key={s.id} id={s.id} className="legal-section" aria-labelledby={`${s.id}-title`}>
                 <h2 id={`${s.id}-title`}>{s.title}</h2>
                 {s.blocks.map(renderBlock)}
               </section>
             ))}
-          </div>
           </div>
         </div>
       </main>
