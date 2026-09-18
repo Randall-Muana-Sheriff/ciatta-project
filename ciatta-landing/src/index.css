@@ -1773,12 +1773,24 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .hp { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
 .waitlist { position: relative; }
 .waitlist-opt { display: flex; gap: var(--s2); align-items: flex-start; color: var(--body-ink); font-size: var(--t-small); cursor: pointer; }
+/* the agreement and the Privacy link as one run of text, at the page's
+   smallest size: the link follows the sentence rather than sitting under it */
+.waitlist-consent {
+  margin: 0; color: var(--meta-ink); font-size: var(--t-caption); line-height: 1.5;
+}
+.waitlist-consent label { cursor: pointer; }
+.waitlist-consent input[type="checkbox"] { vertical-align: -0.15em; margin-right: 0.5ch; }
+.waitlist-consent a { color: inherit; text-underline-offset: 0.2em; }
+.hero .waitlist-consent { color: rgba(247,244,238,0.72); }
+.hero .waitlist-consent a { color: rgba(247,244,238,0.9); }
 /* `.waitlist input` styles the email field; the checkbox has to undo it, at
    higher specificity, including inside the hero and the dark band. */
 .waitlist .waitlist-opt input[type="checkbox"],
+.waitlist .waitlist-consent input[type="checkbox"],
 .hero .waitlist .waitlist-opt input[type="checkbox"],
+.hero .waitlist .waitlist-consent input[type="checkbox"],
 .m-dark .waitlist .waitlist-opt input[type="checkbox"] {
-  appearance: auto; width: 18px; height: 18px; padding: 0; margin: 3px 0 0; flex: none;
+  appearance: auto; width: 16px; height: 16px; padding: 0; margin: 0; flex: none;
   border: 0; border-radius: 0; background: none; accent-color: var(--ink);
 }
 .joined-reset {

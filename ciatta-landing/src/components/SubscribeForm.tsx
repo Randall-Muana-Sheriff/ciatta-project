@@ -137,7 +137,7 @@ export function SubscribeForm({
               setEmail(e.target.value);
               if (state.kind === 'error') setState({ kind: 'idle' });
             }}
-            aria-describedby={noteId}
+            aria-describedby={consent ? `${id}-consent-line` : noteId}
             aria-invalid={state.kind === 'error' ? true : undefined}
           />
         </div>
@@ -160,11 +160,16 @@ export function SubscribeForm({
         />
       </div>
 
+      {/* The agreement and the policy it points at are one line: she is
+          reading one thing, not two. */}
       {consent && (
-        <label className="waitlist-opt" htmlFor={`${id}-consent`}>
-          <input id={`${id}-consent`} name="consent" type="checkbox" required />
-          <span>{consent}</span>
-        </label>
+        <p className="waitlist-consent" id={`${id}-consent-line`}>
+          <label htmlFor={`${id}-consent`}>
+            <input id={`${id}-consent`} name="consent" type="checkbox" required />
+            {consent}
+          </label>{' '}
+          <a href="/privacy/">Privacy</a>
+        </p>
       )}
 
       {kind === 'waitlist' && offerBriefs && (
@@ -179,21 +184,23 @@ export function SubscribeForm({
         </label>
       )}
 
-      <p
-        id={noteId}
-        className={state.kind === 'error' ? 'waitlist-note is-error' : 'waitlist-note'}
-        role={state.kind === 'error' ? 'alert' : undefined}
-      >
-        {state.kind === 'error' ? (
-          state.message
-        ) : (
-          <>
-            {line}
-            {line ? ' ' : ''}
-            <a href="/privacy/">Privacy</a>
-          </>
-        )}
-      </p>
+      {(!consent || state.kind === 'error') && (
+        <p
+          id={noteId}
+          className={state.kind === 'error' ? 'waitlist-note is-error' : 'waitlist-note'}
+          role={state.kind === 'error' ? 'alert' : undefined}
+        >
+          {state.kind === 'error' ? (
+            state.message
+          ) : (
+            <>
+              {line}
+              {line ? ' ' : ''}
+              <a href="/privacy/">Privacy</a>
+            </>
+          )}
+        </p>
+      )}
     </form>
   );
 }
