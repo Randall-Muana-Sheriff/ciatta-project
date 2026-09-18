@@ -90,7 +90,7 @@ export default function Legal({ doc, current }: { doc: LegalDoc; current: 'priva
       <div className="legal-band">
         <div className="shell">
           <h1 className="legal-band-title">
-            <span>Ciatta</span>
+            <span>{LEGAL.operator}</span>
             <span>{doc.title}</span>
           </h1>
         </div>
