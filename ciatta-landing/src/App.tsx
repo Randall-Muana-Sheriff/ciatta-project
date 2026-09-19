@@ -244,7 +244,9 @@ export default function App() {
                   section keeps an accessible name without a label above it
                   restating what the sentence already says. */}
               <h2 id="cta-heading" className="display">
-                See what’s changing.
+                {/* JSX drops the newline between these two, so the space that
+                    separates the sentences for a screen reader is explicit. */}
+                See what’s changing.{' '}
                 <span className="close-second">Know what happened around it.</span>
               </h2>
               <p className="close-lines">
