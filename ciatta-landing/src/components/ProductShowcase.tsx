@@ -521,8 +521,10 @@ export function RecordsScreen() {
 
 /* -- 7. Personalized insight ----------------------------------------------- *
  * The intelligence layer, and the only screen that reads the others together.
- * Every layer is labelled with where it came from, so the finding can be
- * taken apart. It ends on a question, not an instruction.                    */
+ * It runs the loop the page tells, in the same order and the same words: what
+ * changed, what happened around it, what may be connected, what she can do,
+ * and what happened after she did. Every layer still carries where it came
+ * from, so the finding can be taken apart.                                   */
 
 export function InsightScreen() {
   const cycle = 'M4 7 L36 8 L68 11 L100 14 L132 18';
@@ -573,12 +575,8 @@ export function InsightScreen() {
           <dd>A stressful stretch at work, and waking several times a night.</dd>
         </div>
         <div>
-          <dt>What else is in your record<Src kind="imported" /></dt>
-          <dd>14 Mar: ferritin 24, TSH 2.1, vitamin D 31. All within range.</dd>
-        </div>
-        <div>
-          <dt>What Ciatta found<Src kind="inferred" /></dt>
-          <dd>The cycle changes and the low-sleep weeks fell close together in time.</dd>
+          <dt>What may be connected<Src kind="inferred" /></dt>
+          <dd>Your shortest cycles have followed your lowest-sleep weeks. Twice.</dd>
         </div>
         <div className="is-evidence">
           <dt>What evidence says<Src kind="evidence" /></dt>
@@ -590,18 +588,74 @@ export function InsightScreen() {
       </dl>
 
       <div className="ps-open-row">
-        <span className="ps-open-k">Worth exploring</span>
-        <p>Whether this pattern continues across your next few cycles.</p>
+        <span className="ps-open-k">What can you do?</span>
+        <p>Try a 7-day sleep experiment, and see what your next cycle does.</p>
       </div>
 
       <div className="ps-next">
-        <span className="ps-next-k">For your next conversation</span>
-        <p>&ldquo;Are the changes in my sleep and cycle history worth evaluating together?&rdquo;</p>
+        <span className="ps-next-k">What happened next</span>
+        <p>Sleep returned closer to your usual on 5 of 7 nights.</p>
       </div>
 
       <p className="ps-hedge">
         Things that move together are not necessarily one causing the other.
       </p>
+    </Chrome>
+  );
+}
+
+/* -- 8. The experiment ----------------------------------------------------- *
+ * What she can do about a pattern, and what happened when she did. The only
+ * screen where Ciatta proposes anything, so it says what the proposal is
+ * based on, and it reports the result rather than claiming the cause.        */
+
+export function ExperimentScreen() {
+  const nights = [6.4, 7.2, 7.4, 6.6, 7.3, 7.5, 7.2];
+  const kept = [false, true, true, false, true, true, true];
+
+  return (
+    <Chrome title="Sleep experiment" action="info" tab="Today">
+      <div className="ps-ins-head">
+        <span className="ps-tag">Worth exploring</span>
+        <span className="ps-pill is-watch">Day 7 of 7</span>
+      </div>
+
+      <p className="ps-finding">Your sleep has been lower lately.</p>
+      <span className="ps-conf">
+        <Src kind="inferred" /> 30 nights &middot; 48 min below your usual
+      </span>
+
+      <Lab qual="4 things to try">For 7 days</Lab>
+      <div className="ps-rows">
+        <Row k="Earlier wind-down" v="5 of 7" />
+        <Row k="Consistent bedtime" v="6 of 7" />
+        <Row k="Less late-day caffeine" v="7 of 7" />
+        <Row k="How you felt each morning" v="Logged 7" />
+      </div>
+
+      <Lab qual="Measured">What happened</Lab>
+      <div className="ps-nights" aria-hidden="true">
+        {nights.map((n, i) => (
+          <span key={i}>
+            <i style={{ height: `${((n - 5.8) / 2) * 100}%`, opacity: kept[i] ? 1 : 0.45 }} />
+            {'MTWTFSS'[i]}
+          </span>
+        ))}
+      </div>
+      <ul className="ps-facts">
+        <li><span>Sleep</span><b>Closer to your usual on 5 of 7</b></li>
+        <li><span>Fatigue</span><b>Reported less often</b></li>
+        <li><span>Energy</span><b>Higher on 4 mornings</b></li>
+      </ul>
+
+      <div className="ps-open-row">
+        <span className="ps-open-k">What Ciatta learned</span>
+        <p>Seven nights is a start, not an answer. Ciatta watches the next cycle.</p>
+      </div>
+
+      <div className="ps-prov">
+        <Src kind="measured" /> Oura, nightly &middot; you logged each morning
+      </div>
     </Chrome>
   );
 }

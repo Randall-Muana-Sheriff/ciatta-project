@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import {
-  CycleScreen, InsightScreen, MedsScreen, RecordsScreen, SleepScreen, SymptomsScreen, ToldScreen,
+  CycleScreen, ExperimentScreen, InsightScreen, MedsScreen, RecordsScreen, SleepScreen,
+  SymptomsScreen, ToldScreen,
 } from './ProductShowcase';
 
 /**
@@ -91,7 +92,11 @@ const TOPICS: Topic[] = [
     answer:
       'Twice this year. The weeks of 26 Jan and 23 Feb were your lowest, and your two shortest cycles both began inside them.',
     alt: 'A figure silhouetted against a low sun, arms raised overhead.',
-    screens: [{ name: 'Sleep', Screen: SleepScreen }, { name: 'Personalized insight', Screen: InsightScreen }],
+    screens: [
+      { name: 'Sleep', Screen: SleepScreen },
+      { name: 'Personalized insight', Screen: InsightScreen },
+      { name: 'Sleep experiment', Screen: ExperimentScreen },
+    ],
     card: {
       kind: 'series',
       head: 'Sleep · weekly average',
