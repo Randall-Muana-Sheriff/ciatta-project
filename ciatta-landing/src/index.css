@@ -2273,3 +2273,26 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 @media (min-width: 1000px) { .ac-body { --ps-w: clamp(16rem, 21vw, 20rem); } }
 /* the brief keeps its document beside the screen */
 .brief .sec-phone .bf-doc { max-width: none; }
+
+/* --- Today: the day itself, and what it says ------------------------------ */
+.ps-hello { display: flex; flex-direction: column; gap: 0.8cqw; }
+.ps-hello-k {
+  font-size: 2.4cqw; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ps-meta);
+}
+.ps-hello-n {
+  margin: 0; font-size: 5.2cqw; font-weight: 500; line-height: 1.05;
+  letter-spacing: -0.02em; color: var(--ps-ink);
+}
+.ps-day { display: flex; flex-direction: column; gap: 1.4cqw; }
+.ps-day-chart { display: block; width: 100%; height: auto; }
+.ps-day-axis {
+  display: flex; justify-content: space-between;
+  font-size: 2.1cqw; color: var(--ps-meta); font-variant-numeric: tabular-nums;
+}
+.ps-day-key { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 1.2cqw 3cqw; }
+.ps-day-key li { display: flex; align-items: center; gap: 1.2cqw; font-size: 2.2cqw; color: var(--ps-meta); }
+.ps-day-key i { width: 2.2cqw; height: 2.2cqw; border-radius: 50%; }
+.ps-day-key .is-sleep { background: var(--ps-measured); opacity: 0.5; border-radius: 0.6cqw; }
+.ps-day-key .is-energy { background: var(--ps-ink); height: 0.8cqw; width: 3.4cqw; border-radius: 999px; }
+.ps-day-key .is-pain { background: var(--ps-reported); }

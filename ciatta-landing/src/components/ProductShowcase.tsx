@@ -872,3 +872,106 @@ export function BriefScreen() {
     </Chrome>
   );
 }
+
+/* -- 13. Today ------------------------------------------------------------- *
+ * The day, not the month. One drawing carries three things at once: the night
+ * she slept, the energy she reported through the day, and the pain she logged
+ * against it. Underneath, what those three say together, what it is based on,
+ * and two things she could try before the day is out.
+ *
+ * Maya's day is 1 Apr 2026, and it agrees with the record the rest of the
+ * site documents: 6h 46m last night against a usual of 7h 18m, cycle day 24,
+ * levothyroxine 75 mcg since 3 Mar.
+ */
+
+/** Reported energy, one point every two hours from 06:00. */
+const ENERGY: [number, number][] = [
+  [6, 52], [8, 61], [10, 58], [12, 44], [14, 38], [16, 33], [18, 41], [20, 47], [22, 40],
+];
+/** Pain, logged when she felt it. Size is severity. */
+const PAIN: [number, number, string][] = [
+  [11, 2, 'Moderate'],
+  [15.5, 3, 'Higher'],
+  [20, 1, 'Mild'],
+];
+const NOW = 16.3;
+
+function DayChart() {
+  const W = 132;
+  const H = 46;
+  const x = (h: number) => (h / 24) * W;
+  const y = (v: number) => H - (v / 100) * H;
+  const line = ENERGY.map(([h, v], i) => `${i ? 'L' : 'M'}${x(h).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+
+  return (
+    <div className="ps-day">
+      <svg viewBox={`0 -4 ${W} ${H + 12}`} className="ps-day-chart" role="img"
+           aria-label="Maya's day: 6 hours 46 minutes of sleep overnight, energy falling from late morning to a low at 4pm, and pain logged at 11am, 3:40pm and 8pm.">
+        {/* the night she slept, drawn where it happened */}
+        <rect x="0" y="-4" width={x(6.43)} height={H + 4} fill="var(--ps-measured)" opacity="0.16" rx="1.5" />
+        <rect x={x(23.67)} y="-4" width={W - x(23.67)} height={H + 4} fill="var(--ps-measured)" opacity="0.16" rx="1.5" />
+        {/* her usual energy, for the day to be read against */}
+        <line x1="0" x2={W} y1={y(50)} y2={y(50)} stroke="var(--ps-ink)" strokeOpacity="0.22" strokeDasharray="2 2" />
+        <path d={line} fill="none" stroke="var(--ps-ink)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" opacity="0.9" />
+        {PAIN.map(([h, sev]) => (
+          <circle key={h} cx={x(h)} cy={y(20)} r={1.6 + sev * 0.9} fill="var(--ps-reported)" opacity="0.9" />
+        ))}
+        <line x1={x(NOW)} x2={x(NOW)} y1={-4} y2={H} stroke="var(--ps-clay)" strokeWidth="0.8" />
+      </svg>
+      <div className="ps-day-axis" aria-hidden="true">
+        <span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>12a</span>
+      </div>
+      <ul className="ps-day-key" aria-hidden="true">
+        <li><i className="is-sleep" />Slept 6h 46m</li>
+        <li><i className="is-energy" />Energy</li>
+        <li><i className="is-pain" />Pain, 3 logs</li>
+      </ul>
+    </div>
+  );
+}
+
+export function TodayScreen() {
+  return (
+    <Chrome title="Today" action="calendar" tab="Today" dense>
+      <div className="ps-hello">
+        <span className="ps-hello-k">Wednesday 1 April</span>
+        <p className="ps-hello-n">Good afternoon, Maya.</p>
+      </div>
+
+      <Lab qual="Cycle day 24">Your day so far</Lab>
+      <DayChart />
+
+      <ul className="ps-facts">
+        <li><span>Last night</span><b>6h 46m, 48 min under your usual</b></li>
+        <li><span>Energy</span><b>Below your usual since 11am</b></li>
+        <li><span>Pain</span><b>Logged 3 times, highest at 3:40pm</b></li>
+      </ul>
+
+      <div className="ps-ins-head">
+        <span className="ps-tag">What may be connected</span>
+        <span className="ps-pill is-watch">Seen 3 times</span>
+      </div>
+      <p className="ps-finding">
+        Your afternoon pain has been higher on the days that follow a night under 7 hours.
+      </p>
+      <span className="ps-conf">
+        <Src kind="inferred" /> 3 days this month &middot; also days 22 to 25 of your cycle
+      </span>
+
+      <Lab qual="2 for today">What you could try</Lab>
+      <div className="ps-rows">
+        <Row k="Wind down by 10:30pm" meta="Your last 3 nights began after 11:40pm" v="Tonight" />
+        <Row k="A short walk before 6pm" meta="Your energy has risen after one on 4 of 6 days" v="Today" />
+      </div>
+
+      <div className="ps-open-row">
+        <span className="ps-open-k">Why these</span>
+        <p>Both are drawn from your own record, not from what works generally. Ciatta will show you what happens after.</p>
+      </div>
+
+      <div className="ps-prov">
+        <Src kind="measured" /> Oura, nightly &middot; energy and pain you logged today
+      </div>
+    </Chrome>
+  );
+}

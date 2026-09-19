@@ -1,4 +1,4 @@
-import { ContextScreen } from './ProductShowcase';
+import { TodayScreen } from './ProductShowcase';
 
 /**
  * "Health doesn't happen in a vacuum."
@@ -43,16 +43,18 @@ export function ContextSection() {
 
         <div className="sec-phone is-reversed">
           <div className="product sec-phone-device">
-            <ContextScreen />
+            <TodayScreen />
           </div>
           <div className="sec-phone-read">
             <p className="sec-phone-lede">
-              One week she reported pain, and every other part of the record with
-              something to say about the same week.
+              One day, with the night she slept, the energy she reported and the
+              pain she logged drawn against each other rather than apart.
             </p>
             <p className="sec-phone-sub">
-              Nothing here claims a cause. It is the week, assembled, so she can
-              ask about it.
+              Underneath it, what those three say together, how often Ciatta has
+              seen it, and two things she could try before the day is out. Both
+              come from her own record, and Ciatta comes back to what happened
+              after. Nothing here claims a cause.
             </p>
           </div>
         </div>
