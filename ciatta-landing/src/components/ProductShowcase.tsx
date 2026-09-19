@@ -53,6 +53,28 @@
 
 const TABS = ['Today', 'My Health', 'Journey', 'Profile'] as const;
 
+/* -- the tab bar ----------------------------------------------------------- *
+ * Oura's shape: a capsule floating clear of the screen's edges rather than a
+ * bar welded to the bottom, each destination an icon over a small label, and
+ * the one she is on brighter than the rest. Four destinations rather than
+ * Oura's three, and no button beside the capsule, because this app has no
+ * action the page can perform.                                               */
+
+function TabIcon({ kind }: { kind: (typeof TABS)[number] }) {
+  const p = {
+    Today: <><circle cx="8" cy="8" r="3.1" /><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3.05 3.05l1.13 1.13M11.82 11.82l1.13 1.13M12.95 3.05l-1.13 1.13M4.18 11.82l-1.13 1.13" /></>,
+    'My Health': <><path d="M8 13.6S2.2 10.3 2.2 6.4A3.2 3.2 0 0 1 8 4.5a3.2 3.2 0 0 1 5.8 1.9c0 3.9-5.8 7.2-5.8 7.2Z" /></>,
+    Journey: <><path d="M1.8 11.8c2.4 0 2.4-7.6 4.8-7.6s2.4 7.6 4.8 7.6 2.8-3.4 2.8-3.4" /></>,
+    Profile: <><circle cx="8" cy="5.6" r="2.8" /><path d="M2.8 14c0-2.8 2.3-4.4 5.2-4.4s5.2 1.6 5.2 4.4" /></>,
+  }[kind];
+  return (
+    <svg viewBox="0 0 16 16" className="ps-tab-ico" aria-hidden="true"
+         fill="none" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+      {p}
+    </svg>
+  );
+}
+
 /* -- shared chrome --------------------------------------------------------- */
 
 type Action = 'calendar' | 'filter' | 'plus' | 'share' | 'info' | 'search';
@@ -98,7 +120,10 @@ function Chrome({
         <div className={dense ? 'ps-body is-dense' : 'ps-body'}>{children}</div>
         <div className="ps-tabs" aria-hidden="true">
           {TABS.map((t) => (
-            <span key={t} className={t === tab ? 'ps-tab is-on' : 'ps-tab'}>{t}</span>
+            <span key={t} className={t === tab ? 'ps-tab is-on' : 'ps-tab'}>
+              <TabIcon kind={t} />
+              {t}
+            </span>
           ))}
         </div>
         <span className="ps-home" aria-hidden="true" />

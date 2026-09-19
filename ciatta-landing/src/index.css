@@ -605,27 +605,26 @@ p { margin: 0; text-wrap: pretty; }
 
 .ps-body.is-dense { gap: 2.2cqw; }
 
-/* Four destinations now, so the pill container gives way to an even row: at
-   this width a pill per tab would leave no room for the labels. */
+/* The tab bar, in the shape Oura gives it: a capsule floating clear of the
+   screen's edges, an icon over a small label for each destination, and the
+   one she is on brighter than the rest rather than marked underneath. */
 .ps-tabs {
-  display: flex; margin: 0; padding: 1.8cqw 3cqw 1cqw;
-  border-top: 1px solid var(--ps-rule); background: var(--ps-canvas);
+  display: flex; align-items: stretch;
+  margin: 0 4cqw 1.2cqw; padding: 1.8cqw 1cqw;
+  border-radius: 999px;
+  background: var(--ps-raised);
+  box-shadow: 0 0 0 1px rgba(247,244,238,0.06);
 }
 .ps-tab {
-  flex: 1; text-align: center; padding: 0.6cqw 0;
-  font-size: 2.35cqw; font-weight: 500; color: var(--ps-meta);
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.9cqw;
+  font-size: 2.1cqw; font-weight: 500; color: var(--ps-meta);
+  letter-spacing: 0.01em;
 }
-/* The selected destination is named in ink with a mark under it, rather than
-   filled: a filled pill in a four-up row reads as a button, not a location. */
-.ps-tab.is-on { color: var(--ps-ink); font-weight: 600; position: relative; }
-.ps-tab.is-on::after {
-  content: ''; position: absolute; left: 50%; bottom: -1cqw;
-  width: 5cqw; height: 0.6cqw; margin-left: -2.5cqw;
-  border-radius: 999px; background: var(--ps-clay);
-}
+.ps-tab-ico { width: 4.2cqw; height: 4.2cqw; stroke: currentColor; fill: none; }
+.ps-tab.is-on { color: var(--ps-ink); }
+.ps-tab.is-on .ps-tab-ico { stroke: var(--ps-clay); }
 
-/* Teach Ciatta: persistent, reachable from anywhere, and deliberately not a
-   destination. It floats over the content just above the tab bar. */
+/* the home indicator, under the capsule as iOS draws it */
 .ps-home {
   width: 34%; height: 0.9cqw; border-radius: 999px;
   background: var(--ps-ink); opacity: 0.32;
