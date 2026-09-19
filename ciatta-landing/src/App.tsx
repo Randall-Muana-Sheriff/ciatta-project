@@ -146,8 +146,8 @@ export default function App() {
               </h1>
               {/* One paragraph: what Ciatta holds, and what it does with it. */}
               <p className="hero-lede">
-                Your health doesn’t happen in pieces. Ciatta connects your health data
-                to show what’s changing, what connects, and what may be worth exploring.
+                Ciatta connects your health data and everyday context to help you see
+                what changed, what may be connected, and what you can do about it.
               </p>
               <div id="join">
                 <SubscribeForm
