@@ -299,12 +299,8 @@ export function ExploreSection() {
       <div className="shell">
         <div className="band-head">
         <h2 id="explore-heading" className="band-title">
-          See it, connect it, and understand why.
+          All the pieces. One picture.
         </h2>
-        <p className="band-sub">
-          A tracking app watches one thing and stops there. Ciatta holds all
-          parts of your record and shows you what they say together.
-        </p>
         </div>
 
         <div className="ex-tabs" role="tablist" aria-label="Parts of your record" onKeyDown={onKeyDown}>
