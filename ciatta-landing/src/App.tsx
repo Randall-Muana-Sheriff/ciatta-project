@@ -57,38 +57,6 @@ function useScrolled(offset = 8) {
   return scrolled;
 }
 
-/* -- What you get. One card per part of the product, named the way the app
-      names it, each with the photograph that carries its feeling rather than
-      illustrates its function. ------------------------------------------- */
-const WHAT_YOU_GET: [string, string, string, string][] = [
-  ['Your health in one place',
-   'Results and documents from your providers, your cycle, your sleep, your symptoms, and what you take. Imported or entered once.',
-   '/images/get/one-place.jpg',
-   'A woman at a window in low morning light, holding a cup, looking out.'],
-  ['Change over time',
-   'Not today\u2019s number. What moved, when it moved, and what your own usual looked like before it did.',
-   '/images/get/over-time.jpg',
-   'A figure standing on a ridge at sunrise, with range after range behind her.'],
-  ['Personalized insights',
-   'What several pieces of your record say when they are read together, with the reasoning shown rather than asserted.',
-   '/images/get/insight.jpg',
-   'A woman with her eyes closed and one hand resting on her chest, in warm evening light.'],
-  ['Your own words, kept',
-   'A stressful week, a medication change, a night you did not sleep. Context that no device records, sitting beside the measurements.',
-   '/images/get/own-words.jpg',
-   'A woman sitting up in bed in a bright room, stretching, first thing in the morning.'],
-  ['Where every part came from',
-   'Measured, you told Ciatta, imported, uploaded, published evidence, or inferred. Every figure carries its source.',
-   '/images/get/provenance.jpg',
-   'A close frame of a woman\u2019s torso and shoulder against a plain wall.'],
-  ['Something to bring to an appointment',
-   'What changed, what was happening around it, and one question worth asking. Yours to take or to ignore.',
-   '/images/get/appointment.jpg',
-   'A woman outdoors at dawn with her arms raised above her head, mid-stretch.'],
-];
-
-/* -- Questions. The ones a careful person asks before handing over a health
-      record, answered without hedging into meaninglessness. -------------- */
 /* -- Trust, carried by the four photographs that already do it. WHOOP's
       mosaic shape, but each tile now states one thing Ciatta can be held to
       rather than describing the woman looking at it. --------------------- */
@@ -212,31 +180,6 @@ export default function App() {
 
         {/* ------------------------ CLINICAL CONNECTION --------------------- */}
         <BriefSection />
-
-        {/* -------------------------- WHAT YOU GET -------------------------- */}
-        <section className="section get" aria-labelledby="get-heading">
-          <div className="shell">
-            <div className="band-head">
-              <h2 id="get-heading" className="band-title">What you get</h2>
-              <p className="band-sub">
-                All parts, and they only work because they are in the same place.
-              </p>
-            </div>
-            {/* A grid from a tablet up, so all six are on the page at once. On
-                a phone it is a rail that runs to the screen's edge, and the
-                next card is always partly visible. */}
-            <ul className="get-rail">
-            {WHAT_YOU_GET.map(([title, body, img, alt]) => (
-              <li className="get-card" key={title}>
-                <img src={img} alt={alt} width={900} height={1200} loading="lazy" decoding="async" />
-                <div className="get-scrim" aria-hidden="true" />
-                <h3>{title}</h3>
-                <p>{body}</p>
-              </li>
-            ))}
-            </ul>
-          </div>
-        </section>
 
         {/* ------------------- GROUNDED IN EVIDENCE ------------------------- */}
         <section className="section who" aria-labelledby="who-heading">

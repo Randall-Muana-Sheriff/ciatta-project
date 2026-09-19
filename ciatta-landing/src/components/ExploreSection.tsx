@@ -208,7 +208,7 @@ const TOPICS: Topic[] = [
     ask: 'Did the procedure change anything?',
     answer:
       'Your symptom days fell from 14 in the six weeks before to 5 in the six weeks after. Sleep returned to your usual in week 4.',
-    alt: 'A woman resting on her side in low, warm light.',
+    alt: 'A woman sitting in bed in an attic room, drinking from a cup with a book open beside her.',
     screens: [{ name: 'Symptoms', Screen: SymptomsScreen }],
     card: {
       kind: 'log',
