@@ -2,6 +2,17 @@ import { useEffect, useState } from 'react';
 import { HeroFilm } from './components/HeroFilm';
 import { SubscribeForm } from './components/SubscribeForm';
 import { ExploreSection } from './components/ExploreSection';
+import { ProblemSection } from './components/ProblemSection';
+import { ChangeSection } from './components/ChangeSection';
+import { ContextSection } from './components/ContextSection';
+import { WordsSection } from './components/WordsSection';
+import { LabsSection } from './components/LabsSection';
+import { InsightsSection } from './components/InsightsSection';
+import { ActionSection } from './components/ActionSection';
+import { TimelineSection } from './components/TimelineSection';
+import { BriefSection } from './components/BriefSection';
+import { HumanSection } from './components/HumanSection';
+import { StartingSection } from './components/StartingSection';
 import { Wordmark } from './components/Wordmark';
 
 /**
@@ -78,43 +89,53 @@ const WHAT_YOU_GET: [string, string, string, string][] = [
 
 /* -- Questions. The ones a careful person asks before handing over a health
       record, answered without hedging into meaninglessness. -------------- */
-/* -- "Grounded in evidence, built for the questioner." --------------------
-      Shaped after the "Backed by PHDs, worn by MVPs" mosaic on whoop.com.
-      WHOOP mixes member quotes into its grid. Ciatta's study has no quotes
-      that fit, so the grid carries only the photographs: who this is for. */
-type WhoTile = { line: string; img: string; alt: string };
+/* -- Trust, carried by the four photographs that already do it. WHOOP's
+      mosaic shape, but each tile now states one thing Ciatta can be held to
+      rather than describing the woman looking at it. --------------------- */
+type WhoTile = { line: string; sub: string; img: string; alt: string };
 
 const WHO_TILES: WhoTile[] = [
-  { line: 'Reads the study, not the summary.',
+  { line: 'Your data has a source.',
+    sub: 'Measured, imported, uploaded, or told directly by you.',
     img: '/images/who/reads.jpg',
     alt: 'A woman in an infinity pool, facing an open sea.' },
-  { line: 'Has been told her results are normal.',
+  { line: 'Your insights have context.',
+    sub: 'See what information contributed to an observation.',
     img: '/images/who/normal.jpg',
     alt: 'A black and white photograph of a woman in a downward-facing dog position.' },
-  { line: 'Arrives with a list, and wants it answered.',
+  { line: 'Evidence is connected to the question.',
+    sub: 'Relevant research rather than generic health content.',
     img: '/images/who/list.jpg',
     alt: 'A woman sitting on a wooden bench in warm, low light.' },
-  { line: 'Keeps her own notes, because no one else does.',
+  { line: 'Uncertainty stays visible.',
+    sub: 'A pattern isn\u2019t automatically a cause.',
     img: '/images/who/notes-own.jpg',
-    alt: 'A close frame of a woman’s back and shoulder against a plain wall.' },
+    alt: 'A close frame of a woman\u2019s back and shoulder against a plain wall.' },
 ];
 
 const QUESTIONS: [string, string][] = [
   ['What does Ciatta actually do?',
-   'It brings your health information into one place and reads it together. It shows what changed, what was happening around it, what you told it, and what published evidence says about that kind of pattern. It does not diagnose, prescribe, or tell you what to do.'],
+   'It brings your health information into one place and reads it together. It shows what changed, what was happening around it, what you told it, and what published evidence says about that kind of pattern.'],
+  ['Does Ciatta diagnose conditions?',
+   'No. Ciatta describes what is in your record and what moved close to what. Naming a condition is a clinician\u2019s job, and Ciatta does not do it, suggest it, or hint at it.'],
   ['Is Ciatta a medical device?',
    'No. Ciatta is not a medical device and is not a substitute for care. It does not interpret results clinically or offer a second opinion. Decisions stay between you and your clinician.'],
-  ['Where does my data live?',
-   'In your account, and it is yours. You can export it or delete it. Ciatta does not sell health data, and what you write in your own words is never overwritten by a device or a clinic.'],
-  ['How does Ciatta decide two things are connected?',
-   'It looks for things that moved close together in time, more than once, across your own record. It says how many times it has seen the pattern and over what period, and it says plainly when there is not enough behind something to call it.'],
-  ['What if a pattern is a coincidence?',
-   'Often it is, and Ciatta says so. Things that move together are not necessarily one causing the other, and that line appears on the insight itself rather than in a disclaimer at the bottom of a page.'],
+  ['How does Ciatta decide two things may be connected?',
+   'It looks for things that moved close together in time, more than once, across your own record. It says how many times it has seen the pattern and over what period, and it shows the information the observation is based on.'],
+  ['What happens when a pattern could be a coincidence?',
+   'Ciatta says so. Things that move together are not necessarily one causing the other, and that line appears on the observation itself rather than in a disclaimer at the bottom of a page.'],
+  ['Can Ciatta analyze my lab results?',
+   'It reads the values out of the document your provider sent and keeps each one beside every other time it was measured, with its unit, its range, its date and who sent it. It does not tell you what a result means clinically.'],
   ['Do I need a wearable?',
    'No. A wearable adds nightly sleep and cycle data if you already have one. Without it, Ciatta works from what you enter, what you upload, and what your providers send.'],
-  ['When does it open?',
+  ['Where does my health data live?',
+   'In your account, and it is yours. You can export it or delete it. Ciatta does not sell health data, and what you write in your own words is never overwritten by a device or a clinic.'],
+  ['Can I use Ciatta without sharing everything?',
+   'Yes. Every part of the record is optional, and Ciatta works with whatever you give it. What it cannot see, it does not guess at, and it says when a part is missing rather than filling the gap.'],
+  ['When does Ciatta open?',
    'A small group first, then wider. Reserve a place and you will get one email when it opens, and nothing else.'],
 ];
+
 
 export default function App() {
   const scrolled = useScrolled();
@@ -158,15 +179,39 @@ export default function App() {
                   consent="I agree to receive emails about early access and product updates."
                 />
               </div>
-              {/* Who the page is for, under the action rather than over the
-                  headline: it qualifies the invitation, so it follows it. */}
-              <p className="hero-support">Built for women navigating complex, changing health.</p>
             </div>
           </div>
         </section>
 
+        {/* --------------------------- THE PROBLEM -------------------------- */}
+        <ProblemSection />
+
+        {/* ------------------- THE SIGNATURE EXPERIENCE --------------------- */}
+        <ChangeSection />
+
         {/* ----------------------------- EXPLORE ---------------------------- */}
         <ExploreSection />
+
+        {/* ----------------------------- CONTEXT ---------------------------- */}
+        <ContextSection />
+
+        {/* -------------------------- YOUR OWN WORDS ------------------------ */}
+        <WordsSection />
+
+        {/* -------------------------------- LABS ---------------------------- */}
+        <LabsSection />
+
+        {/* ---------------------------- INSIGHTS ---------------------------- */}
+        <InsightsSection />
+
+        {/* ----------------------------- ACTION ----------------------------- */}
+        <ActionSection />
+
+        {/* ---------------------- THE LONGITUDINAL STORY -------------------- */}
+        <TimelineSection />
+
+        {/* ------------------------ CLINICAL CONNECTION --------------------- */}
+        <BriefSection />
 
         {/* -------------------------- WHAT YOU GET -------------------------- */}
         <section className="section get" aria-labelledby="get-heading">
@@ -201,8 +246,8 @@ export default function App() {
                 Grounded in evidence, built for the questioner
               </h2>
               <p className="band-sub">
-                The health intelligence platform for women who question, research,
-                and take their health into their own hands.
+                What an observation is based on, where every figure came from, and
+                what is still too thin to call.
               </p>
             </div>
 
@@ -212,12 +257,21 @@ export default function App() {
                   <img src={tile.img} alt={tile.alt} width={900} height={900}
                        loading="lazy" decoding="async" />
                   <span className="who-scrim" aria-hidden="true" />
-                  <p>{tile.line}</p>
+                  <div>
+                    <p>{tile.line}</p>
+                    <p className="who-sub">{tile.sub}</p>
+                  </div>
                 </li>
               ))}
             </ul>
           </div>
         </section>
+
+        {/* ------------------------ THE HUMAN PROBLEM ----------------------- */}
+        <HumanSection />
+
+        {/* ------------------------------ STARTING -------------------------- */}
+        <StartingSection />
 
         {/* ---------------------------- QUESTIONS --------------------------- */}
         <section className="section" aria-labelledby="q-heading">
@@ -247,21 +301,28 @@ export default function App() {
                   section keeps an accessible name without a label above it
                   restating what the sentence already says. */}
               <h2 id="cta-heading" className="display">
-                Something feels different, and you cannot quite explain it.
+                See what’s changing.
+                <span className="close-second">Know what happened around it.</span>
               </h2>
               <p className="close-lines">
-                Ciatta turns that into what changed, what was happening around it, and what
-                you have noticed since.
+                Ciatta connects your health data and everyday context so you can see
+                what changed, explore what may be connected, and decide what to do next.
               </p>
             </div>
-            <div className="surface is-shell is-lifted split-body">
-              <SubscribeForm
-                id="waitlist-close"
-                source="closing"
-                kind="waitlist"
-                note=""
-                consent="I agree to receive emails about early access and product updates."
-              />
+            <div className="split-body">
+              <div className="surface is-shell is-lifted">
+                <SubscribeForm
+                  id="waitlist-close"
+                  source="closing"
+                  kind="waitlist"
+                  note=""
+                  consent="I agree to receive emails about early access and product updates."
+                />
+              </div>
+              <p className="close-disclaimer">
+                Ciatta provides health information, observations, and recommendations
+                for exploration. It does not diagnose or replace medical care.
+              </p>
             </div>
           </div>
         </section>

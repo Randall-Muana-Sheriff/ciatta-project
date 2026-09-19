@@ -41,6 +41,8 @@ type Topic = {
   pill: string;
   /** The tab's label where the full one will not sit on one line. */
   tab?: string;
+  /** What that part lets her see, on the tab itself. */
+  cap: string;
   title: string;
   lede: string;
   ask: string;
@@ -55,6 +57,8 @@ const TOPICS: Topic[] = [
   {
     key: 'cycle',
     pill: 'Cycle',
+    tab: 'Cycle',
+    cap: 'See what changes across your cycle.',
     title: 'See your cycle change',
     lede:
       'A cycle that shortens by a day, four times running, is not four separate facts. It is one pattern, and you can only see it if the four are kept together.',
@@ -78,6 +82,8 @@ const TOPICS: Topic[] = [
   {
     key: 'sleep',
     pill: 'Sleep',
+    tab: 'Sleep',
+    cap: 'See changes in sleep alongside what was happening around them.',
     title: 'See what a bad week costs',
     lede:
       'One short night is nothing. A week of them, twice in three months, is something your record can put a date on.',
@@ -102,6 +108,8 @@ const TOPICS: Topic[] = [
   {
     key: 'symptoms',
     pill: 'Symptoms',
+    tab: 'Symptoms',
+    cap: 'Put a date and context around what you feel.',
     title: 'Put a date on what you feel',
     lede:
       'What you feel is part of the record too. Dated as you wrote it, it lines up against everything else that happened that week.',
@@ -122,8 +130,9 @@ const TOPICS: Topic[] = [
   },
   {
     key: 'medications',
-    pill: 'Medications & supplements',
+    pill: 'Medications & treatments',
     tab: 'Medications',
+    cap: 'Know what changed, and when.',
     title: 'Know what changed, and when',
     lede:
       'A dose change is exactly the kind of thing you cannot recall in June. Ciatta keeps the date, and keeps what happened after it.',
@@ -144,8 +153,9 @@ const TOPICS: Topic[] = [
   },
   {
     key: 'results',
-    pill: 'Results & documents',
-    tab: 'Results',
+    pill: 'Labs & results',
+    tab: 'Labs',
+    cap: 'See your results across time, not as isolated numbers.',
     title: 'Read your labs in context',
     lede:
       'In range is not the same as nothing to ask about. Ciatta shows where in the range you sit, and what else in your record sits near it.',
@@ -167,6 +177,8 @@ const TOPICS: Topic[] = [
   {
     key: 'notes',
     pill: 'Your own words',
+    tab: 'Your own words',
+    cap: 'Keep what no device could record.',
     title: 'Keep what no device saw',
     lede:
       'A device records the night. It does not record the week you had, so you do — once, and it stays exactly as you wrote it.',
@@ -182,6 +194,29 @@ const TOPICS: Topic[] = [
         ['12 Jan', '“A stressful stretch at work.”', 'You told Ciatta'],
         ['26 Jan', '“Waking several times a night.”', 'You told Ciatta'],
         ['3 Mar', '“My doctor changed my medication.”', 'You told Ciatta'],
+      ],
+    },
+  },
+  {
+    key: 'surgery',
+    pill: 'Surgery & procedures',
+    tab: 'Surgery',
+    cap: 'See what changed before, during, and after an intervention.',
+    title: 'See what an intervention changed',
+    lede:
+      'A procedure is a line drawn through your record. What matters is what your own measurements and symptoms did on either side of it, and that only exists if the record runs through it.',
+    ask: 'Did the procedure change anything?',
+    answer:
+      'Your symptom days fell from 14 in the six weeks before to 5 in the six weeks after. Sleep returned to your usual in week 4.',
+    alt: 'A woman resting on her side in low, warm light.',
+    screens: [{ name: 'Symptoms', Screen: SymptomsScreen }],
+    card: {
+      kind: 'log',
+      head: 'Laparoscopy · 12 Jan',
+      rows: [
+        ['1 Dec – 11 Jan', 'Symptom days 14', 'Before'],
+        ['12 Jan', 'Procedure', 'Imported'],
+        ['13 Jan – 23 Feb', 'Symptom days 5', 'After'],
       ],
     },
   },
@@ -321,7 +356,7 @@ export function ExploreSection() {
                    loading="lazy" decoding="async" />
               <span className="ex-tab-scrim" aria-hidden="true" />
               <span className="ex-tab-pill">{x.tab ?? x.pill}</span>
-              <span className="ex-tab-cap">{x.title}</span>
+              <span className="ex-tab-cap">{x.cap}</span>
             </button>
           ))}
         </div>

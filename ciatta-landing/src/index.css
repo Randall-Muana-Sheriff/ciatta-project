@@ -392,7 +392,6 @@ p { margin: 0; text-wrap: pretty; }
    narrow lines need the weight, long ones do not. */
 @media (min-aspect-ratio: 1/1) { .hero-title { font-weight: 400; } }
 .hero-lede { color: rgba(247,244,238,0.88); font-size: var(--t-lede); line-height: 1.3; }
-.hero-support { color: rgba(247,244,238,0.72); font-size: var(--t-small); line-height: 1.3; }
 
 /* On the film the ground is inverted, so the filled action inverts with it:
    Paper fill, Graphite label. Ember still never becomes a button. */
@@ -539,8 +538,9 @@ p { margin: 0; text-wrap: pretty; }
    Urbanist carries the type inside the screens, which depict the app rather
    than the page. Everything else, here and everywhere, is Jost.
    =========================================================================== */
-/* The screens open from the plus in Explore. */
-.ex-sheet {
+/* The app's dark resolution: the screens behind the plus, and the product
+   panels set directly on the page. */
+.ex-sheet, .product {
   --ps-canvas: #18191B;        /* Graphite, the screen ground */
   --ps-raised: #232733;        /* Raised, panels resting on it */
   --ps-rule: #3A3F4A;
@@ -1780,9 +1780,10 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 .waitlist-consent label { cursor: pointer; }
 .waitlist-consent input[type="checkbox"] { vertical-align: -0.15em; margin-right: 0.5ch; }
+/* the link is the same size and the same ink as the sentence it ends, so the
+   two read as one line rather than as a label and a link */
 .waitlist-consent a { color: inherit; text-underline-offset: 0.2em; }
 .hero .waitlist-consent { color: rgba(247,244,238,0.72); }
-.hero .waitlist-consent a { color: rgba(247,244,238,0.9); }
 /* `.waitlist input` styles the email field; the checkbox has to undo it, at
    higher specificity, including inside the hero and the dark band. */
 .waitlist .waitlist-opt input[type="checkbox"],
@@ -1866,3 +1867,447 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .legal tbody tr:last-child > * { border-bottom: 0; }
 .footer-nav a[aria-current="page"] { color: var(--ink); }
 .waitlist-note a { color: inherit; text-underline-offset: 0.2em; }
+
+/* ===========================================================================
+   The problem, and the turn. Type on paper, one drawing, no cards: five parts
+   at five heights, then the same five on one line.
+   =========================================================================== */
+.pr-body { display: grid; gap: clamp(var(--s6), 4vw, var(--s8)); align-items: start; }
+@media (min-width: 1000px) { .pr-body { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); } }
+.pr-lines { font-size: var(--t-lede); line-height: 1.5; color: var(--ink); margin: 0 0 var(--s5); }
+.pr-ask { font-size: var(--t-lede); line-height: 1.3; color: var(--meta-ink); margin: 0 0 var(--s2); }
+.pr-answer { font-size: var(--t-lede); line-height: 1.3; color: var(--ink); margin: 0; }
+
+.pr-figure { min-width: 0; }
+/* five parts, five places, and deliberately no common baseline */
+.pr-scatter {
+  list-style: none; margin: 0 0 var(--s6); padding: 0;
+  display: flex; flex-wrap: wrap; gap: var(--s3) var(--s4);
+}
+.pr-scatter li {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: var(--s3) var(--s4);
+  border: var(--hairline) solid var(--rule); border-radius: var(--r-control);
+  background: var(--surface);
+}
+.pr-scatter li:nth-child(2) { margin-top: var(--s5); }
+.pr-scatter li:nth-child(3) { margin-top: calc(var(--s3) * -1); }
+.pr-scatter li:nth-child(4) { margin-top: var(--s6); }
+.pr-scatter li:nth-child(5) { margin-top: var(--s2); }
+.pr-scatter b { font-size: var(--t-small); font-weight: 500; color: var(--ink); }
+.pr-scatter i {
+  font-style: normal; font-size: var(--t-caption); color: var(--meta-ink);
+  letter-spacing: 0.04em;
+}
+.pr-turn {
+  margin: 0 0 var(--s5); padding-top: var(--s5);
+  border-top: var(--hairline) solid var(--rule);
+  font-size: var(--t-lede); color: var(--ink);
+}
+/* the same five, on one line */
+.pr-line {
+  list-style: none; margin: 0; padding: var(--s5) 0 0;
+  display: grid; gap: var(--s4);
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  border-top: var(--strong) solid var(--ink);
+}
+.pr-line li { display: flex; flex-direction: column; gap: 2px; position: relative; }
+.pr-tick {
+  position: absolute; top: calc(var(--s5) * -1 - 1px);
+  width: 1px; height: var(--s4); background: var(--ink);
+}
+.pr-line b {
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--meta-ink); font-variant-numeric: tabular-nums;
+}
+.pr-line i { font-style: normal; font-size: var(--t-small); color: var(--ink); line-height: 1.3; }
+
+/* ===========================================================================
+   "What changed?" — the loop in one panel, in the app's dark resolution.
+   =========================================================================== */
+.cg-panel {
+  border-radius: var(--r-shell);
+  background: var(--ps-canvas); color: var(--ps-ink);
+  padding: clamp(var(--s5), 3vw, var(--s7));
+  display: grid; gap: clamp(var(--s6), 3vw, var(--s7));
+}
+@media (min-width: 1000px) {
+  .cg-panel { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); align-items: start; }
+}
+.cg-head { display: flex; align-items: baseline; gap: var(--s4); }
+.cg-kind {
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--ps-ink);
+}
+.cg-src {
+  font-size: var(--t-caption); letter-spacing: 0.06em; color: var(--ps-measured);
+}
+.cg-figure {
+  margin: var(--s4) 0 0; font-size: var(--t-statement); line-height: 1;
+  letter-spacing: -0.03em; font-weight: 400; font-variant-numeric: tabular-nums;
+}
+.cg-figure i { font-style: normal; font-size: 0.4em; color: var(--ps-meta); margin: 0 0.1em 0 0.04em; }
+.cg-delta { margin: var(--s2) 0 var(--s6); color: var(--ps-clay); font-size: var(--t-small); }
+
+.cg-chart { position: relative; }
+.cg-usual {
+  position: absolute; left: 0; right: 0; height: 1px;
+  background: rgba(247,244,238,0.28);
+}
+.cg-usual i {
+  position: absolute; right: 0; bottom: 4px; font-style: normal;
+  font-size: var(--t-caption); color: var(--ps-meta);
+}
+.cg-bars {
+  display: flex; align-items: flex-end; gap: 2px;
+  height: clamp(6rem, 12vw, 10rem);
+}
+.cg-bar { flex: 1; background: var(--ps-measured); opacity: 0.55; border-radius: 2px 2px 0 0; }
+.cg-bar.is-low { background: var(--ps-clay); opacity: 1; }
+.cg-axis {
+  display: flex; justify-content: space-between; margin-top: var(--s3);
+  font-size: var(--t-caption); color: var(--ps-meta);
+}
+
+.cg-read { display: flex; flex-direction: column; gap: var(--s5); }
+.cg-block { padding-top: var(--s5); border-top: var(--hairline) solid var(--ps-rule); }
+.cg-block:first-child { padding-top: 0; border-top: 0; }
+.cg-block h3 {
+  margin: 0 0 var(--s3); font-size: var(--t-caption); font-weight: 600;
+  letter-spacing: 0.13em; text-transform: uppercase; color: var(--ps-meta);
+}
+.cg-block p { margin: 0; color: var(--ps-ink); font-size: var(--t-small); line-height: 1.4; }
+.cg-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.cg-list li { color: var(--ps-body); font-size: var(--t-small); line-height: 1.4; }
+.cg-try { color: var(--ps-ink); }
+.cg-block.is-next p { color: var(--ps-ink); }
+.cg-note {
+  margin: var(--s5) 0 0; color: var(--meta-ink); font-size: var(--t-small); line-height: 1.4;
+}
+
+/* ===========================================================================
+   Context — four layers on one row of rules, then one week read across them.
+   =========================================================================== */
+.cx-layers {
+  list-style: none; margin: 0 0 clamp(var(--s6), 3vw, var(--s7)); padding: 0;
+  display: grid; gap: var(--s5) var(--s6);
+  border-top: var(--strong) solid var(--ink); padding-top: var(--s5);
+}
+@media (min-width: 720px) { .cx-layers { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1100px) { .cx-layers { grid-template-columns: repeat(4, 1fr); } }
+.cx-layers h3 {
+  margin: 0 0 var(--s2); font-size: var(--t-card); font-weight: 400;
+  letter-spacing: -0.03em; line-height: 1.05; color: var(--ink);
+}
+.cx-layers p { color: var(--meta-ink); font-size: var(--t-small); line-height: 1.4; }
+
+.cx-example {
+  border-radius: var(--r-shell); background: var(--ps-canvas); color: var(--ps-ink);
+  padding: clamp(var(--s5), 3vw, var(--s7));
+  display: grid; gap: clamp(var(--s5), 3vw, var(--s6));
+}
+@media (min-width: 1000px) {
+  .cx-example { grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); align-items: start; }
+  .cx-action { grid-column: 1 / -1; }
+}
+.cx-label {
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--ps-meta);
+}
+.cx-headline {
+  margin: var(--s4) 0 var(--s3); font-size: var(--t-statement);
+  line-height: var(--lh-statement); letter-spacing: -0.03em; color: var(--ps-ink);
+}
+.cx-sub { margin: 0; color: var(--ps-meta); font-size: var(--t-small); }
+.cx-around { margin: 0; display: grid; gap: 0; }
+.cx-around div {
+  display: flex; justify-content: space-between; gap: var(--s4);
+  padding: var(--s3) 0; border-top: var(--hairline) solid var(--ps-rule);
+}
+.cx-around div:first-child { border-top: 0; }
+.cx-around dt { color: var(--ps-meta); font-size: var(--t-small); }
+.cx-around dd { margin: 0; color: var(--ps-ink); font-size: var(--t-small); text-align: right; }
+.cx-action {
+  margin: 0; padding-top: var(--s4); border-top: var(--hairline) solid var(--ps-rule);
+  color: var(--ps-clay); font-size: var(--t-small);
+}
+
+/* ===========================================================================
+   Your own words — photograph, her lines, and what becomes of them.
+   =========================================================================== */
+.wd-body { display: grid; gap: clamp(var(--s6), 4vw, var(--s8)); align-items: start; }
+@media (min-width: 1000px) { .wd-body { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); } }
+.wd-photo { margin: 0; border-radius: var(--r-shell); overflow: hidden; background: #2E2A24; }
+.wd-photo img { display: block; width: 100%; height: 100%; object-fit: cover; aspect-ratio: 4 / 5; }
+.wd-copy { display: flex; flex-direction: column; }
+.wd-lede { font-size: var(--t-lede); line-height: 1.4; color: var(--ink); margin: 0 0 var(--s4); }
+.wd-lede.is-turn { color: var(--ink); margin-bottom: var(--s6); }
+.wd-entries {
+  list-style: none; margin: 0 0 var(--s6); padding: 0;
+  border-top: var(--hairline) solid var(--rule);
+}
+.wd-entries li {
+  display: grid; gap: var(--s2); padding: var(--s5) 0;
+  border-bottom: var(--hairline) solid var(--rule);
+}
+@media (min-width: 640px) { .wd-entries li { grid-template-columns: 7rem minmax(0, 1fr); gap: var(--s5); align-items: baseline; } }
+.wd-date {
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--meta-ink); font-variant-numeric: tabular-nums;
+}
+.wd-entries blockquote { margin: 0; }
+.wd-entries blockquote p { font-size: var(--t-lede); line-height: 1.35; color: var(--ink); }
+.wd-close { margin: 0; font-size: var(--t-lede); color: var(--ink); }
+
+/* ===========================================================================
+   Labs — document, values, and the same value across time.
+   =========================================================================== */
+.lb-steps {
+  list-style: none; margin: 0 0 clamp(var(--s6), 3vw, var(--s7)); padding: 0;
+  display: grid; gap: var(--s6);
+}
+@media (min-width: 900px) { .lb-steps { grid-template-columns: repeat(3, 1fr); gap: var(--s6) var(--s7); } }
+.lb-steps > li { display: flex; flex-direction: column; gap: var(--s4); min-width: 0; }
+.lb-step {
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--meta-ink);
+  padding-bottom: var(--s3); border-bottom: var(--hairline) solid var(--rule);
+}
+.lb-doc {
+  display: flex; align-items: center; gap: var(--s4);
+  padding: var(--s4); border: var(--hairline) solid var(--rule);
+  border-radius: var(--r-control); background: var(--surface);
+}
+.lb-doc-ico {
+  flex: none; display: grid; place-items: center;
+  width: 2.75rem; height: 3.25rem; border-radius: var(--r-inset);
+  background: var(--ink); color: var(--on-ink);
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.08em;
+}
+.lb-doc-b { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lb-doc-b b { font-size: var(--t-small); font-weight: 500; color: var(--ink); }
+.lb-doc-b i { font-style: normal; font-size: var(--t-caption); color: var(--meta-ink); }
+.lb-values { list-style: none; margin: 0; padding: 0; }
+.lb-values li {
+  display: flex; justify-content: space-between; gap: var(--s4);
+  padding: var(--s3) 0; border-bottom: var(--hairline) solid var(--rule);
+}
+.lb-values b { font-weight: 400; font-size: var(--t-small); color: var(--ink); }
+.lb-values span { font-size: var(--t-small); color: var(--meta-ink); font-variant-numeric: tabular-nums; }
+.lb-trend { color: var(--change-text); }
+.lb-trend svg { display: block; width: 100%; height: 5rem; }
+.lb-points { margin: var(--s3) 0 0; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.lb-points div { display: flex; flex-direction: column; gap: 2px; text-align: center; }
+.lb-points dt { font-size: var(--t-caption); color: var(--meta-ink); }
+.lb-points dd { margin: 0; font-size: var(--t-small); color: var(--body-ink); font-variant-numeric: tabular-nums; }
+.lb-points .is-last dd { color: var(--ink); font-weight: 600; }
+
+.lb-read {
+  border-radius: var(--r-shell); background: var(--ps-canvas); color: var(--ps-ink);
+  padding: clamp(var(--s5), 3vw, var(--s7));
+  display: grid; gap: clamp(var(--s5), 3vw, var(--s6));
+}
+@media (min-width: 1000px) { .lb-read { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: start; } }
+.lb-around h3 {
+  margin: 0 0 var(--s4); font-size: var(--t-caption); font-weight: 600;
+  letter-spacing: 0.13em; text-transform: uppercase; color: var(--ps-meta);
+}
+.lb-around dl { margin: 0; }
+.lb-around div {
+  display: flex; justify-content: space-between; gap: var(--s4);
+  padding: var(--s3) 0; border-top: var(--hairline) solid var(--ps-rule);
+}
+.lb-around div:first-child { border-top: 0; }
+.lb-around dt { color: var(--ps-meta); font-size: var(--t-small); }
+.lb-around dd { margin: 0; color: var(--ps-ink); font-size: var(--t-small); text-align: right; }
+.lb-registers { margin: 0; display: grid; gap: var(--s5); }
+.lb-registers dt {
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--ps-meta); margin-bottom: var(--s2);
+}
+.lb-registers dd { margin: 0; color: var(--ps-ink); font-size: var(--t-small); line-height: 1.4; }
+
+/* ===========================================================================
+   Insights — three observations on hairlines, then the limit.
+   =========================================================================== */
+.in-list {
+  list-style: none; margin: 0 0 clamp(var(--s6), 3vw, var(--s7)); padding: 0;
+  border-top: var(--strong) solid var(--ink);
+}
+.in-list li {
+  display: grid; gap: var(--s3);
+  padding: var(--s5) 0; border-bottom: var(--hairline) solid var(--rule);
+}
+@media (min-width: 900px) {
+  .in-list li {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 7fr) minmax(0, 2fr);
+    gap: var(--s6); align-items: baseline;
+  }
+}
+.in-pair {
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--meta-ink);
+}
+.in-line { font-size: var(--t-lede); line-height: 1.35; color: var(--ink); }
+.in-basis { font-size: var(--t-caption); color: var(--meta-ink); font-variant-numeric: tabular-nums; }
+.in-limit { display: grid; gap: var(--s3); }
+@media (min-width: 900px) { .in-limit { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s7); } }
+.in-limit-head { font-size: var(--t-card); line-height: 1.05; letter-spacing: -0.03em; color: var(--ink); }
+.in-limit-sub { font-size: var(--t-lede); line-height: 1.35; color: var(--body-ink); }
+
+/* ===========================================================================
+   Action — the four steps, one experiment, and what happened after it.
+   =========================================================================== */
+.ac-steps {
+  list-style: none; margin: 0 0 clamp(var(--s6), 3vw, var(--s7)); padding: var(--s4) 0 0;
+  display: flex; flex-wrap: wrap; gap: var(--s3) var(--s5);
+  border-top: var(--strong) solid var(--ink);
+  counter-reset: step;
+}
+.ac-steps li {
+  display: flex; align-items: baseline; gap: var(--s3);
+  font-size: var(--t-card); line-height: 1.05; letter-spacing: -0.03em; color: var(--ink);
+}
+.ac-steps li + li::before {
+  content: ''; width: 1.5rem; height: 1px; background: var(--rule);
+  align-self: center; margin-right: var(--s2);
+}
+.ac-body { display: grid; gap: clamp(var(--s6), 3vw, var(--s7)); align-items: start; }
+@media (min-width: 1000px) { .ac-body { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); } }
+.ac-card {
+  border-radius: var(--r-shell); background: var(--ps-canvas); color: var(--ps-ink);
+  padding: clamp(var(--s5), 3vw, var(--s6));
+  display: flex; flex-direction: column; gap: var(--s5);
+}
+.ac-label {
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--ps-meta);
+}
+.ac-head {
+  margin: 0; font-size: var(--t-statement); line-height: var(--lh-statement);
+  letter-spacing: -0.03em; color: var(--ps-ink);
+}
+.ac-try h3 {
+  margin: 0 0 var(--s3); font-size: var(--t-caption); font-weight: 600;
+  letter-spacing: 0.13em; text-transform: uppercase; color: var(--ps-meta);
+}
+.ac-try ul { list-style: none; margin: 0; padding: 0; display: grid; }
+.ac-try li {
+  padding: var(--s3) 0; border-top: var(--hairline) solid var(--ps-rule);
+  color: var(--ps-body); font-size: var(--t-small);
+}
+.ac-start {
+  align-self: flex-start;
+  padding: 0 var(--s5); height: var(--control-h);
+  display: inline-flex; align-items: center;
+  border-radius: var(--r-control); background: var(--ps-ink); color: var(--ps-canvas);
+  font-size: var(--t-small); font-weight: 500;
+}
+.ac-after h3 {
+  margin: 0 0 var(--s4); font-size: var(--t-caption); font-weight: 600;
+  letter-spacing: 0.13em; text-transform: uppercase; color: var(--meta-ink);
+}
+.ac-after dl { margin: 0 0 var(--s5); }
+.ac-after div {
+  display: flex; justify-content: space-between; gap: var(--s4);
+  padding: var(--s3) 0; border-top: var(--hairline) solid var(--rule);
+}
+.ac-after dt { color: var(--meta-ink); font-size: var(--t-small); }
+.ac-after dd { margin: 0; color: var(--ink); font-size: var(--t-small); text-align: right; }
+.ac-learn { margin: 0; color: var(--ink); font-size: var(--t-lede); line-height: 1.35; }
+
+/* ===========================================================================
+   The timeline — one rule, eight moments. Vertical on a phone.
+   =========================================================================== */
+.tl-line { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s5); }
+.tl-line li {
+  display: grid; gap: 2px; position: relative;
+  padding-left: var(--s5); border-left: var(--hairline) solid var(--rule);
+}
+.tl-tick {
+  position: absolute; left: -3px; top: 0.45em;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--ink);
+}
+@media (min-width: 900px) {
+  .tl-line {
+    grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--s5);
+    border-top: var(--strong) solid var(--ink); padding-top: var(--s5);
+  }
+  .tl-line li { padding-left: 0; border-left: 0; padding-right: var(--s4); }
+  .tl-tick { left: 0; top: calc(var(--s5) * -1 - 3px); width: 1px; height: var(--s4); border-radius: 0; }
+}
+.tl-when {
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--meta-ink); font-variant-numeric: tabular-nums;
+}
+.tl-kind { font-size: var(--t-small); color: var(--ink); }
+.tl-what { font-size: var(--t-caption); color: var(--meta-ink); line-height: 1.4; }
+
+/* ===========================================================================
+   The health brief — a document on White, because that is what it becomes.
+   =========================================================================== */
+.bf-doc {
+  background: var(--surface); border-radius: var(--r-shell);
+  box-shadow: var(--float-lifted);
+  padding: clamp(var(--s5), 3vw, var(--s7));
+  max-width: 62rem;
+}
+.bf-head {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s3);
+  padding-bottom: var(--s4); border-bottom: var(--strong) solid var(--ink);
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--ink);
+}
+.bf-range { color: var(--meta-ink); font-variant-numeric: tabular-nums; }
+.bf-body { margin: 0; display: grid; }
+.bf-body > div {
+  display: grid; gap: var(--s2);
+  padding: var(--s5) 0; border-bottom: var(--hairline) solid var(--rule);
+}
+@media (min-width: 800px) {
+  .bf-body > div { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--s6); align-items: baseline; }
+}
+.bf-body dt { font-size: var(--t-small); color: var(--meta-ink); }
+.bf-body dd { margin: 0; display: grid; gap: var(--s2); }
+.bf-body dd p { font-size: var(--t-small); line-height: 1.4; color: var(--ink); }
+.bf-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s4) var(--s5); padding-top: var(--s5); }
+.bf-cta {
+  padding: 0 var(--s5); height: var(--control-h);
+  display: inline-flex; align-items: center;
+  border-radius: var(--r-control); background: var(--ink); color: var(--on-ink);
+  font-size: var(--t-small); font-weight: 500;
+}
+.bf-note { margin: 0; color: var(--meta-ink); font-size: var(--t-caption); line-height: 1.4; max-width: 34ch; }
+
+/* ===========================================================================
+   The human problem, and where Ciatta starts. Type on paper, one rule each.
+   =========================================================================== */
+.hm-body { display: grid; gap: var(--s6); align-items: start; }
+@media (min-width: 900px) { .hm-body { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s7); } }
+.hm-work {
+  list-style: none; margin: 0; padding: var(--s5) 0 0;
+  border-top: var(--strong) solid var(--ink);
+  display: grid; gap: var(--s3);
+}
+.hm-work li { font-size: var(--t-lede); line-height: 1.35; color: var(--body-ink); }
+.hm-turn { margin: 0; padding-top: var(--s5); font-size: var(--t-card); line-height: 1.05; letter-spacing: -0.03em; color: var(--ink); }
+
+.st-body { display: grid; gap: var(--s5); max-width: 64rem; }
+.st-lede { font-size: var(--t-lede); line-height: 1.4; color: var(--body-ink); }
+.st-close {
+  margin: 0; padding-top: var(--s5); border-top: var(--hairline) solid var(--rule);
+  font-size: var(--t-card); line-height: 1.1; letter-spacing: -0.03em; color: var(--ink);
+}
+
+/* the trust tiles carry a second line now */
+.who-tile > div { display: grid; gap: var(--s2); }
+.who-sub {
+  color: rgba(247,244,238,0.82); font-size: var(--t-small); font-weight: 400;
+  line-height: 1.35; letter-spacing: 0; max-width: 26ch;
+}
+/* the closing headline runs as two lines, the second quieter */
+.close-second { display: block; color: var(--meta-ink); }
+.close-disclaimer {
+  margin: var(--s4) 0 0; color: var(--meta-ink);
+  font-size: var(--t-caption); line-height: 1.5; max-width: 52ch;
+}
