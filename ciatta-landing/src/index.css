@@ -626,15 +626,6 @@ p { margin: 0; text-wrap: pretty; }
 
 /* Teach Ciatta: persistent, reachable from anywhere, and deliberately not a
    destination. It floats over the content just above the tab bar. */
-.ps-teach {
-  align-self: flex-end; margin: 0 5cqw 1.2cqw;
-  display: inline-flex; align-items: center; gap: 1.3cqw;
-  padding: 1.5cqw 3.2cqw; border-radius: 999px;
-  background: var(--ps-clay); color: #241205;
-  font-size: 2.6cqw; font-weight: 600; white-space: nowrap;
-  box-shadow: 0 2cqw 4cqw rgba(0,0,0,0.32);
-}
-.ps-teach i { font-style: normal; font-size: 3.4cqw; line-height: 0; font-weight: 500; }
 .ps-home {
   width: 34%; height: 0.9cqw; border-radius: 999px;
   background: var(--ps-ink); opacity: 0.32;
@@ -1615,7 +1606,7 @@ p { margin: 0; text-wrap: pretty; }
 
 .ex-sheet {
   /* one phone as tall as the viewport allows, never wider than the screen */
-  --ps-w: min(17rem, calc((100dvh - 12rem) * 402 / 874), calc(100vw - 6rem));
+  --ps-w: min(21rem, 86vw, calc((100dvh - 11rem) * 402 / 874));
   width: min(calc(100vw - 2 * var(--gutter)), 52rem);
   max-height: calc(100dvh - 2 * var(--s5));
   margin: auto; padding: 0; border: 0;
@@ -2251,12 +2242,15 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    the words sit beside it, and below the split the phone leads.
    =========================================================================== */
 .sec-phone {
-  --ps-w: clamp(15rem, 24vw, 20rem);
+  /* One device at one legible size at every width. Below the split the phone
+     takes the row it is given, because a screen shrunk to a quarter of the
+     page is a picture of a screen rather than the screen. */
+  --ps-w: min(86vw, 21rem);
   display: grid; gap: clamp(var(--s6), 4vw, var(--s8)); align-items: center;
   justify-items: center;
 }
 @media (min-width: 1000px) {
-  .sec-phone { grid-template-columns: minmax(0, auto) minmax(0, 1fr); justify-items: stretch; }
+  .sec-phone { --ps-w: clamp(16rem, 21vw, 20rem); grid-template-columns: minmax(0, auto) minmax(0, 1fr); justify-items: stretch; }
   .sec-phone.is-reversed { grid-template-columns: minmax(0, 1fr) minmax(0, auto); }
   .sec-phone.is-reversed .sec-phone-device { order: 2; }
 }
@@ -2275,7 +2269,8 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .sec-phone-read .lb-registers dd { color: var(--ink); }
 .sec-phone-lede { font-size: var(--t-lede); line-height: 1.35; color: var(--ink); }
 .sec-phone-sub { font-size: var(--t-small); line-height: 1.4; color: var(--meta-ink); }
-/* the action section already has its own two-column body */
-.ac-body .sec-phone-device { --ps-w: clamp(15rem, 24vw, 20rem); }
+/* the action section has its own two-column body, and the same device size */
+.ac-body { --ps-w: min(86vw, 21rem); }
+@media (min-width: 1000px) { .ac-body { --ps-w: clamp(16rem, 21vw, 20rem); } }
 /* the brief keeps its document beside the screen */
 .brief .sec-phone .bf-doc { max-width: none; }

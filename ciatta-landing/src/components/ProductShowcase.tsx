@@ -75,10 +75,10 @@ function ActionIcon({ kind }: { kind: Action }) {
 }
 
 function Chrome({
-  title, action = 'info', tab = 'My Health', dense, teach = true, children,
+  title, action = 'info', tab = 'My Health', dense, children,
 }: {
   title: string; action?: Action; tab?: (typeof TABS)[number];
-  dense?: boolean; teach?: boolean; children: React.ReactNode;
+  dense?: boolean; children: React.ReactNode;
 }) {
   return (
     <div className="ps-phone">
@@ -96,9 +96,6 @@ function Chrome({
           <ActionIcon kind={action} />
         </div>
         <div className={dense ? 'ps-body is-dense' : 'ps-body'}>{children}</div>
-        {/* Context can arrive at any moment, so the way to add it is on every
-            screen rather than behind a destination of its own. */}
-        {teach && <div className="ps-teach" aria-hidden="true"><i>+</i>Teach Ciatta</div>}
         <div className="ps-tabs" aria-hidden="true">
           {TABS.map((t) => (
             <span key={t} className={t === tab ? 'ps-tab is-on' : 'ps-tab'}>{t}</span>
