@@ -1,3 +1,5 @@
+import { LabScreen } from './ProductShowcase';
+
 /**
  * "Your lab results shouldn't live in a PDF."
  *
@@ -105,27 +107,33 @@ export function LabsSection() {
           </li>
         </ol>
 
-        <div className="product lb-read">
-          <div className="lb-around">
-            <h3>What changed around the same time</h3>
-            <dl>
-              {ALONGSIDE.map(([k, v]) => (
-                <div key={k}>
-                  <dt>{k}</dt>
-                  <dd>{v}</dd>
+        <div className="sec-phone">
+          <div className="product sec-phone-device">
+            <LabScreen />
+          </div>
+
+          <div className="sec-phone-read">
+            <div className="lb-around">
+              <h3>What changed around the same time</h3>
+              <dl>
+                {ALONGSIDE.map(([k, v]) => (
+                  <div key={k}>
+                    <dt>{k}</dt>
+                    <dd>{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            <dl className="lb-registers">
+              {READ.map(([label, line]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{line}</dd>
                 </div>
               ))}
             </dl>
           </div>
-
-          <dl className="lb-registers">
-            {READ.map(([label, line]) => (
-              <div key={label}>
-                <dt>{label}</dt>
-                <dd>{line}</dd>
-              </div>
-            ))}
-          </dl>
         </div>
       </div>
     </section>

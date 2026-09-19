@@ -1,3 +1,5 @@
+import { ContextScreen } from './ProductShowcase';
+
 /**
  * "Health doesn't happen in a vacuum."
  *
@@ -15,13 +17,6 @@ const LAYERS: [string, string][] = [
   ['Your environment', 'Weather · temperature · air quality · daylight'],
 ];
 
-const AROUND: [string, string][] = [
-  ['Cycle', 'Day 24'],
-  ['Sleep', 'Lower than your usual'],
-  ['GI symptoms', 'Reported more often'],
-  ['Workload', 'Higher'],
-  ['Medication', 'Changed 8 days earlier'],
-];
 
 export function ContextSection() {
   return (
@@ -46,23 +41,20 @@ export function ContextSection() {
           ))}
         </ul>
 
-        <div className="product cx-example">
-          <div className="cx-finding">
-            <span className="cx-label">This week</span>
-            <p className="cx-headline">Your pain increased this week.</p>
-            <p className="cx-sub">Around the same time:</p>
+        <div className="sec-phone is-reversed">
+          <div className="product sec-phone-device">
+            <ContextScreen />
           </div>
-
-          <dl className="cx-around">
-            {AROUND.map(([k, v]) => (
-              <div key={k}>
-                <dt>{k}</dt>
-                <dd>{v}</dd>
-              </div>
-            ))}
-          </dl>
-
-          <p className="cx-action">Explore what changed around it.</p>
+          <div className="sec-phone-read">
+            <p className="sec-phone-lede">
+              One week she reported pain, and every other part of the record with
+              something to say about the same week.
+            </p>
+            <p className="sec-phone-sub">
+              Nothing here claims a cause. It is the week, assembled, so she can
+              ask about it.
+            </p>
+          </div>
         </div>
       </div>
     </section>

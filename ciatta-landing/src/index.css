@@ -2245,3 +2245,37 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   margin: var(--s4) 0 0; color: var(--meta-ink);
   font-size: var(--t-caption); line-height: 1.5; max-width: 52ch;
 }
+
+/* ===========================================================================
+   A section that shows a screen. The phone takes the room a photograph would,
+   the words sit beside it, and below the split the phone leads.
+   =========================================================================== */
+.sec-phone {
+  --ps-w: clamp(15rem, 24vw, 20rem);
+  display: grid; gap: clamp(var(--s6), 4vw, var(--s8)); align-items: center;
+  justify-items: center;
+}
+@media (min-width: 1000px) {
+  .sec-phone { grid-template-columns: minmax(0, auto) minmax(0, 1fr); justify-items: stretch; }
+  .sec-phone.is-reversed { grid-template-columns: minmax(0, 1fr) minmax(0, auto); }
+  .sec-phone.is-reversed .sec-phone-device { order: 2; }
+}
+.sec-phone-device { display: flex; justify-content: center; }
+.sec-phone-read { display: flex; flex-direction: column; gap: var(--s5); min-width: 0; width: 100%; }
+.sec-phone-read .cg-block:first-child { padding-top: 0; border-top: 0; }
+/* on paper the blocks take the page's inks rather than the screen's */
+.sec-phone-read .cg-block { border-top-color: var(--rule); }
+.sec-phone-read .cg-block h3 { color: var(--meta-ink); }
+.sec-phone-read .cg-block p, .sec-phone-read .cg-list li { color: var(--ink); }
+.sec-phone-read .lb-around h3 { color: var(--meta-ink); }
+.sec-phone-read .lb-around div { border-top-color: var(--rule); }
+.sec-phone-read .lb-around dt { color: var(--meta-ink); }
+.sec-phone-read .lb-around dd { color: var(--ink); }
+.sec-phone-read .lb-registers dt { color: var(--meta-ink); }
+.sec-phone-read .lb-registers dd { color: var(--ink); }
+.sec-phone-lede { font-size: var(--t-lede); line-height: 1.35; color: var(--ink); }
+.sec-phone-sub { font-size: var(--t-small); line-height: 1.4; color: var(--meta-ink); }
+/* the action section already has its own two-column body */
+.ac-body .sec-phone-device { --ps-w: clamp(15rem, 24vw, 20rem); }
+/* the brief keeps its document beside the screen */
+.brief .sec-phone .bf-doc { max-width: none; }

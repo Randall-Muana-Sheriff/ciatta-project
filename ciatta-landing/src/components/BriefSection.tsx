@@ -1,3 +1,5 @@
+import { BriefScreen } from './ProductShowcase';
+
 /**
  * "Bring the story with you."
  *
@@ -40,6 +42,11 @@ export function BriefSection() {
           </p>
         </div>
 
+        <div className="sec-phone is-reversed">
+          <div className="product sec-phone-device">
+            <BriefScreen />
+          </div>
+
         <article className="bf-doc" aria-label="An example health brief">
           <header className="bf-head">
             <span className="bf-kind">Health brief</span>
@@ -67,6 +74,7 @@ export function BriefSection() {
             </p>
           </footer>
         </article>
+        </div>
       </div>
     </section>
   );

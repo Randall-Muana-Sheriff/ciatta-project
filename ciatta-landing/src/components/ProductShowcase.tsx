@@ -659,3 +659,194 @@ export function ExperimentScreen() {
     </Chrome>
   );
 }
+
+/* -- 9. What changed ------------------------------------------------------- *
+ * The signature screen: one measurement that moved, and the loop read down
+ * the screen beneath it. The same figures the page states, in the app.       */
+
+export function ChangeScreen() {
+  const nights = [
+    7.5, 7.3, 7.6, 7.2, 7.4, 7.1, 7.5, 7.2, 6.9, 7.3, 7.0, 6.8, 7.1, 6.6, 6.9,
+    6.4, 6.7, 6.2, 6.5, 6.3, 6.6, 6.1, 6.4, 6.8, 6.5, 6.9, 6.7, 7.0, 6.8, 6.77,
+  ];
+  return (
+    <Chrome title="Sleep" action="calendar" tab="Today">
+      <Seg items={['30D', '6M', 'All']} on="30D" />
+
+      <div className="ps-figure">
+        <span className="ps-fig-k">Last night</span>
+        <span className="ps-fig-n">6<i>h</i>46<i>m</i></span>
+        <span className="ps-fig-d is-down">48 min below your usual</span>
+      </div>
+
+      <div className="ps-plot">
+        <span className="ps-target" style={{ bottom: '68%' }} aria-hidden="true"><i>Your usual 7h 18m</i></span>
+        <div className="ps-cols" aria-hidden="true">
+          {nights.map((v, i) => (
+            <span key={i} className={v < 6.8 ? 'ps-col is-low' : 'ps-col'}>
+              <span className="ps-col-bar" style={{ height: `${((v - 5.8) / 2.2) * 100}%` }} />
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="ps-axis" aria-hidden="true"><span>30 days ago</span><span>Last night</span></div>
+
+      <dl className="ps-layers">
+        <div>
+          <dt>What happened around it<Src kind="measured" /></dt>
+          <dd>
+            Work demands were higher. Fatigue was reported 3 times. Cycle changed
+            phase. Bedtime was later on 4 nights.
+          </dd>
+        </div>
+        <div>
+          <dt>What may be connected<Src kind="inferred" /></dt>
+          <dd>Your sleep has been lower during several high-demand weeks.</dd>
+        </div>
+      </dl>
+
+      <div className="ps-open-row">
+        <span className="ps-open-k">What can you do?</span>
+        <p>Try a 7-day sleep experiment.</p>
+      </div>
+
+      <div className="ps-next">
+        <span className="ps-next-k">What happened next</span>
+        <p>Sleep returned closer to your usual on 5 of 7 nights.</p>
+      </div>
+
+      <p className="ps-hedge">
+        Things that move together are not necessarily one causing the other.
+      </p>
+    </Chrome>
+  );
+}
+
+/* -- 10. This week --------------------------------------------------------- *
+ * The context screen. One thing she reported, and every other part of the
+ * record that has something to say about the same week.                      */
+
+export function ContextScreen() {
+  return (
+    <Chrome title="Today" action="share" tab="Today" dense>
+      <div className="ps-ins-head">
+        <span className="ps-tag">This week</span>
+        <span className="ps-pill is-watch">Watching</span>
+      </div>
+
+      <p className="ps-finding">Your pain increased this week.</p>
+      <span className="ps-conf"><Src kind="told" /> Reported on 4 days</span>
+
+      <Lab qual="Around the same time">Your record</Lab>
+      <div className="ps-rows">
+        <Row k="Cycle" v="Day 24" />
+        <Row k="Sleep" v="Lower than usual" />
+        <Row k="GI symptoms" v="More often" />
+        <Row k="Workload" v="Higher" />
+        <Row k="Medication" meta="Changed 8 days earlier" v="75 mcg" />
+      </div>
+
+      <div className="ps-bar-action is-primary">Explore what changed around it</div>
+      <div className="ps-prov"><Src kind="inferred" /> Read across 5 parts of your record</div>
+    </Chrome>
+  );
+}
+
+/* -- 11. A lab result over time -------------------------------------------- *
+ * The document she uploaded, the values read out of it, and the same value
+ * every other time it was measured.                                          */
+
+export function LabScreen() {
+  const points = [
+    { d: '12 Aug', v: 32 },
+    { d: '14 Mar', v: 24 },
+    { d: '2 Sep', v: 18 },
+  ];
+  const h = (v: number) => `${((v - 10) / 30) * 100}%`;
+
+  return (
+    <Chrome title="Ferritin" action="share" dense>
+      <Seg items={['Results', 'Documents']} on="Results" />
+
+      <div className="ps-figure">
+        <span className="ps-fig-k">2 Sep 2026</span>
+        <span className="ps-fig-n">18<i>ng/mL</i></span>
+        <span className="ps-fig-d is-down">Range 15 to 150</span>
+      </div>
+
+      <Lab qual="3 results">Every result you have</Lab>
+      <div className="ps-plot">
+        <div className="ps-cols" aria-hidden="true">
+          {points.map((p) => (
+            <span key={p.d} className={p.v < 25 ? 'ps-col is-short' : 'ps-col'}>
+              <span className="ps-col-n">{p.v}</span>
+              <span className="ps-col-bar" style={{ height: h(p.v) }} />
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="ps-axis" aria-hidden="true">
+        {points.map((p) => <span key={p.d}>{p.d}</span>)}
+      </div>
+
+      <dl className="ps-layers">
+        <div>
+          <dt>Observed<Src kind="inferred" /></dt>
+          <dd>Ferritin declined across available results.</dd>
+        </div>
+        <div>
+          <dt>Context<Src kind="told" /></dt>
+          <dd>Fatigue and heavier bleeding were reported during the same period.</dd>
+        </div>
+      </dl>
+
+      <div className="ps-next">
+        <span className="ps-next-k">Question to discuss</span>
+        <p>Could these changes be worth discussing together?</p>
+      </div>
+
+      <div className="ps-prov"><Src kind="uploaded" /> Quest Diagnostics &middot; full blood panel</div>
+    </Chrome>
+  );
+}
+
+/* -- 12. The health brief -------------------------------------------------- *
+ * Six months as one page, in the registers the product already uses.         */
+
+export function BriefScreen() {
+  return (
+    <Chrome title="Health brief" action="share" tab="Journey" dense>
+      <div className="ps-ins-head">
+        <span className="ps-tag">Health brief</span>
+        <span className="ps-pill is-ok">6 months</span>
+      </div>
+
+      <dl className="ps-layers">
+        <div>
+          <dt>What changed<Src kind="told" /></dt>
+          <dd>Symptoms increased over 6 weeks.</dd>
+        </div>
+        <div>
+          <dt>What was happening around it<Src kind="measured" /></dt>
+          <dd>Sleep decreased. Medication changed on 3 Mar. Cycle shortened by three days.</dd>
+        </div>
+        <div>
+          <dt>What you tried<Src kind="told" /></dt>
+          <dd>A 7-day sleep experiment from 10 Mar, with earlier wind-down on 5 of 7 nights.</dd>
+        </div>
+        <div>
+          <dt>What happened next<Src kind="measured" /></dt>
+          <dd>Sleep returned closer to your usual on 5 of 7 nights. Fatigue was reported less often.</dd>
+        </div>
+      </dl>
+
+      <div className="ps-next">
+        <span className="ps-next-k">Questions to discuss</span>
+        <p>Could the sleep and cycle changes be worth evaluating together? Is the ferritin trend worth repeating?</p>
+      </div>
+
+      <div className="ps-bar-action is-primary">Create health brief</div>
+      <div className="ps-prov"><Src kind="inferred" /> 1 Oct 2025 to 1 Apr 2026</div>
+    </Chrome>
+  );
+}

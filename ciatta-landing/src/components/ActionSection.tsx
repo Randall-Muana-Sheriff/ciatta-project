@@ -1,3 +1,5 @@
+import { ExperimentScreen } from './ProductShowcase';
+
 /**
  * "Seeing a pattern is only the beginning."
  *
@@ -5,19 +7,14 @@
  * app's dark resolution, and then what actually happened after seven days,
  * which is the part a tracker never comes back to.
  *
- * The card is a picture of the product, not the product: its action reads as
- * a label rather than a button, because nothing here can be started from a
- * page about the app.
+ * The experiment is the app's own screen rather than a card about it: the
+ * four things to try, how many of the seven nights she kept to each, and the
+ * nights themselves. Its Start reads as a label, because nothing here can be
+ * started from a page about the app.
  */
 
 const STEPS = ['Explore', 'Try', 'Observe', 'Learn'] as const;
 
-const TRY: string[] = [
-  'Earlier wind-down',
-  'Consistent bedtime',
-  'Reduce late-day caffeine',
-  'Track how you feel each morning',
-];
 
 const AFTER: [string, string][] = [
   ['Sleep', 'Higher on 5 of 7 nights'],
@@ -42,20 +39,8 @@ export function ActionSection() {
         </ol>
 
         <div className="ac-body">
-          <div className="product ac-card">
-            <span className="ac-label">Worth exploring</span>
-            <p className="ac-head">Your sleep has been lower lately.</p>
-
-            <div className="ac-try">
-              <h3>Try for 7 days</h3>
-              <ul>
-                {TRY.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
-            </div>
-
-            <span className="ac-start" aria-hidden="true">Start</span>
+          <div className="product sec-phone-device">
+            <ExperimentScreen />
           </div>
 
           <div className="ac-after">
