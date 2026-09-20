@@ -2289,3 +2289,6 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .ps-day-key .is-sleep { background: var(--ps-measured); opacity: 0.5; border-radius: 0.6cqw; }
 .ps-day-key .is-energy { background: var(--ps-ink); height: 0.8cqw; width: 3.4cqw; border-radius: 999px; }
 .ps-day-key .is-pain { background: var(--ps-reported); }
+
+/* a section where the screen says it all: one device, centred, no column beside it */
+.sec-phone.is-alone { grid-template-columns: minmax(0, 1fr); justify-items: center; }

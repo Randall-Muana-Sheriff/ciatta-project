@@ -16,12 +16,6 @@ import { ExperimentScreen } from './ProductShowcase';
 const STEPS = ['Explore', 'Try', 'Observe', 'Learn'] as const;
 
 
-const AFTER: [string, string][] = [
-  ['Sleep', 'Higher on 5 of 7 nights'],
-  ['Fatigue', 'Reported less often'],
-  ['Energy', 'Higher on 4 mornings'],
-];
-
 export function ActionSection() {
   return (
     <section className="section action" aria-labelledby="action-heading">
@@ -38,22 +32,9 @@ export function ActionSection() {
           ))}
         </ol>
 
-        <div className="ac-body">
+        <div className="sec-phone is-alone">
           <div className="product sec-phone-device">
             <ExperimentScreen />
-          </div>
-
-          <div className="ac-after">
-            <h3>What happened?</h3>
-            <dl>
-              {AFTER.map(([k, v]) => (
-                <div key={k}>
-                  <dt>{k}</dt>
-                  <dd>{v}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="ac-learn">Ciatta learns from what happens next.</p>
           </div>
         </div>
       </div>

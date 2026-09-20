@@ -41,21 +41,9 @@ export function ContextSection() {
           ))}
         </ul>
 
-        <div className="sec-phone is-reversed">
+        <div className="sec-phone is-alone">
           <div className="product sec-phone-device">
             <TodayScreen />
-          </div>
-          <div className="sec-phone-read">
-            <p className="sec-phone-lede">
-              One day, with the night she slept, the energy she reported and the
-              pain she logged drawn against each other rather than apart.
-            </p>
-            <p className="sec-phone-sub">
-              Underneath it, what those three say together, how often Ciatta has
-              seen it, and two things she could try before the day is out. Both
-              come from her own record, and Ciatta comes back to what happened
-              after. Nothing here claims a cause.
-            </p>
           </div>
         </div>
       </div>

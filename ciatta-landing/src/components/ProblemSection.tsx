@@ -1,20 +1,11 @@
 /**
  * "Your health doesn't happen in pieces."
  *
- * The page's first turn: the problem stated in her own terms, and one quiet
- * drawing of it. Five fragments sit at five different heights, each labelled
- * with where that part of her record actually lives, and then the same five
- * land on one line as dated events. Nothing animates and nothing is a card:
- * black type, hairlines, and the warm paper the rest of the page is set on.
+ * The page's first turn: the problem stated in her own terms, and then the
+ * same five parts landing on one line as dated events. Nothing animates and
+ * nothing is a card: black type, hairlines, and the warm paper the rest of
+ * the page is set on.
  */
-
-const FRAGMENTS: [string, string][] = [
-  ['Symptoms', 'A notes app'],
-  ['Labs', 'A patient portal'],
-  ['Cycle', 'A period app'],
-  ['Medications', 'A pharmacy record'],
-  ['Sleep', 'A wearable'],
-];
 
 /** The same five, dated, in the order they happened. */
 const TIMELINE: [string, string][] = [
@@ -53,16 +44,6 @@ export function ProblemSection() {
           </div>
 
           <div className="pr-figure">
-            {/* scattered: five parts, five places, no common line */}
-            <ul className="pr-scatter" aria-label="Where each part of your record lives today">
-              {FRAGMENTS.map(([part, where]) => (
-                <li key={part}>
-                  <b>{part}</b>
-                  <i>{where}</i>
-                </li>
-              ))}
-            </ul>
-
             <p className="pr-turn">Ciatta puts the pieces together.</p>
 
             {/* the same five, on one line, in the order they happened */}
