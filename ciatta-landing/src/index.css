@@ -2648,7 +2648,10 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    translucent so the film reads through it, and everything on it is white.
    No accent survives the film at a size this small, so none is used. */
 .hero-app {
-  --ps-w: clamp(13rem, 17vw, 16.5rem);
+  /* As large as the hero can hold: the screen is the proof, and at 13rem its
+     own type was smaller than the caption under it. Bounded by the height of
+     the first view as well as its width, so the form never leaves the fold. */
+  --ps-w: min(22rem, 26vw, calc((100svh - 15rem) * 402 / 874));
   --ps-canvas: rgba(18, 19, 21, 0.44);
   --ps-raised: rgba(247, 244, 238, 0.10);
   --ps-rule: rgba(247, 244, 238, 0.22);
@@ -2668,12 +2671,14 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    off the first screen. */
 @media (max-width: 999px) {
   .hero-app {
-    --ps-w: clamp(9rem, 34vw, 15rem);
-    position: absolute; right: calc(var(--gutter) * -0.5); top: calc(var(--header-h) + var(--s5));
-    z-index: 0; opacity: 0.58;
+    --ps-w: min(20rem, 64vw, calc((100svh - 12rem) * 402 / 874));
+    position: absolute; right: calc(var(--gutter) * -0.6); top: calc(var(--header-h) + var(--s4));
+    z-index: 0; opacity: 0.66;
   }
 }
-@media (max-width: 560px) { .hero-app { opacity: 0.4; right: calc(var(--gutter) * -0.75); } }
+@media (max-width: 560px) {
+  .hero-app { opacity: 0.5; right: calc(var(--gutter) * -0.9); }
+}
 .hero-app .ps-phone {
   background: rgba(18, 19, 21, 0.28);
   backdrop-filter: blur(18px) saturate(0.9);
