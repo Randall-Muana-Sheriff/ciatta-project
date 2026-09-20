@@ -312,8 +312,9 @@ p { margin: 0; text-wrap: pretty; }
   padding: 0.72em;    /* clear space = cap height on all four sides */
   margin: -0.72em;
 }
-.wordmark.is-sm { font-size: 1.125rem; letter-spacing: 0.07em; }
-.wordmark.is-md { font-size: 1.4375rem; letter-spacing: 0.06em; }
+/* half again as large: the clear space is set in em, so it grows with it */
+.wordmark.is-sm { font-size: 1.6875rem; letter-spacing: 0.07em; }
+.wordmark.is-md { font-size: 2.15625rem; letter-spacing: 0.06em; }
 /* the trailing letter-space is cut back so the mark ends on its last letter */
 .wordmark::after { content: ''; display: inline-block; margin-right: -0.07em; }
 
