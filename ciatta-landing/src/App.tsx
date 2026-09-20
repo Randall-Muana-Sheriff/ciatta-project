@@ -153,6 +153,9 @@ export default function App() {
           </div>
         </section>
 
+        {/* ------ EXPLORE: the whole record, before the page explains it ---- */}
+        <ExploreSection />
+
         {/* -------------------------- HOW IT WORKS -------------------------- */}
         <HowSection />
 
@@ -161,9 +164,6 @@ export default function App() {
 
         {/* ------------------- THE SIGNATURE EXPERIENCE --------------------- */}
         <ChangeSection />
-
-        {/* ----------------------------- EXPLORE ---------------------------- */}
-        <ExploreSection />
 
         {/* ----------------------------- CONTEXT ---------------------------- */}
         <ContextSection />
