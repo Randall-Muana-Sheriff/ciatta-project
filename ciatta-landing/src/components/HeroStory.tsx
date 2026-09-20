@@ -349,11 +349,10 @@ export function HeroStory() {
               <Wordmark size="sm" />
             </div>
 
-            {/* the greeting names the woman, and the screen names itself
-                beside it rather than above the whole thing */}
+            {/* the screen names the day first, then greets the woman under it */}
             <div className="ha-greet hs-fade" data-shown={step >= S.ASSEMBLE ? 'y' : 'n'}>
-              <p className="ha-hello">Good afternoon, Maya.</p>
               <span className="ha-when">Today</span>
+              <p className="ha-hello">Good afternoon, Maya.</p>
             </div>
 
             <div className="ha-day hs-fade" data-shown={step >= S.DAY ? 'y' : 'n'}>

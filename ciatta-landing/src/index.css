@@ -2737,8 +2737,8 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 
 }
 .ha-hello { margin: 0; font-size: 1rem; font-weight: 500; line-height: 1.1; }
-/* the greeting and the screen's own name, on one line */
-.ha-greet { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
+/* the day's name over the greeting, both flush left */
+.ha-greet { display: flex; flex-direction: column; align-items: flex-start; gap: 0.1875rem; }
 .ha-when {
   flex: none; font-size: 0.5rem; font-weight: 600; letter-spacing: 0.08em;
   text-transform: uppercase; color: rgba(255,255,255,0.7);
