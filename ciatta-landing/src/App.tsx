@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { HeroFilm } from './components/HeroFilm';
 import { SubscribeForm } from './components/SubscribeForm';
 import { ExploreSection } from './components/ExploreSection';
+import { HowSection } from './components/HowSection';
 import { ProblemSection } from './components/ProblemSection';
 import { ChangeSection } from './components/ChangeSection';
 import { ContextSection } from './components/ContextSection';
@@ -149,6 +150,9 @@ export default function App() {
             </div>
           </div>
         </section>
+
+        {/* -------------------------- HOW IT WORKS -------------------------- */}
+        <HowSection />
 
         {/* --------------------------- THE PROBLEM -------------------------- */}
         <ProblemSection />
