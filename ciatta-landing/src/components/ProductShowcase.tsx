@@ -850,6 +850,11 @@ export function BriefScreen() {
  * against it. Underneath, what those three say together, what it is based on,
  * and two things she could try before the day is out.
  *
+ * Where each figure came from is not on this screen: a destination she opens
+ * every morning should answer what is happening, and the connections behind
+ * each source belong in her profile. The cards still carry their source in
+ * colour, sky for measured and rose for what she logged.
+ *
  * Maya's day is 1 Apr 2026, and it agrees with the record the rest of the
  * site documents: 6h 46m last night against a usual of 7h 18m, cycle day 24,
  * levothyroxine 75 mcg since 3 Mar.
@@ -986,10 +991,6 @@ export function TodayScreen() {
       <div className="ps-rows">
         <Row k="Wind down by 10:30pm" meta="Your last 3 nights began after 11:40pm" v="Tonight" />
         <Row k="A short walk before 6pm" meta="Your energy has risen after one on 4 of 6 days" v="Today" />
-      </div>
-
-      <div className="ps-prov">
-        <Src kind="measured" /> Oura &middot; what you logged today &middot; drawn from your own record
       </div>
     </Chrome>
   );
