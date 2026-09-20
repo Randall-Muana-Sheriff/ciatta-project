@@ -2832,3 +2832,118 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 @supports (container-type: inline-size) {
   .ps-screen, .hw-frag, .hw-page { --psu: 1cqw; }
 }
+
+/* ===========================================================================
+   The hero's product story: three sources arriving, and the day they become.
+   Motion is carried by opacity and transform only, so it stays smooth, and
+   every step is a state the visitor can pause in and read.
+   =========================================================================== */
+.hs { display: flex; flex-direction: column; align-items: center; gap: var(--s4); }
+.hs-stage { position: relative; display: flex; justify-content: center; width: 100%; }
+
+/* the three sources, resting beside the device until they are drawn into it */
+.hs-sources {
+  list-style: none; margin: 0; padding: 0;
+  position: absolute; inset: 0; pointer-events: none; z-index: 2;
+}
+.hs-source {
+  position: absolute; display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.4375rem 0.625rem; border-radius: 0.875rem;
+  background: rgba(18, 19, 21, 0.62);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.26), 0 18px 40px -22px rgba(0,0,0,0.8);
+  color: #FFFFFF; font-family: var(--font);
+  opacity: 0; transform: translate3d(0, 10px, 0) scale(0.98);
+  transition: opacity 620ms var(--ease-caused), transform 760ms var(--ease-caused);
+}
+.hs-source[data-shown='y'] { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+/* when the day begins to assemble, each source travels into the screen */
+.hs[data-step='4'] .hs-source, .hs[data-step='5'] .hs-source,
+.hs[data-step='6'] .hs-source, .hs[data-step='7'] .hs-source,
+.hs[data-step='8'] .hs-source, .hs[data-step='9'] .hs-source {
+  opacity: 0; transform: translate3d(var(--hs-x, 0), var(--hs-y, 14px), 0) scale(0.9);
+}
+.hs-source.is-oura { top: 4%; left: -2%; --hs-x: 40px; --hs-y: 60px; }
+.hs-source.is-portal { top: 34%; left: -8%; --hs-x: 54px; --hs-y: 20px; }
+.hs-source.is-meal { top: 62%; right: -6%; --hs-x: -48px; --hs-y: -10px; }
+.hs-source img { width: 2.25rem; height: 2.25rem; border-radius: 0.5rem; object-fit: cover; display: block; }
+.hs-dotlight {
+  width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #FFFFFF;
+  box-shadow: 0 0 0 4px rgba(255,255,255,0.18);
+}
+.hs-source-b { display: flex; flex-direction: column; gap: 1px; }
+.hs-source-b b { font-size: 0.6875rem; font-weight: 500; }
+.hs-source-b i { font-style: normal; font-size: 0.5625rem; color: rgba(255,255,255,0.72); }
+.hs-chips { display: flex; flex-wrap: wrap; gap: 0.1875rem; max-width: 8rem; }
+.hs-chips em {
+  font-style: normal; font-size: 0.5rem; letter-spacing: 0.04em;
+  padding: 0.125rem 0.3125rem; border-radius: 999px;
+  background: rgba(255,255,255,0.16); color: #FFFFFF;
+  opacity: 0; transform: translate3d(-6px, 0, 0);
+  transition: opacity 420ms var(--ease-caused), transform 420ms var(--ease-caused);
+}
+.hs-source[data-shown='y'] .hs-chips em { opacity: 1; transform: none; }
+.hs-meta { font-size: 0.5rem; color: rgba(255,255,255,0.7); }
+
+/* the device wakes as the sources land */
+.hs-device {
+  opacity: 0.5; transform: scale(0.985);
+  transition: opacity 800ms var(--ease-caused), transform 900ms var(--ease-caused);
+}
+.hs[data-step='4'] .hs-device, .hs[data-step='5'] .hs-device,
+.hs[data-step='6'] .hs-device, .hs[data-step='7'] .hs-device,
+.hs[data-step='8'] .hs-device, .hs[data-step='9'] .hs-device {
+  opacity: 1; transform: none;
+}
+
+/* each part of the screen arrives in its own time */
+.hs-fade {
+  opacity: 0; transform: translate3d(0, 8px, 0);
+  transition: opacity 700ms var(--ease-caused), transform 700ms var(--ease-caused);
+}
+.hs-fade[data-shown='y'] { opacity: 1; transform: none; }
+.ha-metrics.hs-fade li { opacity: 0; transition: opacity 560ms var(--ease-caused); }
+.ha-metrics.hs-fade[data-shown='y'] li { opacity: 1; }
+.hs-second { opacity: 0; transition: opacity 620ms var(--ease-caused); }
+.hs-second[data-shown='y'] { opacity: 1; }
+
+/* the day draws itself */
+.hs-line { stroke-dasharray: 220; stroke-dashoffset: 220; transition: stroke-dashoffset 1500ms var(--ease-body); }
+.hs-line.is-drawn { stroke-dashoffset: 0; }
+.hs-dot { opacity: 0; transition: opacity 520ms var(--ease-caused); }
+.hs[data-step='5'] .hs-dot, .hs[data-step='6'] .hs-dot, .hs[data-step='7'] .hs-dot,
+.hs[data-step='8'] .hs-dot, .hs[data-step='9'] .hs-dot { opacity: 0.92; }
+.hs-now { opacity: 0; transition: opacity 700ms var(--ease-caused) 900ms; }
+.hs[data-step='6'] .hs-now, .hs[data-step='7'] .hs-now,
+.hs[data-step='8'] .hs-now, .hs[data-step='9'] .hs-now { opacity: 0.8; }
+
+/* play, pause, replay: one button and a line showing where it has got to */
+.hs-controls { display: flex; align-items: center; gap: var(--s3); width: min(15.5rem, 66vw); }
+@media (min-width: 1000px) { .hs-controls { width: min(21rem, 26vw); } }
+.hs-btn {
+  appearance: none; cursor: pointer; flex: none;
+  width: 2rem; height: 2rem; border-radius: 50%;
+  display: grid; place-items: center;
+  background: rgba(255,255,255,0.16); color: #FFFFFF;
+  border: 1px solid rgba(255,255,255,0.34);
+  transition: background var(--quick) var(--ease-caused);
+}
+.hs-btn:hover { background: rgba(255,255,255,0.26); }
+.hs-btn svg { width: 0.875rem; height: 0.875rem; }
+.hs-btn:focus-visible { outline: var(--strong) solid #FFFFFF; outline-offset: 2px; }
+.hs-progress { flex: 1; height: 2px; background: rgba(255,255,255,0.24); border-radius: 999px; overflow: hidden; }
+.hs-progress i { display: block; height: 100%; background: #FFFFFF; transition: width 420ms linear; }
+
+/* On a phone the fold is the whole budget, so the control sits up inside the
+   screen's faded foot rather than costing the hero another row. */
+@media (max-width: 700px) {
+  .hs { gap: 0; }
+  .hs-controls { margin-top: -1.75rem; }
+}
+
+/* Reduce Motion: the finished screen, and none of the performance */
+@media (prefers-reduced-motion: reduce) {
+  .hs-source, .hs-device, .hs-fade, .hs-second, .hs-dot, .hs-now, .hs-chips em { transition: none; }
+  .hs-line { transition: none; stroke-dashoffset: 0; }
+  .hs-sources { display: none; }
+  .hs-device { opacity: 1; transform: none; }
+}

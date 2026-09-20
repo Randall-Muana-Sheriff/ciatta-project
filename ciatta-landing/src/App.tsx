@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { HeroFilm } from './components/HeroFilm';
-import { HeroApp } from './components/HeroApp';
+import { HeroStory } from './components/HeroStory';
 import { SubscribeForm } from './components/SubscribeForm';
 import { ExploreSection } from './components/ExploreSection';
 import { HowSection } from './components/HowSection';
@@ -149,7 +149,7 @@ export default function App() {
                 them, and everything inside it is white on that. Decorative
                 here, because every figure on it is stated again below. */}
             <div className="hero-app">
-              <HeroApp />
+              <HeroStory />
             </div>
           </div>
         </section>
