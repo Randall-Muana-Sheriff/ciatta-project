@@ -2663,77 +2663,112 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 
 /* --- the app, running over the hero film ---------------------------------
-   The screen keeps its layout and loses its ground: every surface becomes
-   translucent so the film reads through it, and everything on it is white.
-   No accent survives the film at a size this small, so none is used. */
-.hero-app {
-  /* As large as the hero can hold: the screen is the proof, and at 13rem its
-     own type was smaller than the caption under it. Bounded by the height of
-     the first view as well as its width, so the form never leaves the fold. */
-  --ps-w: min(22rem, 26vw);
-  --ps-w: min(22rem, 26vw, calc((100svh - 15rem) * 402 / 874));
-  --ps-canvas: rgba(18, 19, 21, 0.44);
-  --ps-raised: rgba(247, 244, 238, 0.10);
-  --ps-rule: rgba(247, 244, 238, 0.22);
-  --ps-ink: #FFFFFF;
-  --ps-body: rgba(255, 255, 255, 0.88);
-  --ps-meta: rgba(255, 255, 255, 0.66);
-  --ps-measured: rgba(255, 255, 255, 0.72);
-  --ps-reported: #FFFFFF;
-  --ps-uncertain: rgba(255, 255, 255, 0.72);
-  --ps-evidence: rgba(255, 255, 255, 0.72);
-  --ps-clay: #FFFFFF;
-  justify-self: end;
-}
-/* Below the split there is no column to put the screen in, and standing it
-   behind the copy meant the headline and the app fought for the same pixels.
-   It sits above the copy instead, in a window showing the top of the screen
-   at full strength, faded out where the window ends. Nothing overlaps, and
-   the height is taken from the view so the form stays on the first screen. */
+   Plain sizes and plain layout: this one has to draw on every engine, first
+   paint, over a moving image. Black and white only, because no accent holds
+   at this size over film. */
+.hero-app { width: 100%; }
+/* below the split the copy takes the row, and the card goes above it */
 @media (max-width: 999px) {
-  .hero-inner {
-    display: flex; flex-direction: column; justify-content: flex-end;
-    gap: clamp(var(--s5), 4vh, var(--s7));
-  }
-  .hero-app {
-    --ps-w: min(18rem, 58vw);
-    /* the copy comes first in the markup, for reading order; here the screen
-       goes above it */
-    order: -1;
-    align-self: flex-end; opacity: 1;
-    /* a plain height first: svh is not understood by every phone browser that
-       still ships, and a dropped declaration here used to leave the hero with
-       nothing in it */
-    height: 13rem;
-    height: clamp(8rem, 24svh, 15rem);
-    overflow: hidden;
-  }
-  /* the device is cut off by the window, so only its top corners are round.
-     No blur here: a backdrop-filter inside a clipped, masked box renders as
-     an empty rectangle on iOS, which is what left the hero blank. */
-  .hero-app .ps-phone {
-    border-radius: 9% / 4% 9% / 4% 0 0; padding-bottom: 0;
-    backdrop-filter: none; -webkit-backdrop-filter: none;
-    background: rgba(18, 19, 21, 0.62);
-  }
+  .hero-inner { display: flex; flex-direction: column; gap: var(--s5); }
+  .hero-app { order: -1; }
 }
-.hero-app .ps-phone {
-  background: rgba(18, 19, 21, 0.28);
-  backdrop-filter: blur(18px) saturate(0.9);
-  -webkit-backdrop-filter: blur(18px) saturate(0.9);
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.28), 0 40px 90px -30px rgba(0,0,0,0.6);
+@media (min-width: 1000px) { .hero-app { justify-self: end; width: auto; } }
+
+.ha {
+  width: min(20rem, 82vw);
+  margin-left: auto;
+  border-radius: 1.75rem;
+  padding: 0.875rem 0.9375rem 0.75rem;
+  background: rgba(18, 19, 21, 0.52);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3), 0 30px 70px -28px rgba(0, 0, 0, 0.7);
+  color: #FFFFFF;
+  font-family: 'Urbanist', system-ui, sans-serif;
+  display: flex; flex-direction: column; gap: 0.5rem;
 }
-.hero-app .ps-screen { background: transparent; }
-.hero-app .ps-tabs { background: rgba(247,244,238,0.10); box-shadow: none; }
-.hero-app .ps-metric { background: rgba(247,244,238,0.10); }
-.hero-app .ps-metric.is-pattern { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.45); }
-.hero-app .ps-after { background: rgba(247,244,238,0.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.32); }
-.hero-app .ps-after-days i { background: rgba(255,255,255,0.32); }
-.hero-app .ps-after-days i.is-hit { background: #FFFFFF; }
-.hero-app .ps-tag, .hero-app .ps-pill.is-watch { background: rgba(255,255,255,0.18); color: #FFFFFF; }
-.hero-app .ps-src { background: rgba(255,255,255,0.16); color: #FFFFFF; }
-.hero-app .ps-bar-action.is-primary { background: rgba(255,255,255,0.92); color: #121315; }
-.hero-app .ps-col-bar, .hero-app .ps-bar { background: rgba(255,255,255,0.7); }
+@media (min-width: 1000px) { .ha { width: min(21rem, 26vw); } }
+
+.ha-bar {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 0.625rem; color: rgba(255,255,255,0.7);
+}
+.ha-hello { margin: 0; font-size: 1rem; font-weight: 500; line-height: 1.1; }
+
+.ha-after {
+  border-radius: 0.75rem; padding: 0.5rem 0.625rem;
+  background: rgba(255,255,255,0.14);
+}
+.ha-after span {
+  display: block; font-size: 0.5rem; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: rgba(255,255,255,0.78);
+}
+.ha-after p { margin: 0.125rem 0 0; font-size: 0.6875rem; line-height: 1.3; }
+
+.ha-day-head {
+  display: flex; justify-content: space-between; gap: 0.5rem;
+  font-size: 0.5rem; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: rgba(255,255,255,0.7);
+  margin-bottom: 0.25rem;
+}
+.ha-chart { display: block; width: 100%; height: auto; }
+.ha-axis {
+  display: flex; justify-content: space-between;
+  font-size: 0.5rem; color: rgba(255,255,255,0.6); margin-top: 0.125rem;
+}
+
+.ha-metrics {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; gap: 0.375rem;
+}
+.ha-metrics li {
+  flex: 1; display: flex; flex-direction: column; gap: 0.0625rem;
+  padding: 0.375rem 0.5rem; border-radius: 0.625rem;
+  background: rgba(255,255,255,0.12);
+}
+.ha-metrics span {
+  font-size: 0.5rem; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: rgba(255,255,255,0.7);
+}
+.ha-metrics b { font-size: 0.75rem; font-weight: 500; }
+
+.ha-insight { border-top: 1px solid rgba(255,255,255,0.22); padding-top: 0.5rem; }
+.ha-tag {
+  display: inline-block; margin-bottom: 0.3125rem;
+  padding: 0.125rem 0.375rem; border-radius: 999px;
+  background: rgba(255,255,255,0.2);
+  font-size: 0.5rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.ha-insight p { margin: 0; font-size: 0.8125rem; line-height: 1.2; }
+.ha-basis { display: block; margin-top: 0.25rem; font-size: 0.5625rem; color: rgba(255,255,255,0.7); }
+
+.ha-try {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  border-top: 1px solid rgba(255,255,255,0.22); padding-top: 0.5rem;
+}
+.ha-try b { display: block; font-size: 0.6875rem; font-weight: 500; }
+.ha-try i { display: block; font-style: normal; font-size: 0.5625rem; color: rgba(255,255,255,0.7); }
+.ha-try > span { flex: none; font-size: 0.5625rem; color: rgba(255,255,255,0.85); }
+
+.ha-tabs {
+  display: flex; justify-content: space-between; gap: 0.25rem;
+  margin-top: 0.125rem; padding: 0.4375rem 0.625rem;
+  border-radius: 999px; background: rgba(255,255,255,0.12);
+  font-size: 0.5rem; color: rgba(255,255,255,0.62);
+}
+.ha-tabs .is-on { color: #FFFFFF; font-weight: 600; }
+
+/* On a phone the card shares the first screen with the headline and the form,
+   so it carries the day and what Ciatta made of it, and drops the two blocks
+   that repeat what the sections below say. */
+@media (max-width: 700px) {
+  /* the hero gives back its own air too, so the form stays on the screen */
+  .hero.has-film { padding-block: calc(var(--header-h) + var(--s4)) var(--s4); }
+  .hero-inner { gap: var(--s4); }
+  .ha { width: min(19rem, 84vw); gap: 0.375rem; padding: 0.6875rem 0.75rem 0.5625rem; }
+  .ha-after, .ha-metrics { display: none; }
+  .ha-hello { font-size: 0.9375rem; }
+  .ha-insight p { font-size: 0.75rem; }
+}
+
 @media (min-width: 1000px) {
   .hero-inner {
     display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);

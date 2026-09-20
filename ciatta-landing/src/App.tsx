@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { HeroFilm } from './components/HeroFilm';
-import { TodayScreen } from './components/ProductShowcase';
+import { HeroApp } from './components/HeroApp';
 import { SubscribeForm } from './components/SubscribeForm';
 import { ExploreSection } from './components/ExploreSection';
 import { HowSection } from './components/HowSection';
@@ -148,8 +148,8 @@ export default function App() {
                 screen's surfaces go translucent so the film reads through
                 them, and everything inside it is white on that. Decorative
                 here, because every figure on it is stated again below. */}
-            <div className="product hero-app" aria-hidden="true">
-              <TodayScreen />
+            <div className="hero-app">
+              <HeroApp />
             </div>
           </div>
         </section>
