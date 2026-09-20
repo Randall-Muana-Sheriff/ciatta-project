@@ -937,25 +937,25 @@ const NOW = 16.3;
 
 function DayChart() {
   const W = 132;
-  const H = 46;
+  const H = 34;
   const x = (h: number) => (h / 24) * W;
   const y = (v: number) => H - (v / 100) * H;
   const line = ENERGY.map(([h, v], i) => `${i ? 'L' : 'M'}${x(h).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
 
   return (
     <div className="ps-day">
-      <svg viewBox={`0 -4 ${W} ${H + 12}`} className="ps-day-chart" role="img"
+      <svg viewBox={`0 -3 ${W} ${H + 8}`} className="ps-day-chart" role="img"
            aria-label="Maya's day: 6 hours 46 minutes of sleep overnight, energy falling from late morning to a low at 4pm, and pain logged at 11am, 3:40pm and 8pm.">
         {/* the night she slept, drawn where it happened */}
-        <rect x="0" y="-4" width={x(6.43)} height={H + 4} fill="var(--ps-measured)" opacity="0.16" rx="1.5" />
-        <rect x={x(23.67)} y="-4" width={W - x(23.67)} height={H + 4} fill="var(--ps-measured)" opacity="0.16" rx="1.5" />
+        <rect x="0" y="-3" width={x(6.43)} height={H + 3} fill="var(--ps-measured)" opacity="0.16" rx="1.5" />
+        <rect x={x(23.67)} y="-3" width={W - x(23.67)} height={H + 3} fill="var(--ps-measured)" opacity="0.16" rx="1.5" />
         {/* her usual energy, for the day to be read against */}
         <line x1="0" x2={W} y1={y(50)} y2={y(50)} stroke="var(--ps-ink)" strokeOpacity="0.22" strokeDasharray="2 2" />
         <path d={line} fill="none" stroke="var(--ps-ink)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" opacity="0.9" />
         {PAIN.map(([h, sev]) => (
           <circle key={h} cx={x(h)} cy={y(20)} r={1.6 + sev * 0.9} fill="var(--ps-reported)" opacity="0.9" />
         ))}
-        <line x1={x(NOW)} x2={x(NOW)} y1={-4} y2={H} stroke="var(--ps-clay)" strokeWidth="0.8" />
+        <line x1={x(NOW)} x2={x(NOW)} y1={-3} y2={H} stroke="var(--ps-clay)" strokeWidth="0.8" />
       </svg>
       <div className="ps-day-axis" aria-hidden="true">
         <span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>12a</span>
@@ -992,7 +992,6 @@ export function TodayScreen() {
       <Lab qual="Menstrual &middot; day 5">Your day so far</Lab>
       <DayChart />
 
-      <Lab qual="Today">Your metrics</Lab>
       <Metrics />
 
       <div className="ps-ins-head">
@@ -1007,7 +1006,7 @@ export function TodayScreen() {
       </span>
       <p className="ps-nearby">
         Also in your record: levothyroxine changed 3 Mar, ferritin 18 on 2 Sep.
-        Neither is a cause. Both are worth reading beside this.
+        Neither is a cause.
       </p>
 
       <Lab qual="2 for today">What you could try</Lab>

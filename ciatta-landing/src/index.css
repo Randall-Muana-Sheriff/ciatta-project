@@ -602,7 +602,7 @@ p { margin: 0; text-wrap: pretty; }
   overflow: hidden;
 }
 
-.ps-body.is-dense { gap: 2.2cqw; }
+.ps-body.is-dense { gap: 1.7cqw; }
 
 /* The tab bar, in the shape Oura gives it: a capsule floating clear of the
    screen's edges, an icon over a small label for each destination, and the
@@ -818,8 +818,8 @@ p { margin: 0; text-wrap: pretty; }
 
 /* actions and links */
 .ps-bar-action {
-  text-align: center; padding: 2.4cqw; border-radius: 999px;
-  font-size: 2.9cqw; font-weight: 500;
+  text-align: center; padding: 2cqw; border-radius: 999px;
+  font-size: 2.7cqw; font-weight: 500;
   border: 1px solid var(--ps-rule); color: var(--ps-ink);
 }
 .ps-bar-action.is-primary { background: var(--ps-ink); color: var(--ps-canvas); border-color: transparent; }
@@ -2273,7 +2273,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   text-transform: uppercase; color: var(--ps-meta);
 }
 .ps-hello-n {
-  margin: 0; font-size: 5.2cqw; font-weight: 500; line-height: 1.05;
+  margin: 0; font-size: 4.6cqw; font-weight: 500; line-height: 1.05;
   letter-spacing: -0.02em; color: var(--ps-ink);
 }
 .ps-day { display: flex; flex-direction: column; gap: 1.4cqw; }
@@ -2299,8 +2299,8 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6cqw;
 }
 .ps-metric {
-  display: flex; flex-direction: column; gap: 0.6cqw;
-  padding: 2cqw; border-radius: 2.6cqw; min-width: 0;
+  display: flex; flex-direction: column; gap: 0.5cqw;
+  padding: 1.7cqw; border-radius: 2.4cqw; min-width: 0;
   background: var(--ps-raised);
 }
 .ps-metric.is-pattern { box-shadow: inset 0 0 0 1px rgba(236,150,88,0.45); }
@@ -2309,11 +2309,11 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   text-transform: uppercase; color: var(--ps-meta);
 }
 .ps-metric-v {
-  font-size: 3.8cqw; font-weight: 500; line-height: 1; color: var(--ps-ink);
+  font-size: 3.4cqw; font-weight: 500; line-height: 1; color: var(--ps-ink);
   font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
 }
 .ps-metric-v i { font-style: normal; font-size: 0.5em; color: var(--ps-meta); margin-left: 0.12em; }
-.ps-spark { width: 100%; height: 2.8cqw; display: block; }
+.ps-spark { width: 100%; height: 2.4cqw; display: block; }
 .ps-metric-n { font-size: 1.9cqw; line-height: 1.25; color: var(--ps-meta); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ps-metric-n.is-down { color: var(--ps-clay); }
 .ps-metric-n.is-up { color: var(--ps-uncertain); }
@@ -2321,7 +2321,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 /* what happened after the last thing she tried: the product remembering */
 .ps-after {
   display: flex; flex-direction: column; gap: 1cqw;
-  padding: 2.6cqw 3cqw; border-radius: 3cqw;
+  padding: 2.2cqw 2.8cqw; border-radius: 2.8cqw;
   background: rgba(236,150,88,0.12);
   box-shadow: inset 0 0 0 1px rgba(236,150,88,0.35);
 }
@@ -2337,4 +2337,4 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 .ps-after-days i.is-hit { background: var(--ps-clay); opacity: 1; }
 /* the care and results that sit in the same day as the measurements */
-.ps-nearby { margin: 0; font-size: 2.2cqw; line-height: 1.35; color: var(--ps-meta); }
+.ps-nearby { margin: 0; font-size: 2.1cqw; line-height: 1.3; color: var(--ps-meta); }
