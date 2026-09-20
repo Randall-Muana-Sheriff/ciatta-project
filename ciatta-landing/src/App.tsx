@@ -12,7 +12,6 @@ import { ActionSection } from './components/ActionSection';
 import { TimelineSection } from './components/TimelineSection';
 import { BriefSection } from './components/BriefSection';
 import { HumanSection } from './components/HumanSection';
-import { StartingSection } from './components/StartingSection';
 import { Wordmark } from './components/Wordmark';
 
 /**
@@ -212,9 +211,6 @@ export default function App() {
 
         {/* ------------------------ THE HUMAN PROBLEM ----------------------- */}
         <HumanSection />
-
-        {/* ------------------------------ STARTING -------------------------- */}
-        <StartingSection />
 
         {/* ---------------------------- QUESTIONS --------------------------- */}
         <section className="section" aria-labelledby="q-heading">

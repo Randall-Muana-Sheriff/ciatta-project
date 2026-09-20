@@ -2216,13 +2216,6 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .hm-work li { font-size: var(--t-lede); line-height: 1.35; color: var(--body-ink); }
 .hm-turn { margin: 0; padding-top: var(--s5); font-size: var(--t-card); line-height: 1.05; letter-spacing: -0.03em; color: var(--ink); }
 
-.st-body { display: grid; gap: var(--s5); max-width: 64rem; }
-.st-lede { font-size: var(--t-lede); line-height: 1.4; color: var(--body-ink); }
-.st-close {
-  margin: 0; padding-top: var(--s5); border-top: var(--hairline) solid var(--rule);
-  font-size: var(--t-card); line-height: 1.1; letter-spacing: -0.03em; color: var(--ink);
-}
-
 /* the trust tiles carry a second line now */
 .who-tile > div { display: grid; gap: var(--s2); }
 .who-sub {
