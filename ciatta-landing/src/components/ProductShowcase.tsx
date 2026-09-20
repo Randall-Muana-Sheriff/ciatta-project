@@ -1008,14 +1008,18 @@ export function TodayScreen() {
         Neither is a cause.
       </p>
 
-      <Lab qual="2 for today">What you could try</Lab>
+      <Lab qual="3 to consider">What you could try</Lab>
       <div className="ps-rows">
         <Row k="Wind down by 10:30pm"
-             meta="Your last 3 nights began after 11:40pm, and your longest nights this month started before 11"
+             meta="Your last 3 nights began after 11:40pm"
              v="Tonight" />
         <Row k="A short walk before 6pm"
-             meta="Your energy rose in the evening after a walk on 4 of 6 days, and today it has been low since 11am"
+             meta="Your energy rose after one on 4 of 6 days"
              v="Today" />
+        {/* the one she does not do by herself */}
+        <Row k="Raise it with your clinician"
+             meta="Symptom days up since 3 Mar, ferritin down across 3 results"
+             v="Next visit" />
       </div>
 
       <div className="ps-bar-action is-primary">+ Log pain, a meal or a note</div>
