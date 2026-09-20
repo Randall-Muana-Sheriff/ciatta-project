@@ -2677,6 +2677,9 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   }
   .hero-app {
     --ps-w: min(18rem, 58vw);
+    /* the copy comes first in the markup, for reading order; here the screen
+       goes above it */
+    order: -1;
     align-self: flex-end; opacity: 1;
     height: clamp(8rem, 24svh, 15rem); overflow: hidden;
     -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
