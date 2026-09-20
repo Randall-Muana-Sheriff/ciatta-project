@@ -863,17 +863,17 @@ type Metric = {
 };
 
 const METRICS: Metric[] = [
-  { k: 'Sleep', v: '6', unit: 'h 46m', note: '48 min under your usual',
+  { k: 'Sleep', v: '6', unit: 'h46', note: '48m under usual',
     dir: 'down', spark: [7.5, 7.2, 6.9, 7.1, 6.6, 6.9, 6.77], src: 'measured', pattern: true },
-  { k: 'HRV', v: '38', unit: 'ms', note: '9 under your usual',
+  { k: 'HRV', v: '38', unit: 'ms', note: '9 under usual',
     dir: 'down', spark: [48, 46, 44, 47, 41, 39, 38], src: 'measured' },
-  { k: 'Body temp', v: '+0.3', unit: '°C', note: 'Raised since day 21',
+  { k: 'Body temp', v: '+0.3', unit: '°C', note: 'Up since day 21',
     dir: 'up', spark: [0, 0.05, 0.1, 0.2, 0.25, 0.28, 0.3], src: 'measured' },
-  { k: 'Steps', v: '4,120', note: '2,400 under your usual by now',
+  { k: 'Steps', v: '4.1', unit: 'k', note: '2.4k under usual',
     dir: 'down', spark: [9, 8.4, 7.2, 8.8, 6.1, 5.2, 4.1], src: 'measured' },
-  { k: 'Food & drinks', v: '2', unit: ' meals', note: 'Lunch not logged · 0.9 L',
+  { k: 'Food', v: '2', unit: 'meals', note: '0.9 L, no lunch',
     spark: [3, 3, 2, 3, 3, 2, 2], src: 'told' },
-  { k: 'Pain', v: '3', unit: ' logs', note: 'Highest at 3:40pm',
+  { k: 'Pain', v: '3', unit: 'logs', note: 'Peak 3:40pm',
     dir: 'up', spark: [0, 1, 0, 2, 1, 2, 3], src: 'told', pattern: true },
 ];
 
@@ -968,7 +968,7 @@ export function TodayScreen() {
       <Lab qual="Cycle day 24">Your day so far</Lab>
       <DayChart />
 
-      <Lab qual="Measured and logged today">Today’s metrics</Lab>
+      <Lab qual="Today">Your metrics</Lab>
       <Metrics />
 
       <div className="ps-ins-head">
@@ -976,7 +976,7 @@ export function TodayScreen() {
         <span className="ps-pill is-watch">Seen 3 times</span>
       </div>
       <p className="ps-finding">
-        Your afternoon pain has been higher on the days that follow a night under 7 hours.
+        Afternoon pain has been higher after nights under 7 hours.
       </p>
       <span className="ps-conf">
         <Src kind="inferred" /> 3 days this month &middot; also days 22 to 25 of your cycle

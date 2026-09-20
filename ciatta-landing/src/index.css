@@ -2296,11 +2296,11 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    already draws marked so the two readings cannot drift apart */
 .ps-metrics {
   list-style: none; margin: 0; padding: 0;
-  display: grid; grid-template-columns: 1fr 1fr; gap: 2cqw;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6cqw;
 }
 .ps-metric {
-  display: flex; flex-direction: column; gap: 0.8cqw;
-  padding: 2.6cqw; border-radius: 3cqw;
+  display: flex; flex-direction: column; gap: 0.6cqw;
+  padding: 2cqw; border-radius: 2.6cqw; min-width: 0;
   background: var(--ps-raised);
 }
 .ps-metric.is-pattern { box-shadow: inset 0 0 0 1px rgba(236,150,88,0.45); }
@@ -2309,11 +2309,11 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   text-transform: uppercase; color: var(--ps-meta);
 }
 .ps-metric-v {
-  font-size: 4.6cqw; font-weight: 500; line-height: 1; color: var(--ps-ink);
+  font-size: 3.8cqw; font-weight: 500; line-height: 1; color: var(--ps-ink);
   font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
 }
-.ps-metric-v i { font-style: normal; font-size: 0.46em; color: var(--ps-meta); margin-left: 0.15em; }
-.ps-spark { width: 100%; height: 3.4cqw; display: block; }
-.ps-metric-n { font-size: 2cqw; line-height: 1.3; color: var(--ps-meta); }
+.ps-metric-v i { font-style: normal; font-size: 0.5em; color: var(--ps-meta); margin-left: 0.12em; }
+.ps-spark { width: 100%; height: 2.8cqw; display: block; }
+.ps-metric-n { font-size: 1.9cqw; line-height: 1.25; color: var(--ps-meta); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ps-metric-n.is-down { color: var(--ps-clay); }
 .ps-metric-n.is-up { color: var(--ps-uncertain); }
