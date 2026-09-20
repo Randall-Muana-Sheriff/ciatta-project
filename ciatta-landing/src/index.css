@@ -2797,6 +2797,13 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
      the name over the sentence, the sentence over the form */
   .hero-copy { align-items: center; text-align: center; }
   .hero-lede, .waitlist, .joined { margin-inline: auto; }
+  /* On a phone the home hero's sentence sets on one line and its paragraph on
+     three. Both sizes are the widest that still fit, written against the
+     gutter rather than the viewport, so they hold from a 360 to a 430 screen
+     instead of only the one they were measured on. The page heroes keep the
+     display step: their headings are short and do not need giving up. */
+  .hero:not(.is-page) .hero-title { font-size: min(var(--t-display), calc(6.85vw - 2.7px)); }
+  .hero:not(.is-page) .hero-lede { font-size: min(var(--t-lede), calc(4.7vw - 1.9px)); }
   .waitlist-consent { text-align: center; }
   .ha-device {
     width: min(15.5rem, 66vw);
