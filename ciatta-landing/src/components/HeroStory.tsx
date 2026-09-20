@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Wordmark } from './Wordmark';
 
 /**
  * The hero's interactive product story.
@@ -340,7 +341,13 @@ export function HeroStory() {
               </span>
             </div>
 
-            <div className="ha-nav">Today</div>
+            {/* Oura's shape: the mark sits alone at the top of the screen and
+                the day introduces itself underneath. The wordmark is the real
+                component, so it is built the same way here as in the bar. */}
+            <div className="ha-nav">
+              <span className="sr-only">Ciatta</span>
+              <Wordmark size="sm" />
+            </div>
 
             <p className="ha-hello hs-fade" data-shown={step >= S.ASSEMBLE ? 'y' : 'n'}>Good afternoon, Maya.</p>
 

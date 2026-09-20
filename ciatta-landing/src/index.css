@@ -2725,6 +2725,9 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   text-align: center; font-size: 0.6875rem; font-weight: 600;
   padding-bottom: 0.125rem;
 }
+/* the mark at the top of the screen: white on the dark app, and tracked
+   wider than the bar's because it is set so much smaller here */
+.ha-nav .wordmark { color: #FFFFFF; font-size: inherit; letter-spacing: 0.14em; }
 
 }
 .ha-hello { margin: 0; font-size: 1rem; font-weight: 500; line-height: 1.1; }
