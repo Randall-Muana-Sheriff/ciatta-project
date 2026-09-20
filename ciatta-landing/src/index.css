@@ -2665,21 +2665,25 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   --ps-clay: #FFFFFF;
   justify-self: end;
 }
-/* Below the split the copy takes the whole row, so the screen stands behind
-   it rather than under it: anchored to the right edge, dimmed, and clipped by
-   the hero. It is still the app, still running, and it never pushes the form
-   off the first screen. */
+/* Below the split there is no column to put the screen in, and standing it
+   behind the copy meant the headline and the app fought for the same pixels.
+   It sits above the copy instead, in a window showing the top of the screen
+   at full strength, faded out where the window ends. Nothing overlaps, and
+   the height is taken from the view so the form stays on the first screen. */
 @media (max-width: 999px) {
-  .hero-app {
-    --ps-w: min(20rem, 64vw, calc((100svh - 12rem) * 402 / 874));
-    position: absolute; right: calc(var(--gutter) * -0.6); top: calc(var(--header-h) + var(--s4));
-    z-index: 0; opacity: 0.5;
+  .hero-inner {
+    display: flex; flex-direction: column; justify-content: flex-end;
+    gap: clamp(var(--s5), 4vh, var(--s7));
   }
-}
-/* on a phone the screen is behind the headline itself, so it drops further:
-   the copy has to win that overlap */
-@media (max-width: 560px) {
-  .hero-app { opacity: 0.32; right: calc(var(--gutter) * -0.9); }
+  .hero-app {
+    --ps-w: min(18rem, 58vw);
+    align-self: flex-end; opacity: 1;
+    height: clamp(8rem, 24svh, 15rem); overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+  }
+  /* the device is cut off by the window, so only its top corners are round */
+  .hero-app .ps-phone { border-radius: 9% / 4% 9% / 4% 0 0; padding-bottom: 0; }
 }
 .hero-app .ps-phone {
   background: rgba(18, 19, 21, 0.28);
