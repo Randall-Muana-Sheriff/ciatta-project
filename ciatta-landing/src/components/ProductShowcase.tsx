@@ -935,7 +935,7 @@ const PAIN: [number, number, string][] = [
 ];
 const NOW = 16.3;
 
-function DayChart() {
+export function DayChart() {
   const W = 132;
   const H = 30;
   const x = (h: number) => (h / 24) * W;

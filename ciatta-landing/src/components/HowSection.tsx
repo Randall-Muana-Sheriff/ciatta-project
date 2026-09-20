@@ -1,4 +1,4 @@
-import { TodayScreen } from './ProductShowcase';
+import { DayChart } from './ProductShowcase';
 
 /**
  * "What is your body telling you?" — how Ciatta works, directly under the hero.
@@ -41,6 +41,31 @@ function Sources() {
       <div className="hw-src-into">
         <span className="hw-src-rail" aria-hidden="true" />
         <img src="/images/icon.svg" alt="Ciatta" width={96} height={96} className="hw-src-mark" />
+      </div>
+    </div>
+  );
+}
+
+/* -- 02 · the day, and what Ciatta makes of it ----------------------------- *
+ * The part of Today this step is about: the day drawn as one frame, and the
+ * finding under it. Not the whole screen shrunk, but the two things the step
+ * claims, at the size they are read at.                                      */
+
+function TodayRead() {
+  return (
+    <div className="product hw-frag">
+      <div className="hw-frag-head">
+        <span>Today</span>
+        <i>Wed 1 Apr · day 5</i>
+      </div>
+      <p className="hw-frag-hello">Good afternoon, Maya.</p>
+
+      <DayChart />
+
+      <div className="hw-frag-ins">
+        <span className="hw-frag-tag">What may be connected</span>
+        <p>Afternoon pain has been higher after nights under 7 hours.</p>
+        <span className="hw-frag-basis">Seen 3 times this month</span>
       </div>
     </div>
   );
@@ -162,7 +187,7 @@ const STEPS: [string, string, string, () => React.ReactNode][] = [
     '02',
     'See what changed, and what it sits beside',
     'What moved against your own usual, and the day it moved in. Ciatta names what may be connected, and what that is based on.',
-    TodayScreen,
+    TodayRead,
   ],
   [
     '03',
@@ -196,14 +221,10 @@ export function HowSection() {
         <ol className="hw-steps">
           {STEPS.map(([n, title, body, Art]) => (
             <li key={n} className="hw-step">
-              <div className="hw-art-wrap">
-                {Art === TodayScreen ? (
-                  <div className="product hw-device">
-                    <TodayScreen />
-                  </div>
-                ) : (
-                  <Art />
-                )}
+              {/* each drawing is the part of the product the step is about,
+                  at the size that part is read at */}
+              <div className={Art === Brief ? 'hw-art-wrap is-page' : 'hw-art-wrap'}>
+                <Art />
               </div>
 
               <div className="hw-say">

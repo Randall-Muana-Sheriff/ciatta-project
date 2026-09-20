@@ -2352,12 +2352,22 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 @media (min-width: 680px) { .hw-steps { grid-template-columns: repeat(2, 1fr); gap: var(--s7) var(--s5); } }
 @media (min-width: 1100px) { .hw-steps { grid-template-columns: repeat(4, 1fr); gap: var(--s5); } }
 .hw-step { display: flex; flex-direction: column; gap: var(--s4); min-width: 0; }
-/* every drawing occupies the same box, so the four read as one row */
+/* every drawing occupies the same box, so the four read as one row. The box is
+   tall enough that each one is legible at its own type size rather than
+   shrunk to a picture of itself. */
 .hw-art-wrap {
-  min-width: 0; height: 13rem; display: flex; align-items: center; justify-content: center;
+  min-width: 0; height: 25rem; display: flex; align-items: center; justify-content: center;
   padding: var(--s4); border-radius: var(--r-surface);
   background: var(--surface); overflow: hidden;
 }
+/* the page runs past the bottom of its box on purpose: it is cropped to the
+   part that carries the step, faded rather than cut. */
+.hw-art-wrap.is-page {
+  align-items: flex-start; padding: 0;
+  -webkit-mask-image: linear-gradient(to bottom, #000 84%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 84%, transparent 100%);
+}
+.hw-art-wrap.is-page { padding: var(--s4) var(--s4) 0; }
 .hw-say { display: flex; flex-direction: column; gap: var(--s2); min-width: 0; }
 .hw-n {
   font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.16em;
@@ -2374,20 +2384,20 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 
 /* 01 · what arrives, and the mark it arrives at */
-.hw-sources { display: flex; flex-direction: column; gap: var(--s2); width: 100%; }
-.hw-src-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.hw-sources { display: flex; flex-direction: column; gap: var(--s3); width: 100%; }
+.hw-src-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
 .hw-src-list li {
   display: flex; align-items: center; gap: var(--s2);
-  padding: 5px var(--s3);
-  border: var(--hairline) solid var(--rule); border-radius: var(--r-inset);
+  padding: var(--s3);
+  border: var(--hairline) solid var(--rule); border-radius: var(--r-control);
   background: var(--canvas);
 }
 .hw-src-list b {
-  font-size: var(--t-caption); font-weight: 500; color: var(--ink);
+  font-size: var(--t-small); font-weight: 500; color: var(--ink);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .hw-src-list i {
-  margin-left: auto; font-style: normal; font-size: 0.5625rem;
+  margin-left: auto; font-style: normal; font-size: var(--t-caption);
   letter-spacing: 0.08em; text-transform: uppercase; color: var(--meta-ink); white-space: nowrap;
 }
 .hw-src-pdf {
@@ -2396,69 +2406,88 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   padding: 2px 4px; border-radius: 3px;
 }
 .hw-src-into { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.hw-src-rail { width: 2px; height: var(--s4); background: var(--change); }
-.hw-src-mark { width: 2.25rem; height: 2.25rem; border-radius: var(--r-inset); display: block; }
+.hw-src-rail { width: 2px; height: var(--s5); background: var(--change); }
+.hw-src-mark { width: 3rem; height: 3rem; border-radius: var(--r-nested); display: block; }
 
-/* 02 · the screen itself */
-.hw-device { --ps-w: 5.6rem; display: flex; justify-content: center; }
+/* 02 · the day and the finding, at the size they are read at */
+.hw-frag-hello {
+  margin: 0 0 4cqw; font-size: 6.6cqw; font-weight: 500; line-height: 1.05;
+  letter-spacing: -0.02em; color: var(--ps-ink);
+}
+/* the key belongs in the app, where the series can be tapped; here the three
+   are named by the finding underneath */
+.hw-frag .ps-day-key { display: none; }
+.hw-frag .ps-day-chart { height: auto; }
+.hw-frag .ps-day-axis { font-size: 3cqw; }
+.hw-frag-ins { margin-top: 3.4cqw; padding-top: 3.4cqw; border-top: 1px solid var(--ps-rule); }
+.hw-frag-tag {
+  display: inline-block; margin-bottom: 3cqw;
+  padding: 1.2cqw 2.6cqw; border-radius: 999px;
+  background: rgba(236,150,88,0.18); color: var(--ps-clay);
+  font-size: 3cqw; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.hw-frag-ins p { margin: 0 0 2.6cqw; font-size: 6cqw; line-height: 1.15; color: var(--ps-ink); }
+.hw-frag-basis { display: block; font-size: 3.4cqw; line-height: 1.35; color: var(--ps-meta); }
 
 /* 03 · the suggestions, lifted out of the screen at reading size */
 .hw-frag {
   container-type: inline-size;
-  width: 100%;
+  width: 100%; align-self: center;
   background: var(--ps-canvas); color: var(--ps-ink);
   border-radius: var(--r-nested); padding: 4cqw;
   font-family: 'Urbanist', system-ui, sans-serif;
 }
 .hw-frag-head {
   display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3);
-  font-size: 3.4cqw; font-weight: 600; letter-spacing: 0.12em;
+  font-size: 3.2cqw; font-weight: 600; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--ps-meta); margin-bottom: 3cqw;
 }
 .hw-frag-head i { font-style: normal; letter-spacing: 0.04em; }
+/* the rows are read here rather than glanced at inside a phone, so they take
+   a size of their own rather than the screen's */
+.hw-frag .ps-row-k b { font-size: 5.2cqw; font-weight: 500; }
+.hw-frag .ps-row-k i { font-size: 4.2cqw; line-height: 1.35; }
+.hw-frag .ps-row-v { font-size: 4.4cqw; }
+.hw-frag .ps-caret { width: 3cqw; }
+.hw-frag .ps-row { border-top-color: var(--ps-rule); }
+.hw-frag .ps-row-line { padding: 3.4cqw 0; gap: 3cqw; }
 
 /* 04 · the brief, as the page it prints as */
 .hw-page {
-  width: 100%; max-width: 9.5rem; aspect-ratio: 1 / 1.414;
+  width: 100%; max-width: none; aspect-ratio: 1 / 1.414;
   background: #FFFFFF; color: #18191B;
-  border-radius: 4px; box-shadow: var(--float-above);
-  padding: 0.5rem;
-  display: flex; flex-direction: column; gap: 0.3rem;
-  overflow: hidden;
+  border-radius: 6px 6px 0 0; box-shadow: var(--float-above);
+  padding: var(--s4);
+  display: flex; flex-direction: column; gap: var(--s3);
+  overflow: hidden; container-type: inline-size;
 }
 .hw-page-head {
   display: flex; align-items: center; gap: var(--s3);
   padding-bottom: var(--s3); border-bottom: var(--strong) solid #18191B;
 }
-.hw-page-head { gap: 0.25rem; padding-bottom: 0.25rem; }
-.hw-page-head img { width: 0.75rem; height: 0.75rem; border-radius: 2px; display: block; }
+.hw-page-head { gap: var(--s3); padding-bottom: var(--s3); }
+.hw-page-head img { width: 1.75rem; height: 1.75rem; border-radius: 4px; display: block; }
 .hw-page-head h4 {
-  margin: 0; font-size: 0.4375rem; font-weight: 600; letter-spacing: 0.1em;
+  margin: 0; font-size: 3.4cqw; font-weight: 600; letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.hw-page-head p { font-size: 0.3125rem; color: #585B5E; margin-top: 1px; }
-.hw-page-body { margin: 0; display: grid; gap: 0.2rem; }
+.hw-page-head p { font-size: 2.6cqw; color: #585B5E; margin-top: 2px; line-height: 1.3; }
+.hw-page-body { margin: 0; display: grid; gap: var(--s3); }
 .hw-page-body dt {
-  font-size: 0.3125rem; font-weight: 600; letter-spacing: 0.1em;
-  text-transform: uppercase; color: #585B5E; margin-bottom: 1px;
+  font-size: 2.5cqw; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: #585B5E; margin-bottom: 2px;
 }
-.hw-page-body dd { margin: 0; display: grid; gap: 1px; }
-.hw-page-body p {
-  font-size: 0.34rem; line-height: 1.35; color: #18191B;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-}
-.hw-page-ask { margin-top: auto; padding-top: 0.25rem; border-top: var(--hairline) solid #E8E4DC; }
+.hw-page-body dd { margin: 0; display: grid; gap: 2px; }
+.hw-page-body p { font-size: 3cqw; line-height: 1.4; color: #18191B; }
+.hw-page-ask { padding-top: var(--s3); border-top: var(--hairline) solid #E8E4DC; }
 .hw-page-ask h5 {
-  margin: 0 0 0.15rem; font-size: 0.3125rem; font-weight: 600;
+  margin: 0 0 var(--s2); font-size: 2.5cqw; font-weight: 600;
   letter-spacing: 0.1em; text-transform: uppercase; color: var(--ember-deep);
 }
-.hw-page-ask ol { margin: 0; padding-left: 0.7em; display: grid; gap: 1px; }
-.hw-page-ask li {
-  font-size: 0.34rem; line-height: 1.35; color: #18191B;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-}
+.hw-page-ask ol { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; }
+.hw-page-ask li { font-size: 3cqw; line-height: 1.4; color: #18191B; }
 .hw-page-foot {
-  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px;
-  padding-top: 0.2rem; border-top: var(--hairline) solid #E8E4DC;
-  font-size: 0.28rem; letter-spacing: 0.02em; color: #585B5E;
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s2);
+  padding-top: var(--s3); border-top: var(--hairline) solid #E8E4DC;
+  font-size: 2.2cqw; letter-spacing: 0.02em; color: #585B5E;
 }
