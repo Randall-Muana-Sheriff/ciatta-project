@@ -2525,6 +2525,9 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   padding: var(--s6) var(--gutter);
   display: flex; flex-direction: column;
 }
+/* the class would otherwise beat the hidden attribute, and the panel would
+   stand open on every phone */
+.header-menu[hidden] { display: none; }
 .header-menu nav { display: flex; flex-direction: column; }
 .header-menu a {
   color: var(--ink); text-decoration: none;
