@@ -349,15 +349,11 @@ export function HeroStory() {
               <Wordmark size="sm" />
             </div>
 
-            {/* the screen names the day first, then greets the woman under it */}
-            <div className="ha-greet hs-fade" data-shown={step >= S.ASSEMBLE ? 'y' : 'n'}>
-              <span className="ha-when">Today</span>
-              <p className="ha-hello">Good afternoon, Maya.</p>
-            </div>
+            <p className="ha-hello hs-fade" data-shown={step >= S.ASSEMBLE ? 'y' : 'n'}>Good afternoon, Maya.</p>
 
             <div className="ha-day hs-fade" data-shown={step >= S.DAY ? 'y' : 'n'}>
               <div className="ha-day-head">
-                <span>Your day so far</span>
+                <span>Today’s patterns</span>
                 <span>Menstrual · day 5</span>
               </div>
               <Day drawn={step >= S.DAY} now={step >= S.FIGURES} />
@@ -376,7 +372,7 @@ export function HeroStory() {
             </ul>
 
             <div className="ha-insight hs-fade" data-shown={step >= S.FINDING ? 'y' : 'n'}>
-              <span className="ha-tag">Today</span>
+              <span className="ha-tag">Insights</span>
               <p>Your afternoon pain has been higher following nights under 7 hours.</p>
               <span className="ha-basis">You’ve seen this on 3 days this month.</span>
               <span className="ha-basis hs-second" data-shown={step >= S.TRY ? 'y' : 'n'}>
