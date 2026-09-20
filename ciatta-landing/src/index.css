@@ -2364,3 +2364,43 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   margin: clamp(var(--s6), 3vw, var(--s7)) 0 0;
   color: var(--meta-ink); font-size: var(--t-small); line-height: 1.4;
 }
+
+/* --- the four drawings, one per step -------------------------------------- */
+.hw-art {
+  position: relative; display: flex; flex-direction: column; justify-content: center;
+  gap: var(--s2); height: 7rem; color: var(--ink);
+  padding: var(--s4) 0 var(--s3);
+  border-bottom: var(--hairline) solid var(--rule);
+  margin-bottom: var(--s4);
+}
+.hw-art-svg { display: block; width: 100%; height: 3.4rem; }
+.hw-art-cap { font-size: var(--t-caption); color: var(--meta-ink); line-height: 1.3; }
+
+/* 01 · the sources, each on its own line, arriving at one rail */
+.hw-art-bring ul {
+  list-style: none; margin: 0; padding: 0 0 0 var(--s4);
+  display: grid; gap: 3px;
+}
+.hw-art-bring li {
+  font-size: var(--t-caption); color: var(--meta-ink);
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.hw-art-bring li:last-child { color: var(--ink); }
+.hw-art-rail { position: absolute; left: 0; top: var(--s4); bottom: var(--s3); width: 2px; background: var(--change); }
+
+/* 03 · four lanes of one week, and the day they all speak */
+.hw-art-beside { justify-content: center; gap: 6px; }
+.hw-lane { display: grid; grid-template-columns: 4.5rem 1fr; align-items: center; gap: var(--s3); }
+.hw-lane i { font-style: normal; font-size: var(--t-caption); color: var(--meta-ink); }
+.hw-lane b { position: relative; display: block; height: 5px; background: var(--unlit); border-radius: 999px; }
+.hw-lane u { position: absolute; top: 0; bottom: 0; background: var(--ink); border-radius: 999px; opacity: 0.55; }
+.hw-art-mark { position: absolute; top: var(--s4); bottom: var(--s3); width: 1px; background: var(--change); }
+
+/* 04 · the seven nights, and the page they become */
+.hw-art-next { justify-content: center; }
+.hw-days { display: flex; gap: 5px; }
+.hw-days i { width: 9px; height: 9px; border-radius: 50%; background: var(--unlit); }
+.hw-days i.is-hit { background: var(--change); }
+.hw-brief { display: grid; gap: 3px; margin-top: var(--s2); }
+.hw-brief em { display: block; height: 3px; background: var(--rule); border-radius: 999px; }
+.hw-brief em.is-short { width: 46%; }
