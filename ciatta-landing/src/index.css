@@ -558,7 +558,11 @@ p { margin: 0; text-wrap: pretty; }
 /* --- the device ---------------------------------------------------------- */
 .ps-phone {
   width: var(--ps-w);
-  aspect-ratio: 402 / 874;          /* iPhone 17 Pro */
+  /* The device's height is computed from its width rather than left to
+     aspect-ratio: every --ps-w is a length, and an aspect ratio resolved
+     against a flex child inside an inline-size container is the kind of
+     chain Safari gives up on. */
+  height: calc(var(--ps-w) * 874 / 402);
   border-radius: 12.5%/5.75%;       /* device corner, proportional to width */
   background: var(--ps-canvas);
   padding: 0.28rem;                 /* the bezel */
