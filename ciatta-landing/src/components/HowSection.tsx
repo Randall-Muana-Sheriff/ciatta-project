@@ -80,6 +80,10 @@ const TRY: [string, string, string][] = [
   ['A short walk before 6pm',
    'Your energy rose in the evening after a walk on 4 of 6 days, and today it has been low since 11am',
    'Today'],
+  /* Not everything worth doing is something she does by herself. */
+  ['Raise it with your clinician',
+   'Symptom days have risen since your dose changed on 3 Mar, and ferritin has fallen across three results',
+   'Next visit'],
 ];
 
 function Suggestions() {
@@ -87,7 +91,7 @@ function Suggestions() {
     <div className="product hw-frag">
       <div className="hw-frag-head">
         <span>What you could try</span>
-        <i>2 for today</i>
+        <i>3 to consider</i>
       </div>
       <div className="ps-rows">
         {TRY.map(([what, why, when]) => (
@@ -180,7 +184,7 @@ function Brief() {
 const STEPS: [string, string, () => React.ReactNode][] = [
   ['01', 'Bring it together: wearable, portal, documents, and your own words.', Sources],
   ['02', 'See what changed, and what sat beside it that day.', TodayRead],
-  ['03', 'Decide what to try, and see what happened after you did.', Suggestions],
+  ['03', 'Decide what to try, what to raise, and what happened after.', Suggestions],
   ['04', 'Walk in informed: six months as one page, three questions.', Brief],
 ];
 
