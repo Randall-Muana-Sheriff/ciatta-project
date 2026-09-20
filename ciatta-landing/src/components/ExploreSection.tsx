@@ -135,7 +135,7 @@ const TOPICS: Topic[] = [
   },
   {
     key: 'medications',
-    pill: 'Medications & treatments',
+    pill: 'Medications & supplements',
     tab: 'Medications',
     cap: 'Know what changed, and when.',
     title: 'Know what changed, and when',
