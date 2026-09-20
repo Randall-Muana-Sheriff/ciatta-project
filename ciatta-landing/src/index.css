@@ -2368,7 +2368,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   mask-image: linear-gradient(to bottom, #000 84%, transparent 100%);
 }
 .hw-art-wrap.is-page { padding: var(--s4) var(--s4) 0; }
-.hw-say { display: flex; flex-direction: column; gap: var(--s2); min-width: 0; }
+.hw-head { display: flex; flex-direction: column; gap: var(--s2); min-width: 0; }
 .hw-n {
   font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.16em;
   color: var(--meta-ink); font-variant-numeric: tabular-nums;
@@ -2377,7 +2377,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   margin: 0; font-size: var(--t-card); font-weight: 400;
   line-height: 1.05; letter-spacing: -0.03em; color: var(--ink); text-wrap: balance;
 }
-.hw-say p { color: var(--body-ink); font-size: var(--t-small); line-height: 1.4; }
+.hw-body { color: var(--body-ink); font-size: var(--t-small); line-height: 1.4; }
 .hw-note {
   margin: clamp(var(--s6), 3vw, var(--s7)) 0 0;
   color: var(--meta-ink); font-size: var(--t-small); line-height: 1.4;

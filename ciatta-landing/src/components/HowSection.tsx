@@ -221,17 +221,19 @@ export function HowSection() {
         <ol className="hw-steps">
           {STEPS.map(([n, title, body, Art]) => (
             <li key={n} className="hw-step">
+              {/* the step names itself first, then shows itself */}
+              <div className="hw-head">
+                <span className="hw-n">{n}</span>
+                <h3>{title}</h3>
+              </div>
+
               {/* each drawing is the part of the product the step is about,
                   at the size that part is read at */}
               <div className={Art === Brief ? 'hw-art-wrap is-page' : 'hw-art-wrap'}>
                 <Art />
               </div>
 
-              <div className="hw-say">
-                <span className="hw-n">{n}</span>
-                <h3>{title}</h3>
-                <p>{body}</p>
-              </div>
+              <p className="hw-body">{body}</p>
             </li>
           ))}
         </ol>
