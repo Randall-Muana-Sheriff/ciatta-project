@@ -14,6 +14,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         briefs: resolve(__dirname, 'briefs/index.html'),
+        how: resolve(__dirname, 'how-it-works/index.html'),
         member: resolve(__dirname, 'member/index.html'),
         privacy: resolve(__dirname, 'privacy/index.html'),
         terms: resolve(__dirname, 'terms/index.html'),

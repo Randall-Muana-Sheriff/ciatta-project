@@ -14,6 +14,7 @@ import { TimelineSection } from './components/TimelineSection';
 import { BriefSection } from './components/BriefSection';
 import { HumanSection } from './components/HumanSection';
 import { Wordmark } from './components/Wordmark';
+import { SiteHeader } from './components/SiteHeader';
 
 /**
  * Ciatta landing page.
@@ -112,14 +113,7 @@ export default function App() {
     <>
       <a className="skip" href="#join">Skip to the waitlist</a>
 
-      <header className={scrolled ? 'header is-scrolled' : 'header'}>
-        <a href="/" className="header-brand" aria-label="Ciatta, home">
-          <Wordmark size="sm" />
-        </a>
-        <div className="header-end">
-          <a className="header-cta" href="/member/">Become a member</a>
-        </div>
-      </header>
+      <SiteHeader scrolled={scrolled} />
 
       <main>
         {/* ---------------------------------- HERO ------------------------
