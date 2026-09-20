@@ -33,7 +33,7 @@
  * THE RECORD  — today is 1 April 2026, and every screen agrees with this.
  *
  *   Cycles     8 Dec 29d · 6 Jan 28d · 3 Feb 27d · 2 Mar 26d
- *              current cycle began 28 Mar, day 5
+ *              current cycle began 28 Mar, day 5, menstrual phase
  *   Sleep      average 7h 18m · lowest weeks 26 Jan 6h 02m, 23 Feb 6h 14m
  *   Symptoms   sleep disruption from 10 Mar · fatigue 7 Mar to 24 Mar
  *              night sweats 3 occurrences · headache 12 Mar · mood 9 Mar
@@ -236,12 +236,12 @@ export function CycleScreen() {
       <div className="ps-now">
         <div className="ps-now-head">
           <span className="ps-now-k">Current cycle</span>
-          <span className="ps-now-n">Day 5</span>
+          <span className="ps-now-n">Menstrual &middot; day 5</span>
         </div>
         <div className="ps-prog" aria-hidden="true"><span style={{ width: '19%' }} /></div>
         <div className="ps-now-foot">
           <span>Began 28 Mar</span>
-          <span>Next expected 23 Apr</span>
+          <span>Follicular from day 6</span>
         </div>
       </div>
 
@@ -965,7 +965,7 @@ export function TodayScreen() {
         <p className="ps-hello-n">Good afternoon, Maya.</p>
       </div>
 
-      <Lab qual="Cycle day 24">Your day so far</Lab>
+      <Lab qual="Menstrual &middot; day 5">Your day so far</Lab>
       <DayChart />
 
       <Lab qual="Today">Your metrics</Lab>
@@ -979,7 +979,7 @@ export function TodayScreen() {
         Afternoon pain has been higher after nights under 7 hours.
       </p>
       <span className="ps-conf">
-        <Src kind="inferred" /> 3 days this month &middot; also days 22 to 25 of your cycle
+        <Src kind="inferred" /> 3 days this month &middot; and in the last days of your last 3 cycles
       </span>
 
       <Lab qual="2 for today">What you could try</Lab>
