@@ -180,25 +180,25 @@ const STEPS: [string, string, string, () => React.ReactNode][] = [
   [
     '01',
     'Bring it together',
-    'Your wearable, your portal, the documents your provider sends, and the things only you can say. Each kept with its date and its source.',
+    'Wearable, portal, documents, and your own words. Each kept with its source.',
     Sources,
   ],
   [
     '02',
     'See what changed, and what it sits beside',
-    'What moved against your own usual, and the day it moved in. Ciatta names what may be connected, and what that is based on.',
+    'What moved against your usual, the day it moved, and what connects.',
     TodayRead,
   ],
   [
     '03',
     'Decide what to do next',
-    'Try one thing, see what happened after, and let Ciatta keep the result, so the next reading starts from what you already learned.',
+    'Try one thing. Ciatta keeps the result and reads what happens next.',
     Suggestions,
   ],
   [
     '04',
     'Walk in informed',
-    'Six months as one page: what changed, what was around it, what you tried, what happened next, and three questions worth asking.',
+    'Six months as one page, ending on three questions worth asking.',
     Brief,
   ],
 ];
