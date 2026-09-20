@@ -568,6 +568,10 @@ p { margin: 0; text-wrap: pretty; }
     0 22px 48px -20px rgba(24,25,27,0.42);
   font-family: 'Urbanist', system-ui, sans-serif;
   color: var(--ps-ink);
+  /* the screen fills the bezel as a flex child rather than by percentage
+     height: Safari collapses a percentage height inside an inline-size
+     container to nothing, which drew the phone as an empty box */
+  display: flex;
 }
 /* --psu is one hundredth of the screen's width, which is what 1cqw means
    here. It is declared as a plain length first, because container queries
@@ -577,7 +581,8 @@ p { margin: 0; text-wrap: pretty; }
    hold identical proportions. */
 .ps-screen {
   --psu: calc(var(--ps-w) / 100);
-  height: 100%; border-radius: 11%/5.2%;
+  flex: 1 1 auto; min-height: 0; width: 100%;
+  border-radius: 11%/5.2%;
   background: var(--ps-canvas);
   display: flex; flex-direction: column;
   overflow: hidden;
