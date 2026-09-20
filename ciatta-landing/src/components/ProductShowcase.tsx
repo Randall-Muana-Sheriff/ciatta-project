@@ -97,11 +97,9 @@ function ActionIcon({ kind }: { kind: Action }) {
 }
 
 function Chrome({
-  title, action = 'info', tab = 'My Health', dense, root, children,
+  title, action = 'info', tab = 'My Health', dense, children,
 }: {
   title: string; action?: Action; tab?: (typeof TABS)[number];
-  /** A destination rather than a pushed view: no back, and the title sits left. */
-  root?: boolean;
   dense?: boolean; children: React.ReactNode;
 }) {
   return (
@@ -114,12 +112,9 @@ function Chrome({
             <svg viewBox="0 0 24 12" className="ps-batt"><rect x="0.6" y="0.6" width="19" height="10.8" rx="3" fill="none" strokeWidth="1.2"/><rect x="2.2" y="2.2" width="13" height="7.6" rx="1.6"/><path d="M21.4 4.2v3.6a2.2 2.2 0 0 0 0-3.6Z"/></svg>
           </span>
         </div>
-        {/* A destination has nothing to go back to, so it carries no chevron
-            and its title sits where a title sits on a root screen: left. */}
-        <div className={root ? 'ps-nav is-root' : 'ps-nav'}>
-          {!root && (
-            <svg viewBox="0 0 8 14" className="ps-chev" aria-hidden="true"><path d="M7 1 1 7l6 6" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          )}
+        {/* No chevron and no rule under the title: every screen opens as a
+            place she is, rather than as a page pushed on top of another. */}
+        <div className="ps-nav">
           <span className="ps-nav-title">{title}</span>
           <ActionIcon kind={action} />
         </div>
@@ -559,7 +554,7 @@ export function InsightScreen() {
   const sleep = 'M4 30 L36 31 L68 42 L100 32 L132 40';
 
   return (
-    <Chrome title="Today" action="share" tab="Today" dense root>
+    <Chrome title="Today" action="share" tab="Today" dense>
       <div className="ps-ins-head">
         <span className="ps-tag">Personalized insight</span>
         <span className="ps-pill is-watch">Watching</span>
@@ -908,7 +903,7 @@ function DayChart() {
 
 export function TodayScreen() {
   return (
-    <Chrome title="Today" action="calendar" tab="Today" dense root>
+    <Chrome title="Today" action="calendar" tab="Today" dense>
       <div className="ps-hello">
         <span className="ps-hello-k">Wednesday 1 April</span>
         <p className="ps-hello-n">Good afternoon, Maya.</p>

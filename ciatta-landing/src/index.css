@@ -588,15 +588,11 @@ p { margin: 0; text-wrap: pretty; }
 .ps-batt rect:first-child { stroke: var(--ps-ink); fill: none; opacity: 0.5; }
 
 .ps-nav {
-  display: grid; grid-template-columns: 3.4cqw 1fr 3.4cqw; align-items: center;
-  gap: 2cqw; padding: 1.6cqw 6cqw 2.6cqw;
-  border-bottom: 1px solid var(--ps-rule);
+  display: grid; grid-template-columns: 1fr 3.4cqw; align-items: center;
+  gap: 2cqw; padding: 1.6cqw 6cqw 2cqw;
 }
-.ps-chev, .ps-info { width: 100%; height: auto; stroke: var(--ps-ink); fill: none; }
-.ps-nav-title { text-align: center; font-size: 3.7cqw; font-weight: 600; letter-spacing: 0.01em; }
-/* a destination: no chevron, so the title takes the left of the row */
-.ps-nav.is-root { grid-template-columns: 1fr 3.4cqw; padding-bottom: 2cqw; border-bottom: 0; }
-.ps-nav.is-root .ps-nav-title { text-align: left; font-size: 4.4cqw; letter-spacing: -0.01em; }
+.ps-info { width: 100%; height: auto; stroke: var(--ps-ink); fill: none; }
+.ps-nav-title { text-align: left; font-size: 4.4cqw; font-weight: 600; letter-spacing: -0.01em; }
 
 .ps-body {
   flex: 1 1 auto; min-height: 0;
