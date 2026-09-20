@@ -2792,9 +2792,14 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   .hero-inner { gap: var(--s4); }
   /* narrow, and run off the right edge: the card is the app arriving from the
      side of the frame, and the face in the film stays visible beside it */
+  /* on a phone the hero is one centred column: the device over the name,
+     the name over the sentence, the sentence over the form */
+  .hero-copy { align-items: center; text-align: center; }
+  .hero-lede, .waitlist, .joined { margin-inline: auto; }
+  .waitlist-consent { text-align: center; }
   .ha-device {
-    width: min(15.5rem, 62vw);
-    margin-right: calc(var(--gutter) * -1);
+    width: min(15.5rem, 66vw);
+    margin-inline: auto;
     border-radius: 1.75rem 1.75rem 0 0;
     padding: 0.25rem 0.25rem 0;
   }
