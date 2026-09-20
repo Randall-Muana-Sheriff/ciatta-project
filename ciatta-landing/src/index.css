@@ -2760,10 +2760,21 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   /* the hero gives back its own air too, so the form stays on the screen */
   .hero.has-film { padding-block: calc(var(--header-h) + var(--s4)) var(--s4); }
   .hero-inner { gap: var(--s4); }
-  .ha { width: min(19rem, 84vw); gap: 0.375rem; padding: 0.6875rem 0.75rem 2rem; }
+  /* narrow, and run off the right edge: the card is the app arriving from the
+     side of the frame, and the face in the film stays visible beside it */
+  .ha {
+    width: min(15.5rem, 62vw); gap: 0.3125rem;
+    padding: 0.625rem 0.6875rem 1.75rem;
+    margin-right: calc(var(--gutter) * -1);
+    border-radius: 1.25rem 0 0 0;
+  }
   .ha-after, .ha-metrics { display: none; }
-  .ha-hello { font-size: 0.9375rem; }
-  .ha-insight p { font-size: 0.75rem; }
+  .ha-hello { font-size: 0.8125rem; }
+  .ha-insight p { font-size: 0.6875rem; line-height: 1.25; }
+  .ha-basis, .ha-try i, .ha-try > span { font-size: 0.5rem; }
+  .ha-try b { font-size: 0.625rem; }
+  .ha-bar, .ha-day-head, .ha-axis { font-size: 0.4375rem; }
+  .ha-tag { font-size: 0.4375rem; }
 }
 
 @media (min-width: 1000px) {
