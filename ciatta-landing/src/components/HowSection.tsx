@@ -214,11 +214,6 @@ export function HowSection() {
             </li>
           ))}
         </ol>
-
-        <p className="hw-note">
-          A connection is not a diagnosis. Ciatta shows what an observation is
-          based on, and what is still too thin to call.
-        </p>
       </div>
     </section>
   );
