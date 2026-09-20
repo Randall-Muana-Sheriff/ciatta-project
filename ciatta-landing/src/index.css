@@ -336,7 +336,7 @@ p { margin: 0; text-wrap: pretty; }
      rather than height, so a short window grows the hero instead of
      cropping the form. */
   min-height: 100vh;
-  min-height: 100svh;
+  min-height: 100lvh;
   /* The film runs to the very top of the page and the sticky header sits over
      it, which is what lets the header go transparent and take white type. The
      padding puts the copy back below where the header sits. */
@@ -2962,6 +2962,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 
 /* the device wakes as the last source lands */
 .hs-device {
+  pointer-events: none;   /* decorative: nothing here is pressable */
   opacity: 0.5; transform: scale(0.985);
   transition: opacity 800ms var(--ease-caused), transform 900ms var(--ease-caused);
 }
@@ -2993,7 +2994,13 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .ha-chart[data-now='y'] .hs-nowdot { opacity: 1; }
 
 /* play, pause, replay: one button and a line showing where it has got to */
-.hs-controls { display: flex; align-items: center; gap: var(--s3); width: min(15.5rem, 66vw); }
+/* Above the device, not under it: on a phone the row is pulled up into the
+   screen's faded foot, and without this the screen wins the hit test and the
+   button cannot be tapped at all. */
+.hs-controls {
+  position: relative; z-index: 3;
+  display: flex; align-items: center; gap: var(--s3); width: min(15.5rem, 66vw);
+}
 @media (min-width: 1000px) { .hs-controls { width: min(21rem, 26vw); } }
 .hs-btn {
   appearance: none; cursor: pointer; flex: none;
@@ -3004,9 +3011,17 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   transition: background var(--quick) var(--ease-caused);
 }
 .hs-btn:hover { background: rgba(255,255,255,0.26); }
+/* accessibility.md > Mobility: a 44x44 target. The circle stays 2rem to the
+   eye and the target grows around it rather than the button getting bigger. */
+.hs-btn { position: relative; }
+/* -7px, not -6: the offsets resolve against the padding box, and the button
+   carries a 1px border, so -6 would leave the target 2px short of 44. */
+.hs-btn::after { content: ''; position: absolute; inset: -0.4375rem; border-radius: 50%; }
 .hs-btn svg { width: 0.875rem; height: 0.875rem; }
 .hs-btn:focus-visible { outline: var(--strong) solid #FFFFFF; outline-offset: 2px; }
-.hs-progress { flex: 1; height: 2px; background: rgba(255,255,255,0.24); border-radius: 999px; overflow: hidden; }
+/* it reports progress and takes no presses, so it cannot stand in front of
+   the button's target where the two overlap */
+.hs-progress { pointer-events: none; flex: 1; height: 2px; background: rgba(255,255,255,0.24); border-radius: 999px; overflow: hidden; }
 .hs-progress i { display: block; height: 100%; background: #FFFFFF; transition: width 420ms linear; }
 
 /* On a phone the fold is the whole budget, so the control sits up inside the
