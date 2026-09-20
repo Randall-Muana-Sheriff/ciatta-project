@@ -355,9 +355,12 @@ p { margin: 0; text-wrap: pretty; }
 }
 .hero-scrim {
   position: absolute; inset: 0;
+  /* the film is a bright one, so the scrim carries more than it used to:
+     heavier under the copy, and a wash across the whole frame so the
+     device's white type holds on the lit half too */
   background:
-    linear-gradient(to right, rgba(24,25,27,0.84) 0%, rgba(24,25,27,0.64) 42%, rgba(24,25,27,0.22) 72%, rgba(24,25,27,0) 100%),
-    linear-gradient(to top, rgba(24,25,27,0.28) 0%, rgba(24,25,27,0) 46%);
+    linear-gradient(to right, rgba(24,25,27,0.90) 0%, rgba(24,25,27,0.74) 42%, rgba(24,25,27,0.40) 72%, rgba(24,25,27,0.26) 100%),
+    linear-gradient(to top, rgba(24,25,27,0.42) 0%, rgba(24,25,27,0.06) 46%);
 }
 /* The directional scrim assumes the copy occupies the calm left third. That
    holds on a wide screen; by 1000px the copy column is most of the frame and
@@ -365,7 +368,7 @@ p { margin: 0; text-wrap: pretty; }
    title, 3.51:1 on the lede, against the 3:1 and 4.5:1 those sizes need
    (accessibility.md > Color and effects). The even scrim starts there instead. */
 @media (max-width: 1000px) {
-  .hero-scrim { background: linear-gradient(to top, rgba(24,25,27,0.88) 0%, rgba(24,25,27,0.66) 60%, rgba(24,25,27,0.56) 100%); }
+  .hero-scrim { background: linear-gradient(to top, rgba(24,25,27,0.92) 0%, rgba(24,25,27,0.76) 60%, rgba(24,25,27,0.68) 100%); }
 }
 @media (max-width: 760px) {
   .hero-film video, .hero-film img { object-position: 62% 50%; }
