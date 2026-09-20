@@ -1,5 +1,7 @@
 /**
- * The Ciatta wordmark — Brand Brief / Constitution v2.0, §06 Logo.
+ * The Ciatta wordmark — Brand Brief / Constitution v2.0, §06 Logo, set after
+ * whoop's mark: a step larger, semibold rather than medium, and tracked tight
+ * instead of wide.
  *
  * "A wordmark and nothing else. There is no symbol, no container, no icon and
  * no registered mark: the name, set once, correctly, is the entire identity."
