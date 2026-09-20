@@ -569,7 +569,14 @@ p { margin: 0; text-wrap: pretty; }
   font-family: 'Urbanist', system-ui, sans-serif;
   color: var(--ps-ink);
 }
+/* --psu is one hundredth of the screen's width, which is what 1cqw means
+   here. It is declared as a plain length first, because container queries
+   need iOS 16 and a phone older than that dropped every size inside the app
+   and drew nothing. Where container queries exist, the @supports below
+   restores the real unit, so a screen at 0.62 scale and one at 1.75 still
+   hold identical proportions. */
 .ps-screen {
+  --psu: calc(var(--ps-w) / 100);
   height: 100%; border-radius: 11%/5.2%;
   background: var(--ps-canvas);
   display: flex; flex-direction: column;
@@ -581,55 +588,55 @@ p { margin: 0; text-wrap: pretty; }
    1.28 hold identical proportions instead of drifting apart. */
 .ps-status {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 4.2cqw 6cqw 1.4cqw;
-  font-size: 3.6cqw; font-weight: 600; color: var(--ps-ink);
+  padding: calc(4.2 * var(--psu)) calc(6 * var(--psu)) calc(1.4 * var(--psu));
+  font-size: calc(3.6 * var(--psu)); font-weight: 600; color: var(--ps-ink);
 }
-.ps-status-r { display: inline-flex; align-items: center; gap: 1.4cqw; }
-.ps-sig, .ps-batt { height: 3.1cqw; width: auto; fill: var(--ps-ink); stroke: var(--ps-ink); }
+.ps-status-r { display: inline-flex; align-items: center; gap: calc(1.4 * var(--psu)); }
+.ps-sig, .ps-batt { height: calc(3.1 * var(--psu)); width: auto; fill: var(--ps-ink); stroke: var(--ps-ink); }
 .ps-sig { stroke: none; }
 .ps-batt rect:first-child { stroke: var(--ps-ink); fill: none; opacity: 0.5; }
 
 .ps-nav {
-  display: grid; grid-template-columns: 1fr 3.4cqw; align-items: center;
-  gap: 2cqw; padding: 1.6cqw 6cqw 2cqw;
+  display: grid; grid-template-columns: 1fr calc(3.4 * var(--psu)); align-items: center;
+  gap: calc(2 * var(--psu)); padding: calc(1.6 * var(--psu)) calc(6 * var(--psu)) calc(2 * var(--psu));
 }
 .ps-info { width: 100%; height: auto; stroke: var(--ps-ink); fill: none; }
-.ps-nav-title { text-align: left; font-size: 4.4cqw; font-weight: 600; letter-spacing: -0.01em; }
+.ps-nav-title { text-align: left; font-size: calc(4.4 * var(--psu)); font-weight: 600; letter-spacing: -0.01em; }
 
 .ps-body {
   flex: 1 1 auto; min-height: 0;
-  padding: 3.4cqw 6cqw 2cqw;
-  display: flex; flex-direction: column; gap: 3.2cqw;
+  padding: calc(3.4 * var(--psu)) calc(6 * var(--psu)) calc(2 * var(--psu));
+  display: flex; flex-direction: column; gap: calc(3.2 * var(--psu));
   justify-content: space-between;
   overflow: hidden;
 }
 
-.ps-body.is-dense { gap: 1.7cqw; }
+.ps-body.is-dense { gap: calc(1.7 * var(--psu)); }
 
 /* The tab bar, in the shape Oura gives it: a capsule floating clear of the
    screen's edges, an icon over a small label for each destination, and the
    one she is on brighter than the rest rather than marked underneath. */
 .ps-tabs {
   display: flex; align-items: stretch;
-  margin: 0 4cqw 1.2cqw; padding: 1.8cqw 1cqw;
+  margin: 0 calc(4 * var(--psu)) calc(1.2 * var(--psu)); padding: calc(1.8 * var(--psu)) calc(1 * var(--psu));
   border-radius: 999px;
   background: var(--ps-raised);
   box-shadow: 0 0 0 1px rgba(247,244,238,0.06);
 }
 .ps-tab {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.9cqw;
-  font-size: 2.1cqw; font-weight: 500; color: var(--ps-meta);
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: calc(0.9 * var(--psu));
+  font-size: calc(2.1 * var(--psu)); font-weight: 500; color: var(--ps-meta);
   letter-spacing: 0.01em;
 }
-.ps-tab-ico { width: 4.2cqw; height: 4.2cqw; stroke: currentColor; fill: none; }
+.ps-tab-ico { width: calc(4.2 * var(--psu)); height: calc(4.2 * var(--psu)); stroke: currentColor; fill: none; }
 .ps-tab.is-on { color: var(--ps-ink); }
 .ps-tab.is-on .ps-tab-ico { stroke: var(--ps-clay); }
 
 /* the home indicator, under the capsule as iOS draws it */
 .ps-home {
-  width: 34%; height: 0.9cqw; border-radius: 999px;
+  width: 34%; height: calc(0.9 * var(--psu)); border-radius: 999px;
   background: var(--ps-ink); opacity: 0.32;
-  margin: 0 auto 1.8cqw;
+  margin: 0 auto calc(1.8 * var(--psu));
 }
 
 /* --- screen content: the app's own UI kit --------------------------------
@@ -639,94 +646,94 @@ p { margin: 0; text-wrap: pretty; }
 
 /* the range control, in the same place on every measured screen */
 .ps-seg {
-  display: flex; gap: 0.6cqw; padding: 0.9cqw;
+  display: flex; gap: calc(0.6 * var(--psu)); padding: calc(0.9 * var(--psu));
   background: var(--ps-raised); border-radius: 999px;
 }
 .ps-seg-i {
-  flex: 1; text-align: center; padding: 1.2cqw 0; border-radius: 999px;
-  font-size: 2.6cqw; font-weight: 500; color: var(--ps-meta);
+  flex: 1; text-align: center; padding: calc(1.2 * var(--psu)) 0; border-radius: 999px;
+  font-size: calc(2.6 * var(--psu)); font-weight: 500; color: var(--ps-meta);
 }
 .ps-seg-i.is-on { background: var(--ps-canvas); color: var(--ps-ink); }
 
 /* filter chips, where the content is kinds rather than a period */
-.ps-chips { display: flex; gap: 1.4cqw; flex-wrap: wrap; }
+.ps-chips { display: flex; gap: calc(1.4 * var(--psu)); flex-wrap: wrap; }
 .ps-chip {
-  padding: 1.2cqw 2.6cqw; border-radius: 999px;
-  border: 1px solid var(--ps-rule); font-size: 2.5cqw; color: var(--ps-body);
+  padding: calc(1.2 * var(--psu)) calc(2.6 * var(--psu)); border-radius: 999px;
+  border: 1px solid var(--ps-rule); font-size: calc(2.5 * var(--psu)); color: var(--ps-body);
 }
 .ps-chip.is-on { background: var(--ps-ink); border-color: transparent; color: var(--ps-canvas); font-weight: 500; }
 
 /* section label, with a right-hand qualifier that says how much there is */
 .ps-lab {
   display: flex; justify-content: space-between; align-items: baseline;
-  font-size: 2.3cqw; font-weight: 600; letter-spacing: 0.1em;
+  font-size: calc(2.3 * var(--psu)); font-weight: 600; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--ps-meta);
 }
 .ps-lab-q { font-weight: 400; letter-spacing: 0.04em; text-transform: none; }
 
 /* the big number, and what it is measured against */
-.ps-figure { display: flex; flex-direction: column; gap: 0.8cqw; }
-.ps-fig-k { font-size: 2.6cqw; color: var(--ps-meta); }
+.ps-figure { display: flex; flex-direction: column; gap: calc(0.8 * var(--psu)); }
+.ps-fig-k { font-size: calc(2.6 * var(--psu)); color: var(--ps-meta); }
 .ps-fig-n {
-  font-size: 11cqw; font-weight: 300; line-height: 1;
+  font-size: calc(11 * var(--psu)); font-weight: 300; line-height: 1;
   letter-spacing: -0.03em; font-variant-numeric: tabular-nums;
 }
-.ps-fig-n.is-sm { font-size: 7.4cqw; }
-.ps-fig-n i { font-style: normal; font-size: 0.42em; color: var(--ps-meta); margin-left: 0.6cqw; }
-.ps-fig-d { font-size: 2.7cqw; line-height: 1.35; }
+.ps-fig-n.is-sm { font-size: calc(7.4 * var(--psu)); }
+.ps-fig-n i { font-style: normal; font-size: 0.42em; color: var(--ps-meta); margin-left: calc(0.6 * var(--psu)); }
+.ps-fig-d { font-size: calc(2.7 * var(--psu)); line-height: 1.35; }
 .ps-fig-d.is-down { color: var(--ps-clay); }
 .ps-fig-d.is-up { color: var(--ps-measured); }
 .ps-figure.is-inline {
-  flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 3cqw;
+  flex-direction: row; align-items: flex-end; justify-content: space-between; gap: calc(3 * var(--psu));
 }
-.ps-figure.is-inline > span { display: flex; flex-direction: column; gap: 0.6cqw; }
+.ps-figure.is-inline > span { display: flex; flex-direction: column; gap: calc(0.6 * var(--psu)); }
 
 /* the current-cycle card: the one live thing on the Cycle screen */
 .ps-now {
-  background: var(--ps-raised); border-radius: 3.2cqw; padding: 3cqw;
-  display: flex; flex-direction: column; gap: 1.8cqw;
+  background: var(--ps-raised); border-radius: calc(3.2 * var(--psu)); padding: calc(3 * var(--psu));
+  display: flex; flex-direction: column; gap: calc(1.8 * var(--psu));
 }
 .ps-now-head { display: flex; justify-content: space-between; align-items: baseline; }
-.ps-now-k { font-size: 2.6cqw; color: var(--ps-meta); }
-.ps-now-n { font-size: 4.4cqw; font-weight: 600; font-variant-numeric: tabular-nums; }
-.ps-prog { height: 1.4cqw; background: rgba(247,244,238,0.22); border-radius: 999px; overflow: hidden; }
+.ps-now-k { font-size: calc(2.6 * var(--psu)); color: var(--ps-meta); }
+.ps-now-n { font-size: calc(4.4 * var(--psu)); font-weight: 600; font-variant-numeric: tabular-nums; }
+.ps-prog { height: calc(1.4 * var(--psu)); background: rgba(247,244,238,0.22); border-radius: 999px; overflow: hidden; }
 .ps-prog span { display: block; height: 100%; background: var(--ps-measured); border-radius: 999px; }
 .ps-now-foot {
   display: flex; justify-content: space-between;
-  font-size: 2.4cqw; color: var(--ps-meta); font-variant-numeric: tabular-nums;
+  font-size: calc(2.4 * var(--psu)); color: var(--ps-meta); font-variant-numeric: tabular-nums;
 }
 
 /* the plot frame: a reference band or target line, then the columns */
-.ps-plot { position: relative; height: 28cqw; }
+.ps-plot { position: relative; height: calc(28 * var(--psu)); }
 .ps-target {
   position: absolute; inset-inline: 0; z-index: 1;
   border-top: 1px dashed rgba(247,244,238,0.50);
 }
 .ps-target i {
-  position: absolute; right: 0; top: 0.6cqw;
-  font-style: normal; font-size: 2.1cqw; color: var(--ps-meta);
-  background: var(--ps-canvas); padding-left: 1cqw;
+  position: absolute; right: 0; top: calc(0.6 * var(--psu));
+  font-style: normal; font-size: calc(2.1 * var(--psu)); color: var(--ps-meta);
+  background: var(--ps-canvas); padding-left: calc(1 * var(--psu));
 }
-.ps-cols { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 1.2cqw; }
-.ps-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; gap: 0.6cqw; }
-.ps-col-bar { width: 100%; background: var(--ps-measured); opacity: 0.78; border-radius: 0.8cqw 0.8cqw 0 0; }
-.ps-col-n { font-size: 2.2cqw; font-weight: 600; color: var(--ps-clay); font-variant-numeric: tabular-nums; }
+.ps-cols { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: calc(1.2 * var(--psu)); }
+.ps-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; gap: calc(0.6 * var(--psu)); }
+.ps-col-bar { width: 100%; background: var(--ps-measured); opacity: 0.78; border-radius: calc(0.8 * var(--psu)) calc(0.8 * var(--psu)) 0 0; }
+.ps-col-n { font-size: calc(2.2 * var(--psu)); font-weight: 600; color: var(--ps-clay); font-variant-numeric: tabular-nums; }
 .ps-col.is-short .ps-col-bar,
 .ps-col.is-low .ps-col-bar { background: var(--ps-clay); opacity: 1; }
 .ps-col.is-short .ps-col-n { color: var(--ps-clay); font-weight: 600; }
 
 .ps-axis {
   display: flex; justify-content: space-between;
-  font-size: 2.3cqw; color: var(--ps-meta);
-  border-top: 1px solid var(--ps-rule); padding-top: 1.2cqw;
+  font-size: calc(2.3 * var(--psu)); color: var(--ps-meta);
+  border-top: 1px solid var(--ps-rule); padding-top: calc(1.2 * var(--psu));
 }
 
 /* lanes: a shared timeline that several things are drawn against */
-.ps-lanes { display: flex; flex-direction: column; gap: 1.7cqw; }
-.ps-lane { display: flex; flex-direction: column; gap: 0.9cqw; }
-.ps-lane-k { font-size: 2.5cqw; color: var(--ps-body); }
+.ps-lanes { display: flex; flex-direction: column; gap: calc(1.7 * var(--psu)); }
+.ps-lane { display: flex; flex-direction: column; gap: calc(0.9 * var(--psu)); }
+.ps-lane-k { font-size: calc(2.5 * var(--psu)); color: var(--ps-body); }
 .ps-lane.is-ref .ps-lane-k { color: var(--ps-meta); }
-.ps-rail { position: relative; height: 1.9cqw; background: var(--ps-raised); border-radius: 999px; }
+.ps-rail { position: relative; height: calc(1.9 * var(--psu)); background: var(--ps-raised); border-radius: 999px; }
 .ps-span { position: absolute; inset-block: 0; border-radius: 999px; }
 .ps-span.is-mild { background: rgba(244,110,180,0.70); }
 .ps-span.is-mod  { background: rgba(244,110,180,0.86); }
@@ -734,85 +741,85 @@ p { margin: 0; text-wrap: pretty; }
 .ps-span.is-on   { background: var(--ps-measured); }
 .ps-span.is-past { background: rgba(247,244,238,0.45); }
 .ps-tick {
-  position: absolute; top: -0.7cqw; bottom: -0.7cqw; width: 0.8cqw;
+  position: absolute; top: -calc(0.7 * var(--psu)); bottom: -calc(0.7 * var(--psu)); width: calc(0.8 * var(--psu));
   border-radius: 999px; background: var(--ps-meta);
 }
 
 /* rows: the one tappable thing. The open row shows its detail in place. */
 .ps-rows { display: flex; flex-direction: column; }
-.ps-rows.is-tight .ps-row-line { padding-block: 1cqw; }
+.ps-rows.is-tight .ps-row-line { padding-block: calc(1 * var(--psu)); }
 .ps-row { border-top: 1px solid var(--ps-rule); }
-.ps-row-line { display: flex; align-items: center; gap: 2cqw; padding-block: 2.1cqw; }
-.ps-row-k { flex: 1; display: flex; flex-direction: column; gap: 0.3cqw; min-width: 0; }
-.ps-row-k b { font-size: 2.9cqw; font-weight: 500; color: var(--ps-ink); }
+.ps-row-line { display: flex; align-items: center; gap: calc(2 * var(--psu)); padding-block: calc(2.1 * var(--psu)); }
+.ps-row-k { flex: 1; display: flex; flex-direction: column; gap: calc(0.3 * var(--psu)); min-width: 0; }
+.ps-row-k b { font-size: calc(2.9 * var(--psu)); font-weight: 500; color: var(--ps-ink); }
 .ps-row-k i {
-  font-style: normal; font-size: 2.3cqw; color: var(--ps-meta);
+  font-style: normal; font-size: calc(2.3 * var(--psu)); color: var(--ps-meta);
   font-variant-numeric: tabular-nums;
 }
 .ps-row-v {
-  font-size: 2.9cqw; font-weight: 600; color: var(--ps-ink);
+  font-size: calc(2.9 * var(--psu)); font-weight: 600; color: var(--ps-ink);
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
-.ps-caret { width: 1.7cqw; height: auto; flex: none; stroke: var(--ps-meta); fill: none; }
-.ps-row.is-open { background: var(--ps-raised); border-radius: 2.4cqw; border-top-color: transparent; }
-.ps-row.is-open .ps-row-line { padding-inline: 2.6cqw; }
+.ps-caret { width: calc(1.7 * var(--psu)); height: auto; flex: none; stroke: var(--ps-meta); fill: none; }
+.ps-row.is-open { background: var(--ps-raised); border-radius: calc(2.4 * var(--psu)); border-top-color: transparent; }
+.ps-row.is-open .ps-row-line { padding-inline: calc(2.6 * var(--psu)); }
 .ps-row.is-open .ps-caret { transform: rotate(90deg); }
 .ps-row-detail {
-  padding: 0 2.6cqw 2.6cqw;
-  display: flex; flex-direction: column; gap: 1.8cqw;
+  padding: 0 calc(2.6 * var(--psu)) calc(2.6 * var(--psu));
+  display: flex; flex-direction: column; gap: calc(1.8 * var(--psu));
 }
-.ps-facts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1.1cqw; }
-.ps-facts li { display: flex; justify-content: space-between; gap: 2.4cqw; font-size: 2.5cqw; }
+.ps-facts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: calc(1.1 * var(--psu)); }
+.ps-facts li { display: flex; justify-content: space-between; gap: calc(2.4 * var(--psu)); font-size: calc(2.5 * var(--psu)); }
 .ps-facts span { color: var(--ps-meta); white-space: nowrap; }
 .ps-facts b { font-weight: 500; color: var(--ps-body); text-align: right; }
 
 /* the nightly breakdown inside an open sleep week */
-.ps-nights { display: flex; align-items: flex-end; gap: 1.2cqw; height: 14cqw; }
+.ps-nights { display: flex; align-items: flex-end; gap: calc(1.2 * var(--psu)); height: calc(14 * var(--psu)); }
 .ps-nights span {
   flex: 1; display: flex; flex-direction: column; justify-content: flex-end;
-  align-items: center; gap: 0.7cqw; height: 100%;
-  font-size: 2cqw; color: var(--ps-meta);
+  align-items: center; gap: calc(0.7 * var(--psu)); height: 100%;
+  font-size: calc(2 * var(--psu)); color: var(--ps-meta);
 }
-.ps-nights i { width: 100%; background: var(--ps-measured); opacity: 0.5; border-radius: 0.6cqw 0.6cqw 0 0; }
+.ps-nights i { width: 100%; background: var(--ps-measured); opacity: 0.5; border-radius: calc(0.6 * var(--psu)) calc(0.6 * var(--psu)) 0 0; }
 
 /* cards, for things she is currently taking */
-.ps-cards { display: flex; flex-direction: column; gap: 1.6cqw; }
+.ps-cards { display: flex; flex-direction: column; gap: calc(1.6 * var(--psu)); }
 .ps-card {
-  background: var(--ps-raised); border-radius: 2.8cqw; padding: 2.6cqw;
-  display: flex; flex-direction: column; gap: 0.9cqw;
+  background: var(--ps-raised); border-radius: calc(2.8 * var(--psu)); padding: calc(2.6 * var(--psu));
+  display: flex; flex-direction: column; gap: calc(0.9 * var(--psu));
 }
-.ps-card-t { display: flex; align-items: baseline; gap: 1.6cqw; }
-.ps-card-t b { font-size: 3.2cqw; font-weight: 600; }
-.ps-card-t span { font-size: 2.6cqw; color: var(--ps-body); font-variant-numeric: tabular-nums; }
+.ps-card-t { display: flex; align-items: baseline; gap: calc(1.6 * var(--psu)); }
+.ps-card-t b { font-size: calc(3.2 * var(--psu)); font-weight: 600; }
+.ps-card-t span { font-size: calc(2.6 * var(--psu)); color: var(--ps-body); font-variant-numeric: tabular-nums; }
 .ps-card-m {
   display: flex; justify-content: space-between;
-  font-size: 2.4cqw; color: var(--ps-meta); font-variant-numeric: tabular-nums;
+  font-size: calc(2.4 * var(--psu)); color: var(--ps-meta); font-variant-numeric: tabular-nums;
 }
 
 /* her own entries: no chart, no units, larger type, Rose throughout */
-.ps-entries { display: flex; flex-direction: column; gap: 1.6cqw; }
+.ps-entries { display: flex; flex-direction: column; gap: calc(1.6 * var(--psu)); }
 .ps-month {
-  font-size: 2.3cqw; font-weight: 600; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--ps-reported); margin-top: 1cqw;
+  font-size: calc(2.3 * var(--psu)); font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ps-reported); margin-top: calc(1 * var(--psu));
 }
 .ps-entry {
-  margin: 0; padding: 2.6cqw;
-  background: rgba(244,110,180,0.10); border-radius: 2.8cqw;
-  display: flex; flex-direction: column; gap: 1.2cqw;
+  margin: 0; padding: calc(2.6 * var(--psu));
+  background: rgba(244,110,180,0.10); border-radius: calc(2.8 * var(--psu));
+  display: flex; flex-direction: column; gap: calc(1.2 * var(--psu));
 }
-.ps-entry p { margin: 0; font-size: 3.5cqw; line-height: 1.34; color: var(--ps-ink); }
+.ps-entry p { margin: 0; font-size: calc(3.5 * var(--psu)); line-height: 1.34; color: var(--ps-ink); }
 .ps-entry footer {
-  display: flex; justify-content: space-between; align-items: center; gap: 2cqw;
-  font-size: 2.3cqw; color: var(--ps-reported); font-variant-numeric: tabular-nums;
+  display: flex; justify-content: space-between; align-items: center; gap: calc(2 * var(--psu));
+  font-size: calc(2.3 * var(--psu)); color: var(--ps-reported); font-variant-numeric: tabular-nums;
 }
 .ps-tag-s {
-  padding: 0.7cqw 1.8cqw; border-radius: 999px;
-  background: rgba(244,110,180,0.16); font-size: 2.1cqw;
+  padding: calc(0.7 * var(--psu)) calc(1.8 * var(--psu)); border-radius: 999px;
+  background: rgba(244,110,180,0.16); font-size: calc(2.1 * var(--psu));
 }
 .ps-entry.is-linked { background: rgba(244,110,180,0.16); }
 .ps-pill {
-  display: inline-block; padding: 0.6cqw 1.6cqw; border-radius: 999px;
-  font-size: 2.1cqw; font-weight: 500; white-space: nowrap;
+  display: inline-block; padding: calc(0.6 * var(--psu)) calc(1.6 * var(--psu)); border-radius: 999px;
+  font-size: calc(2.1 * var(--psu)); font-weight: 500; white-space: nowrap;
 }
 .ps-pill.is-ok { background: rgba(247,244,238,0.14); color: var(--ps-body); }
 .ps-pill.is-low { background: rgba(228,192,88,0.18); color: var(--ps-uncertain); }
@@ -820,22 +827,22 @@ p { margin: 0; text-wrap: pretty; }
 
 /* actions and links */
 .ps-bar-action {
-  text-align: center; padding: 2cqw; border-radius: 999px;
-  font-size: 2.7cqw; font-weight: 500;
+  text-align: center; padding: calc(2 * var(--psu)); border-radius: 999px;
+  font-size: calc(2.7 * var(--psu)); font-weight: 500;
   border: 1px solid var(--ps-rule); color: var(--ps-ink);
 }
 .ps-bar-action.is-primary { background: var(--ps-ink); color: var(--ps-canvas); border-color: transparent; }
-.ps-link { font-size: 2.5cqw; color: var(--ps-measured); }
+.ps-link { font-size: calc(2.5 * var(--psu)); color: var(--ps-measured); }
 .ps-link.is-centred { text-align: center; }
 
 /* every screen ends by saying where its numbers came from */
 .ps-prov {
-  display: flex; align-items: center; flex-wrap: wrap; gap: 1.4cqw;
-  font-size: 2.4cqw; line-height: 1.4; color: var(--ps-meta);
+  display: flex; align-items: center; flex-wrap: wrap; gap: calc(1.4 * var(--psu));
+  font-size: calc(2.4 * var(--psu)); line-height: 1.4; color: var(--ps-meta);
 }
 .ps-src {
-  padding: 0.5cqw 1.5cqw; border-radius: 999px;
-  font-size: 2cqw; font-weight: 600; white-space: nowrap; letter-spacing: 0.02em;
+  padding: calc(0.5 * var(--psu)) calc(1.5 * var(--psu)); border-radius: 999px;
+  font-size: calc(2 * var(--psu)); font-weight: 600; white-space: nowrap; letter-spacing: 0.02em;
 }
 /* Six kinds, one colour each, never reused for anything else. A reader has to
    be able to tell a measurement from a thing she said from a published study
@@ -846,11 +853,11 @@ p { margin: 0; text-wrap: pretty; }
 .ps-src.is-uploaded { background: rgba(228,192,88,0.18);  color: var(--ps-uncertain); }
 .ps-src.is-evidence { background: rgba(242,184,99,0.14);  color: var(--ps-evidence); }
 .ps-src.is-inferred { background: rgba(236,150,88,0.20);  color: var(--ps-clay); }
-.ps-ins-head { display: flex; justify-content: space-between; align-items: center; gap: 2cqw; }
+.ps-ins-head { display: flex; justify-content: space-between; align-items: center; gap: calc(2 * var(--psu)); }
 .ps-tag {
-  padding: 0.9cqw 2.2cqw; border-radius: 999px; align-self: flex-start;
+  padding: calc(0.9 * var(--psu)) calc(2.2 * var(--psu)); border-radius: 999px; align-self: flex-start;
   background: rgba(236,150,88,0.16); color: var(--ps-clay);
-  font-size: 2.2cqw; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  font-size: calc(2.2 * var(--psu)); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
 }
 .ps-finding {
   margin: 0;
@@ -858,25 +865,25 @@ p { margin: 0; text-wrap: pretty; }
      this used to be, so it takes Medium and tighter tracking to keep the
      presence the sentence had. */
   font-family: var(--font);
-  font-weight: 500; font-size: 5.1cqw; line-height: 1.14;
+  font-weight: 500; font-size: calc(5.1 * var(--psu)); line-height: 1.14;
   letter-spacing: -0.025em; color: var(--ps-ink);
 }
 .ps-conf {
-  display: flex; align-items: center; gap: 1.4cqw;
-  font-size: 2.3cqw; color: var(--ps-meta); font-variant-numeric: tabular-nums;
+  display: flex; align-items: center; gap: calc(1.4 * var(--psu));
+  font-size: calc(2.3 * var(--psu)); color: var(--ps-meta); font-variant-numeric: tabular-nums;
 }
 .ps-pair {
-  background: var(--ps-raised); border-radius: 3.2cqw; padding: 2.6cqw;
-  display: flex; flex-direction: column; gap: 1.3cqw;
+  background: var(--ps-raised); border-radius: calc(3.2 * var(--psu)); padding: calc(2.6 * var(--psu));
+  display: flex; flex-direction: column; gap: calc(1.3 * var(--psu));
 }
-.ps-pair-head { display: flex; gap: 4cqw; font-size: 2.4cqw; color: var(--ps-body); }
-.ps-pair-head span { display: inline-flex; align-items: center; gap: 1.2cqw; }
-.ps-key { width: 3cqw; height: 0.6cqw; border-radius: 999px; flex: none; }
+.ps-pair-head { display: flex; gap: calc(4 * var(--psu)); font-size: calc(2.4 * var(--psu)); color: var(--ps-body); }
+.ps-pair-head span { display: inline-flex; align-items: center; gap: calc(1.2 * var(--psu)); }
+.ps-key { width: calc(3 * var(--psu)); height: calc(0.6 * var(--psu)); border-radius: 999px; flex: none; }
 .ps-key.is-measured { background: var(--ps-measured); }
 .ps-key.is-sleep { background: var(--ps-ink); opacity: 0.85; }
 .ps-pair-chart { width: 100%; height: auto; display: block; }
-.ps-cite { font-size: 2.2cqw; color: var(--ps-meta); font-variant-numeric: tabular-nums; }
-.ps-hedge { font-size: 2.3cqw; line-height: 1.4; color: var(--ps-meta); margin: 0; }
+.ps-cite { font-size: calc(2.2 * var(--psu)); color: var(--ps-meta); font-variant-numeric: tabular-nums; }
+.ps-hedge { font-size: calc(2.3 * var(--psu)); line-height: 1.4; color: var(--ps-meta); margin: 0; }
 
 @media (prefers-reduced-transparency: reduce) { .ps-col-bar { opacity: 1; } }
 @media (prefers-contrast: more) {
@@ -887,79 +894,79 @@ p { margin: 0; text-wrap: pretty; }
 /* --- the record's own additions ------------------------------------------ */
 
 /* a dose change or a caveat that belongs to the card above it */
-.ps-note-s { font-size: 2.3cqw; line-height: 1.4; color: var(--ps-meta); }
+.ps-note-s { font-size: calc(2.3 * var(--psu)); line-height: 1.4; color: var(--ps-meta); }
 .ps-card-t .ps-pill { margin-left: auto; }
 
 /* Add to Ciatta: one primary action, two ways through it. Presented at a
    medium detent so the results it adds to stay visible behind it. */
 .ps-sheet {
-  margin: 0 -6cqw -2cqw; padding: 2cqw 5cqw 3cqw;
+  margin: 0 -calc(6 * var(--psu)) -calc(2 * var(--psu)); padding: calc(2 * var(--psu)) calc(5 * var(--psu)) calc(3 * var(--psu));
   background: var(--ps-raised);
-  border-radius: 4cqw 4cqw 0 0;
-  display: flex; flex-direction: column; gap: 2cqw;
-  box-shadow: 0 -2cqw 6cqw rgba(0,0,0,0.34);
+  border-radius: calc(4 * var(--psu)) calc(4 * var(--psu)) 0 0;
+  display: flex; flex-direction: column; gap: calc(2 * var(--psu));
+  box-shadow: 0 -calc(2 * var(--psu)) calc(6 * var(--psu)) rgba(0,0,0,0.34);
 }
 .ps-grab {
-  align-self: center; width: 9cqw; height: 0.9cqw; border-radius: 999px;
+  align-self: center; width: calc(9 * var(--psu)); height: calc(0.9 * var(--psu)); border-radius: 999px;
   background: var(--ps-meta); opacity: 0.5;
 }
-.ps-sheet-t { font-size: 3.2cqw; font-weight: 600; color: var(--ps-ink); }
-.ps-opt { display: flex; flex-direction: column; gap: 0.5cqw; }
-.ps-opt-h { display: flex; align-items: center; gap: 2cqw; }
-.ps-opt-h b { flex: 1; font-size: 2.9cqw; font-weight: 600; color: var(--ps-ink); }
-.ps-opt p { margin: 0; font-size: 2.4cqw; line-height: 1.4; color: var(--ps-body); }
+.ps-sheet-t { font-size: calc(3.2 * var(--psu)); font-weight: 600; color: var(--ps-ink); }
+.ps-opt { display: flex; flex-direction: column; gap: calc(0.5 * var(--psu)); }
+.ps-opt-h { display: flex; align-items: center; gap: calc(2 * var(--psu)); }
+.ps-opt-h b { flex: 1; font-size: calc(2.9 * var(--psu)); font-weight: 600; color: var(--ps-ink); }
+.ps-opt p { margin: 0; font-size: calc(2.4 * var(--psu)); line-height: 1.4; color: var(--ps-body); }
 
 /* --- the insight's evidence layers --------------------------------------- */
 .ps-layers { margin: 0; display: flex; flex-direction: column; }
 .ps-layers > div {
-  display: flex; flex-direction: column; gap: 0.6cqw;
-  border-top: 1px solid var(--ps-rule); padding: 1.4cqw 0;
+  display: flex; flex-direction: column; gap: calc(0.6 * var(--psu));
+  border-top: 1px solid var(--ps-rule); padding: calc(1.4 * var(--psu)) 0;
 }
 .ps-layers dt {
-  display: flex; align-items: center; gap: 1.6cqw;
-  font-size: 2.2cqw; font-weight: 600; letter-spacing: 0.08em;
+  display: flex; align-items: center; gap: calc(1.6 * var(--psu));
+  font-size: calc(2.2 * var(--psu)); font-weight: 600; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--ps-meta);
 }
-.ps-layers dd { margin: 0; font-size: 2.7cqw; line-height: 1.38; color: var(--ps-body); }
+.ps-layers dd { margin: 0; font-size: calc(2.7 * var(--psu)); line-height: 1.38; color: var(--ps-body); }
 .ps-layers > div.is-evidence {
-  background: rgba(242,184,99,0.09); border-radius: 2.4cqw;
-  border-top-color: transparent; padding: 1.8cqw 2.4cqw; margin-block: 0.5cqw;
+  background: rgba(242,184,99,0.09); border-radius: calc(2.4 * var(--psu));
+  border-top-color: transparent; padding: calc(1.8 * var(--psu)) calc(2.4 * var(--psu)); margin-block: calc(0.5 * var(--psu));
 }
 
 /* what is still open, and the question she can carry out of the screen */
-.ps-open-row { display: flex; flex-direction: column; gap: 0.5cqw; }
+.ps-open-row { display: flex; flex-direction: column; gap: calc(0.5 * var(--psu)); }
 .ps-open-k, .ps-next-k {
-  font-size: 2.2cqw; font-weight: 600; letter-spacing: 0.08em;
+  font-size: calc(2.2 * var(--psu)); font-weight: 600; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--ps-meta);
 }
-.ps-open-row p { margin: 0; font-size: 2.7cqw; line-height: 1.4; color: var(--ps-body); }
+.ps-open-row p { margin: 0; font-size: calc(2.7 * var(--psu)); line-height: 1.4; color: var(--ps-body); }
 .ps-next {
-  background: rgba(236,150,88,0.12); border-radius: 2.4cqw;
-  padding: 2cqw 2.4cqw; display: flex; flex-direction: column; gap: 0.6cqw;
+  background: rgba(236,150,88,0.12); border-radius: calc(2.4 * var(--psu));
+  padding: calc(2 * var(--psu)) calc(2.4 * var(--psu)); display: flex; flex-direction: column; gap: calc(0.6 * var(--psu));
 }
 .ps-next-k { color: var(--ps-clay); }
-.ps-next p { margin: 0; font-size: 2.9cqw; line-height: 1.38; color: var(--ps-ink); }
+.ps-next p { margin: 0; font-size: calc(2.9 * var(--psu)); line-height: 1.38; color: var(--ps-ink); }
 
 /* A document stays a document. Ciatta reads it, but the record shows the file
    she uploaded rather than a summary standing in for it. */
 .ps-doc {
-  display: flex; align-items: center; gap: 2.4cqw;
-  background: var(--ps-raised); border-radius: 2.4cqw; padding: 2.2cqw 2.4cqw;
+  display: flex; align-items: center; gap: calc(2.4 * var(--psu));
+  background: var(--ps-raised); border-radius: calc(2.4 * var(--psu)); padding: calc(2.2 * var(--psu)) calc(2.4 * var(--psu));
 }
 .ps-doc-ico {
-  flex: none; padding: 1cqw 1.6cqw; border-radius: 1.2cqw;
+  flex: none; padding: calc(1 * var(--psu)) calc(1.6 * var(--psu)); border-radius: calc(1.2 * var(--psu));
   background: rgba(228,192,88,0.18); color: var(--ps-uncertain);
-  font-size: 2cqw; font-weight: 700; letter-spacing: 0.06em;
+  font-size: calc(2 * var(--psu)); font-weight: 700; letter-spacing: 0.06em;
 }
-.ps-doc-b { flex: 1; display: flex; flex-direction: column; gap: 0.3cqw; min-width: 0; }
-.ps-doc-b b { font-size: 2.9cqw; font-weight: 500; color: var(--ps-ink); }
-.ps-doc-b i { font-style: normal; font-size: 2.3cqw; color: var(--ps-meta); }
+.ps-doc-b { flex: 1; display: flex; flex-direction: column; gap: calc(0.3 * var(--psu)); min-width: 0; }
+.ps-doc-b b { font-size: calc(2.9 * var(--psu)); font-weight: 500; color: var(--ps-ink); }
+.ps-doc-b i { font-style: normal; font-size: calc(2.3 * var(--psu)); color: var(--ps-meta); }
 
 /* The cohort line is not part of the sentence above it: it says who the study
    was about, and running them together implies it was about her. */
 .ps-cite {
-  display: block; margin-top: 0.6cqw;
-  font-size: 2.2cqw; color: var(--ps-meta); font-variant-numeric: tabular-nums;
+  display: block; margin-top: calc(0.6 * var(--psu));
+  font-size: calc(2.2 * var(--psu)); color: var(--ps-meta); font-variant-numeric: tabular-nums;
 }
 
 
@@ -1606,6 +1613,7 @@ p { margin: 0; text-wrap: pretty; }
 
 .ex-sheet {
   /* one phone as tall as the viewport allows, never wider than the screen */
+  --ps-w: min(21rem, 86vw);
   --ps-w: min(21rem, 86vw, calc((100dvh - 11rem) * 402 / 874));
   width: min(calc(100vw - 2 * var(--gutter)), 52rem);
   max-height: calc(100dvh - 2 * var(--s5));
@@ -2269,26 +2277,26 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .brief .sec-phone .bf-doc { max-width: none; }
 
 /* --- Today: the day itself, and what it says ------------------------------ */
-.ps-hello { display: flex; flex-direction: column; gap: 0.8cqw; }
+.ps-hello { display: flex; flex-direction: column; gap: calc(0.8 * var(--psu)); }
 .ps-hello-k {
-  font-size: 2.4cqw; font-weight: 600; letter-spacing: 0.12em;
+  font-size: calc(2.4 * var(--psu)); font-weight: 600; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--ps-meta);
 }
 .ps-hello-n {
-  margin: 0; font-size: 4.6cqw; font-weight: 500; line-height: 1.05;
+  margin: 0; font-size: calc(4.6 * var(--psu)); font-weight: 500; line-height: 1.05;
   letter-spacing: -0.02em; color: var(--ps-ink);
 }
-.ps-day { display: flex; flex-direction: column; gap: 1.4cqw; }
+.ps-day { display: flex; flex-direction: column; gap: calc(1.4 * var(--psu)); }
 .ps-day-chart { display: block; width: 100%; height: auto; }
 .ps-day-axis {
   display: flex; justify-content: space-between;
-  font-size: 2.1cqw; color: var(--ps-meta); font-variant-numeric: tabular-nums;
+  font-size: calc(2.1 * var(--psu)); color: var(--ps-meta); font-variant-numeric: tabular-nums;
 }
-.ps-day-key { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 1.2cqw 3cqw; }
-.ps-day-key li { display: flex; align-items: center; gap: 1.2cqw; font-size: 2.2cqw; color: var(--ps-meta); }
-.ps-day-key i { width: 2.2cqw; height: 2.2cqw; border-radius: 50%; }
-.ps-day-key .is-sleep { background: var(--ps-measured); opacity: 0.5; border-radius: 0.6cqw; }
-.ps-day-key .is-energy { background: var(--ps-ink); height: 0.8cqw; width: 3.4cqw; border-radius: 999px; }
+.ps-day-key { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: calc(1.2 * var(--psu)) calc(3 * var(--psu)); }
+.ps-day-key li { display: flex; align-items: center; gap: calc(1.2 * var(--psu)); font-size: calc(2.2 * var(--psu)); color: var(--ps-meta); }
+.ps-day-key i { width: calc(2.2 * var(--psu)); height: calc(2.2 * var(--psu)); border-radius: 50%; }
+.ps-day-key .is-sleep { background: var(--ps-measured); opacity: 0.5; border-radius: calc(0.6 * var(--psu)); }
+.ps-day-key .is-energy { background: var(--ps-ink); height: calc(0.8 * var(--psu)); width: calc(3.4 * var(--psu)); border-radius: 999px; }
 .ps-day-key .is-pain { background: var(--ps-reported); }
 
 /* a section where the screen says it all: one device, centred, no column beside it */
@@ -2298,48 +2306,48 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    already draws marked so the two readings cannot drift apart */
 .ps-metrics {
   list-style: none; margin: 0; padding: 0;
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6cqw;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(1.6 * var(--psu));
 }
 .ps-metric {
-  display: flex; flex-direction: column; gap: 0.5cqw;
-  padding: 1.7cqw; border-radius: 2.4cqw; min-width: 0;
+  display: flex; flex-direction: column; gap: calc(0.5 * var(--psu));
+  padding: calc(1.7 * var(--psu)); border-radius: calc(2.4 * var(--psu)); min-width: 0;
   background: var(--ps-raised);
 }
 .ps-metric.is-pattern { box-shadow: inset 0 0 0 1px rgba(236,150,88,0.45); }
 .ps-metric-k {
-  font-size: 2.1cqw; font-weight: 600; letter-spacing: 0.1em;
+  font-size: calc(2.1 * var(--psu)); font-weight: 600; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--ps-meta);
 }
 .ps-metric-v {
-  font-size: 3.4cqw; font-weight: 500; line-height: 1; color: var(--ps-ink);
+  font-size: calc(3.4 * var(--psu)); font-weight: 500; line-height: 1; color: var(--ps-ink);
   font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
 }
 .ps-metric-v i { font-style: normal; font-size: 0.5em; color: var(--ps-meta); margin-left: 0.12em; }
-.ps-spark { width: 100%; height: 2.4cqw; display: block; }
-.ps-metric-n { font-size: 1.9cqw; line-height: 1.25; color: var(--ps-meta); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ps-spark { width: 100%; height: calc(2.4 * var(--psu)); display: block; }
+.ps-metric-n { font-size: calc(1.9 * var(--psu)); line-height: 1.25; color: var(--ps-meta); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ps-metric-n.is-down { color: var(--ps-clay); }
 .ps-metric-n.is-up { color: var(--ps-uncertain); }
 
 /* what happened after the last thing she tried: the product remembering */
 .ps-after {
-  display: flex; flex-direction: column; gap: 1cqw;
-  padding: 2.2cqw 2.8cqw; border-radius: 2.8cqw;
+  display: flex; flex-direction: column; gap: calc(1 * var(--psu));
+  padding: calc(2.2 * var(--psu)) calc(2.8 * var(--psu)); border-radius: calc(2.8 * var(--psu));
   background: rgba(236,150,88,0.12);
   box-shadow: inset 0 0 0 1px rgba(236,150,88,0.35);
 }
 .ps-after-k {
-  font-size: 2.1cqw; font-weight: 600; letter-spacing: 0.1em;
+  font-size: calc(2.1 * var(--psu)); font-weight: 600; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--ps-clay);
 }
-.ps-after p { margin: 0; font-size: 3cqw; line-height: 1.25; color: var(--ps-ink); }
-.ps-after-days { display: flex; gap: 1.2cqw; }
+.ps-after p { margin: 0; font-size: calc(3 * var(--psu)); line-height: 1.25; color: var(--ps-ink); }
+.ps-after-days { display: flex; gap: calc(1.2 * var(--psu)); }
 .ps-after-days i {
-  width: 2.2cqw; height: 2.2cqw; border-radius: 50%;
+  width: calc(2.2 * var(--psu)); height: calc(2.2 * var(--psu)); border-radius: 50%;
   background: var(--ps-ink); opacity: 0.22;
 }
 .ps-after-days i.is-hit { background: var(--ps-clay); opacity: 1; }
 /* the care and results that sit in the same day as the measurements */
-.ps-nearby { margin: 0; font-size: 2.1cqw; line-height: 1.3; color: var(--ps-meta); }
+.ps-nearby { margin: 0; font-size: calc(2.1 * var(--psu)); line-height: 1.3; color: var(--ps-meta); }
 
 /* ===========================================================================
    How it works — findmypattern's shape: a step at a time, each one shown as
@@ -2412,46 +2420,47 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 
 /* 02 · the day and the finding, at the size they are read at */
 .hw-frag-hello {
-  margin: 0 0 4cqw; font-size: 6.6cqw; font-weight: 500; line-height: 1.05;
+  margin: 0 0 calc(4 * var(--psu)); font-size: calc(6.6 * var(--psu)); font-weight: 500; line-height: 1.05;
   letter-spacing: -0.02em; color: var(--ps-ink);
 }
 /* the key belongs in the app, where the series can be tapped; here the three
    are named by the finding underneath */
 .hw-frag .ps-day-key { display: none; }
 .hw-frag .ps-day-chart { height: auto; }
-.hw-frag .ps-day-axis { font-size: 3cqw; }
-.hw-frag-ins { margin-top: 3.4cqw; padding-top: 3.4cqw; border-top: 1px solid var(--ps-rule); }
+.hw-frag .ps-day-axis { font-size: calc(3 * var(--psu)); }
+.hw-frag-ins { margin-top: calc(3.4 * var(--psu)); padding-top: calc(3.4 * var(--psu)); border-top: 1px solid var(--ps-rule); }
 .hw-frag-tag {
-  display: inline-block; margin-bottom: 3cqw;
-  padding: 1.2cqw 2.6cqw; border-radius: 999px;
+  display: inline-block; margin-bottom: calc(3 * var(--psu));
+  padding: calc(1.2 * var(--psu)) calc(2.6 * var(--psu)); border-radius: 999px;
   background: rgba(236,150,88,0.18); color: var(--ps-clay);
-  font-size: 3cqw; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  font-size: calc(3 * var(--psu)); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
 }
-.hw-frag-ins p { margin: 0 0 2.6cqw; font-size: 6cqw; line-height: 1.15; color: var(--ps-ink); }
-.hw-frag-basis { display: block; font-size: 3.4cqw; line-height: 1.35; color: var(--ps-meta); }
+.hw-frag-ins p { margin: 0 0 calc(2.6 * var(--psu)); font-size: calc(6 * var(--psu)); line-height: 1.15; color: var(--ps-ink); }
+.hw-frag-basis { display: block; font-size: calc(3.4 * var(--psu)); line-height: 1.35; color: var(--ps-meta); }
 
 /* 03 · the suggestions, lifted out of the screen at reading size */
 .hw-frag {
+  --psu: 0.245rem;
   container-type: inline-size;
   width: 100%; align-self: center;
   background: var(--ps-canvas); color: var(--ps-ink);
-  border-radius: var(--r-nested); padding: 4cqw;
+  border-radius: var(--r-nested); padding: calc(4 * var(--psu));
   font-family: 'Urbanist', system-ui, sans-serif;
 }
 .hw-frag-head {
   display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3);
-  font-size: 3.2cqw; font-weight: 600; letter-spacing: 0.12em;
-  text-transform: uppercase; color: var(--ps-meta); margin-bottom: 3cqw;
+  font-size: calc(3.2 * var(--psu)); font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ps-meta); margin-bottom: calc(3 * var(--psu));
 }
 .hw-frag-head i { font-style: normal; letter-spacing: 0.04em; }
 /* the rows are read here rather than glanced at inside a phone, so they take
    a size of their own rather than the screen's */
-.hw-frag .ps-row-k b { font-size: 5.2cqw; font-weight: 500; }
-.hw-frag .ps-row-k i { font-size: 4.2cqw; line-height: 1.35; }
-.hw-frag .ps-row-v { font-size: 4.4cqw; }
-.hw-frag .ps-caret { width: 3cqw; }
+.hw-frag .ps-row-k b { font-size: calc(5.2 * var(--psu)); font-weight: 500; }
+.hw-frag .ps-row-k i { font-size: calc(4.2 * var(--psu)); line-height: 1.35; }
+.hw-frag .ps-row-v { font-size: calc(4.4 * var(--psu)); }
+.hw-frag .ps-caret { width: calc(3 * var(--psu)); }
 .hw-frag .ps-row { border-top-color: var(--ps-rule); }
-.hw-frag .ps-row-line { padding: 3.4cqw 0; gap: 3cqw; }
+.hw-frag .ps-row-line { padding: calc(3.4 * var(--psu)) 0; gap: calc(3 * var(--psu)); }
 
 /* 04 · the brief, as the page it prints as */
 .hw-page {
@@ -2461,6 +2470,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   padding: var(--s4);
   display: flex; flex-direction: column; gap: var(--s3);
   overflow: hidden; container-type: inline-size;
+  --psu: 0.2rem;
 }
 .hw-page-head {
   display: flex; align-items: center; gap: var(--s3);
@@ -2469,28 +2479,28 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .hw-page-head { gap: var(--s3); padding-bottom: var(--s3); }
 .hw-page-head img { width: 1.75rem; height: 1.75rem; border-radius: 4px; display: block; }
 .hw-page-head h4 {
-  margin: 0; font-size: 3.4cqw; font-weight: 600; letter-spacing: 0.1em;
+  margin: 0; font-size: calc(3.4 * var(--psu)); font-weight: 600; letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.hw-page-head p { font-size: 2.6cqw; color: #585B5E; margin-top: 2px; line-height: 1.3; }
+.hw-page-head p { font-size: calc(2.6 * var(--psu)); color: #585B5E; margin-top: 2px; line-height: 1.3; }
 .hw-page-body { margin: 0; display: grid; gap: var(--s3); }
 .hw-page-body dt {
-  font-size: 2.5cqw; font-weight: 600; letter-spacing: 0.1em;
+  font-size: calc(2.5 * var(--psu)); font-weight: 600; letter-spacing: 0.1em;
   text-transform: uppercase; color: #585B5E; margin-bottom: 2px;
 }
 .hw-page-body dd { margin: 0; display: grid; gap: 2px; }
-.hw-page-body p { font-size: 3cqw; line-height: 1.4; color: #18191B; }
+.hw-page-body p { font-size: calc(3 * var(--psu)); line-height: 1.4; color: #18191B; }
 .hw-page-ask { padding-top: var(--s3); border-top: var(--hairline) solid #E8E4DC; }
 .hw-page-ask h5 {
-  margin: 0 0 var(--s2); font-size: 2.5cqw; font-weight: 600;
+  margin: 0 0 var(--s2); font-size: calc(2.5 * var(--psu)); font-weight: 600;
   letter-spacing: 0.1em; text-transform: uppercase; color: var(--ember-deep);
 }
 .hw-page-ask ol { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; }
-.hw-page-ask li { font-size: 3cqw; line-height: 1.4; color: #18191B; }
+.hw-page-ask li { font-size: calc(3 * var(--psu)); line-height: 1.4; color: #18191B; }
 .hw-page-foot {
   display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s2);
   padding-top: var(--s3); border-top: var(--hairline) solid #E8E4DC;
-  font-size: 2.2cqw; letter-spacing: 0.02em; color: #585B5E;
+  font-size: calc(2.2 * var(--psu)); letter-spacing: 0.02em; color: #585B5E;
 }
 
 /* --- the header's destinations, and the hamburger below the split --------- */
@@ -2651,6 +2661,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   /* As large as the hero can hold: the screen is the proof, and at 13rem its
      own type was smaller than the caption under it. Bounded by the height of
      the first view as well as its width, so the form never leaves the fold. */
+  --ps-w: min(22rem, 26vw);
   --ps-w: min(22rem, 26vw, calc((100svh - 15rem) * 402 / 874));
   --ps-canvas: rgba(18, 19, 21, 0.44);
   --ps-raised: rgba(247, 244, 238, 0.10);
@@ -2681,12 +2692,21 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
        goes above it */
     order: -1;
     align-self: flex-end; opacity: 1;
-    height: clamp(8rem, 24svh, 15rem); overflow: hidden;
-    -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+    /* a plain height first: svh is not understood by every phone browser that
+       still ships, and a dropped declaration here used to leave the hero with
+       nothing in it */
+    height: 13rem;
+    height: clamp(8rem, 24svh, 15rem);
+    overflow: hidden;
   }
-  /* the device is cut off by the window, so only its top corners are round */
-  .hero-app .ps-phone { border-radius: 9% / 4% 9% / 4% 0 0; padding-bottom: 0; }
+  /* the device is cut off by the window, so only its top corners are round.
+     No blur here: a backdrop-filter inside a clipped, masked box renders as
+     an empty rectangle on iOS, which is what left the hero blank. */
+  .hero-app .ps-phone {
+    border-radius: 9% / 4% 9% / 4% 0 0; padding-bottom: 0;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    background: rgba(18, 19, 21, 0.62);
+  }
 }
 .hero-app .ps-phone {
   background: rgba(18, 19, 21, 0.28);
@@ -2710,4 +2730,9 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
     display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
     gap: var(--s7); align-items: end;
   }
+}
+
+/* Where the browser has container queries, the unit is the real one. */
+@supports (container-type: inline-size) {
+  .ps-screen, .hw-frag, .hw-page { --psu: 1cqw; }
 }
