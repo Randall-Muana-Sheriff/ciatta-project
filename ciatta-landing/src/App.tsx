@@ -4,15 +4,6 @@ import { HeroStory } from './components/HeroStory';
 import { SubscribeForm } from './components/SubscribeForm';
 import { ExploreSection } from './components/ExploreSection';
 import { HowSection } from './components/HowSection';
-import { ProblemSection } from './components/ProblemSection';
-import { ChangeSection } from './components/ChangeSection';
-import { ContextSection } from './components/ContextSection';
-import { WordsSection } from './components/WordsSection';
-import { LabsSection } from './components/LabsSection';
-import { InsightsSection } from './components/InsightsSection';
-import { ActionSection } from './components/ActionSection';
-import { TimelineSection } from './components/TimelineSection';
-import { BriefSection } from './components/BriefSection';
 import { HumanSection } from './components/HumanSection';
 import { Wordmark } from './components/Wordmark';
 import { SiteHeader } from './components/SiteHeader';
@@ -158,33 +149,6 @@ export default function App() {
 
         {/* -------------------------- HOW IT WORKS -------------------------- */}
         <HowSection />
-
-        {/* --------------------------- THE PROBLEM -------------------------- */}
-        <ProblemSection />
-
-        {/* ------------------- THE SIGNATURE EXPERIENCE --------------------- */}
-        <ChangeSection />
-
-        {/* ----------------------------- CONTEXT ---------------------------- */}
-        <ContextSection />
-
-        {/* -------------------------- YOUR OWN WORDS ------------------------ */}
-        <WordsSection />
-
-        {/* -------------------------------- LABS ---------------------------- */}
-        <LabsSection />
-
-        {/* ---------------------------- INSIGHTS ---------------------------- */}
-        <InsightsSection />
-
-        {/* ----------------------------- ACTION ----------------------------- */}
-        <ActionSection />
-
-        {/* ---------------------- THE LONGITUDINAL STORY -------------------- */}
-        <TimelineSection />
-
-        {/* ------------------------ CLINICAL CONNECTION --------------------- */}
-        <BriefSection />
 
         {/* ------------------- GROUNDED IN EVIDENCE ------------------------- */}
         <section className="section who" aria-labelledby="who-heading">
