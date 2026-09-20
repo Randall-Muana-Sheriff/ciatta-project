@@ -2533,59 +2533,108 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 @media (min-width: 900px) { .header-menu { display: none; } }
 
-/* ===========================================================================
-   How it works — the page the header points at, to whoop.com's shape.
-   =========================================================================== */
-.hero.has-film.is-page { min-height: min(46rem, 82vh); }
 
-.hiw-steps, .hiw-days {
+/* ===========================================================================
+   How it works — one dark document from the hero to the footer, after the
+   composition of whoop.com/how-it-works: a heading on its own, a row of
+   steps, then modules where a numbered accordion sits beside the screen it
+   is about.
+   =========================================================================== */
+.page-dark {
+  --canvas: #18191B;
+  --surface: #232733;
+  --statement-ground: #232733;
+  --rule: #2E323B;
+  --ink: #F7F4EE;
+  --body-ink: #C2C5C7;
+  --meta-ink: #A3A6A8;
+  --on-ink: #18191B;
+  --unlit: #2E323B;
+  --float-lifted: none;
+  --float-above: none;
+  background: var(--canvas); color: var(--ink);
+}
+.page-dark .header.is-scrolled { background: var(--canvas); border-bottom: var(--hairline) solid var(--rule); box-shadow: none; }
+.page-dark .header-menu { background: var(--canvas); }
+.page-dark .hero.has-film.is-page { min-height: min(46rem, 84vh); }
+
+.hw2-kind {
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--meta-ink);
+}
+
+/* the row of steps under the opening heading */
+.hw2-steps {
   list-style: none; margin: 0; padding: var(--s5) 0 0;
   display: grid; gap: var(--s6);
-  border-top: var(--strong) solid var(--ink);
+  border-top: var(--hairline) solid var(--rule);
 }
-@media (min-width: 760px) { .hiw-steps, .hiw-days { grid-template-columns: repeat(2, 1fr); gap: var(--s7) var(--s6); } }
-@media (min-width: 1200px) { .hiw-steps, .hiw-days { grid-template-columns: repeat(4, 1fr); gap: var(--s6) var(--s5); } }
-.hiw-steps > li, .hiw-days > li { display: flex; flex-direction: column; gap: var(--s2); min-width: 0; }
-.hiw-n, .hiw-when {
-  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.16em;
-  text-transform: uppercase; color: var(--meta-ink); font-variant-numeric: tabular-nums;
-}
-.hiw-steps h3, .hiw-days h3, .hiw-parts h3, .hiw-stages h3 {
+@media (min-width: 760px) { .hw2-steps { grid-template-columns: repeat(2, 1fr); gap: var(--s7) var(--s6); } }
+@media (min-width: 1200px) { .hw2-steps { grid-template-columns: repeat(4, 1fr); gap: var(--s6) var(--s5); } }
+.hw2-steps > li { display: flex; flex-direction: column; gap: var(--s2); min-width: 0; }
+.hw2-steps h3 {
   margin: 0; font-size: var(--t-card); font-weight: 400;
   line-height: 1.05; letter-spacing: -0.03em; color: var(--ink); text-wrap: balance;
 }
-.hiw-steps p, .hiw-days p, .hiw-parts p, .hiw-stages p {
-  color: var(--body-ink); font-size: var(--t-small); line-height: 1.4;
-}
-.hiw-note { color: var(--meta-ink) !important; }
-
-.hiw-parts {
-  list-style: none; margin: 0; padding: 0;
-  display: grid; gap: var(--s5) var(--s6);
-}
-@media (min-width: 680px) { .hiw-parts { grid-template-columns: repeat(2, 1fr); } }
-@media (min-width: 1100px) { .hiw-parts { grid-template-columns: repeat(4, 1fr); } }
-.hiw-parts > li {
-  display: flex; flex-direction: column; gap: var(--s2);
-  padding-top: var(--s4); border-top: var(--hairline) solid var(--rule);
+.hw2-steps p { color: var(--body-ink); font-size: var(--t-small); line-height: 1.4; }
+.hw2-n {
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.16em;
+  color: var(--meta-ink); font-variant-numeric: tabular-nums;
 }
 
-.hiw-deep-body { display: grid; gap: clamp(var(--s6), 4vw, var(--s8)); align-items: start; }
-@media (min-width: 1000px) { .hiw-deep-body { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); } }
-.hiw-stages { list-style: none; margin: 0; padding: 0; display: grid; }
-.hiw-stages > li {
-  display: flex; flex-direction: column; gap: var(--s2);
-  padding: var(--s5) 0; border-top: var(--hairline) solid var(--rule);
+/* a module: the accordion, and the screen it is about */
+.hw2-body { display: grid; gap: clamp(var(--s6), 4vw, var(--s8)); align-items: center; }
+@media (min-width: 1000px) {
+  .hw2-body { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+  .hw2-body.is-reversed .hw2-media { order: -1; }
 }
-.hiw-stages > li:first-child { border-top: 0; padding-top: 0; }
-.hiw-devices { display: flex; gap: var(--s5); justify-content: center; --ps-w: min(40vw, 13rem); }
-.hiw-device.is-second { align-self: flex-end; }
-@media (max-width: 559px) { .hiw-device.is-second { display: none; } }
+.hw2-list { display: flex; flex-direction: column; border-top: var(--hairline) solid var(--rule); }
+.hw2-item { border-bottom: var(--hairline) solid var(--rule); }
+.hw2-item h3 { margin: 0; }
+.hw2-item button {
+  appearance: none; background: none; border: 0; width: 100%; cursor: pointer;
+  display: flex; align-items: baseline; gap: var(--s4);
+  padding: var(--s5) 0; text-align: left; color: var(--meta-ink);
+  font: inherit; font-size: var(--t-card); font-weight: 400;
+  line-height: 1.05; letter-spacing: -0.03em;
+  transition: color var(--quick) var(--ease-caused);
+}
+.hw2-item button:hover { color: var(--ink); }
+.hw2-item.is-open button { color: var(--ink); }
+.hw2-item .hw2-n { flex: none; }
+.hw2-item .hw2-t { flex: 1; text-wrap: balance; }
+.hw2-mark {
+  flex: none; position: relative; width: 0.875rem; height: 0.875rem; align-self: center;
+}
+.hw2-mark::before, .hw2-mark::after {
+  content: ''; position: absolute; inset: 0; margin: auto; background: currentColor;
+}
+.hw2-mark::before { width: 100%; height: 1.5px; }
+.hw2-mark::after { width: 1.5px; height: 100%; transition: transform var(--transition) var(--ease-body); }
+.hw2-item.is-open .hw2-mark::after { transform: scaleY(0); }
+@media (prefers-reduced-motion: reduce) { .hw2-mark::after, .hw2-item button { transition: none; } }
+.hw2-panel { padding-bottom: var(--s5); }
+.hw2-panel p { color: var(--body-ink); font-size: var(--t-small); line-height: 1.45; max-width: 52ch; }
 
-.hiw-day {
-  background: var(--ps-canvas); color: var(--ps-ink);
-  border-radius: var(--r-shell); padding: clamp(var(--s5), 3vw, var(--s7));
-  container-type: inline-size;
+.hw2-media { display: flex; justify-content: center; min-width: 0; }
+.hw2-device { --ps-w: min(78vw, 17rem); }
+
+/* the film band, one sentence over it */
+.hw2-film {
+  position: relative; isolation: isolate; overflow: hidden;
+  min-height: min(32rem, 70vh);
+  display: flex; align-items: center;
+  padding-block: var(--section-y);
 }
-.hiw-day .ps-day-axis, .hiw-day .ps-day-key { font-size: 1.6cqw; }
-.hiw-day .ps-day-key i { width: 1.4cqw; height: 1.4cqw; }
+.hw2-film-layer { position: absolute; inset: 0; z-index: -2; }
+.hw2-film-layer video, .hw2-film-layer img {
+  display: block; width: 100%; height: 100%; object-fit: cover; background: #2E2A24;
+}
+.hw2-film-scrim {
+  position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(to top, rgba(24,25,27,0.92) 0%, rgba(24,25,27,0.72) 60%, rgba(24,25,27,0.66) 100%);
+}
+.hw2-film-line {
+  color: #F7F4EE; font-size: var(--t-statement); line-height: var(--lh-statement);
+  letter-spacing: -0.03em; max-width: 24ch;
+}

@@ -1,83 +1,147 @@
+import { useState } from 'react';
 import { SiteHeader } from './components/SiteHeader';
 import { SubscribeForm } from './components/SubscribeForm';
 import { Wordmark } from './components/Wordmark';
 import { Film } from './components/Film';
-import { DayChart, ExperimentScreen, TodayScreen } from './components/ProductShowcase';
+import {
+  BriefScreen, ChangeScreen, CycleScreen, ExperimentScreen, LabScreen, TodayScreen, ToldScreen,
+} from './components/ProductShowcase';
 
 /**
- * How Ciatta works — the page the header points at.
+ * How Ciatta works — built to the composition of whoop.com/how-it-works.
  *
- * Built to the shape of whoop.com/how-it-works: a film hero carrying one
- * sentence, the work itself as four steps, what the product reads, one domain
- * opened up as numbered stages, what the first thirty days actually look like,
- * and the invitation at the foot.
+ * Their page is one dark document from the hero to the footer: a film opener,
+ * a heading on its own, a row of steps, then module after module in which a
+ * numbered accordion sits beside a phone whose screen changes as each item is
+ * opened, and it closes on what the first thirty days look like.
  *
- * Their page sells a device, so it explains a sensor. Ciatta has no sensor, so
- * the same slots carry what Ciatta actually does: the record it holds, the
- * order it reads it in, and the limits it keeps.
+ * The composition is theirs. Everything inside it is Ciatta's: its screens,
+ * its record, its type, and a claim about the first month that a device
+ * company does not have to make.
  */
 
-/* -- the four steps, said longer than the home page says them -------------- */
+type Item = { n: string; title: string; body: string; Screen: () => React.ReactNode };
 
-const STEPS: [string, string, string][] = [
+/* -- the four steps, across the top --------------------------------------- */
+
+const STEPS: [string, string][] = [
   ['Bring it together',
-   'Connect a wearable or an app you already use, import results from a patient portal, upload the documents your provider sends, and write down the things only you can say.',
-   'Nothing is asked for twice. Every figure keeps the date it happened on and the source it came from.'],
+   'Connect an app or wearable, import from a portal, upload the documents your provider sends, and add what only you can say.'],
   ['Read it in order',
-   'Ciatta reads your record along a timeline rather than as a set of dashboards, so a change is always read against your own usual rather than a population average.',
-   'What moved, when it moved, and what your usual looked like before it did.'],
+   'Ciatta reads along a timeline rather than as dashboards, so a change is read against your own usual.'],
   ['See what sits beside it',
-   'A measurement is read beside the week it happened in: your cycle phase, your care, your workload, the weather you were in, the things you wrote down.',
-   'Ciatta names what may be connected, how often it has seen it, and what the observation is based on.'],
+   'Every change is read beside the week it happened in: your cycle, your care, your workload, your words.'],
   ['Decide, and see what happened',
-   'Try one thing for a week. Ciatta keeps the result and reads the next change against it, and turns six months into one page when you have an appointment.',
-   'A connection is not a diagnosis, and Ciatta says so on the observation rather than in a footnote.'],
+   'Try one thing, keep the result, and take one page to your next appointment.'],
 ];
 
-/* -- what Ciatta reads ----------------------------------------------------- */
+/* -- the day, five stages ------------------------------------------------- */
 
-const PARTS: [string, string][] = [
-  ['Cycle', 'Length, start dates, phase, and how each cycle compares with the last.'],
-  ['Sleep', 'Duration and timing, nightly, against your own usual rather than eight hours.'],
-  ['Symptoms', 'What you felt, when, how often and how severe, dated as you entered it.'],
-  ['Medications & supplements', 'What you take, what changed, and the date it changed.'],
-  ['Labs & results', 'Values with their units and ranges, kept across every panel you have.'],
-  ['Surgery & procedures', 'The intervention, and what your record did on either side of it.'],
-  ['Your own words', 'A stressful week, a bad night, a dose change. Context no device records.'],
-  ['Everyday context', 'Work, travel, meals, routines, and the weather the week happened in.'],
+const DAY: Item[] = [
+  { n: '01', title: 'What changed',
+    body: 'Sleep came in at 6h 46m, 48 minutes under your usual. Ciatta says what your usual is rather than assuming eight hours, and it says when the figure was measured and by what.',
+    Screen: ChangeScreen },
+  { n: '02', title: 'What happened around it',
+    body: 'Work demands were higher. Fatigue was reported three times. Your cycle changed phase. Bedtime was later on four nights. The day is drawn as one frame, not three charts.',
+    Screen: TodayScreen },
+  { n: '03', title: 'What may be connected',
+    body: 'Afternoon pain has been higher after nights under seven hours, seen three times this month. Ciatta shows what the observation is based on, and says plainly that a connection is not a cause.',
+    Screen: TodayScreen },
+  { n: '04', title: 'What you could do',
+    body: 'Two things drawn from your own record, each carrying the pattern that produced it: wind down by 10:30 because your last three nights began after 11:40, not because earlier nights are generally better.',
+    Screen: ExperimentScreen },
+  { n: '05', title: 'What happened next',
+    body: 'Seven nights later, sleep returned closer to your usual on five of them. Ciatta keeps that result and reads the next change against it.',
+    Screen: ExperimentScreen },
 ];
 
-/* -- one change, opened up ------------------------------------------------- */
+/* -- the record, beyond the day ------------------------------------------- */
 
-const STAGES: [string, string, string][] = [
-  ['01', 'What changed',
-   'Sleep came in at 6h 46m, 48 minutes under your usual, and Ciatta says what your usual is rather than assuming it.'],
-  ['02', 'What happened around it',
-   'Work demands were higher. Fatigue was reported three times. Your cycle changed phase. Bedtime was later on four nights.'],
-  ['03', 'What may be connected',
-   'Your sleep has been lower during several high-demand weeks. Ciatta says how many times it has seen that, and over what period.'],
-  ['04', 'What you could do',
-   'Two things drawn from your own record, each carrying the pattern that produced it, not general advice about sleep hygiene.'],
-  ['05', 'What happened next',
-   'Seven nights later, sleep returned closer to your usual on five of them, and that result is kept for the next reading.'],
+const RECORD: Item[] = [
+  { n: '01', title: 'Your cycle, and what moves with it',
+    body: 'Length, start dates and phase, with each cycle read against the last four rather than against an average woman.',
+    Screen: CycleScreen },
+  { n: '02', title: 'Your results, across time',
+    body: 'Upload the document your provider sent. Ciatta reads the values out of it and keeps each one beside every other time it was measured, with its unit, its range and its date.',
+    Screen: LabScreen },
+  { n: '03', title: 'Your own words, kept',
+    body: 'A stressful week, a bad night, a dose change. Dated as you wrote it, never overwritten by a device or a clinic, and read beside the measurements.',
+    Screen: ToldScreen },
+  { n: '04', title: 'One page for an appointment',
+    body: 'What changed, what was happening around it, what you tried, what happened next, and the questions worth asking. Take it, print it, or share it.',
+    Screen: BriefScreen },
 ];
 
-/* -- the first thirty days ------------------------------------------------- */
+/* -- the first thirty days ------------------------------------------------ */
 
-const DAYS: [string, string, string][] = [
-  ['Day 1', 'Bring what you already have',
-   'Connect one source and upload one document. Ciatta reads what is there and says plainly what it cannot see yet.'],
-  ['Week 1', 'Your record starts to hold a shape',
-   'Measurements arrive nightly, and what you write down sits beside them with the same weight.'],
-  ['Weeks 2 to 4', 'The first observations',
-   'Ciatta needs to see something more than once before it calls it anything. When it does, it shows the working.'],
-  ['Day 30', 'The first brief',
-   'What changed, what was happening around it, what you tried, what happened next, and the questions worth asking.'],
+const DAYS: Item[] = [
+  { n: 'Day 1', title: 'Bring what you already have',
+    body: 'Connect one source and upload one document. Ciatta reads what is there and says plainly what it cannot see yet.',
+    Screen: TodayScreen },
+  { n: 'Weeks 2 to 4', title: 'The first observations',
+    body: 'Ciatta waits until it has seen something more than once before it calls it anything. When it does, it shows the working, and it says how thin the evidence still is.',
+    Screen: ExperimentScreen },
 ];
+
+/* -- a module: a numbered accordion, and the screen it is about ------------ */
+
+function Module({
+  id, kind, title, lede, items, reversed,
+}: {
+  id: string; kind: string; title: string; lede?: string; items: Item[]; reversed?: boolean;
+}) {
+  const [open, setOpen] = useState(0);
+  const Screen = items[open].Screen;
+
+  return (
+    <section className="section hw2-module" aria-labelledby={id}>
+      <div className="shell">
+        <div className="band-head">
+          <span className="hw2-kind">{kind}</span>
+          <h2 id={id} className="band-title">{title}</h2>
+          {lede && <p className="band-sub">{lede}</p>}
+        </div>
+
+        <div className={reversed ? 'hw2-body is-reversed' : 'hw2-body'}>
+          <div className="hw2-list">
+            {items.map((item, i) => {
+              const isOpen = i === open;
+              return (
+                <div className={isOpen ? 'hw2-item is-open' : 'hw2-item'} key={item.n}>
+                  <h3>
+                    <button
+                      type="button"
+                      aria-expanded={isOpen}
+                      aria-controls={`${id}-${item.n}`}
+                      onClick={() => setOpen(i)}
+                    >
+                      <span className="hw2-n">{item.n}</span>
+                      <span className="hw2-t">{item.title}</span>
+                      <span className="hw2-mark" aria-hidden="true" />
+                    </button>
+                  </h3>
+                  <div id={`${id}-${item.n}`} className="hw2-panel" hidden={!isOpen}>
+                    <p>{item.body}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="hw2-media">
+            <div className="product hw2-device">
+              <Screen />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function HowItWorks() {
   return (
-    <>
+    <div className="page-dark">
       <a className="skip" href="#how-main">Skip to how Ciatta works</a>
 
       <SiteHeader current="/how-it-works/" />
@@ -99,117 +163,18 @@ export default function HowItWorks() {
           </div>
         </section>
 
-        {/* ------------------------------- THE WORK ----------------------- */}
-        <section className="section" aria-labelledby="work-heading">
+        {/* ------------------------- THE WORK, AS A ROW -------------------- */}
+        <section className="section hw2-steps-band" aria-labelledby="work-heading">
           <div className="shell">
             <div className="band-head">
               <h2 id="work-heading" className="band-title">The work Ciatta does</h2>
-              <p className="band-sub">
-                Four steps, in the order they happen, every day it runs.
-              </p>
+              <p className="band-sub">Four steps, in the order they happen, every day it runs.</p>
             </div>
 
-            <ol className="hiw-steps">
-              {STEPS.map(([title, body, note], i) => (
+            <ol className="hw2-steps">
+              {STEPS.map(([title, body], i) => (
                 <li key={title}>
-                  <span className="hiw-n">{String(i + 1).padStart(2, '0')}</span>
-                  <h3>{title}</h3>
-                  <p>{body}</p>
-                  <p className="hiw-note">{note}</p>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-
-        {/* ----------------------------- WHAT IT READS -------------------- */}
-        <section className="section" aria-labelledby="parts-heading">
-          <div className="shell">
-            <div className="band-head">
-              <h2 id="parts-heading" className="band-title">What Ciatta reads</h2>
-              <p className="band-sub">
-                Eight parts of one record. Any of them can be missing, and
-                Ciatta says which rather than filling the gap.
-              </p>
-            </div>
-
-            <ul className="hiw-parts">
-              {PARTS.map(([name, what]) => (
-                <li key={name}>
-                  <h3>{name}</h3>
-                  <p>{what}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        {/* --------------------------- ONE CHANGE, OPENED ----------------- */}
-        <section className="section hiw-deep" aria-labelledby="deep-heading">
-          <div className="shell">
-            <div className="band-head">
-              <h2 id="deep-heading" className="band-title">One change, read in five stages</h2>
-              <p className="band-sub">
-                This is a night of sleep. It is the same five stages for a lab
-                result, a symptom or a dose change.
-              </p>
-            </div>
-
-            <div className="hiw-deep-body">
-              <ol className="hiw-stages">
-                {STAGES.map(([n, title, body]) => (
-                  <li key={n}>
-                    <span className="hiw-n">{n}</span>
-                    <h3>{title}</h3>
-                    <p>{body}</p>
-                  </li>
-                ))}
-              </ol>
-
-              <div className="hiw-devices">
-                <div className="product hiw-device">
-                  <TodayScreen />
-                </div>
-                <div className="product hiw-device is-second">
-                  <ExperimentScreen />
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ------------------------------ THE DAY ------------------------- */}
-        <section className="section" aria-labelledby="day-heading">
-          <div className="shell">
-            <div className="band-head">
-              <h2 id="day-heading" className="band-title">A day, drawn as a day</h2>
-              <p className="band-sub">
-                The night you slept, the energy you reported and the pain you
-                logged, on one 24-hour frame rather than three charts.
-              </p>
-            </div>
-
-            <div className="product hiw-day">
-              <DayChart />
-            </div>
-          </div>
-        </section>
-
-        {/* --------------------------- FIRST 30 DAYS ---------------------- */}
-        <section className="section" aria-labelledby="days-heading">
-          <div className="shell">
-            <div className="band-head">
-              <h2 id="days-heading" className="band-title">What to expect in your first 30 days</h2>
-              <p className="band-sub">
-                Ciatta is more useful in month six than in week one, and it does
-                not pretend otherwise.
-              </p>
-            </div>
-
-            <ol className="hiw-days">
-              {DAYS.map(([when, title, body]) => (
-                <li key={when}>
-                  <span className="hiw-when">{when}</span>
+                  <span className="hw2-n">{String(i + 1).padStart(2, '0')}</span>
                   <h3>{title}</h3>
                   <p>{body}</p>
                 </li>
@@ -217,6 +182,42 @@ export default function HowItWorks() {
             </ol>
           </div>
         </section>
+
+        <Module
+          id="day-heading"
+          kind="A day"
+          title="Your day, read in five stages"
+          lede="This is a night of sleep. It is the same five stages for a lab result, a symptom or a dose change."
+          items={DAY}
+        />
+
+        <Module
+          id="record-heading"
+          kind="Your record"
+          title="Everything else it reads, and keeps"
+          lede="Any part can be missing. Ciatta says which rather than filling the gap."
+          items={RECORD}
+          reversed
+        />
+
+        {/* ------------------------------ THE FILM ------------------------- */}
+        <section className="hw2-film" aria-label="Ciatta in a sentence">
+          <Film base="hero" className="hw2-film-layer" scrim="hw2-film-scrim" />
+          <div className="shell">
+            <p className="hw2-film-line">
+              A connection is not a diagnosis. Ciatta shows what an observation
+              is based on, and what is still too thin to call.
+            </p>
+          </div>
+        </section>
+
+        <Module
+          id="start-heading"
+          kind="Getting started"
+          title="What to expect in your first 30 days"
+          lede="Ciatta is more useful in month six than in week one, and it does not pretend otherwise."
+          items={DAYS}
+        />
 
         {/* -------------------------------- CTA --------------------------- */}
         <section className="section" aria-labelledby="hiw-cta">
@@ -263,6 +264,6 @@ export default function HowItWorks() {
         </nav>
         <span className="footer-copy">© 2026 Ciatta</span>
       </footer>
-    </>
+    </div>
   );
 }
