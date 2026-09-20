@@ -176,31 +176,12 @@ function Brief() {
 
 /* -------------------------------------------------------------------------- */
 
-const STEPS: [string, string, string, () => React.ReactNode][] = [
-  [
-    '01',
-    'Bring it together',
-    'Wearable, portal, documents, and your own words. Each kept with its source.',
-    Sources,
-  ],
-  [
-    '02',
-    'See what changed, and what it sits beside',
-    'What moved against your usual, the day it moved, and what connects.',
-    TodayRead,
-  ],
-  [
-    '03',
-    'Decide what to do next',
-    'Try one thing. Ciatta keeps the result and reads what happens next.',
-    Suggestions,
-  ],
-  [
-    '04',
-    'Walk in informed',
-    'Six months as one page, ending on three questions worth asking.',
-    Brief,
-  ],
+/* One line per step: what it is and what it does, said together. */
+const STEPS: [string, string, () => React.ReactNode][] = [
+  ['01', 'Bring it together: wearable, portal, documents, and your own words.', Sources],
+  ['02', 'See what changed, and what sat beside it that day.', TodayRead],
+  ['03', 'Decide what to try, and see what happened after you did.', Suggestions],
+  ['04', 'Walk in informed: six months as one page, three questions.', Brief],
 ];
 
 export function HowSection() {
@@ -219,21 +200,17 @@ export function HowSection() {
         </div>
 
         <ol className="hw-steps">
-          {STEPS.map(([n, title, body, Art]) => (
+          {STEPS.map(([n, line, Art]) => (
             <li key={n} className="hw-step">
-              {/* the step names itself first, then shows itself */}
+              {/* the step says itself in one line, then shows itself */}
               <div className="hw-head">
                 <span className="hw-n">{n}</span>
-                <h3>{title}</h3>
+                <h3>{line}</h3>
               </div>
 
-              {/* each drawing is the part of the product the step is about,
-                  at the size that part is read at */}
               <div className={Art === Brief ? 'hw-art-wrap is-page' : 'hw-art-wrap'}>
                 <Art />
               </div>
-
-              <p className="hw-body">{body}</p>
             </li>
           ))}
         </ol>
