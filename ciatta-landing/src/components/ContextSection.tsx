@@ -1,13 +1,10 @@
-import { TodayScreen } from './ProductShowcase';
-
 /**
  * "Health doesn't happen in a vacuum."
  *
  * What separates a record that is read together from a tracker: four layers
  * of context, named plainly, and then one week where they all say something
- * at once. The layers are a rule-separated row rather than four cards, and
- * the example is the product's own dark panel, so the page keeps alternating
- * between editorial type and product.
+ * at once. The layers are a rule-separated row rather than four cards. The
+ * day that reads across them is in the hero now, over the film.
  */
 
 const LAYERS: [string, string][] = [
@@ -41,11 +38,6 @@ export function ContextSection() {
           ))}
         </ul>
 
-        <div className="sec-phone is-alone">
-          <div className="product sec-phone-device">
-            <TodayScreen />
-          </div>
-        </div>
       </div>
     </section>
   );

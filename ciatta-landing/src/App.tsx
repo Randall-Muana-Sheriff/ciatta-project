@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { HeroFilm } from './components/HeroFilm';
+import { TodayScreen } from './components/ProductShowcase';
 import { SubscribeForm } from './components/SubscribeForm';
 import { ExploreSection } from './components/ExploreSection';
 import { HowSection } from './components/HowSection';
@@ -123,6 +124,14 @@ export default function App() {
         <section className="hero has-film">
           <HeroFilm />
           <div className="shell hero-inner">
+            {/* The app, running over the film rather than beside it: the
+                screen's surfaces go translucent so the film reads through
+                them, and everything inside it is white on that. Decorative
+                here, because every figure on it is stated again below. */}
+            <div className="product hero-app" aria-hidden="true">
+              <TodayScreen />
+            </div>
+
             <div className="hero-copy">
               <h1 className="display hero-title">
                 See what’s changing in your health.
