@@ -19,9 +19,7 @@ import { TodayScreen } from './ProductShowcase';
 /* -- 01 · what arrives, and where it arrives ------------------------------- */
 
 const SOURCES: [string, string][] = [
-  ['Oura', 'Measured'],
-  ['WHOOP', 'Measured'],
-  ['Apple Health', 'Measured'],
+  ['Oura · WHOOP · Apple Health', 'Measured'],
   ['MyChart · Epic', 'Imported'],
   ['PDF results', 'Uploaded'],
   ['Your own words', 'You tell Ciatta'],
@@ -79,10 +77,7 @@ function Suggestions() {
           </div>
         ))}
       </div>
-      <p className="hw-frag-note">
-        Each one carries the pattern in your own record that produced it, and
-        Ciatta comes back to what happened after.
-      </p>
+
     </div>
   );
 }
@@ -160,13 +155,13 @@ const STEPS: [string, string, string, () => React.ReactNode][] = [
   [
     '01',
     'Bring it together',
-    'Your wearable, your patient portal, the documents your provider sends, and the things only you can say. Imported, uploaded, or entered once, and kept with its date and its source attached.',
+    'Your wearable, your portal, the documents your provider sends, and the things only you can say. Each kept with its date and its source.',
     Sources,
   ],
   [
     '02',
     'See what changed, and what it sits beside',
-    'Ciatta reads your record in order: what moved against your own usual, and the day it moved in. It names what may be connected, how often it has seen it, and what the observation is based on.',
+    'What moved against your own usual, and the day it moved in. Ciatta names what may be connected, and what that is based on.',
     TodayScreen,
   ],
   [
@@ -178,7 +173,7 @@ const STEPS: [string, string, string, () => React.ReactNode][] = [
   [
     '04',
     'Walk in informed',
-    'Six months become one page: what changed, what was happening around it, what you tried, what happened next, and the questions worth asking. Take it, print it, or share it.',
+    'Six months as one page: what changed, what was around it, what you tried, what happened next, and three questions worth asking.',
     Brief,
   ],
 ];

@@ -2346,111 +2346,119 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    =========================================================================== */
 .hw-steps {
   list-style: none; margin: 0; padding: var(--s6) 0 0;
-  display: grid; gap: clamp(var(--s7), 5vw, var(--s8));
+  display: grid; gap: var(--s6);
   border-top: var(--strong) solid var(--ink);
 }
-.hw-step { display: grid; gap: var(--s5); align-items: center; }
-@media (min-width: 1000px) {
-  .hw-step { grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: var(--s8); }
-  .hw-step:nth-child(even) .hw-art-wrap { order: 2; }
+@media (min-width: 680px) { .hw-steps { grid-template-columns: repeat(2, 1fr); gap: var(--s7) var(--s5); } }
+@media (min-width: 1100px) { .hw-steps { grid-template-columns: repeat(4, 1fr); gap: var(--s5); } }
+.hw-step { display: flex; flex-direction: column; gap: var(--s4); min-width: 0; }
+/* every drawing occupies the same box, so the four read as one row */
+.hw-art-wrap {
+  min-width: 0; height: 13rem; display: flex; align-items: center; justify-content: center;
+  padding: var(--s4); border-radius: var(--r-surface);
+  background: var(--surface); overflow: hidden;
 }
-.hw-art-wrap { min-width: 0; display: flex; justify-content: center; }
-.hw-say { display: flex; flex-direction: column; gap: var(--s3); min-width: 0; }
+.hw-say { display: flex; flex-direction: column; gap: var(--s2); min-width: 0; }
 .hw-n {
   font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.16em;
   color: var(--meta-ink); font-variant-numeric: tabular-nums;
 }
 .hw-steps h3 {
-  margin: 0; font-size: var(--t-statement); font-weight: 400;
-  line-height: var(--lh-statement); letter-spacing: -0.03em; color: var(--ink);
+  margin: 0; font-size: var(--t-card); font-weight: 400;
+  line-height: 1.05; letter-spacing: -0.03em; color: var(--ink); text-wrap: balance;
 }
-.hw-say p { color: var(--body-ink); font-size: var(--t-lede); line-height: 1.35; }
+.hw-say p { color: var(--body-ink); font-size: var(--t-small); line-height: 1.4; }
 .hw-note {
   margin: clamp(var(--s6), 3vw, var(--s7)) 0 0;
   color: var(--meta-ink); font-size: var(--t-small); line-height: 1.4;
 }
 
 /* 01 · what arrives, and the mark it arrives at */
-.hw-sources { display: grid; gap: var(--s5); width: 100%; align-items: center; }
-@media (min-width: 560px) { .hw-sources { grid-template-columns: minmax(0, 1fr) auto; gap: var(--s6); } }
-.hw-src-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.hw-sources { display: flex; flex-direction: column; gap: var(--s2); width: 100%; }
+.hw-src-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .hw-src-list li {
-  display: flex; align-items: baseline; gap: var(--s3);
-  padding: var(--s3) var(--s4);
-  border: var(--hairline) solid var(--rule); border-radius: var(--r-control);
-  background: var(--surface);
+  display: flex; align-items: center; gap: var(--s2);
+  padding: 5px var(--s3);
+  border: var(--hairline) solid var(--rule); border-radius: var(--r-inset);
+  background: var(--canvas);
 }
-.hw-src-list b { font-size: var(--t-small); font-weight: 500; color: var(--ink); }
+.hw-src-list b {
+  font-size: var(--t-caption); font-weight: 500; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .hw-src-list i {
-  margin-left: auto; font-style: normal; font-size: var(--t-caption);
-  letter-spacing: 0.08em; text-transform: uppercase; color: var(--meta-ink);
+  margin-left: auto; font-style: normal; font-size: 0.5625rem;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--meta-ink); white-space: nowrap;
 }
 .hw-src-pdf {
   font-size: 0.5625rem; font-weight: 600; letter-spacing: 0.06em;
   color: var(--on-ink); background: var(--ink);
   padding: 2px 4px; border-radius: 3px;
 }
-.hw-src-into { display: flex; align-items: center; gap: var(--s3); justify-content: center; }
-.hw-src-rail { flex: 1; height: 2px; background: var(--change); min-width: 2.5rem; }
-@media (min-width: 560px) { .hw-src-rail { min-width: 3.5rem; } }
-.hw-src-mark { width: 4.5rem; height: 4.5rem; border-radius: var(--r-nested); display: block; }
+.hw-src-into { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.hw-src-rail { width: 2px; height: var(--s4); background: var(--change); }
+.hw-src-mark { width: 2.25rem; height: 2.25rem; border-radius: var(--r-inset); display: block; }
 
 /* 02 · the screen itself */
-.hw-device { --ps-w: min(86vw, 17rem); display: flex; justify-content: center; }
+.hw-device { --ps-w: 5.6rem; display: flex; justify-content: center; }
 
 /* 03 · the suggestions, lifted out of the screen at reading size */
 .hw-frag {
   container-type: inline-size;
-  width: 100%; max-width: 30rem;
+  width: 100%;
   background: var(--ps-canvas); color: var(--ps-ink);
-  border-radius: var(--r-surface); padding: var(--s5);
+  border-radius: var(--r-nested); padding: 4cqw;
   font-family: 'Urbanist', system-ui, sans-serif;
 }
 .hw-frag-head {
-  display: flex; justify-content: space-between; align-items: baseline; gap: var(--s4);
-  font-size: 3cqw; font-weight: 600; letter-spacing: 0.12em;
+  display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3);
+  font-size: 3.4cqw; font-weight: 600; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--ps-meta); margin-bottom: 3cqw;
 }
 .hw-frag-head i { font-style: normal; letter-spacing: 0.04em; }
-.hw-frag-note {
-  margin: 3cqw 0 0; font-size: 2.8cqw; line-height: 1.4; color: var(--ps-meta);
-}
 
 /* 04 · the brief, as the page it prints as */
 .hw-page {
-  width: 100%; max-width: 30rem; aspect-ratio: 1 / 1.414;
+  width: 100%; max-width: 9.5rem; aspect-ratio: 1 / 1.414;
   background: #FFFFFF; color: #18191B;
-  border-radius: var(--r-nested); box-shadow: var(--float-above);
-  padding: clamp(var(--s4), 3.2vw, var(--s6));
-  display: flex; flex-direction: column; gap: var(--s4);
+  border-radius: 4px; box-shadow: var(--float-above);
+  padding: 0.5rem;
+  display: flex; flex-direction: column; gap: 0.3rem;
   overflow: hidden;
 }
 .hw-page-head {
   display: flex; align-items: center; gap: var(--s3);
   padding-bottom: var(--s3); border-bottom: var(--strong) solid #18191B;
 }
-.hw-page-head img { width: 2rem; height: 2rem; border-radius: 6px; display: block; }
+.hw-page-head { gap: 0.25rem; padding-bottom: 0.25rem; }
+.hw-page-head img { width: 0.75rem; height: 0.75rem; border-radius: 2px; display: block; }
 .hw-page-head h4 {
-  margin: 0; font-size: 0.9375rem; font-weight: 600; letter-spacing: 0.12em;
+  margin: 0; font-size: 0.4375rem; font-weight: 600; letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.hw-page-head p { font-size: 0.625rem; color: #585B5E; margin-top: 2px; }
-.hw-page-body { margin: 0; display: grid; gap: var(--s3); }
+.hw-page-head p { font-size: 0.3125rem; color: #585B5E; margin-top: 1px; }
+.hw-page-body { margin: 0; display: grid; gap: 0.2rem; }
 .hw-page-body dt {
-  font-size: 0.5625rem; font-weight: 600; letter-spacing: 0.12em;
-  text-transform: uppercase; color: #585B5E; margin-bottom: 2px;
+  font-size: 0.3125rem; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: #585B5E; margin-bottom: 1px;
 }
-.hw-page-body dd { margin: 0; display: grid; gap: 2px; }
-.hw-page-body p { font-size: 0.6875rem; line-height: 1.4; color: #18191B; }
-.hw-page-ask { margin-top: auto; padding-top: var(--s3); border-top: var(--hairline) solid #E8E4DC; }
+.hw-page-body dd { margin: 0; display: grid; gap: 1px; }
+.hw-page-body p {
+  font-size: 0.34rem; line-height: 1.35; color: #18191B;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.hw-page-ask { margin-top: auto; padding-top: 0.25rem; border-top: var(--hairline) solid #E8E4DC; }
 .hw-page-ask h5 {
-  margin: 0 0 var(--s2); font-size: 0.5625rem; font-weight: 600;
-  letter-spacing: 0.12em; text-transform: uppercase; color: var(--ember-deep);
+  margin: 0 0 0.15rem; font-size: 0.3125rem; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ember-deep);
 }
-.hw-page-ask ol { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; }
-.hw-page-ask li { font-size: 0.6875rem; line-height: 1.4; color: #18191B; }
+.hw-page-ask ol { margin: 0; padding-left: 0.7em; display: grid; gap: 1px; }
+.hw-page-ask li {
+  font-size: 0.34rem; line-height: 1.35; color: #18191B;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 .hw-page-foot {
-  display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s2);
-  padding-top: var(--s3); border-top: var(--hairline) solid #E8E4DC;
-  font-size: 0.5rem; letter-spacing: 0.04em; color: #585B5E;
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px;
+  padding-top: 0.2rem; border-top: var(--hairline) solid #E8E4DC;
+  font-size: 0.28rem; letter-spacing: 0.02em; color: #585B5E;
 }
