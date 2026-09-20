@@ -124,14 +124,6 @@ export default function App() {
         <section className="hero has-film">
           <HeroFilm />
           <div className="shell hero-inner">
-            {/* The app, running over the film rather than beside it: the
-                screen's surfaces go translucent so the film reads through
-                them, and everything inside it is white on that. Decorative
-                here, because every figure on it is stated again below. */}
-            <div className="product hero-app" aria-hidden="true">
-              <TodayScreen />
-            </div>
-
             <div className="hero-copy">
               <h1 className="display hero-title">
                 See what’s changing in your health.
@@ -150,6 +142,14 @@ export default function App() {
                   consent="I agree to receive emails about early access and product updates."
                 />
               </div>
+            </div>
+
+            {/* The app, running over the film rather than beside it: the
+                screen's surfaces go translucent so the film reads through
+                them, and everything inside it is white on that. Decorative
+                here, because every figure on it is stated again below. */}
+            <div className="product hero-app" aria-hidden="true">
+              <TodayScreen />
             </div>
           </div>
         </section>
