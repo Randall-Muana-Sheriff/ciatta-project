@@ -10,5 +10,5 @@ import { Film } from './Film';
  * `.hero-film` / `.hero-scrim`, because they are properties of this clip.
  */
 export function HeroFilm() {
-  return <Film base="hero" />;
+  return <Film base="hero-2" />;
 }

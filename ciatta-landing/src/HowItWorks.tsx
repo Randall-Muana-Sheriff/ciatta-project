@@ -149,7 +149,7 @@ export default function HowItWorks() {
       <main id="how-main">
         {/* ---------------------------------- HERO ------------------------ */}
         <section className="hero has-film is-page" aria-labelledby="hiw-title">
-          <Film base="hero" />
+          <Film base="hero-2" />
           <div className="shell hero-inner">
             <div className="hero-copy">
               <h1 id="hiw-title" className="display hero-title">How Ciatta works</h1>
@@ -202,7 +202,7 @@ export default function HowItWorks() {
 
         {/* ------------------------------ THE FILM ------------------------- */}
         <section className="hw2-film" aria-label="Ciatta in a sentence">
-          <Film base="hero" className="hw2-film-layer" scrim="hw2-film-scrim" />
+          <Film base="hero-2" className="hw2-film-layer" scrim="hw2-film-scrim" />
           <div className="shell">
             <p className="hw2-film-line">
               A connection is not a diagnosis. Ciatta shows what an observation

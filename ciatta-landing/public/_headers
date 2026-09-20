@@ -1,0 +1,8 @@
+# Media carries a version in its name, so it can be cached hard. Replacing a
+# clip means a new name, which is what makes the change reach a phone that
+# already has the old one.
+/video/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/images/*
+  Cache-Control: public, max-age=604800
