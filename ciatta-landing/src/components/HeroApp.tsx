@@ -11,7 +11,8 @@
  * So this is the same day, written plainly: fixed rem sizes, one SVG with a
  * viewBox, no container queries and no computed geometry. It carries what the
  * hero needs to prove — the day, what Ciatta made of it, and what it suggests
- * — and nothing else.
+ * — and nothing else. It is the top of a screen rather than a whole one, so
+ * it carries no tab bar and fades out at the foot instead of ending.
  */
 
 const ENERGY: [number, number][] = [
@@ -94,13 +95,6 @@ export function HeroApp() {
           <i>Your last 3 nights began after 11:40pm</i>
         </div>
         <span>Tonight</span>
-      </div>
-
-      <div className="ha-tabs">
-        <span className="is-on">Today</span>
-        <span>My Health</span>
-        <span>Journey</span>
-        <span>Profile</span>
       </div>
     </div>
   );
