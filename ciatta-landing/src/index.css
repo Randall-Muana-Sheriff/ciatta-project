@@ -594,6 +594,9 @@ p { margin: 0; text-wrap: pretty; }
 }
 .ps-chev, .ps-info { width: 100%; height: auto; stroke: var(--ps-ink); fill: none; }
 .ps-nav-title { text-align: center; font-size: 3.7cqw; font-weight: 600; letter-spacing: 0.01em; }
+/* a destination: no chevron, so the title takes the left of the row */
+.ps-nav.is-root { grid-template-columns: 1fr 3.4cqw; padding-bottom: 2cqw; border-bottom: 0; }
+.ps-nav.is-root .ps-nav-title { text-align: left; font-size: 4.4cqw; letter-spacing: -0.01em; }
 
 .ps-body {
   flex: 1 1 auto; min-height: 0;

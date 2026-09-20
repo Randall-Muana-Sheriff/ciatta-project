@@ -97,9 +97,11 @@ function ActionIcon({ kind }: { kind: Action }) {
 }
 
 function Chrome({
-  title, action = 'info', tab = 'My Health', dense, children,
+  title, action = 'info', tab = 'My Health', dense, root, children,
 }: {
   title: string; action?: Action; tab?: (typeof TABS)[number];
+  /** A destination rather than a pushed view: no back, and the title sits left. */
+  root?: boolean;
   dense?: boolean; children: React.ReactNode;
 }) {
   return (
@@ -112,8 +114,12 @@ function Chrome({
             <svg viewBox="0 0 24 12" className="ps-batt"><rect x="0.6" y="0.6" width="19" height="10.8" rx="3" fill="none" strokeWidth="1.2"/><rect x="2.2" y="2.2" width="13" height="7.6" rx="1.6"/><path d="M21.4 4.2v3.6a2.2 2.2 0 0 0 0-3.6Z"/></svg>
           </span>
         </div>
-        <div className="ps-nav">
-          <svg viewBox="0 0 8 14" className="ps-chev" aria-hidden="true"><path d="M7 1 1 7l6 6" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        {/* A destination has nothing to go back to, so it carries no chevron
+            and its title sits where a title sits on a root screen: left. */}
+        <div className={root ? 'ps-nav is-root' : 'ps-nav'}>
+          {!root && (
+            <svg viewBox="0 0 8 14" className="ps-chev" aria-hidden="true"><path d="M7 1 1 7l6 6" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          )}
           <span className="ps-nav-title">{title}</span>
           <ActionIcon kind={action} />
         </div>
@@ -553,7 +559,7 @@ export function InsightScreen() {
   const sleep = 'M4 30 L36 31 L68 42 L100 32 L132 40';
 
   return (
-    <Chrome title="Today" action="share" tab="Today" dense>
+    <Chrome title="Today" action="share" tab="Today" dense root>
       <div className="ps-ins-head">
         <span className="ps-tag">Personalized insight</span>
         <span className="ps-pill is-watch">Watching</span>
@@ -744,36 +750,6 @@ export function ChangeScreen() {
   );
 }
 
-/* -- 10. This week --------------------------------------------------------- *
- * The context screen. One thing she reported, and every other part of the
- * record that has something to say about the same week.                      */
-
-export function ContextScreen() {
-  return (
-    <Chrome title="Today" action="share" tab="Today" dense>
-      <div className="ps-ins-head">
-        <span className="ps-tag">This week</span>
-        <span className="ps-pill is-watch">Watching</span>
-      </div>
-
-      <p className="ps-finding">Your pain increased this week.</p>
-      <span className="ps-conf"><Src kind="told" /> Reported on 4 days</span>
-
-      <Lab qual="Around the same time">Your record</Lab>
-      <div className="ps-rows">
-        <Row k="Cycle" v="Day 24" />
-        <Row k="Sleep" v="Lower than usual" />
-        <Row k="GI symptoms" v="More often" />
-        <Row k="Workload" v="Higher" />
-        <Row k="Medication" meta="Changed 8 days earlier" v="75 mcg" />
-      </div>
-
-      <div className="ps-bar-action is-primary">Explore what changed around it</div>
-      <div className="ps-prov"><Src kind="inferred" /> Read across 5 parts of your record</div>
-    </Chrome>
-  );
-}
-
 /* -- 11. A lab result over time -------------------------------------------- *
  * The document she uploaded, the values read out of it, and the same value
  * every other time it was measured.                                          */
@@ -932,7 +908,7 @@ function DayChart() {
 
 export function TodayScreen() {
   return (
-    <Chrome title="Today" action="calendar" tab="Today" dense>
+    <Chrome title="Today" action="calendar" tab="Today" dense root>
       <div className="ps-hello">
         <span className="ps-hello-k">Wednesday 1 April</span>
         <p className="ps-hello-n">Good afternoon, Maya.</p>
