@@ -139,7 +139,6 @@ export default function App() {
                   source="hero"
                   kind="waitlist"
                   note=""
-                  consent="I agree to receive emails about early access and product updates."
                 />
               </div>
             </div>

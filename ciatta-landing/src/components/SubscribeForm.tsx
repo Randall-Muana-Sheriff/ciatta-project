@@ -137,7 +137,7 @@ export function SubscribeForm({
               setEmail(e.target.value);
               if (state.kind === 'error') setState({ kind: 'idle' });
             }}
-            aria-describedby={consent ? `${id}-consent-line` : noteId}
+            aria-describedby={consent ? `${id}-consent-line` : line ? noteId : undefined}
             aria-invalid={state.kind === 'error' ? true : undefined}
           />
         </div>
@@ -184,7 +184,11 @@ export function SubscribeForm({
         </label>
       )}
 
-      {(!consent || state.kind === 'error') && (
+      {/* A form asked to carry neither a consent line nor a note carries
+          nothing: an empty paragraph with a bare Privacy link under it is
+          not a smaller version of the line, it is a loose end. An error
+          always speaks, whatever the form was given. */}
+      {((!consent && line) || state.kind === 'error') && (
         <p
           id={noteId}
           className={state.kind === 'error' ? 'waitlist-note is-error' : 'waitlist-note'}
