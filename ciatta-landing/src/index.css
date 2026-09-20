@@ -2291,3 +2291,29 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 
 /* a section where the screen says it all: one device, centred, no column beside it */
 .sec-phone.is-alone { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+
+/* the metrics grid: a card per measurement, two up, the ones the day's chart
+   already draws marked so the two readings cannot drift apart */
+.ps-metrics {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 2cqw;
+}
+.ps-metric {
+  display: flex; flex-direction: column; gap: 0.8cqw;
+  padding: 2.6cqw; border-radius: 3cqw;
+  background: var(--ps-raised);
+}
+.ps-metric.is-pattern { box-shadow: inset 0 0 0 1px rgba(236,150,88,0.45); }
+.ps-metric-k {
+  font-size: 2.1cqw; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ps-meta);
+}
+.ps-metric-v {
+  font-size: 4.6cqw; font-weight: 500; line-height: 1; color: var(--ps-ink);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+}
+.ps-metric-v i { font-style: normal; font-size: 0.46em; color: var(--ps-meta); margin-left: 0.15em; }
+.ps-spark { width: 100%; height: 3.4cqw; display: block; }
+.ps-metric-n { font-size: 2cqw; line-height: 1.3; color: var(--ps-meta); }
+.ps-metric-n.is-down { color: var(--ps-clay); }
+.ps-metric-n.is-up { color: var(--ps-uncertain); }

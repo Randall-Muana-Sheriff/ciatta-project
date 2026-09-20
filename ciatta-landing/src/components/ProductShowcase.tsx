@@ -855,6 +855,62 @@ export function BriefScreen() {
  * levothyroxine 75 mcg since 3 Mar.
  */
 
+/** Today's metrics. Value, how it sits against her usual, and 7 days of it.
+ *  `pattern` marks the ones the day's chart is already drawing. */
+type Metric = {
+  k: string; v: string; unit?: string; note: string;
+  dir?: 'up' | 'down'; spark: number[]; src: SrcKind; pattern?: boolean;
+};
+
+const METRICS: Metric[] = [
+  { k: 'Sleep', v: '6', unit: 'h 46m', note: '48 min under your usual',
+    dir: 'down', spark: [7.5, 7.2, 6.9, 7.1, 6.6, 6.9, 6.77], src: 'measured', pattern: true },
+  { k: 'HRV', v: '38', unit: 'ms', note: '9 under your usual',
+    dir: 'down', spark: [48, 46, 44, 47, 41, 39, 38], src: 'measured' },
+  { k: 'Body temp', v: '+0.3', unit: '°C', note: 'Raised since day 21',
+    dir: 'up', spark: [0, 0.05, 0.1, 0.2, 0.25, 0.28, 0.3], src: 'measured' },
+  { k: 'Steps', v: '4,120', note: '2,400 under your usual by now',
+    dir: 'down', spark: [9, 8.4, 7.2, 8.8, 6.1, 5.2, 4.1], src: 'measured' },
+  { k: 'Food & drinks', v: '2', unit: ' meals', note: 'Lunch not logged · 0.9 L',
+    spark: [3, 3, 2, 3, 3, 2, 2], src: 'told' },
+  { k: 'Pain', v: '3', unit: ' logs', note: 'Highest at 3:40pm',
+    dir: 'up', spark: [0, 1, 0, 2, 1, 2, 3], src: 'told', pattern: true },
+];
+
+/** Seven days of one metric, at the size of a word. */
+function Spark({ points, kind }: { points: number[]; kind: SrcKind }) {
+  const hi = Math.max(...points);
+  const lo = Math.min(...points);
+  const span = hi - lo || 1;
+  const d = points
+    .map((v, i) => `${i ? 'L' : 'M'}${((i / (points.length - 1)) * 34).toFixed(1)},${(10 - ((v - lo) / span) * 9).toFixed(1)}`)
+    .join(' ');
+  return (
+    <svg viewBox="-1 -1 36 12" className="ps-spark" aria-hidden="true">
+      <path d={d} fill="none" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"
+            stroke={kind === 'told' ? 'var(--ps-reported)' : 'var(--ps-measured)'} />
+    </svg>
+  );
+}
+
+function Metrics() {
+  return (
+    <ul className="ps-metrics">
+      {METRICS.map((m) => (
+        <li key={m.k} className={m.pattern ? 'ps-metric is-pattern' : 'ps-metric'}>
+          <span className="ps-metric-k">{m.k}</span>
+          <span className="ps-metric-v">
+            {m.v}
+            {m.unit && <i>{m.unit}</i>}
+          </span>
+          <Spark points={m.spark} kind={m.src} />
+          <span className={m.dir ? `ps-metric-n is-${m.dir}` : 'ps-metric-n'}>{m.note}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** Reported energy, one point every two hours from 06:00. */
 const ENERGY: [number, number][] = [
   [6, 52], [8, 61], [10, 58], [12, 44], [14, 38], [16, 33], [18, 41], [20, 47], [22, 40],
@@ -912,11 +968,8 @@ export function TodayScreen() {
       <Lab qual="Cycle day 24">Your day so far</Lab>
       <DayChart />
 
-      <ul className="ps-facts">
-        <li><span>Last night</span><b>6h 46m, 48 min under your usual</b></li>
-        <li><span>Energy</span><b>Below your usual since 11am</b></li>
-        <li><span>Pain</span><b>Logged 3 times, highest at 3:40pm</b></li>
-      </ul>
+      <Lab qual="Measured and logged today">Today’s metrics</Lab>
+      <Metrics />
 
       <div className="ps-ins-head">
         <span className="ps-tag">What may be connected</span>
@@ -935,13 +988,8 @@ export function TodayScreen() {
         <Row k="A short walk before 6pm" meta="Your energy has risen after one on 4 of 6 days" v="Today" />
       </div>
 
-      <div className="ps-open-row">
-        <span className="ps-open-k">Why these</span>
-        <p>Both are drawn from your own record, not from what works generally. Ciatta will show you what happens after.</p>
-      </div>
-
       <div className="ps-prov">
-        <Src kind="measured" /> Oura, nightly &middot; energy and pain you logged today
+        <Src kind="measured" /> Oura &middot; what you logged today &middot; drawn from your own record
       </div>
     </Chrome>
   );
