@@ -850,6 +850,11 @@ export function BriefScreen() {
  * against it. Underneath, what those three say together, what it is based on,
  * and two things she could try before the day is out.
  *
+ * Three things a day screen has to do, and this one does: it opens on what
+ * happened after the last thing she tried, it lets her tell Ciatta something
+ * without leaving it, and it holds her care beside her measurements, so a
+ * dose change and a lab sit in the same day as her sleep.
+ *
  * Where each figure came from is not on this screen: a destination she opens
  * every morning should answer what is happening, and the connections behind
  * each source belong in her profile. The cards still carry their source in
@@ -868,8 +873,6 @@ type Metric = {
 };
 
 const METRICS: Metric[] = [
-  { k: 'Sleep', v: '6', unit: 'h46', note: '48m under usual',
-    dir: 'down', spark: [7.5, 7.2, 6.9, 7.1, 6.6, 6.9, 6.77], src: 'measured', pattern: true },
   { k: 'HRV', v: '38', unit: 'ms', note: '9 under usual',
     dir: 'down', spark: [48, 46, 44, 47, 41, 39, 38], src: 'measured' },
   { k: 'Body temp', v: '+0.3', unit: '°C', note: 'Up since day 21',
@@ -878,8 +881,10 @@ const METRICS: Metric[] = [
     dir: 'down', spark: [9, 8.4, 7.2, 8.8, 6.1, 5.2, 4.1], src: 'measured' },
   { k: 'Food', v: '2', unit: 'meals', note: '0.9 L, no lunch',
     spark: [3, 3, 2, 3, 3, 2, 2], src: 'told' },
-  { k: 'Pain', v: '3', unit: 'logs', note: 'Peak 3:40pm',
-    dir: 'up', spark: [0, 1, 0, 2, 1, 2, 3], src: 'told', pattern: true },
+  { k: 'Levothyrox.', v: '75', unit: 'mcg', note: 'Taken 7:10am',
+    spark: [50, 50, 75, 75, 75, 75, 75], src: 'imported' },
+  { k: 'Ferritin', v: '18', unit: 'ng/mL', note: 'Fell since Aug',
+    dir: 'down', spark: [32, 32, 24, 24, 24, 18, 18], src: 'uploaded' },
 ];
 
 /** Seven days of one metric, at the size of a word. */
@@ -893,7 +898,9 @@ function Spark({ points, kind }: { points: number[]; kind: SrcKind }) {
   return (
     <svg viewBox="-1 -1 36 12" className="ps-spark" aria-hidden="true">
       <path d={d} fill="none" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"
-            stroke={kind === 'told' ? 'var(--ps-reported)' : 'var(--ps-measured)'} />
+            stroke={kind === 'told' ? 'var(--ps-reported)'
+              : kind === 'imported' || kind === 'uploaded' ? 'var(--ps-evidence)'
+              : 'var(--ps-measured)'} />
     </svg>
   );
 }
@@ -970,6 +977,18 @@ export function TodayScreen() {
         <p className="ps-hello-n">Good afternoon, Maya.</p>
       </div>
 
+      {/* The product remembers what she did about the last pattern, so the
+          screen she opens every morning opens on the result of it. */}
+      <div className="ps-after">
+        <span className="ps-after-k">Since you tried an earlier wind-down</span>
+        <p>Sleep closer to your usual on 5 of 7 nights.</p>
+        <span className="ps-after-days" aria-hidden="true">
+          {[1, 1, 0, 1, 1, 0, 1].map((hit, i) => (
+            <i key={i} className={hit ? 'is-hit' : undefined} />
+          ))}
+        </span>
+      </div>
+
       <Lab qual="Menstrual &middot; day 5">Your day so far</Lab>
       <DayChart />
 
@@ -986,12 +1005,18 @@ export function TodayScreen() {
       <span className="ps-conf">
         <Src kind="inferred" /> 3 days this month &middot; and in the last days of your last 3 cycles
       </span>
+      <p className="ps-nearby">
+        Also in your record: levothyroxine changed 3 Mar, ferritin 18 on 2 Sep.
+        Neither is a cause. Both are worth reading beside this.
+      </p>
 
       <Lab qual="2 for today">What you could try</Lab>
       <div className="ps-rows">
         <Row k="Wind down by 10:30pm" meta="Your last 3 nights began after 11:40pm" v="Tonight" />
-        <Row k="A short walk before 6pm" meta="Your energy has risen after one on 4 of 6 days" v="Today" />
+        <Row k="A short walk before 6pm" meta="Your energy rose after one on 4 of 6 days" v="Today" />
       </div>
+
+      <div className="ps-bar-action is-primary">+ Log pain, a meal or a note</div>
     </Chrome>
   );
 }

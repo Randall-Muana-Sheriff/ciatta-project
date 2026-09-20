@@ -2317,3 +2317,24 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .ps-metric-n { font-size: 1.9cqw; line-height: 1.25; color: var(--ps-meta); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ps-metric-n.is-down { color: var(--ps-clay); }
 .ps-metric-n.is-up { color: var(--ps-uncertain); }
+
+/* what happened after the last thing she tried: the product remembering */
+.ps-after {
+  display: flex; flex-direction: column; gap: 1cqw;
+  padding: 2.6cqw 3cqw; border-radius: 3cqw;
+  background: rgba(236,150,88,0.12);
+  box-shadow: inset 0 0 0 1px rgba(236,150,88,0.35);
+}
+.ps-after-k {
+  font-size: 2.1cqw; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ps-clay);
+}
+.ps-after p { margin: 0; font-size: 3cqw; line-height: 1.25; color: var(--ps-ink); }
+.ps-after-days { display: flex; gap: 1.2cqw; }
+.ps-after-days i {
+  width: 2.2cqw; height: 2.2cqw; border-radius: 50%;
+  background: var(--ps-ink); opacity: 0.22;
+}
+.ps-after-days i.is-hit { background: var(--ps-clay); opacity: 1; }
+/* the care and results that sit in the same day as the measurements */
+.ps-nearby { margin: 0; font-size: 2.2cqw; line-height: 1.35; color: var(--ps-meta); }
