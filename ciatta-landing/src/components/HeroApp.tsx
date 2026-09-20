@@ -50,20 +50,30 @@ const METRICS: [string, string][] = [
 
 export function HeroApp() {
   return (
-    <div className="ha" aria-hidden="true">
-      <div className="ha-bar">
-        <span>9:41</span>
-        <span>Today</span>
-      </div>
+    <div className="ha-device" aria-hidden="true">
+      <div className="ha">
+        {/* the device's own furniture: the island, the clock and the three
+            indicators, at iPhone 17 Pro proportions */}
+        <div className="ha-status">
+          <span className="ha-time">9:41</span>
+          <span className="ha-island" />
+          <span className="ha-sys">
+            <svg viewBox="0 0 18 12" className="ha-sig"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0.5" width="3" height="11.5" rx="1" opacity="0.45"/></svg>
+            <svg viewBox="0 0 16 12" className="ha-wifi" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M1.4 4.2a9.5 9.5 0 0 1 13.2 0"/><path d="M4 6.8a6 6 0 0 1 8 0"/><path d="M6.6 9.3a2.4 2.4 0 0 1 2.8 0"/></svg>
+            <svg viewBox="0 0 24 12" className="ha-batt"><rect x="0.6" y="0.6" width="19" height="10.8" rx="3" fill="none" strokeWidth="1.2" stroke="currentColor"/><rect x="2.2" y="2.2" width="13" height="7.6" rx="1.6" fill="currentColor"/><path d="M21.4 4.2v3.6a2.2 2.2 0 0 0 0-3.6Z" fill="currentColor"/></svg>
+          </span>
+        </div>
 
-      <p className="ha-hello">Good afternoon, Maya.</p>
+        <div className="ha-nav">Today</div>
 
-      <div className="ha-after">
+        <p className="ha-hello">Good afternoon, Maya.</p>
+
+        <div className="ha-after">
         <span>Since you tried an earlier wind-down</span>
         <p>Sleep closer to your usual on 5 of 7 nights.</p>
       </div>
 
-      <div className="ha-day">
+        <div className="ha-day">
         <div className="ha-day-head">
           <span>Your day so far</span>
           <span>Menstrual · day 5</span>
@@ -74,7 +84,7 @@ export function HeroApp() {
         </div>
       </div>
 
-      <ul className="ha-metrics">
+        <ul className="ha-metrics">
         {METRICS.map(([k, v]) => (
           <li key={k}>
             <span>{k}</span>
@@ -83,18 +93,19 @@ export function HeroApp() {
         ))}
       </ul>
 
-      <div className="ha-insight">
+        <div className="ha-insight">
         <span className="ha-tag">What may be connected</span>
         <p>Afternoon pain has been higher after nights under 7 hours.</p>
         <span className="ha-basis">Seen 3 times this month</span>
       </div>
 
-      <div className="ha-try">
-        <div>
-          <b>Wind down by 10:30pm</b>
-          <i>Your last 3 nights began after 11:40pm</i>
+        <div className="ha-try">
+          <div>
+            <b>Wind down by 10:30pm</b>
+            <i>Your last 3 nights began after 11:40pm</i>
+          </div>
+          <span>Tonight</span>
         </div>
-        <span>Tonight</span>
       </div>
     </div>
   );
