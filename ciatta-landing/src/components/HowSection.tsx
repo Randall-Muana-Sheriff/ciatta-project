@@ -80,16 +80,26 @@ function Next() {
         ))}
       </span>
       <span className="hw-art-cap">5 of 7 nights closer to your usual</span>
+    </div>
+  );
+}
+
+/** 05 · six months as one page, with the questions at the foot of it. */
+function Brief() {
+  const rows = ['What changed', 'What was around it', 'What you tried', 'What happened next'];
+  return (
+    <div className="hw-art hw-art-brief" aria-hidden="true">
       <span className="hw-brief">
-        <em />
-        <em />
-        <em className="is-short" />
+        {rows.map((row) => (
+          <em key={row}>{row}</em>
+        ))}
+        <em className="is-ask">Questions to discuss</em>
       </span>
     </div>
   );
 }
 
-const ART = [Bring, Changed, Beside, Next];
+const ART = [Bring, Changed, Beside, Next, Brief];
 
 const STEPS: [string, string, string][] = [
   [
@@ -110,7 +120,12 @@ const STEPS: [string, string, string][] = [
   [
     '04',
     'Decide what to do next',
-    'Try one thing, see what happened after, and take what changed into your next appointment as one page rather than six months of memory.',
+    'Try one thing, see what happened after, and let Ciatta keep the result, so the next reading starts from what you already learned.',
+  ],
+  [
+    '05',
+    'Walk in informed',
+    'Six months become one page: what changed, what was happening around it, what you tried, what happened next, and the questions worth asking. Take it, print it, or share it.',
   ],
 ];
 

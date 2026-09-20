@@ -2349,7 +2349,8 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   border-top: var(--strong) solid var(--ink);
 }
 @media (min-width: 720px) { .hw-steps { grid-template-columns: repeat(2, 1fr); gap: var(--s7) var(--s6); } }
-@media (min-width: 1100px) { .hw-steps { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1100px) { .hw-steps { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1440px) { .hw-steps { grid-template-columns: repeat(5, 1fr); gap: var(--s6) var(--s5); } }
 .hw-steps > li { display: flex; flex-direction: column; gap: var(--s3); padding-top: var(--s5); min-width: 0; }
 .hw-n {
   font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.16em;
@@ -2396,11 +2397,19 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .hw-lane u { position: absolute; top: 0; bottom: 0; background: var(--ink); border-radius: 999px; opacity: 0.55; }
 .hw-art-mark { position: absolute; top: var(--s4); bottom: var(--s3); width: 1px; background: var(--change); }
 
-/* 04 · the seven nights, and the page they become */
+/* 04 · the seven nights she tried */
 .hw-art-next { justify-content: center; }
 .hw-days { display: flex; gap: 5px; }
 .hw-days i { width: 9px; height: 9px; border-radius: 50%; background: var(--unlit); }
 .hw-days i.is-hit { background: var(--change); }
-.hw-brief { display: grid; gap: 3px; margin-top: var(--s2); }
-.hw-brief em { display: block; height: 3px; background: var(--rule); border-radius: 999px; }
-.hw-brief em.is-short { width: 46%; }
+
+/* 05 · the page she takes with her */
+.hw-art-brief { justify-content: center; }
+.hw-brief { display: grid; gap: 4px; }
+.hw-brief em {
+  font-style: normal; font-size: var(--t-caption); line-height: 1.5;
+  color: var(--meta-ink); padding-bottom: 3px;
+  border-bottom: var(--hairline) solid var(--rule);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hw-brief em.is-ask { color: var(--change-text); border-bottom-color: transparent; }
