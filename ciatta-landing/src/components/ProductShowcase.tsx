@@ -937,7 +937,7 @@ const NOW = 16.3;
 
 function DayChart() {
   const W = 132;
-  const H = 34;
+  const H = 30;
   const x = (h: number) => (h / 24) * W;
   const y = (v: number) => H - (v / 100) * H;
   const line = ENERGY.map(([h, v], i) => `${i ? 'L' : 'M'}${x(h).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
@@ -973,7 +973,6 @@ export function TodayScreen() {
   return (
     <Chrome title="Today" action="calendar" tab="Today" dense>
       <div className="ps-hello">
-        <span className="ps-hello-k">Wednesday 1 April</span>
         <p className="ps-hello-n">Good afternoon, Maya.</p>
       </div>
 
@@ -989,7 +988,7 @@ export function TodayScreen() {
         </span>
       </div>
 
-      <Lab qual="Menstrual &middot; day 5">Your day so far</Lab>
+      <Lab qual="Wed 1 Apr &middot; menstrual, day 5">Your day so far</Lab>
       <DayChart />
 
       <Metrics />
@@ -1011,8 +1010,12 @@ export function TodayScreen() {
 
       <Lab qual="2 for today">What you could try</Lab>
       <div className="ps-rows">
-        <Row k="Wind down by 10:30pm" meta="Your last 3 nights began after 11:40pm" v="Tonight" />
-        <Row k="A short walk before 6pm" meta="Your energy rose after one on 4 of 6 days" v="Today" />
+        <Row k="Wind down by 10:30pm"
+             meta="Your last 3 nights began after 11:40pm, and your longest nights this month started before 11"
+             v="Tonight" />
+        <Row k="A short walk before 6pm"
+             meta="Your energy rose in the evening after a walk on 4 of 6 days, and today it has been low since 11am"
+             v="Today" />
       </div>
 
       <div className="ps-bar-action is-primary">+ Log pain, a meal or a note</div>
