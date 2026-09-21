@@ -3411,6 +3411,10 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 @media (min-width: 1000px) {
   .hw2-body { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
   .hw2-body.is-reversed .hw2-media { order: -1; }
+  /* no screen, no second column: the accordion takes the row. The paragraph
+     inside each panel still stops at its own measure, so a wide window makes
+     the rules longer, never the reading harder. */
+  .hw2-body.is-plain { grid-template-columns: minmax(0, 1fr); }
 }
 .hw2-list { display: flex; flex-direction: column; border-top: var(--hairline) solid var(--rule); }
 .hw2-item { border-bottom: var(--hairline) solid var(--rule); }

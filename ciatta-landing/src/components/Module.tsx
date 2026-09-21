@@ -18,7 +18,13 @@ import { Phone } from './PhoneChrome';
  * a finding.
  */
 
-export type Item = { n: string; title: string; body: string; Screen: () => React.ReactNode };
+/**
+ * An item. `Screen` is optional: a module whose items have no screen is just
+ * the accordion, running the full width. Some things are worth showing and
+ * some are worth reading, and a device beside a sentence that does not need
+ * one is decoration.
+ */
+export type Item = { n: string; title: string; body: string; Screen?: () => React.ReactNode };
 
 export type Row = [string, string, string];
 
@@ -132,6 +138,8 @@ export function Module({
 }) {
   const [open, setOpen] = useState(0);
   const Screen = items[open].Screen;
+  const body = ['hw2-body', Screen ? '' : 'is-plain', reversed ? 'is-reversed' : '']
+    .filter(Boolean).join(' ');
 
   return (
     <section className="section hw2-module" aria-labelledby={id}>
@@ -142,7 +150,7 @@ export function Module({
           {lede && <p className="band-sub">{lede}</p>}
         </div>
 
-        <div className={reversed ? 'hw2-body is-reversed' : 'hw2-body'}>
+        <div className={body}>
           <div className="hw2-list">
             {items.map((item, i) => {
               const isOpen = i === open;
@@ -168,9 +176,11 @@ export function Module({
             })}
           </div>
 
-          <div className="hw2-media">
-            <Screen />
-          </div>
+          {Screen && (
+            <div className="hw2-media">
+              <Screen />
+            </div>
+          )}
         </div>
 
         {foot && <p className="sf-foot">{foot}</p>}
