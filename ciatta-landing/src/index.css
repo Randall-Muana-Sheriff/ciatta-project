@@ -3295,6 +3295,46 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   border-radius: 999px; background: #000000;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
 }
+/* Monochrome, as the hero is. Every colour on these screens runs through
+   five tokens, so the whole palette turns here.
+
+   What the hues were doing was ranking, not decorating: measured against
+   inferred, reported against uncertain. So each becomes a value rather than
+   a hue, and the rank survives. Flattening them all to one white would make
+   the two halves of the sleep chart the same bar. */
+.hw2-device {
+  --ps-measured: #F7F4EE;                    /* measured by a device */
+  --ps-reported: rgba(247, 244, 238, 0.80);  /* reported by her */
+  --ps-clay: rgba(247, 244, 238, 0.68);      /* the connection */
+  --ps-evidence: rgba(247, 244, 238, 0.62);  /* published evidence */
+  --ps-uncertain: rgba(247, 244, 238, 0.55); /* what is still uncertain */
+  /* the raised panel and the hairline are desaturated navies in the app;
+     here they are neutral, or the segmented control and every rule on the
+     screen read faintly blue against a screen that has no other colour */
+  --ps-raised: #26272A;
+  --ps-rule: #35363A;
+}
+/* The tinted grounds behind chips, tags and panels are written as literal
+   hue rgbas rather than as tokens, so they do not follow the five above.
+   Every one of them becomes the same white at the alpha it already had,
+   which keeps each element's weight and takes its colour. */
+.hw2-device .ps-seg { background: rgba(247,244,238,0.09); }
+.hw2-device .ps-span.is-mild { background: rgba(247,244,238,0.62); }
+.hw2-device .ps-span.is-mod { background: rgba(247,244,238,0.82); }
+.hw2-device .ps-entry { background: rgba(247,244,238,0.07); }
+.hw2-device .ps-entry.is-linked,
+.hw2-device .ps-tag-s { background: rgba(247,244,238,0.13); }
+.hw2-device .ps-pill.is-low,
+.hw2-device .ps-pill.is-watch { background: rgba(247,244,238,0.14); }
+.hw2-device .ps-src.is-measured,
+.hw2-device .ps-src.is-told,
+.hw2-device .ps-src.is-imported,
+.hw2-device .ps-src.is-uploaded,
+.hw2-device .ps-src.is-evidence,
+.hw2-device .ps-src.is-inferred { background: rgba(247,244,238,0.15); }
+.hw2-device .ps-tag { background: rgba(247,244,238,0.14); }
+.hw2-device .ps-next { background: rgba(247,244,238,0.10); }
+
 /* and the rest of the hero's treatment: it is the top of a screen rather
    than a whole one, so it fades out at the foot instead of ending, and it
    carries no tab bar. The hero drops both for the same reason — what is
