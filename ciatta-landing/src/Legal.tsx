@@ -84,7 +84,7 @@ export default function Legal({ doc, current }: { doc: LegalDoc; current: 'priva
         </a>
         <div className="header-end">
           <a className="header-cta" href="/member/">
-            Become a member
+            Reserve your place
           </a>
         </div>
       </header>

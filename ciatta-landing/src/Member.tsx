@@ -70,12 +70,14 @@ const QUESTIONS: [string, string][] = [
    'No. Ciatta describes what is in your record and what moved close to what. Naming a condition is a clinician\u2019s job, and Ciatta does not do it, suggest it, or hint at it. What it prepares is yours to take to your clinician or to ignore.'],
   ['How does Ciatta use my health data?',
    'To build your record and read it for you. It is encrypted in transit and at rest, access is audited, and we will never sell, rent, or share it with advertisers, brokers, or insurers. You can export everything, and if you delete your account we delete every byte.'],
+  ['What does reserving a place do?',
+   'It puts you on the early-access list, in the order people are let in. It is free, it takes no card, and it does not enrol you in anything. You are not a member and you are not subscribed until you choose to begin, after Ciatta opens.'],
   ['When does membership begin?',
    'When Ciatta opens, which we are building towards for Quarter 3 of 2027. Reserving now holds your place, and nothing begins, or is billed, before then. If the date moves we will tell you.'],
   ['Can I cancel?',
    'At any time, and you keep your record: export everything before you go, or delete it outright. Cancelling stops the next payment rather than ending your access that day.'],
   ['What does it cost?',
-   '$9.99 a month, from the day you choose to begin. Nothing is charged today, and nothing is charged before Ciatta opens in 2027.'],
+   'Ciatta Core will be $9.99 a month when membership opens. Reserving a place costs nothing, takes no card, and charges nothing today.'],
 ];
 
 export default function Member() {
@@ -95,16 +97,17 @@ export default function Member() {
         <section className="m-hero is-member">
           <Film base="member" className="m-hero-film" scrim="m-hero-scrim" width={1080} height={1920} />
           <div className="m-hero-inner">
-            <span className="m-eyebrow">Membership</span>
+            <span className="m-eyebrow">Reservations open</span>
             <h1 className="m-hero-title">Your health, continuously connected.</h1>
             <p className="m-hero-lede">
               Your records, your symptoms, your treatments, your everyday
-              context and your own words, read together over time.
+              context and your own words, read together over time. Ciatta
+              Core will be $9.99 a month when membership opens; reserving a
+              place today is free.
             </p>
             <a className="m-btn is-light" href="#join">Reserve your place</a>
             <p className="m-hero-note">
-              <span>$9.99 a month</span> <span>&middot; No card today</span>{' '}
-              <span>&middot; Nothing charged until it opens</span>
+              <span>No card</span> <span>&middot; Nothing charged</span>
             </p>
           </div>
         </section>
@@ -224,8 +227,8 @@ export default function Member() {
               <ReservedNotice />
               <SubscribeForm id="waitlist-member" source="member" kind="waitlist" offerBriefs cta="Reserve your place" note="" />
               <p className="m-free-note">
-                No card today. Nothing is charged until Ciatta opens and you
-                choose to begin.
+                <span>No card</span> <span>&middot; Nothing charged</span>{' '}
+                <span>&middot; You are not subscribed to anything</span>
               </p>
             </div>
           </div>

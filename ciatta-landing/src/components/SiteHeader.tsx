@@ -57,7 +57,7 @@ export function SiteHeader({
       </nav>
 
       <div className="header-end">
-        <a className="header-cta" href="/member/">Become a member</a>
+        <a className="header-cta" href="/member/">Reserve your place</a>
 
         <button
           type="button"
@@ -79,7 +79,7 @@ export function SiteHeader({
               {label}
             </a>
           ))}
-          <a href="/member/">Become a member</a>
+          <a href="/member/">Reserve your place</a>
         </nav>
       </div>
     </header>

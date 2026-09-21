@@ -134,6 +134,7 @@ export default function App() {
                   id="waitlist-hero"
                   source="hero"
                   kind="waitlist"
+                  cta="Reserve your place"
                   note=""
                 />
               </div>
@@ -252,6 +253,7 @@ export default function App() {
                   id="waitlist-close"
                   source="closing"
                   kind="waitlist"
+                  cta="Reserve your place"
                   note=""
                   consent="I agree to receive emails about early access and product updates."
                 />

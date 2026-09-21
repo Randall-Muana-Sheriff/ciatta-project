@@ -72,8 +72,8 @@ export function ReserveButton({
 
       {state.kind === 'closed' && (
         <p className="rs-msg" role="status">
-          Card reservations open shortly. Leave your address below and you will
-          be first to know.
+          Leave your address below to hold your place. No card, and nothing is
+          charged.
         </p>
       )}
       {state.kind === 'error' && (
