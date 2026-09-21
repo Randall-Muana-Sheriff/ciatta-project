@@ -2641,6 +2641,10 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 /* three suggestions, each with its reason, is a lot of screen: this one sets
    a step smaller so all three clear the fade rather than two and a half */
 .hw-phone.is-rows .hw-frag { --psu: 0.15rem; }
+/* The brief runs to five rows, and the box around it is padded in fluid
+   units, so on the widest screens the last row was landing in the fade. It
+   takes a step smaller still and clears it everywhere. */
+.hw-phone.is-brief .hw-frag { --psu: 0.138rem; }
 
 /* The hero's own screen, set for a column rather than for the hero: the same
    screen, a step down, and without the row of figures the hero drops on a

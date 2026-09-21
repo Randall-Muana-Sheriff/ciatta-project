@@ -186,12 +186,15 @@ function Suggestions() {
  * that part is, and the last one is the only thing she has to do with it.
  */
 
+/* The brief says what Ciatta does, in the order Ciatta does it: what changed,
+   what was around it, what she tried and what came of it, what is still worth
+   asking, and the one thing she does with it. Not a table of contents. */
 const BRIEF: [string, string][] = [
-  ['Summary', 'Key changes and insights'],
-  ['Trends', 'Your data over time'],
-  ['What to discuss', 'Topics for your provider'],
-  ['Questions', 'Prep for your next appointment'],
-  ['Share', 'Export your report'],
+  ['What changed', 'Symptoms, sleep and your cycle'],
+  ['What was happening around it', 'Your medication, your week, your words'],
+  ['What you tried', 'And whether it held'],
+  ['Questions to discuss', 'Three, drawn from your own record'],
+  ['Take it with you', 'Print it, or send it ahead'],
 ];
 
 function Caret() {
@@ -204,7 +207,7 @@ function Caret() {
 
 function Brief() {
   return (
-    <Phone title="Health brief" className="is-rows">
+    <Phone title="Health brief" className="is-rows is-brief">
       <div className="product hw-frag">
         {/* the bar above already names the screen, so this line says what the
             brief covers instead of saying it twice */}
