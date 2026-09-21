@@ -175,26 +175,47 @@ export default function Member() {
           </div>
         </section>
 
-        {/* ============ 04 · membership ================================= */}
-        <section className="m-band" aria-labelledby="plan-heading">
+        {/* ============ 04 · membership ================================= *
+             Octo Health's arrangement on their home page: the invitation
+             above, then one card carrying the tier, what it is for, what is
+             in it, and the price said twice — the figure you are billed and
+             the figure it works out at a day. One card, because there is one
+             membership.                                                      */}
+        <section className="m-band mb-join" aria-labelledby="plan-heading">
           <div className="m-wrap">
-            <div className="m-plan is-solo">
-              <div className="m-plan-head">
-                <span className="m-plan-name" id="plan-heading">Ciatta Core</span>
-                <p className="m-plan-price">$9.99 <span>/ month</span></p>
-                <p className="m-plan-price-note">
-                  Nothing is charged until Ciatta opens and you choose to begin.
-                </p>
-                <a className="m-btn" href="#join">Reserve your place</a>
-                <p className="m-plan-foot">Reserving a place is free</p>
+            <div className="band-head is-mid">
+              <h2 className="m-h2" id="plan-heading">Your membership starts here.</h2>
+              <p className="m-h2-sub">
+                Pre-order your membership and be among the first Ciatta
+                members.
+              </p>
+            </div>
+
+            <div className="mb-card">
+              <div className="mb-card-name">
+                <span className="mb-card-brand">Ciatta</span>
+                <span className="mb-card-tier">Core</span>
               </div>
-              <ul className="m-ticks">
+              <p className="mb-card-tag">Your record, kept in order and read for you.</p>
+
+              <ul className="mb-card-list">
                 {INCLUDED.map((line) => (
                   <li key={line}><i aria-hidden="true" /><span>{line}</span></li>
                 ))}
               </ul>
+
+              <p className="mb-card-price">
+                <b>$9.99</b> <span>/ month</span>
+              </p>
+              <p className="mb-card-day">$0.33 / day</p>
+
+              <a className="m-btn" href="#join">Reserve your place</a>
+              <p className="mb-card-foot">
+                Nothing is charged until Ciatta opens and you choose to begin.
+              </p>
             </div>
-            <p className="mb-note">
+
+            <p className="mb-note is-mid">
               Ciatta Care and future agent capabilities evolve within your
               membership.
             </p>

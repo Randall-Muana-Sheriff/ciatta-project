@@ -1308,6 +1308,65 @@ p { margin: 0; text-wrap: pretty; }
    not have to repeat itself.
    ========================================================================= */
 
+/* --- the membership card -------------------------------------------------
+   One card, centred, because there is one membership. The price is said
+   twice: the figure that is billed, and the figure it comes to in a day,
+   which is the number a person actually weighs. */
+.mb-join .band-head.is-mid { text-align: center; }
+.mb-join .band-head.is-mid .m-h2 { max-width: none; margin-inline: auto; }
+.mb-join .band-head.is-mid .m-h2-sub { max-width: 44ch; margin-inline: auto; }
+.mb-note.is-mid { margin-inline: auto; text-align: center; max-width: 42ch; }
+
+.mb-card {
+  max-width: 26rem; margin-inline: auto;
+  background: var(--surface); border-radius: var(--r-surface);
+  box-shadow: 0 0 0 var(--hairline) var(--rule), var(--float-above);
+  padding: clamp(var(--s5), 4vw, var(--s7));
+  display: grid; gap: var(--s4); text-align: center;
+}
+.m-band.is-alt .mb-card { background: var(--canvas); }
+.mb-card-name { display: grid; gap: 2px; }
+.mb-card-brand {
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--meta-ink);
+}
+.mb-card-tier {
+  font-size: var(--t-card); font-weight: 500; letter-spacing: -0.03em;
+  line-height: 1; color: var(--ink);
+}
+.mb-card-tag { margin: 0; color: var(--body-ink); font-size: var(--t-small); line-height: 1.5; }
+
+/* the ticks, read left so the eye runs down one column rather than
+   re-centring on every line */
+.mb-card-list {
+  list-style: none; margin: var(--s2) 0; padding: var(--s5) 0;
+  display: grid; gap: var(--s4); text-align: left;
+  border-top: var(--hairline) solid var(--rule);
+  border-bottom: var(--hairline) solid var(--rule);
+}
+.mb-card-list li { display: flex; align-items: flex-start; gap: var(--s3); }
+.mb-card-list span { color: var(--ink); font-size: var(--t-body); line-height: 1.35; }
+/* the tick is drawn rather than typed: a check glyph sits differently in
+   every face and this one has to sit on the line it marks */
+.mb-card-list i {
+  flex: none; position: relative; width: 1rem; height: 1.35em;
+}
+.mb-card-list i::before, .mb-card-list i::after {
+  content: ''; position: absolute; background: var(--ink); border-radius: 1px;
+}
+.mb-card-list i::before { left: 1px; top: 0.66em; width: 5px; height: 1.5px; transform: rotate(45deg); transform-origin: left center; }
+.mb-card-list i::after { left: 4.4px; top: 0.82em; width: 10px; height: 1.5px; transform: rotate(-52deg); transform-origin: left center; }
+
+.mb-card-price { margin: 0; color: var(--ink); line-height: 1; }
+.mb-card-price b {
+  font-size: clamp(2.25rem, 1.4rem + 2.6vw, 3.25rem);
+  font-weight: 500; letter-spacing: -0.04em;
+}
+.mb-card-price span { font-size: var(--t-body); color: var(--meta-ink); }
+.mb-card-day { margin: 0; color: var(--meta-ink); font-size: var(--t-small); }
+.mb-card .m-btn { justify-self: center; margin-top: var(--s2); }
+.mb-card-foot { margin: 0; color: var(--meta-ink); font-size: var(--t-caption); line-height: 1.5; }
+
 /* the plan, standing on its own rather than under a heading about where
    membership starts: there is one membership, so the card is the section */
 .m-plan.is-solo { margin-top: 0; }
