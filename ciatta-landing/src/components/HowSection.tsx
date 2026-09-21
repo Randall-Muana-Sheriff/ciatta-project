@@ -1,5 +1,5 @@
-import { DayChart } from './ProductShowcase';
 import { Phone } from './PhoneChrome';
+import { TodayScreen } from './TodayScreen';
 
 /**
  * "What is your body telling you?" — how Ciatta works, directly under the hero.
@@ -127,28 +127,14 @@ function Sources() {
 }
 
 /* -- 02 · the day, and what Ciatta makes of it ----------------------------- *
- * The part of Today this step is about: the day drawn as one frame, and the
- * finding under it. Not the whole screen shrunk, but the two things the step
- * claims, at the size they are read at.                                      */
+ * The hero's screen itself, not a second drawing of it. This step is about
+ * what she sees on that screen, so it shows her that screen.
+ */
 
 function TodayRead() {
   return (
-    <Phone title="Today">
-      <div className="product hw-frag">
-      <div className="hw-frag-head">
-        <span>Today</span>
-        <i>Wed 1 Apr · day 5</i>
-      </div>
-      <p className="hw-frag-hello">Good afternoon, Maya.</p>
-
-      <DayChart />
-
-      <div className="hw-frag-ins">
-        <span className="hw-frag-tag">What may be connected</span>
-        <p>Afternoon pain has been higher after nights under 7 hours.</p>
-        <span className="hw-frag-basis">Seen 3 times this month</span>
-      </div>
-      </div>
+    <Phone className="is-today">
+      <TodayScreen />
     </Phone>
   );
 }

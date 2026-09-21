@@ -2618,6 +2618,20 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 /* three suggestions, each with its reason, is a lot of screen: this one sets
    a step smaller so all three clear the fade rather than two and a half */
 .hw-phone.is-rows .hw-frag { --psu: 0.15rem; }
+
+/* The hero's own screen, set for a column rather than for the hero: the same
+   screen, a step down, and without the row of figures the hero drops on a
+   phone for the same reason. */
+.hw-phone.is-today .ha { gap: 0.375rem; }
+.hw-phone.is-today .ha-hello { font-size: 0.8125rem; }
+.hw-phone.is-today .ha-metrics { display: none; }
+.hw-phone.is-today .ha-insight p { font-size: 0.6875rem; line-height: 1.25; }
+.hw-phone.is-today .ha-basis,
+.hw-phone.is-today .ha-try i,
+.hw-phone.is-today .ha-try > span { font-size: 0.5rem; }
+.hw-phone.is-today .ha-try b { font-size: 0.625rem; }
+.hw-phone.is-today .ha-day-head, .hw-phone.is-today .ha-axis { font-size: 0.4375rem; }
+.hw-phone.is-today .ha-tag { font-size: 0.4375rem; }
 /* a document opened in the app is still a document: it keeps its own paper */
 .hw-phone.is-doc .ha { padding-inline: 0.375rem; }
 .hw-phone .hw-page {
