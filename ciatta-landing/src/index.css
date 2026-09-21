@@ -3347,19 +3347,38 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    than a whole one, so it fades out at the foot instead of ending, and it
    carries no tab bar. The hero drops both for the same reason — what is
    being shown is the screen, not the app's furniture. */
+/* The height stays derived from the width and is never auto. The screen is a
+   flex child with min-height 0 inside an inline-size container, and on iOS
+   Safari that collapses to nothing the moment the parent stops having a
+   definite height: the device drew as an empty black box on a real phone
+   while every desktop browser was fine. The file already carries this
+   warning a few hundred lines up, about percentage heights, and this is the
+   same trap by the other door. */
 .hw2-device .ps-phone {
-  height: auto;
   -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
   mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
 }
 .hw2-device .ps-tabs, .hw2-device .ps-home { display: none; }
 .hw2-device .ps-body { padding-bottom: calc(14 * var(--psu)); }
 
-/* on a phone it is the same device, given the column's width */
+/* On a phone it is the same device, at a plain rem width per step.
+   --ps-w is divided by 100 to make --psu, and every size inside the screen
+   is written in that unit: a font-size, a padding, a radius, a stroke. So
+   --ps-w has to be something every engine can resolve without thinking. A
+   min() of a vw calc is not: where it fails to compute, --psu fails with
+   it, every size inside the screen becomes invalid at once, and the device
+   paints as an empty black box — which is exactly what it was doing on a
+   real iPhone while every desktop browser drew it correctly.
+
+   The hero was rebuilt for this same reason and carries the same rule:
+   plain lengths, no derived geometry, nothing exotic in the chain that the
+   screen's own units hang off. */
 @media (max-width: 700px) {
   .hw2-media { display: block; }
-  .hw2-device { --ps-w: 20rem; width: 100%; }
-  .hw2-device .ps-phone { width: 100%; }
+  .hw2-device { --ps-w: 19rem; }
+}
+@media (max-width: 380px) {
+  .hw2-device { --ps-w: 16.5rem; }
 }
 
 /* the film band, one sentence over it */
