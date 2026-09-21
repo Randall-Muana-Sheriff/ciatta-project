@@ -2424,7 +2424,6 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .hw-steps {
   list-style: none; margin: 0; padding: var(--s6) 0 0;
   display: grid; gap: var(--s6);
-  border-top: var(--strong) solid var(--ink);
 }
 @media (min-width: 680px) { .hw-steps { grid-template-columns: repeat(2, 1fr); gap: var(--s7) var(--s5); } }
 @media (min-width: 1100px) { .hw-steps { grid-template-columns: repeat(4, 1fr); gap: var(--s5); } }
