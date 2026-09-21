@@ -1496,9 +1496,16 @@ p { margin: 0; text-wrap: pretty; }
 .mb-card .m-btn { justify-self: center; margin-top: var(--s2); border: 0; cursor: pointer; font: inherit; }
 
 /* --- the membership card -------------------------------------------------
-   One card, centred, because there is one membership. The price is said
-   twice: the figure that is billed, and the figure it comes to in a day,
-   which is the number a person actually weighs. */
+   One card, because there is one membership, set beside the paragraph that
+   says what reserving a place actually commits you to. Two columns from a
+   laptop up, the same 6/5 split the modules use; stacked below it, with the
+   sentence before the price rather than after it. */
+.mb-split { display: grid; gap: clamp(var(--s6), 4vw, var(--s8)); align-items: center; }
+@media (min-width: 1000px) { .mb-split { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); } }
+/* the head is a column here, not a band over one: it owns no bottom margin
+   and its sentence wraps to the column rather than to a reading measure */
+.mb-split .band-head { margin-bottom: 0; }
+.mb-split .band-head .m-h2, .mb-split .band-head .m-h2-sub { max-width: none; }
 .mb-join .band-head.is-mid { text-align: center; }
 .mb-join .band-head.is-mid .m-h2 { max-width: none; margin-inline: auto; }
 .mb-join .band-head.is-mid .m-h2-sub { max-width: 44ch; margin-inline: auto; }

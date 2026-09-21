@@ -11,6 +11,12 @@ import { ReserveButton } from './ReserveButton';
  * `.shell` and `.m-wrap` are the same rule, so the markup suits the home
  * page and the membership page without either needing to know about the
  * other.
+ *
+ * Two columns: what reserving a place means on the left, the card itself on
+ * the right. The offer and the explanation of the offer sit at the same
+ * height rather than one scrolling past the other, which is the difference
+ * between reading the sentence about not being charged and arriving at a
+ * price with no sentence attached. It stacks below a laptop, text first.
  */
 
 const INCLUDED: string[] = [
@@ -25,8 +31,8 @@ const INCLUDED: string[] = [
 export function MembershipCard() {
   return (
     <section className="section mb-join" id="membership" aria-labelledby="plan-heading">
-      <div className="shell">
-        <div className="band-head is-mid">
+      <div className="shell mb-split">
+        <div className="band-head">
           <h2 className="m-h2" id="plan-heading">Your membership starts here.</h2>
           <p className="m-h2-sub">
             Reserving a place puts you on the early-access list. You are not
