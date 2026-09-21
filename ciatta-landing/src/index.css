@@ -2467,7 +2467,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    with the stroke kept off the stretch so it stays a hairline at any width. */
 .hw-hub { position: relative; width: 100%; aspect-ratio: 1 / 1; min-height: 16rem; }
 .hw-hub-lines { position: absolute; inset: 0; width: 100%; height: 100%; }
-.hw-hub-lines use { fill: none; stroke: var(--rule); stroke-width: 1.5; }
+.hw-hub-lines use { fill: none; stroke: var(--rule); stroke-width: 1; }
 /* what is travelling in: one mark per source, absorbed under the tile it
    arrives at, so the drawing reads as data entering rather than as six
    decorative curves */
@@ -2479,7 +2479,15 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   list-style: none; margin: 0; padding: 0;
   display: grid; grid-auto-rows: 1fr; align-items: center;
 }
-.hw-node { display: flex; align-items: center; gap: var(--s2); min-width: 0; }
+/* The name comes first and the mark last, so the six marks line up in one
+   column at the right of the rows — which is exactly where the lines start.
+   A line then leaves WHOOP's own icon and runs to Ciatta, rather than
+   starting in the white space past its name. */
+.hw-node {
+  display: flex; flex-direction: row-reverse; justify-content: flex-start;
+  align-items: center; gap: var(--s3); min-width: 0;
+}
+.hw-node-b { text-align: right; }
 .hw-node-mark {
   flex: none; width: 2.25rem; height: 2.25rem;
   display: grid; place-items: center;

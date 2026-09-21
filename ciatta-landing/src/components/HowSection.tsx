@@ -93,7 +93,7 @@ function Sources() {
         {/* what each source is sending, on its way in. The marks are staggered
             so the six read as a flow rather than as one pulse six times. */}
         {NODES.map((n, i) => (
-          <circle className="hw-flow" key={n.key} r="1.15">
+          <circle className="hw-flow" key={n.key} r="0.95">
             <animateMotion dur="2.8s" repeatCount="indefinite" begin={`${i * 0.38}s`} keyPoints="0;1" keyTimes="0;1" calcMode="linear">
               <mpath href={`#hw-path-${n.key}`} />
             </animateMotion>
