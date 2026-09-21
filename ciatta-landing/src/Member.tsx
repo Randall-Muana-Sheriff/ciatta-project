@@ -36,59 +36,54 @@ const TIMELINE: [string, string, string][] = [
   ['Now', 'What happened next', 'Sleep closer to her usual'],
 ];
 
-/* -- 07 · Ciatta Care ------------------------------------------------------- */
+/* -- Ciatta Care, in four movements ---------------------------------------- *
+ * Eight separate capabilities read as a feature list and said the same thing
+ * four times. These are the four things Care actually does, in the order a
+ * visit happens.                                                            */
 
 const CARE: [string, string][] = [
-  ['Appointment preparation', 'What changed since the last visit, and what you meant to raise and forgot.'],
-  ['Clinician message drafting', 'What you want to ask, written as a message you can change and send yourself.'],
-  ['Question preparation', 'The questions worth asking, each drawn from something in your record.'],
-  ['Record organization', 'Results, documents and notes filed against the date they belong to.'],
-  ['Referrals', 'What was referred, to whom, and whether it has happened.'],
-  ['Follow-up tracking', 'What was said would happen next, and whether it has.'],
-  ['Insurance navigation', 'What your cover requires before a thing can happen, in order.'],
-  ['Appointment coordination', 'Finding a time that works, and holding the thread until it is booked.'],
+  ['Prepare for care',
+   'What changed, what is relevant, and what you want to discuss.'],
+  ['Communicate',
+   'Draft messages and questions from your actual health record.'],
+  ['Coordinate care',
+   'Manage referrals, appointments, and the steps between visits.'],
+  ['Navigate healthcare',
+   'Help organise insurance requirements, records, and what needs to happen next.'],
 ];
 
-/* -- 08 · what Ciatta will be able to do, with permission ------------------ */
-
-const AGENTIC: string[] = [
-  'Help find appointments',
-  'Coordinate referrals',
-  'Navigate insurance requirements',
-  'Prepare communications',
-  'Organize records',
-  'Track what needs to happen next',
-];
-
-/* -- 10 · what membership opens with --------------------------------------- */
+/* -- what membership is, said six ways rather than nine -------------------- */
 
 const INCLUDED: string[] = [
-  'Your connected health record',
-  'Your data organised and kept in order',
-  'Longitudinal trends across months and years',
-  'Personalized insights from your own record',
-  'The context around every change',
-  'Evidence you can explore for yourself',
-  'Health Briefs for your appointments',
-  'Preparation for clinician conversations',
-  'Ciatta Care, as it arrives',
+  'Your health, in one place',
+  'See what is changing',
+  'See what may be connected',
+  'Get personalized insights',
+  'Prepare for care',
+  'Keep learning over time',
 ];
 
-/* -- 11 · the questions people ask first ----------------------------------- */
+/* -- the questions a page that asks for money has to answer ---------------- */
 
 const QUESTIONS: [string, string][] = [
   ['What is Ciatta membership?',
    'Access to a system rather than a download. Your record is kept in one place, read along a timeline, and returned to you as what changed and what to do next. It is more useful in month six than in week one, and it is built on that basis.'],
-  ['What is included?',
-   'The connected record, the trends across time, the insights drawn from your own history, the Health Briefs you take to appointments, and Ciatta Care as its capabilities arrive.'],
+  ['What is included in Ciatta Core?',
+   'Your health in one place, what is changing in it, what may be connected, insights drawn from your own history, preparation for your appointments, and a record that keeps getting richer. Ciatta Care is included as its capabilities arrive.'],
   ['What is Ciatta Care?',
-   'The part of membership that acts on your record rather than only keeping it. It follows Core rather than opening with it.'],
+   'The part of membership that acts on your record rather than only keeping it: preparing you for a visit, drafting what you meant to send, coordinating referrals and appointments, and keeping track of what needs to happen next.'],
   ['Can Ciatta take actions for me?',
-   'In time, and only what you authorize. Each connection is made by you and can be withdrawn by you, and Ciatta keeps a record of everything done in your name. It does not enter payment details, and it does not make clinical decisions.'],
+   'In time, and only what you authorize. Ciatta tells you what it is about to do, asks when your approval is needed, and keeps a record of everything done on your behalf. It does not enter payment details, and it does not make clinical decisions.'],
+  ['Does Ciatta diagnose or replace my clinician?',
+   'No. Ciatta describes what is in your record and what moved close to what. Naming a condition is a clinician\u2019s job, and Ciatta does not do it, suggest it, or hint at it. What it prepares is yours to take to your clinician or to ignore.'],
+  ['How does Ciatta use my health data?',
+   'To build your record and read it for you. It is encrypted in transit and at rest, access is audited, and we will never sell, rent, or share it with advertisers, brokers, or insurers. You can export everything, and if you delete your account we delete every byte.'],
   ['When does membership begin?',
    'When Ciatta opens. Joining now reserves your place, and nothing begins, or is billed, before then.'],
+  ['Can I cancel?',
+   'At any time, and you keep your record: export everything before you go, or delete it outright. Cancelling stops the next payment rather than ending your access that day.'],
   ['What does it cost?',
-   'Not set yet. You will see the price before anything is charged, with the choice to stop there. No card is taken today.'],
+   '$9.99 a month. Nothing is charged today, and nothing is charged until Ciatta opens and you choose to begin.'],
 ];
 
 export default function Member() {
@@ -116,7 +111,8 @@ export default function Member() {
             </p>
             <a className="m-btn is-light" href="#join">Reserve your place</a>
             <p className="m-hero-note">
-              <span>No card</span> <span>&middot; Nothing charged</span>
+              <span>$9.99 a month</span> <span>&middot; No card today</span>{' '}
+              <span>&middot; Nothing charged until it opens</span>
             </p>
           </div>
         </section>
@@ -129,10 +125,10 @@ export default function Member() {
               <span> What it becomes is.</span>
             </h2>
             <p className="mb-say-sub">
-              Six months is not six months of data. It is the reason a change
-              in April can be read against a dose change in January. That is
-              worth little on your first day and a great deal by your second
-              year, which is why Ciatta is a membership and not a download.
+              Your health becomes more useful in context. A change in April
+              means more when Ciatta remembers what happened in January,
+              February and March. The longer you use it, the richer your
+              health record becomes.
             </p>
 
             <ol className="mb-time">
@@ -147,15 +143,14 @@ export default function Member() {
           </div>
         </section>
 
-        {/* ============ 08 · Ciatta Care ================================= */}
-        <section className="m-band" aria-labelledby="care-heading">
+        {/* ============ 03 · Ciatta Care, and what it will grow into ==== */}
+        <section className="m-band is-alt" aria-labelledby="care-heading">
           <div className="m-wrap">
             <div className="band-head">
               <span className="m-eyebrow is-ink">Ciatta Care</span>
               <h2 className="m-h2" id="care-heading">Healthcare doesn’t end when you close the app.</h2>
               <p className="m-h2-sub">
-                The work around an appointment that currently falls to you. It
-                follows Core rather than opening with it.
+                The work around an appointment that currently falls to you.
               </p>
             </div>
 
@@ -167,54 +162,28 @@ export default function Member() {
                 </div>
               ))}
             </dl>
-          </div>
-        </section>
 
-        {/* ============ 09 · what comes after ============================ */}
-        <section className="m-band is-alt" aria-labelledby="agentic-heading">
-          <div className="m-wrap">
-            <div className="band-head">
-              <span className="m-eyebrow is-ink">Ahead of us</span>
-              <h2 className="m-h2" id="agentic-heading">
-                You tell Ciatta what you need. Ciatta helps move it forward.
-              </h2>
-              <p className="m-h2-sub">
-                In time, and only where you authorize it, Ciatta will act
-                rather than only prepare. None of this is available today.
-              </p>
-            </div>
-
-            <ul className="mb-agentic">
-              {AGENTIC.map((a) => <li key={a}>{a}</li>)}
-            </ul>
-
+            {/* The roadmap used to be a section of its own, listing the same
+                four things again under different verbs. It is a paragraph. */}
             <p className="mb-note">
-              You connect each source and can disconnect it. Ciatta says what
-              it is about to do before it does it, and keeps a record of
-              everything done in your name. It never enters payment details,
-              and it never decides anything clinical.
+              Ciatta Care evolves inside your membership. As Ciatta becomes
+              more capable, you will be able to authorize it to take care of
+              more of this work for you. It will always tell you what it is
+              about to do, ask when your approval is needed, and keep a record
+              of what it does on your behalf.
             </p>
           </div>
         </section>
 
-        {/* ============ 11 · membership ================================== */}
-        <section className="m-band is-alt" aria-labelledby="plan-heading">
+        {/* ============ 04 · membership ================================= */}
+        <section className="m-band" aria-labelledby="plan-heading">
           <div className="m-wrap">
-            <div className="band-head">
-              <span className="m-eyebrow is-ink">Membership</span>
-              <h2 className="m-h2" id="plan-heading">Where membership starts</h2>
-              <p className="m-h2-sub">
-                One membership. What Ciatta can do will grow, and it will grow
-                inside this one.
-              </p>
-            </div>
-
-            <div className="m-plan">
+            <div className="m-plan is-solo">
               <div className="m-plan-head">
-                <span className="m-plan-name">Ciatta Core</span>
-                <p className="m-plan-price">Price coming soon</p>
+                <span className="m-plan-name" id="plan-heading">Ciatta Core</span>
+                <p className="m-plan-price">$9.99 <span>/ month</span></p>
                 <p className="m-plan-price-note">
-                  You will see the price before anything is charged.
+                  Nothing is charged until Ciatta opens and you choose to begin.
                 </p>
                 <a className="m-btn" href="#join">Reserve your place</a>
                 <p className="m-plan-foot">Reserving a place is free</p>
@@ -225,6 +194,24 @@ export default function Member() {
                 ))}
               </ul>
             </div>
+            <p className="mb-note">
+              Ciatta Care and future agent capabilities evolve within your
+              membership.
+            </p>
+          </div>
+        </section>
+
+        {/* ============ 05 · permission, and privacy ===================== */}
+        <section className="m-band is-alt mb-trustline" aria-labelledby="control-heading">
+          <div className="m-wrap">
+            <h2 className="m-h2" id="control-heading">Your health. Your record. Your decisions.</h2>
+            <p className="m-h2-sub">
+              Nothing happens without your permission, and Ciatta shows where
+              every figure came from. Your record is encrypted, never sold or
+              shared, exportable at any time, and deleted in full if you ask.
+              The <a href="/privacy/">privacy notice</a> and{' '}
+              <a href="/terms/">terms</a> are the binding versions.
+            </p>
           </div>
         </section>
 
@@ -257,8 +244,8 @@ export default function Member() {
             <div className="split-body">
               <SubscribeForm id="waitlist-member" source="member" kind="waitlist" offerBriefs cta="Reserve your place" note="" />
               <p className="m-free-note">
-                No card. Nothing charged. You will see the price before
-                anything is charged.
+                No card today. Nothing is charged until Ciatta opens and you
+                choose to begin.
               </p>
             </div>
           </div>

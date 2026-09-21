@@ -1308,6 +1308,15 @@ p { margin: 0; text-wrap: pretty; }
    not have to repeat itself.
    ========================================================================= */
 
+/* the plan, standing on its own rather than under a heading about where
+   membership starts: there is one membership, so the card is the section */
+.m-plan.is-solo { margin-top: 0; }
+.m-plan-price span { font-size: 0.42em; font-weight: 500; letter-spacing: 0; color: var(--meta-ink); }
+/* the permission line: a statement band, not a grid of tiles */
+.mb-trustline .m-h2 { max-width: 20ch; }
+.mb-trustline .m-h2-sub { max-width: 60ch; margin-bottom: 0; }
+.mb-trustline a { color: var(--ink); }
+
 /* 02 · the statement. The largest type on the page, and the only section
         with nothing in it but a sentence. */
 .mb-say { padding-block: clamp(4.5rem, 10vw, 9rem); }
