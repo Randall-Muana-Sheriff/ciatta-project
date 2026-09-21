@@ -3341,7 +3341,11 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 
 /* --- the header's destinations, and the hamburger below the split --------- */
-.header-nav { display: none; gap: var(--s5); margin-right: auto; margin-left: var(--s6); }
+/* The links belong with the action, not with the wordmark. margin-left auto
+   pushes the whole group right, so "How it works" and "Briefs" sit beside
+   "Reserve your place" and the bar reads as a name at one end and a place to
+   go at the other, rather than three things adrift across the width. */
+.header-nav { display: none; gap: var(--s5); margin-left: auto; margin-right: var(--s5); }
 @media (min-width: 900px) { .header-nav { display: flex; } }
 .header-nav a {
   color: var(--ink); font-size: var(--t-small); text-decoration: none;
@@ -4034,10 +4038,21 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .m-free-sub,
 .m-h2-sub,
 .band-sub,
-.statement-lede,
 .mb-say-sub {
   font-size: var(--t-lede);
   font-weight: 400;
+}
+/* The statement is one block of speech, so it is set as one: the sentence
+   under the heading takes the heading's own size, weight and leading rather
+   than dropping to the lede step. This is the Vision Pro treatment the
+   section was built to — a paragraph that is all the same voice, at the
+   size the page is loudest. */
+.statement-lede {
+  font-size: var(--t-head);
+  line-height: var(--lh-head);
+  font-weight: 500;
+  color: var(--ink);
+  max-width: 24ch;
 }
 .qa-item summary span { font-size: var(--t-lede); font-weight: 500; }
 

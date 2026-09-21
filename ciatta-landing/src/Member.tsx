@@ -106,7 +106,7 @@ export default function Member() {
               Core will be $9.99 a month when membership opens; reserving a
               place today is free.
             </p>
-            <a className="m-btn is-light" href="#join">Reserve your place</a>
+            <a className="m-btn is-light" href="#join">Reserve</a>
             <p className="m-hero-note">
               <span>No card</span> <span>&middot; Nothing charged</span>
             </p>
@@ -225,7 +225,7 @@ export default function Member() {
             </div>
             <div className="split-body">
               <ReservedNotice />
-              <SubscribeForm id="waitlist-member" source="member" kind="waitlist" offerBriefs cta="Reserve your place" note="" />
+              <SubscribeForm id="waitlist-member" source="member" kind="waitlist" offerBriefs cta="Reserve" note="" />
               <p className="m-free-note">
                 <span>No card</span> <span>&middot; Nothing charged</span>{' '}
                 <span>&middot; You are not subscribed to anything</span>

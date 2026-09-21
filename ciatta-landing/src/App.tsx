@@ -74,27 +74,35 @@ const WHO_TILES: WhoTile[] = [
     alt: 'A close frame of a woman\u2019s back and shoulder against a plain wall.' },
 ];
 
+/* Six, not ten.
+
+   Ten questions is a page saying everything it can think of rather than
+   the six a person actually arrives with, and four of the old ten were
+   halves of the same question — diagnose and medical device, connection
+   and coincidence, wearable and partial sharing. Each pair is one question
+   now, answered once and properly.
+
+   What could not be cut: that Ciatta does not diagnose, that a connection
+   is not a cause, that the record is hers, and when it opens. Those are
+   the four the rest of the site is also bound by. */
 const QUESTIONS: [string, string][] = [
   ['What does Ciatta actually do?',
-   'It brings your health information into one place and reads it together. It shows what changed, what was happening around it, what you told it, and what published evidence says about that kind of pattern.'],
-  ['Does Ciatta diagnose conditions?',
-   'No. Ciatta describes what is in your record and what moved close to what. Naming a condition is a clinician\u2019s job, and Ciatta does not do it, suggest it, or hint at it.'],
-  ['Is Ciatta a medical device?',
-   'No. Ciatta is not a medical device and is not a substitute for care. It does not interpret results clinically or offer a second opinion. Decisions stay between you and your clinician.'],
+   'It brings your health information into one place and reads it together, rather than leaving you to hold a portal, an app, a wearable and your own memory at once. It shows what changed, what was happening around it, what you told it, and what published evidence says about that kind of pattern. It reads the documents your provider sends, too, keeping each value beside every other time it was measured, with its unit, its range and its date.'],
+
+  ['Does Ciatta diagnose conditions, or replace my doctor?',
+   'No, to both. Ciatta is not a medical device and is not a substitute for care. It describes what is in your record and what moved close to what; naming a condition is a clinician\u2019s job, and Ciatta does not do it, suggest it, or hint at it. What it is for is the appointment: arriving with your own history in order, and the questions worth asking already written down.'],
+
   ['How does Ciatta decide two things may be connected?',
-   'It looks for things that moved close together in time, more than once, across your own record. It says how many times it has seen the pattern and over what period, and it shows the information the observation is based on.'],
-  ['What happens when a pattern could be a coincidence?',
-   'Ciatta says so. Things that move together are not necessarily one causing the other, and that line appears on the observation itself rather than in a disclaimer at the bottom of a page.'],
-  ['Can Ciatta analyze my lab results?',
-   'It reads the values out of the document your provider sent and keeps each one beside every other time it was measured, with its unit, its range, its date and who sent it. It does not tell you what a result means clinically.'],
-  ['Do I need a wearable?',
-   'No. A wearable adds nightly sleep and cycle data if you already have one. Without it, Ciatta works from what you enter, what you upload, and what your providers send.'],
-  ['Where does my health data live?',
-   'In your account, and it is yours. You can export it or delete it. Ciatta does not sell health data, and what you write in your own words is never overwritten by a device or a clinic.'],
-  ['Can I use Ciatta without sharing everything?',
-   'Yes. Every part of the record is optional, and Ciatta works with whatever you give it. What it cannot see, it does not guess at, and it says when a part is missing rather than filling the gap.'],
-  ['When does Ciatta open?',
-   'In Quarter 3 of 2027, to a small group first and then wider. That is what we are building to rather than a promise, and if it moves we will say so. Reserve a place and you will get one email when it opens, and nothing else.'],
+   'It looks for things that moved close together in time, more than once, across your own record \u2014 and it shows you the information the observation rests on, along with how many times it has seen the pattern and over what period. When something could be a coincidence, Ciatta says so on the observation itself rather than in a disclaimer at the bottom of the page. Things that move together are not necessarily one causing the other, and a tool that blurs that is worse than no tool.'],
+
+  ['Do I need a wearable, or to share everything?',
+   'Neither. A wearable adds nightly sleep and cycle data if you already have one; without it, Ciatta works from what you enter, what you upload, and what your providers send. Every part of the record is optional. What Ciatta cannot see it does not guess at \u2014 it says which part is missing rather than filling the gap.'],
+
+  ['Where does my health data live, and who can reach it?',
+   'In your account, and it is yours. It is encrypted in transit and at rest, you can export all of it or delete it at any time, and disconnecting a source takes its data with it. Ciatta does not sell, rent or share health data with advertisers, brokers or insurers. What you write in your own words is never overwritten by a device or a clinic.'],
+
+  ['When does Ciatta open, and what does reserving a place do?',
+   'Quarter 3 of 2027, to a small group first and then wider. That is what we are building to rather than a promise, and if it moves we will say so. Reserving a place puts you on the early-access list \u2014 no card, nothing charged, and you are not subscribed to anything. You will get one email when it opens, and nothing else.'],
 ];
 
 
@@ -129,12 +137,16 @@ export default function App() {
                 Ciatta connects your health data and everyday context to help you see
                 what changed, what may be connected, and what you can do about it.
               </p>
+              {/* The hero's action is the shortest word on the page. It sits
+                  inside the field on a phone, where "Reserve your place" left
+                  barely a hundred pixels to type an address into, and the
+                  sentence above it has already said what she is joining. */}
               <div id="join">
                 <SubscribeForm
                   id="waitlist-hero"
                   source="hero"
                   kind="waitlist"
-                  cta="Reserve your place"
+                  cta="Join now"
                   note=""
                 />
               </div>
@@ -252,7 +264,7 @@ export default function App() {
                   id="waitlist-close"
                   source="closing"
                   kind="waitlist"
-                  cta="Reserve your place"
+                  cta="Reserve"
                   note=""
                   consent="I agree to receive emails about early access and product updates."
                 />

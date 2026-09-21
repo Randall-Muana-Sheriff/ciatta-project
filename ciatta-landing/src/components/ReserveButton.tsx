@@ -1,7 +1,11 @@
 import { useState } from 'react';
 
 /**
- * "Reserve your place", wired to Stripe.
+ * The reserve action, wired to Stripe.
+ *
+ * "Reserve" everywhere it appears in the page body. Only the header keeps
+ * the full "Reserve your place": it is the one that has to stand alone,
+ * with no sentence above it saying what is being reserved.
  *
  * Pressing it asks the site for a Checkout session and hands the browser to
  * Stripe, which collects the card and charges nothing. Stripe collects the
@@ -26,7 +30,7 @@ type State = { kind: 'idle' } | { kind: 'opening' } | { kind: 'closed' } | { kin
 
 export function ReserveButton({
   className = 'm-btn',
-  label = 'Reserve your place',
+  label = 'Reserve',
 }: {
   className?: string;
   label?: string;

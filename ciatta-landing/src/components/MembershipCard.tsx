@@ -60,7 +60,7 @@ export function MembershipCard() {
           </p>
           <p className="mb-card-when">when membership opens</p>
 
-          <ReserveButton label="Reserve your place for free" />
+          <ReserveButton label="Reserve" />
           <p className="mb-card-foot">
             <span>No card</span> <span>&middot; Nothing charged</span>
           </p>
