@@ -3025,21 +3025,29 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    the foot, so what is inside can be set at the size it is read at instead of
    shrunk until a whole phone fits the box. */
 .hw-art-wrap.is-phone { align-items: flex-start; padding: var(--s4) var(--s4) 0; }
+/* The same device as the one on how-it-works, and for the same reason: a
+   product shown twice in two shapes reads as two products.
+
+   The corner is set as a percentage pair rather than in pixels, which is
+   what makes it hold at every width: a 32px corner is right at 224 wide and
+   wrong at 272, where the same phone is drawn larger. All four corners are
+   rounded — this one is not cropped by a fold, so a flat foot was a device
+   that stopped rather than a device that ends. */
 .hw-phone {
   width: 100%; max-width: 14rem; margin-inline: auto;
-  border-radius: 2rem 2rem 0 0;
-  padding: 0.3125rem 0.3125rem 0;
+  border-radius: 13%/6%;
+  padding: 0.3125rem;
   background: #0C0D0F;
   box-shadow:
     0 0 0 1px rgba(24,25,27,0.16),
     inset 0 0 0 1px rgba(255,255,255,0.10),
-    0 26px 54px -32px rgba(0,0,0,0.6);
-  -webkit-mask-image: linear-gradient(to bottom, #000 86%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 86%, transparent 100%);
+    0 30px 70px -28px rgba(24,25,27,0.30);
+  -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
 }
 .hw-phone .ha {
   background: var(--ps-canvas);
-  border-radius: 1.75rem 1.75rem 0 0;
+  border-radius: 11.5%/5.4%;
   padding: 0.375rem 0.625rem 1.5rem;
   gap: 0.4375rem;
 }
