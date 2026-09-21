@@ -3296,6 +3296,37 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
 }
 
+/* On a phone, the device goes. She is holding one: a drawing of a smaller
+   phone inside it is a picture of a phone rather than a screen, and it spends
+   a third of the width on bezel to say something she can already feel. The
+   screen takes the column instead, at the radius a surface takes, and the
+   height follows the content rather than a 402x874 box.
+
+   The width comes from the column, not from 100vw: a viewport unit counts
+   the scrollbar, which pushed the screen wider than the page and gave the
+   whole document a horizontal scroll. --ps-w stays a plain length because
+   it is divided by 100 to make --psu, which every size inside the screen is
+   written in and where a percentage resolves to nothing a font-size can
+   use; where container queries exist, --psu is already the real unit and
+   follows the width below. */
+@media (max-width: 700px) {
+  /* the media column is a centring flex box, so its child has no definite
+     width to take 100% of until it is given one */
+  .hw2-media { display: block; }
+  .hw2-device { --ps-w: 22rem; width: 100%; }
+  .hw2-device .ps-phone {
+    width: 100%;
+    height: auto;
+    padding: 0;
+    background: transparent;
+    border-radius: var(--r-surface);
+    box-shadow: none;
+  }
+  .hw2-device .ps-screen { border-radius: var(--r-surface); }
+  /* no bezel, so no island: it would be a black bar across the status row */
+  .hw2-device .ps-status::after { display: none; }
+}
+
 /* the film band, one sentence over it */
 .hw2-film {
   position: relative; isolation: isolate; overflow: hidden;
