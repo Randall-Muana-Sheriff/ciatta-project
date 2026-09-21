@@ -2460,30 +2460,59 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 
 
 /* 01 · what arrives, and the mark it arrives at */
-.hw-sources { display: flex; flex-direction: column; gap: var(--s3); width: 100%; }
-.hw-src-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
-.hw-src-list li {
+/* --- 01: the hub and its spokes ------------------------------------------
+   Every source has its own line in, so the drawing says what the step says:
+   they arrive separately and are read together. The lines are drawn in a
+   0-100 box stretched to whatever the column is, with the stroke kept off
+   the stretch so it stays a hairline at any width. */
+.hw-hub { position: relative; width: 100%; aspect-ratio: 1 / 1; min-height: 17rem; }
+.hw-hub-lines { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hw-hub-lines line { stroke: var(--rule); stroke-width: 1.5; }
+
+.hw-node {
+  position: absolute; transform: translateY(-50%);
   display: flex; align-items: center; gap: var(--s2);
-  padding: var(--s3);
-  border: var(--hairline) solid var(--rule); border-radius: var(--r-control);
+  max-width: 47%;
+}
+.hw-node.is-l { left: 0; }
+.hw-node.is-r { right: 0; flex-direction: row-reverse; text-align: right; }
+.hw-node.is-c { left: 50%; transform: translate(-50%, -50%); max-width: 78%; }
+.hw-node-mark {
+  flex: none; width: 2.25rem; height: 2.25rem;
+  display: grid; place-items: center;
+  border-radius: var(--r-nested);
+  background: var(--surface); color: var(--ink);
+  box-shadow: 0 0 0 var(--hairline) var(--rule);
+}
+.hw-node-mark svg { width: 1.25rem; height: 1.25rem; }
+.hw-node-mark img { width: 1.5rem; height: 1.5rem; object-fit: contain; display: block; }
+.hw-node-pdf { font-size: 0.5rem; font-weight: 700; letter-spacing: 0.06em; }
+.hw-node-b { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+/* the name holds one line: a wrapped node grows downward and walks out of
+   the box it is positioned inside */
+.hw-node-b b {
+  font-size: var(--t-small); font-weight: 500; color: var(--ink); line-height: 1.2;
+  white-space: nowrap;
+}
+.hw-node-b i {
+  font-style: normal; font-size: var(--t-caption); color: var(--meta-ink);
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+
+/* the mark the lines run to, sitting over them so they end under it */
+.hw-hub-c {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 3.25rem; height: 3.25rem; border-radius: var(--r-nested);
   background: var(--canvas);
+  display: grid; place-items: center;
 }
-.hw-src-list b {
-  font-size: var(--t-small); font-weight: 500; color: var(--ink);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.hw-hub-c img { width: 3.25rem; height: 3.25rem; border-radius: var(--r-nested); display: block; }
+
+/* narrow columns cannot carry a label either side of the hub */
+@media (max-width: 560px) {
+  .hw-node-b i { display: none; }
+  .hw-node { gap: var(--s2); }
 }
-.hw-src-list i {
-  margin-left: auto; font-style: normal; font-size: var(--t-caption);
-  letter-spacing: 0.08em; text-transform: uppercase; color: var(--meta-ink); white-space: nowrap;
-}
-.hw-src-pdf {
-  font-size: 0.5625rem; font-weight: 600; letter-spacing: 0.06em;
-  color: var(--on-ink); background: var(--ink);
-  padding: 2px 4px; border-radius: 3px;
-}
-.hw-src-into { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.hw-src-rail { width: 2px; height: var(--s5); background: var(--change); }
-.hw-src-mark { width: 3rem; height: 3rem; border-radius: var(--r-nested); display: block; }
 
 /* 02 · the day and the finding, at the size they are read at */
 .hw-frag-hello {

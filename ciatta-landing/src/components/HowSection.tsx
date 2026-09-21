@@ -12,35 +12,81 @@ import { DayChart } from './ProductShowcase';
  * Seeing what changed and seeing what it sits beside are one step, because on
  * the screen they are one screen.
  *
- * The source names are set as type rather than as their logos: Ciatta says
- * where a figure can come from without borrowing anyone's mark.
+ * Step 01 draws the sources as a hub: each one keeps its own line in to
+ * Ciatta. Where a source has supplied its own mark the node uses it; where it
+ * has not, the node draws a plain shape rather than an imitation of one.
  */
 
-/* -- 01 · what arrives, and where it arrives ------------------------------- */
+/* -- 01 · what arrives, and where it arrives ------------------------------- *
+ * A hub and its spokes: each source keeps its own line to Ciatta rather than
+ * being pooled into one arrow, because that is the claim — every one of them
+ * arrives separately and is read together.
+ *
+ * `logo` is the path to a source's own mark. Until one is supplied the node
+ * draws a plain glyph instead: a generic shape is honest about being a
+ * placeholder, where an approximation of somebody's logo would not be, and
+ * naming a brand in type is not the same as flying its mark.
+ */
 
-const SOURCES: [string, string][] = [
-  ['Oura · WHOOP · Apple Health', 'Measured'],
-  ['MyChart · Epic', 'Imported'],
-  ['PDF results', 'Uploaded'],
-  ['Your own words', 'You tell Ciatta'],
+type Node = {
+  key: string;
+  name: string;
+  kind: string;
+  side: 'l' | 'r' | 'c';
+  /** vertical position in the box, as a percentage */
+  y: number;
+  /** drop an official mark at this path and the node uses it */
+  logo?: string;
+  glyph: React.ReactNode;
+};
+
+const NODES: Node[] = [
+  { key: 'oura', name: 'Oura', kind: 'Measured', side: 'c', y: 8,
+    glyph: <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2.6" /></svg> },
+  { key: 'whoop', name: 'WHOOP', kind: 'Measured', side: 'l', y: 30,
+    glyph: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7l4 10 5-10 5 10 4-10" /></svg> },
+  { key: 'apple', name: 'Apple Health', kind: 'Measured', side: 'l', y: 70,
+    glyph: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20s-7-4.5-7-9.3A4.2 4.2 0 0 1 12 8a4.2 4.2 0 0 1 7 2.7C19 15.5 12 20 12 20Z" /></svg> },
+  { key: 'mychart', name: 'MyChart', kind: 'Imported', side: 'r', y: 30,
+    glyph: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15l4-5 3.5 3L20 6" /></svg> },
+  { key: 'pdf', name: 'PDF results', kind: 'Uploaded', side: 'r', y: 70,
+    glyph: <span className="hw-node-pdf">PDF</span> },
+  { key: 'words', name: 'Your own words', kind: 'You tell Ciatta', side: 'c', y: 92,
+    glyph: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 18.5 5 15l9-9 3.5 3.5-9 9-3.5 1Z" /><path d="M13.5 6.5 17 10" /></svg> },
 ];
+
+/* Where each node's line meets it, in the same 0-100 space as the box. The
+   six sit round the hub rather than in two columns of three: a middle row
+   puts two of them straight through the mark in the centre. */
+const ANCHOR = { l: 20, r: 80, c: 50 };
 
 function Sources() {
   return (
-    <div className="hw-sources">
-      <ul className="hw-src-list">
-        {SOURCES.map(([name, kind]) => (
-          <li key={name}>
-            {name === 'PDF results' && <span className="hw-src-pdf" aria-hidden="true">PDF</span>}
-            <b>{name}</b>
-            <i>{kind}</i>
-          </li>
+    <div className="hw-hub">
+      <svg className="hw-hub-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        {NODES.map((n) => (
+          <line
+            key={n.key}
+            x1="50" y1="50" x2={ANCHOR[n.side]} y2={n.y}
+            vectorEffect="non-scaling-stroke"
+          />
         ))}
-      </ul>
+      </svg>
 
-      <div className="hw-src-into">
-        <span className="hw-src-rail" aria-hidden="true" />
-        <img src="/images/icon.svg" alt="Ciatta" width={96} height={96} className="hw-src-mark" />
+      {NODES.map((n) => (
+        <div className={`hw-node is-${n.side}`} key={n.key} style={{ top: `${n.y}%` }}>
+          <span className="hw-node-mark">
+            {n.logo ? <img src={n.logo} alt="" width={48} height={48} loading="lazy" decoding="async" /> : n.glyph}
+          </span>
+          <span className="hw-node-b">
+            <b>{n.name}</b>
+            <i>{n.kind}</i>
+          </span>
+        </div>
+      ))}
+
+      <div className="hw-hub-c">
+        <img src="/images/icon.svg" alt="Ciatta" width={96} height={96} />
       </div>
     </div>
   );
