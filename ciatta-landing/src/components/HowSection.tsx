@@ -18,72 +18,85 @@ import { DayChart } from './ProductShowcase';
  */
 
 /* -- 01 · what arrives, and where it arrives ------------------------------- *
- * A hub and its spokes: each source keeps its own line to Ciatta rather than
- * being pooled into one arrow, because that is the claim — every one of them
- * arrives separately and is read together.
+ * findmypattern's shape: the sources stacked in a list, each one running into
+ * the product's own mark. Each keeps its own line rather than being pooled
+ * into one arrow, because that is the claim — they arrive separately and are
+ * read together.
  *
- * `logo` is the path to a source's own mark. Until one is supplied the node
- * draws a plain glyph instead: a generic shape is honest about being a
- * placeholder, where an approximation of somebody's logo would not be, and
- * naming a brand in type is not the same as flying its mark.
+ * `logo` is the path to a source's official mark. Give a row one and it uses
+ * the file; leave it off and the row draws a plain shape instead. A generic
+ * shape is honest about standing in for a mark. A hand-drawn lookalike of
+ * somebody's logo is not, so there are none here.
  */
 
 type Node = {
   key: string;
   name: string;
   kind: string;
-  side: 'l' | 'r' | 'c';
-  /** vertical position in the box, as a percentage */
-  y: number;
-  /** drop an official mark at this path and the node uses it */
+  /** e.g. '/images/sources/oura.svg' — drop the file in and set this */
   logo?: string;
   glyph: React.ReactNode;
 };
 
 const NODES: Node[] = [
-  { key: 'oura', name: 'Oura', kind: 'Measured', side: 'c', y: 8,
+  { key: 'oura', name: 'Oura', kind: 'Measured',
     glyph: <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2.6" /></svg> },
-  { key: 'whoop', name: 'WHOOP', kind: 'Measured', side: 'l', y: 30,
+  { key: 'whoop', name: 'WHOOP', kind: 'Measured',
     glyph: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7l4 10 5-10 5 10 4-10" /></svg> },
-  { key: 'apple', name: 'Apple Health', kind: 'Measured', side: 'l', y: 70,
+  { key: 'apple', name: 'Apple Health', kind: 'Measured',
     glyph: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20s-7-4.5-7-9.3A4.2 4.2 0 0 1 12 8a4.2 4.2 0 0 1 7 2.7C19 15.5 12 20 12 20Z" /></svg> },
-  { key: 'mychart', name: 'MyChart', kind: 'Imported', side: 'r', y: 30,
+  { key: 'mychart', name: 'MyChart', kind: 'Imported',
     glyph: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15l4-5 3.5 3L20 6" /></svg> },
-  { key: 'pdf', name: 'PDF results', kind: 'Uploaded', side: 'r', y: 70,
-    glyph: <span className="hw-node-pdf">PDF</span> },
-  { key: 'words', name: 'Your own words', kind: 'You tell Ciatta', side: 'c', y: 92,
+  { key: 'pdf', name: 'PDF results', kind: 'Uploaded',
+    glyph: (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M6 2.5h8L19 7.5v14H6z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        <path d="M14 2.5V8h5" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        <text x="12" y="18" textAnchor="middle" fontSize="6.4" fontWeight="700" fill="currentColor">PDF</text>
+      </svg>
+    ) },
+  { key: 'words', name: 'Your own words', kind: 'You tell Ciatta',
     glyph: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 18.5 5 15l9-9 3.5 3.5-9 9-3.5 1Z" /><path d="M13.5 6.5 17 10" /></svg> },
 ];
 
-/* Where each node's line meets it, in the same 0-100 space as the box. The
-   six sit round the hub rather than in two columns of three: a middle row
-   puts two of them straight through the mark in the centre. */
-const ANCHOR = { l: 20, r: 80, c: 50 };
+/* the rows occupy the left of the box and the mark sits at the right of it,
+   in the same 0-100 space the lines are drawn in */
+const ROWS_RIGHT = 62;
+const HUB_X = 86;
 
 function Sources() {
+  const step = 100 / NODES.length;
+
   return (
     <div className="hw-hub">
       <svg className="hw-hub-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-        {NODES.map((n) => (
-          <line
-            key={n.key}
-            x1="50" y1="50" x2={ANCHOR[n.side]} y2={n.y}
-            vectorEffect="non-scaling-stroke"
-          />
-        ))}
+        {NODES.map((n, i) => {
+          const y = step * (i + 0.5);
+          return (
+            <path
+              key={n.key}
+              d={`M${ROWS_RIGHT},${y} C${ROWS_RIGHT + 12},${y} ${HUB_X - 12},50 ${HUB_X},50`}
+              vectorEffect="non-scaling-stroke"
+            />
+          );
+        })}
       </svg>
 
-      {NODES.map((n) => (
-        <div className={`hw-node is-${n.side}`} key={n.key} style={{ top: `${n.y}%` }}>
-          <span className="hw-node-mark">
-            {n.logo ? <img src={n.logo} alt="" width={48} height={48} loading="lazy" decoding="async" /> : n.glyph}
-          </span>
-          <span className="hw-node-b">
-            <b>{n.name}</b>
-            <i>{n.kind}</i>
-          </span>
-        </div>
-      ))}
+      <ul className="hw-rows">
+        {NODES.map((n) => (
+          <li className="hw-node" key={n.key}>
+            <span className="hw-node-mark">
+              {n.logo
+                ? <img src={n.logo} alt="" width={48} height={48} loading="lazy" decoding="async" />
+                : n.glyph}
+            </span>
+            <span className="hw-node-b">
+              <b>{n.name}</b>
+              <i>{n.kind}</i>
+            </span>
+          </li>
+        ))}
+      </ul>
 
       <div className="hw-hub-c">
         <img src="/images/icon.svg" alt="Ciatta" width={96} height={96} />
