@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 import { Wordmark } from './components/Wordmark';
 import { LEGAL } from './legal/config';
 import type { Block, LegalDoc } from './legal/types';
+import { CookieBanner, CookieChoicesLink } from './components/CookieBanner';
 
 /**
  * The Privacy Policy and the Terms of Use, one layout for both, to the shape of
@@ -65,6 +66,7 @@ function renderBlock(block: Block, key: number) {
           ))}
         </tbody>
       </table>
+      <CookieBanner />
     </div>
   );
 }
@@ -124,6 +126,7 @@ export default function Legal({ doc, current }: { doc: LegalDoc; current: 'priva
           <a href="/terms/" aria-current={current === 'terms' ? 'page' : undefined}>
             Terms of Use
           </a>
+          <CookieChoicesLink />
         </nav>
         <p className="footer-copy">&copy; {new Date().getFullYear()} Ciatta</p>
       </footer>

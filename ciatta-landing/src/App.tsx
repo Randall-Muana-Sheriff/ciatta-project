@@ -9,6 +9,7 @@ import { SafetySection } from './components/SafetySection';
 import { MembershipCard } from './components/MembershipCard';
 import { Wordmark } from './components/Wordmark';
 import { SiteHeader } from './components/SiteHeader';
+import { CookieBanner, CookieChoicesLink } from './components/CookieBanner';
 
 /**
  * Ciatta landing page.
@@ -274,9 +275,11 @@ export default function App() {
           <a href="/briefs/">Briefs</a>
           <a href="/privacy/">Privacy Policy</a>
           <a href="/terms/">Terms of Use</a>
+          <CookieChoicesLink />
         </nav>
         <p className="footer-copy">© {new Date().getFullYear()} Ciatta</p>
       </footer>
+      <CookieBanner />
     </>
   );
 }

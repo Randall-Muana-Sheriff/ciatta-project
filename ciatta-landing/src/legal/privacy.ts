@@ -11,7 +11,7 @@ import type { LegalDoc } from './types';
 //   · hosting and security by Cloudflare Pages; rate-limit counters keyed by a
 //     one-way hash of the IP address or email, kept for at most 24 hours
 //   · fonts loaded from Google Fonts
-//   · no cookies, no analytics, no advertising pixels, no local storage
+//   · no cookies and no analytics unless she accepts; no advertising pixels
 // If any of that changes, this document has to change with it.
 
 export const privacy: LegalDoc = {
@@ -20,7 +20,7 @@ export const privacy: LegalDoc = {
   plainly: [
     'This policy covers ciatta.io, the Ciatta Briefs newsletter and the waitlist. The Ciatta app is not open yet and will have its own notice before it is.',
     'We ask for one thing: your email address. We do not ask for health information on this website.',
-    'The site sets no cookies and runs no analytics or advertising trackers. We do not track whether you open our emails or click their links.',
+    'The site sets no cookies unless you accept analytics, and you are asked before anything is set. We do not track whether you open our emails or click their links.',
     'We never sell your information, and we do not use it for advertising.',
     'You can unsubscribe from any email in one click, and ask us to delete your address at any time.',
   ],
@@ -101,7 +101,10 @@ export const privacy: LegalDoc = {
       title: 'Cookies and tracking',
       blocks: [
         {
-          p: 'The site sets no cookies and stores nothing in your browser. It runs no analytics, advertising, session recording or social media pixels, so there is no cookie banner because there is nothing to consent to.',
+          p: 'We use one analytics tool, Google Analytics, to count visits and see which pages are read. It sets cookies, so it does not run until you accept it. Decline and nothing is set and nothing is sent. Your answer is remembered in your browser rather than in a cookie, and you can change it at any time from Cookie choices in the footer.',
+        },
+        {
+          p: 'We run no advertising pixels, no session recording and no social media trackers. Analytics is configured to truncate your address before it is stored and to send nothing to Google\u2019s advertising products. Nothing in your health record is ever part of it.',
         },
         {
           p: 'Our fonts are loaded from Google Fonts. To send them, Google receives your IP address and browser details, as with any request to its servers. Google states that it does not use this to profile visitors or set cookies.',

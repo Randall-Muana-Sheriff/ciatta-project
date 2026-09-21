@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Wordmark } from './components/Wordmark';
 import { confirmSubscription, unsubscribe, type Result } from './lib/newsletter';
+import { CookieBanner } from './components/CookieBanner';
 
 /**
  * Where the links in our emails land.
@@ -103,6 +104,7 @@ export default function Newsletter({ mode }: { mode: Mode }) {
           </div>
         </div>
       </main>
+      <CookieBanner />
     </>
   );
 }

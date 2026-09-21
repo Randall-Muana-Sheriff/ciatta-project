@@ -4,6 +4,7 @@ import { Wordmark } from './components/Wordmark';
 import { Film } from './components/Film';
 import { Phone } from './components/PhoneChrome';
 import { TodayScreen } from './components/TodayScreen';
+import { CookieBanner, CookieChoicesLink } from './components/CookieBanner';
 
 /**
  * How Ciatta works — built to the composition of whoop.com/how-it-works.
@@ -382,9 +383,11 @@ export default function HowItWorks() {
           <a href="/briefs/">Briefs</a>
           <a href="/privacy/">Privacy Policy</a>
           <a href="/terms/">Terms of Use</a>
+          <CookieChoicesLink />
         </nav>
         <span className="footer-copy">© 2026 Ciatta</span>
       </footer>
+      <CookieBanner />
     </div>
   );
 }

@@ -1375,6 +1375,55 @@ p { margin: 0; text-wrap: pretty; }
    not have to repeat itself.
    ========================================================================= */
 
+/* --- the cookie banner ----------------------------------------------------
+   It sits at the foot and does not cover the page: holding a landing page
+   hostage over analytics is a cost paid by the visitor for something that
+   benefits only us.
+
+   Accept and Decline are the same size and weight. A banner where refusing
+   is a grey word in the corner is a banner designed to be accepted, and
+   that is not consent. */
+.ck {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  padding: var(--s4);
+  padding-bottom: calc(var(--s4) + env(safe-area-inset-bottom, 0px));
+  background: var(--surface);
+  border-top: var(--hairline) solid var(--rule);
+  box-shadow: 0 -12px 40px -24px rgba(24,25,27,0.35);
+}
+.ck-in {
+  max-width: var(--measure); margin-inline: auto;
+  display: grid; gap: var(--s4); align-items: center;
+}
+@media (min-width: 760px) {
+  .ck-in { grid-template-columns: minmax(0, 1fr) auto; gap: var(--s6); }
+}
+.ck-title { margin: 0 0 var(--s2); color: var(--ink); font-size: var(--t-body); font-weight: 600; }
+.ck-body {
+  margin: 0; color: var(--body-ink);
+  font-size: var(--t-small); line-height: 1.5; max-width: 66ch;
+}
+.ck-body a { color: var(--ink); }
+.ck-acts { display: flex; gap: var(--s3); }
+.ck-btn {
+  appearance: none; cursor: pointer; flex: 1 1 auto;
+  font: inherit; font-size: var(--t-small); font-weight: 500;
+  min-height: 2.75rem; padding: 0 var(--s5);
+  border-radius: var(--r-pill);
+  background: none; color: var(--ink);
+  border: var(--hairline) solid var(--rule);
+}
+@media (min-width: 760px) { .ck-btn { flex: none; } }
+.ck-btn.is-on { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.ck-btn:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 2px; }
+
+/* the way back to the choice, set as the footer's other links are */
+.ck-link {
+  appearance: none; background: none; border: 0; padding: 0;
+  font: inherit; cursor: pointer; color: inherit;
+  text-decoration: underline; text-underline-offset: 0.2em;
+}
+
 /* the two things the reserve button can say back */
 .rs-msg {
   margin: 0; color: var(--meta-ink);
@@ -2946,9 +2995,19 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .hero.has-film:not(.is-page) { position: sticky; top: 0; z-index: 0; }
 .statement {
   position: relative; z-index: 1;
-  /* White out of the system rather than #FFFFFF, and Graphite on it: the
-     panel still climbs over the film, and what it climbs into is paper. */
-  background: var(--surface); color: var(--ink);
+  /* Frosted, the way Vision Pro's panels are: the film is not hidden behind
+     this, it is blurred behind it, so the panel reads as glass over the
+     footage rather than as a second page laid on top of it.
+
+     The colour underneath is White at 72%, not a transparent white, because
+     a backdrop-filter that a browser refuses leaves whatever is behind it
+     fully legible — and a headline in Graphite over moving footage is not
+     legible. The fallback is the panel a shade more solid, which is the
+     right failure. */
+  background: rgba(253, 253, 252, 0.72);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  backdrop-filter: blur(28px) saturate(1.4);
+  color: var(--ink);
   min-height: 100vh; min-height: 100lvh;
   display: grid; align-content: center;
   padding-block: clamp(4rem, 14vh, 10rem);
@@ -2964,6 +3023,9 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 /* the kicker: the smallest line in the section and the last one to arrive,
    set in caps against the sentence above it rather than competing with it */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .statement { background: rgba(253, 253, 252, 0.94); }
+}
 .statement-kicker {
   margin: var(--s6) 0 0; color: var(--meta-ink);
   font-size: var(--t-caption); font-weight: 600;
