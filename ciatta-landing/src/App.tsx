@@ -237,14 +237,13 @@ export default function App() {
                   section keeps an accessible name without a label above it
                   restating what the sentence already says. */}
               <h2 id="cta-heading" className="display">
-                {/* JSX drops the newline between these two, so the space that
-                    separates the sentences for a screen reader is explicit. */}
-                See what’s changing.{' '}
-                <span className="close-second">Know what happened around it.</span>
+                You shouldn’t have to piece together your own health.
               </h2>
               <p className="close-lines">
-                Ciatta connects your health data and everyday context so you can see
-                what changed, explore what may be connected, and decide what to do next.
+                We are building the intelligence layer for personal health,
+                connecting what’s happening across your body, your care, and
+                your everyday life so you can see what’s changing, make
+                informed decisions, and move forward with greater clarity.
               </p>
             </div>
             <div className="split-body">
