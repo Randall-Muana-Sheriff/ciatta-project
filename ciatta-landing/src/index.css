@@ -1308,6 +1308,22 @@ p { margin: 0; text-wrap: pretty; }
    not have to repeat itself.
    ========================================================================= */
 
+/* the two things the reserve button can say back */
+.rs-msg {
+  margin: 0; color: var(--meta-ink);
+  font-size: var(--t-small); line-height: 1.5;
+}
+.rs-msg.is-error { color: var(--ink); }
+.rs-done {
+  margin: 0 0 var(--s4); padding: var(--s4);
+  border-radius: var(--r-nested);
+  background: rgba(247,244,238,0.12);
+  color: #F7F4EE; font-size: var(--t-small); line-height: 1.55;
+}
+.rs-done b { font-weight: 600; }
+/* the card's own button is a button now, so it takes the width a link took */
+.mb-card .m-btn { justify-self: center; margin-top: var(--s2); border: 0; cursor: pointer; font: inherit; }
+
 /* --- the membership card -------------------------------------------------
    One card, centred, because there is one membership. The price is said
    twice: the figure that is billed, and the figure it comes to in a day,

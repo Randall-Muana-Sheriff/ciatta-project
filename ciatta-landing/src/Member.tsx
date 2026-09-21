@@ -1,6 +1,7 @@
 import { Wordmark } from './components/Wordmark';
 import { SubscribeForm } from './components/SubscribeForm';
 import { Film } from './components/Film';
+import { ReserveButton, ReservedNotice } from './components/ReserveButton';
 
 /**
  * Ciatta membership.
@@ -181,7 +182,7 @@ export default function Member() {
              in it, and the price said twice — the figure you are billed and
              the figure it works out at a day. One card, because there is one
              membership.                                                      */}
-        <section className="m-band mb-join" aria-labelledby="plan-heading">
+        <section className="m-band mb-join" id="membership" aria-labelledby="plan-heading">
           <div className="m-wrap">
             <div className="band-head is-mid">
               <h2 className="m-h2" id="plan-heading">Your membership starts here.</h2>
@@ -209,9 +210,11 @@ export default function Member() {
               </p>
               <p className="mb-card-day">$0.33 / day</p>
 
-              <a className="m-btn" href="#join">Reserve your place</a>
+              <ReserveButton />
               <p className="mb-card-foot">
-                Nothing is charged until Ciatta opens and you choose to begin.
+                Your card is saved, not charged. Nothing is taken until Ciatta
+                opens and you choose to begin, and you can remove it any time
+                before then.
               </p>
             </div>
 
@@ -263,6 +266,7 @@ export default function Member() {
               <p className="m-free-sub">Ciatta helps you keep up with it.</p>
             </div>
             <div className="split-body">
+              <ReservedNotice />
               <SubscribeForm id="waitlist-member" source="member" kind="waitlist" offerBriefs cta="Reserve your place" note="" />
               <p className="m-free-note">
                 No card today. Nothing is charged until Ciatta opens and you

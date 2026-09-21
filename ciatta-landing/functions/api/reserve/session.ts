@@ -44,14 +44,18 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const key = env.STRIPE_SECRET_KEY;
   if (!key) return json({ ok: false, message: 'Reservations are not open yet.' }, 503);
 
+  // The address is optional: Checkout collects one itself when we do not
+  // supply it, so the card can be reserved from a button without a form in
+  // front of it. When the page does know the address, passing it means she
+  // does not type it twice.
   let email = '';
   try {
-    const body = (await request.json()) as { email?: string };
+    const body = (await request.json().catch(() => ({}))) as { email?: string };
     email = (body.email ?? '').trim().toLowerCase();
   } catch {
-    return json({ ok: false, message: 'Something went wrong. Try again.' }, 400);
+    email = '';
   }
-  if (!EMAIL.test(email) || email.length > 254) {
+  if (email && (!EMAIL.test(email) || email.length > 254)) {
     return json({ ok: false, message: 'Enter a valid email address.' }, 400);
   }
 
@@ -64,16 +68,15 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       'content-type': 'application/x-www-form-urlencoded',
       // Stripe retries are safe to repeat: the same email within the same
       // minute produces the same session rather than a second customer.
-      'idempotency-key': `reserve:${email}:${Math.floor(Date.now() / 60000)}`,
+      'idempotency-key': `reserve:${email || 'anon'}:${Math.floor(Date.now() / 60000)}`,
     },
     body: form({
       mode: 'setup',
-      customer_email: email,
       currency: 'usd',
-      success_url: `${origin}/reserved/?ok=1`,
-      cancel_url: `${origin}/member/#join`,
+      success_url: `${origin}/member/?reserved=1`,
+      cancel_url: `${origin}/member/#membership`,
       'metadata[intent]': 'reserve',
-      'metadata[email]': email,
+      ...(email ? { customer_email: email, 'metadata[email]': email } : {}),
       ...(env.STRIPE_PRICE_ID ? { 'metadata[price_id]': env.STRIPE_PRICE_ID } : {}),
     }),
   });
