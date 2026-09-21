@@ -13,6 +13,22 @@ import { LEGAL } from '../legal/config';
  * dead links is a worse impression than a short one.
  */
 
+/**
+ * The accounts, at their canonical addresses.
+ *
+ * Each of these arrived with the parameters a share sheet adds — stkn on
+ * Instagram, mibextid on Facebook, _r and _t on TikTok. They are stripped.
+ * Two reasons: they are one person's share-session artefacts rather than
+ * part of the address, and Instagram's stkn in particular is scoped to the
+ * account that generated it, which is not a thing to publish on a website
+ * and leave there. The bare profile URLs resolve to the same places.
+ */
+const SOCIAL: { label: string; href: string }[] = [
+  { label: 'Instagram', href: 'https://www.instagram.com/getciatta' },
+  { label: 'Facebook', href: 'https://www.facebook.com/share/19caYcZnC9/' },
+  { label: 'TikTok', href: 'https://www.tiktok.com/@getciatta' },
+];
+
 const COLUMNS: [string, { label: string; href: string }[]][] = [
   ['Company', [
     { label: 'How it works', href: '/how-it-works/' },
@@ -56,6 +72,13 @@ export function SiteFooter() {
             <div>
               <h2>Connect</h2>
               <ul>
+                {SOCIAL.map((s) => (
+                  <li key={s.href}>
+                    {/* noreferrer as well as noopener: the target has no
+                        business knowing which page sent her. */}
+                    <a href={s.href} target="_blank" rel="noopener noreferrer">{s.label}</a>
+                  </li>
+                ))}
                 <li><a href={`mailto:${LEGAL.contactEmail}`}>{LEGAL.contactEmail}</a></li>
                 <li><CookieChoicesLink /></li>
               </ul>
