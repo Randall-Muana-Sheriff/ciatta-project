@@ -1,7 +1,8 @@
 import { Wordmark } from './components/Wordmark';
 import { SubscribeForm } from './components/SubscribeForm';
 import { Film } from './components/Film';
-import { ReserveButton, ReservedNotice } from './components/ReserveButton';
+import { ReservedNotice } from './components/ReserveButton';
+import { MembershipCard } from './components/MembershipCard';
 
 /**
  * Ciatta membership.
@@ -51,17 +52,6 @@ const CARE: [string, string][] = [
    'Manage referrals, appointments, and the steps between visits.'],
   ['Navigate healthcare',
    'Help organise insurance requirements, records, and what needs to happen next.'],
-];
-
-/* -- what membership is, said six ways rather than nine -------------------- */
-
-const INCLUDED: string[] = [
-  'Your health, in one place',
-  'See what is changing',
-  'See what may be connected',
-  'Get personalized insights',
-  'Prepare for care',
-  'Keep learning over time',
 ];
 
 /* -- the questions a page that asks for money has to answer ---------------- */
@@ -176,54 +166,17 @@ export default function Member() {
           </div>
         </section>
 
-        {/* ============ 04 · membership ================================= *
-             Octo Health's arrangement on their home page: the invitation
-             above, then one card carrying the tier, what it is for, what is
-             in it, and the price said twice — the figure you are billed and
-             the figure it works out at a day. One card, because there is one
-             membership.                                                      */}
-        <section className="m-band mb-join" id="membership" aria-labelledby="plan-heading">
+        {/* ============ 04 · membership ================================= */}
+        <MembershipCard />
+
+        <div className="m-band">
           <div className="m-wrap">
-            <div className="band-head is-mid">
-              <h2 className="m-h2" id="plan-heading">Your membership starts here.</h2>
-              <p className="m-h2-sub">
-                Pre-order your membership and be among the first Ciatta
-                members when it opens in 2027.
-              </p>
-            </div>
-
-            <div className="mb-card">
-              <div className="mb-card-name">
-                <span className="mb-card-brand">Ciatta</span>
-                <span className="mb-card-tier">Core</span>
-              </div>
-              <p className="mb-card-tag">Your record, kept in order and read for you.</p>
-
-              <ul className="mb-card-list">
-                {INCLUDED.map((line) => (
-                  <li key={line}><i aria-hidden="true" /><span>{line}</span></li>
-                ))}
-              </ul>
-
-              <p className="mb-card-price">
-                <b>$9.99</b> <span>/ month</span>
-              </p>
-              <p className="mb-card-day">$0.33 / day</p>
-
-              <ReserveButton />
-              <p className="mb-card-foot">
-                Your card is saved, not charged. Nothing is taken until Ciatta
-                opens and you choose to begin, and you can remove it any time
-                before then.
-              </p>
-            </div>
-
             <p className="mb-note is-mid">
               Ciatta Care and future agent capabilities evolve within your
               membership.
             </p>
           </div>
-        </section>
+        </div>
 
         {/* ============ 05 · permission, and privacy ===================== */}
         <section className="m-band is-alt mb-trustline" aria-labelledby="control-heading">

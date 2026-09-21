@@ -47,7 +47,7 @@
          Token names and values are unchanged; only which one is the default
          background swaps. Strict alternation — canvas, surface, canvas —
          is what lets the borders go away, and it caps nesting at two. */
-  --canvas: #F7F4EE;          /* Paper  · the canvas */
+  --canvas: #FAF9F6;          /* Paper  · the canvas, warm but bright */
   --surface: #FDFDFC;         /* White  · what rests on it */
   --statement-ground: #FFF8EC;/* Daylight · one sentence */
   --rule: #E8E4DC;            /* Mist   · the three surviving hairlines */

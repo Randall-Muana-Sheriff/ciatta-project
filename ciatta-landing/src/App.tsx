@@ -6,6 +6,7 @@ import { ExploreSection } from './components/ExploreSection';
 import { HowSection } from './components/HowSection';
 import { HumanSection } from './components/HumanSection';
 import { SafetySection } from './components/SafetySection';
+import { MembershipCard } from './components/MembershipCard';
 import { Wordmark } from './components/Wordmark';
 import { SiteHeader } from './components/SiteHeader';
 
@@ -202,6 +203,9 @@ export default function App() {
 
         {/* --------------------- SAFETY AND PRIVACY ------------------------ */}
         <SafetySection />
+
+        {/* -------------------------- MEMBERSHIP ---------------------------- */}
+        <MembershipCard />
 
         {/* ---------------------------- QUESTIONS --------------------------- */}
         <section className="section" aria-labelledby="q-heading">
