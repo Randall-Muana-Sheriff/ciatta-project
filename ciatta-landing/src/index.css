@@ -1560,13 +1560,29 @@ p { margin: 0; text-wrap: pretty; }
 /* the ticks, read left so the eye runs down one column rather than
    re-centring on every line */
 .mb-card-list {
-  list-style: none; margin: var(--s2) 0; padding: var(--s5) 0;
+  list-style: none; margin: 0 0 var(--s2); padding: var(--s4) 0 var(--s5);
   display: grid; gap: var(--s4); text-align: left;
-  border-top: var(--hairline) solid var(--rule);
   border-bottom: var(--hairline) solid var(--rule);
 }
 .mb-card-list li { display: flex; align-items: flex-start; gap: var(--s3); }
-.mb-card-list span { color: var(--ink); font-size: var(--t-body); line-height: 1.35; }
+/* each inclusion is now a thing and a sentence saying what the thing is, so
+   the row is a stacked pair rather than one line. The title takes the body
+   step at 600 and the sentence the step below it, which is the same pairing
+   the rest of the site uses for a label and its explanation. */
+.mb-card-list span { display: grid; gap: 2px; min-width: 0; }
+.mb-card-list b {
+  color: var(--ink); font-size: var(--t-body); font-weight: 600; line-height: 1.25;
+}
+.mb-card-list em {
+  font-style: normal; color: var(--body-ink);
+  font-size: var(--t-small); line-height: 1.4;
+}
+/* the label over the list, set as every other small label on the site is */
+.mb-card-label {
+  margin: var(--s2) 0 0; color: var(--meta-ink);
+  font-size: var(--t-caption); font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase;
+}
 /* the tick is drawn rather than typed: a check glyph sits differently in
    every face and this one has to sit on the line it marks */
 .mb-card-list i {
@@ -1578,16 +1594,22 @@ p { margin: 0; text-wrap: pretty; }
 .mb-card-list i::before { left: 1px; top: 0.66em; width: 5px; height: 1.5px; transform: rotate(45deg); transform-origin: left center; }
 .mb-card-list i::after { left: 4.4px; top: 0.82em; width: 10px; height: 1.5px; transform: rotate(-52deg); transform-origin: left center; }
 
-.mb-card-price { margin: 0; color: var(--ink); line-height: 1; }
+.mb-card-price {
+  margin: var(--s4) 0 0; padding-top: var(--s5); color: var(--ink); line-height: 1;
+  border-top: var(--hairline) solid var(--rule);
+}
 .mb-card-price b {
   font-size: clamp(2.25rem, 1.4rem + 2.6vw, 3.25rem);
   font-weight: 500; letter-spacing: -0.04em;
 }
 .mb-card-price span { font-size: var(--t-body); color: var(--meta-ink); }
-/* the price is what membership will be, not what is being taken today */
+/* Under the price: what the payment buys, in a sentence. It used to be the
+   three words "when membership opens" and could sit at the caption step;
+   it is a line of prose now, so it takes the step prose takes. */
 .mb-card-when {
-  margin: 0; color: var(--meta-ink);
-  font-size: var(--t-caption); letter-spacing: 0.02em;
+  margin: var(--s3) 0 0; color: var(--body-ink);
+  font-size: var(--t-small); line-height: 1.45; max-width: 30ch;
+  margin-inline: auto;
 }
 .mb-card-foot span { white-space: nowrap; }
 .mb-card .m-btn { justify-self: center; margin-top: var(--s2); }
@@ -4108,7 +4130,6 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .close-disclaimer,
 .ft-base,
 .waitlist-consent,
-.mb-card-when,
 .mb-card-foot {
   font-size: var(--t-caption);
   font-weight: 400;

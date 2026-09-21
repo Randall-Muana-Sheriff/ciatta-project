@@ -89,7 +89,7 @@ export const terms: LegalDoc = {
           p: 'The first charge happens when Ciatta opens and you confirm that you want to begin, and not before. We are building towards Quarter 3 of 2027. That is a plan and not a promise, and if it moves we will tell you. We will email you before anything is charged, and you will be able to decline. If you do nothing, you are not charged.',
         },
         {
-          p: 'Membership is $79 for a year, charged once at the start of the year, unless we tell you a different price before you confirm. There is no monthly instalment and no separate joining fee. It renews once a year until you cancel. If the price changes for existing members we will tell you at least 30 days before the renewal it would apply to, and you can cancel before it takes effect.',
+          p: 'Membership is $99 for a year, charged once at the start of the year, unless we tell you a different price before you confirm. There is no monthly instalment and no separate joining fee. It renews once a year until you cancel. If the price changes for existing members we will tell you at least 30 days before the renewal it would apply to, and you can cancel before it takes effect.',
         },
         {
           p: 'You can cancel at any time, from your account or by writing to us. Cancelling stops the next annual payment; it does not end your access that day. You keep access until the end of the year you have paid for, and you can export your whole record before you go or delete it outright. We will email you before each renewal, so a year never turns over without your being told first.',
