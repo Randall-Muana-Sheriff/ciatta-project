@@ -1,9 +1,6 @@
 import { Wordmark } from './components/Wordmark';
 import { SubscribeForm } from './components/SubscribeForm';
 import { Film } from './components/Film';
-import { HeroStory } from './components/HeroStory';
-import { Phone } from './components/PhoneChrome';
-import { TodayScreen } from './components/TodayScreen';
 
 /**
  * Ciatta membership.
@@ -26,30 +23,6 @@ import { TodayScreen } from './components/TodayScreen';
  * rather than as what opens.
  */
 
-/* -- 03 · everything the record holds -------------------------------------- *
- * Said as domains rather than drawn as a dashboard: this is the scope of the
- * thing, and a grid of tiles would turn scope into features.                 */
-
-const DOMAINS: [string, string[]][] = [
-  ['From your clinicians',
-   ['Medical records', 'Lab results', 'Medications', 'Treatments', 'Surgery and procedures']],
-  ['From your body',
-   ['Symptoms', 'Cycle', 'Sleep', 'Activity', 'Wearable data', 'Nutrition', 'Gut health']],
-  ['From your life',
-   ['Everyday context', 'Mental and cognitive health', 'Your own words']],
-];
-
-/* -- 04 · what reading them together can show ------------------------------ */
-
-const PAIRS: [string, string][] = [
-  ['Sleep × symptoms', 'Afternoon pain has been higher following nights under seven hours.'],
-  ['Cycle × symptoms', 'Abdominal symptoms were reported more often in the same phase, across three cycles.'],
-  ['Labs × symptoms', 'Ferritin fell across three results in the period fatigue was reported most.'],
-  ['Treatment × symptoms', 'Symptom days changed after a dose change, and kept changing for six weeks.'],
-  ['Surgery × recovery', 'Symptom days fell in the months after the procedure, against her own baseline.'],
-  ['Nutrition × gut health', 'Reported discomfort clustered on days with a late, heavy evening meal.'],
-];
-
 /* -- 05 · the record as it thickens ---------------------------------------- */
 
 const TIMELINE: [string, string, string][] = [
@@ -61,32 +34,6 @@ const TIMELINE: [string, string, string][] = [
   ['Mar', 'Surgery', 'Laparoscopy'],
   ['Apr', 'Recovery', 'Symptom days fell'],
   ['Now', 'What happened next', 'Sleep closer to her usual'],
-];
-
-/* -- 06 · the page she takes to an appointment ----------------------------- */
-
-const BRIEF: [string, string[]][] = [
-  ['What changed', [
-    'Symptom days rose from 4 to 11 a month across 6 weeks.',
-    'Sleep fell to 6h 46m, 48 minutes under her usual.',
-  ]],
-  ['What was happening around it', [
-    'Levothyroxine increased from 50 to 75 mcg on 3 Mar.',
-    'Cycle shortened from 29 to 26 days across 4 cycles.',
-    'Ferritin 32 on 12 Aug, 24 on 14 Mar, 18 on 2 Sep. Range 15 to 150.',
-  ]],
-  ['What you tried', [
-    'A 7-day sleep experiment from 10 Mar, with an earlier wind-down on 5 of 7 nights.',
-  ]],
-  ['What happened next', [
-    'Sleep returned closer to your usual on 5 of 7 nights. Fatigue was reported less often.',
-  ]],
-];
-
-const BRIEF_ASKS: string[] = [
-  'Could the cycle shortening and the sleep change be worth evaluating together?',
-  'Is the ferritin trend worth repeating, given the heavier bleeding in the same period?',
-  'Should the dose change on 3 Mar be reviewed against the symptoms recorded since?',
 ];
 
 /* -- 07 · Ciatta Care ------------------------------------------------------- */
@@ -113,17 +60,6 @@ const AGENTIC: string[] = [
   'Track what needs to happen next',
 ];
 
-/* -- 09 · what Ciatta shows about its own working -------------------------- */
-
-const TRUST: [string, string][] = [
-  ['Where it came from', 'Measured, imported, uploaded, or told to Ciatta by you.'],
-  ['When it happened', 'Every figure carries its date, its unit, and its range.'],
-  ['What surrounded it', 'The week a change happened in, not the change alone.'],
-  ['What supports it', 'The evidence an observation rests on, and how thin it still is.'],
-  ['What is uncertain', 'Things that move together are not necessarily one causing the other.'],
-  ['What Ciatta did', 'A record of every action taken in your name, and by whose permission.'],
-];
-
 /* -- 10 · what membership opens with --------------------------------------- */
 
 const INCLUDED: string[] = [
@@ -142,25 +78,17 @@ const INCLUDED: string[] = [
 
 const QUESTIONS: [string, string][] = [
   ['What is Ciatta membership?',
-   'Access to a system rather than a download. Your record is brought into one place and kept there, read along a timeline, and returned to you as what changed, what was happening around it, what may be connected, and what you might do next. It is more useful in month six than in week one, and it is built on that basis.'],
+   'Access to a system rather than a download. Your record is kept in one place, read along a timeline, and returned to you as what changed and what to do next. It is more useful in month six than in week one, and it is built on that basis.'],
   ['What is included?',
-   'The connected record, the organisation of it, the trends across time, the insights drawn from your own history, the evidence behind them, the Health Briefs you take to appointments, and Ciatta Care as its capabilities arrive.'],
-  ['Can Ciatta analyze my labs?',
-   'It reads the values out of the document your provider sent and keeps each one beside every other time it was measured, with its unit, its range, its date and who sent it. It shows you the trend. It does not tell you what a result means clinically.'],
-  ['Do I need a wearable?',
-   'No. A wearable adds nightly sleep and cycle data if you already have one. Without it, Ciatta works from what you enter, what you upload, and what your providers send.'],
-  ['Does Ciatta diagnose?',
-   'No. Ciatta describes what is in your record and what moved close to what. Naming a condition is a clinician’s job, and Ciatta does not do it, suggest it, or hint at it. It does not prescribe, and it does not replace your clinician.'],
-  ['How does Ciatta use my data?',
-   'To build your record and read it for you. Data is encrypted in transit and at rest, access is audited, and we will never sell, rent, or share it with advertisers, brokers, or insurers. You can export everything, and if you delete your account we delete every byte.'],
+   'The connected record, the trends across time, the insights drawn from your own history, the Health Briefs you take to appointments, and Ciatta Care as its capabilities arrive.'],
   ['What is Ciatta Care?',
-   'The part of membership that acts on your record rather than only keeping it: preparing you for a visit, drafting the message you meant to send, organising the record, and tracking what was supposed to happen next. It follows Core rather than opening with it.'],
+   'The part of membership that acts on your record rather than only keeping it. It follows Core rather than opening with it.'],
   ['Can Ciatta take actions for me?',
-   'In time, and only what you authorize. Each connection is made by you and can be withdrawn by you, Ciatta says what it is about to do and on whose behalf before it does it, and it keeps a record of everything done in your name. It does not enter payment details, and it does not make clinical decisions.'],
+   'In time, and only what you authorize. Each connection is made by you and can be withdrawn by you, and Ciatta keeps a record of everything done in your name. It does not enter payment details, and it does not make clinical decisions.'],
   ['When does membership begin?',
-   'When Ciatta opens. Joining now reserves your place in the order people are let in, and nothing begins, or is billed, before then.'],
+   'When Ciatta opens. Joining now reserves your place, and nothing begins, or is billed, before then.'],
   ['What does it cost?',
-   'Not set yet. You will be told what membership costs before anything is charged, with the choice to stop there. No card is taken today.'],
+   'Not set yet. You will see the price before anything is charged, with the choice to stop there. No card is taken today.'],
 ];
 
 export default function Member() {
@@ -183,9 +111,8 @@ export default function Member() {
             <span className="m-eyebrow">Membership</span>
             <h1 className="m-hero-title">Your health, continuously connected.</h1>
             <p className="m-hero-lede">
-              Ciatta brings your health data, medical records, symptoms,
-              treatments, everyday context and your own words together, so you
-              can see what is changing and what to do next.
+              Your records, your symptoms, your treatments, your everyday
+              context and your own words, read together over time.
             </p>
             <a className="m-btn is-light" href="#join">Reserve your place</a>
             <p className="m-hero-note">
@@ -194,7 +121,7 @@ export default function Member() {
           </div>
         </section>
 
-        {/* ============ 02 · why membership ============================== */}
+        {/* ============ 02 · the whole argument for membership ========== */}
         <section className="m-band mb-say" aria-labelledby="why-heading">
           <div className="m-wrap">
             <h2 id="why-heading" className="mb-say-line">
@@ -202,104 +129,11 @@ export default function Member() {
               <span> What it becomes is.</span>
             </h2>
             <p className="mb-say-sub">
-              Anything can store your health information. Ciatta reads it
-              along a timeline, against your own usual, beside the week it
-              happened in. That is worth little on your first day and a great
-              deal by your second year, which is why it is a membership and
-              not a download.
+              Six months is not six months of data. It is the reason a change
+              in April can be read against a dose change in January. That is
+              worth little on your first day and a great deal by your second
+              year, which is why Ciatta is a membership and not a download.
             </p>
-          </div>
-        </section>
-
-        {/* ============ 03 · the product, running ======================== */}
-        <section className="m-band is-alt" aria-labelledby="see-heading">
-          <div className="m-wrap">
-            <div className="band-head">
-              <span className="m-eyebrow is-ink">The Today screen</span>
-              <h2 className="m-h2" id="see-heading">Watch a day come together</h2>
-              <p className="m-h2-sub">
-                A ring, a portal, the document your provider sent, a sentence
-                only you can write, a photograph of lunch. They arrive
-                separately and are read together.
-              </p>
-            </div>
-            <div className="mb-stage">
-              <HeroStory />
-            </div>
-          </div>
-        </section>
-
-        {/* ============ 04 · the connected record ======================== */}
-        <section className="m-band" aria-labelledby="record-heading">
-          <div className="m-wrap">
-            <div className="band-head">
-              <span className="m-eyebrow is-ink">The connected record</span>
-              <h2 className="m-h2" id="record-heading">Your health doesn’t happen in pieces.</h2>
-              <p className="m-h2-sub">
-                It happens in a portal, an app, a wearable, a drawer, and your
-                own head. Membership is what puts all of it in one order.
-              </p>
-            </div>
-
-            <div className="mb-domains">
-              {DOMAINS.map(([group, items]) => (
-                <div className="mb-domain" key={group}>
-                  <h3>{group}</h3>
-                  <ul>
-                    {items.map((i) => <li key={i}>{i}</li>)}
-                  </ul>
-                </div>
-              ))}
-            </div>
-
-            <figure className="mb-figure">
-              <img src="/images/who/reads.jpg" alt="A woman in an infinity pool, facing an open sea."
-                   width={1440} height={900} loading="lazy" decoding="async" />
-            </figure>
-          </div>
-        </section>
-
-        {/* ============ 05 · personalized intelligence =================== */}
-        <section className="m-band is-alt" aria-labelledby="pairs-heading">
-          <div className="m-wrap">
-            <div className="band-head">
-              <span className="m-eyebrow is-ink">Personalized insight</span>
-              <h2 className="m-h2" id="pairs-heading">Ciatta reads across, not down.</h2>
-              <p className="m-h2-sub">
-                One measurement on its own is a number. Read beside everything
-                else in the same weeks, it becomes something you can ask
-                about.
-              </p>
-            </div>
-
-            <ul className="mb-pairs">
-              {PAIRS.map(([pair, line]) => (
-                <li key={pair}>
-                  <b>{pair}</b>
-                  <span>{line}</span>
-                </li>
-              ))}
-            </ul>
-
-            <p className="mb-note">
-              These are possible relationships, not diagnoses. Things that
-              move together are not necessarily one causing the other, and
-              Ciatta says so on the observation itself.
-            </p>
-          </div>
-        </section>
-
-        {/* ============ 06 · the longitudinal case ======================= */}
-        <section className="m-band" aria-labelledby="time-heading">
-          <div className="m-wrap">
-            <div className="band-head">
-              <span className="m-eyebrow is-ink">Over time</span>
-              <h2 className="m-h2" id="time-heading">Ciatta remembers, so you don’t have to.</h2>
-              <p className="m-h2-sub">
-                Six months is not six months of data. It is the reason a
-                change in April can be read against a dose change in January.
-              </p>
-            </div>
 
             <ol className="mb-time">
               {TIMELINE.map(([when, kind, what]) => (
@@ -310,60 +144,6 @@ export default function Member() {
                 </li>
               ))}
             </ol>
-
-            <p className="mb-note">
-              The longer you use Ciatta, the more your record can say. This is
-              the part a new account cannot give you, and the reason to start
-              one.
-            </p>
-          </div>
-        </section>
-
-        {/* ============ 07 · the health brief ============================ */}
-        <section className="m-band is-alt" aria-labelledby="brief-heading">
-          <div className="m-wrap">
-            <div className="band-head">
-              <span className="m-eyebrow is-ink">Health Briefs</span>
-              <h2 className="m-h2" id="brief-heading">Walk into every appointment prepared.</h2>
-              <p className="m-h2-sub">
-                Six months as one page, and three questions worth asking.
-                Yours to take, print, or ignore.
-              </p>
-            </div>
-
-            <div className="mb-brief-row">
-              <article className="mb-brief" aria-label="An example health brief">
-                <header>
-                  <img src="/images/icon.svg" alt="" width={44} height={44} />
-                  <div>
-                    <h3>Health brief</h3>
-                    <p>Maya R. · 1 Oct to 1 Apr · prepared today</p>
-                  </div>
-                </header>
-                <dl>
-                  {BRIEF.map(([label, lines]) => (
-                    <div key={label}>
-                      <dt>{label}</dt>
-                      <dd>{lines.map((l) => <p key={l}>{l}</p>)}</dd>
-                    </div>
-                  ))}
-                </dl>
-                <section aria-label="Questions to discuss">
-                  <h4>Questions to discuss</h4>
-                  <ol>{BRIEF_ASKS.map((q) => <li key={q}>{q}</li>)}</ol>
-                </section>
-                <footer>
-                  <span>Measured · imported · uploaded · told by Maya</span>
-                  <span>Ciatta does not diagnose or replace medical care.</span>
-                </footer>
-              </article>
-
-              <div className="mb-brief-phone">
-                <Phone className="is-today">
-                  <TodayScreen />
-                </Phone>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -374,9 +154,8 @@ export default function Member() {
               <span className="m-eyebrow is-ink">Ciatta Care</span>
               <h2 className="m-h2" id="care-heading">Healthcare doesn’t end when you close the app.</h2>
               <p className="m-h2-sub">
-                Care is the next layer of the same membership: the work around
-                an appointment that currently falls to you. It follows Core
-                rather than opening with it.
+                The work around an appointment that currently falls to you. It
+                follows Core rather than opening with it.
               </p>
             </div>
 
@@ -400,9 +179,8 @@ export default function Member() {
                 You tell Ciatta what you need. Ciatta helps move it forward.
               </h2>
               <p className="m-h2-sub">
-                In time, and only where you authorize it, Ciatta will be able
-                to act rather than only prepare. None of this is available
-                today, and none of it happens without you.
+                In time, and only where you authorize it, Ciatta will act
+                rather than only prepare. None of this is available today.
               </p>
             </div>
 
@@ -412,40 +190,9 @@ export default function Member() {
 
             <p className="mb-note">
               You connect each source and can disconnect it. Ciatta says what
-              it is about to do and on whose behalf before it does it, and
-              keeps a record of everything done in your name. It never enters
-              payment details, and it never decides anything clinical.
-            </p>
-          </div>
-        </section>
-
-        {/* ============ 10 · trust ======================================= */}
-        <section className="m-band" aria-labelledby="trust-heading">
-          <div className="m-wrap">
-            <div className="band-head">
-              <span className="m-eyebrow is-ink">Your record</span>
-              <h2 className="m-h2" id="trust-heading">Your health. Your record. Your decisions.</h2>
-              <p className="m-h2-sub">
-                Ciatta shows its working, because an observation you cannot
-                check is not worth having.
-              </p>
-            </div>
-
-            <ul className="mb-trust">
-              {TRUST.map(([name, line]) => (
-                <li key={name}>
-                  <h3>{name}</h3>
-                  <p>{line}</p>
-                </li>
-              ))}
-            </ul>
-
-            <p className="mb-note">
-              Encrypted in transit and at rest. Never sold, rented, or shared
-              with advertisers, brokers, or insurers. Export everything at any
-              time. The{' '}
-              <a href="/privacy/">privacy notice</a> and{' '}
-              <a href="/terms/">terms</a> are the binding versions.
+              it is about to do before it does it, and keeps a record of
+              everything done in your name. It never enters payment details,
+              and it never decides anything clinical.
             </p>
           </div>
         </section>
@@ -457,8 +204,8 @@ export default function Member() {
               <span className="m-eyebrow is-ink">Membership</span>
               <h2 className="m-h2" id="plan-heading">Where membership starts</h2>
               <p className="m-h2-sub">
-                One membership, and it opens for members first. What Ciatta
-                can do will grow, and it will grow inside this one.
+                One membership. What Ciatta can do will grow, and it will grow
+                inside this one.
               </p>
             </div>
 
