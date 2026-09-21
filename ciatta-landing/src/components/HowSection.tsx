@@ -66,7 +66,7 @@ const NODES: Node[] = [
 /* The rows sit on the left and the mark on the right, in the same 0-100 space
    the lines are drawn in. The lines begin just clear of the names rather than
    out at the edge, so each one reads as leaving its own source. */
-const ROWS_RIGHT = 54;
+const ROWS_RIGHT = 60;
 const HUB_X = 84;
 
 function Sources() {
@@ -237,7 +237,7 @@ const STEPS: [string, string, () => React.ReactNode][] = [
   ['01', 'Bring it together: wearable, portal, documents, and your own words.', Sources],
   ['02', 'See what changed, and what sat beside it that day.', TodayRead],
   ['03', 'Decide what to try, what to raise, and what happened after.', Suggestions],
-  ['04', 'Walk in informed: six months as one page, three questions.', Brief],
+  ['04', 'Walk into every appointment informed and prepared.', Brief],
 ];
 
 export function HowSection() {

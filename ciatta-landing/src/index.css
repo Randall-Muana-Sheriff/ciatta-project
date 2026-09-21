@@ -2421,13 +2421,27 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    well as said. The visual takes one half of the row and the words the other,
    sides alternating, stacked below the split.
    =========================================================================== */
+/* The four steps are one rail, read across rather than down. Each column
+   holds a width it is legible at and the row scrolls when they no longer fit,
+   so the same four are side by side on a laptop and swiped through on a
+   phone — one order, one reading, whatever the screen.
+
+   Wide enough and the columns share the space out and nothing scrolls; the
+   rail costs nothing where it is not needed. */
 .hw-steps {
-  list-style: none; margin: 0; padding: var(--s6) 0 0;
-  display: grid; gap: var(--s6);
+  list-style: none; margin: 0; padding: var(--s6) 0 var(--s2);
+  display: grid; grid-auto-flow: column;
+  grid-auto-columns: minmax(15.5rem, 1fr);
+  gap: var(--s5);
+  overflow-x: auto; scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
 }
-@media (min-width: 680px) { .hw-steps { grid-template-columns: repeat(2, 1fr); gap: var(--s7) var(--s5); } }
-@media (min-width: 1100px) { .hw-steps { grid-template-columns: repeat(4, 1fr); gap: var(--s5); } }
-.hw-step { display: flex; flex-direction: column; gap: var(--s4); min-width: 0; }
+.hw-steps::-webkit-scrollbar { display: none; }
+.hw-step {
+  display: flex; flex-direction: column; gap: var(--s4); min-width: 0;
+  scroll-snap-align: start;
+}
 .hw-head { min-height: 5.5rem; }
 /* every drawing occupies the same box, so the four read as one row. The box is
    tall enough that each one is legible at its own type size rather than
@@ -2521,7 +2535,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .hw-flow { fill: var(--change, #18191B); }
 
 .hw-rows {
-  position: absolute; inset: 0 46% 0 0;
+  position: absolute; inset: 0 40% 0 0;
 
   list-style: none; margin: 0; padding: 0;
   display: grid; grid-auto-rows: 1fr; align-items: center;
@@ -2557,6 +2571,15 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .hw-node-b b {
   font-size: var(--t-small); font-weight: 500; color: var(--ink); line-height: 1.2;
   white-space: nowrap;
+}
+
+/* On the rail every column is 15.5rem, which is narrower than the four get on
+   a laptop, and the longest name runs out of room. The marks and the names
+   both come down a step so "Your own words" still ends where it should. */
+@media (max-width: 1150px) {
+  .hw-node-mark { width: 2rem; height: 2rem; }
+  .hw-node-mark svg { width: 1.125rem; height: 1.125rem; }
+  .hw-node-b b { font-size: 0.75rem; }
 }
 
 @media (prefers-reduced-motion: reduce) { .hw-flow { display: none; } }
