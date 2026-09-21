@@ -249,8 +249,8 @@ export default function Briefs() {
         <Wordmark size="sm" />
         <nav className="footer-nav" aria-label="Legal">
           <a href="/">Home</a>
-          <a href="/privacy/">Privacy</a>
-          <a href="/terms/">Terms</a>
+          <a href="/privacy/">Privacy Policy</a>
+          <a href="/terms/">Terms of Use</a>
         </nav>
         <p className="footer-copy">&copy; {new Date().getFullYear()} Ciatta</p>
       </footer>

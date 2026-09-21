@@ -4,7 +4,7 @@ import { LEGAL } from './legal/config';
 import type { Block, LegalDoc } from './legal/types';
 
 /**
- * The privacy notice and the terms, one layout for both, built to the shape of
+ * The Privacy Policy and the Terms of Use, one layout for both, to the shape of
  * whoop.com's Terms of Use: a black band carrying the title on two staggered
  * lines, then the document in a single column indented from the left edge of
  * the row. Inside that column there is one size of type — headings are the
@@ -119,10 +119,10 @@ export default function Legal({ doc, current }: { doc: LegalDoc; current: 'priva
           <a href="/">Home</a>
           <a href="/briefs/">Briefs</a>
           <a href="/privacy/" aria-current={current === 'privacy' ? 'page' : undefined}>
-            Privacy
+            Privacy Policy
           </a>
           <a href="/terms/" aria-current={current === 'terms' ? 'page' : undefined}>
-            Terms
+            Terms of Use
           </a>
         </nav>
         <p className="footer-copy">&copy; {new Date().getFullYear()} Ciatta</p>

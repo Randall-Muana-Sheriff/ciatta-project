@@ -10,7 +10,7 @@
  * no shields, no badges: a security section that looks like a security
  * section is decoration, and this one has to be read.
  *
- * Every line here is also in the privacy notice and the terms, because a
+ * Every line here is also in the Privacy Policy and the Terms of Use, because a
  * claim that lives only on a landing page is marketing. These are the
  * short forms; the documents are the binding ones.
  */
@@ -57,8 +57,8 @@ export function SafetySection() {
 
         <p className="sf-foot">
           The binding versions are in the{' '}
-          <a href="/privacy/">privacy notice</a> and the{' '}
-          <a href="/terms/">terms of use</a>.
+          <a href="/privacy/">Privacy Policy</a> and the{' '}
+          <a href="/terms/">Terms of Use</a>.
         </p>
       </div>
     </section>

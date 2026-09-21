@@ -15,10 +15,10 @@ import type { LegalDoc } from './types';
 // If any of that changes, this document has to change with it.
 
 export const privacy: LegalDoc = {
-  title: 'Privacy notice',
+  title: 'Privacy Policy',
   summary: `How ${LEGAL.operator} handles the little personal information this website and our emails use.`,
   plainly: [
-    'This notice covers ciatta.io, the Ciatta Briefs newsletter and the waitlist. The Ciatta app is not open yet and will have its own notice before it is.',
+    'This policy covers ciatta.io, the Ciatta Briefs newsletter and the waitlist. The Ciatta app is not open yet and will have its own notice before it is.',
     'We ask for one thing: your email address. We do not ask for health information on this website.',
     'The site sets no cookies and runs no analytics or advertising trackers. We do not track whether you open our emails or click their links.',
     'We never sell your information, and we do not use it for advertising.',
@@ -127,7 +127,7 @@ export const privacy: LegalDoc = {
           },
         },
         {
-          p: 'We never sell personal information, and we do not share it for cross-context behavioural advertising. We would disclose it only if the law required us to, to protect someone’s safety, or as part of a merger or acquisition, in which case this notice would continue to apply to it.',
+          p: 'We never sell personal information, and we do not share it for cross-context behavioural advertising. We would disclose it only if the law required us to, to protect someone’s safety, or as part of a merger or acquisition, in which case this policy would continue to apply to it.',
         },
       ],
     },
@@ -227,7 +227,7 @@ export const privacy: LegalDoc = {
     },
     {
       id: 'changes',
-      title: 'Changes to this notice',
+      title: 'Changes to this policy',
       blocks: [
         {
           p: 'If we change how we use your information, we will update this page and the date at the top. If a change is significant, we will tell subscribers by email before it takes effect.',

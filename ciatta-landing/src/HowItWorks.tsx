@@ -259,8 +259,8 @@ export default function HowItWorks() {
           <a href="/">Home</a>
           <a href="/how-it-works/" aria-current="page">How it works</a>
           <a href="/briefs/">Briefs</a>
-          <a href="/privacy/">Privacy</a>
-          <a href="/terms/">Terms</a>
+          <a href="/privacy/">Privacy Policy</a>
+          <a href="/terms/">Terms of Use</a>
         </nav>
         <span className="footer-copy">© 2026 Ciatta</span>
       </footer>

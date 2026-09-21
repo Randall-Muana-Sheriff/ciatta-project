@@ -268,8 +268,8 @@ export default function App() {
             host answers 308 first and the click costs a round trip. */}
         <nav className="footer-nav" aria-label="Footer">
           <a href="/briefs/">Briefs</a>
-          <a href="/privacy/">Privacy</a>
-          <a href="/terms/">Terms</a>
+          <a href="/privacy/">Privacy Policy</a>
+          <a href="/terms/">Terms of Use</a>
         </nav>
         <p className="footer-copy">© {new Date().getFullYear()} Ciatta</p>
       </footer>

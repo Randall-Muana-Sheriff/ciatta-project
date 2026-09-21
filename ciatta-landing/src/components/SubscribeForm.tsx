@@ -168,7 +168,7 @@ export function SubscribeForm({
             <input id={`${id}-consent`} name="consent" type="checkbox" required />
             {consent}
           </label>{' '}
-          <a href="/privacy/">Privacy</a>
+          <a href="/privacy/">Privacy Policy</a>
         </p>
       )}
 
@@ -200,7 +200,7 @@ export function SubscribeForm({
             <>
               {line}
               {line ? ' ' : ''}
-              <a href="/privacy/">Privacy</a>
+              <a href="/privacy/">Privacy Policy</a>
             </>
           )}
         </p>

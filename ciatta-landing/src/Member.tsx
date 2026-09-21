@@ -209,8 +209,8 @@ export default function Member() {
               Nothing happens without your permission, and Ciatta shows where
               every figure came from. Your record is encrypted, never sold or
               shared, exportable at any time, and deleted in full if you ask.
-              The <a href="/privacy/">privacy notice</a> and{' '}
-              <a href="/terms/">terms</a> are the binding versions.
+              The <a href="/privacy/">Privacy Policy</a> and{' '}
+              <a href="/terms/">Terms of Use</a> are the binding versions.
             </p>
           </div>
         </section>
@@ -258,8 +258,8 @@ export default function Member() {
             <a href="/">Home</a>
             <a href="/how-it-works/">How it works</a>
             <a href="/briefs/">Briefs</a>
-            <a href="/privacy/">Privacy</a>
-            <a href="/terms/">Terms</a>
+            <a href="/privacy/">Privacy Policy</a>
+            <a href="/terms/">Terms of Use</a>
           </nav>
           <span>&copy; {new Date().getFullYear()} Ciatta</span>
         </div>
