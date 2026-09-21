@@ -2995,19 +2995,9 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .hero.has-film:not(.is-page) { position: sticky; top: 0; z-index: 0; }
 .statement {
   position: relative; z-index: 1;
-  /* Frosted, the way Vision Pro's panels are: the film is not hidden behind
-     this, it is blurred behind it, so the panel reads as glass over the
-     footage rather than as a second page laid on top of it.
-
-     The colour underneath is White at 72%, not a transparent white, because
-     a backdrop-filter that a browser refuses leaves whatever is behind it
-     fully legible — and a headline in Graphite over moving footage is not
-     legible. The fallback is the panel a shade more solid, which is the
-     right failure. */
-  background: rgba(253, 253, 252, 0.72);
-  -webkit-backdrop-filter: blur(28px) saturate(1.4);
-  backdrop-filter: blur(28px) saturate(1.4);
-  color: var(--ink);
+  /* White out of the system rather than #FFFFFF, and solid: the panel is a
+     page climbing over the film, not glass laid on it. */
+  background: var(--surface); color: var(--ink);
   min-height: 100vh; min-height: 100lvh;
   display: grid; align-content: center;
   padding-block: clamp(4rem, 14vh, 10rem);
@@ -3023,9 +3013,6 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 /* the kicker: the smallest line in the section and the last one to arrive,
    set in caps against the sentence above it rather than competing with it */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .statement { background: rgba(253, 253, 252, 0.94); }
-}
 .statement-kicker {
   margin: var(--s6) 0 0; color: var(--meta-ink);
   font-size: var(--t-caption); font-weight: 600;
