@@ -35,10 +35,54 @@ const INCLUDED: string[] = [
 
 
 
+/**
+ * Ciatta Care: the part of the membership that does something with the record
+ * rather than only keeping it. Each line is a piece of work a woman currently
+ * does herself, in her own evenings, badly, because nobody gave her the six
+ * months of her own history in one place first.
+ */
+const CARE: [string, string][] = [
+  ['Visit preparation',
+   'What changed since your last appointment, what sat beside it, and what you meant to raise and forgot.'],
+  ['Health Brief generation',
+   'One page: what changed, what was happening around it, what you tried, and what happened next.'],
+  ['Clinician message drafting',
+   'What you want to ask, written as a message you can read, change, and send yourself.'],
+  ['Question generation',
+   'The questions worth asking at this visit, each one drawn from something actually in your record.'],
+  ['Record organization',
+   'Results, documents and notes filed against the date they belong to, not the date you got round to them.'],
+  ['Follow-up tracking',
+   'What was said would happen next, and whether it has.'],
+];
+
+/**
+ * What Care can be authorized to do. These are actions on her behalf, in her
+ * name, with real consequences, so the list says plainly that each one is
+ * connected by her and asks before it acts. Several of these depend on the
+ * other side supporting it, which is said here rather than discovered later.
+ */
+const CONNECTS: string[] = [
+  'Appointment search and booking',
+  'Calendar',
+  'Patient portals, where they support it',
+  'Insurance information',
+  'Referrals',
+  'Labs and imaging',
+  'Pharmacy',
+  'Document and record requests',
+];
+
 /** The questions people ask first. WHOOP's Membership FAQ. */
 const QUESTIONS: [string, string][] = [
   ['What is included in Ciatta Core?',
    'Your health record in one place — results and documents from your providers, your cycle, your sleep, your symptoms, what you take, and your own notes — and the insights that come from reading those together. Imported from a connected provider or entered once, then kept.'],
+  ['What is Ciatta Care?',
+   'The part of membership that acts on your record rather than only keeping it: preparing you for a visit, writing the brief, drafting the message you meant to send, and tracking what was supposed to happen next. It is included in membership, and it follows Core rather than opening with it.'],
+  ['Does Ciatta Care do things on my behalf?',
+   'Only what you connect and only when you say so. Each tool is authorized by you and can be disconnected by you, Care tells you what it is about to do and on whose behalf before it does it, and it keeps a record of every action taken in your name. It does not enter payment details, and it does not make clinical decisions.'],
+  ['Which portals and pharmacies will it work with?',
+   'The ones that support it. Some providers and services allow this kind of access and some do not, and that is not ours to decide. Ciatta will say which of yours are supported rather than implying it reaches all of them.'],
   ['Will there be other tiers?',
    'Yes. Core is the first, and it is the one that opens. What comes after it will be built on what Core turns out to be short of, so there is nothing honest to say about it yet — except that you will not be moved onto another tier, or charged for one, without choosing it.'],
   ['What does it cost?',
@@ -114,6 +158,57 @@ export default function Member() {
                   </li>
                 ))}
               </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* ---- Ciatta Care: what membership does with the record ---------- */}
+        <section className="m-band" aria-labelledby="care-heading">
+          <div className="m-wrap">
+            <div className="band-head">
+              <span className="m-eyebrow is-ink">Ciatta Care</span>
+              <h2 className="m-h2" id="care-heading">
+                The part that does something with it
+              </h2>
+              <p className="m-h2-sub">
+                Keeping your record in one place is the beginning. Care is the
+                work that comes after: getting you ready for an appointment,
+                writing what you meant to ask, and knowing what was supposed to
+                happen next. It is part of membership, not a separate purchase,
+                and it follows Core rather than arriving with it.
+              </p>
+            </div>
+
+            <div className="m-care">
+              <div className="m-care-col">
+                <h3 className="m-care-h">What Care prepares</h3>
+                <dl className="m-care-list">
+                  {CARE.map(([name, line]) => (
+                    <div key={name}>
+                      <dt>{name}</dt>
+                      <dd>{line}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+
+              <div className="m-care-col">
+                <h3 className="m-care-h">What you can authorize it to do</h3>
+                <ul className="m-care-tools">
+                  {CONNECTS.map((name) => (
+                    <li key={name}>{name}</li>
+                  ))}
+                </ul>
+                {/* The governing rule, next to the list it governs rather than
+                    in a policy she has to go and find. */}
+                <p className="m-care-rule">
+                  You connect each one, and you can disconnect it. Care asks
+                  before it acts, says what it is about to do and on whose
+                  behalf, and keeps a record of everything it has done in your
+                  name. It never enters payment details, and it never decides
+                  anything clinical.
+                </p>
+              </div>
             </div>
           </div>
         </section>

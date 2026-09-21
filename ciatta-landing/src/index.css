@@ -1297,6 +1297,48 @@ p { margin: 0; text-wrap: pretty; }
 }
 .band-head .m-h2, .band-head .m-h2-sub, .split-lead .m-h2, .split-lead .m-h2-sub { margin: 0; }
 
+/* --- Ciatta Care ---------------------------------------------------------
+   Two columns because the two lists are different in kind and should not be
+   read as one longer list: the left is work Ciatta does with what it already
+   holds, the right is what it may be let out into the world to do. The rule
+   that governs the second sits beside it, not in a policy page. --------- */
+.m-eyebrow.is-ink {
+  background: rgba(24,25,27,0.08); color: var(--ink);
+  /* band-head lays its children out, so the pill has to say it is only as
+     wide as its word rather than as wide as the column */
+  justify-self: start; align-self: start; width: fit-content;
+  margin-bottom: var(--s3);
+}
+.m-care {
+  display: grid; gap: var(--s6) var(--s7);
+  padding-top: var(--s6);
+  border-top: var(--hairline) solid var(--rule);
+}
+@media (min-width: 900px) { .m-care { grid-template-columns: 1fr 1fr; gap: var(--s7); } }
+.m-care-h {
+  margin: 0 0 var(--s4); color: var(--meta-ink);
+  font-size: var(--t-caption); font-weight: 600;
+  letter-spacing: 0.13em; text-transform: uppercase;
+}
+.m-care-list { margin: 0; display: grid; gap: var(--s4); }
+.m-care-list > div { display: grid; gap: 0.25rem; }
+.m-care-list dt { color: var(--ink); font-weight: 500; font-size: var(--t-body); }
+.m-care-list dd {
+  margin: 0; color: var(--body-ink);
+  font-size: var(--t-small); line-height: 1.5; max-width: 46ch;
+}
+.m-care-tools { list-style: none; margin: 0 0 var(--s5); padding: 0; display: grid; }
+.m-care-tools li {
+  padding: var(--s3) 0;
+  border-bottom: var(--hairline) solid var(--rule);
+  color: var(--ink); font-size: var(--t-body);
+}
+.m-care-tools li:first-child { border-top: var(--hairline) solid var(--rule); }
+.m-care-rule {
+  margin: 0; color: var(--body-ink);
+  font-size: var(--t-small); line-height: 1.6; max-width: 48ch;
+}
+
 /* --- the membership ------------------------------------------------------ */
 /* One card across the whole row. The head keeps the left; the list takes the
    rest, and on a wide screen runs in two columns so it fills what it is given. */
