@@ -557,17 +557,25 @@ p { margin: 0; text-wrap: pretty; }
 /* The app's dark resolution: the screens behind the plus, and the product
    panels set directly on the page. */
 .ex-sheet, .product {
-  --ps-canvas: #18191B;        /* Graphite, the screen ground */
-  --ps-raised: #232733;        /* Raised, panels resting on it */
+  /* The screen's palette is the design system's, referenced rather than
+     copied. These were the same hex values written out a second time, which
+     is how a screen ends up a generation behind the tokens it was drawn
+     from. Each one now points at the token it always meant, and the dark
+     steps are the ones the system publishes for exactly this ground.
+     The two grounds stay literal. --ink and --on-ink swap on a dark page,
+     and the phone's screen is Graphite whatever page is holding it: pointed
+     at those tokens, the screen turned itself inside out on how-it-works. */
+  --ps-canvas: #18191B;           /* Graphite, the screen ground */
+  --ps-raised: #232733;           /* Raised, panels resting on it */
   --ps-rule: #3A3F4A;
-  --ps-ink: #F7F4EE;           /* Paper */
+  --ps-ink: #F7F4EE;              /* Paper */
   --ps-body: #C2C5C7;
   --ps-meta: #A3A6A8;
-  --ps-measured: #789AF3;      /* Sky, dark step */
-  --ps-reported: #F46EB4;      /* Rose, dark step */
-  --ps-uncertain: #E4C058;     /* Mustard, dark step */
-  --ps-evidence: #F2B863;   /* Amber, dark step. Published evidence. */
-  --ps-clay: #EC9658;          /* Ember, dark step. The connection. */
+  --ps-measured: var(--sky-dark);      /* measured by a device */
+  --ps-reported: var(--rose-dark);     /* reported by her */
+  --ps-uncertain: var(--mustard-dark); /* what is still uncertain */
+  --ps-evidence: var(--amber-dark);    /* published evidence */
+  --ps-clay: var(--ember-dark);        /* the connection */
 }
 /* --- the device ---------------------------------------------------------- */
 .ps-phone {
