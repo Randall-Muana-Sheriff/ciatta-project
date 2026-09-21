@@ -84,7 +84,7 @@ const TOPICS: Topic[] = [
     key: 'sleep',
     pill: 'Sleep',
     tab: 'Sleep',
-    cap: 'See changes in sleep alongside what was happening around them.',
+    cap: 'See sleep beside what surrounded it.',
     title: 'See what a bad week costs',
     lede:
       'One short night is nothing. A week of them, twice in three months, is something your record can put a date on.',
@@ -114,7 +114,7 @@ const TOPICS: Topic[] = [
     key: 'symptoms',
     pill: 'Symptoms',
     tab: 'Symptoms',
-    cap: 'Put a date and context around what you feel.',
+    cap: 'Give what you feel a date.',
     title: 'Put a date on what you feel',
     lede:
       'What you feel is part of the record too. Dated as you wrote it, it lines up against everything else that happened that week.',
@@ -160,7 +160,7 @@ const TOPICS: Topic[] = [
     key: 'results',
     pill: 'Labs & results',
     tab: 'Labs',
-    cap: 'See your results across time, not as isolated numbers.',
+    cap: 'See results across time, not alone.',
     title: 'Read your labs in context',
     lede:
       'In range is not the same as nothing to ask about. Ciatta shows where in the range you sit, and what else in your record sits near it.',
@@ -206,7 +206,7 @@ const TOPICS: Topic[] = [
     key: 'surgery',
     pill: 'Surgery & procedures',
     tab: 'Surgery',
-    cap: 'See what changed before, during, and after an intervention.',
+    cap: 'See before, during, and after.',
     title: 'See what an intervention changed',
     lede:
       'A procedure is a line drawn through your record. What matters is what your own measurements and symptoms did on either side of it, and that only exists if the record runs through it.',

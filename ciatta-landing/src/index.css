@@ -1488,9 +1488,13 @@ p { margin: 0; text-wrap: pretty; }
   background: linear-gradient(to top, rgba(24,25,27,0.92) 0%, rgba(24,25,27,0.52) 52%, rgba(24,25,27,0.76) 100%);
 }
 .ex-tab:hover img { opacity: 0.88; }
-/* a ring with a gap, so it reads as selection rather than as a border */
-.ex-tab.is-on { box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px var(--ink); }
+/* Selection is carried by the card itself rather than by a ring drawn round
+   it: the chosen photograph comes up to full and the rest sit back, which is
+   the same signal without a second rounded outline in the row. */
+.ex-tab img { opacity: 0.44; }
+.ex-tab:hover img { opacity: 0.66; }
 .ex-tab.is-on img { opacity: 1; }
+.ex-tab.is-on .ex-tab-pill { background: #F7F4EE; color: #18191B; }
 .ex-tab:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 3px; }
 .ex-tab-pill {
   align-self: flex-start; margin: var(--s3) var(--s3) 0;
