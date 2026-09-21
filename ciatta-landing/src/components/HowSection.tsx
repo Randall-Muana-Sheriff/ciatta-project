@@ -194,71 +194,52 @@ function Suggestions() {
   );
 }
 
-/* -- 04 · the page she takes to an appointment ----------------------------- */
+/* -- 04 · the brief she takes to an appointment ---------------------------- *
+ * The brief's own screen: what is in it, rather than the whole of it shrunk
+ * until none of it can be read. Each line is a part of the brief and what
+ * that part is, and the last one is the only thing she has to do with it.
+ */
 
-const BRIEF: [string, string[]][] = [
-  ['What changed', [
-    'Symptom days rose from 4 to 11 a month across 6 weeks.',
-    'Sleep fell to 6h 46m, 48 minutes under her usual.',
-  ]],
-  ['What was happening around it', [
-    'Levothyroxine increased from 50 to 75 mcg on 3 Mar.',
-    'Cycle shortened from 29 to 26 days across 4 cycles.',
-    'Ferritin 32 on 12 Aug, 24 on 14 Mar, 18 on 2 Sep. Reference range 15 to 150.',
-  ]],
-  ['What she tried', [
-    'A 7-day sleep experiment from 10 Mar, with an earlier wind-down on 5 of 7 nights.',
-  ]],
-  ['What happened next', [
-    'Sleep returned closer to her usual on 5 of 7 nights. Fatigue was reported less often.',
-  ]],
+const BRIEF: [string, string][] = [
+  ['Summary', 'Key changes and insights'],
+  ['Trends', 'Your data over time'],
+  ['What to discuss', 'Topics for your provider'],
+  ['Questions', 'Prep for your next appointment'],
+  ['Share', 'Export your report'],
 ];
 
-const QUESTIONS: string[] = [
-  'Could the cycle shortening and the sleep change be worth evaluating together?',
-  'Is the ferritin trend worth repeating, given the heavier bleeding reported in the same period?',
-  'Should the dose change on 3 Mar be reviewed against the symptoms recorded since?',
-];
+function Caret() {
+  return (
+    <svg viewBox="0 0 8 14" className="ps-caret" aria-hidden="true">
+      <path d="m1 1 6 6-6 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 function Brief() {
   return (
-    <Phone title="Health brief" className="is-doc">
-    <article className="hw-page" aria-label="An example health brief, as a printable page">
-      <header className="hw-page-head">
-        <img src="/images/icon.svg" alt="" width={44} height={44} />
-        <div>
-          <h4>Health brief</h4>
-          <p>Maya R. · 1 Oct 2025 to 1 Apr 2026 · prepared 1 Apr 2026</p>
+    <Phone title="Health brief" className="is-rows">
+      <div className="product hw-frag">
+        {/* the bar above already names the screen, so this line says what the
+            brief covers instead of saying it twice */}
+        <div className="hw-frag-head">
+          <span>1 Oct to 1 Apr</span>
+          <i>Prepared today</i>
         </div>
-      </header>
-
-      <dl className="hw-page-body">
-        {BRIEF.map(([label, lines]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>
-              {lines.map((line) => (
-                <p key={line}>{line}</p>
-              ))}
-            </dd>
-          </div>
-        ))}
-      </dl>
-
-      <section className="hw-page-ask" aria-label="Questions to discuss">
-        <h5>Questions to discuss</h5>
-        <ol>
-          {QUESTIONS.map((q) => (
-            <li key={q}>{q}</li>
+        <div className="ps-rows">
+          {BRIEF.map(([name, what]) => (
+            <div className="ps-row" key={name}>
+              <div className="ps-row-line">
+                <span className="ps-row-k">
+                  <b>{name}</b>
+                  <i>{what}</i>
+                </span>
+                <Caret />
+              </div>
+            </div>
           ))}
-        </ol>
-      </section>
-
-      <footer className="hw-page-foot">
-        <span>Measured · imported · uploaded · told by Maya</span>
-        <span>Ciatta does not diagnose or replace medical care.</span>
-      </footer>
-    </article>
+        </div>
+      </div>
     </Phone>
   );
 }
