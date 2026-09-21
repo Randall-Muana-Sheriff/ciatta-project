@@ -1299,6 +1299,160 @@ p { margin: 0; text-wrap: pretty; }
 }
 .band-head .m-h2, .band-head .m-h2-sub, .split-lead .m-h2, .split-lead .m-h2-sub { margin: 0; }
 
+/* =========================================================================
+   The membership page.
+
+   Paced after Oura's: one membership, and a steady alternation of editorial
+   statement, the product doing the thing, and the practical detail. Every
+   band carries one idea, so the rhythm does the explaining and the copy does
+   not have to repeat itself.
+   ========================================================================= */
+
+/* 02 · the statement. The largest type on the page, and the only section
+        with nothing in it but a sentence. */
+.mb-say { padding-block: clamp(4.5rem, 10vw, 9rem); }
+.mb-say-line {
+  margin: 0 0 var(--s6); color: var(--ink); font-weight: 500;
+  font-size: clamp(2rem, 1rem + 4.2vw, 5rem);
+  line-height: 1.02; letter-spacing: -0.04em; text-wrap: balance;
+  max-width: 18ch;
+}
+.mb-say-line span { display: block; color: var(--meta-ink); }
+.mb-say-sub {
+  margin: 0; color: var(--body-ink); max-width: 46ch;
+  font-size: var(--t-lede); line-height: 1.5;
+}
+
+/* 03 · the product, on the ground it was drawn for. The screen and the cards
+        that fly into it are white on translucency, built to sit over film, so
+        on paper they wash out to nothing. The band stays paper and the demo
+        gets a dark stage inside it, which is also how the eye is meant to
+        read it: the page recedes and the product is the only lit thing. */
+.mb-stage {
+  max-width: 34rem; margin-inline: auto;
+  background: #0C0D0F; border-radius: var(--r-surface);
+  padding: clamp(2rem, 5vw, 4rem) clamp(1rem, 4vw, 3rem) clamp(1.5rem, 3vw, 2.5rem);
+  display: flex; justify-content: center;
+}
+.mb-stage .ha-device { width: min(17rem, 62vw); }
+@media (min-width: 760px) { .mb-stage .ha-device { width: 17rem; } }
+
+/* 04 · the domains. Three groups of plain type: this is the scope of the
+        record, and a grid of tiles would turn scope into features. */
+.mb-domains { display: grid; gap: var(--s6); }
+@media (min-width: 760px) { .mb-domains { grid-template-columns: repeat(3, 1fr); gap: var(--s7); } }
+.mb-domain h3 {
+  margin: 0 0 var(--s4); padding-bottom: var(--s3);
+  border-bottom: var(--hairline) solid var(--rule);
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--meta-ink);
+}
+.mb-domain ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
+.mb-domain li { color: var(--ink); font-size: var(--t-lede); line-height: 1.25; }
+
+.mb-figure {
+  margin: var(--s7) 0 0; border-radius: var(--r-surface); overflow: hidden;
+  aspect-ratio: 16 / 7;
+}
+.mb-figure img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* 05 · the pairs. A relationship per row, with the observation it produced,
+        so the claim and its evidence are never separated. */
+.mb-pairs { list-style: none; margin: 0; padding: 0; display: grid; }
+.mb-pairs li {
+  display: grid; gap: var(--s2);
+  padding: var(--s5) 0; border-top: var(--hairline) solid var(--rule);
+}
+@media (min-width: 760px) {
+  .mb-pairs li { grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: var(--s6); align-items: baseline; }
+}
+.mb-pairs b { color: var(--ink); font-size: var(--t-body); font-weight: 600; }
+.mb-pairs span { color: var(--body-ink); font-size: var(--t-small); line-height: 1.5; }
+
+/* 06 · the timeline, read across. It scrolls when the months no longer fit,
+        which is the same gesture as scrolling back through a year. */
+.mb-time {
+  list-style: none; margin: 0; padding: var(--s5) 0 var(--s3);
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(11rem, 1fr);
+  gap: var(--s5);
+  overflow-x: auto; scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  border-top: var(--strong) solid var(--ink);
+}
+.mb-time::-webkit-scrollbar { display: none; }
+.mb-time li { display: grid; gap: var(--s2); scroll-snap-align: start; }
+.mb-time-when {
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--meta-ink);
+}
+.mb-time b { color: var(--ink); font-size: var(--t-body); font-weight: 600; }
+.mb-time-what { color: var(--body-ink); font-size: var(--t-small); line-height: 1.4; }
+
+/* 07 · the brief, as the artifact it is, beside the screen it came from */
+.mb-brief-row { display: grid; gap: var(--s6); align-items: start; }
+@media (min-width: 900px) { .mb-brief-row { grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: var(--s7); } }
+.mb-brief {
+  background: #FFFFFF; color: #18191B;
+  border-radius: var(--r-nested); box-shadow: var(--float-above);
+  padding: clamp(var(--s5), 3vw, var(--s6));
+  display: grid; gap: var(--s5);
+}
+.mb-brief header { display: flex; align-items: center; gap: var(--s3); padding-bottom: var(--s4); border-bottom: var(--hairline) solid rgba(24,25,27,0.14); }
+.mb-brief header img { width: 2rem; height: 2rem; border-radius: 6px; display: block; }
+.mb-brief header h3 { margin: 0; font-size: var(--t-body); font-weight: 600; }
+.mb-brief header p { margin: 0; font-size: var(--t-caption); color: rgba(24,25,27,0.62); }
+.mb-brief dl { margin: 0; display: grid; gap: var(--s4); }
+.mb-brief dt {
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: rgba(24,25,27,0.55); margin-bottom: var(--s2);
+}
+.mb-brief dd { margin: 0; }
+.mb-brief dd p { margin: 0 0 var(--s2); font-size: var(--t-small); line-height: 1.45; }
+.mb-brief dd p:last-child { margin-bottom: 0; }
+.mb-brief h4 {
+  margin: 0 0 var(--s3); font-size: var(--t-caption); font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; color: rgba(24,25,27,0.55);
+}
+.mb-brief ol { margin: 0; padding-left: 1.1rem; display: grid; gap: var(--s2); }
+.mb-brief ol li { font-size: var(--t-small); line-height: 1.45; }
+.mb-brief footer {
+  display: grid; gap: 2px; padding-top: var(--s4);
+  border-top: var(--hairline) solid rgba(24,25,27,0.14);
+  font-size: var(--t-caption); color: rgba(24,25,27,0.55);
+}
+.mb-brief-phone { display: none; }
+@media (min-width: 900px) { .mb-brief-phone { display: block; } }
+
+/* 08 · Care, as pairs of what it does and what that means */
+.mb-care { margin: 0; display: grid; gap: var(--s5); }
+@media (min-width: 760px) { .mb-care { grid-template-columns: repeat(2, 1fr); gap: var(--s5) var(--s7); } }
+.mb-care div { padding-top: var(--s4); border-top: var(--hairline) solid var(--rule); }
+.mb-care dt { color: var(--ink); font-size: var(--t-body); font-weight: 600; margin-bottom: var(--s2); }
+.mb-care dd { margin: 0; color: var(--body-ink); font-size: var(--t-small); line-height: 1.5; }
+
+/* 09 · what comes after: named plainly, and never as though it were here */
+.mb-agentic { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
+@media (min-width: 760px) { .mb-agentic { grid-template-columns: repeat(3, 1fr); gap: var(--s4) var(--s6); } }
+.mb-agentic li {
+  padding: var(--s4) 0; border-top: var(--hairline) solid var(--rule);
+  color: var(--ink); font-size: var(--t-body);
+}
+
+/* 10 · trust, as six plain statements */
+.mb-trust { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s5); }
+@media (min-width: 680px) { .mb-trust { grid-template-columns: repeat(2, 1fr); gap: var(--s5) var(--s7); } }
+@media (min-width: 1040px) { .mb-trust { grid-template-columns: repeat(3, 1fr); } }
+.mb-trust li { padding-top: var(--s4); border-top: var(--strong) solid var(--ink); }
+.mb-trust h3 { margin: 0 0 var(--s2); color: var(--ink); font-size: var(--t-body); font-weight: 600; }
+.mb-trust p { margin: 0; color: var(--body-ink); font-size: var(--t-small); line-height: 1.5; }
+
+/* the line that qualifies a section, set quieter than the section it follows */
+.mb-note {
+  margin: var(--s6) 0 0; color: var(--meta-ink);
+  font-size: var(--t-small); line-height: 1.6; max-width: 64ch;
+}
+.mb-note a { color: var(--ink); }
+
 /* --- Health Agents, and the Provider View --------------------------------
    The three traits read as a row of claims; the two agents as two documents
    side by side. The nudge is set as a quotation because that is what it is:
