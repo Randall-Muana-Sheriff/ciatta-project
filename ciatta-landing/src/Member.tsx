@@ -80,11 +80,11 @@ const QUESTIONS: [string, string][] = [
   ['How does Ciatta use my health data?',
    'To build your record and read it for you. It is encrypted in transit and at rest, access is audited, and we will never sell, rent, or share it with advertisers, brokers, or insurers. You can export everything, and if you delete your account we delete every byte.'],
   ['When does membership begin?',
-   'When Ciatta opens. Joining now reserves your place, and nothing begins, or is billed, before then.'],
+   'When Ciatta opens, which we are building towards for the third quarter of 2027. Reserving now holds your place, and nothing begins, or is billed, before then. If the date moves we will tell you.'],
   ['Can I cancel?',
    'At any time, and you keep your record: export everything before you go, or delete it outright. Cancelling stops the next payment rather than ending your access that day.'],
   ['What does it cost?',
-   '$9.99 a month. Nothing is charged today, and nothing is charged until Ciatta opens and you choose to begin.'],
+   '$9.99 a month, from the day you choose to begin. Nothing is charged today, and nothing is charged before Ciatta opens in 2027.'],
 ];
 
 export default function Member() {
@@ -188,7 +188,7 @@ export default function Member() {
               <h2 className="m-h2" id="plan-heading">Your membership starts here.</h2>
               <p className="m-h2-sub">
                 Pre-order your membership and be among the first Ciatta
-                members.
+                members when it opens in 2027.
               </p>
             </div>
 

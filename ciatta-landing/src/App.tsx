@@ -92,7 +92,7 @@ const QUESTIONS: [string, string][] = [
   ['Can I use Ciatta without sharing everything?',
    'Yes. Every part of the record is optional, and Ciatta works with whatever you give it. What it cannot see, it does not guess at, and it says when a part is missing rather than filling the gap.'],
   ['When does Ciatta open?',
-   'A small group first, then wider. Reserve a place and you will get one email when it opens, and nothing else.'],
+   'In the third quarter of 2027, to a small group first and then wider. That is what we are building to rather than a promise, and if it moves we will say so. Reserve a place and you will get one email when it opens, and nothing else.'],
 ];
 
 
