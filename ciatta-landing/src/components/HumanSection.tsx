@@ -6,9 +6,11 @@
  * light, a woman mid-thought rather than posed, and the line set over her in
  * white the way the tiles set theirs.
  *
- * What sits under the photograph is the plainest thing on the page and
- * deliberately the least designed: the work she is currently doing, listed,
- * and then the one line that says Ciatta does it instead.
+ * The work she is currently doing sits on the photograph as six separate
+ * pills rather than under it as a list, because that is how it reaches her:
+ * not in order, not one at a time, and never finished. The line that says
+ * Nothing sits under the frame: the section is the photograph and what is
+ * on it.
  */
 
 const WORK: string[] = [
@@ -31,19 +33,19 @@ export function HumanSection() {
             width={1440} height={900} loading="lazy" decoding="async"
           />
           <span className="hm-figure-scrim" aria-hidden="true" />
+          {/* the work, scattered over her the way it actually arrives: not a
+              tidy list, six separate things at once */}
+          <ul className="hm-pills" aria-label="What you are currently doing yourself">
+            {WORK.map((line) => (
+              <li className="hm-pill" key={line}>{line}</li>
+            ))}
+          </ul>
+
           <h2 id="human-heading" className="band-title hm-title">
             You shouldn’t have to become your own medical historian.
           </h2>
         </figure>
 
-        <div className="hm-body">
-          <ul className="hm-work">
-            {WORK.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
-          <p className="hm-turn">Ciatta keeps the story together.</p>
-        </div>
       </div>
     </section>
   );
