@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { SiteHeader } from './components/SiteHeader';
 import { Wordmark } from './components/Wordmark';
 import { Film } from './components/Film';
-import {
-  BriefScreen, ChangeScreen, CycleScreen, ExperimentScreen, LabScreen, TodayScreen, ToldScreen,
-} from './components/ProductShowcase';
+import { Phone } from './components/PhoneChrome';
+import { TodayScreen } from './components/TodayScreen';
 
 /**
  * How Ciatta works — built to the composition of whoop.com/how-it-works.
@@ -21,24 +20,114 @@ import {
 
 type Item = { n: string; title: string; body: string; Screen: () => React.ReactNode };
 
+/* -- the screens ----------------------------------------------------------- *
+ * Built the way the hero's screen and the four columns under it are built,
+ * and for the reason those two work on a real iPhone while what was here
+ * did not: the hero's device, plain rem sizes, no query container, and no
+ * unit derived from anything a browser has to agree about.
+ *
+ * Three screens carry every item on this page. That is fewer than one
+ * drawing per item, and it is the trade: a screen that renders is worth
+ * more than a screen that is specific to its paragraph and blank.
+ */
+
+const TRY: [string, string, string][] = [
+  ['Wind down by 10:30pm', 'Your last 3 nights began after 11:40pm', 'Tonight'],
+  ['A short walk before 6pm', 'Your energy rose in the evening after a walk on 4 of 6 days', 'Today'],
+  ['Raise it with your clinician', 'Symptom days have risen since your dose changed on 3 Mar', 'Next visit'],
+];
+
+const BRIEF: [string, string][] = [
+  ['What changed', 'Symptoms, sleep and your cycle'],
+  ['What was happening around it', 'Your medication, your week, your words'],
+  ['What you tried', 'And whether it held'],
+  ['Questions to discuss', 'Three, drawn from your own record'],
+  ['Take it with you', 'Print it, or send it ahead'],
+];
+
+function Caret() {
+  return (
+    <svg viewBox="0 0 8 14" className="ps-caret" aria-hidden="true">
+      <path d="m1 1 6 6-6 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** The day itself: the hero's screen, unchanged. */
+function DayScreen() {
+  return (
+    <Phone className="is-today">
+      <TodayScreen />
+    </Phone>
+  );
+}
+
+/** What she could try, at the size it is read at. */
+function TryScreen() {
+  return (
+    <Phone title="Today" className="is-rows">
+      <div className="product hw-frag">
+        <div className="hw-frag-head">
+          <span>What you could try</span>
+          <i>3 to consider</i>
+        </div>
+        <div className="ps-rows">
+          {TRY.map(([what, why, when]) => (
+            <div className="ps-row" key={what}>
+              <div className="ps-row-line">
+                <span className="ps-row-k"><b>{what}</b><i>{why}</i></span>
+                <span className="ps-row-v">{when}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Phone>
+  );
+}
+
+/** The brief, as the screen she opens it on. */
+function BriefScreen() {
+  return (
+    <Phone title="Health brief" className="is-rows is-brief">
+      <div className="product hw-frag">
+        <div className="hw-frag-head">
+          <span>1 Oct to 1 Apr</span>
+          <i>Prepared today</i>
+        </div>
+        <div className="ps-rows">
+          {BRIEF.map(([name, what]) => (
+            <div className="ps-row" key={name}>
+              <div className="ps-row-line">
+                <span className="ps-row-k"><b>{name}</b><i>{what}</i></span>
+                <Caret />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Phone>
+  );
+}
+
 /* -- the day, five stages ------------------------------------------------- */
 
 const DAY: Item[] = [
   { n: '01', title: 'What changed',
     body: 'Sleep came in at 6h 46m, 48 minutes under your usual. Ciatta says what your usual is rather than assuming eight hours, and it says when the figure was measured and by what.',
-    Screen: ChangeScreen },
+    Screen: DayScreen },
   { n: '02', title: 'What happened around it',
     body: 'Work demands were higher. Fatigue was reported three times. Your cycle changed phase. Bedtime was later on four nights. The day is drawn as one frame, not three charts.',
-    Screen: TodayScreen },
+    Screen: DayScreen },
   { n: '03', title: 'What may be connected',
     body: 'Afternoon pain has been higher after nights under seven hours, seen three times this month. Ciatta shows what the observation is based on, and says plainly that a connection is not a cause.',
-    Screen: TodayScreen },
+    Screen: DayScreen },
   { n: '04', title: 'What you could do',
     body: 'Two things drawn from your own record, each carrying the pattern that produced it: wind down by 10:30 because your last three nights began after 11:40, not because earlier nights are generally better.',
-    Screen: ExperimentScreen },
+    Screen: TryScreen },
   { n: '05', title: 'What happened next',
     body: 'Seven nights later, sleep returned closer to your usual on five of them. Ciatta keeps that result and reads the next change against it.',
-    Screen: ExperimentScreen },
+    Screen: TryScreen },
 ];
 
 /* -- the record, beyond the day ------------------------------------------- */
@@ -46,13 +135,13 @@ const DAY: Item[] = [
 const RECORD: Item[] = [
   { n: '01', title: 'Your cycle, and what moves with it',
     body: 'Length, start dates and phase, with each cycle read against the last four rather than against an average woman.',
-    Screen: CycleScreen },
+    Screen: DayScreen },
   { n: '02', title: 'Your results, across time',
     body: 'Upload the document your provider sent. Ciatta reads the values out of it and keeps each one beside every other time it was measured, with its unit, its range and its date.',
-    Screen: LabScreen },
+    Screen: DayScreen },
   { n: '03', title: 'Your own words, kept',
     body: 'A stressful week, a bad night, a dose change. Dated as you wrote it, never overwritten by a device or a clinic, and read beside the measurements.',
-    Screen: ToldScreen },
+    Screen: DayScreen },
   { n: '04', title: 'One page for an appointment',
     body: 'What changed, what was happening around it, what you tried, what happened next, and the questions worth asking. Take it, print it, or share it.',
     Screen: BriefScreen },
@@ -63,10 +152,10 @@ const RECORD: Item[] = [
 const DAYS: Item[] = [
   { n: 'Day 1', title: 'Bring what you already have',
     body: 'Connect one source and upload one document. Ciatta reads what is there and says plainly what it cannot see yet.',
-    Screen: TodayScreen },
+    Screen: DayScreen },
   { n: 'Weeks 2 to 4', title: 'The first observations',
     body: 'Ciatta waits until it has seen something more than once before it calls it anything. When it does, it shows the working, and it says how thin the evidence still is.',
-    Screen: ExperimentScreen },
+    Screen: TryScreen },
 ];
 
 /* -- a module: a numbered accordion, and the screen it is about ------------ */
@@ -115,9 +204,7 @@ function Module({
           </div>
 
           <div className="hw2-media">
-            <div className="product hw2-device">
-              <Screen />
-            </div>
+            <Screen />
           </div>
         </div>
       </div>

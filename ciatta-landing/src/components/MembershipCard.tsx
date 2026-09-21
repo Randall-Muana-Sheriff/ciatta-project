@@ -50,14 +50,7 @@ export function MembershipCard() {
           <p className="mb-card-price">
             <b>$9.99</b> <span>/ month</span>
           </p>
-          <p className="mb-card-day">$0.33 / day</p>
-
           <ReserveButton />
-          <p className="mb-card-foot">
-            Your card is saved, not charged. Nothing is taken until Ciatta
-            opens and you choose to begin, and you can remove it any time
-            before then.
-          </p>
         </div>
       </div>
     </section>

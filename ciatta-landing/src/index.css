@@ -2887,24 +2887,26 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .hero.has-film:not(.is-page) { position: sticky; top: 0; z-index: 0; }
 .statement {
   position: relative; z-index: 1;
-  background: #0C0D0F; color: #F7F4EE;
+  /* White out of the system rather than #FFFFFF, and Graphite on it: the
+     panel still climbs over the film, and what it climbs into is paper. */
+  background: var(--surface); color: var(--ink);
   min-height: 100vh; min-height: 100lvh;
   display: grid; align-content: center;
   padding-block: clamp(4rem, 14vh, 10rem);
 }
 .statement-title {
-  margin: 0 0 var(--s5); font-weight: 500; color: #F7F4EE;
+  margin: 0 0 var(--s5); font-weight: 500; color: var(--ink);
   font-size: var(--t-display); line-height: var(--lh-display);
   letter-spacing: -0.04em; text-wrap: balance;
 }
 .statement-lede {
-  margin: 0; color: rgba(247,244,238,0.82);
+  margin: 0; color: var(--body-ink);
   font-size: var(--t-lede); line-height: 1.5; max-width: 54ch;
 }
 /* the kicker: the smallest line in the section and the last one to arrive,
    set in caps against the sentence above it rather than competing with it */
 .statement-kicker {
-  margin: var(--s6) 0 0; color: rgba(247,244,238,0.62);
+  margin: var(--s6) 0 0; color: var(--meta-ink);
   font-size: var(--t-caption); font-weight: 600;
   letter-spacing: 0.16em; text-transform: uppercase;
 }
@@ -3046,7 +3048,11 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
 }
 .hw-phone .ha {
-  background: var(--ps-canvas);
+  /* Graphite outright. --ps-canvas is declared on .product and .ex-sheet,
+     neither of which is an ancestor here, so this was resolving to nothing
+     and the screen was showing the bezel through itself. It looked right
+     only because the bezel is the same colour. */
+  background: #18191B;
   border-radius: 11.5%/5.4%;
   padding: 0.375rem 0.625rem 1.5rem;
   gap: 0.4375rem;
@@ -3304,83 +3310,10 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   border-radius: 999px; background: #000000;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
 }
-/* Monochrome, as the hero is. Every colour on these screens runs through
-   five tokens, so the whole palette turns here.
-
-   What the hues were doing was ranking, not decorating: measured against
-   inferred, reported against uncertain. So each becomes a value rather than
-   a hue, and the rank survives. Flattening them all to one white would make
-   the two halves of the sleep chart the same bar. */
-.hw2-device {
-  --ps-measured: #F7F4EE;                    /* measured by a device */
-  --ps-reported: rgba(247, 244, 238, 0.80);  /* reported by her */
-  --ps-clay: rgba(247, 244, 238, 0.68);      /* the connection */
-  --ps-evidence: rgba(247, 244, 238, 0.62);  /* published evidence */
-  --ps-uncertain: rgba(247, 244, 238, 0.55); /* what is still uncertain */
-  /* the raised panel and the hairline are desaturated navies in the app;
-     here they are neutral, or the segmented control and every rule on the
-     screen read faintly blue against a screen that has no other colour */
-  --ps-raised: #26272A;
-  --ps-rule: #35363A;
-}
-/* The tinted grounds behind chips, tags and panels are written as literal
-   hue rgbas rather than as tokens, so they do not follow the five above.
-   Every one of them becomes the same white at the alpha it already had,
-   which keeps each element's weight and takes its colour. */
-.hw2-device .ps-seg { background: rgba(247,244,238,0.09); }
-.hw2-device .ps-span.is-mild { background: rgba(247,244,238,0.62); }
-.hw2-device .ps-span.is-mod { background: rgba(247,244,238,0.82); }
-.hw2-device .ps-entry { background: rgba(247,244,238,0.07); }
-.hw2-device .ps-entry.is-linked,
-.hw2-device .ps-tag-s { background: rgba(247,244,238,0.13); }
-.hw2-device .ps-pill.is-low,
-.hw2-device .ps-pill.is-watch { background: rgba(247,244,238,0.14); }
-.hw2-device .ps-src.is-measured,
-.hw2-device .ps-src.is-told,
-.hw2-device .ps-src.is-imported,
-.hw2-device .ps-src.is-uploaded,
-.hw2-device .ps-src.is-evidence,
-.hw2-device .ps-src.is-inferred { background: rgba(247,244,238,0.15); }
-.hw2-device .ps-tag { background: rgba(247,244,238,0.14); }
-.hw2-device .ps-next { background: rgba(247,244,238,0.10); }
-
-/* and the rest of the hero's treatment: it is the top of a screen rather
-   than a whole one, so it fades out at the foot instead of ending, and it
-   carries no tab bar. The hero drops both for the same reason — what is
-   being shown is the screen, not the app's furniture. */
-/* The height stays derived from the width and is never auto. The screen is a
-   flex child with min-height 0 inside an inline-size container, and on iOS
-   Safari that collapses to nothing the moment the parent stops having a
-   definite height: the device drew as an empty black box on a real phone
-   while every desktop browser was fine. The file already carries this
-   warning a few hundred lines up, about percentage heights, and this is the
-   same trap by the other door. */
-.hw2-device .ps-phone {
-  -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
-}
-.hw2-device .ps-tabs, .hw2-device .ps-home { display: none; }
-.hw2-device .ps-body { padding-bottom: calc(14 * var(--psu)); }
-
-/* On a phone it is the same device, at a plain rem width per step.
-   --ps-w is divided by 100 to make --psu, and every size inside the screen
-   is written in that unit: a font-size, a padding, a radius, a stroke. So
-   --ps-w has to be something every engine can resolve without thinking. A
-   min() of a vw calc is not: where it fails to compute, --psu fails with
-   it, every size inside the screen becomes invalid at once, and the device
-   paints as an empty black box — which is exactly what it was doing on a
-   real iPhone while every desktop browser drew it correctly.
-
-   The hero was rebuilt for this same reason and carries the same rule:
-   plain lengths, no derived geometry, nothing exotic in the chain that the
-   screen's own units hang off. */
-@media (max-width: 700px) {
-  .hw2-media { display: block; }
-  .hw2-device { --ps-w: 19rem; }
-}
-@media (max-width: 380px) {
-  .hw2-device { --ps-w: 16.5rem; }
-}
+/* the screens on this page are the hero's, so the phone carries the hero's
+   rule: a column wide enough to read, centred, and nothing else */
+.hw2-media { display: block; }
+.hw2-media .hw-phone { max-width: 17rem; }
 
 /* the film band, one sentence over it */
 .hw2-film {
@@ -3579,27 +3512,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   .ps-screen, .hw-frag, .hw-page { --psu: 1cqw; }
 }
 
-/* --- how-it-works: none of the above ---------------------------------------
-   This page drew an empty black box on a real iPhone through four attempts
-   at fixing it from the outside, and every one of them was a guess at which
-   clever thing had failed. So the clever things go.
 
-   The screen here is not a query container, its unit is a plain division of
-   a plain rem, and its height is a percentage of a parent that has one
-   rather than a flex child that has to be told not to collapse. Nothing in
-   the chain needs iOS to agree with anything: --ps-w is 19rem, --psu is
-   0.19rem, and every size inside resolves from that alone.
-
-   This is the same treatment the hero was rebuilt with when it was blank on
-   the same phone, and for the same reason: on the first paint, on every
-   engine, is worth more than any elegance in how the sizes are derived. */
-.hw2-device .ps-screen {
-  container-type: normal;
-  --psu: calc(var(--ps-w) / 100);
-  flex: none;
-  height: 100%;
-}
-.hw2-device .ps-phone { display: block; }
 
 /* ===========================================================================
    The hero's product story: three sources arriving, and the day they become.
