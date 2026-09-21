@@ -150,13 +150,14 @@ export default function App() {
         <section className="statement" aria-labelledby="statement-heading">
           <div className="shell">
             <h2 id="statement-heading" className="statement-title">
-              What is your body telling you?
+              Your health doesn’t happen in pieces.
             </h2>
             <p className="statement-lede">
-              The story of your health unfolds over time. Ciatta brings the
-              pieces together and reads them in order, so the changes, and what
-              sits beside them, are yours to see.
+              Ciatta continuously connects what’s changing across your health,
+              your care, and your everyday life. So you can see what changed,
+              what may be connected, and what you can do next.
             </p>
+            <p className="statement-kicker">Continuous health intelligence.</p>
           </div>
         </section>
         </div>

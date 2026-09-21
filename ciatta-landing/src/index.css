@@ -2574,18 +2574,26 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   margin: 0; color: rgba(247,244,238,0.82);
   font-size: var(--t-lede); line-height: 1.5; max-width: 54ch;
 }
+/* the kicker: the smallest line in the section and the last one to arrive,
+   set in caps against the sentence above it rather than competing with it */
+.statement-kicker {
+  margin: var(--s6) 0 0; color: rgba(247,244,238,0.62);
+  font-size: var(--t-caption); font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase;
+}
 
 /* Where the browser can time an animation to the scroll itself, the sentence
    arrives as it climbs rather than being fully there the moment it appears.
    Everywhere else, and under Reduce Motion, it is simply there. */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
-    .statement-title, .statement-lede {
+    .statement-title, .statement-lede, .statement-kicker {
       animation: statement-in linear both;
       animation-timeline: view();
       animation-range: entry 10% entry 80%;
     }
     .statement-lede { animation-range: entry 20% entry 90%; }
+    .statement-kicker { animation-range: entry 28% entry 96%; }
   }
 }
 @keyframes statement-in {
