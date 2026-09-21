@@ -1299,6 +1299,62 @@ p { margin: 0; text-wrap: pretty; }
 }
 .band-head .m-h2, .band-head .m-h2-sub, .split-lead .m-h2, .split-lead .m-h2-sub { margin: 0; }
 
+/* --- Health Agents, and the Provider View --------------------------------
+   The three traits read as a row of claims; the two agents as two documents
+   side by side. The nudge is set as a quotation because that is what it is:
+   a thing Ciatta would say, shown rather than described. */
+.ag-traits {
+  list-style: none; margin: 0 0 var(--s7); padding: 0;
+  display: grid; gap: var(--s5);
+}
+@media (min-width: 760px) { .ag-traits { grid-template-columns: repeat(3, 1fr); gap: var(--s6); } }
+.ag-traits li { padding-top: var(--s4); border-top: var(--strong) solid var(--ink); }
+.ag-traits h3 { margin: 0 0 var(--s2); font-size: var(--t-body); font-weight: 600; color: var(--ink); }
+.ag-traits p { margin: 0; color: var(--body-ink); font-size: var(--t-small); line-height: 1.5; }
+
+.ag-grid { display: grid; gap: var(--s5); }
+@media (min-width: 900px) { .ag-grid { grid-template-columns: repeat(2, 1fr); gap: var(--s6); } }
+.ag-card {
+  background: var(--canvas); border-radius: var(--r-surface);
+  padding: clamp(var(--s5), 2.6vw, var(--s6));
+  display: flex; flex-direction: column; gap: var(--s3);
+}
+.m-band.is-alt .ag-card { background: var(--surface); }
+.ag-card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+.ag-kind, .ag-soon {
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--meta-ink);
+}
+.ag-soon {
+  color: var(--ink); background: rgba(24,25,27,0.08);
+  padding: 0.25rem 0.5rem; border-radius: var(--r-pill);
+}
+.ag-name { margin: 0; font-size: var(--t-card); font-weight: 500; letter-spacing: -0.03em; color: var(--ink); line-height: 1.1; }
+.ag-claim { margin: 0; color: var(--ink); font-size: var(--t-body); }
+.ag-body { margin: 0; color: var(--body-ink); font-size: var(--t-small); line-height: 1.55; }
+.ag-does { list-style: none; margin: var(--s2) 0 0; padding: 0; display: grid; }
+.ag-does li {
+  padding: var(--s3) 0; border-top: var(--hairline) solid var(--rule);
+  color: var(--ink); font-size: var(--t-small); line-height: 1.4;
+}
+.ag-nudge { margin: var(--s2) 0 0; }
+.ag-nudge figcaption {
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--meta-ink); margin-bottom: var(--s3);
+}
+.ag-nudge blockquote {
+  margin: 0; padding: var(--s4);
+  background: var(--ink); color: var(--on-ink);
+  border-radius: var(--r-nested);
+  font-size: var(--t-small); line-height: 1.5;
+}
+.ag-foot { margin: var(--s6) 0 0; color: var(--meta-ink); font-size: var(--t-small); line-height: 1.5; max-width: 62ch; }
+
+/* the provider list runs full width rather than in one of Care's columns */
+@media (min-width: 900px) {
+  .m-care-list.is-wide { grid-template-columns: repeat(2, 1fr); gap: var(--s5) var(--s7); }
+}
+
 /* --- Ciatta Care ---------------------------------------------------------
    Two columns because the two lists are different in kind and should not be
    read as one longer list: the left is work Ciatta does with what it already

@@ -1,6 +1,7 @@
 import { Wordmark } from './components/Wordmark';
 import { SubscribeForm } from './components/SubscribeForm';
 import { Film } from './components/Film';
+import { AgentsSection } from './components/AgentsSection';
 
 /**
  * Member — the page the "Become a member" button goes to.
@@ -212,6 +213,9 @@ export default function Member() {
             </div>
           </div>
         </section>
+
+        {/* ---- the agents, and the view a clinician gets ------------------ */}
+        <AgentsSection />
 
         {/* ---- start free, choose later. The one dark band, and the ask. -- */}
         <section className="m-free m-dark" id="join">
