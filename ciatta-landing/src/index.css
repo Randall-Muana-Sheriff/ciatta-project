@@ -303,7 +303,10 @@ p { margin: 0; text-wrap: pretty; }
 .wordmark {
   display: inline-block;
   font-family: var(--font);
-  font-weight: 600;   /* after whoop's mark: set bold, tight and a step larger */
+  /* Medium, as the Constitution's §06 has it. It was raised to 600 to sit
+     after whoop's mark; at Ciatta's size that read as thick rather than as
+     set, and the tighter tracking below is what carries the weight now. */
+  font-weight: 500;
   font-style: normal;
   text-transform: uppercase;
   color: var(--ink);  /* Graphite or Paper only. Ember never enters the lockup. */
