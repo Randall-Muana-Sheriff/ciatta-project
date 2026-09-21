@@ -192,11 +192,11 @@ export default function App() {
                 </li>
               ))}
             </ul>
-
-            {/* what all of that costs her, and what Ciatta does with it */}
-            <HumanSection />
           </div>
         </section>
+
+        {/* ------------------------ THE HUMAN PROBLEM ----------------------- */}
+        <HumanSection />
 
         {/* ---------------------------- QUESTIONS --------------------------- */}
         <section className="section" aria-labelledby="q-heading">

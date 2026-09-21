@@ -1,13 +1,14 @@
 /**
  * "You shouldn't have to become your own medical historian."
  *
- * The plainest block on the page and deliberately the least designed: the
- * work she is currently doing, listed, and then the line that says Ciatta
- * does it instead. Type on paper, one rule, nothing else.
+ * Its own section again, and now with a photograph of its own, cut from the
+ * same art direction as the four tiles above it: warm, low, directional
+ * light, a woman mid-thought rather than posed, and the line set over her in
+ * white the way the tiles set theirs.
  *
- * It is a block rather than a section because it sits inside the one about
- * the woman it describes. The four tiles above it say what she already does;
- * this says what it costs her, and what Ciatta does with that.
+ * What sits under the photograph is the plainest thing on the page and
+ * deliberately the least designed: the work she is currently doing, listed,
+ * and then the one line that says Ciatta does it instead.
  */
 
 const WORK: string[] = [
@@ -21,19 +22,29 @@ const WORK: string[] = [
 
 export function HumanSection() {
   return (
-    <div className="human">
-      <h3 id="human-heading" className="band-title hm-title">
-        You shouldn’t have to become your own medical historian.
-      </h3>
+    <section className="section human" aria-labelledby="human-heading">
+      <div className="shell">
+        <figure className="hm-figure">
+          <img
+            src="/images/value/remember.jpg"
+            alt="A woman at a window in low morning light, holding a cup, looking out."
+            width={1440} height={900} loading="lazy" decoding="async"
+          />
+          <span className="hm-figure-scrim" aria-hidden="true" />
+          <h2 id="human-heading" className="band-title hm-title">
+            You shouldn’t have to become your own medical historian.
+          </h2>
+        </figure>
 
-      <div className="hm-body">
-        <ul className="hm-work">
-          {WORK.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
-        <p className="hm-turn">Ciatta keeps the story together.</p>
+        <div className="hm-body">
+          <ul className="hm-work">
+            {WORK.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+          <p className="hm-turn">Ciatta keeps the story together.</p>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

@@ -2282,9 +2282,32 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 /* ===========================================================================
    The human problem, and where Ciatta starts. Type on paper, one rule each.
    =========================================================================== */
-/* the historian block, now inside the section about the same woman */
-.human { margin-top: clamp(3rem, 6vw, 5.5rem); padding-top: var(--s6); border-top: var(--hairline) solid var(--rule); }
-.hm-title { margin: 0 0 var(--s6); }
+/* --- the historian, with a photograph of its own ------------------------- *
+   Cut from the same art direction as the four tiles above it, and carrying
+   its line the same way: white, set into the frame, over a scrim that runs
+   from the corner the type sits in. */
+.hm-figure {
+  position: relative; margin: 0 0 var(--s6);
+  border-radius: var(--r-surface); overflow: hidden; isolation: isolate;
+  aspect-ratio: 4 / 5;
+  display: flex; align-items: flex-end;
+}
+@media (min-width: 760px) { .hm-figure { aspect-ratio: 16 / 7; } }
+.hm-figure img {
+  position: absolute; inset: 0; z-index: -2;
+  width: 100%; height: 100%; object-fit: cover; object-position: 64% center;
+  display: block;
+}
+.hm-figure-scrim {
+  position: absolute; inset: 0; z-index: -1;
+  background:
+    linear-gradient(to top, rgba(24,25,27,0.86) 0%, rgba(24,25,27,0.28) 56%, rgba(24,25,27,0.10) 100%),
+    linear-gradient(to right, rgba(24,25,27,0.62) 0%, rgba(24,25,27,0) 62%);
+}
+.hm-title {
+  margin: 0; padding: clamp(var(--s5), 3.4vw, var(--s7));
+  color: #F7F4EE; max-width: 24ch;
+}
 .hm-body { display: grid; gap: var(--s6); align-items: start; }
 @media (min-width: 900px) { .hm-body { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s7); } }
 .hm-work {
