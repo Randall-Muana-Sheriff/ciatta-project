@@ -1,4 +1,5 @@
 import { DayChart } from './ProductShowcase';
+import { Phone } from './PhoneChrome';
 
 /**
  * "What is your body telling you?" — how Ciatta works, directly under the hero.
@@ -132,7 +133,8 @@ function Sources() {
 
 function TodayRead() {
   return (
-    <div className="product hw-frag">
+    <Phone title="Today">
+      <div className="product hw-frag">
       <div className="hw-frag-head">
         <span>Today</span>
         <i>Wed 1 Apr · day 5</i>
@@ -146,7 +148,8 @@ function TodayRead() {
         <p>Afternoon pain has been higher after nights under 7 hours.</p>
         <span className="hw-frag-basis">Seen 3 times this month</span>
       </div>
-    </div>
+      </div>
+    </Phone>
   );
 }
 
@@ -167,7 +170,8 @@ const TRY: [string, string, string][] = [
 
 function Suggestions() {
   return (
-    <div className="product hw-frag">
+    <Phone title="Today" className="is-rows">
+      <div className="product hw-frag">
       <div className="hw-frag-head">
         <span>What you could try</span>
         <i>3 to consider</i>
@@ -185,8 +189,8 @@ function Suggestions() {
           </div>
         ))}
       </div>
-
-    </div>
+      </div>
+    </Phone>
   );
 }
 
@@ -218,6 +222,7 @@ const QUESTIONS: string[] = [
 
 function Brief() {
   return (
+    <Phone title="Health brief" className="is-doc">
     <article className="hw-page" aria-label="An example health brief, as a printable page">
       <header className="hw-page-head">
         <img src="/images/icon.svg" alt="" width={44} height={44} />
@@ -254,6 +259,7 @@ function Brief() {
         <span>Ciatta does not diagnose or replace medical care.</span>
       </footer>
     </article>
+    </Phone>
   );
 }
 
@@ -291,7 +297,7 @@ export function HowSection() {
                 <h3>{line}</h3>
               </div>
 
-              <div className={Art === Brief ? 'hw-art-wrap is-page' : 'hw-art-wrap'}>
+              <div className={Art === Sources ? 'hw-art-wrap' : 'hw-art-wrap is-phone'}>
                 <Art />
               </div>
             </li>
