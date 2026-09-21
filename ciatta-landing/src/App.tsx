@@ -112,6 +112,11 @@ export default function App() {
             Octo's shape: the film fills the section and the copy sits over it.
             The scrim carries the contrast; the type stays flush left, because
             centred type is not part of this system. ------------------------ */}
+        {/* The hero holds still and the statement climbs over it. Both sit in
+            one box so the hero is released the moment the statement has
+            finished passing, rather than staying pinned behind the whole
+            page. */}
+        <div className="reveal">
         <section className="hero has-film">
           <HeroFilm />
           <div className="shell hero-inner">
@@ -143,6 +148,21 @@ export default function App() {
             </div>
           </div>
         </section>
+
+        {/* ---- the statement, sliding up over the film -------------------- */}
+        <section className="statement" aria-labelledby="statement-heading">
+          <div className="shell">
+            <h2 id="statement-heading" className="statement-title">
+              What is your body telling you?
+            </h2>
+            <p className="statement-lede">
+              The story of your health unfolds over time. Ciatta brings the
+              pieces together and reads them in order, so the changes, and what
+              sits beside them, are yours to see.
+            </p>
+          </div>
+        </section>
+        </div>
 
         {/* ------ EXPLORE: the whole record, before the page explains it ---- */}
         <ExploreSection />

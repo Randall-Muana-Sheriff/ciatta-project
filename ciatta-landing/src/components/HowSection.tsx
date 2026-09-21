@@ -256,19 +256,8 @@ const STEPS: [string, string, () => React.ReactNode][] = [
 
 export function HowSection() {
   return (
-    <section className="section how" aria-labelledby="how-heading">
+    <section className="section how" aria-label="How Ciatta works, in four steps">
       <div className="shell">
-        <div className="band-head">
-          <h2 id="how-heading" className="band-title">
-            What is your body telling you?
-          </h2>
-          <p className="band-sub">
-            The story of your health unfolds over time. Ciatta brings the pieces
-            together and reads them in order, so the changes, and what sits
-            beside them, are yours to see.
-          </p>
-        </div>
-
         <ol className="hw-steps">
           {STEPS.map(([n, line, Art]) => (
             <li key={n} className="hw-step">

@@ -2460,6 +2460,54 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 
 
 /* 01 · what arrives, and the mark it arrives at */
+/* --- the statement that climbs over the film -----------------------------
+   Apple's move on the Vision Pro page: the opening frame holds still and the
+   sentence after it slides up and covers it. Two rules do the whole thing —
+   the hero sticks to the top of the window, the statement sits above it in
+   the stack and carries its own ground — and the browser's own scrolling
+   does the rest, so there is no listener, no transform and nothing to fall
+   out of step on a slow frame.
+
+   The pair share `.reveal`, which is what releases the hero: a sticky box
+   only sticks inside its own parent, so the film lets go once the statement
+   has finished passing rather than staying pinned behind the whole page. */
+.reveal { position: relative; }
+.hero.has-film:not(.is-page) { position: sticky; top: 0; z-index: 0; }
+.statement {
+  position: relative; z-index: 1;
+  background: #0C0D0F; color: #F7F4EE;
+  min-height: 100vh; min-height: 100lvh;
+  display: grid; align-content: center;
+  padding-block: clamp(4rem, 14vh, 10rem);
+}
+.statement-title {
+  margin: 0 0 var(--s5); font-weight: 500; color: #F7F4EE;
+  font-size: var(--t-display); line-height: var(--lh-display);
+  letter-spacing: -0.04em; text-wrap: balance;
+}
+.statement-lede {
+  margin: 0; color: rgba(247,244,238,0.82);
+  font-size: var(--t-lede); line-height: 1.5; max-width: 54ch;
+}
+
+/* Where the browser can time an animation to the scroll itself, the sentence
+   arrives as it climbs rather than being fully there the moment it appears.
+   Everywhere else, and under Reduce Motion, it is simply there. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .statement-title, .statement-lede {
+      animation: statement-in linear both;
+      animation-timeline: view();
+      animation-range: entry 10% entry 80%;
+    }
+    .statement-lede { animation-range: entry 20% entry 90%; }
+  }
+}
+@keyframes statement-in {
+  from { opacity: 0; transform: translate3d(0, 1.25rem, 0); }
+  to { opacity: 1; transform: none; }
+}
+
 /* --- 01: the sources, and the mark they run into -------------------------
    findmypattern's arrangement: the list on the left, the product's mark on
    the right, and one line per source rather than one arrow for all of them.
