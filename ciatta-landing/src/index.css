@@ -3274,7 +3274,8 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .hw2-panel p { color: var(--body-ink); font-size: var(--t-small); line-height: 1.45; max-width: 52ch; }
 
 .hw2-media { display: flex; justify-content: center; min-width: 0; }
-.hw2-device { --ps-w: min(78vw, 17rem); }
+/* a plain rem here too: nothing in this page's chain is conditional */
+.hw2-device { --ps-w: 17rem; }
 
 /* The screens on this page take the hero's device rather than the showcase's:
    the same black bezel, the same Dynamic Island, the same weight of shadow.
@@ -3577,6 +3578,28 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 @supports (container-type: inline-size) {
   .ps-screen, .hw-frag, .hw-page { --psu: 1cqw; }
 }
+
+/* --- how-it-works: none of the above ---------------------------------------
+   This page drew an empty black box on a real iPhone through four attempts
+   at fixing it from the outside, and every one of them was a guess at which
+   clever thing had failed. So the clever things go.
+
+   The screen here is not a query container, its unit is a plain division of
+   a plain rem, and its height is a percentage of a parent that has one
+   rather than a flex child that has to be told not to collapse. Nothing in
+   the chain needs iOS to agree with anything: --ps-w is 19rem, --psu is
+   0.19rem, and every size inside resolves from that alone.
+
+   This is the same treatment the hero was rebuilt with when it was blank on
+   the same phone, and for the same reason: on the first paint, on every
+   engine, is worth more than any elegance in how the sizes are derived. */
+.hw2-device .ps-screen {
+  container-type: normal;
+  --psu: calc(var(--ps-w) / 100);
+  flex: none;
+  height: 100%;
+}
+.hw2-device .ps-phone { display: block; }
 
 /* ===========================================================================
    The hero's product story: three sources arriving, and the day they become.
