@@ -52,18 +52,20 @@ export function MembershipCard() {
     <section className="section mb-join" id="membership" aria-labelledby="plan-heading">
       <div className="shell mb-split">
         <div className="band-head">
-          <h2 className="m-h2" id="plan-heading">
-            Your health doesn’t reset every month.
-          </h2>
+          {/* Four words. The heading was a whole sentence of argument —
+              "Your health doesn't reset every month." — which is the right
+              thought but the wrong place for it: it opened the same way as
+              the statement section further up the page ("Your health doesn't
+              happen in pieces."), so the home page had two headings starting
+              on the same three words. The argument moves into the paragraph,
+              where it reads as a reason rather than as a slogan. */}
+          <h2 className="m-h2" id="plan-heading">One membership. One year.</h2>
           <p className="m-h2-sub">
-            Your membership shouldn’t either. One membership, one payment, and
-            continuous access to Ciatta’s health intelligence for the year —
-            not a subscription that starts over every thirty days.
-          </p>
-          <p className="m-h2-sub">
-            Membership opens in Quarter 3 of 2027. Reserving a place puts you
-            on the early-access list: you are not charged, you are not
-            subscribed to anything, and you decide then.
+            Your health doesn’t reset every month, and your membership doesn’t
+            either: one payment, and continuous access to Ciatta’s health
+            intelligence for the year. Membership opens in Quarter 3 of 2027,
+            and reserving a place costs nothing, takes no card, and commits
+            you to nothing.
           </p>
         </div>
 
