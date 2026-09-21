@@ -1560,23 +1560,52 @@ p { margin: 0; text-wrap: pretty; }
 /* the ticks, read left so the eye runs down one column rather than
    re-centring on every line */
 .mb-card-list {
-  list-style: none; margin: 0 0 var(--s2); padding: var(--s4) 0 var(--s5);
-  display: grid; gap: var(--s4); text-align: left;
+  list-style: none; margin: 0 0 var(--s5); padding: 0; text-align: left;
+  display: grid; gap: 0;
   border-bottom: var(--hairline) solid var(--rule);
 }
+/* rows separated by a rule rather than by air, which is what tells her the
+   row is a row and not a paragraph that happens to be bold */
+.mb-card-list > li + li { border-top: var(--hairline) solid var(--rule); }
 .mb-card-list li { display: flex; align-items: flex-start; gap: var(--s3); }
-/* each inclusion is now a thing and a sentence saying what the thing is, so
-   the row is a stacked pair rather than one line. The title takes the body
-   step at 600 and the sentence the step below it, which is the same pairing
-   the rest of the site uses for a label and its explanation. */
-.mb-card-list span { display: grid; gap: 2px; min-width: 0; }
-.mb-card-list b {
+/* Each inclusion is a disclosure: the heading shows, the sentence waits.
+   The row is the summary, and it has to look like a line of the list rather
+   than like a control — so the tick keeps its place at the left and the only
+   thing added is a mark at the right edge. */
+.mb-card-list li { display: block; }
+.mb-inc summary {
+  display: flex; align-items: center; gap: var(--s3);
+  cursor: pointer; list-style: none;
+  /* 0.75rem each side over a 1.25 line brings the row to 44px on a phone,
+     which is HIG's floor for something a thumb has to hit. It was 28px. */
+  padding-block: 0.75rem;
+  min-height: 2.75rem; box-sizing: border-box;
   color: var(--ink); font-size: var(--t-body); font-weight: 600; line-height: 1.25;
 }
-.mb-card-list em {
-  font-style: normal; color: var(--body-ink);
-  font-size: var(--t-small); line-height: 1.4;
+/* Safari draws its own triangle unless both of these are set */
+.mb-inc summary::-webkit-details-marker { display: none; }
+.mb-inc summary::marker { content: ''; }
+.mb-inc summary:hover { color: var(--ink); }
+.mb-inc summary:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 3px; border-radius: 4px; }
+.mb-inc summary > span { flex: 1; min-width: 0; text-align: left; }
+.mb-inc p {
+  margin: 0 0 var(--s4); padding-left: calc(1rem + var(--s3));
+  color: var(--body-ink); font-size: var(--t-small); line-height: 1.45;
+  text-align: left;
 }
+/* the mark: a plus that loses its upright when the row opens, drawn rather
+   than typed, as the other accordion on the site draws its own */
+.mb-inc-mark {
+  flex: none; position: relative; width: 0.75rem; height: 1.25em;
+}
+.mb-inc-mark::before, .mb-inc-mark::after {
+  content: ''; position: absolute; left: 0; top: 50%;
+  width: 0.75rem; height: 1.5px; margin-top: -0.75px;
+  background: var(--meta-ink); border-radius: 1px;
+}
+.mb-inc-mark::after { transform: rotate(90deg); transition: transform var(--transition) var(--ease-body); }
+.mb-inc[open] .mb-inc-mark::after { transform: rotate(90deg) scaleX(0); }
+@media (prefers-reduced-motion: reduce) { .mb-inc-mark::after { transition: none; } }
 /* the label over the list, set as every other small label on the site is */
 .mb-card-label {
   margin: var(--s2) 0 0; color: var(--meta-ink);
@@ -1586,7 +1615,7 @@ p { margin: 0; text-wrap: pretty; }
 /* the tick is drawn rather than typed: a check glyph sits differently in
    every face and this one has to sit on the line it marks */
 .mb-card-list i {
-  flex: none; position: relative; width: 1rem; height: 1.35em;
+  flex: none; position: relative; width: 1rem; height: 1.25em;
 }
 .mb-card-list i::before, .mb-card-list i::after {
   content: ''; position: absolute; background: var(--ink); border-radius: 1px;

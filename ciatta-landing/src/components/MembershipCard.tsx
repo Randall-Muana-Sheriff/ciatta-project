@@ -87,14 +87,27 @@ export function MembershipCard() {
           </p>
 
           <p className="mb-card-label">Membership includes</p>
+          {/* Six headings and nothing else until she asks. The card had six
+              titles and six sentences showing at once, which is a wall of
+              type in a 416px column and reads as a specification rather than
+              a list of what she gets.
+
+              <details> rather than state: it opens with no JavaScript, it is
+              a disclosure to a screen reader without any ARIA to get wrong,
+              and each one opens independently — they are six things she
+              gets, not one choice between six. None is open on arrival,
+              which is the whole point of the change. */}
           <ul className="mb-card-list">
             {INCLUDED.map(([title, body]) => (
               <li key={title}>
-                <i aria-hidden="true" />
-                <span>
-                  <b>{title}</b>
-                  <em>{body}</em>
-                </span>
+                <details className="mb-inc">
+                  <summary>
+                    <i aria-hidden="true" />
+                    <span>{title}</span>
+                    <b className="mb-inc-mark" aria-hidden="true" />
+                  </summary>
+                  <p>{body}</p>
+                </details>
               </li>
             ))}
           </ul>
