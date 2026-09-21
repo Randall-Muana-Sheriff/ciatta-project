@@ -427,6 +427,65 @@ p { margin: 0; text-wrap: pretty; }
    left and the button takes only what its label needs. flex-end, not stretch,
    so the button matches the input beside it rather than the label above it. */
 .waitlist-row { display: flex; flex-direction: row; align-items: flex-end; gap: var(--s3); }
+
+/* On a phone the action sits inside the field rather than beside it. Two
+   controls side by side on a 390 screen leaves the address about two thirds
+   of a line to be typed into; together, the field keeps the width and the
+   button keeps its whole label.
+
+   The row becomes the control: it carries the ground, the border and the
+   radius, the input goes transparent inside it, and the button is a pill at
+   the end. Done this way rather than by padding the input and floating the
+   button over it, because that needs a number for the button's width and
+   the button is "Join the waitlist" in one place and "Reserve your place"
+   in another. This arrangement does not care.
+
+   Only on a phone. From 700 up there is room for both. */
+@media (max-width: 700px) {
+  .waitlist-row {
+    align-items: center; gap: 0;
+    padding: 0.3125rem;
+    background: var(--surface);
+    border: var(--hairline) solid var(--rule);
+    border-radius: var(--r-control);
+  }
+  /* the focus ring moves to the row, since the row is now the control */
+  .waitlist .waitlist-row:focus-within { outline: var(--strong) solid var(--ink); outline-offset: 2px; }
+  .waitlist .waitlist-field input {
+    height: calc(var(--control-h) - 0.625rem);
+    background: none; border: 0; border-radius: 0;
+    padding: 0 var(--s3);
+  }
+  .waitlist .waitlist-field input:focus,
+  .waitlist .waitlist-field input:focus-visible { outline: none; }
+  /* three classes deep on purpose: .m-dark .btn-primary is declared much
+     later in this file with uppercase, wide tracking and generous padding,
+     and on source order alone it kept the dark band's button 236px wide
+     inside a 350px row. */
+  .waitlist .waitlist-row .btn-primary {
+    flex: none;
+    height: calc(var(--control-h) - 0.625rem);
+    border-radius: var(--r-pill);
+    /* tighter than it is beside the field: the label here is as long as
+       "Reserve your place", and at the wider padding that left barely a
+       hundred pixels to type an address into */
+    padding: 0 var(--s3);
+    font-size: var(--t-caption);
+    letter-spacing: 0.01em;
+    text-transform: none;
+  }
+
+  /* over the film and on the dark band the row takes the ground the input
+     used to have, and the input inside it takes none */
+  .hero .waitlist-row, .m-dark .waitlist-row {
+    background: rgba(247,244,238,0.10);
+    border-color: rgba(247,244,238,0.32);
+  }
+  .hero .waitlist-row:focus-within,
+  .m-dark .waitlist-row:focus-within { outline-color: #F7F4EE; }
+  .hero .waitlist input, .m-dark .waitlist input { background: none; border: 0; }
+}
+
 .waitlist-field { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
 /* The field is labelled for the screen reader and not for the eye: the
    placeholder already says what goes in it, and an EMAIL caption over a box
