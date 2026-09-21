@@ -3132,11 +3132,17 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   display: grid; align-content: center;
   padding-block: clamp(4rem, 14vh, 10rem);
 }
+/* The statement is the one centred block on the site. Everything else sets
+   flush left, and it earns the exception by being a single sentence on an
+   otherwise empty screen — there is no column of copy beside it for a ragged
+   left edge to line up with, and a lone sentence pinned to the left of a
+   1440 window reads as the start of something that never arrives. */
+.statement .shell { text-align: center; }
 .statement-title {
   /* a sentence rather than a phrase now, so it gets a measure a sentence can
      be read at instead of running the full width of a 1440 window */
-  max-width: 26ch;
-  margin: 0 0 var(--s5); font-weight: 500; color: var(--ink);
+  max-width: 26ch; margin-inline: auto;
+  margin: 0 auto var(--s5); font-weight: 500; color: var(--ink);
   font-size: var(--t-display); line-height: var(--lh-display);
   letter-spacing: -0.04em; text-wrap: balance;
 }
