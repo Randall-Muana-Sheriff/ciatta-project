@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { Wordmark } from './Wordmark';
 import { CookieChoicesLink } from './CookieBanner';
 import { LEGAL } from '../legal/config';
+import { initReveal } from '../lib/reveal';
 
 /**
  * The footer every page shares, in Suna Health's arrangement: the wordmark
@@ -43,6 +45,13 @@ const COLUMNS: [string, { label: string; href: string }[]][] = [
 ];
 
 export function SiteFooter() {
+  /* The scroll reveal is armed here because the footer is the last thing
+     every page renders: by the time this effect runs the whole document is
+     committed, so the observer sees every section rather than whatever had
+     mounted when a main.tsx called it. Every page uses this footer, so every
+     page gets it, and no page has to remember to. */
+  useEffect(() => { initReveal(); }, []);
+
   return (
     <footer className="ft">
       <div className="shell">

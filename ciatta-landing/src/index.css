@@ -4172,3 +4172,65 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   font-size: var(--t-caption);
   font-weight: 400;
 }
+
+/* =========================================================================
+   THE BROWSING EFFECT
+   =========================================================================
+   A line lifts a few pixels and fades up as it comes into view, the parts of
+   a block a beat apart so a heading lands before its sentence. Nothing
+   slides in from the side, nothing scales, nothing bounces.
+
+   Every rule that hides anything is nested under [data-reveal="on"], which
+   src/lib/reveal.ts sets only from inside the observer's own first callback
+   — proof the observer is alive. No JavaScript, no attribute, nothing
+   hidden: the page renders exactly as it did before this file existed. That
+   is the whole safety design, because text on a health page may not depend
+   on a script to become visible.
+
+   The hidden list is wrapped in :where() so it carries no specificity of its
+   own. Without that, a selector ending in a type — .who-tile p, .ft-cols >
+   div, .hw2-steps > li — outranks .is-in, and those elements are marked
+   revealed by the script and stay at opacity 0 for ever. Which is precisely
+   what happened: seven elements on the home page, class applied, still
+   invisible.
+
+   Reduced motion is honoured here rather than in the script, so the setting
+   holds even if the script is what failed. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-reveal="on"] :where(
+    .band-head > *,
+    .m-h2,
+    .m-h2-sub,
+    .hw2-item,
+    .hw2-steps > li,
+    .mb-card,
+    .who-tile p,
+    .hm-title,
+    .ex-title,
+    .ex-lede,
+    .qa-item,
+    .sf-foot,
+    .mb-time > *,
+    .split-lead > *,
+    .split-body > *,
+    .briefs-card,
+    .briefs-group-head > *,
+    .close-lines,
+    .ft-brand,
+    .ft-cols > div
+  ) {
+    opacity: 0;
+    /* translate only: it must not move a neighbour or change a height, or
+       the fold measurements this page was built to stop being true */
+    transform: translate3d(0, 14px, 0);
+  }
+  [data-reveal="on"] .is-in {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 0.75s cubic-bezier(0.22, 0.61, 0.36, 1),
+      transform 0.75s cubic-bezier(0.22, 0.61, 0.36, 1);
+    /* the beat between the parts of one block */
+    transition-delay: calc(var(--reveal-i, 0) * 80ms);
+  }
+}
