@@ -477,7 +477,12 @@ p { margin: 0; text-wrap: pretty; }
   .waitlist .waitlist-row .btn-primary {
     flex: none;
     height: calc(var(--control-h) - 0.625rem);
-    border-radius: var(--r-pill);
+    /* The button sits inside the field, so it takes the field's shape rather
+       than a pill's. Concentric: the inner radius is the outer radius less
+       the gap between them, which is the row's 0.3125rem of padding. Any
+       other figure and the two curves stop being parallel — a pill inside a
+       rounded rectangle reads as a second control dropped into the first. */
+    border-radius: calc(var(--r-control) - 0.3125rem);
     /* tighter than it is beside the field: the label here is as long as
        "Reserve your place", and at the wider padding that left barely a
        hundred pixels to type an address into */
