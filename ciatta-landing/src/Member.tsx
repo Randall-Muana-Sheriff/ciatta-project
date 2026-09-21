@@ -78,7 +78,7 @@ const QUESTIONS: [string, string][] = [
   ['Can I cancel?',
    'At any time, and you keep your record: export everything before you go, or delete it outright. Cancelling stops the next payment rather than ending your access that day.'],
   ['What does it cost?',
-   'Ciatta Core will be $9.99 a month when membership opens. Reserving a place costs nothing, takes no card, and charges nothing today.'],
+   'Ciatta Core will be $79 for the year when membership opens \u2014 one payment, not a monthly deduction. Reserving a place costs nothing, takes no card, and charges nothing today.'],
 ];
 
 export default function Member() {
@@ -103,7 +103,7 @@ export default function Member() {
             <p className="m-hero-lede">
               Your records, your symptoms, your treatments, your everyday
               context and your own words, read together over time. Ciatta
-              Core will be $9.99 a month when membership opens; reserving a
+              Core will be $79 for the year when membership opens; reserving a
               place today is free.
             </p>
             <a className="m-btn is-light" href="#join">Reserve</a>

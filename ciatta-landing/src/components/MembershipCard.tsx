@@ -37,7 +37,7 @@ export function MembershipCard() {
           <p className="m-h2-sub">
             Reserving a place puts you on the early-access list. You are not
             charged and you are not subscribed to anything: Ciatta Core will
-            be $9.99 a month when membership opens in 2027, and you decide
+            be $79 for the year when membership opens in 2027, and you decide
             then.
           </p>
         </div>
@@ -55,10 +55,13 @@ export function MembershipCard() {
             ))}
           </ul>
 
+          {/* One payment a year, the way a warehouse club does it: the
+              figure you see is the figure you pay, once, and nothing is
+              deducted monthly in between. */}
           <p className="mb-card-price">
-            <b>$9.99</b> <span>/ month</span>
+            <b>$79</b> <span>/ year</span>
           </p>
-          <p className="mb-card-when">when membership opens</p>
+          <p className="mb-card-when">one payment, when membership opens</p>
 
           <ReserveButton label="Reserve" />
           <p className="mb-card-foot">

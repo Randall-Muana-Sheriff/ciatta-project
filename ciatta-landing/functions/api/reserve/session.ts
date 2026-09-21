@@ -20,7 +20,7 @@
 
 type Env = {
   STRIPE_SECRET_KEY?: string;
-  /** e.g. price_1AbCdEf… — the $9.99/month recurring price */
+  /** e.g. price_1AbCdEf… — the $79/year recurring price, billed annually */
   STRIPE_PRICE_ID?: string;
   /** e.g. https://ciatta.io */
   SITE_ORIGIN?: string;
