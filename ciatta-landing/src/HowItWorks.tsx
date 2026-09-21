@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { SiteHeader } from './components/SiteHeader';
-import { SubscribeForm } from './components/SubscribeForm';
 import { Wordmark } from './components/Wordmark';
 import { Film } from './components/Film';
 import {
@@ -21,19 +20,6 @@ import {
  */
 
 type Item = { n: string; title: string; body: string; Screen: () => React.ReactNode };
-
-/* -- the four steps, across the top --------------------------------------- */
-
-const STEPS: [string, string][] = [
-  ['Bring it together',
-   'Connect an app or wearable, import from a portal, upload the documents your provider sends, and add what only you can say.'],
-  ['Read it in order',
-   'Ciatta reads along a timeline rather than as dashboards, so a change is read against your own usual.'],
-  ['See what sits beside it',
-   'Every change is read beside the week it happened in: your cycle, your care, your workload, your words.'],
-  ['Decide, and see what happened',
-   'Try one thing, keep the result, and take one page to your next appointment.'],
-];
 
 /* -- the day, five stages ------------------------------------------------- */
 
@@ -163,26 +149,6 @@ export default function HowItWorks() {
           </div>
         </section>
 
-        {/* ------------------------- THE WORK, AS A ROW -------------------- */}
-        <section className="section hw2-steps-band" aria-labelledby="work-heading">
-          <div className="shell">
-            <div className="band-head">
-              <h2 id="work-heading" className="band-title">The work Ciatta does</h2>
-              <p className="band-sub">Four steps, in the order they happen, every day it runs.</p>
-            </div>
-
-            <ol className="hw2-steps">
-              {STEPS.map(([title, body], i) => (
-                <li key={title}>
-                  <span className="hw2-n">{String(i + 1).padStart(2, '0')}</span>
-                  <h3>{title}</h3>
-                  <p>{body}</p>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-
         <Module
           id="day-heading"
           kind="A day"
@@ -219,37 +185,6 @@ export default function HowItWorks() {
           items={DAYS}
         />
 
-        {/* -------------------------------- CTA --------------------------- */}
-        <section className="section" aria-labelledby="hiw-cta">
-          <div className="shell split is-centred">
-            <div className="split-lead close-inner">
-              <h2 id="hiw-cta" className="display">
-                See what’s changing.{' '}
-                <span className="close-second">Know what happened around it.</span>
-              </h2>
-              <p className="close-lines">
-                Ciatta opens to a small group first. Reserve a place and you
-                will get one email when it does.
-              </p>
-            </div>
-            <div className="split-body">
-              <div className="surface is-shell is-lifted" id="join">
-                <SubscribeForm
-                  id="waitlist-how"
-                  source="closing"
-                  kind="waitlist"
-                  note=""
-                  consent="I agree to receive emails about early access and product updates."
-                />
-              </div>
-              <p className="close-disclaimer">
-                Ciatta provides health information, observations, and
-                recommendations for exploration. It does not diagnose or replace
-                medical care.
-              </p>
-            </div>
-          </div>
-        </section>
       </main>
 
       <footer className="footer shell">
