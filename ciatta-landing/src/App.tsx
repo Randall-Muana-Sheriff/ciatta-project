@@ -165,14 +165,16 @@ export default function App() {
         {/* ---- the statement, sliding up over the film -------------------- */}
         <section className="statement" aria-labelledby="statement-heading">
           <div className="shell">
+            {/* One sentence. The section was a heading and a paragraph set
+                at identical size and weight, which is two blocks doing one
+                block's work — so it is now the single claim it was always
+                making, and the heading is that claim rather than a lead-in
+                to it. */}
             <h2 id="statement-heading" className="statement-title">
-              Your health doesn’t happen in pieces.
+              Ciatta continuously connects your health data and context to
+              identify patterns, surface emerging risks, and help you take
+              informed action.
             </h2>
-            <p className="statement-lede">
-              Ciatta continuously connects what’s changing across your health,
-              your care, and your everyday life. So you can see what changed,
-              what may be connected, and what you can do next.
-            </p>
             <p className="statement-kicker">Continuous health intelligence.</p>
           </div>
         </section>
