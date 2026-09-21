@@ -32,26 +32,25 @@ import { DayChart } from './ProductShowcase';
 type Node = {
   key: string;
   name: string;
-  kind: string;
   /** e.g. '/images/sources/oura.svg' — drop the file in and set this */
   logo?: string;
   glyph: React.ReactNode;
 };
 
 const NODES: Node[] = [
-  { key: 'oura', name: 'Oura', kind: 'Measured',
+  { key: 'oura', name: 'Oura',
     logo: '/images/sources/oura.png',
     glyph: <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2.6" /></svg> },
-  { key: 'whoop', name: 'WHOOP', kind: 'Measured',
+  { key: 'whoop', name: 'WHOOP',
     logo: '/images/sources/whoop.png',
     glyph: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7l4 10 5-10 5 10 4-10" /></svg> },
-  { key: 'apple', name: 'Apple Health', kind: 'Measured',
+  { key: 'apple', name: 'Apple Health',
     logo: '/images/sources/apple-health.png',
     glyph: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20s-7-4.5-7-9.3A4.2 4.2 0 0 1 12 8a4.2 4.2 0 0 1 7 2.7C19 15.5 12 20 12 20Z" /></svg> },
-  { key: 'mychart', name: 'MyChart', kind: 'Imported',
+  { key: 'mychart', name: 'MyChart',
     logo: '/images/sources/mychart.png',
     glyph: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15l4-5 3.5 3L20 6" /></svg> },
-  { key: 'pdf', name: 'PDF results', kind: 'Uploaded',
+  { key: 'pdf', name: 'PDF results',
     glyph: (
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M6 2.5h8L19 7.5v14H6z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
@@ -59,14 +58,15 @@ const NODES: Node[] = [
         <text x="12" y="18" textAnchor="middle" fontSize="6.4" fontWeight="700" fill="currentColor">PDF</text>
       </svg>
     ) },
-  { key: 'words', name: 'Your own words', kind: 'You tell Ciatta',
+  { key: 'words', name: 'Your own words',
     glyph: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 18.5 5 15l9-9 3.5 3.5-9 9-3.5 1Z" /><path d="M13.5 6.5 17 10" /></svg> },
 ];
 
-/* the rows occupy the left of the box and the mark sits at the right of it,
-   in the same 0-100 space the lines are drawn in */
-const ROWS_RIGHT = 62;
-const HUB_X = 86;
+/* The rows sit on the left and the mark on the right, in the same 0-100 space
+   the lines are drawn in. The lines begin just clear of the names rather than
+   out at the edge, so each one reads as leaving its own source. */
+const ROWS_RIGHT = 54;
+const HUB_X = 84;
 
 function Sources() {
   const step = 100 / NODES.length;
@@ -74,16 +74,33 @@ function Sources() {
   return (
     <div className="hw-hub">
       <svg className="hw-hub-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-        {NODES.map((n, i) => {
-          const y = step * (i + 0.5);
-          return (
-            <path
-              key={n.key}
-              d={`M${ROWS_RIGHT},${y} C${ROWS_RIGHT + 12},${y} ${HUB_X - 12},50 ${HUB_X},50`}
-              vectorEffect="non-scaling-stroke"
-            />
-          );
-        })}
+        <defs>
+          {NODES.map((n, i) => {
+            const y = step * (i + 0.5);
+            return (
+              <path
+                key={n.key} id={`hw-path-${n.key}`}
+                d={`M${ROWS_RIGHT},${y} C${ROWS_RIGHT + 11},${y} ${HUB_X - 11},50 ${HUB_X},50`}
+              />
+            );
+          })}
+        </defs>
+
+        {NODES.map((n) => (
+          <use key={n.key} href={`#hw-path-${n.key}`} vectorEffect="non-scaling-stroke" />
+        ))}
+
+        {/* what each source is sending, on its way in. The marks are staggered
+            so the six read as a flow rather than as one pulse six times. */}
+        {NODES.map((n, i) => (
+          <circle className="hw-flow" key={n.key} r="1.15">
+            <animateMotion dur="2.8s" repeatCount="indefinite" begin={`${i * 0.38}s`} keyPoints="0;1" keyTimes="0;1" calcMode="linear">
+              <mpath href={`#hw-path-${n.key}`} />
+            </animateMotion>
+            <animate attributeName="opacity" dur="2.8s" repeatCount="indefinite" begin={`${i * 0.38}s`}
+                     values="0;1;1;0" keyTimes="0;0.12;0.82;1" />
+          </circle>
+        ))}
       </svg>
 
       <ul className="hw-rows">
@@ -96,7 +113,6 @@ function Sources() {
             </span>
             <span className="hw-node-b">
               <b>{n.name}</b>
-              <i>{n.kind}</i>
             </span>
           </li>
         ))}
