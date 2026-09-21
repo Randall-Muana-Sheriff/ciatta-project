@@ -5,6 +5,7 @@ import { SubscribeForm } from './components/SubscribeForm';
 import { ExploreSection } from './components/ExploreSection';
 import { HowSection } from './components/HowSection';
 import { HumanSection } from './components/HumanSection';
+import { SafetySection } from './components/SafetySection';
 import { Wordmark } from './components/Wordmark';
 import { SiteHeader } from './components/SiteHeader';
 
@@ -198,6 +199,9 @@ export default function App() {
 
         {/* ------------------------ THE HUMAN PROBLEM ----------------------- */}
         <HumanSection />
+
+        {/* --------------------- SAFETY AND PRIVACY ------------------------ */}
+        <SafetySection />
 
         {/* ---------------------------- QUESTIONS --------------------------- */}
         <section className="section" aria-labelledby="q-heading">

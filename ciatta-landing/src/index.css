@@ -2280,6 +2280,31 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 /* ===========================================================================
    The human problem, and where Ciatta starts. Type on paper, one rule each.
    =========================================================================== */
+/* --- safety and privacy --------------------------------------------------
+   Type on paper with a rule over each promise. No padlocks and no badges: a
+   security section that looks like one is decoration, and this has to be
+   read rather than recognised. */
+.sf-grid {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; gap: var(--s6) var(--s5);
+}
+@media (min-width: 680px) { .sf-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1040px) { .sf-grid { grid-template-columns: repeat(3, 1fr); } }
+.sf-item { padding-top: var(--s4); border-top: var(--strong) solid var(--ink); }
+.sf-item h3 {
+  margin: 0 0 var(--s3); color: var(--ink);
+  font-size: var(--t-body); font-weight: 600; letter-spacing: -0.01em;
+}
+.sf-item p {
+  margin: 0; color: var(--body-ink);
+  font-size: var(--t-small); line-height: 1.5;
+}
+.sf-foot {
+  margin: var(--s6) 0 0; color: var(--meta-ink);
+  font-size: var(--t-small); line-height: 1.5;
+}
+.sf-foot a { color: var(--ink); }
+
 /* --- the historian, with a photograph of its own ------------------------- *
    Cut from the same art direction as the four tiles above it, and carrying
    its line the same way: white, set into the frame, over a scrim that runs

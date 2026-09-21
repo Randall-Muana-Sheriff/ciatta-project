@@ -188,7 +188,31 @@ export const privacy: LegalDoc = {
       title: 'Security',
       blocks: [
         {
+          p: 'Health data is the most sensitive data you have, and it is held accordingly. Data is encrypted with TLS 1.3 in transit and AES-256 at rest, and sensitive fields are wrapped in per-user encryption envelopes. The cloud architecture is encrypted at rest, access patterns are audited, and the principle of least privilege applies across every service.',
+        },
+        {
           p: 'The site is served only over HTTPS. Links in our emails are signed so they cannot be forged or altered, and the signup forms accept requests only from ciatta.io. Access to subscriber information is limited to the people who need it. No system is perfectly secure, and if a breach affecting you occurred we would tell you and the authorities as the law requires.',
+        },
+      ],
+    },
+    {
+      id: 'never-sold',
+      title: 'What we will never do with your data',
+      blocks: [
+        {
+          p: 'We will never sell, rent, or share your data with advertisers, data brokers, or insurers. There is no exception to this and no arrangement under which it changes. Ciatta is built for your health outcomes rather than for ad targeting, and what Ciatta tells you is grounded in medical evidence rather than in anything a third party has paid for.',
+        },
+      ],
+    },
+    {
+      id: 'your-control',
+      title: 'Export, deletion, and connected sources',
+      blocks: [
+        {
+          p: 'Your record is yours. You can export everything at any time. If you delete your account we delete every byte of your data, and we do not keep shadow copies of it.',
+        },
+        {
+          p: 'Where you connect another source, such as Google Health or Apple Health, you can revoke that connection in one click, and the data that came from it goes with it.',
         },
       ],
     },
