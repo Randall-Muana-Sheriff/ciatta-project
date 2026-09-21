@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { SubscribeForm } from './components/SubscribeForm';
 import { Wordmark } from './components/Wordmark';
-import { CookieBanner, CookieChoicesLink } from './components/CookieBanner';
+import { CookieBanner } from './components/CookieBanner';
+import { SiteFooter } from './components/SiteFooter';
 
 /**
  * Briefs — Ciatta's writing, indexed.
@@ -245,17 +246,7 @@ export default function Briefs() {
         </section>
       </main>
 
-      <footer className="footer shell">
-        <span className="sr-only">Ciatta</span>
-        <Wordmark size="sm" />
-        <nav className="footer-nav" aria-label="Legal">
-          <a href="/">Home</a>
-          <a href="/privacy/">Privacy Policy</a>
-          <a href="/terms/">Terms of Use</a>
-          <CookieChoicesLink />
-        </nav>
-        <p className="footer-copy">&copy; {new Date().getFullYear()} Ciatta</p>
-      </footer>
+      <SiteFooter />
       <CookieBanner />
     </>
   );

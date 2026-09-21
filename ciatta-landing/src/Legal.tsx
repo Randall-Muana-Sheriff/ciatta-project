@@ -2,7 +2,8 @@ import { Fragment } from 'react';
 import { Wordmark } from './components/Wordmark';
 import { LEGAL } from './legal/config';
 import type { Block, LegalDoc } from './legal/types';
-import { CookieBanner, CookieChoicesLink } from './components/CookieBanner';
+import { CookieBanner } from './components/CookieBanner';
+import { SiteFooter } from './components/SiteFooter';
 
 /**
  * The Privacy Policy and the Terms of Use, one layout for both, to the shape of
@@ -71,7 +72,7 @@ function renderBlock(block: Block, key: number) {
   );
 }
 
-export default function Legal({ doc, current }: { doc: LegalDoc; current: 'privacy' | 'terms' }) {
+export default function Legal({ doc }: { doc: LegalDoc; current?: 'privacy' | 'terms' }) {
   return (
     <>
       <a className="skip" href="#legal-main">
@@ -114,22 +115,7 @@ export default function Legal({ doc, current }: { doc: LegalDoc; current: 'priva
         </div>
       </main>
 
-      <footer className="footer shell">
-        <span className="sr-only">Ciatta</span>
-        <Wordmark size="sm" />
-        <nav className="footer-nav" aria-label="Footer">
-          <a href="/">Home</a>
-          <a href="/briefs/">Briefs</a>
-          <a href="/privacy/" aria-current={current === 'privacy' ? 'page' : undefined}>
-            Privacy Policy
-          </a>
-          <a href="/terms/" aria-current={current === 'terms' ? 'page' : undefined}>
-            Terms of Use
-          </a>
-          <CookieChoicesLink />
-        </nav>
-        <p className="footer-copy">&copy; {new Date().getFullYear()} Ciatta</p>
-      </footer>
+      <SiteFooter />
     </>
   );
 }

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { SiteHeader } from './components/SiteHeader';
-import { Wordmark } from './components/Wordmark';
 import { Film } from './components/Film';
 import { Phone } from './components/PhoneChrome';
 import { TodayScreen } from './components/TodayScreen';
-import { CookieBanner, CookieChoicesLink } from './components/CookieBanner';
+import { CookieBanner } from './components/CookieBanner';
+import { SiteFooter } from './components/SiteFooter';
 
 /**
  * How Ciatta works — built to the composition of whoop.com/how-it-works.
@@ -374,19 +374,7 @@ export default function HowItWorks() {
 
       </main>
 
-      <footer className="footer shell">
-        <span className="sr-only">Ciatta</span>
-        <Wordmark size="sm" />
-        <nav className="footer-nav" aria-label="Footer">
-          <a href="/">Home</a>
-          <a href="/how-it-works/" aria-current="page">How it works</a>
-          <a href="/briefs/">Briefs</a>
-          <a href="/privacy/">Privacy Policy</a>
-          <a href="/terms/">Terms of Use</a>
-          <CookieChoicesLink />
-        </nav>
-        <span className="footer-copy">© 2026 Ciatta</span>
-      </footer>
+      <SiteFooter />
       <CookieBanner />
     </div>
   );

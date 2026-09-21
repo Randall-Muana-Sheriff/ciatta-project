@@ -1375,6 +1375,57 @@ p { margin: 0; text-wrap: pretty; }
    not have to repeat itself.
    ========================================================================= */
 
+/* --- the footer ----------------------------------------------------------
+   Suna Health's arrangement: the wordmark and a sentence saying what this
+   is, then headed columns, then a rule and a line carrying the year and
+   what Ciatta is not.
+
+   It is written in tokens rather than in colours so the one footer reads on
+   paper and on the dark page without a second set of rules. */
+.ft {
+  border-top: var(--hairline) solid var(--rule);
+  padding-block: clamp(var(--s7), 6vw, 4.5rem) var(--s6);
+  padding-bottom: calc(var(--s6) + env(safe-area-inset-bottom, 0px));
+  background: var(--canvas); color: var(--ink);
+}
+.ft-top { display: grid; gap: var(--s7); }
+@media (min-width: 860px) {
+  .ft-top { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s8); }
+}
+.ft-brand p {
+  margin: var(--s4) 0 0; color: var(--body-ink);
+  font-size: var(--t-small); line-height: 1.6; max-width: 42ch;
+}
+
+.ft-cols { display: grid; gap: var(--s6) var(--s5); grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 560px) { .ft-cols { grid-template-columns: repeat(3, 1fr); } }
+.ft-cols h2 {
+  margin: 0 0 var(--s4); color: var(--meta-ink);
+  font-size: var(--t-caption); font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase;
+}
+.ft-cols ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
+.ft-cols a, .ft-cols .ck-link {
+  color: var(--ink); font-size: var(--t-small); text-decoration: none;
+  text-underline-offset: 0.2em;
+}
+.ft-cols a:hover, .ft-cols .ck-link:hover { text-decoration: underline; }
+.ft-cols a:focus-visible, .ft-cols .ck-link:focus-visible {
+  outline: var(--strong) solid var(--ink); outline-offset: 3px; border-radius: 2px;
+}
+
+.ft-base {
+  margin-top: clamp(var(--s7), 5vw, 3.5rem);
+  padding-top: var(--s5);
+  border-top: var(--hairline) solid var(--rule);
+  display: grid; gap: var(--s3);
+  color: var(--meta-ink); font-size: var(--t-caption); line-height: 1.6;
+}
+@media (min-width: 860px) {
+  .ft-base { grid-template-columns: auto minmax(0, 1fr); gap: var(--s6); align-items: baseline; }
+}
+.ft-base span:last-child { max-width: 72ch; }
+
 /* --- the cookie banner ----------------------------------------------------
    It sits at the foot and does not cover the page: holding a landing page
    hostage over analytics is a cost paid by the visitor for something that

@@ -7,9 +7,9 @@ import { HowSection } from './components/HowSection';
 import { HumanSection } from './components/HumanSection';
 import { SafetySection } from './components/SafetySection';
 import { MembershipCard } from './components/MembershipCard';
-import { Wordmark } from './components/Wordmark';
 import { SiteHeader } from './components/SiteHeader';
-import { CookieBanner, CookieChoicesLink } from './components/CookieBanner';
+import { CookieBanner } from './components/CookieBanner';
+import { SiteFooter } from './components/SiteFooter';
 
 /**
  * Ciatta landing page.
@@ -266,20 +266,7 @@ export default function App() {
         </section>
       </main>
 
-      <footer className="footer shell">
-        <span className="sr-only">Ciatta</span>
-        <Wordmark size="sm" />
-        {/* Briefs is a page rather than a policy, so the nav is no longer
-            labelled Legal. The trailing slash is deliberate: without it the
-            host answers 308 first and the click costs a round trip. */}
-        <nav className="footer-nav" aria-label="Footer">
-          <a href="/briefs/">Briefs</a>
-          <a href="/privacy/">Privacy Policy</a>
-          <a href="/terms/">Terms of Use</a>
-          <CookieChoicesLink />
-        </nav>
-        <p className="footer-copy">© {new Date().getFullYear()} Ciatta</p>
-      </footer>
+      <SiteFooter />
       <CookieBanner />
     </>
   );
