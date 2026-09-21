@@ -40,12 +40,16 @@ type Node = {
 
 const NODES: Node[] = [
   { key: 'oura', name: 'Oura', kind: 'Measured',
+    logo: '/images/sources/oura.png',
     glyph: <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2.6" /></svg> },
   { key: 'whoop', name: 'WHOOP', kind: 'Measured',
+    logo: '/images/sources/whoop.png',
     glyph: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7l4 10 5-10 5 10 4-10" /></svg> },
   { key: 'apple', name: 'Apple Health', kind: 'Measured',
+    logo: '/images/sources/apple-health.png',
     glyph: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20s-7-4.5-7-9.3A4.2 4.2 0 0 1 12 8a4.2 4.2 0 0 1 7 2.7C19 15.5 12 20 12 20Z" /></svg> },
   { key: 'mychart', name: 'MyChart', kind: 'Imported',
+    logo: '/images/sources/mychart.png',
     glyph: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15l4-5 3.5 3L20 6" /></svg> },
   { key: 'pdf', name: 'PDF results', kind: 'Uploaded',
     glyph: (
@@ -85,9 +89,9 @@ function Sources() {
       <ul className="hw-rows">
         {NODES.map((n) => (
           <li className="hw-node" key={n.key}>
-            <span className="hw-node-mark">
+            <span className={n.logo ? 'hw-node-mark has-logo' : 'hw-node-mark'}>
               {n.logo
-                ? <img src={n.logo} alt="" width={48} height={48} loading="lazy" decoding="async" />
+                ? <img src={n.logo} alt="" width={128} height={128} loading="lazy" decoding="async" />
                 : n.glyph}
             </span>
             <span className="hw-node-b">
