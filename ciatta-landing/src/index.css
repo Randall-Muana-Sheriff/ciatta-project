@@ -335,19 +335,27 @@ p { margin: 0; text-wrap: pretty; }
   isolation: isolate;
   display: flex;
   align-items: flex-end;
-  /* The full first view, as WHOOP's hero is. svh rather than vh, so on a
-     phone the copy is not hidden behind the browser's own toolbar; min-height
-     rather than height, so a short window grows the hero instead of
-     cropping the form. */
+  /* The full first view, as WHOOP's hero is — but measured against the
+     SMALL viewport, not the large one.
+
+     lvh is the window with the browser's toolbars retracted, which is a
+     state the visitor is not in when the page loads. Every mobile browser
+     with chrome on screen — Safari, Chrome, Firefox, Edge, Arc — is showing
+     svh, between 90 and 130 pixels shorter, and a hero cut to lvh puts that
+     difference through the bottom of the form. svh is the floor: size to it
+     and the hero fits whatever the toolbars are doing, in every engine.
+
+     min-height rather than height, so a short window grows the hero instead
+     of cropping the form. */
   min-height: 100vh;
-  min-height: 100lvh;
+  min-height: 100svh;
   /* The film runs to the very top of the page and the sticky header sits over
      it, which is what lets the header go transparent and take white type. The
      padding puts the copy back below where the header sits. */
   margin-top: calc(var(--header-h) * -1);
   /* Less than a section's padding: in a hero that is exactly one screen tall,
      every pixel of padding is a pixel the form loses. */
-  padding-block: calc(var(--header-h) + clamp(var(--s5), 4vh, var(--s7))) clamp(var(--s5), 5vh, var(--s7));
+  padding-block: calc(var(--header-h) + clamp(var(--s5), 4vh, var(--s7))) clamp(var(--s7), 6vh, var(--s8));
   overflow: hidden;
 }
 .hero-film { position: absolute; inset: 0; z-index: -1; }
@@ -3536,11 +3544,31 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 @media (min-width: 1000px) { .hero-app { justify-self: end; width: auto; } }
 
+
+
 /* the device: a bezel at iPhone 17 Pro corner proportions, the screen inside
    it, and the whole thing fading out at the foot because this is the top of
    a screen rather than a whole one */
+/* The device is sized so the form clears the bottom of the small viewport
+   with room to spare, not so it clears it exactly. It is the one element on
+   the first screen that can give up height without losing a word: every
+   figure on it is stated again in the sections below. */
 .ha-device {
-  width: min(20rem, 82vw);
+  width: min(18rem, 82vw);
+  /* The cap only bites on a short window; on a tall one the device is its
+     own height and this does nothing. The subtracted figure is everything
+     on the first screen that may not be cut — the header, the headline, the
+     sentence, the form — plus the clearance the form keeps below it.
+
+     Cutting the device rather than shrinking it is deliberate twice over:
+     narrowing it rewraps the text inside and makes it taller, and the foot
+     of it is already drawn to go — square-cornered, and faded out by the
+     mask below. What is lost is the empty part of the screen.
+
+     14rem, not 11: the play control and its progress bar sit under the
+     device inside the same column, and they are part of what has to fit. */
+  max-height: calc(100svh - 14rem);
+  overflow: hidden;
   margin-left: auto;
   padding: 0.3125rem 0.3125rem 0;
   border-radius: 2.5rem 2.5rem 0 0;
@@ -3552,6 +3580,9 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   -webkit-mask-image: linear-gradient(to bottom, #000 66%, transparent 100%);
   mask-image: linear-gradient(to bottom, #000 66%, transparent 100%);
 }
+/* Stacked, so the whole copy column counts against the device as well. After
+   the base rule, not before: same specificity, later declaration wins. */
+@media (max-width: 999px) { .ha-device { max-height: calc(100svh - 33rem); } }
 @media (min-width: 1000px) { .ha-device { width: min(21rem, 26vw); } }
 
 .ha {
@@ -3648,8 +3679,10 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    so it carries the day and what Ciatta made of it, and drops the two blocks
    that repeat what the sections below say. */
 @media (max-width: 700px) {
-  /* the hero gives back its own air too, so the form stays on the screen */
-  .hero.has-film { padding-block: calc(var(--header-h) + var(--s4)) var(--s4); }
+  /* The air comes off the top, where nothing is read, and the bottom keeps a
+     full step so the form stands clear of the edge rather than resting on
+     it. 16px under a submit button reads as the page having run out. */
+  .hero.has-film { padding-block: calc(var(--header-h) + var(--s4)) var(--s7); }
   .hero-inner { gap: var(--s4); }
   /* narrow, and run off the right edge: the card is the app arriving from the
      side of the frame, and the face in the film stays visible beside it */
@@ -3665,8 +3698,19 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   .hero:not(.is-page) .hero-title { font-size: min(var(--t-display), calc(6.85vw - 2.7px)); }
   .hero:not(.is-page) .hero-lede { font-size: min(var(--t-lede), calc(4.7vw - 1.9px)); }
   .waitlist-consent { text-align: center; }
+  /* The device is the only thing on the first screen that can give way, and
+     it gives way by height, not by width: narrowing it rewraps the text
+     inside and makes it TALLER, which is the opposite of the fix.
+
+     So it keeps its width and is cut off at the bottom instead — which is
+     what it was already drawn for, rounded at the top and open at the foot,
+     the app arriving from the edge of the frame. 23rem is everything above
+     and below it that may not be cut: the header, the gap, the headline,
+     the sentence, the form, and the form's clearance. */
   .ha-device {
     width: min(15.5rem, 66vw);
+    max-height: calc(100svh - 23rem);
+    overflow: hidden;
     margin-inline: auto;
     border-radius: 1.75rem 1.75rem 0 0;
     padding: 0.25rem 0.25rem 0;
