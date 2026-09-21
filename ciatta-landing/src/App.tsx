@@ -51,25 +51,22 @@ function useScrolled(offset = 8) {
 }
 
 /* -- Trust, carried by the four photographs that already do it. WHOOP's
-      mosaic shape, but each tile now states one thing Ciatta can be held to
-      rather than describing the woman looking at it. --------------------- */
-type WhoTile = { line: string; sub: string; img: string; alt: string };
+      mosaic shape. Each tile is the woman Ciatta is for, said in her own
+      terms rather than in the product's: what she already does, which is
+      what makes her the questioner the heading names. ------------------- */
+type WhoTile = { line: string; img: string; alt: string };
 
 const WHO_TILES: WhoTile[] = [
-  { line: 'Your data has a source.',
-    sub: 'Measured, imported, uploaded, or told directly by you.',
+  { line: 'Reads the study, not the summary.',
     img: '/images/who/reads.jpg',
     alt: 'A woman in an infinity pool, facing an open sea.' },
-  { line: 'Your insights have context.',
-    sub: 'See what information contributed to an observation.',
+  { line: 'Has been told her results are normal.',
     img: '/images/who/normal.jpg',
     alt: 'A black and white photograph of a woman in a downward-facing dog position.' },
-  { line: 'Evidence is connected to the question.',
-    sub: 'Relevant research rather than generic health content.',
+  { line: 'Arrives with a list, and wants it answered.',
     img: '/images/who/list.jpg',
     alt: 'A woman sitting on a wooden bench in warm, low light.' },
-  { line: 'Uncertainty stays visible.',
-    sub: 'A pattern isn\u2019t automatically a cause.',
+  { line: 'Keeps her own notes, because no one else does.',
     img: '/images/who/notes-own.jpg',
     alt: 'A close frame of a woman\u2019s back and shoulder against a plain wall.' },
 ];
@@ -178,8 +175,8 @@ export default function App() {
                 Grounded in evidence, built for the questioner
               </h2>
               <p className="band-sub">
-                What an observation is based on, where every figure came from, and
-                what is still too thin to call.
+                The health intelligence platform for women who question,
+                research, and take their health into their own hands.
               </p>
             </div>
 
@@ -191,16 +188,15 @@ export default function App() {
                   <span className="who-scrim" aria-hidden="true" />
                   <div>
                     <p>{tile.line}</p>
-                    <p className="who-sub">{tile.sub}</p>
                   </div>
                 </li>
               ))}
             </ul>
+
+            {/* what all of that costs her, and what Ciatta does with it */}
+            <HumanSection />
           </div>
         </section>
-
-        {/* ------------------------ THE HUMAN PROBLEM ----------------------- */}
-        <HumanSection />
 
         {/* ---------------------------- QUESTIONS --------------------------- */}
         <section className="section" aria-labelledby="q-heading">
