@@ -80,7 +80,7 @@ const QUESTIONS: [string, string][] = [
   ['How does Ciatta use my health data?',
    'To build your record and read it for you. It is encrypted in transit and at rest, access is audited, and we will never sell, rent, or share it with advertisers, brokers, or insurers. You can export everything, and if you delete your account we delete every byte.'],
   ['When does membership begin?',
-   'When Ciatta opens, which we are building towards for the third quarter of 2027. Reserving now holds your place, and nothing begins, or is billed, before then. If the date moves we will tell you.'],
+   'When Ciatta opens, which we are building towards for Quarter 3 of 2027. Reserving now holds your place, and nothing begins, or is billed, before then. If the date moves we will tell you.'],
   ['Can I cancel?',
    'At any time, and you keep your record: export everything before you go, or delete it outright. Cancelling stops the next payment rather than ending your access that day.'],
   ['What does it cost?',
