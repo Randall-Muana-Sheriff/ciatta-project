@@ -154,7 +154,11 @@
   --lh-title: clamp(2.5013rem, 4.22vw + 1.5114rem, 5.3125rem);
   --t-statement: clamp(2.5rem, 2.35vw + 1.9498rem, 4.0625rem);
   --lh-statement: clamp(2.5rem, 1.74vw + 2.0929rem, 3.6563rem);
-  --t-card: clamp(1.5625rem, 0.94vw + 1.3424rem, 2.1875rem);
+  /* Title 2 in HIG's terms: card titles, accordion items, the tier name and
+     the price. 32px on a 1440 window, 22px on a 390 one — the section head
+     above it is 56/28, so the step between them is a clear one rather than
+     the four-pixel difference the old 35px left on a phone. */
+  --t-card: clamp(1.375rem, 0.95vw + 1.1429rem, 2rem);
   --t-lede: clamp(1.125rem, 0.56vw + 0.993rem, 1.5rem);
   --t-body: clamp(1rem, 0.38vw + 0.912rem, 1.25rem);
   --t-small: clamp(0.875rem, 0.19vw + 0.831rem, 1rem);
@@ -3955,34 +3959,53 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 
 /* =========================================================================
-   ONE SECTION HEADING
+   THE TYPE SCALE
    =========================================================================
-   Every heading on the site outside a hero is the same size and the same
-   weight. Before this there were seven: 120px, 100px at two weights, 76px,
-   65px at two weights and 35px, which is not a hierarchy, it is a drift.
+   Apple's Human Interface Guidelines make three demands of a type system,
+   and this block is all three applied at once.
 
-   Apple's Human Interface Guidelines are the argument for collapsing them
-   rather than tuning them: a type scale is a small set of named steps used
-   consistently, and hierarchy comes from the steps being few and far apart,
-   not from every section inventing a size between the last two. One step
-   for section headings, one for card titles, one for body.
+   ONE, a small set of named steps, used everywhere. The scan that produced
+   this found eighteen distinct size-and-weight pairs across the site at
+   1440 — 65px here, 52px there, 35px at three different weights, 21.4px,
+   19px, 15px, 14px, 13px at two weights, 11px. That is not a hierarchy; it
+   is every section having invented a size between the last two. The steps
+   below are the whole vocabulary now.
 
-   Declared last on purpose. These selectors are the same specificity as the
-   rules they settle, so source order is what decides, and a single block at
-   the end is easier to keep honest than a specificity arms race spread over
-   four thousand lines.
+   TWO, hierarchy from size and weight, not from decoration. Three weights
+   only — 400 for running text, 500 for anything that titles something, 600
+   for uppercase labels and emphasis inside a paragraph. No fourth weight,
+   no italics carrying meaning, no colour doing a heading's job.
 
-   Heroes keep their own display size — they are the one place a page is
-   allowed to be loud, and HIG's large-title step exists for exactly that.
-   Card titles keep --t-card, because flattening a card title into a section
-   heading removes the hierarchy this block is meant to restore. */
+   THREE, steps far enough apart to read as different. The card step moved
+   from 35px to 32px on a desktop and from 25px to 22px on a phone for that
+   reason: at 28px section heads, a 25px card title was not a step at all.
+
+   The scale, desktop -> phone:
+
+     display   hero titles only          120 -> 24   400
+     title     section headings           56 -> 28   500
+     card      card and accordion titles  32 -> 22   500
+     lede      the deck under a heading    24 -> 18   400
+               a question, same size       24 -> 18   500
+     body      running text                20 -> 17   400
+               emphasis inside it          20 -> 17   600
+     small     secondary text, controls    16 -> 15   400 / 500 on buttons
+     caption   labels and footnotes        12          600 uppercase / 400 sentences
+
+   Declared last on purpose: these selectors are the same specificity as the
+   rules they settle, so source order is what decides, and one block at the
+   end is easier to keep honest than a specificity fight spread over four
+   thousand lines. Heroes keep display, because a hero is the one place a
+   page is allowed to be loud and HIG's large-title step exists for that. */
+
 /* On a phone the section heading stops at 28px rather than Apple's 32px.
-   Apple can run 32px there because their own H1 is 34px; ours is pinned to
+   Apple can run 32 there because their own H1 is 34px; ours is pinned to
    24px so the hero sentence holds one line, and a section heading larger
-   than the page's own title is an inverted hierarchy — the thing HIG's type
-   scale exists to prevent. Desktop keeps Apple's 56px exactly. */
+   than the page's own title is the inverted hierarchy a type scale exists
+   to prevent. Desktop keeps Apple's 56px exactly. */
 @media (max-width: 700px) { :root { --t-head: 1.75rem; } }
 
+/* --- title: every section heading ------------------------------------- */
 .band-title,
 .m-h2,
 .statement-title,
@@ -3993,4 +4016,86 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   font-size: var(--t-head);
   line-height: var(--lh-head);
   font-weight: 500;
+}
+
+/* --- card: anything that titles a card, a tile or a row ---------------- */
+.ex-title,
+.who-tile p,
+.hw2-t,
+.hw2-steps h3,
+.mb-card-tier,
+.mb-card-price b {
+  font-size: var(--t-card);
+  line-height: 1.12;
+  font-weight: 500;
+}
+
+/* --- lede: the deck under a heading, and a question -------------------- */
+.m-free-sub,
+.m-h2-sub,
+.band-sub,
+.statement-lede,
+.mb-say-sub {
+  font-size: var(--t-lede);
+  font-weight: 400;
+}
+.qa-item summary span { font-size: var(--t-lede); font-weight: 500; }
+
+/* --- small: secondary text and every control --------------------------- */
+.m-top-link,
+.m-free-note,
+.m-hero-note {
+  font-size: var(--t-small);
+  font-weight: 400;
+}
+/* One button step. The membership page was setting 13px/600 where the home
+   page set 16px/500, so the same button read as two different controls
+   depending on which page you met it on. */
+.btn-primary,
+.m-btn,
+.header-cta,
+.m-dark .btn-primary,
+.m-dark .m-btn,
+.hero .btn-primary {
+  font-size: var(--t-small);
+  font-weight: 500;
+}
+
+/* --- the remaining strays, each onto the step it belongs to ------------ */
+/* a statement over film is a section heading that happens to sit on a photo */
+.hw2-film-line { font-size: var(--t-head); line-height: var(--lh-head); font-weight: 500; }
+/* the briefs index had a scale of its own: a title step at 18/600, two chip
+   sizes, a count, a date and a topic label, none of them shared with any
+   other page. They are the site's steps now. */
+.briefs-card h4,
+.mb-brief h4,
+.hw-page-head h4 { font-size: var(--t-body); font-weight: 600; }
+.chip,
+.filter-count,
+.briefs-soon,
+.briefs-group-head p { font-size: var(--t-small); font-weight: 400; }
+.chip.is-on { font-weight: 500; }
+
+/* --- caption: uppercase labels, and footnote sentences ----------------- */
+.m-eyebrow,
+.hw2-kind,
+.statement-kicker,
+.filter-label,
+.briefs-topic {
+  font-size: var(--t-caption);
+  font-weight: 600;
+}
+/* Nothing on the site sets below 12px now. HIG's floor for legible text is
+   11pt and no lower, and both of these were under it on a phone: the date
+   labels on the cycle figure, and the pills on the photo band. Both come up
+   to the caption step. */
+.ex-points dt,
+.hm-pill { font-size: var(--t-caption); }
+.close-disclaimer,
+.ft-base,
+.waitlist-consent,
+.mb-card-when,
+.mb-card-foot {
+  font-size: var(--t-caption);
+  font-weight: 400;
 }
