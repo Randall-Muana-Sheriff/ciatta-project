@@ -68,6 +68,7 @@ async function main() {
     await admin.from('health_sources').insert({ user_id: uid, kind: 'apple_health', name: 'Watch', status: 'active' }).select('id').single(),
     'watch source'
   );
+  if (!watch) throw new Error('watch source: no row returned');
 
   // Her period starts, as episodes; the trigger mirrors each into a
   // period_start observation with her own report as its source.

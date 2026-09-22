@@ -183,9 +183,11 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
           .maybeSingle(),
       ) as InsightRow | null;
       if (!row) return null;
+      // Through unknown because supabase-js's select parser cannot type the
+      // two foreign key named joins on a link; the shape is EvidenceRow.
       const evidence = must(
         await db.from('thread_evidence').select(EVIDENCE_COLUMNS).eq('thread_id', row.thread_id).order('created_at'),
-      ) as EvidenceRow[];
+      ) as unknown as EvidenceRow[];
       return insightView(row, evidence);
     },
     async saveSourceStatus(kind, status, lastSyncedAt) {
