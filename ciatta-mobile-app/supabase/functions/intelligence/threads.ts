@@ -115,7 +115,10 @@ function dayMs(iso: string): number {
   return Date.UTC(y, m - 1, d);
 }
 const isDay = (s: string | null): s is string => !!s && /^\d{4}-\d{2}-\d{2}$/.test(s);
-const daysApart = (a: string, b: string) => Math.round((dayMs(b) - dayMs(a)) / DAY_MS);
+// Shared by the loop modules (recommend, outcomes, learning) so there is
+// one day arithmetic on the server, not four copies.
+export const daysApart = (a: string, b: string) => Math.round((dayMs(b) - dayMs(a)) / DAY_MS);
+export const shiftDay = (iso: string, n: number) => new Date(dayMs(iso) + n * DAY_MS).toISOString().slice(0, 10);
 const cmp = (x: string, y: string) => (x < y ? -1 : x > y ? 1 : 0);
 
 export type CycleLength = { observationId: string; start: string; end: string; length: number };
