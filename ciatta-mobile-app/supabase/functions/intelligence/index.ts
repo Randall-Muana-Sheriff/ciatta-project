@@ -22,8 +22,12 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 import { keysetFilter, readAllPages } from '../baselines/paging.ts';
 import { gate, type GateReason } from './gate.ts';
+import { buildLearningEvents, type MeasuredForLearning, type ReportedForLearning, type ThreadCount, type WrittenInsight } from './learning.ts';
+import { measureOutcome, type ActionToMeasure, type MetricDayRow } from './outcomes.ts';
+import { buildRecommendations } from './recommend.ts';
 import {
   buildThreads,
+  shiftDay,
   type ChangeRow,
   type EpisodeRow,
   type JournalRow,
@@ -31,7 +35,7 @@ import {
   type ObservationRow,
   type ThreadCandidate,
 } from './threads.ts';
-import { contextEntry, offending, wordInsight, type ContextEntry } from './wording.ts';
+import { contextEntry, offending, wordInsight, type ContextEntry, type OutcomeValue } from './wording.ts';
 
 const url = Deno.env.get('SUPABASE_URL')!;
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -47,6 +51,11 @@ export const WINDOW_DAYS = 180;
 // watching: still hers, still shown, no longer the thing that keeps
 // happening.
 export const WATCHING_AFTER_DAYS = 60;
+// Actions older than this are history, not something to measure or offer
+// around; the after window is three days, so thirty is generous.
+export const ACTION_DAYS = 30;
+// An offer grounded in a change older than this is about other days.
+export const OFFER_CHANGE_DAYS = 7;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const isoDay = (d: Date) => d.toISOString().slice(0, 10);
@@ -77,6 +86,19 @@ function bearerIsServiceRole(given: string): boolean {
 
 type JobRow = { id: string; user_id: string; kind: string; status: string; attempts: number };
 type ThreadRow = { id: string; key: string; status: string; observation_count: number; last_observed_at: string | null };
+type ActionRow = {
+  id: string;
+  kind: string;
+  title: string;
+  metric: ActionToMeasure['metric'];
+  wanted: ActionToMeasure['wanted'];
+  started_on: string;
+  started_at: string;
+  target_end_at: string | null;
+  status: string;
+  created_from_insight_id: string | null;
+};
+type OutcomeRow = { id: string; action_id: string; reported: OutcomeValue | null; measured: OutcomeValue | null };
 type LiveInsight = { id: string; what_changed: string; connected: string; you_told: string; not_established: string };
 
 // PostgREST renders numeric columns as strings. Number() on the way in, so
@@ -104,7 +126,9 @@ type Admin = any;
 // deno-lint-ignore no-explicit-any
 type Row = { id: string } & Record<string, any>;
 
-async function runJob(admin: Admin, job: JobRow): Promise<{ threads: number; insights: number }> {
+type RunCounts = { threads: number; insights: number; outcomes: number; learning: number; recommendations: number; expired: number };
+
+async function runJob(admin: Admin, job: JobRow): Promise<RunCounts> {
   const today = new Date();
   const todayIso = isoDay(today);
   const start = new Date(today.getTime() - (WINDOW_DAYS - 1) * DAY_MS);
@@ -174,13 +198,19 @@ async function runJob(admin: Admin, job: JobRow): Promise<{ threads: number; ins
     await readAllPages<Row>((after, limit) => {
       const query = admin
         .from('episodes')
-        .select('id, occurred_on, occurred_at, kinds, period_start')
+        .select('id, occurred_on, occurred_at, kinds, period_start, severity')
         .eq('user_id', job.user_id)
         .gte('occurred_on', startIso)
         .lte('occurred_on', todayIso);
       return (after ? query.or(keysetFilter(after)) : query).order('occurred_at').order('id').limit(limit);
     })
-  ).map((row): EpisodeRow => ({ id: row.id, occurred_on: row.occurred_on, kinds: row.kinds ?? [], period_start: row.period_start }));
+  ).map((row): EpisodeRow & { severity: number | null } => ({
+    id: row.id,
+    occurred_on: row.occurred_on,
+    kinds: row.kinds ?? [],
+    period_start: row.period_start,
+    severity: numOrNull(row.severity),
+  }));
 
   const journals = (
     await readAllPages<Row>((after, limit) => {
@@ -206,6 +236,9 @@ async function runJob(admin: Admin, job: JobRow): Promise<{ threads: number; ins
 
   let written = 0;
   const withheld: Record<GateReason, number> = { no_finding: 0, no_relationship: 0, no_source: 0, insufficient_recurrence: 0, stale: 0 };
+  // What this run wrote, for the lessons and offers that follow.
+  const afterThreads: ThreadCount[] = [];
+  const insightsWritten: WrittenInsight[] = [];
 
   for (const candidate of candidates) {
     const status = nextStatus(prior.get(candidate.key), candidate, todayIso);
@@ -230,6 +263,7 @@ async function runJob(admin: Admin, job: JobRow): Promise<{ threads: number; ins
       .select('id')
       .single();
     if (threadError) throw threadError;
+    afterThreads.push({ id: thread.id, key: candidate.key, status, observation_count: candidate.occurrences.length });
 
     // The trace is replaced whole: what THIS run can point at, not an
     // accumulation of what earlier runs once could.
@@ -295,32 +329,232 @@ async function runJob(admin: Admin, job: JobRow): Promise<{ threads: number; ins
       // trigger moves updated_at.
       const { error: continueError } = await admin.from('insights').update({ status: 'continuing' }).eq('id', current.id);
       if (continueError) throw continueError;
+      insightsWritten.push({ id: current.id, thread_id: thread.id, status: 'continuing' });
       continue;
     }
     if (current) {
       const { error: closeError } = await admin.from('insights').update({ valid_to: today.toISOString() }).eq('id', current.id);
       if (closeError) throw closeError;
     }
-    const { error: insertError } = await admin.from('insights').insert({
-      user_id: job.user_id,
-      thread_id: thread.id,
-      title: text.title,
-      what_changed: text.whatChanged,
-      connected: text.connected,
-      you_told: text.youTold,
-      not_established: notEstablished,
-      alternatives: text.alternatives,
-      status: current ? 'updated' : 'new',
-      confidence,
-    });
+    const { data: inserted, error: insertError } = await admin
+      .from('insights')
+      .insert({
+        user_id: job.user_id,
+        thread_id: thread.id,
+        title: text.title,
+        what_changed: text.whatChanged,
+        connected: text.connected,
+        you_told: text.youTold,
+        not_established: notEstablished,
+        alternatives: text.alternatives,
+        status: current ? 'updated' : 'new',
+        confidence,
+      })
+      .select('id')
+      .single();
     if (insertError) throw insertError;
+    insightsWritten.push({ id: inserted.id, thread_id: thread.id, status: current ? 'updated' : 'new' });
     written += 1;
   }
 
   console.log('intelligence threads upserted', candidates.length);
   console.log('intelligence insights written', written);
   console.log('intelligence insights withheld', JSON.stringify(withheld));
-  return { threads: candidates.length, insights: written };
+
+  // ── The loop's second half: measure, learn, offer ───────────────
+  // Order matters and is the spec's (section 6): outcomes are measured
+  // before lessons are written, and offers come last so they can see
+  // what she is already trying.
+
+  const actions = (
+    await readAllPages<Row>(
+      (after, limit) => {
+        const query = admin
+          .from('actions')
+          .select('id, kind, title, metric, wanted, started_on, started_at, target_end_at, status, created_from_insight_id')
+          .eq('user_id', job.user_id)
+          .gte('started_on', shiftDay(todayIso, -ACTION_DAYS));
+        return (after ? query.or(keysetFilter(after, 'started_at')) : query).order('started_at').order('id').limit(limit);
+      },
+      undefined,
+      (row) => ({ occurredAt: row.started_at, id: row.id })
+    )
+  ) as ActionRow[];
+
+  const outcomes = (
+    actions.length
+      ? await readAllPages<Row>((after, limit) => {
+          const query = admin
+            .from('outcomes')
+            .select('id, action_id, reported, measured, created_at')
+            .eq('user_id', job.user_id)
+            .in('action_id', actions.map((a) => a.id));
+          return (after ? query.or(keysetFilter(after, 'created_at')) : query).order('created_at').order('id').limit(limit);
+        }, undefined, (row) => ({ occurredAt: row.created_at, id: row.id }))
+      : []
+  ) as OutcomeRow[];
+  const outcomeByAction = new Map(outcomes.map((o) => [o.action_id, o]));
+
+  // Daily rows from three days before the earliest action, or the last
+  // week, whichever is longer: the windows above and the walk rule below.
+  // One row per day, so no paging, as the baselines read of this table.
+  const earliestStart = actions.reduce((min, a) => (a.started_on < min ? a.started_on : min), todayIso);
+  const metricsFrom = [shiftDay(earliestStart, -3), shiftDay(todayIso, -6)].sort()[0];
+  const { data: metricRows, error: metricsError } = await admin
+    .from('daily_metrics')
+    .select('day, steps, sleep_hours, resting_hr, hrv, active_minutes, energy')
+    .eq('user_id', job.user_id)
+    .gte('day', metricsFrom)
+    .lte('day', todayIso)
+    .order('day');
+  if (metricsError) throw metricsError;
+  const metricDays: MetricDayRow[] = ((metricRows ?? []) as Row[]).map((r) => ({
+    day: r.day,
+    steps: numOrNull(r.steps),
+    sleep_hours: numOrNull(r.sleep_hours),
+    resting_hr: numOrNull(r.resting_hr),
+    hrv: numOrNull(r.hrv),
+    active_minutes: numOrNull(r.active_minutes),
+    energy: numOrNull(r.energy),
+  }));
+
+  // Measure every action whose window has elapsed and has not been
+  // measured. The upsert names the measured columns only; reported is
+  // never in it, so hers is never overwritten.
+  const measured: MeasuredForLearning[] = [];
+  for (const action of actions) {
+    const existing = outcomeByAction.get(action.id);
+    if (existing?.measured) continue;
+    const result = measureOutcome(action, metricDays, todayIso);
+    if (!result) continue;
+    const { data: outcome, error: outcomeError } = await admin
+      .from('outcomes')
+      .upsert(
+        { user_id: job.user_id, action_id: action.id, measured: result.measured, measured_at: today.toISOString(), measured_evidence: result.evidence },
+        { onConflict: 'user_id,action_id' }
+      )
+      .select('id')
+      .single();
+    if (outcomeError) throw outcomeError;
+    measured.push({
+      outcomeId: outcome.id,
+      actionId: action.id,
+      actionTitle: action.title,
+      threadId: null,
+      metric: action.metric,
+      measured: result.measured,
+      ratio: result.evidence.ratio,
+    });
+  }
+
+  // An action whose target has passed is over.
+  const overdue = actions.filter((a) => a.status === 'active' && a.target_end_at && a.target_end_at < today.toISOString());
+  if (overdue.length) {
+    const { error: endError } = await admin
+      .from('actions')
+      .update({ status: 'ended', ended_at: today.toISOString() })
+      .in('id', overdue.map((a) => a.id));
+    if (endError) throw endError;
+  }
+
+  // Lessons: land once each, by key.
+  const reported: ReportedForLearning[] = outcomes
+    .filter((o) => o.reported)
+    .map((o) => {
+      const action = actions.find((a) => a.id === o.action_id)!;
+      return { outcomeId: o.id, actionId: o.action_id, actionTitle: action.title, threadId: null, reported: o.reported as OutcomeValue };
+    });
+  const lessons = buildLearningEvents({ before: [...prior.values()], after: afterThreads, insightsWritten, measured, reported });
+  let learned = 0;
+  if (lessons.length) {
+    const { data: landed, error: lessonError } = await admin
+      .from('learning_events')
+      .upsert(
+        lessons.map((l) => ({
+          user_id: job.user_id,
+          key: l.key,
+          type: l.type,
+          thread_id: l.threadId,
+          action_id: l.actionId,
+          outcome_id: l.outcomeId,
+          summary: l.summary,
+          evidence: l.evidence,
+        })),
+        { onConflict: 'user_id,key', ignoreDuplicates: true }
+      )
+      .select('id');
+    if (lessonError) throw lessonError;
+    learned = (landed ?? []).length;
+  }
+
+  // Offers, from what is live now.
+  const { data: liveRows, error: liveError } = await admin
+    .from('insights')
+    .select('id, thread_id, status, valid_to')
+    .eq('user_id', job.user_id)
+    .is('valid_to', null);
+  if (liveError) throw liveError;
+  const { data: threadRows, error: threadsError } = await admin
+    .from('threads')
+    .select('id, key, status, observation_count')
+    .eq('user_id', job.user_id);
+  if (threadsError) throw threadsError;
+  const offers = buildRecommendations({
+    today: todayIso,
+    insights: (liveRows ?? []) as Row[] as { id: string; thread_id: string; status: string; valid_to: string | null }[],
+    threads: (threadRows ?? []) as ThreadCount[],
+    changes: changes.filter((c) => daysApart(c.detected_on, todayIso) <= OFFER_CHANGE_DAYS),
+    dailyMetrics: metricDays.map((d) => ({ day: d.day, steps: d.steps, energy: d.energy })),
+    painEpisodes: episodes.filter((e) => e.kinds.includes('Pain')).map((e) => ({ occurred_on: e.occurred_on, severity: e.severity })),
+    openActions: actions.filter((a) => a.status === 'planned' || a.status === 'active').map((a) => ({ kind: a.kind, started_on: a.started_on })),
+  });
+  if (offers.length) {
+    // Title and body may be refreshed; status is hers and the run's past,
+    // and is not in this upsert.
+    const { error: offerError } = await admin.from('recommendations').upsert(
+      offers.map((o) => ({
+        user_id: job.user_id,
+        key: o.key,
+        type: o.type,
+        insight_id: o.insightId ?? null,
+        thread_id: o.threadId ?? null,
+        change_id: o.changeId ?? null,
+        title: o.title,
+        body: o.body,
+      })),
+      { onConflict: 'user_id,key' }
+    );
+    if (offerError) throw offerError;
+    // An offer that lapsed and is grounded again comes back; one she
+    // dismissed does not.
+    const { error: reviveError } = await admin
+      .from('recommendations')
+      .update({ status: 'active' })
+      .eq('user_id', job.user_id)
+      .eq('status', 'expired')
+      .in('key', offers.map((o) => o.key));
+    if (reviveError) throw reviveError;
+  }
+  const { data: activeRows, error: activeError } = await admin
+    .from('recommendations')
+    .select('id, key')
+    .eq('user_id', job.user_id)
+    .eq('status', 'active');
+  if (activeError) throw activeError;
+  const offered = new Set(offers.map((o) => o.key));
+  const stale = ((activeRows ?? []) as { id: string; key: string }[]).filter((r) => !offered.has(r.key));
+  if (stale.length) {
+    const { error: expireError } = await admin
+      .from('recommendations')
+      .update({ status: 'expired' })
+      .in('id', stale.map((r) => r.id));
+    if (expireError) throw expireError;
+  }
+
+  console.log('intelligence outcomes measured', measured.length);
+  console.log('intelligence learning events written', learned);
+  console.log('intelligence recommendations upserted', offers.length, 'expired', stale.length);
+  return { threads: candidates.length, insights: written, outcomes: measured.length, learning: learned, recommendations: offers.length, expired: stale.length };
 }
 
 Deno.serve(async (req) => {
