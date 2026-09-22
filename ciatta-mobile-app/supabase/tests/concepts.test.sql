@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(40);
+select plan(42);
 
 select has_type('public', 'code_system', 'the code system enum exists');
 select has_table('public', 'concepts', 'concepts exists');
@@ -35,16 +35,22 @@ select col_not_null('public', 'concepts', 'system', 'system is required');
 select col_is_null('public', 'concepts', 'seeded_at',
   'seeded_at is nullable, because a concept UMLS has never confirmed has no such date');
 
--- Reference data carries no RLS on purpose, and that must not drift. A policy
--- here could only be `using (true)`, which asserts a scoping this table does
--- not have. If concepts ever gains an owner, change this assertion
--- deliberately rather than letting a policy appear by muscle memory.
+-- Reference data has no owner to scope a policy to, so concepts first shipped
+-- without RLS and relied on grants alone. 20260918100300 put RLS on as a
+-- second barrier behind those grants: one select policy, unconditional
+-- because a LOINC code is the same fact for everyone, and no policy for any
+-- write, so a grant widened by mistake still meets a refusal. These pin that
+-- exact shape so a broader policy cannot appear by muscle memory.
 select ok(
-  not (select relrowsecurity from pg_class where oid = 'public.concepts'::regclass),
-  'RLS is off on concepts, because reference data has no owner to scope it to'
+  (select relrowsecurity from pg_class where oid = 'public.concepts'::regclass),
+  'RLS is on for concepts, as a barrier behind the grants'
 );
-select policies_are('public', 'concepts', array[]::name[],
-  'no policy exists on concepts, so the grant is the whole access control story');
+select policies_are('public', 'concepts', array['concepts_read']::name[],
+  'concepts_read is the only policy on concepts, so nothing permits a write');
+select policy_cmd_is('public', 'concepts', 'concepts_read', 'SELECT',
+  'concepts_read permits select and nothing else');
+select policy_roles_are('public', 'concepts', 'concepts_read', array['authenticated']::name[],
+  'concepts_read applies to signed in people only');
 
 -- The revoke covers DELETE too, and a future additive grant must fail here
 -- rather than at run time.
