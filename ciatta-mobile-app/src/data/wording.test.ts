@@ -8,6 +8,7 @@ import { test } from 'node:test';
 import { COPY_DASH } from '../lib/displayCopy';
 import type { ChangeRow, ThreadCandidate } from '../../supabase/functions/intelligence/threads';
 import {
+  contextEntry,
   FORBIDDEN,
   NOTHING_NOTED,
   offending,
@@ -177,9 +178,9 @@ test('counts of times are words, as the engine writes them: three times, not 3 t
   assert.ok(!/\b3 times\b/.test(t.connected));
 });
 
-test('whatChanged says the direction, the two values with units, the span and the day', () => {
+test('whatChanged says the direction, the two values with units, the span the usual came from, and the day', () => {
   const t = wordInsight(candidate(), facts());
-  assert.equal(t.whatChanged, 'Sleep ran lower than usual: 5.4 hours against your usual 7.1 hours, over 14 days to 29 January.');
+  assert.equal(t.whatChanged, 'Sleep ran lower than usual: 5.4 hours against your usual 7.1 hours from the last 14 days, as of 29 January.');
 });
 
 test('a cycle pair is worded with followed, and a measured pair with alongside', () => {
@@ -198,7 +199,7 @@ test('a cycle pair is worded with followed, and a measured pair with alongside',
   );
   assert.equal(
     pair.whatChanged,
-    'Resting heart rate ran higher than usual: 64 beats a minute against your usual 58 beats a minute, over 14 days to 2 March. Sleep ran lower than usual: 5.4 hours against your usual 7.1 hours, over 14 days to 1 March.'
+    'Resting heart rate ran higher than usual: 64 beats a minute against your usual 58 beats a minute from the last 14 days, as of 2 March. Sleep ran lower than usual: 5.4 hours against your usual 7.1 hours from the last 14 days, as of 1 March.'
   );
 });
 
@@ -217,4 +218,22 @@ test('a change the candidate does not cite is not worded, even if it is in the w
   );
   assert.equal(t.whatChanged, 'No sustained change was detected on either side around these days.');
   assert.equal(t.title, 'Cycle length and sleep, seen twice across 1 month');
+});
+
+test('contextEntry turns what she reported into words, and nothing else', () => {
+  const base = { id: 'o', domain: 'x', value: null, value_text: null, occurred_at: '2026-01-27T20:00:00.000Z', source_id: 'you', provenance: 'REPORTED', origin_id: 'e' };
+  assert.deepEqual(contextEntry({ ...base, metric: 'note', value_text: ' rough week ' }), { on: '2026-01-27', metric: 'note', text: 'rough week' });
+  assert.deepEqual(contextEntry({ ...base, metric: 'symptom', value_text: 'Headache' }), { on: '2026-01-27', metric: 'symptom', text: 'Headache' });
+  assert.deepEqual(contextEntry({ ...base, metric: 'pain_episode', value_text: 'Pelvis, lower back' }), { on: '2026-01-27', metric: 'pain_episode', text: 'pain in your pelvis, lower back' });
+  assert.deepEqual(contextEntry({ ...base, metric: 'pain_episode', value_text: 'Reported' }), { on: '2026-01-27', metric: 'pain_episode', text: 'pain' });
+  assert.deepEqual(contextEntry({ ...base, metric: 'flow', value_text: 'Heavy' }), { on: '2026-01-27', metric: 'flow', text: 'heavy flow' });
+  assert.deepEqual(contextEntry({ ...base, metric: 'period_start', value_text: '2026-01-27' }), { on: '2026-01-27', metric: 'period_start', text: 'a period start' });
+  assert.equal(contextEntry({ ...base, metric: 'note', value_text: '   ' }), null);
+  assert.equal(contextEntry({ ...base, metric: 'sleep_hours', value: 5.4, provenance: 'MEASURED' }), null);
+  for (const e of [
+    contextEntry({ ...base, metric: 'pain_episode', value_text: 'Pelvis' })!,
+    contextEntry({ ...base, metric: 'flow', value_text: 'Light' })!,
+  ]) {
+    assert.equal(offending(e.text), null);
+  }
 });

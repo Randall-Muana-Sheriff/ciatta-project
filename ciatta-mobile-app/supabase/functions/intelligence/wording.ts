@@ -15,7 +15,7 @@
 // because the Evidence screen renders them as rows. index.ts joins them
 // with a newline for the text columns, and the app splits them again.
 
-import type { ChangeRow, Missing, Occurrence, ThreadCandidate } from './threads.ts';
+import type { ChangeRow, Missing, ObservationRow, Occurrence, ThreadCandidate } from './threads.ts';
 
 export const FORBIDDEN: readonly string[] = [
   'cause',
@@ -170,9 +170,11 @@ export function wordInsight(candidate: ThreadCandidate, facts: WordingFacts): In
   const changed = sides
     .map((side) => latest.get(side))
     .filter((c): c is ChangeRow => !!c)
+    // window_days is the span the USUAL was taken over (the baselines
+    // window), not how long the change lasted; the sentence says so.
     .map(
       (c) =>
-        `${capital(label(c.metric))} ran ${c.direction} than usual: ${fmtValue(c.metric, c.to_value)} against your usual ${fmtValue(c.metric, c.from_value)}, over ${c.window_days} days to ${dateWords(c.detected_on)}.`
+        `${capital(label(c.metric))} ran ${c.direction} than usual: ${fmtValue(c.metric, c.to_value)} against your usual ${fmtValue(c.metric, c.from_value)} from the last ${c.window_days} days, as of ${dateWords(c.detected_on)}.`
     );
   const whatChanged = changed.length ? changed.join(' ') : 'No sustained change was detected on either side around these days.';
 
@@ -203,4 +205,29 @@ export function wordInsight(candidate: ThreadCandidate, facts: WordingFacts): In
   const alternatives = [...ALTERNATIVES, ...(candidate.missing.includes('single_source') ? [DEVICE_ALTERNATIVE] : [])];
 
   return { title, meta, whatChanged, connected, youTold, notEstablished, alternatives };
+}
+
+// What she told the record, as one observation mirrored from an episode or
+// a journal entry, turned into the words youTold can carry. Null for an
+// observation that is not something she said (a device reading, or a
+// mirrored field with nothing in it). The day is the UTC day of the
+// timestamp, the same day the links step used.
+export function contextEntry(o: ObservationRow): ContextEntry | null {
+  const on = o.occurred_at.slice(0, 10);
+  const text = (o.value_text ?? '').trim();
+  switch (o.metric) {
+    case 'note':
+    case 'symptom':
+      return text ? { on, metric: o.metric, text } : null;
+    case 'pain_episode':
+      return { on, metric: o.metric, text: text && text !== 'Reported' ? `pain in your ${text.toLowerCase()}` : 'pain' };
+    case 'stool_type':
+      return { on, metric: o.metric, text: 'a bowel movement' };
+    case 'flow':
+      return text ? { on, metric: o.metric, text: `${text.toLowerCase()} flow` } : null;
+    case 'period_start':
+      return { on, metric: o.metric, text: 'a period start' };
+    default:
+      return null;
+  }
 }

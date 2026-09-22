@@ -72,8 +72,14 @@ export const OBSERVATION_PAGE_SIZE = 1000;
 //
 // The timestamp is double quoted because the Data API renders it with a
 // +00:00 offset, and an unquoted + in a filter value is ambiguous.
-export function keysetFilter(after: Cursor): string {
-  return `occurred_at.gt."${after.occurredAt}",and(occurred_at.eq."${after.occurredAt}",id.gt.${after.id})`;
+//
+// `column` names the ordering column. It defaults to occurred_at, which is
+// what every read over her observations orders by; the intelligence
+// function pages temporal_links by occurred_on and changes by detected_at
+// with the same tuple rule, and passes the column so the filter and the
+// order it relies on can never name different columns.
+export function keysetFilter(after: Cursor, column = 'occurred_at'): string {
+  return `${column}.gt."${after.occurredAt}",and(${column}.eq."${after.occurredAt}",id.gt.${after.id})`;
 }
 
 // Pages until a page comes back empty, which is the only signal the Data
@@ -91,9 +97,14 @@ export function keysetFilter(after: Cursor): string {
 // Ending on empty costs one extra round trip per read and is correct for
 // any ceiling: the cursor advances from the last row actually returned, so
 // a page of any size at all still carries the loop forward correctly.
-export async function readAllPages<T extends KeyedRow>(
+//
+// `cursorOf` reads the ordering tuple off the last row of a page. The
+// default is (occurred_at, id); a read ordered by another column passes
+// its own, and the raw string rule above applies to it just the same.
+export async function readAllPages<T extends { id: string }>(
   fetchPage: FetchPage<T>,
-  pageSize: number = OBSERVATION_PAGE_SIZE
+  pageSize: number = OBSERVATION_PAGE_SIZE,
+  cursorOf: (row: T) => Cursor = (row) => ({ occurredAt: (row as unknown as KeyedRow).occurred_at, id: row.id })
 ): Promise<T[]> {
   const out: T[] = [];
   let after: Cursor | null = null;
@@ -109,7 +120,6 @@ export async function readAllPages<T extends KeyedRow>(
     out.push(...rows);
     if (rows.length === 0) return out;
 
-    const last = rows[rows.length - 1];
-    after = { occurredAt: last.occurred_at, id: last.id };
+    after = cursorOf(rows[rows.length - 1]);
   }
 }
