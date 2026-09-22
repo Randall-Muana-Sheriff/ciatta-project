@@ -102,7 +102,7 @@ const QUESTIONS: [string, string][] = [
    'In your account, and it is yours. It is encrypted in transit and at rest, you can export all of it or delete it at any time, and disconnecting a source takes its data with it. Ciatta does not sell, rent or share health data with advertisers, brokers or insurers. What you write in your own words is never overwritten by a device or a clinic.'],
 
   ['When does Ciatta open, and what does reserving a place do?',
-   'Quarter 3 of 2027, to a small group first and then wider. That is what we are building to rather than a promise, and if it moves we will say so. Reserving a place puts you on the early-access list: no card, nothing charged, and you are not subscribed to anything. You will get one email when it opens, and nothing else.'],
+   'Quarter 3 of 2027, to a small group first and then wider. That is what we are building to rather than a promise, and if it moves we will say so. Reserving a place puts you on the early-access list, and charges you nothing either way. Leave your address and no card is taken at all. Reserve with a card and it is saved, not billed, so membership can begin the day Ciatta opens; you can remove it at any time until then, and you are not subscribed to anything. You will get one email when it opens, and nothing else.'],
 ];
 
 

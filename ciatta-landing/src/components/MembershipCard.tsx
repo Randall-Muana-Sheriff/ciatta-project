@@ -63,9 +63,13 @@ export function MembershipCard() {
           <p className="m-h2-sub">
             Your health doesn’t reset every month, and your membership doesn’t
             either: one payment, and continuous access to Ciatta’s health
-            intelligence for the year. Membership opens in Quarter 3 of 2027,
-            and reserving a place costs nothing, takes no card, and commits
-            you to nothing.
+            intelligence for the year.
+          </p>
+          <p className="m-h2-sub">
+            Membership opens in Quarter 3 of 2027. Reserving holds your place
+            and charges you nothing: your card is saved so membership can
+            begin the day Ciatta opens, nothing is taken before then, and you
+            can remove it at any time until launch.
           </p>
         </div>
 
@@ -115,8 +119,12 @@ export function MembershipCard() {
           </ul>
 
           <ReserveButton label="Reserve" />
+          {/* This button goes to Stripe Checkout in setup mode, which does
+              collect a card. It says so. The email forms elsewhere on the
+              site take no card and still say "No card", because there the
+              sentence is true. */}
           <p className="mb-card-foot">
-            <span>No card</span> <span>&middot; Nothing charged</span>
+            <span>Card saved</span> <span>&middot; Nothing charged</span>
           </p>
         </div>
       </div>
