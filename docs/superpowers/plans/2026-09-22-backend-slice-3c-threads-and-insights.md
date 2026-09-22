@@ -324,6 +324,14 @@ Spec section 11 test 1 up to "watch next cycle": seed cycles 29, 28, 27, 26 and 
 
 Then: `supabase link --project-ref pghlquiwqnknpveyssui`, `supabase db push` (three migrations), `supabase functions deploy intelligence`, confirm `cron.job` holds `intelligence-drain`, watch one tick post and one job move to `done`, and record the counts (never the content) in the commit that closes the slice.
 
+**Progress, 22 September (through the claude.ai Supabase connector, which holds the founder's account; the CLI account has no access):**
+
+- Applied live, with their exact file versions in the migration history: `20260922100000_threads`, `20260922100200_intelligence_job`. The `intelligence` function is deployed (entrypoint `intelligence/index.ts`, with `baselines/paging.ts` beside it). `cron.job` holds `intelligence-drain`.
+- **Not yet applied:** `20260922100100_insights` (research_refs, insights, and `thread_evidence.research_ref_id`). The tool permission layer refused it twice as a production deploy. Until it lands, live is half applied: the function completes jobs but has no table to write an insight into, and the app's insight read fails quietly.
+- **Found and fixed on the way:** the live `public` schema had no usage grants at all for anon, authenticated or service_role (the 9 September wipe recreated the schema without the platform's grants), so every Data API read and every RPC on live had been failing with 42501 since the rebuild, and no edge function had ever run there. Restored with `grant usage on schema public to anon, authenticated, service_role`.
+- **Also done:** the four retired cron jobs (`understanding-engine-continuous`, `understanding-engine-nightly`, `notify-discoveries-nightly`, `ensure-daily-curiosity`) unscheduled; the four orphan history rows from 17 September removed so a CLI push no longer demands a repair.
+- **Still open:** Vault holds no `service_role_key`, so neither drain fires. A one off function `configure-scheduler` (with SQL guard `public.configure_scheduler_secret`) is deployed to store the project's own key from inside the project; it has not been triggered because the permission layer treats that as a secret store write. Once it has run and `scheduler_health` reads configured, drop the guard and delete the function. The retired `understanding-engine` and `provider-search` functions and the `understanding_engine_key` secret remain (the connector cannot delete functions). Leaked password protection is a dashboard toggle.
+
 ## Self review
 
 - Every spec table in 5.4 now exists: baselines and changes (Slice 2), temporal_links (3a), threads, thread_evidence, insights, research_refs (this slice). 5.5 is Slice 4.
