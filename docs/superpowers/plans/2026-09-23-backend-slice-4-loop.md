@@ -62,8 +62,8 @@ The Slice 3c constraints apply unchanged (no inference as fact, no cause or diag
 
 **Produces:** enum `recommendation_type` (observe, log, reflect, try, review, prepare, explore, discuss, connect, continue, no_action_yet). Table `recommendations` (user_id, type, insight_id, thread_id, change_id with `recommendations_one_grounding` check, `key text` unique per user for idempotent upserts, title, body, status in active, accepted, dismissed, expired, dismissed_at, dismissal_reason); server written, owner select. Table `considerations` (basis_kind in insight, thread, recommendation; basis_id; status in active, dismissed, completed, expired; reason in not_relevant, already_handled, dont_want_to, waiting, other; note); owner RLS through `enable_owner_rls`. Table `actions` (title, kind, intent, expected_outcome, metric, wanted in higher, lower, started_on date, started_at, target_end_at, ended_at, status in planned, active, ended, abandoned, created_from_insight_id, created_from_recommendation_id; unique (user_id, kind, started_on)); owner RLS. Table `outcomes` (action_id unique per user, reported and measured over the same five values, reported_at, measured_at, measured_evidence jsonb); owner select, owner insert and update on the reported columns only (column grants), service role all. Table `learning_events` (thread_id, action_id, outcome_id, type in pattern_recurred, pattern_resolved, outcome_measured, outcome_reported, insight_updated, summary not null, evidence jsonb, occurred_at, `key` unique per user); server written, owner select. Table `insight_views` (insight_id unique per user, first_seen_at, last_seen_at, viewed_count, status_when_last_seen); owner RLS. Triggers on `actions` and `outcomes` enqueue an `intelligence` job for the owner, as `daily_metrics` enqueues baselines.
 
-- [ ] Tests: each table exists with RLS on; anon holds nothing; A cannot read B in any of the six; authenticated cannot insert into recommendations or learning_events; authenticated can insert an action and read it back; authenticated can insert an outcome with `reported` but an update to `measured` is refused (42501); a recommendation with two groundings is refused; inserting an action queues one intelligence job and a second insert queues no second; a learning event with an empty summary is refused.
-- [ ] Run, see them fail; implement; `supabase migration up`; pass; commit "Store what she is offered, what she chooses, and what happened after".
+- [x] Tests: each table exists with RLS on; anon holds nothing; A cannot read B in any of the six; authenticated cannot insert into recommendations or learning_events; authenticated can insert an action and read it back; authenticated can insert an outcome with `reported` but an update to `measured` is refused (42501); a recommendation with two groundings is refused; inserting an action queues one intelligence job and a second insert queues no second; a learning event with an empty summary is refused.
+- [x] Run, see them fail; implement; `supabase migration up`; pass; commit "Store what she is offered, what she chooses, and what happened after".
 
 ### Task 2: The loop RPCs
 
@@ -79,8 +79,8 @@ The Slice 3c constraints apply unchanged (no inference as fact, no cause or diag
 - `dismiss_recommendation(id uuid, reason text)` and `accept_recommendation(id uuid)` security definer: ownership checked, status set, a consideration row written with the reason.
 - `get_today()` security invoker returning jsonb: `last_visit_at`; the newest live insight with its thread status and count and a `since` of new, updated, continuing, resolved or unchanged computed against her `insight_views` row; active and accepted recommendations; actions started in the last 14 days with their outcome; learning events since her last visit, newest first, at most five.
 
-- [ ] Tests: revoke and grant on every function; `set_thread_watch` on B's thread as A raises; on then off round trips the status; `record_insight_view` twice gives `viewed_count` 2; `get_today` says `new` before a view, `unchanged` after a view with nothing changed, `continuing` after the insight's `updated_at` moves with status continuing, `updated` when status is updated, `resolved` for a resolved insight; `report_outcome` never touches `measured`; `start_action` twice on one day yields one walk; `record_visit` returns the previous stamp.
-- [ ] Run, fail, implement, pass; commit "Let her watch, try, report and come back, without ever writing the trace herself".
+- [x] Tests: revoke and grant on every function; `set_thread_watch` on B's thread as A raises; on then off round trips the status; `record_insight_view` twice gives `viewed_count` 2; `get_today` says `new` before a view, `unchanged` after a view with nothing changed, `continuing` after the insight's `updated_at` moves with status continuing, `updated` when status is updated, `resolved` for a resolved insight; `report_outcome` never touches `measured`; `start_action` twice on one day yields one walk; `record_visit` returns the previous stamp.
+- [x] Run, fail, implement, pass; commit "Let her watch, try, report and come back, without ever writing the trace herself".
 
 ### Task 3: Words for offers, outcomes and what changed since last time
 
@@ -88,7 +88,7 @@ The Slice 3c constraints apply unchanged (no inference as fact, no cause or diag
 
 **Produces:** `recommendationText(type, ctx)` returning `{ title, body }` from fixed frames per type (observe: "Watch your next cycle" for a cycle thread, otherwise "Watch what happens next time"; try walk: "A short walk today" with the standing "only if it feels appropriate" body; reflect: "Describe what changed"; prepare: "Prepare for an appointment"; review: "View the evidence"; no_action_yet: "Nothing to do yet"); `learningText(event)` (pattern_recurred: "The same combination came back: seen N times now"; outcome_measured: "After <action>, <metric> ran <higher or lower>, about N% over the next three days" or the insufficient line; outcome_reported: "You said <action> left things <reported>"; insight_updated; pattern_resolved); `sinceText(state)` for the five states. Every string passes the forbidden list and `COPY_DASH`.
 
-- [ ] Tests first, then implement; commit "Say what is offered and what was learned in the same careful words".
+- [x] Tests first, then implement; commit "Say what is offered and what was learned in the same careful words".
 
 ### Task 4: What to offer
 
@@ -96,8 +96,8 @@ The Slice 3c constraints apply unchanged (no inference as fact, no cause or diag
 
 **Produces:** `buildRecommendations(input): RecommendationCandidate[]` with `input = { today, insights (live), threads, changes, dailyMetrics (last 7 days: day, steps, energy), painEpisodes (last 2 days: severity), openActions (kind, started_on) }` and `RecommendationCandidate = { key, type, insightId?, threadId?, changeId?, title, body }`. Rules: for every live insight, `observe` keyed on its thread (unless the thread is `watching`, then `continue`), `reflect` and `review` keyed on the insight, `prepare` when the thread's count is at least three. One `try` (walk) when a `steps` change with direction lower was detected within three days, the last week's energy averages at most 2.8 or is unrecorded, no pain episode of severity eight or more in the last two days, and no walk action started today; keyed on the change. Deterministic order by key.
 
-- [ ] Tests: the seven rules above, each on and off; keys stable across runs; every title and body clean; an insight with `valid_to` set yields nothing.
-- [ ] Commit "Offer only what the record can ground".
+- [x] Tests: the seven rules above, each on and off; keys stable across runs; every title and body clean; an insight with `valid_to` set yields nothing.
+- [x] Commit "Offer only what the record can ground".
 
 ### Task 5: Measuring what happened after
 
@@ -105,8 +105,8 @@ The Slice 3c constraints apply unchanged (no inference as fact, no cause or diag
 
 **Produces:** `measureOutcome(action, days, today): MeasuredOutcome | null` where `days` is `{ day, steps, sleep_hours, resting_hr, hrv, active_minutes, energy }[]` oldest first. Null until `started_on + 3 <= today`. Windows as `walkOutcomes`: three days before the start, three from it. `measured`: `unknown` without a metric; `insufficient_evidence` when either window holds fewer than two values; `improved` when the after mean moves at least 10 percent in the wanted direction; `worse` when it moves at least 10 percent against; else `unchanged`. `evidence` carries both means, the counts, the ratio and, for kind walk, the energy delta when both windows have check ins.
 
-- [ ] Tests: each verdict; the not yet elapsed case; cross check: the engine's `walkOutcomes` and this agree on the steps ratio for one shared fixture.
-- [ ] Commit "Measure the three days after against the three before, and say when that is not enough".
+- [x] Tests: each verdict; the not yet elapsed case; cross check: the engine's `walkOutcomes` and this agree on the steps ratio for one shared fixture.
+- [x] Commit "Measure the three days after against the three before, and say when that is not enough".
 
 ### Task 6: What was learned
 
@@ -114,8 +114,8 @@ The Slice 3c constraints apply unchanged (no inference as fact, no cause or diag
 
 **Produces:** `buildLearningEvents(input): LearningCandidate[]` from `{ threadsBefore (key to count), threadsAfter, insightsWritten (status), outcomesMeasured, outcomesReported (without an event yet) }`. Keys: `pattern_recurred:<thread>:<count>`, `insight_updated:<insight>`, `outcome_measured:<outcome>`, `outcome_reported:<outcome>:<value>`, `pattern_resolved:<thread>`. Summaries from `learningText`; evidence jsonb carries the numbers.
 
-- [ ] Tests: a count that rose yields one event and a second run yields none; a reported outcome yields one event per value; summaries clean.
-- [ ] Commit "Record what was learned, once".
+- [x] Tests: a count that rose yields one event and a second run yields none; a reported outcome yields one event per value; summaries clean.
+- [x] Commit "Record what was learned, once".
 
 ### Task 7: The function closes the loop
 
@@ -123,7 +123,7 @@ The Slice 3c constraints apply unchanged (no inference as fact, no cause or diag
 
 After the insights loop: read her actions (last 30 days) with outcomes, and the `daily_metrics` rows their windows need; measure every action whose window has elapsed and whose `measured` is null, upsert `outcomes` (service role, measured columns only, never `reported`), end actions past `target_end_at`; build learning events from the prior thread counts already held in `prior`, upsert by key; build recommendations, upsert by key without touching an existing row's status, expire recommendations whose insight is no longer live or whose change is older than seven days. Log counts only: `intelligence outcomes measured n`, `learning events written n`, `recommendations upserted n, expired n`.
 
-- [ ] `npm run check:functions` (with Deno on PATH), `npm run test:loop` still PASS, commit "Close the loop: measure, learn, offer".
+- [x] `npm run check:functions` (with Deno on PATH), `npm run test:loop` still PASS, commit "Close the loop: measure, learn, offer".
 
 ### Task 8: The app reads and writes the loop
 
@@ -136,8 +136,8 @@ After the insights loop: read her actions (last 30 days) with outcomes, and the 
 - Store: in real mode `watching.nextCycle` is `loop.insight.threadStatus === 'watching'`, `setWatching('nextCycle', on)` calls `setThreadWatch`, `interventions` come from `interventionsFrom(loop.actions)`, `accept('walk')` calls `startAction('walk', ...)` with metric steps and wanted higher, all with optimistic local state and a reload on success. Demo mode unchanged.
 - `InsightScreen`: the watch toggle reads and writes the store instead of `useState`.
 
-- [ ] Tests: `loopRows` projection including null; the five since lines pass `displayCopy` unchanged; adapter kicker in real mode with and without a loop; `npm test` and `npx tsc --noEmit` clean.
-- [ ] Commit "Show her what changed since last time, and let her watch and try from the phone".
+- [x] Tests: `loopRows` projection including null; the five since lines pass `displayCopy` unchanged; adapter kicker in real mode with and without a loop; `npm test` and `npx tsc --noEmit` clean.
+- [x] Commit "Show her what changed since last time, and let her watch and try from the phone".
 
 ### Task 9: The learning loop, second half, end to end
 
@@ -145,13 +145,17 @@ After the insights loop: read her actions (last 30 days) with outcomes, and the 
 
 Runs part one's seed, then as her: `record_insight_view`, `set_thread_watch` on; seeds a new cycle (a period start 26 days on, a low sleep week before it, its change and its link), queues and posts: the thread's count is 3 and status `recurring`, the insight is `updated`, a `pattern_recurred` learning event exists, `get_today().since` reads `updated`; starts a walk action through `start_action` with steps seeded low before and higher after; queues and posts: the outcome is measured `improved` with evidence, an `outcome_measured` event exists, `get_today` lists the action with its outcome and the events; a final post with nothing new writes no new row anywhere (section 11 test 3). Prints PASS and deletes the seed user.
 
-- [ ] Commit "Prove the second half of the loop: watch, recur, try, measure, learn, then silence".
+- [x] Commit "Prove the second half of the loop: watch, recur, try, measure, learn, then silence".
 
 ### Task 10: Live
 
 Through the Supabase connector: apply the two migrations with their exact file versions, deploy `intelligence` with the three new modules, run one tick, confirm `scheduler_health`, record counts in the plan and the closing commit. Advisors re-run.
 
-- [ ] Commit "Close Slice 4 on the live project".
+- [x] Commit "Close Slice 4 on the live project".
+
+**Done 22 September, evening.** `20260923100000_loop` and `20260923100100_loop_rpcs` applied with their exact versions; `intelligence` version 2 deployed with the eight sources (`intelligence/*.ts` and `baselines/paging.ts`). Smoke test: one job queued for a live account with no health rows, one tick, function answer 200 `{"processed":true,"threads":0,"insights":0,"outcomes":0,"learning":0,"recommendations":0,"expired":0}`, job `done` after one attempt; `scheduler_health` configured for all three drains. The security advisor now warns that `set_thread_watch`, `accept_recommendation` and `dismiss_recommendation` are security definer functions signed in users can call: that is intentional and the reason they exist (the client may never write `threads` or `recommendations`; each checks the row is hers before touching one named column), so the warning stands and is not a defect. Two `claim failed PGRST303` lines in the function log (13:55 and 18:55 UTC) were transient token errors from the platform; each run answered 500 without claiming and the next tick retried. Worth a later look: both drains post ten requests every five minutes whether or not a job is pending, which is thousands of empty invocations a day; posting `least(batch, pending)` would end that.
+
+Test counts at close: `npm test` 400, `supabase test db` 455, `npm run test:loop` and `npm run test:loop2` PASS, `npm run check:functions` clean.
 
 ## Self review
 
