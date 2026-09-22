@@ -209,6 +209,36 @@ const TOPICS: Topic[] = [
       ],
     },
   },
+  /* The everyday context the statement at the top of the page promises. It
+     is the one part of the record that is not about her at all — it is what
+     was around her — and it is why a bad week sometimes has an explanation
+     that is nothing to do with her body.
+
+     The answer carries the site's own caution on its face rather than in a
+     footnote, because "symptoms on the high-pollen days" is exactly the
+     kind of overlap a person reads as cause. */
+  {
+    key: 'environment',
+    pill: 'Environment & seasons',
+    tab: 'Environment',
+    cap: 'See what was around you.',
+    title: 'See what was going on around you',
+    lede:
+      'Air quality, pollen, heat and how much daylight you were getting are part of the record too. They are the background a bad week happened against, and without them the week looks like it came from nowhere.',
+    ask: 'Was it me, or was it the week?',
+    answer:
+      'Your symptom days this month fell on the three highest-pollen days and across the heat of 2–4 Aug. Things that move together are not necessarily one causing the other.',
+    alt: 'A woman at an open window in early light, looking out at the weather.',
+    card: {
+      kind: 'log',
+      head: 'Around you · August',
+      rows: [
+        ['2–4 Aug', 'Heat above 32°C', 'Imported'],
+        ['11 Aug', 'Pollen very high', 'Imported'],
+        ['16 Aug', 'Daylight down 48 min since July', 'Imported'],
+      ],
+    },
+  },
 ];
 
 /** The plot. One scale, drawn from the data, with the last point emphasised. */
@@ -340,8 +370,13 @@ export function ExploreSection() {
               className={i === active ? 'ex-tab is-on' : 'ex-tab'}
               onClick={() => select(i)}
             >
+              {/* A topic whose photograph has not been supplied yet must not
+                  put a broken image on the page: the tab keeps its scrim,
+                  its pill and its caption, and simply has no picture behind
+                  them until the file lands. */}
               <img src={`/images/explore/${x.key}-thumb.jpg`} alt="" width={480} height={400}
-                   loading="lazy" decoding="async" />
+                   loading="lazy" decoding="async"
+                   onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }} />
               <span className="ex-tab-scrim" aria-hidden="true" />
               <span className="ex-tab-pill">{x.tab ?? x.pill}</span>
               <span className="ex-tab-cap">{x.cap}</span>
@@ -351,7 +386,8 @@ export function ExploreSection() {
 
         <div className="ex-panel" id="ex-panel" role="tabpanel" aria-labelledby={`ex-tab-${t.key}`} tabIndex={-1}>
           <img className="ex-panel-img" src={`/images/explore/${t.key}.jpg`} alt={t.alt}
-               width={1800} height={900} loading="lazy" decoding="async" />
+               width={1800} height={900} loading="lazy" decoding="async"
+               onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }} />
           <div className="ex-panel-scrim" aria-hidden="true" />
 
           <div className="ex-copy">
