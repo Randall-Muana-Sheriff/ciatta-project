@@ -42,7 +42,7 @@ const starts = startOffsets.map(day);
 
 const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 
-function must<T>(result: { data: T; error: { message: string } | null }, what: string): T {
+function must<D>(result: { data: D; error: { message: string } | null }, what: string): D {
   if (result.error) throw new Error(`${what}: ${result.error.message}`);
   return result.data;
 }
@@ -51,14 +51,18 @@ async function main() {
   // The admin list ignores an email filter and returns everyone, so the
   // match is made here. A previous seed is deleted first: the cascade from
   // auth.users clears every row she had.
-  const { users } = must(await admin.auth.admin.listUsers({ perPage: 1000 }), 'list users');
-  const previous = users.find((u) => u.email === EMAIL);
-  if (previous) must(await admin.auth.admin.deleteUser(previous.id), 'delete previous seed');
-  const { user } = must(
-    await admin.auth.admin.createUser({ email: EMAIL, password: 'loop-test-only', email_confirm: true }),
-    'create user'
-  );
-  const uid = user.id;
+  // The auth admin calls answer with a discriminated union, so each is
+  // narrowed on its error rather than passed through must().
+  const listed = await admin.auth.admin.listUsers({ perPage: 1000 });
+  if (listed.error) throw new Error(`list users: ${listed.error.message}`);
+  const previous = listed.data.users.find((u) => u.email === EMAIL);
+  if (previous) {
+    const deleted = await admin.auth.admin.deleteUser(previous.id);
+    if (deleted.error) throw new Error(`delete previous seed: ${deleted.error.message}`);
+  }
+  const created = await admin.auth.admin.createUser({ email: EMAIL, password: 'loop-test-only', email_confirm: true });
+  if (created.error) throw new Error(`create user: ${created.error.message}`);
+  const uid = created.data.user.id;
 
   const watch = must(
     await admin.from('health_sources').insert({ user_id: uid, kind: 'apple_health', name: 'Watch', status: 'active' }).select('id').single(),
