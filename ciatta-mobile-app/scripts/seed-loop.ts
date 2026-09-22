@@ -14,53 +14,53 @@
 //   SUPABASE_URL=$API_URL SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY npx tsx scripts/seed-loop.ts
 //
 // Kept out of src/ so it is neither bundled into the app nor picked up by
-// npm test.
-import { createClient } from '@supabase/supabase-js';
+// npm test. loop-part-one.ts imports seedLoop() and runs the whole
+// acceptance test around it.
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const url = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!key) {
-  console.error('SUPABASE_SERVICE_ROLE_KEY is required: supabase status -o env');
-  process.exit(1);
-}
-if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(url)) {
-  console.error('refusing to seed anything but the local stack');
-  process.exit(1);
+export const LOCAL_URL = 'http://127.0.0.1:54321';
+export const SEED_EMAIL = 'loop@test.local';
+export const SEED_PASSWORD = 'loop-test-only';
+export const SEED_NOTE = 'Slept badly all week, work deadline';
+
+export function assertLocal(url: string): void {
+  if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(url)) {
+    throw new Error('refusing to seed anything but the local stack');
+  }
 }
 
-const EMAIL = 'loop@test.local';
 const DAY_MS = 86400000;
-const today = new Date();
-const day = (offset: number) => new Date(today.getTime() + offset * DAY_MS).toISOString().slice(0, 10);
 const at = (iso: string, hour: number) => `${iso}T${String(hour).padStart(2, '0')}:00:00.000Z`;
 
 // Cycles of 29, 28, 27 and 26 days, the last one ending two days ago.
-const LENGTHS = [29, 28, 27, 26];
-const startOffsets = [-2];
-for (const n of [...LENGTHS].reverse()) startOffsets.unshift(startOffsets[0] - n);
-const starts = startOffsets.map(day);
-
-const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+export const LENGTHS = [29, 28, 27, 26];
 
 function must<D>(result: { data: D; error: { message: string } | null }, what: string): D {
   if (result.error) throw new Error(`${what}: ${result.error.message}`);
   return result.data;
 }
 
-async function main() {
+export type Seeded = { userId: string; starts: string[]; lengths: number[] };
+
+export async function seedLoop(admin: SupabaseClient, today = new Date()): Promise<Seeded> {
+  const day = (offset: number) => new Date(today.getTime() + offset * DAY_MS).toISOString().slice(0, 10);
+  const startOffsets = [-2];
+  for (const n of [...LENGTHS].reverse()) startOffsets.unshift(startOffsets[0] - n);
+  const starts = startOffsets.map(day);
+
   // The admin list ignores an email filter and returns everyone, so the
   // match is made here. A previous seed is deleted first: the cascade from
-  // auth.users clears every row she had.
-  // The auth admin calls answer with a discriminated union, so each is
-  // narrowed on its error rather than passed through must().
+  // auth.users clears every row she had. The auth admin calls answer with
+  // a discriminated union, so each is narrowed on its error rather than
+  // passed through must().
   const listed = await admin.auth.admin.listUsers({ perPage: 1000 });
   if (listed.error) throw new Error(`list users: ${listed.error.message}`);
-  const previous = listed.data.users.find((u) => u.email === EMAIL);
+  const previous = listed.data.users.find((u) => u.email === SEED_EMAIL);
   if (previous) {
     const deleted = await admin.auth.admin.deleteUser(previous.id);
     if (deleted.error) throw new Error(`delete previous seed: ${deleted.error.message}`);
   }
-  const created = await admin.auth.admin.createUser({ email: EMAIL, password: 'loop-test-only', email_confirm: true });
+  const created = await admin.auth.admin.createUser({ email: SEED_EMAIL, password: SEED_PASSWORD, email_confirm: true });
   if (created.error) throw new Error(`create user: ${created.error.message}`);
   const uid = created.data.user.id;
 
@@ -96,10 +96,11 @@ async function main() {
   // Sleep every night for the whole window: 7.3 hours as usual, 6.2 in
   // the week before each of the last two starts.
   const lowWeeks = [starts[3], starts[4]];
-  const isLow = (d: string) => lowWeeks.some((s) => {
-    const gap = Math.round((Date.parse(s) - Date.parse(d)) / DAY_MS);
-    return gap >= 1 && gap <= 7;
-  });
+  const isLow = (d: string) =>
+    lowWeeks.some((s) => {
+      const gap = Math.round((Date.parse(s) - Date.parse(d)) / DAY_MS);
+      return gap >= 1 && gap <= 7;
+    });
   const nights: string[] = [];
   for (let k = 130; k >= 0; k--) nights.push(day(-k));
   const sleepRows = must(
@@ -164,7 +165,7 @@ async function main() {
     await admin.from('journal_entries').insert({
       user_id: uid,
       client_id: 'loop-note-1',
-      text: 'Slept badly all week, work deadline',
+      text: SEED_NOTE,
       kind: 'Notes',
       occurred_at: at(day(-5), 21),
     }),
@@ -172,10 +173,23 @@ async function main() {
   );
 
   must(await admin.rpc('enqueue_job', { uid, job_kind: 'intelligence' }), 'enqueue');
-  console.log(JSON.stringify({ user_id: uid, starts, lengths: LENGTHS }));
+  return { userId: uid, starts, lengths: LENGTHS };
 }
 
-main().catch((e) => {
-  console.error(e instanceof Error ? e.message : e);
-  process.exit(1);
-});
+// Run directly: seed and print who was seeded.
+if (process.argv[1] && /seed-loop\.ts$/.test(process.argv[1])) {
+  const url = process.env.SUPABASE_URL ?? LOCAL_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) {
+    console.error('SUPABASE_SERVICE_ROLE_KEY is required: supabase status -o env');
+    process.exit(1);
+  }
+  assertLocal(url);
+  const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  seedLoop(admin)
+    .then((seeded) => console.log(JSON.stringify(seeded)))
+    .catch((e) => {
+      console.error(e instanceof Error ? e.message : e);
+      process.exit(1);
+    });
+}

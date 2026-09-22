@@ -307,10 +307,10 @@ Screens do not change. `InsightScreen` already renders exactly this shape and al
 ### Task 9: The learning loop, first half, end to end
 
 **Files:**
-- Create: `ciatta-mobile-app/supabase/tests/loop_part_one.test.sql`
-- Create: `ciatta-mobile-app/scripts/seed-loop.ts` (from Task 7, now committed)
+- Create: `ciatta-mobile-app/scripts/loop-part-one.ts`, run as `npm run test:loop` (the plan first named a pgTAP file here; pgTAP cannot call an edge function, so the acceptance test is a script that serves the functions itself, posts, and checks the rows, and it also reads the insight back as her through `realRepo.loadInsight()`, proving the app's joins and its row level security)
+- Modify: `ciatta-mobile-app/scripts/seed-loop.ts` (from Task 7), so the seed is an importable function
 
-Spec section 11 test 1 up to "watch next cycle": seed cycles 29, 28, 27, 26 and sleep 7h18 then 6h12 with a reported stressful stretch, run baselines then intelligence locally, assert one thread, one insight whose `you_told` contains the reported note, `not_established` non empty, and that a second run with no new data writes no second insight (section 11 test 3, "nothing happened"). This is the acceptance test for the slice; it is written last because it needs everything above, and it is what Task 10 shows the founder before asking for the go.
+Spec section 11 test 1 up to "watch next cycle": seed cycles 29, 28, 27, 26 and sleep 7h18 then 6h12 with a reported stressful stretch, run intelligence locally, assert one thread, one insight whose `you_told` contains the reported note, `not_established` non empty, and that a second run with no new data writes no second insight (section 11 test 3, "nothing happened"). This is the acceptance test for the slice; it is written last because it needs everything above, and it is what Task 10 shows the founder before asking for the go.
 
 - [ ] **Step 1 to 3:** write, run, commit.
 
