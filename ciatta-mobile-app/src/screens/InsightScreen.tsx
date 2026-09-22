@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { displayCopy } from '../lib/displayCopy';
 import { useNav } from '../navigation';
+import { useCycle } from '../state/cycleStore';
 import { useData } from '../state/session';
 import { C, font } from '../theme';
 import { InsightLineChart, Legend } from '../ui/charts';
@@ -11,7 +12,10 @@ import { Card, DetailScreen, EmptyNote, Facts, LinkButton, PrimaryButton, Row, S
 export function InsightScreen() {
   const nav = useNav();
   const { insight } = useData();
-  const [watching, setWatching] = useState(true);
+  // The watch flag lives in the store: her thread's status in real mode,
+  // memory in the demo, where it starts on as the sample shows it.
+  const { watching: watchMap, setWatching } = useCycle();
+  const watching = watchMap.nextCycle ?? true;
   const [showMethod, setShowMethod] = useState(false);
 
   if (!insight) {
@@ -27,7 +31,7 @@ export function InsightScreen() {
       <View style={i.between}>
         <Tag label="Personalized insight" tone="amber" upper />
         <Pressable
-          onPress={() => setWatching((w) => !w)}
+          onPress={() => setWatching('nextCycle', !watching)}
           accessibilityRole="switch"
           accessibilityState={{ checked: watching }}
           style={i.watch}

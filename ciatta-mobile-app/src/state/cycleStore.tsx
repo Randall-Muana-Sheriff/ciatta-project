@@ -3,8 +3,8 @@ import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, 
 
 import { addDays, type Episode, type EpisodeForm, isoDay, recordEpisodes, startOfDay } from '../data/cycleLog';
 import { importDeviceRecord } from '../data/deviceImport';
-import { mergeEpisodes, mergeInterventions, mergeWatching } from '../data/cycleMerge';
-import { loopKey } from '../data/localKeys';
+import { mergeEpisodes } from '../data/cycleMerge';
+import { interventionsFrom, watchingFrom } from '../data/loopRows';
 import { enqueue, flush } from '../data/outbox';
 import { WALK_PLAN_AGO } from '../data/daily';
 import { lensFor } from '../lib/cycleLens';
@@ -20,11 +20,11 @@ import { useData, useRepo, useSession } from './session';
 // the cycle profile live in her record and are loaded and saved through the
 // repo; in demo mode the sample record stands in, held only in memory.
 
-// The watch flags and planned actions stay on this phone until Slice 4 turns
-// them into threads and actions. Real mode only; the demo keeps nothing.
-// They are kept under the account that chose them (see loopKey), so a second
-// person signing in on this phone never inherits what the first watched or
-// agreed to try.
+// Watching and planned actions: in real mode they are her thread's status
+// and her actions on the server, read through the session's loop and
+// written through the repo's RPCs, with a local entry held only while a
+// write is in flight so the screen answers at once. In demo mode they
+// stay in memory. Nothing about them is kept on the phone any more.
 
 export type Draft = { mode: 'new' | 'similar'; form: Partial<EpisodeForm>; focusNote?: boolean };
 
@@ -58,12 +58,12 @@ const sampleInterventions = (): Intervention[] => [
 
 export function CycleStoreProvider({ children }: { children: ReactNode }) {
   const repo = useRepo();
-  const { userId } = useSession();
+  const { userId, loop, reloadLoop } = useSession();
   const real = repo.mode === 'real';
   const [own, setOwn] = useState<Episode[]>([]);
   const episodes = useMemo(() => (real ? own : recordEpisodes(own)), [own, real]);
-  const [watching, setWatchingMap] = useState<Record<string, boolean>>({});
-  const [interventions, setInterventions] = useState<Intervention[]>(real ? [] : sampleInterventions);
+  const [localWatching, setWatchingMap] = useState<Record<string, boolean>>({});
+  const [localInterventions, setInterventions] = useState<Intervention[]>(real ? [] : sampleInterventions);
   const [draft, setDraft] = useState<Draft>({ mode: 'new', form: {} });
   const [focus, setFocus] = useState<string | null>(null);
   const [profile, setProfileState] = useState<CycleProfile>(real ? EMPTY_PROFILE : SAMPLE_PROFILE);
@@ -83,19 +83,13 @@ export function CycleStoreProvider({ children }: { children: ReactNode }) {
         // The device record stays in place and is tried again next launch.
       }
       await flush(AsyncStorage, userId, (e) => repo.saveEpisode(e)).catch(() => 0);
-      const [mine, savedProfile, loop] = await Promise.all([
+      const [mine, savedProfile] = await Promise.all([
         repo.loadEpisodes().catch(() => [] as Episode[]),
         repo.loadCycleProfile().catch(() => null),
-        AsyncStorage.getItem(loopKey(userId)).catch(() => null),
       ]);
       if (!alive) return;
       setOwn((prev) => mergeEpisodes(mine, prev));
       if (savedProfile && !profileTouched.current) setProfileState(savedProfile);
-      if (loop) {
-        const saved = JSON.parse(loop) as { watching?: Record<string, boolean>; interventions?: Intervention[] };
-        setWatchingMap((current) => mergeWatching(saved.watching, current));
-        setInterventions((current) => mergeInterventions(saved.interventions, current));
-      }
       loaded.current = true;
     })();
     return () => {
@@ -103,10 +97,15 @@ export function CycleStoreProvider({ children }: { children: ReactNode }) {
     };
   }, [real, repo, userId]);
 
-  useEffect(() => {
-    if (!real || !userId || !loaded.current) return;
-    AsyncStorage.setItem(loopKey(userId), JSON.stringify({ watching, interventions })).catch(() => {});
-  }, [real, userId, watching, interventions]);
+  // In real mode the server's answer is the truth and a local entry only
+  // stands in while a write is in flight.
+  const watching = useMemo(() => (real ? { ...watchingFrom(loop), ...localWatching } : localWatching), [real, loop, localWatching]);
+  const interventions = useMemo(() => {
+    if (!real) return localInterventions;
+    const server = interventionsFrom(loop?.actions ?? []);
+    const pending = localInterventions.filter((v) => !server.some((s) => s.kind === v.kind && s.date === v.date));
+    return [...server, ...pending];
+  }, [real, loop, localInterventions]);
 
   const store = useMemo<Store>(
     () => ({
@@ -121,13 +120,35 @@ export function CycleStoreProvider({ children }: { children: ReactNode }) {
       draft,
       startDraft: (next) => setDraft({ mode: 'new', form: {}, ...next }),
       watching,
-      setWatching: (id, on) => setWatchingMap((w) => ({ ...w, [id]: on })),
+      setWatching: (id, on) => {
+        setWatchingMap((w) => ({ ...w, [id]: on }));
+        if (!real || id !== 'nextCycle' || !loop?.insight) return;
+        repo
+          .setThreadWatch(loop.insight.threadId, on)
+          .then(() => reloadLoop())
+          .then(() => setWatchingMap(({ [id]: _settled, ...rest }) => rest))
+          .catch(() => setWatchingMap(({ [id]: _failed, ...rest }) => rest));
+      },
       interventions,
       accept: (kind) => {
         const date = isoDay(new Date());
         setInterventions((list) =>
           list.some((v) => v.kind === kind && v.date === date) ? list : [...list, { id: `${kind}-${Date.now()}`, kind, date }],
         );
+        if (!real) return;
+        const offer = loop?.recommendations.find((r) => r.type === 'try' && r.status === 'active');
+        repo
+          .startAction({
+            kind,
+            title: 'A short walk',
+            intent: 'To see whether energy or sleep follow',
+            metric: 'steps',
+            wanted: 'higher',
+            recommendationId: offer?.id,
+          })
+          .then(() => reloadLoop())
+          .then(() => setInterventions((list) => list.filter((v) => !(v.kind === kind && v.date === date))))
+          .catch(() => setInterventions((list) => list.filter((v) => !(v.kind === kind && v.date === date))));
       },
       focus,
       setFocus,
@@ -141,7 +162,7 @@ export function CycleStoreProvider({ children }: { children: ReactNode }) {
           .catch((e) => done?.(e));
       },
     }),
-    [episodes, draft, watching, interventions, focus, profile, repo, userId],
+    [episodes, draft, watching, interventions, focus, profile, repo, userId, real, loop, reloadLoop],
   );
 
   return <CycleContext.Provider value={store}>{children}</CycleContext.Provider>;

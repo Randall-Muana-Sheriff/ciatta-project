@@ -181,3 +181,14 @@ test('saveSourceStatus without a synced time leaves last_synced_at out, rather t
   await realRepo(db, 'user-a').saveSourceStatus('apple_health', 'refused');
   assert.equal('last_synced_at' in upserts[0].payload, false, 'an existing last_synced_at must not be nulled out by a status only update');
 });
+
+test('demo mode has no loop and its loop writes are no ops', async () => {
+  const repo = demoRepo();
+  assert.equal(await repo.loadToday(), null);
+  assert.equal(await repo.startAction({ kind: 'walk', title: 'A short walk' }), null);
+  await repo.setThreadWatch('t1', true);
+  await repo.recordVisit();
+  await repo.recordInsightView('i1');
+  await repo.reportOutcome('a1', 'improved');
+  await repo.dismissRecommendation('r1', 'not_relevant');
+});

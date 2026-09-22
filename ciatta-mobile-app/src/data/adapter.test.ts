@@ -59,3 +59,19 @@ test('real mode leads Today with her own insight when the server has written one
   assert.equal(without.insight, null);
   assert.equal(without.today.headline, 'Nothing to compare yet.');
 });
+
+test('real mode says what changed about her insight since she last looked, once the loop has loaded', () => {
+  const view = { ...sample.insight, headline: 'Cycle length and lower sleep, seen twice across 1 month', meta: 'Seen twice · across 1 month · updated 22 Sep' };
+  const loop = {
+    lastVisitAt: null,
+    insight: { id: 'i1', title: view.headline, status: 'continuing', since: 'continuing' as const, threadId: 't1', threadKey: 'cycle_length~sleep_hours', threadStatus: 'watching', observationCount: 2 },
+    recommendations: [],
+    actions: [],
+    learning: [],
+  };
+  const d = dataFor('real', 'Ada', [], view, loop);
+  assert.equal(d.today.kicker, 'Seen again since your last visit');
+  assert.equal(d.loop, loop);
+  assert.equal(dataFor('real', 'Ada', [], view).today.kicker, view.meta, 'the count line stands in until the loop has loaded');
+  assert.equal(dataFor('demo', null).loop, null);
+});

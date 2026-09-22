@@ -1,5 +1,6 @@
 import { type Day, loadDays } from './daily';
 import type { InsightView } from './insightRows';
+import { sinceCopy, type TodayLoop } from './loopRows';
 import * as sample from './sample';
 
 // What each screen reads, per mode. Demo is the sample person; real is only
@@ -17,6 +18,9 @@ export type Data = {
   medications: typeof sample.medications | null;
   journey: typeof sample.journey | null;
   insight: InsightView | null;
+  // The loop around the insight: what changed since last time, offers,
+  // actions, lessons. Null in demo mode and until real mode has loaded it.
+  loop: TodayLoop | null;
   profile: typeof sample.profile | null;
 };
 
@@ -47,11 +51,18 @@ export function dataForSession(
   firstName: string | null,
   days: Day[] = [],
   insight: InsightView | null = null,
+  loop: TodayLoop | null = null,
 ): Data {
-  return dataFor(mode === 'demo' ? 'demo' : 'real', firstName, days, insight);
+  return dataFor(mode === 'demo' ? 'demo' : 'real', firstName, days, insight, loop);
 }
 
-export function dataFor(mode: 'demo' | 'real', firstName: string | null, days: Day[] = [], insight: InsightView | null = null): Data {
+export function dataFor(
+  mode: 'demo' | 'real',
+  firstName: string | null,
+  days: Day[] = [],
+  insight: InsightView | null = null,
+  loop: TodayLoop | null = null,
+): Data {
   if (mode === 'demo') {
     return {
       mode,
@@ -64,6 +75,7 @@ export function dataFor(mode: 'demo' | 'real', firstName: string | null, days: D
       medications: sample.medications,
       journey: sample.journey,
       insight: sample.insight,
+      loop: null,
       profile: sample.profile,
     };
   }
@@ -72,11 +84,13 @@ export function dataFor(mode: 'demo' | 'real', firstName: string | null, days: D
     days,
     person: firstName ? { firstName } : null,
     // When the server has written her an insight, Today leads with its
-    // title and its count line; until then the record starts text stays.
+    // title, and the kicker says what changed about it since she last
+    // looked (or its count line until the loop has loaded); until then the
+    // record starts text stays.
     today: {
       ...sample.today,
       ...REAL_TODAY_TEXT,
-      ...(insight ? { headline: insight.headline, kicker: insight.meta } : {}),
+      ...(insight ? { headline: insight.headline, kicker: loop?.insight ? sinceCopy(loop.insight.since) : insight.meta } : {}),
     },
     records: null,
     sleep: null,
@@ -84,6 +98,7 @@ export function dataFor(mode: 'demo' | 'real', firstName: string | null, days: D
     medications: null,
     journey: null,
     insight,
+    loop,
     profile: null,
   };
 }

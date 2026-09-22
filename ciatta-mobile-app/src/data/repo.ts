@@ -6,6 +6,7 @@ import { type Day, loadDays as loadSampleDays } from './daily';
 import { daysFromRows } from './dailyRows';
 import type { Episode } from './cycleLog';
 import { type EvidenceRow, type InsightRow, insightView, type InsightView } from './insightRows';
+import { type OutcomeValue, type TodayLoop, todayLoop } from './loopRows';
 import { paginateAll } from './pagination';
 import {
   type DbSourceKind,
@@ -68,12 +69,34 @@ export type Repo = {
   // Her newest live insight, or null when the server has not written one:
   // the Insight screen shows its empty note then, never the sample.
   loadInsight(): Promise<InsightView | null>;
+  // The loop, as get_today() composes it: the newest insight with what
+  // changed about it since she last looked, her offers, what she is
+  // trying, and what was learned. Null in demo mode, where the local store
+  // keeps the sample loop in memory.
+  loadToday(): Promise<TodayLoop | null>;
+  recordVisit(): Promise<void>;
+  recordInsightView(insightId: string): Promise<void>;
+  setThreadWatch(threadId: string, watching: boolean): Promise<void>;
+  // Returns the action's id, or null in demo mode.
+  startAction(input: StartAction): Promise<string | null>;
+  reportOutcome(actionId: string, reported: OutcomeValue): Promise<void>;
+  dismissRecommendation(id: string, reason: string): Promise<void>;
   // Real mode only: writes or updates the row for one source kind, keyed by
   // (user_id, kind, name) so a repeat call updates the same row instead of
   // creating a duplicate. Omitting lastSyncedAt leaves whatever was already
   // stored there untouched, rather than clearing it.
   saveSourceStatus(kind: DbSourceKind, status: DbSourceStatus, lastSyncedAt?: string): Promise<void>;
   firstName(): Promise<string | null>;
+};
+
+export type StartAction = {
+  kind: string;
+  title: string;
+  intent?: string;
+  metric?: string;
+  wanted?: 'higher' | 'lower';
+  insightId?: string;
+  recommendationId?: string;
 };
 
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -101,6 +124,13 @@ export function demoRepo(): Repo {
     loadSources: async () => sources,
     loadDays: async () => loadSampleDays(),
     loadInsight: async () => sampleInsight,
+    loadToday: async () => null,
+    recordVisit: async () => {},
+    recordInsightView: async () => {},
+    setThreadWatch: async () => {},
+    startAction: async () => null,
+    reportOutcome: async () => {},
+    dismissRecommendation: async () => {},
     saveSourceStatus: async () => {},
     firstName: async () => person.firstName,
   };
@@ -189,6 +219,38 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
         await db.from('thread_evidence').select(EVIDENCE_COLUMNS).eq('thread_id', row.thread_id).order('created_at'),
       ) as unknown as EvidenceRow[];
       return insightView(row, evidence);
+    },
+    async loadToday() {
+      return todayLoop(must(await db.rpc('get_today')));
+    },
+    async recordVisit() {
+      must(await db.rpc('record_visit'));
+    },
+    async recordInsightView(insightId) {
+      must(await db.rpc('record_insight_view', { p_insight_id: insightId }));
+    },
+    async setThreadWatch(threadId, watching) {
+      must(await db.rpc('set_thread_watch', { p_thread_id: threadId, p_watching: watching }));
+    },
+    async startAction(input) {
+      const id = must(
+        await db.rpc('start_action', {
+          p_kind: input.kind,
+          p_title: input.title,
+          p_intent: input.intent ?? null,
+          p_metric: input.metric ?? null,
+          p_wanted: input.wanted ?? null,
+          p_insight_id: input.insightId ?? null,
+          p_recommendation_id: input.recommendationId ?? null,
+        }),
+      ) as unknown;
+      return typeof id === 'string' ? id : null;
+    },
+    async reportOutcome(actionId, reported) {
+      must(await db.rpc('report_outcome', { p_action_id: actionId, p_reported: reported }));
+    },
+    async dismissRecommendation(id, reason) {
+      must(await db.rpc('dismiss_recommendation', { p_id: id, p_reason: reason }));
     },
     async saveSourceStatus(kind, status, lastSyncedAt) {
       const payload: Record<string, unknown> = { user_id: userId, kind, name: SOURCE_NAME[kind], status };

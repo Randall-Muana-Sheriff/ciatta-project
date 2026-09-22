@@ -1,9 +1,10 @@
 import type { Session } from '@supabase/supabase-js';
-import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { type Data, dataForSession } from '../data/adapter';
 import type { Day } from '../data/daily';
 import type { InsightView } from '../data/insightRows';
+import type { TodayLoop } from '../data/loopRows';
 import { demoRepo, realRepo, type Repo } from '../data/repo';
 import { supabase } from '../lib/supabase';
 
@@ -16,6 +17,10 @@ type SessionValue = {
   firstName: string | null;
   days: Day[];
   insight: InsightView | null;
+  loop: TodayLoop | null;
+  // Read the loop again after she changed it (watched, tried); the since
+  // she saw at the start of the session is kept.
+  reloadLoop: () => Promise<void>;
   enterDemo: () => void;
   signOut: () => Promise<void>;
 };
@@ -30,6 +35,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [firstName, setFirstName] = useState<string | null>(null);
   const [days, setDays] = useState<Day[]>([]);
   const [insight, setInsight] = useState<InsightView | null>(null);
+  const [loop, setLoop] = useState<TodayLoop | null>(null);
+  // Which insight this session has already recorded as seen, and for whom
+  // the visit has been stamped, so each happens once per session.
+  const viewed = useRef<string | null>(null);
+  const visited = useRef<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -83,6 +93,45 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     };
   }, [mode, repo]);
 
+  // The loop, once per session: read Today's state first (its "since" is
+  // computed against her last look and last visit), then record that she
+  // has now seen this insight and has now visited, in that order, so the
+  // since she is shown is the one that was true when she opened the app.
+  useEffect(() => {
+    let ignore = false;
+    setLoop(null);
+    if (mode === 'real' && repo) {
+      repo
+        .loadToday()
+        .then(async (next) => {
+          if (ignore) return;
+          setLoop(next);
+          if (next?.insight && viewed.current !== next.insight.id) {
+            viewed.current = next.insight.id;
+            await repo.recordInsightView(next.insight.id).catch(() => {});
+          }
+          if (userId && visited.current !== userId) {
+            visited.current = userId;
+            await repo.recordVisit().catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
+    return () => {
+      ignore = true;
+    };
+  }, [mode, repo, userId]);
+
+  const reloadLoop = useCallback(async () => {
+    if (mode !== 'real' || !repo) return;
+    const next = await repo.loadToday().catch(() => null);
+    setLoop((prev) =>
+      next && prev?.insight && next.insight && next.insight.id === prev.insight.id
+        ? { ...next, insight: { ...next.insight, since: prev.insight.since } }
+        : next,
+    );
+  }, [mode, repo]);
+
   const value = useMemo<SessionValue>(
     () => ({
       mode,
@@ -91,13 +140,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       firstName,
       days,
       insight,
+      loop,
+      reloadLoop,
       enterDemo: () => setDemo(true),
       signOut: async () => {
         if (demo) setDemo(false);
         else await supabase.auth.signOut();
       },
     }),
-    [mode, userId, repo, firstName, days, insight, demo],
+    [mode, userId, repo, firstName, days, insight, loop, reloadLoop, demo],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
@@ -112,8 +163,8 @@ export function useSession(): SessionValue {
 // What screens read. Only the demo reads as the sample person; loading and
 // signed out read as an empty record, never as somebody else's.
 export function useData(): Data {
-  const { mode, firstName, days, insight } = useSession();
-  return useMemo(() => dataForSession(mode, firstName, days, insight), [mode, firstName, days, insight]);
+  const { mode, firstName, days, insight, loop } = useSession();
+  return useMemo(() => dataForSession(mode, firstName, days, insight, loop), [mode, firstName, days, insight, loop]);
 }
 
 export function useRepo(): Repo {
