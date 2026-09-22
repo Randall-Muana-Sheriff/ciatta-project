@@ -123,6 +123,11 @@ export function Finding({
 /**
  * The module itself. The first item is open on arrival, because a column of
  * closed headings tells her nothing about what is behind them.
+ *
+ * Every row is a real toggle: the plus opens a row, and the minus it becomes
+ * closes it again. One row is open at a time. A module with screens keeps
+ * showing the screen of the row that was opened last, so closing a row
+ * never empties the device beside the list.
  */
 export function Module({
   id, kind, title, lede, items, reversed, foot,
@@ -136,8 +141,9 @@ export function Module({
   /** A line under the body: where the binding version of this lives. */
   foot?: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(0);
-  const Screen = items[open].Screen;
+  const [open, setOpen] = useState<number | null>(0);
+  const [shown, setShown] = useState(0);
+  const Screen = items[shown].Screen;
   const body = ['hw2-body', Screen ? '' : 'is-plain', reversed ? 'is-reversed' : '']
     .filter(Boolean).join(' ');
 
@@ -161,7 +167,14 @@ export function Module({
                       type="button"
                       aria-expanded={isOpen}
                       aria-controls={`${id}-${item.n}`}
-                      onClick={() => setOpen(i)}
+                      onClick={() => {
+                        if (isOpen) {
+                          setOpen(null);
+                        } else {
+                          setOpen(i);
+                          setShown(i);
+                        }
+                      }}
                     >
                       <span className="hw2-n">{item.n}</span>
                       <span className="hw2-t">{item.title}</span>
