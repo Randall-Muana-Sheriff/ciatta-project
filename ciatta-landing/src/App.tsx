@@ -165,15 +165,27 @@ export default function App() {
         {/* ---- the statement, sliding up over the film -------------------- */}
         <section className="statement" aria-labelledby="statement-heading">
           <div className="shell">
-            {/* One sentence. The section was a heading and a paragraph set
-                at identical size and weight, which is two blocks doing one
-                block's work — so it is now the single claim it was always
-                making, and the heading is that claim rather than a lead-in
-                to it. */}
+            {/* One sentence, in the page's own words.
+
+                A scan of every claim on the site found this was the only
+                place that said anything forward-looking. "Surface emerging
+                risks" promises detection of something before it arrives,
+                and nothing else here supports it: the FAQ six sections down
+                says Ciatta does not name a condition, "suggest it, or hint
+                at it", the observation copy says a connection is not a
+                cause, and the footer on every page says it does not
+                diagnose, treat or prevent. It was also the largest type on
+                the page, so the strongest claim was the one with the least
+                behind it.
+
+                The triad the rest of the site actually makes is: what
+                changed, what may be connected, what you can do. The hero
+                says it, the how-it-works steps say it, the FAQ says it.
+                This says it too now, at the size the page is loudest. */}
             <h2 id="statement-heading" className="statement-title">
-              Ciatta continuously connects your health data and context to
-              identify patterns, surface emerging risks, and help you take
-              informed action.
+              Ciatta continuously connects your health data, your care, and
+              your everyday context — so you can see what changed, what may
+              be connected, and what you can do next.
             </h2>
             <p className="statement-kicker">Continuous health intelligence.</p>
           </div>
