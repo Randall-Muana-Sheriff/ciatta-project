@@ -245,8 +245,20 @@ const STEPS: [string, string, () => React.ReactNode][] = [
 
 export function HowSection() {
   return (
-    <section className="section how" aria-label="How Ciatta works, in four steps">
+    <section className="section how" aria-labelledby="how-heading">
       <div className="shell">
+        {/* The four steps had carried no visible heading since the old one
+            was cut, so the columns arrived with nothing naming them: the
+            page went from "All the pieces. One picture." straight into a
+            numbered row. This says what the row is.
+
+            aria-labelledby rather than the aria-label it replaces — a
+            section with a visible heading should be named by that heading,
+            not by a second string only a screen reader hears. */}
+        <div className="band-head">
+          <h2 id="how-heading" className="band-title">How it works</h2>
+        </div>
+
         <ol className="hw-steps">
           {STEPS.map(([n, line, Art]) => (
             <li key={n} className="hw-step">
