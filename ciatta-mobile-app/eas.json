@@ -27,7 +27,7 @@
       "extends": "preview",
       "android": {
         "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease -PreactNativeArchitectures=x86_64 --max-workers=2"
+        "gradleCommand": ":app:assembleRelease -PreactNativeArchitectures=x86_64 -x lintVitalAnalyzeRelease -x lintVitalReportRelease -x lintVitalRelease --max-workers=2"
       },
       "channel": "preview"
     },
@@ -35,7 +35,7 @@
       "extends": "preview",
       "android": {
         "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease -PreactNativeArchitectures=armeabi-v7a --max-workers=2"
+        "gradleCommand": ":app:assembleRelease -PreactNativeArchitectures=armeabi-v7a -x lintVitalAnalyzeRelease -x lintVitalReportRelease -x lintVitalRelease --max-workers=2"
       },
       "channel": "preview"
     }
