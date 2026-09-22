@@ -166,28 +166,6 @@ const TOPICS: Topic[] = [
     },
   },
   {
-    key: 'notes',
-    pill: 'Your own words',
-    tab: 'Your own words',
-    cap: 'Keep what no device could record.',
-    title: 'Keep what no device saw',
-    lede:
-      'A device records the night. It does not record the week you had, so you do — once, and it stays exactly as you wrote it.',
-    ask: 'Will I still remember this at my appointment in June?',
-    answer:
-      'You wrote it on 12 Jan, and it is still dated 12 Jan. Nothing a device records overwrites what you said.',
-    alt: 'A woman cooking at a kitchen counter in daylight.',
-    card: {
-      kind: 'log',
-      head: 'What you told Ciatta',
-      rows: [
-        ['12 Jan', '“A stressful stretch at work.”', 'You told Ciatta'],
-        ['26 Jan', '“Waking several times a night.”', 'You told Ciatta'],
-        ['3 Mar', '“My doctor changed my medication.”', 'You told Ciatta'],
-      ],
-    },
-  },
-  {
     key: 'surgery',
     pill: 'Surgery & procedures',
     tab: 'Surgery',
@@ -217,28 +195,88 @@ const TOPICS: Topic[] = [
      The answer carries the site's own caution on its face rather than in a
      footnote, because "symptoms on the high-pollen days" is exactly the
      kind of overlap a person reads as cause. */
+  /* Daily life is the layer between her body and the world: what she was
+     doing, where she was, how the week was shaped. It is separate from
+     Environment because one is what she did and the other is what was around
+     her, and separate from Your own words because these are facts about a
+     week rather than how the week felt.
+
+     The sources stay honest. Ciatta does not claim a calendar integration
+     anywhere else on this site, so the rows are labelled by how the record
+     actually gets them — connected, or told — and the lede says the same. */
+  {
+    key: 'daily',
+    pill: 'Daily life',
+    tab: 'Daily life',
+    cap: 'See how the week was shaped.',
+    title: 'See what your days were actually like',
+    lede:
+      'Work and travel, training and rest, meals, and a schedule that moved. Some of it arrives from what you connect and some of it you tell Ciatta, and either way it is part of the week a symptom landed in.',
+    ask: 'What was that week actually like?',
+    answer:
+      'Your heaviest symptom days sat in the week you crossed three time zones, and in the stretch with the latest finishes. A week can explain a lot without being the cause of it.',
+    alt: 'A woman walking through a station concourse with a bag over her shoulder.',
+    card: {
+      kind: 'log',
+      head: 'Your weeks · March',
+      rows: [
+        ['4–8 Mar', 'Late finishes, 4 nights', 'Told'],
+        ['11–13 Mar', 'Travel, 3 time zones', 'Told'],
+        ['14 Mar', 'Nine meetings, no break', 'Told'],
+        ['15–17 Mar', 'Training resumed', 'Measured'],
+      ],
+    },
+  },
   {
     key: 'environment',
-    pill: 'Environment & seasons',
+    pill: 'Environment & exposures',
     tab: 'Environment',
     cap: 'See what was around you.',
     title: 'See what was going on around you',
     lede:
-      'Air quality, pollen, heat and how much daylight you were getting are part of the record too. They are the background a bad week happened against, and without them the week looks like it came from nowhere.',
-    ask: 'Was it me, or was it the week?',
+      'Air quality and pollution, pollen and allergens, temperature and humidity, wildfire smoke, damp and mould where it can be known, and how much daylight you were getting. Weather is one part of this, not the whole of it, and none of it is about your body. It is the background a bad week happened against.',
+    ask: 'Was it me, or was it what was around me?',
     answer:
-      'Your symptom days this month fell on the three highest-pollen days and across the heat of 2–4 Aug. Things that move together are not necessarily one causing the other.',
+      'Your symptom days this month sat on the three highest-pollen days, and across the heat and poor air of 2–8 Aug. Things that move together are not necessarily one causing the other.',
     alt: 'A woman at an open window in early light, looking out at the weather.',
     card: {
       kind: 'log',
       head: 'Around you · August',
       rows: [
-        ['2–4 Aug', 'Heat above 32°C', 'Imported'],
+        ['2–4 Aug', 'Heat 32°C · humidity 78%', 'Imported'],
+        ['7 Aug', 'Air quality poor · AQI 142', 'Imported'],
         ['11 Aug', 'Pollen very high', 'Imported'],
         ['16 Aug', 'Daylight down 48 min since July', 'Imported'],
+        ['19 Aug', 'Wildfire smoke nearby', 'Imported'],
       ],
     },
   },
+  /* Last, on purpose. The record reads outward from her body to her
+     care, then to her days and what was around them — and it ends on
+     the only part nothing can measure: what she says herself. */
+  {
+    key: 'notes',
+    pill: 'Your own words',
+    tab: 'Your own words',
+    cap: 'Keep what no device could record.',
+    title: 'Keep what no device saw',
+    lede:
+      'A device records the night. It does not record the week you had, so you do: once, and it stays exactly as you wrote it.',
+    ask: 'Will I still remember this at my appointment in June?',
+    answer:
+      'You wrote it on 12 Jan, and it is still dated 12 Jan. Nothing a device records overwrites what you said.',
+    alt: 'A woman cooking at a kitchen counter in daylight.',
+    card: {
+      kind: 'log',
+      head: 'What you told Ciatta',
+      rows: [
+        ['12 Jan', '“A stressful stretch at work.”', 'You told Ciatta'],
+        ['26 Jan', '“Waking several times a night.”', 'You told Ciatta'],
+        ['3 Mar', '“My doctor changed my medication.”', 'You told Ciatta'],
+      ],
+    },
+  },
+
 ];
 
 /** The plot. One scale, drawn from the data, with the last point emphasised. */

@@ -93,16 +93,16 @@ const QUESTIONS: [string, string][] = [
    'No, to both. Ciatta is not a medical device and is not a substitute for care. It describes what is in your record and what moved close to what; naming a condition is a clinician\u2019s job, and Ciatta does not do it, suggest it, or hint at it. What it is for is the appointment: arriving with your own history in order, and the questions worth asking already written down.'],
 
   ['How does Ciatta decide two things may be connected?',
-   'It looks for things that moved close together in time, more than once, across your own record \u2014 and it shows you the information the observation rests on, along with how many times it has seen the pattern and over what period. When something could be a coincidence, Ciatta says so on the observation itself rather than in a disclaimer at the bottom of the page. Things that move together are not necessarily one causing the other, and a tool that blurs that is worse than no tool.'],
+   'It looks for things that moved close together in time, more than once, across your own record, and it shows you the information the observation rests on, along with how many times it has seen the pattern and over what period. When something could be a coincidence, Ciatta says so on the observation itself rather than in a disclaimer at the bottom of the page. Things that move together are not necessarily one causing the other, and a tool that blurs that is worse than no tool.'],
 
   ['Do I need a wearable, or to share everything?',
-   'Neither. A wearable adds nightly sleep and cycle data if you already have one; without it, Ciatta works from what you enter, what you upload, and what your providers send. Every part of the record is optional. What Ciatta cannot see it does not guess at \u2014 it says which part is missing rather than filling the gap.'],
+   'Neither. A wearable adds nightly sleep and cycle data if you already have one; without it, Ciatta works from what you enter, what you upload, and what your providers send. Every part of the record is optional. What Ciatta cannot see it does not guess at: it says which part is missing rather than filling the gap.'],
 
   ['Where does my health data live, and who can reach it?',
    'In your account, and it is yours. It is encrypted in transit and at rest, you can export all of it or delete it at any time, and disconnecting a source takes its data with it. Ciatta does not sell, rent or share health data with advertisers, brokers or insurers. What you write in your own words is never overwritten by a device or a clinic.'],
 
   ['When does Ciatta open, and what does reserving a place do?',
-   'Quarter 3 of 2027, to a small group first and then wider. That is what we are building to rather than a promise, and if it moves we will say so. Reserving a place puts you on the early-access list \u2014 no card, nothing charged, and you are not subscribed to anything. You will get one email when it opens, and nothing else.'],
+   'Quarter 3 of 2027, to a small group first and then wider. That is what we are building to rather than a promise, and if it moves we will say so. Reserving a place puts you on the early-access list: no card, nothing charged, and you are not subscribed to anything. You will get one email when it opens, and nothing else.'],
 ];
 
 
@@ -182,12 +182,37 @@ export default function App() {
                 changed, what may be connected, what you can do. The hero
                 says it, the how-it-works steps say it, the FAQ says it.
                 This says it too now, at the size the page is loudest. */}
+            {/* Set the way apple.com/apple-vision-pro sets its statement:
+                one continuous block of sentences, every line the same size
+                and weight, broken where the writing breaks rather than
+                wherever the column happens to end. Theirs reads
+
+                  Apple Vision Pro seamlessly
+                  blends digital content with
+                  your physical space.
+                  So you can work, watch, relive
+                  memories, and connect in ways
+                  never before possible.
+
+                The dash goes with it. The clause it was holding open is a
+                sentence of its own now, which is what "So you can..." was
+                always doing anyway.
+
+                The breaks are authored, so they are switched off below a
+                tablet: a line break written for a 1440 window lands in the
+                middle of a phrase on a 390 one. There the block wraps to
+                its own measure instead. The {' '} before each break is not
+                decoration: JSX strips the whitespace either side of an
+                element, so with the breaks switched off the lines ran
+                together as "connectsyour health data". */}
             <h2 id="statement-heading" className="statement-title">
-              Ciatta continuously connects your health data, your care, and
-              your everyday context — so you can see what changed, what may
-              be connected, and what you can do next.
+              Ciatta continuously connects{' '}<br className="st-br" />
+              your health data, your care,{' '}<br className="st-br" />
+              and your everyday context.{' '}<br className="st-br" />
+              So you can see what changed,{' '}<br className="st-br" />
+              what may be connected,{' '}<br className="st-br" />
+              and what you can do next.
             </h2>
-            <p className="statement-kicker">Continuous health intelligence.</p>
           </div>
         </section>
         </div>

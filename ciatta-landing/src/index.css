@@ -3138,38 +3138,38 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    left edge to line up with, and a lone sentence pinned to the left of a
    1440 window reads as the start of something that never arrives. */
 .statement .shell { text-align: center; }
+/* above the phone the breaks do the wrapping, so the measure gets out of
+   the way rather than folding the authored lines a second time */
+@media (min-width: 701px) { .statement-title { max-width: none; } }
+/* The authored line breaks in the statement. They are written for a wide
+   window; below a tablet they are switched off and the block wraps to its
+   own measure, because a break written for 1440 lands mid-phrase on 390. */
+.st-br { display: none; }
+@media (min-width: 701px) { .st-br { display: inline; } }
+
 .statement-title {
   /* a sentence rather than a phrase now, so it gets a measure a sentence can
      be read at instead of running the full width of a 1440 window */
-  max-width: 26ch; margin-inline: auto;
+  max-width: 22ch; margin-inline: auto;
   margin: 0 auto var(--s5); font-weight: 500; color: var(--ink);
   font-size: var(--t-display); line-height: var(--lh-display);
   letter-spacing: -0.04em; text-wrap: balance;
 }
-.statement-lede {
-  margin: 0; color: var(--body-ink);
-  font-size: var(--t-lede); line-height: 1.5; max-width: 54ch;
-}
-/* the kicker: the smallest line in the section and the last one to arrive,
-   set in caps against the sentence above it rather than competing with it */
-.statement-kicker {
-  margin: var(--s6) 0 0; color: var(--meta-ink);
-  font-size: var(--t-caption); font-weight: 600;
-  letter-spacing: 0.16em; text-transform: uppercase;
-}
+
+
 
 /* Where the browser can time an animation to the scroll itself, the sentence
    arrives as it climbs rather than being fully there the moment it appears.
    Everywhere else, and under Reduce Motion, it is simply there. */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
-    .statement-title, .statement-lede, .statement-kicker {
+    /* One sentence now, so one animation: the staggered pair and the kicker
+       that used to follow it are gone. */
+    .statement-title {
       animation: statement-in linear both;
       animation-timeline: view();
       animation-range: entry 10% entry 80%;
     }
-    .statement-lede { animation-range: entry 20% entry 90%; }
-    .statement-kicker { animation-range: entry 28% entry 96%; }
   }
 }
 @keyframes statement-in {
@@ -4106,13 +4106,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    than dropping to the lede step. This is the Vision Pro treatment the
    section was built to — a paragraph that is all the same voice, at the
    size the page is loudest. */
-.statement-lede {
-  font-size: var(--t-head);
-  line-height: var(--lh-head);
-  font-weight: 500;
-  color: var(--ink);
-  max-width: 24ch;
-}
+
 .qa-item summary span { font-size: var(--t-lede); font-weight: 500; }
 
 /* --- small: secondary text and every control --------------------------- */
@@ -4153,7 +4147,6 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 /* --- caption: uppercase labels, and footnote sentences ----------------- */
 .m-eyebrow,
 .hw2-kind,
-.statement-kicker,
 .filter-label,
 .briefs-topic {
   font-size: var(--t-caption);
