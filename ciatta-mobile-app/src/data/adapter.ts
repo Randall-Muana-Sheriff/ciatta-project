@@ -1,4 +1,5 @@
 import { type Day, loadDays } from './daily';
+import type { InsightView } from './insightRows';
 import * as sample from './sample';
 
 // What each screen reads, per mode. Demo is the sample person; real is only
@@ -15,7 +16,7 @@ export type Data = {
   symptoms: typeof sample.symptoms | null;
   medications: typeof sample.medications | null;
   journey: typeof sample.journey | null;
-  insight: typeof sample.insight | null;
+  insight: InsightView | null;
   profile: typeof sample.profile | null;
 };
 
@@ -41,11 +42,16 @@ const REAL_TODAY_TEXT = {
 // person: while a session is loading, or once she has signed out, a screen
 // mounted outside the Gate reads her own (empty) record rather than falling
 // open to somebody else's data.
-export function dataForSession(mode: 'loading' | 'signedOut' | 'demo' | 'real', firstName: string | null, days: Day[] = []): Data {
-  return dataFor(mode === 'demo' ? 'demo' : 'real', firstName, days);
+export function dataForSession(
+  mode: 'loading' | 'signedOut' | 'demo' | 'real',
+  firstName: string | null,
+  days: Day[] = [],
+  insight: InsightView | null = null,
+): Data {
+  return dataFor(mode === 'demo' ? 'demo' : 'real', firstName, days, insight);
 }
 
-export function dataFor(mode: 'demo' | 'real', firstName: string | null, days: Day[] = []): Data {
+export function dataFor(mode: 'demo' | 'real', firstName: string | null, days: Day[] = [], insight: InsightView | null = null): Data {
   if (mode === 'demo') {
     return {
       mode,
@@ -65,13 +71,19 @@ export function dataFor(mode: 'demo' | 'real', firstName: string | null, days: D
     mode,
     days,
     person: firstName ? { firstName } : null,
-    today: { ...sample.today, ...REAL_TODAY_TEXT },
+    // When the server has written her an insight, Today leads with its
+    // title and its count line; until then the record starts text stays.
+    today: {
+      ...sample.today,
+      ...REAL_TODAY_TEXT,
+      ...(insight ? { headline: insight.headline, kicker: insight.meta } : {}),
+    },
     records: null,
     sleep: null,
     symptoms: null,
     medications: null,
     journey: null,
-    insight: null,
+    insight,
     profile: null,
   };
 }

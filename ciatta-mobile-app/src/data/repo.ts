@@ -5,6 +5,7 @@ import type { DailyRow } from '../lib/healthMetrics';
 import { type Day, loadDays as loadSampleDays } from './daily';
 import { daysFromRows } from './dailyRows';
 import type { Episode } from './cycleLog';
+import { type EvidenceRow, type InsightRow, insightView, type InsightView } from './insightRows';
 import { paginateAll } from './pagination';
 import {
   type DbSourceKind,
@@ -19,7 +20,7 @@ import {
   sourceView,
   type SourceView,
 } from './rows';
-import { type EntryKind, journal, person, sources } from './sample';
+import { type EntryKind, insight as sampleInsight, journal, person, sources } from './sample';
 
 // Every daily_metrics column daysFromRows/rowToDay actually reads. Named
 // explicitly, like every other realRepo method, rather than select('*'),
@@ -28,6 +29,17 @@ import { type EntryKind, journal, person, sources } from './sample';
 // projection has any use for.
 const DAILY_COLUMNS =
   'day, sleep_hours, stage_awake, stage_rem, stage_light, stage_deep, time_in_bed, steps, active_minutes, workouts, resting_hr, hrv, temp_deviation, energy, mood, stress, caffeine, alcohol, foods, digestion, note';
+
+// An insight with its thread embedded, and the thread's evidence with the
+// row each piece points at. The two observation joins on a link are named
+// by their foreign keys because temporal_links reaches observations twice.
+const INSIGHT_COLUMNS =
+  'id, thread_id, title, what_changed, connected, you_told, not_established, alternatives, status, confidence, valid_from, updated_at, threads(key, title, status, domains, observation_count, first_observed_at, last_observed_at, confidence)';
+const OBSERVATION_REF = 'metric, domain, value, value_text, unit, occurred_at';
+const EVIDENCE_COLUMNS =
+  `role, note, created_at, observations(${OBSERVATION_REF}), changes(metric, direction, from_value, to_value, detected_on), ` +
+  `temporal_links(occurred_on, a:observations!temporal_links_a_observation_id_fkey(${OBSERVATION_REF}), b:observations!temporal_links_b_observation_id_fkey(${OBSERVATION_REF})), ` +
+  'research_refs(title, publication, year, summary)';
 
 // The name each source kind is stored and shown under. Only apple_health is
 // ever written by saveSourceStatus today; the rest are named so the mapping
@@ -53,6 +65,9 @@ export type Repo = {
   addJournal(text: string, kind: EntryKind): Promise<void>;
   loadSources(): Promise<SourceView[]>;
   loadDays(): Promise<Day[]>;
+  // Her newest live insight, or null when the server has not written one:
+  // the Insight screen shows its empty note then, never the sample.
+  loadInsight(): Promise<InsightView | null>;
   // Real mode only: writes or updates the row for one source kind, keyed by
   // (user_id, kind, name) so a repeat call updates the same row instead of
   // creating a duplicate. Omitting lastSyncedAt leaves whatever was already
@@ -85,6 +100,7 @@ export function demoRepo(): Repo {
     },
     loadSources: async () => sources,
     loadDays: async () => loadSampleDays(),
+    loadInsight: async () => sampleInsight,
     saveSourceStatus: async () => {},
     firstName: async () => person.firstName,
   };
@@ -150,6 +166,27 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
             .range(from, to) as unknown as Page<DailyRow>,
       );
       return daysFromRows(rows, new Date());
+    },
+    async loadInsight() {
+      // One row: the newest insight still in force (valid_to null) that she
+      // has not dismissed. Its thread's evidence is a few rows per
+      // occurrence over a 180 day window, well under max_rows, so neither
+      // read pages.
+      const row = must(
+        await db
+          .from('insights')
+          .select(INSIGHT_COLUMNS)
+          .is('valid_to', null)
+          .neq('status', 'dismissed')
+          .order('valid_from', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ) as InsightRow | null;
+      if (!row) return null;
+      const evidence = must(
+        await db.from('thread_evidence').select(EVIDENCE_COLUMNS).eq('thread_id', row.thread_id).order('created_at'),
+      ) as EvidenceRow[];
+      return insightView(row, evidence);
     },
     async saveSourceStatus(kind, status, lastSyncedAt) {
       const payload: Record<string, unknown> = { user_id: userId, kind, name: SOURCE_NAME[kind], status };

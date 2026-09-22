@@ -46,3 +46,16 @@ test('demo mode is the sample, unchanged', () => {
   assert.equal(d.today, sample.today);
   assert.equal(d.person?.firstName, sample.person.firstName);
 });
+
+test('real mode leads Today with her own insight when the server has written one', () => {
+  const view = { ...sample.insight, headline: 'Cycle length and lower sleep, seen twice across 1 month', meta: 'Seen twice · across 1 month · updated 22 Sep' };
+  const d = dataFor('real', 'Ada', [], view);
+  assert.equal(d.insight, view);
+  assert.equal(d.today.headline, view.headline);
+  assert.equal(d.today.kicker, view.meta);
+  assert.notEqual(d.today.brief, sample.today.brief);
+
+  const without = dataFor('real', 'Ada', []);
+  assert.equal(without.insight, null);
+  assert.equal(without.today.headline, 'Nothing to compare yet.');
+});

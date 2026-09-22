@@ -3,6 +3,7 @@ import { createContext, type ReactNode, useContext, useEffect, useMemo, useState
 
 import { type Data, dataForSession } from '../data/adapter';
 import type { Day } from '../data/daily';
+import type { InsightView } from '../data/insightRows';
 import { demoRepo, realRepo, type Repo } from '../data/repo';
 import { supabase } from '../lib/supabase';
 
@@ -14,6 +15,7 @@ type SessionValue = {
   repo: Repo | null;
   firstName: string | null;
   days: Day[];
+  insight: InsightView | null;
   enterDemo: () => void;
   signOut: () => Promise<void>;
 };
@@ -27,6 +29,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [demo, setDemo] = useState(false);
   const [firstName, setFirstName] = useState<string | null>(null);
   const [days, setDays] = useState<Day[]>([]);
+  const [insight, setInsight] = useState<InsightView | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -64,6 +67,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     };
   }, [mode, repo]);
 
+  // Her newest insight, the same way: once per session, shared by Today
+  // and the Insight screen, and cleared before it is asked for again so a
+  // previous session's never shows under a new one.
+  useEffect(() => {
+    let ignore = false;
+    setInsight(null);
+    if (mode === 'real' && repo) {
+      repo.loadInsight().then((view) => {
+        if (!ignore) setInsight(view);
+      }).catch(() => {});
+    }
+    return () => {
+      ignore = true;
+    };
+  }, [mode, repo]);
+
   const value = useMemo<SessionValue>(
     () => ({
       mode,
@@ -71,13 +90,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       repo,
       firstName,
       days,
+      insight,
       enterDemo: () => setDemo(true),
       signOut: async () => {
         if (demo) setDemo(false);
         else await supabase.auth.signOut();
       },
     }),
-    [mode, userId, repo, firstName, days, demo],
+    [mode, userId, repo, firstName, days, insight, demo],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
@@ -92,8 +112,8 @@ export function useSession(): SessionValue {
 // What screens read. Only the demo reads as the sample person; loading and
 // signed out read as an empty record, never as somebody else's.
 export function useData(): Data {
-  const { mode, firstName, days } = useSession();
-  return useMemo(() => dataForSession(mode, firstName, days), [mode, firstName, days]);
+  const { mode, firstName, days, insight } = useSession();
+  return useMemo(() => dataForSession(mode, firstName, days, insight), [mode, firstName, days, insight]);
 }
 
 export function useRepo(): Repo {
