@@ -231,3 +231,115 @@ export function contextEntry(o: ObservationRow): ContextEntry | null {
       return null;
   }
 }
+
+// ── Slice 4: offers, lessons, and what changed since last time ─────────
+
+export type RecommendationKind =
+  | 'observe'
+  | 'log'
+  | 'reflect'
+  | 'try'
+  | 'review'
+  | 'prepare'
+  | 'explore'
+  | 'discuss'
+  | 'connect'
+  | 'continue'
+  | 'no_action_yet';
+
+export type RecommendationContext = { cycle?: boolean; kind?: 'walk' | 'custom' };
+
+// An offer is a title and one line under it, from fixed frames. "Only if
+// it feels appropriate" travels with every try, because an offer is never
+// an instruction.
+export function recommendationText(type: RecommendationKind, ctx: RecommendationContext = {}): { title: string; body: string } {
+  const nextTime = ctx.cycle ? 'your next cycle' : 'what happens next time';
+  const showsWhen = ctx.cycle ? 'It will show here when your next cycle ends.' : 'It will show here the next time this comes around.';
+  switch (type) {
+    case 'observe':
+      return { title: `Watch ${nextTime}`, body: showsWhen };
+    case 'continue':
+      return { title: `Watching ${nextTime}`, body: showsWhen };
+    case 'try':
+      return ctx.kind === 'walk'
+        ? { title: 'A short walk today', body: 'Only if it feels appropriate. The next few days will show whether your energy or sleep follow.' }
+        : { title: 'Something small to try', body: 'Only if it feels appropriate.' };
+    case 'reflect':
+      return { title: 'Describe what changed', body: 'A few words about these days will sit beside the record.' };
+    case 'log':
+      return { title: 'Log what is going on', body: 'Bleeding, pain, symptoms, and what was going on.' };
+    case 'review':
+      return { title: 'View the evidence', body: 'Every line traces back to something in your record.' };
+    case 'prepare':
+      return { title: 'Prepare for an appointment', body: 'This has come back often enough to be worth a conversation.' };
+    case 'explore':
+      return { title: 'Look at this over time', body: 'The Journey view shows these days in place.' };
+    case 'discuss':
+      return { title: 'Bring this to your clinician', body: 'What was seen, and what is not established, in one place.' };
+    case 'connect':
+      return { title: 'Connect a source', body: 'A device would let the record see more of these days.' };
+    case 'no_action_yet':
+      return { title: 'Nothing to do yet', body: 'Watching is enough for now.' };
+  }
+}
+
+export type OutcomeValue = 'improved' | 'unchanged' | 'worse' | 'insufficient_evidence' | 'unknown';
+
+export type LearningEvent =
+  | { type: 'pattern_recurred'; count: number }
+  | { type: 'pattern_resolved' }
+  | { type: 'insight_updated' }
+  | { type: 'outcome_measured'; action: string; metric: string | null; measured: OutcomeValue; ratio: number | null }
+  | { type: 'outcome_reported'; action: string; reported: OutcomeValue };
+
+const REPORTED_WORDS: Record<OutcomeValue, string> = {
+  improved: 'better',
+  unchanged: 'about the same',
+  worse: 'worse',
+  insufficient_evidence: 'hard to tell',
+  unknown: 'unknown',
+};
+
+const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
+
+// One sentence per lesson. A measured outcome names the measure, the
+// direction and the size; it never says the action did it.
+export function learningText(event: LearningEvent): string {
+  switch (event.type) {
+    case 'pattern_recurred':
+      return `The same combination came back: seen ${times(event.count)} now.`;
+    case 'pattern_resolved':
+      return 'This combination has not come back for some time.';
+    case 'insight_updated':
+      return 'This reading was rewritten with what was seen since.';
+    case 'outcome_measured': {
+      const action = lowerFirst(event.action);
+      if (event.measured === 'unknown' || !event.metric) return `After ${action}, no measure was named, so nothing was measured.`;
+      if (event.measured === 'insufficient_evidence') return `After ${action}, there were not enough readings in the days around it to say.`;
+      const measure = label(event.metric);
+      if (event.measured === 'unchanged' || event.ratio == null) return `After ${action}, ${measure} stayed about the same over the next three days.`;
+      const direction = event.ratio > 0 ? 'higher' : 'lower';
+      return `After ${action}, ${measure} ran ${direction}, about ${Math.round(Math.abs(event.ratio) * 100)} percent, over the next three days.`;
+    }
+    case 'outcome_reported':
+      return `You said ${lowerFirst(event.action)} left things ${REPORTED_WORDS[event.reported]}.`;
+  }
+}
+
+export type SinceState = 'new' | 'updated' | 'continuing' | 'resolved' | 'unchanged';
+
+// Today's kicker: what happened to the insight since she last looked.
+export function sinceText(state: SinceState): string {
+  switch (state) {
+    case 'new':
+      return 'New since your last visit';
+    case 'updated':
+      return 'Updated since your last visit';
+    case 'continuing':
+      return 'Seen again since your last visit';
+    case 'resolved':
+      return 'Resolved since your last visit';
+    case 'unchanged':
+      return 'No meaningful change since your last visit';
+  }
+}

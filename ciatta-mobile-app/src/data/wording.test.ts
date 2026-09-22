@@ -10,9 +10,15 @@ import type { ChangeRow, ThreadCandidate } from '../../supabase/functions/intell
 import {
   contextEntry,
   FORBIDDEN,
+  learningText,
   NOTHING_NOTED,
   offending,
+  recommendationText,
+  sinceText,
   wordInsight,
+  type LearningEvent,
+  type RecommendationKind,
+  type SinceState,
   type ContextEntry,
   type InsightText,
   type WordingFacts,
@@ -236,4 +242,80 @@ test('contextEntry turns what she reported into words, and nothing else', () => 
   ]) {
     assert.equal(offending(e.text), null);
   }
+});
+
+const KINDS: RecommendationKind[] = ['observe', 'log', 'reflect', 'try', 'review', 'prepare', 'explore', 'discuss', 'connect', 'continue', 'no_action_yet'];
+const SINCE: SinceState[] = ['new', 'updated', 'continuing', 'resolved', 'unchanged'];
+const LESSONS: LearningEvent[] = [
+  { type: 'pattern_recurred', count: 3 },
+  { type: 'pattern_resolved' },
+  { type: 'insight_updated' },
+  { type: 'outcome_measured', action: 'A short walk', metric: 'steps', measured: 'improved', ratio: 0.18 },
+  { type: 'outcome_measured', action: 'A short walk', metric: 'steps', measured: 'worse', ratio: -0.25 },
+  { type: 'outcome_measured', action: 'A short walk', metric: 'steps', measured: 'unchanged', ratio: 0.02 },
+  { type: 'outcome_measured', action: 'A short walk', metric: 'steps', measured: 'insufficient_evidence', ratio: null },
+  { type: 'outcome_measured', action: 'An earlier bedtime', metric: null, measured: 'unknown', ratio: null },
+  { type: 'outcome_reported', action: 'A short walk', reported: 'improved' },
+  { type: 'outcome_reported', action: 'An earlier bedtime', reported: 'insufficient_evidence' },
+];
+
+test('every offer, lesson and since line is clean: no forbidden word, no dash, no product name', () => {
+  const all: string[] = [];
+  for (const k of KINDS) {
+    for (const ctx of [{}, { cycle: true }, { kind: 'walk' as const }, { cycle: true, kind: 'custom' as const }]) {
+      const t = recommendationText(k, ctx);
+      all.push(t.title, t.body);
+    }
+  }
+  for (const l of LESSONS) all.push(learningText(l));
+  for (const s of SINCE) all.push(sinceText(s));
+  for (const s of all) {
+    assert.ok(s.trim().length > 0, 'nothing is blank');
+    assert.equal(offending(s), null, s);
+    assert.ok(!COPY_DASH.test(s), `dash in: ${s}`);
+    assert.ok(!/ciatta/i.test(s), s);
+  }
+});
+
+test('an offer to watch names the cycle when the thread is about one, and a try carries its condition', () => {
+  assert.deepEqual(recommendationText('observe', { cycle: true }), { title: 'Watch your next cycle', body: 'It will show here when your next cycle ends.' });
+  assert.equal(recommendationText('observe').title, 'Watch what happens next time');
+  assert.equal(recommendationText('continue', { cycle: true }).title, 'Watching your next cycle');
+  assert.equal(recommendationText('try', { kind: 'walk' }).title, 'A short walk today');
+  assert.ok(recommendationText('try', { kind: 'walk' }).body.startsWith('Only if it feels appropriate.'));
+  assert.ok(recommendationText('try').body.startsWith('Only if it feels appropriate.'));
+  assert.equal(recommendationText('no_action_yet').title, 'Nothing to do yet');
+});
+
+test('a lesson says what was seen or measured, and never that the action did it', () => {
+  assert.equal(learningText({ type: 'pattern_recurred', count: 3 }), 'The same combination came back: seen three times now.');
+  assert.equal(learningText({ type: 'pattern_recurred', count: 2 }), 'The same combination came back: seen twice now.');
+  assert.equal(
+    learningText({ type: 'outcome_measured', action: 'A short walk', metric: 'steps', measured: 'improved', ratio: 0.18 }),
+    'After a short walk, steps ran higher, about 18 percent, over the next three days.'
+  );
+  assert.equal(
+    learningText({ type: 'outcome_measured', action: 'A short walk', metric: 'steps', measured: 'worse', ratio: -0.25 }),
+    'After a short walk, steps ran lower, about 25 percent, over the next three days.'
+  );
+  assert.equal(
+    learningText({ type: 'outcome_measured', action: 'A short walk', metric: 'steps', measured: 'insufficient_evidence', ratio: null }),
+    'After a short walk, there were not enough readings in the days around it to say.'
+  );
+  assert.equal(
+    learningText({ type: 'outcome_measured', action: 'An earlier bedtime', metric: null, measured: 'unknown', ratio: null }),
+    'After an earlier bedtime, no measure was named, so nothing was measured.'
+  );
+  assert.equal(learningText({ type: 'outcome_reported', action: 'A short walk', reported: 'improved' }), 'You said a short walk left things better.');
+  assert.equal(learningText({ type: 'outcome_reported', action: 'A short walk', reported: 'insufficient_evidence' }), 'You said a short walk left things hard to tell.');
+});
+
+test('the five since lines', () => {
+  assert.deepEqual(SINCE.map(sinceText), [
+    'New since your last visit',
+    'Updated since your last visit',
+    'Seen again since your last visit',
+    'Resolved since your last visit',
+    'No meaningful change since your last visit',
+  ]);
 });
