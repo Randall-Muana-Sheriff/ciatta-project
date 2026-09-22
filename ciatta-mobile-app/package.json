@@ -46,6 +46,7 @@
     "test": "tsx --test \"src/**/*.test.ts\"",
     "check:functions": "deno check supabase/functions/*/index.ts",
     "test:loop": "tsx scripts/loop-part-one.ts",
+    "test:loop2": "tsx scripts/loop-part-two.ts",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
