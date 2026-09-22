@@ -78,25 +78,25 @@
 
 **One evidence row points at exactly one thing.** A check constraint requires exactly one of `observation_id`, `change_id`, `link_id`, `research_ref_id` to be set (`research_ref_id` is added in Task 2, so this task's check covers the first three and Task 2 replaces it). A row that pointed at nothing, or at two things, could not be traced, and the whole point of the table is the trace.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `ciatta-mobile-app/supabase/tests/threads.test.sql` following the shape of `temporal_links.test.sql`: `has_type` for both enums, `has_table` for both tables, RLS enabled on both, anon reads nothing, authenticated selects only (no insert, update, delete), service role has all, `col_is_unique('public','threads', array['user_id','key'])`, and three `throws_ok` cases for `thread_evidence` with SQLSTATE `23514`: no target set, two targets set, `observation_count` below zero on `threads`. Then a two user isolation block in the `isolation.test.sql` style: seed a thread for B as the table owner, switch to A's JWT, assert A's select over `threads` and `thread_evidence` returns zero rows. Plan count: 22.
 
-- [ ] **Step 2: Run it to make sure it fails**
+- [x] **Step 2: Run it to make sure it fails**
 
 Run: `cd ciatta-mobile-app && npx supabase test db`
 Expected: FAIL, the types and tables do not exist.
 
-- [ ] **Step 3: Write the migration**
+- [x] **Step 3: Write the migration**
 
 Create `ciatta-mobile-app/supabase/migrations/20260922100000_threads.sql`. Both tables follow `temporal_links` exactly: `user_id` references `auth.users` on delete cascade, `enable row level security`, one `"owner select"` policy `using (user_id = (select auth.uid()))`, a `_touch` trigger, `revoke all ... from anon, authenticated`, `grant select ... to authenticated`, `grant all ... to service_role`. Do not call `enable_owner_rls()`: it grants insert, update and delete policies, and the client must never write these tables. Index `threads (user_id, status)` and `thread_evidence (thread_id)`. `confidence` defaults to `'{}'::jsonb`; the function fills `{"components": {...}, "missing": [...]}` and nothing reads a number out of it in this slice.
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `cd ciatta-mobile-app && npx supabase test db`
 Expected: PASS, 13 files.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git commit -m "Record a relationship that has recurred, and what it rests on"`
 
@@ -114,23 +114,23 @@ Expected: PASS, 13 files.
 
 **The four parts are columns, not one text.** `what_changed`, `connected`, `you_told` and `not_established` are the four sentences the Insight screen shows, each produced by the wording module from structured fields. Keeping them separate is what lets a later slice change the wording of one part without touching the others, and lets a test assert that `not_established` is never empty: an insight with nothing in that column has not named what it does not know, and the gate refuses it.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `ciatta-mobile-app/supabase/tests/insights.test.sql`: both tables exist; `insights` has RLS with owner select only; `research_refs` has RLS with exactly one policy `research_refs_read`, `SELECT`, `authenticated` (mirror the four assertions from `concepts.test.sql` lines 44 to 53); `throws_ok` `23514` when `not_established` is empty string; `throws_ok` `23514` when `status` is outside the list; `fk_ok` from `insights.thread_id` to `threads.id`; `fk_ok` from `thread_evidence.research_ref_id` to `research_refs.id`; `throws_ok` `23514` when an evidence row sets both `observation_id` and `research_ref_id`. Isolation block: A cannot see B's insight. Plan count: 20.
 
-- [ ] **Step 2: Run it to make sure it fails**
+- [x] **Step 2: Run it to make sure it fails**
 
 Expected: FAIL, tables do not exist.
 
-- [ ] **Step 3: Write the migration**
+- [x] **Step 3: Write the migration**
 
 `insights` follows the `threads` pattern. Add `constraint insights_not_established_named check (length(btrim(not_established)) > 0)`. `research_refs` follows the `concepts` pattern for grants and the `20260918100300` pattern for RLS. Then `alter table public.thread_evidence add column research_ref_id uuid references public.research_refs (id) on delete set null`, drop the Task 1 check constraint and recreate it over four columns.
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Expected: PASS, 14 files.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git commit -m "Give an insight four parts, and a place for research that is about cohorts rather than her"`
 
@@ -149,21 +149,21 @@ Expected: PASS, 14 files.
 
 **Why the chain, and why it is safe.** `enqueue_job` is idempotent while a job is pending (`jobs_one_pending`), so ten baselines completions in a row queue one intelligence run, which reads everything they wrote. The reconciliation job in `enqueue_baselines_reconciliation` needs no change: a reconciled baselines run completes and so enqueues intelligence like any other.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `intelligence_job.test.sql`: inserting a job with kind `intelligence` succeeds; kind `other` throws `23514`; `enqueue_job(A, 'intelligence')` twice leaves one pending row; completing a pending baselines job for A leaves exactly one pending intelligence job for A; `claim_intelligence_job()` returns A's job with status `running` and never a `baselines` job; `complete_intelligence_job` sets `done` and `finished_at`; `fail_intelligence_job` sets `failed` and `last_error`; `has_function` for `intelligence_tick`; every new function refuses execute to `authenticated` and `anon` and grants it to `service_role`; `cron.job` contains `intelligence-drain`. Plan count: 16.
 
-- [ ] **Step 2: Run it to make sure it fails**
+- [x] **Step 2: Run it to make sure it fails**
 
-- [ ] **Step 3: Write the migration**
+- [x] **Step 3: Write the migration**
 
 Copy the baselines trio from `20260916100000` and `20260916100200` with `kind = 'intelligence'`. Replace `complete_baselines_job` with a version whose last statement is `perform public.enqueue_job(v_user_id, 'intelligence')`, reading `v_user_id` from the row it just updated. Copy `baselines_tick` as `intelligence_tick` with the URL path changed. Schedule it with `cron.schedule('intelligence-drain', ...)` using the same expression `baselines-drain` uses in `20260917100400`. Every function: `security definer set search_path = ''`, then `revoke execute ... from public, anon, authenticated` and `grant execute ... to service_role`.
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Expected: PASS, 15 files. Also rerun `scheduler.test.sql` in your head: it counts cron jobs, so if it asserts an exact count, update that assertion in the same commit and say so in the message.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git commit -m "Queue the reasoning to run after the arithmetic, never before it"`
 
@@ -181,19 +181,19 @@ Expected: PASS, 15 files. Also rerun `scheduler.test.sql` in your head: it count
 
 **The rule, stated once.** An occurrence is a `temporal_links` row whose two observations carry different metrics from the pair. A candidate exists when the pair has at least `MIN_RECURRENCE = 2` occurrences on distinct `occurred_on` days at least `MIN_SEPARATION_DAYS = 7` apart. That mirrors `engine.ts` line 607: one earlier match is not enough to call it recurring. Cycle length is derived here from consecutive `period_start` observations, the same way `cycleTrend` in `engine.ts` does, so that `cycle_length` can be one side of a pair even though no table stores it. `missing` names what the candidate lacks: `no_change_row` when neither metric has a `changes` row in the window, `single_source` when both observations came from the same source, `no_context` when no journal or episode falls within 7 days of any occurrence.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Cover: two occurrences 30 days apart make one candidate with key `cycle_length~sleep_hours` (sorted); the same two occurrences with the pair reversed make the same key; one occurrence makes nothing; two occurrences 3 days apart make nothing; occurrences between the same two observation ids are counted once; `missing` includes `no_change_row` when `changes` is empty; the cycle length derivation over `period_start` observations dated 1 Jan, 30 Jan, 27 Feb gives lengths 29 and 28, and a single `period_start` gives no length (unknown, not zero). Cross check: for one shared fixture, the lengths agree with `cycleTrend` from `src/lib/engine.ts`, imported by relative path exactly as `compute.test.ts` imports `median`.
 
-- [ ] **Step 2: Run them, see them fail**
+- [x] **Step 2: Run them, see them fail**
 
 Run: `cd ciatta-mobile-app && npm test`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git commit -m "Count how often two things have recurred near each other, and say what is still missing"`
 
@@ -211,17 +211,17 @@ Run: `cd ciatta-mobile-app && npm test`
 
 **The only place sentences are made.** Structured fields in, sentences out, and every sentence is built from a fixed set of frames: "followed", "occurred alongside", "seen N times across M months", "do not show that one brought on the other" (the plan first wrote that frame with "caused", a word on its own forbidden list; the frame was changed rather than the list). `FORBIDDEN` holds the words no sentence may contain: `cause`, `caused`, `causing`, `because`, `diagnos`, `you have`, `condition`, `disorder`, `syndrome`, `deficien`, `risk of`. `youTold` is built only from journal entries and episodes inside the occurrence windows; when there are none it says so ("You did not note anything around these days"; "you have" is on the forbidden list, so the earlier draft of this sentence could not stand) rather than being blank. `notEstablished` always names the `missing` list in words plus the standing line that things happening near each other do not show that one brought on the other.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Every produced sentence: contains none of `FORBIDDEN` (case insensitive); contains no em dash, en dash or hyphen; does not contain the product name; `notEstablished` is non empty for every fixture including one with an empty `missing` list; `youTold` for a candidate with no context entries is the fixed sentence above; a candidate seen twice across 7 months words the meta as "Seen twice across 7 months"; counts of times follow `engine.ts`'s `word()` (once, twice, three times), while measured spans stay in digits (7 months, 14 days, 5.4 hours), as the engine's own briefs do.
 
-- [ ] **Step 2: Run them, see them fail**
+- [x] **Step 2: Run them, see them fail**
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git commit -m "Say what recurred in words that keep the two things apart"`
 
@@ -239,13 +239,13 @@ Every produced sentence: contains none of `FORBIDDEN` (case insensitive); contai
 
 **The chain, checked link by link.** Finding: at least one side has a `changes` row in the window. Relationship: at least `MIN_RECURRENCE` occurrences (Task 4 already guarantees this; the gate asserts it again so a future builder change cannot slip past). Interpretation and her context: produced by wording, never gated on, because absence of context is stated rather than failed. Evidence: every occurrence's link row exists. Source: every observation in an occurrence has a `source_id` or a provenance of `REPORTED`. Stale: `lastObservedAt` older than 120 days fails, because an insight about something that stopped recurring four months ago is not today's insight; the thread stays, the insight is not written.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 One fixture per reason, plus one that passes. The passing fixture is the spec's section 11 test 1 shape: cycles 29, 28, 27, 26 with a sleep change row and two links.
 
-- [ ] **Step 2 to 4:** run, implement, pass.
+- [x] **Step 2 to 4:** run, implement, pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git commit -m "Write an insight only when every link of the chain can be traced"`
 
@@ -263,17 +263,17 @@ One fixture per reason, plus one that passes. The passing fixture is the spec's 
 
 Mirror `baselines/index.ts` exactly for: the constant time service role check, the 405 on non POST, the `PGRST116` empty queue case, complete or fail with an error name only, and paged reads over `observations`. Window: 180 days, twice the baselines window, because recurrence needs more history than a baseline does; state the constant and why. Status transitions: a new thread is `new`; a thread whose `observation_count` rose since last run becomes `recurring`; one that has been `recurring` and gains no occurrence for 60 days becomes `watching`. Nothing else changes status in this slice. Logs: `intelligence threads upserted <n>`, `intelligence insight written <threadKey>` is **not** logged (a key names two metrics about her; log a count instead).
 
-- [ ] **Step 1: Typecheck target first**
+- [x] **Step 1: Typecheck target first**
 
 Add `[functions.intelligence]` with `verify_jwt = true` to `config.toml`. Run `npm run check:functions` and make it pass on an empty `index.ts` that only serves 405.
 
-- [ ] **Step 2: Write the function**
+- [x] **Step 2: Write the function**
 
-- [ ] **Step 3: Run it locally end to end**
+- [x] **Step 3: Run it locally end to end**
 
 With `supabase start` up: seed one user with the section 11 test 1 data through the local Data API as the service role (a small `scripts/seed-loop.ts` run with `tsx`, kept out of `src/`), run `supabase functions serve intelligence` and post to it with the local service role key. Assert with `psql`: one thread `cycle_length~sleep_hours` with `observation_count` 2, one insight with four non empty parts, evidence rows pointing at real link ids. Post again: no second insight, `updated_at` moved. Record the exact commands in the commit message body.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 `git commit -m "Build threads from what recurred, and write an insight only when the chain holds"`
 
@@ -292,13 +292,13 @@ With `supabase start` up: seed one user with the section 11 test 1 data through 
 
 Screens do not change. `InsightScreen` already renders exactly this shape and already shows `EmptyNote` when it is null. `TodayScreen`'s headline in real mode comes from `REAL_TODAY_TEXT` today; change only `adapter.ts` so that when a real insight exists, `today.headline` is its title and `today.kicker` is its meta, and otherwise the existing real mode text stays.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `insightRows.test.ts`: the projection of a fixture with two supports rows gives two `basedOn` entries in date order; an insight with no `research_context` evidence gives the fixed evidence line; `method` always has four rows; every string in the output passes `displayCopy` unchanged (no dashes); `null` in gives `null` out.
 
-- [ ] **Step 2 to 4:** run, implement (load in `session.tsx` beside `loadDays`, once per session, same `ignore` pattern), pass. `npm test` stays green including the existing adapter tests.
+- [x] **Step 2 to 4:** run, implement (load in `session.tsx` beside `loadDays`, once per session, same `ignore` pattern), pass. `npm test` stays green including the existing adapter tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git commit -m "Show her own insight where the sample one used to be"`
 
@@ -312,7 +312,7 @@ Screens do not change. `InsightScreen` already renders exactly this shape and al
 
 Spec section 11 test 1 up to "watch next cycle": seed cycles 29, 28, 27, 26 and sleep 7h18 then 6h12 with a reported stressful stretch, run intelligence locally, assert one thread, one insight whose `you_told` contains the reported note, `not_established` non empty, and that a second run with no new data writes no second insight (section 11 test 3, "nothing happened"). This is the acceptance test for the slice; it is written last because it needs everything above, and it is what Task 10 shows the founder before asking for the go.
 
-- [ ] **Step 1 to 3:** write, run, commit.
+- [x] **Step 1 to 3:** write, run, commit.
 
 `git commit -m "Prove the first half of the loop: recur, thread, insight, then silence"`
 
