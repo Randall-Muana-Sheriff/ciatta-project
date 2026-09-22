@@ -650,7 +650,9 @@ export function mostRecentValue(days: Day[], get: (d: Day) => number | null): { 
 
 // ── Actions and what happened after ────────────────────────────
 
-function walkOutcomes(days: Day[], interventions: Intervention[]): Candidate | null {
+// Exported only so src/data/outcomes.test.ts can assert the server measures
+// a walk the way this does; nothing else outside this file calls it.
+export function walkOutcomes(days: Day[], interventions: Intervention[]): Candidate | null {
   const index = new Map(days.map((d, i) => [d.date, i]));
   const results = interventions
     .filter((v) => v.kind === 'walk')
