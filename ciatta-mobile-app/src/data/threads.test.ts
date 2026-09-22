@@ -65,6 +65,9 @@ const change = (id: string, metric: string, detectedOn: string): ChangeRow => ({
   detected_on: detectedOn,
   deviation: -1.2,
   quality: 'ok',
+  from_value: 7.1,
+  to_value: 5.4,
+  window_days: 14,
 });
 const input = (partial: Partial<ThreadInput>): ThreadInput => ({
   changes: [],

@@ -20,6 +20,11 @@ export type ChangeRow = {
   detected_on: string;
   deviation: number;
   quality: string;
+  // The usual and the recent value, and the span the recent one was held
+  // over. The builder never reads them; wording.ts says them.
+  from_value: number;
+  to_value: number;
+  window_days: number;
 };
 
 export type LinkRow = {
