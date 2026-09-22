@@ -58,28 +58,36 @@ const CARE: [string, string][] = [
 
 /* -- the questions a page that asks for money has to answer ---------------- */
 
+/* Six, as on the home page.
+
+   Ten was five questions asked twice: what membership is and what is in it;
+   what Care is and whether it can act; what reserving does and when
+   membership begins; what it costs and whether you can cancel. Each pair is
+   one question now, answered once and properly.
+
+   These are the membership questions. The home page answers the product
+   ones — what Ciatta does, how it decides two things may be connected,
+   whether a wearable is needed — and neither page repeats the other. */
 const QUESTIONS: [string, string][] = [
-  ['What is Ciatta membership?',
-   'Access to a system rather than a download. Your record is kept in one place, read along a timeline, and returned to you as what changed and what to do next. It is more useful in month six than in week one, and it is built on that basis.'],
-  ['What is included in Ciatta Core?',
-   'Your health in one place, what is changing in it, what may be connected, insights drawn from your own history, preparation for your appointments, and a record that keeps getting richer. Ciatta Care is included as its capabilities arrive.'],
-  ['What is Ciatta Care?',
-   'The part of membership that acts on your record rather than only keeping it: preparing you for a visit, drafting what you meant to send, coordinating referrals and appointments, and keeping track of what needs to happen next.'],
-  ['Can Ciatta take actions for me?',
-   'In time, and only what you authorize. Ciatta tells you what it is about to do, asks when your approval is needed, and keeps a record of everything done on your behalf. It does not enter payment details, and it does not make clinical decisions.'],
-  ['Does Ciatta diagnose or replace my clinician?',
-   'No. Ciatta describes what is in your record and what moved close to what. Naming a condition is a clinician\u2019s job, and Ciatta does not do it, suggest it, or hint at it. What it prepares is yours to take to your clinician or to ignore.'],
+  ['What is Ciatta membership, and what does Core include?',
+   'Access to a system rather than a download. Your record is kept in one place, read along a timeline, and returned to you as what changed and what to do next \u2014 your health in one place, what is changing in it, what may be connected, insights drawn from your own history, preparation for your appointments, and a record that keeps getting richer. It is more useful in month six than in week one, and it is built on that basis.'],
+
+  ['What is Ciatta Care, and can Ciatta act for me?',
+   'Care is the part of membership that acts on your record rather than only keeping it: preparing you for a visit, drafting what you meant to send, coordinating referrals and appointments, and tracking what needs to happen next. It arrives as its capabilities do, and it acts only on what you authorize \u2014 Ciatta says what it is about to do, asks when your approval is needed, and keeps a record of everything done on your behalf. It does not enter payment details, and it does not make clinical decisions.'],
+
+  ['Does Ciatta diagnose, or replace my clinician?',
+   'No. Ciatta describes what is in your record and what moved close to what. Naming a condition is a clinician\u2019s job, and Ciatta does not do it, suggest it, or hint at it. What it prepares is yours to take to your clinician, or to ignore.'],
+
   ['How does Ciatta use my health data?',
-   'To build your record and read it for you. It is encrypted in transit and at rest, access is audited, and we will never sell, rent, or share it with advertisers, brokers, or insurers. You can export everything, and if you delete your account we delete every byte.'],
-  ['What does reserving a place do?',
-   'It puts you on the early-access list, in the order people are let in. It is free, it takes no card, and it does not enrol you in anything. You are not a member and you are not subscribed until you choose to begin, after Ciatta opens.'],
-  ['When does membership begin?',
-   'When Ciatta opens, which we are building towards for Quarter 3 of 2027. Reserving now holds your place, and nothing begins, or is billed, before then. If the date moves we will tell you.'],
-  ['Can I cancel?',
-   'At any time, and you keep your record: export everything before you go, or delete it outright. Cancelling stops the next payment rather than ending your access that day.'],
-  ['What does it cost?',
-   'Ciatta Core is $99 for the year — one membership, one payment, and continuous access for the year rather than a subscription that starts over every thirty days. Reserving a place costs nothing, takes no card, and charges nothing today.'],
+   'To build your record and read it for you, and nothing else. It is encrypted in transit and at rest, access is audited, and we will never sell, rent, or share it with advertisers, brokers, or insurers. You can export everything at any time, and if you delete your account we delete every byte.'],
+
+  ['What does it cost, and can I cancel?',
+   'Ciatta Core is $99 for the year \u2014 one membership, one payment, and continuous access for the year rather than a subscription that starts over every thirty days. You can cancel at any time and keep your record: export everything before you go, or delete it outright. Cancelling stops the next annual payment rather than ending your access that day, and we email you before each renewal.'],
+
+  ['What does reserving a place do, and when does membership begin?',
+   'Reserving puts you on the early-access list, in the order people are let in. It is free, it takes no card, and it enrols you in nothing \u2014 you are not a member and not subscribed until you choose to begin. Membership begins when Ciatta opens, which we are building towards for Quarter 3 of 2027. Nothing is billed before then, and if the date moves we will tell you.'],
 ];
+
 
 export default function Member() {
   return (
