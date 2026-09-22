@@ -37,11 +37,14 @@ select is((select status from public.jobs where user_id = '00000000-0000-0000-00
 select is((select count(*)::int from public.claim_baselines_job()), 0,
   'claiming again with nothing pending returns zero rows');
 
--- Completing it marks it done with a finished_at.
-select public.complete_baselines_job((select id from public.jobs where user_id = '00000000-0000-0000-0000-0000000000c1'));
-select is((select status from public.jobs where user_id = '00000000-0000-0000-0000-0000000000c1'), 'done',
+-- Completing it marks it done with a finished_at. Since Slice 3c
+-- (20260922100200) completing also queues an intelligence job for the same
+-- person, so the reads below name the kind: a subquery over "her jobs"
+-- would now find two rows.
+select public.complete_baselines_job((select id from public.jobs where user_id = '00000000-0000-0000-0000-0000000000c1' and kind = 'baselines'));
+select is((select status from public.jobs where user_id = '00000000-0000-0000-0000-0000000000c1' and kind = 'baselines'), 'done',
   'completing the job marks it done');
-select isnt((select finished_at from public.jobs where user_id = '00000000-0000-0000-0000-0000000000c1'), null,
+select isnt((select finished_at from public.jobs where user_id = '00000000-0000-0000-0000-0000000000c1' and kind = 'baselines'), null,
   'completing the job stamps finished_at');
 
 -- A failure short of the third attempt goes back to pending.

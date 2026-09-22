@@ -410,6 +410,13 @@ verify_jwt = true
 [functions.seed-concepts]
 verify_jwt = true
 
+# The reasoning runs only when the scheduler posts to it with the service
+# role key, and it checks that bearer itself before claiming a job
+# (supabase/functions/intelligence/index.ts), exactly as baselines does.
+# Platform JWT verification is on as the second gate for the same reason.
+[functions.intelligence]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327
