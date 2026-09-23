@@ -39,18 +39,31 @@ const TARGETS = [
   '.band-head > *',
   '.m-h2',
   '.m-h2-sub',
-  '.hw2-item',
+  /* NOT .hw2-item, and NOT .qa-item. Both wrap a control whose panel is
+     shown and hidden by the `hidden` attribute, so the reveal was putting an
+     opacity transition and a composited transform around an element whose
+     children appear and disappear underneath it. On a real browser that
+     rendered the four accordion modules blank below their headings, which no
+     amount of headless Chrome would show: every measurement here said the
+     items were revealed and the open panel was visible, and on the reporter's
+     screen it was not.
+
+     The rule this leaves behind: the reveal may move type, never a control.
+     A fade is worth nothing next to a section that does not render. */
   '.hw2-steps > li',
-  '.mb-card',
+  /* not .mb-card either: it holds the six <details> inclusions and the
+     reserve button, so it is the same hazard as the accordions above */
   '.who-tile p',
   '.hm-title',
   '.ex-title',
   '.ex-lede',
-  '.qa-item',
   '.sf-foot',
   '.mb-time > *',
   '.split-lead > *',
-  '.split-body > *',
+  /* p only. `.split-body > *` swept up the FAQ's <details> items and the
+     subscribe form with them, which is how this bug reached four sections
+     and would have reached more. */
+  '.split-body > p',
   '.briefs-card',
   '.briefs-group-head > *',
   '.close-lines',
