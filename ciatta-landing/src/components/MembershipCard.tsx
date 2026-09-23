@@ -60,16 +60,18 @@ export function MembershipCard() {
               on the same three words. The argument moves into the paragraph,
               where it reads as a reason rather than as a slogan. */}
           <h2 className="m-h2" id="plan-heading">One membership. One year.</h2>
+          {/* Short enough that the whole section is one screen. Everything
+              cut from here is still said in full where it binds: the card
+              disclosure in the Questions below, and the billing in clause 6
+              of the Terms. What stays is what she needs before she decides
+              to press the button. */}
           <p className="m-h2-sub">
-            Your health doesn’t reset every month, and your membership doesn’t
-            either: one payment, and continuous access to Ciatta’s health
-            intelligence for the year.
+            Your health doesn’t reset every month. Your membership doesn’t
+            either.
           </p>
           <p className="m-h2-sub">
-            Membership opens in Quarter 3 of 2027. Reserving holds your place
-            and charges you nothing: your card is saved so membership can
-            begin the day Ciatta opens, nothing is taken before then, and you
-            can remove it at any time until launch.
+            Opens Quarter 3 of 2027. Reserving saves your card and charges
+            nothing; remove it any time before launch.
           </p>
         </div>
 

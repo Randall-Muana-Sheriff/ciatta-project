@@ -1527,8 +1527,15 @@ p { margin: 0; text-wrap: pretty; }
    says what reserving a place actually commits you to. Two columns from a
    laptop up, the same 6/5 split the modules use; stacked below it, with the
    sentence before the price rather than after it. */
+/* This section is meant to be taken in without scrolling, so it gives back
+   the air a section normally carries. 144px of padding in a 900px window is
+   the difference between one screen and two. */
+.mb-join.section { padding-block: clamp(var(--s4), 2.5vh, var(--s7)); }
 .mb-split { display: grid; gap: clamp(var(--s6), 4vw, var(--s8)); align-items: center; }
-@media (min-width: 1000px) { .mb-split { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); } }
+/* The card carries more than the copy does, so it takes the larger share.
+   Wider card, shorter card: the six inclusions run in two columns instead of
+   one, which is what brings the whole section inside a single screen. */
+@media (min-width: 1000px) { .mb-split { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); } }
 /* the head is a column here, not a band over one: it owns no bottom margin
    and its sentence wraps to the column rather than to a reading measure */
 .mb-split .band-head { margin-bottom: 0; }
@@ -1539,11 +1546,13 @@ p { margin: 0; text-wrap: pretty; }
 .mb-note.is-mid { margin-inline: auto; text-align: center; max-width: 42ch; }
 
 .mb-card {
-  max-width: 26rem; margin-inline: auto;
+  max-width: 34rem; margin-inline: auto;
   background: var(--surface); border-radius: var(--r-surface);
   box-shadow: 0 0 0 var(--hairline) var(--rule), var(--float-above);
-  padding: clamp(var(--s5), 4vw, var(--s7));
-  display: grid; gap: var(--s4); text-align: center;
+  /* A wide card does not need a wide inset as well, and every pixel here is
+     a pixel the section spends on a second scroll. */
+  padding: clamp(var(--s5), 2.6vw, var(--s6));
+  display: grid; gap: var(--s2); text-align: center;
 }
 .m-band.is-alt .mb-card { background: var(--canvas); }
 .mb-card-name { display: grid; gap: 2px; }
@@ -1560,13 +1569,23 @@ p { margin: 0; text-wrap: pretty; }
 /* the ticks, read left so the eye runs down one column rather than
    re-centring on every line */
 .mb-card-list {
-  list-style: none; margin: 0 0 var(--s5); padding: 0; text-align: left;
+  list-style: none; margin: 0 0 var(--s4); padding: 0; text-align: left;
   display: grid; gap: 0;
   border-bottom: var(--hairline) solid var(--rule);
 }
 /* rows separated by a rule rather than by air, which is what tells her the
    row is a row and not a paragraph that happens to be bold */
 .mb-card-list > li + li { border-top: var(--hairline) solid var(--rule); }
+/* Two columns inside a wide card. The rule between rows becomes a rule
+   between cells, so the first item of the second column does not carry a
+   stray line above it. */
+@media (min-width: 900px) {
+  .mb-card-list { grid-template-columns: 1fr 1fr; column-gap: var(--s5); }
+  .mb-card-list > li + li { border-top: 0; }
+  .mb-card-list > li:not(:first-child):not(:nth-child(4)) {
+    border-top: var(--hairline) solid var(--rule);
+  }
+}
 .mb-card-list li { display: flex; align-items: flex-start; gap: var(--s3); }
 /* Each inclusion is a disclosure: the heading shows, the sentence waits.
    The row is the summary, and it has to look like a line of the list rather
@@ -1624,7 +1643,7 @@ p { margin: 0; text-wrap: pretty; }
 .mb-card-list i::after { left: 4.4px; top: 0.82em; width: 10px; height: 1.5px; transform: rotate(-52deg); transform-origin: left center; }
 
 .mb-card-price {
-  margin: var(--s4) 0 0; padding-top: var(--s5); color: var(--ink); line-height: 1;
+  margin: var(--s3) 0 0; padding-top: var(--s4); color: var(--ink); line-height: 1;
   border-top: var(--hairline) solid var(--rule);
 }
 .mb-card-price b {
@@ -1637,7 +1656,7 @@ p { margin: 0; text-wrap: pretty; }
    it is a line of prose now, so it takes the step prose takes. */
 .mb-card-when {
   margin: var(--s3) 0 0; color: var(--body-ink);
-  font-size: var(--t-small); line-height: 1.45; max-width: 30ch;
+  font-size: var(--t-small); line-height: 1.45; max-width: 44ch;
   margin-inline: auto;
 }
 .mb-card-foot span { white-space: nowrap; }
