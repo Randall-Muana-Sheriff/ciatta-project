@@ -89,27 +89,20 @@ export function MembershipCard() {
           </p>
 
           <p className="mb-card-label">Membership includes</p>
-          {/* Six headings and nothing else until she asks. The card had six
-              titles and six sentences showing at once, which is a wall of
-              type in a 416px column and reads as a specification rather than
-              a list of what she gets.
-
-              <details> rather than state: it opens with no JavaScript, it is
-              a disclosure to a screen reader without any ARIA to get wrong,
-              and each one opens independently — they are six things she
-              gets, not one choice between six. None is open on arrival,
-              which is the whole point of the change. */}
+          {/* All six, open. They were a <details> accordion for a while, six
+              headings with their sentences a tap away, and the argument for
+              that was the wall of type six titles and six sentences make in
+              a narrow column. The card is wider now, and the plainer reading
+              is that someone deciding whether to reserve a place should not
+              have to tap six times to find out what they are reserving. */}
           <ul className="mb-card-list">
             {INCLUDED.map(([title, body]) => (
               <li key={title}>
-                <details className="mb-inc">
-                  <summary>
-                    <i aria-hidden="true" />
-                    <span>{title}</span>
-                    <b className="mb-inc-mark" aria-hidden="true" />
-                  </summary>
-                  <p>{body}</p>
-                </details>
+                <i aria-hidden="true" />
+                <span>
+                  <b>{title}</b>
+                  <em>{body}</em>
+                </span>
               </li>
             ))}
           </ul>
