@@ -46,10 +46,15 @@ const AROUND: [string, string][] = [
   /* The symptom row carries what she actually logs: how bad the pain was,
      how long the flare ran, and how heavy the bleeding was — which is the
      detail that decides a day and the detail she is least likely to recall
-     in June. "Flare" and "super and overnight" are her words for her own
+     in June. The protection is named rather than described — overnight pads,
+     super tampons — because "heavy" is a word everyone uses differently and
+     what she got through in two hours is not. It is also the detail a
+     clinician can do something with.
+
+     "Flare", "overnight pads" and "super tampons" are her words for her own
      experience, not a finding: no condition is named here, or anywhere on
      this site, because naming one is a clinician's job. */
-  ['Symptoms', 'Energy low and pain at 8 of 10 across four days from 26 Jan, and three from 23 Feb. Both flares ran through super and overnight protection every two hours.'],
+  ['Symptoms', 'Energy low and pain at 8 of 10 across four days from 26 Jan, and three from 23 Feb. Both flares ran through overnight pads and super tampons every two hours.'],
   ['Sleep', 'Your two lowest weeks were 26 Jan and 23 Feb, averaging 6h 02m and 6h 14m.'],
   ['Treatment', 'Levothyroxine went from 50 mcg to 75 mcg on 3 Mar.'],
   ['Labs', 'On 14 Mar, ferritin 24: inside its range, close to the floor of it.'],
