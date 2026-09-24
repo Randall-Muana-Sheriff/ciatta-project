@@ -1,0 +1,18 @@
+{
+  "name": "Ciatta (web + mobile)",
+  "user": "ubuntu",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "ciatta-web",
+      "command": "cd ciatta-web && npm run dev -- --host 0.0.0.0 --port 5173",
+      "description": "Vite dev server for the ciatta-web React app (http://localhost:5173)."
+    },
+    {
+      "name": "ciatta-mobile-metro",
+      "command": "export PATH=\"$HOME/.deno/bin:$PATH\"; cd ciatta-mobile-app && npx expo start --port 8081",
+      "description": "Expo/Metro bundler for ciatta-mobile-app. Open in Expo Go or a dev build, or press w for web. Serves JS bundles at http://localhost:8081."
+    }
+  ],
+  "ports": [5173, 8081]
+}
