@@ -64,7 +64,7 @@ export function MembershipCard() {
               of the Terms. What stays is what she needs before she decides
               to press the button. */}
           <p className="m-h2-sub">
-            Opens Quarter 3 of 2027. Reserving saves your card and charges
+            Opens Q3 of 2027. Reserving saves your card and charges
             nothing; remove it any time before launch.
           </p>
         </div>

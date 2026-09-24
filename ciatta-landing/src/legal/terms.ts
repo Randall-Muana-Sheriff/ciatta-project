@@ -86,7 +86,7 @@ export const terms: LegalDoc = {
           p: 'When you reserve with a card, we do not charge it. Your card is stored with our payment processor, Stripe, against a customer record in your name. No subscription is created, no invoice is raised, and no money moves. We never see or store your full card number ourselves.',
         },
         {
-          p: 'The first charge happens when Ciatta opens and you confirm that you want to begin, and not before. We are building towards Quarter 3 of 2027. That is a plan and not a promise, and if it moves we will tell you. We will email you before anything is charged, and you will be able to decline. If you do nothing, you are not charged.',
+          p: 'The first charge happens when Ciatta opens and you confirm that you want to begin, and not before. We are building towards Q3 of 2027. That is a plan and not a promise, and if it moves we will tell you. We will email you before anything is charged, and you will be able to decline. If you do nothing, you are not charged.',
         },
         {
           p: 'Membership is $99 for a year, charged once at the start of the year, unless we tell you a different price before you confirm. There is no monthly instalment and no separate joining fee. It renews once a year until you cancel. If the price changes for existing members we will tell you at least 30 days before the renewal it would apply to, and you can cancel before it takes effect.',

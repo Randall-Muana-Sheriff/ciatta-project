@@ -63,7 +63,7 @@ export function SiteFooter() {
             <p>
               The intelligence layer for personal health, connecting what is
               happening across your body, your care and your everyday life.
-              Reservations are open; membership opens in Quarter 3 of 2027.
+              Reservations are open; membership opens in Q3 of 2027.
             </p>
           </div>
 

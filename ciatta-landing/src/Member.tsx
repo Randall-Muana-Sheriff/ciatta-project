@@ -85,7 +85,7 @@ const QUESTIONS: [string, string][] = [
    'Ciatta Core is $99 for the year: one membership, one payment, and continuous access for the year rather than a subscription that starts over every thirty days. You can cancel at any time and keep your record: export everything before you go, or delete it outright. Cancelling stops the next annual payment rather than ending your access that day, and we email you before each renewal.'],
 
   ['What does reserving a place do, and when does membership begin?',
-   'Reserving puts you on the early-access list, in the order people are let in, and it is free. Leave your address and no card is taken. Reserve with a card and it is saved against your place rather than billed, so membership can begin the day Ciatta opens, and you can remove it at any time before then. Either way you are not a member and not subscribed until you choose to begin. Membership begins when Ciatta opens, which we are building towards for Quarter 3 of 2027. Nothing is billed before then, and if the date moves we will tell you.'],
+   'Reserving puts you on the early-access list, in the order people are let in, and it is free. Leave your address and no card is taken. Reserve with a card and it is saved against your place rather than billed, so membership can begin the day Ciatta opens, and you can remove it at any time before then. Either way you are not a member and not subscribed until you choose to begin. Membership begins when Ciatta opens, which we are building towards for Q3 of 2027. Nothing is billed before then, and if the date moves we will tell you.'],
 ];
 
 
