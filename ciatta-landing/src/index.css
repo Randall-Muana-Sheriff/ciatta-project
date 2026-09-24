@@ -3203,9 +3203,6 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    left edge to line up with, and a lone sentence pinned to the left of a
    1440 window reads as the start of something that never arrives. */
 .statement .shell { text-align: center; }
-/* above the phone the breaks do the wrapping, so the measure gets out of
-   the way rather than folding the authored lines a second time */
-@media (min-width: 701px) { .statement-title { max-width: none; } }
 /* The authored line breaks in the statement. They are written for a wide
    window; below a tablet they are switched off and the block wraps to its
    own measure, because a break written for 1440 lands mid-phrase on 390. */
@@ -3220,6 +3217,18 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   font-size: var(--t-display); line-height: var(--lh-display);
   letter-spacing: -0.04em; text-wrap: balance;
 }
+
+/* Above the phone the authored breaks do the wrapping, so the measure gets
+   out of the way rather than folding those lines a second time.
+
+   AFTER the rule it overrides, not before. This is the third rule in this
+   file to be written above its base and silently lose on source order — the
+   hero's device cap and the membership card's short-window block were the
+   other two. The symptom each time is the same: the change appears to do
+   nothing, or a fraction of what it should. If a fourth turns up, move the
+   overrides into one block at the end of the file instead of annotating
+   them one at a time. */
+@media (min-width: 701px) { .statement-title { max-width: none; } }
 
 
 

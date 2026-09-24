@@ -201,6 +201,11 @@ export default function App() {
                 exist at all, which nothing else on the page says and which
                 is what "one membership, one year" rests on further down.
 
+                The three middle lines are set as three because they are
+                three: a wearable, a lab, a clinic, each catching one thing
+                and missing the rest. Stacked, the shape of the sentence is
+                the argument.
+
                 The breaks are authored, so they are switched off below a
                 tablet: a line break written for a 1440 window lands in the
                 middle of a phrase on a 390 one. There the block wraps to
@@ -209,10 +214,12 @@ export default function App() {
                 element, so with the breaks switched off the lines ran
                 together as "connectsyour health data". */}
             <h2 id="statement-heading" className="statement-title">
-              Your body keeps no record.{' '}<br className="st-br" />
-              Your clinic keeps part of one.{' '}<br className="st-br" />
-              Ciatta keeps all of it,{' '}<br className="st-br" />
-              and reads it as one thing.
+              Your health unfolds continuously,{' '}<br className="st-br" />
+              but healthcare sees it in fragments.{' '}<br className="st-br" />
+              A wearable captures a moment.{' '}<br className="st-br" />
+              A lab captures a result.{' '}<br className="st-br" />
+              A clinic captures a visit.{' '}<br className="st-br" />
+              Your life holds everything in between.
             </h2>
           </div>
         </section>
