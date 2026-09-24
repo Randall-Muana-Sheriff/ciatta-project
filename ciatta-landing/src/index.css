@@ -4165,6 +4165,42 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   border-radius: 0 0 var(--r-surface) var(--r-surface);
   border-top: var(--hairline) solid rgba(247,244,238,0.18);
 }
+/* -- pain, as bars under the cycle line ----------------------------------
+   Two series on one axis. The line above is the cycle shortening; these are
+   how bad the pain got in each of the same thirteen weeks. They share the
+   card, the width and the dates underneath, and nothing joins a bar to a
+   point, because a line drawn from one to the other would be a cause and
+   this section is not allowed to claim one. */
+.cy-pain { margin-top: var(--s4); padding-top: var(--s4); border-top: var(--hairline) solid rgba(247,244,238,0.16); }
+.cy-pain-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3);
+  margin-bottom: var(--s3);
+  font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(247,244,238,0.82);
+}
+.cy-pain-head i { font-style: normal; letter-spacing: 0.08em; color: rgba(247,244,238,0.66); }
+
+/* Thirteen columns, each the full height of the track so every bar grows
+   from the same floor and a short week reads as short rather than as
+   missing. The bar itself is the <i>, sized as a percentage of ten. */
+/* No track behind the bars. Filling the unused part of every column drew
+   thirteen grey blocks the same size, and the shape the eye found first was
+   the blocks rather than the bars inside them. A bar on the ground line and
+   nothing else says the same thing with less ink. */
+.cy-bars {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  gap: 4px; height: 3rem; align-items: end;
+  border-bottom: var(--hairline) solid rgba(247,244,238,0.22);
+  padding-bottom: 2px;
+}
+.cy-bar { display: flex; align-items: flex-end; height: 100%; }
+.cy-bar i {
+  display: block; width: 100%; border-radius: 2px 2px 0 0;
+  background: var(--ember-dark); opacity: 0.42;
+}
+/* The two flare weeks the symptom row names, at full strength. */
+.cy-bar.is-peak i { opacity: 1; }
+
 .cy-card-head {
   margin: 0; color: rgba(247,244,238,0.72);
   font-size: var(--t-caption); font-weight: 600;

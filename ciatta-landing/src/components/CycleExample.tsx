@@ -31,6 +31,32 @@ const POINTS: [string, number, string][] = [
   ['2 Mar', 26, '26'],
 ];
 
+/* Pain, highest logged in each week, from 8 Dec to 2 Mar.
+ *
+ * THIRTEEN WEEKS, BECAUSE THIRTEEN IS WHAT MAKES THE TWO PLOTS ONE PLOT.
+ * 8 Dec, 6 Jan, 3 Feb and 2 Mar are the four cycle starts above, and on a
+ * weekly series beginning 8 Dec they land on weeks 0, 4, 8 and 12 — exactly
+ * the quarters the line's four points sit on. So the bars run under the line
+ * on the same axis, the dates below label both, and a week in one is the
+ * same week in the other. A second chart on its own scale would have been a
+ * second subject.
+ *
+ * Weekly rather than daily: a hundred and sixteen daily values is a hundred
+ * and sixteen figures this record does not have, and the week is the unit
+ * the rest of the section is already written in.
+ *
+ * The two eights are the flares the symptom row names, the sevens are the
+ * weeks a period began, and nothing here is drawn as one causing another.
+ * They are bars on a timeline, side by side with a line on the same
+ * timeline, which is the only claim: these happened in the same weeks. */
+const PAIN: [string, number][] = [
+  ['8 Dec', 7], ['15 Dec', 3], ['22 Dec', 2], ['29 Dec', 3],
+  ['5 Jan', 7], ['12 Jan', 3], ['19 Jan', 4], ['26 Jan', 8],
+  ['2 Feb', 7], ['9 Feb', 3], ['16 Feb', 4], ['23 Feb', 8],
+  ['2 Mar', 7],
+];
+const PAIN_MAX = 10;
+
 /* What else the record holds from those months. A name and the fact, and
    nothing else.
 
@@ -77,7 +103,6 @@ function Plot() {
   const last = POINTS.length - 1;
 
   return (
-    <>
       <svg className="ex-plot" viewBox={`-3 -4 ${W + 6} ${H + 8}`} role="img"
            aria-label={POINTS.map((p) => `${p[0]}, ${p[2]} days`).join('; ')}>
         <path d={d} fill="none" stroke="currentColor" strokeWidth="1.1"
@@ -88,18 +113,51 @@ function Plot() {
                   stroke="currentColor" strokeWidth="1.1" />
         ))}
       </svg>
-      {/* .ex-points, as the tour's own series cards use it: the same dl, so
-          the figures under the plot are set by the styles that already exist
-          rather than by a second set written for one section. */}
-      <dl className="ex-points">
-        {POINTS.map((p, i) => (
-          <div key={p[0]} className={i === last ? 'is-last' : undefined}>
-            <dt>{p[0]}</dt>
-            <dd>{p[2]}</dd>
-          </div>
-        ))}
-      </dl>
-    </>
+  );
+}
+
+/**
+ * The axis, under both series.
+ *
+ * It is .ex-points, as the tour's own series cards use it, so the figures are
+ * set by styles that already exist. It sits below the bars rather than
+ * directly under the line, because it labels both: the four cycle starts are
+ * weeks 0, 4, 8 and 12 of the pain series, so one row of dates is the whole
+ * axis and two rows would have been the same four dates twice.
+ */
+function Dates() {
+  const last = POINTS.length - 1;
+  return (
+    <dl className="ex-points">
+      {POINTS.map((p, i) => (
+        <div key={p[0]} className={i === last ? 'is-last' : undefined}>
+          <dt>{p[0]}</dt>
+          <dd>{p[2]}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/**
+ * Pain, as bars under the line. Height is the week's highest logged pain on
+ * the 0 to 10 scale the symptom row uses, so a bar at full height is a 10
+ * and the two flares read as what they are rather than as the top of
+ * whatever happened to be in the data.
+ */
+function Pain() {
+  const peak = Math.max(...PAIN.map((p) => p[1]));
+
+  return (
+    <div className="cy-bars" role="img"
+         aria-label={`Highest pain logged each week, out of ${PAIN_MAX}: ${
+           PAIN.map(([w, v]) => `week of ${w}, ${v}`).join('; ')}`}>
+      {PAIN.map(([week, v]) => (
+        <span key={week} className={v === peak ? 'cy-bar is-peak' : 'cy-bar'}>
+          <i style={{ height: `${(v / PAIN_MAX) * 100}%` }} />
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -150,7 +208,20 @@ export function CycleExample() {
                 <span>Cycle length</span>
                 <i>days</i>
               </figcaption>
+              {/* Two series, one axis. The line is the cycle shortening and
+                  the bars under it are how bad the pain got in each of those
+                  weeks, drawn across the same thirteen weeks so a week in one
+                  is the week above it in the other. Reading them together is
+                  left to her: nothing is joined, and nothing says because. */}
               <div className="ex-card-body"><Plot /></div>
+              <div className="cy-pain">
+                <div className="cy-pain-head">
+                  <span>Pain, highest each week</span>
+                  <i>out of 10</i>
+                </div>
+                <Pain />
+              </div>
+              <Dates />
             </figure>
 
             {/* Not a reveal target, on purpose: these rows are the substance
