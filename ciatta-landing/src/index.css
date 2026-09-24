@@ -1565,18 +1565,47 @@ p { margin: 0; text-wrap: pretty; }
    the same trap the hero's device cap fell into earlier in this file. The
    summary rows are not touched here either: 44px is the floor whatever the
    window is doing. */
-@media (max-height: 760px) {
+/* One column is taller than two, so the short-window tiers do more work.
+   Each one takes the least valuable thing left, in order: the section's own
+   air, then the card's inset and the gaps between its parts, then the rows
+   down to HIG's 44px floor, then the line under the price (the price above
+   and the six rows below have said it), and last the tagline. Nothing above
+   920px tall gives up anything. */
+@media (max-height: 920px) {
+  .mb-join.section { padding-block: var(--s4); }
+  .mb-card { padding: var(--s5); gap: var(--s2); }
+}
+@media (max-height: 820px) {
   .mb-join.section { padding-block: var(--s3); }
-  .mb-card { padding: var(--s5); gap: var(--s1); }
+  .mb-card { gap: var(--s1); }
   .mb-card-list { margin-bottom: var(--s3); }
   .mb-card-price { margin-top: var(--s2); padding-top: var(--s3); }
+  /* to the floor, not below it */
+  .mb-inc summary { padding-block: 0.625rem; }
 }
-/* Shorter still: a 640px window, or a tall one at 150% zoom. The line under
-   the price is the last thing that can go, because the price above it and
-   the six inclusions below already say it. */
-@media (max-height: 660px) {
-  .mb-join.section { padding-block: var(--s2); }
+/* 780, not 740: a 768px window was eighteen pixels over and this line is
+   worth exactly those eighteen. An 800px one keeps it. */
+@media (max-height: 780px) {
   .mb-card-when { display: none; }
+}
+/* The label goes before the tagline does: "Membership includes" over six
+   ticked rows is the most redundant thing on the card. */
+@media (max-height: 730px) {
+  .mb-card-label { display: none; }
+  .mb-card .m-btn { margin-top: 0; }
+}
+@media (max-height: 710px) {
+  .mb-join.section { padding-block: var(--s2); }
+  .mb-card-tag { display: none; }
+}
+/* The last of it. The rows come to exactly 44px, which is the floor and not
+   a pixel under, and the card's inset comes in again. Nothing below this
+   point touches the price, the button, or "Card saved · Nothing charged":
+   the first two are the offer and the third is a disclosure, and a window
+   being short is not a reason to stop making it. */
+@media (max-height: 650px) {
+  .mb-card { padding: var(--s4); }
+  .mb-inc summary { padding-block: 0.5rem; }
 }
 .mb-card-name { display: grid; gap: 2px; }
 .mb-card-brand {
@@ -1599,16 +1628,11 @@ p { margin: 0; text-wrap: pretty; }
 /* rows separated by a rule rather than by air, which is what tells her the
    row is a row and not a paragraph that happens to be bold */
 .mb-card-list > li + li { border-top: var(--hairline) solid var(--rule); }
-/* Two columns inside a wide card. The rule between rows becomes a rule
-   between cells, so the first item of the second column does not carry a
-   stray line above it. */
-@media (min-width: 900px) {
-  .mb-card-list { grid-template-columns: 1fr 1fr; column-gap: var(--s5); }
-  .mb-card-list > li + li { border-top: 0; }
-  .mb-card-list > li:not(:first-child):not(:nth-child(4)) {
-    border-top: var(--hairline) solid var(--rule);
-  }
-}
+/* One column, at every width. Six things you get, read top to bottom in the
+   order you meet them; two columns turned that into a spec sheet and made a
+   reader choose which side to start on. The card stays wide, which is what
+   keeps each row to a single line rather than the two a narrow column forced
+   on half of them. */
 .mb-card-list li { display: flex; align-items: flex-start; gap: var(--s3); }
 /* Each inclusion is a disclosure: the heading shows, the sentence waits.
    The row is the summary, and it has to look like a line of the list rather
