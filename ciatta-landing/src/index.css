@@ -1102,6 +1102,11 @@ p { margin: 0; text-wrap: pretty; }
   line-height: var(--lh-title); letter-spacing: -0.03em; color: var(--ink);
   margin: 0;
 }
+/* The safety paragraph carries five claims in one breath, so it gets a
+   measure a paragraph can be read at rather than the short deck measure the
+   band-sub usually wants. */
+.safety-copy { max-width: 62ch; }
+
 .band-sub {
   margin: var(--s3) 0 var(--s6); color: var(--body-ink);
   font-size: var(--t-lede); line-height: 1.3;
