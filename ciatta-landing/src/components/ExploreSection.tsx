@@ -215,7 +215,7 @@ const TOPICS: Topic[] = [
     ask: 'What was that week actually like?',
     answer:
       'Your heaviest symptom days sat in the week you crossed three time zones, and in the stretch with the latest finishes. A week can explain a lot without being the cause of it.',
-    alt: 'A woman walking through a station concourse with a bag over her shoulder.',
+    alt: 'A woman cooking at a kitchen island, bread and fruit on the counter beside her.',
     card: {
       kind: 'log',
       head: 'Your weeks · March',
@@ -238,7 +238,7 @@ const TOPICS: Topic[] = [
     ask: 'Was it me, or was it what was around me?',
     answer:
       'Your symptom days this month sat on the three highest-pollen days, and across the heat and poor air of 2–8 Aug. Things that move together are not necessarily one causing the other.',
-    alt: 'A woman at an open window in early light, looking out at the weather.',
+    alt: 'Haze and cloud over a ridge at dusk, the light going orange behind it.',
     card: {
       kind: 'log',
       head: 'Around you · August',

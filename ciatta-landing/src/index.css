@@ -3187,9 +3187,12 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .hero.has-film:not(.is-page) { position: sticky; top: 0; z-index: 0; }
 .statement {
   position: relative; z-index: 1;
-  /* White out of the system rather than #FFFFFF, and solid: the panel is a
-     page climbing over the film, not glass laid on it. */
-  background: var(--surface); color: var(--ink);
+  /* The page's own ground, not the brighter surface: this panel is the page
+     climbing over the film, so it is the colour the page already is. Solid
+     rather than translucent for the same reason — it is a page, not glass
+     laid on one. Every section around it sits on --canvas and lets the body
+     show through; this one paints it, because it has to cover the hero. */
+  background: var(--canvas); color: var(--ink);
   min-height: 100vh; min-height: 100lvh;
   display: grid; align-content: center;
   padding-block: clamp(4rem, 14vh, 10rem);
