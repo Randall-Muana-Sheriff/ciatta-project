@@ -4287,3 +4287,104 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
     transition-delay: calc(var(--reveal-i, 0) * 80ms);
   }
 }
+
+/* =========================================================================
+   THE SYMPTOM QUIZ
+   =========================================================================
+   A dialog she can always leave: the close button is the first thing in the
+   panel and the first thing focus lands on, so getting out never means
+   tabbing past twelve answers to find the exit.
+
+   Set on paper, in the site's own type and its own steps. It does not
+   announce itself with a colour the rest of the site does not use. */
+.qz {
+  position: fixed; inset: 0; z-index: 60;
+  display: grid; place-items: center;
+  padding: max(var(--s4), env(safe-area-inset-top, 0px)) var(--s4)
+           max(var(--s4), env(safe-area-inset-bottom, 0px));
+  background: rgba(24, 25, 27, 0.55);
+  overflow-y: auto;
+}
+@supports (backdrop-filter: blur(2px)) { .qz { backdrop-filter: blur(2px); } }
+
+.qz-panel {
+  position: relative; width: 100%; max-width: 34rem;
+  background: var(--surface); color: var(--ink);
+  border-radius: var(--r-surface);
+  box-shadow: 0 0 0 var(--hairline) var(--rule), 0 32px 80px -24px rgba(0,0,0,0.45);
+  padding: clamp(var(--s5), 3vw, var(--s7));
+  display: grid; gap: var(--s3);
+  /* it scrolls inside itself rather than pushing the page around */
+  max-height: calc(100dvh - 2 * var(--s4));
+  overflow-y: auto;
+}
+.qz-x {
+  position: absolute; top: var(--s4); right: var(--s4);
+  width: 2.75rem; height: 2.75rem; display: inline-flex;
+  align-items: center; justify-content: center;
+  appearance: none; border: 0; background: none; cursor: pointer;
+  color: var(--meta-ink); border-radius: 999px;
+}
+.qz-x:hover { color: var(--ink); }
+.qz-x:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 2px; }
+
+.qz-kind {
+  margin: 0; padding-right: 2.75rem;
+  font-size: var(--t-caption); font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--meta-ink);
+}
+.qz-h { margin: 0; font-size: var(--t-card); font-weight: 500; line-height: 1.12; letter-spacing: -0.02em; }
+.qz-lede { margin: 0; color: var(--body-ink); font-size: var(--t-small); line-height: 1.5; }
+
+.qz-bar { height: 2px; background: var(--rule); border-radius: 999px; margin-top: var(--s3); }
+.qz-bar span { display: block; height: 100%; background: var(--ink); border-radius: 999px;
+  transition: width var(--transition) var(--ease-body); }
+@media (prefers-reduced-motion: reduce) { .qz-bar span { transition: none; } }
+.qz-n { margin: 0; color: var(--meta-ink); font-size: var(--t-caption);
+  font-variant-numeric: tabular-nums; letter-spacing: 0.06em; }
+
+.qz-q { margin: var(--s2) 0 0; font-size: var(--t-body); font-weight: 600; line-height: 1.3; }
+.qz-a { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.qz-a button {
+  appearance: none; width: 100%; text-align: left; cursor: pointer;
+  background: var(--canvas); color: var(--ink);
+  border: var(--hairline) solid var(--rule); border-radius: var(--r-control);
+  /* a full step over a 1.4 line clears 44px, which is the floor for a thumb */
+  padding: 0.75rem var(--s4); min-height: 2.75rem;
+  font: inherit; font-size: var(--t-small); line-height: 1.4;
+  transition: border-color var(--quick) var(--ease-body), background var(--quick) var(--ease-body);
+}
+.qz-a button:hover { border-color: var(--ink); }
+.qz-a button:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 2px; }
+
+.qz-sub { margin: var(--s3) 0 0; font-size: var(--t-caption); font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--meta-ink); }
+.qz-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.qz-list li {
+  padding: var(--s3) var(--s4); border-radius: var(--r-control);
+  background: var(--canvas); box-shadow: inset 0 0 0 var(--hairline) var(--rule);
+  font-size: var(--t-small); line-height: 1.35;
+}
+.qz-list.is-quiet li { background: none; color: var(--body-ink); }
+
+.qz-note { margin: var(--s3) 0 0; color: var(--meta-ink);
+  font-size: var(--t-caption); line-height: 1.55; }
+
+.qz-cta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); margin-top: var(--s3); }
+.qz-go {
+  display: inline-flex; align-items: center; min-height: 2.75rem;
+  padding: 0 var(--s5); border-radius: var(--r-pill);
+  background: var(--ink); color: var(--on-ink); text-decoration: none;
+  font-size: var(--t-small); font-weight: 500;
+}
+.qz-go:hover { opacity: 0.88; }
+
+.qz-foot { display: flex; align-items: center; gap: var(--s4); margin-top: var(--s2); }
+.qz-back, .qz-skip {
+  appearance: none; border: 0; background: none; cursor: pointer; font: inherit;
+  min-height: 2.75rem; padding: 0; color: var(--meta-ink);
+  font-size: var(--t-small); text-decoration: underline; text-underline-offset: 0.3em;
+}
+.qz-back:hover, .qz-skip:hover { color: var(--ink); }
+.qz-back:focus-visible, .qz-skip:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 2px; }
+.qz-skip { margin-left: auto; }

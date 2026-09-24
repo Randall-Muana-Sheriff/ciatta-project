@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Wordmark } from './Wordmark';
 import { CookieChoicesLink } from './CookieBanner';
+import { QuizLink } from './SymptomQuiz';
 import { LEGAL } from '../legal/config';
 import { initReveal } from '../lib/reveal';
 
@@ -89,6 +90,7 @@ export function SiteFooter() {
                   </li>
                 ))}
                 <li><a href={`mailto:${LEGAL.contactEmail}`}>{LEGAL.contactEmail}</a></li>
+                <li><QuizLink /></li>
                 <li><CookieChoicesLink /></li>
               </ul>
             </div>
