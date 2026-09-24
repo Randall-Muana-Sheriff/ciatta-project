@@ -41,8 +41,13 @@ const INCLUDED: [string, string][] = [
    'Bring your health data, experiences, and care together.'],
   ['See Your Patterns',
    'Spot meaningful trends and relationships across your health, and what changes over time.'],
+  /* "Recommendations" is a word the site already uses and already qualifies:
+     the footer of every page says Ciatta provides "health information,
+     observations and recommendations for exploration", and that it does not
+     diagnose, treat or prevent. So it is safe to say here, and it is the
+     more honest description of what Ciatta actually returns. */
   ['Get Personalized Insights',
-   'Turn your health history and evidence into relevant insights.'],
+   'Turn your health history and the evidence into individualized insights and recommendations.'],
   ['Take Informed Action',
    'Try personalized routines, plans and everyday changes, then track what you tried and what happened next.'],
   ['Prepare for Care',
