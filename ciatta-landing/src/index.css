@@ -4542,6 +4542,66 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .qz-a button:hover { border-color: var(--ink); }
 .qz-a button:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 2px; }
 
+/* -- where to start -------------------------------------------------------
+   Six ways in. Octo stacks eight filled pills on a tinted panel; these are
+   the site's own answer buttons with a second line, because the choice is
+   the same kind of choice the questions ask and should not look like a
+   different product for one screen.
+
+   Each one carries what it covers underneath. A row of six bare labels
+   makes you guess which box your own symptom belongs in, which is the exact
+   thing this step exists to save you from. */
+.qz-tracks { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.qz-tracks button {
+  appearance: none; width: 100%; text-align: left; cursor: pointer;
+  display: grid; gap: 2px;
+  background: var(--canvas); color: var(--ink);
+  border: var(--hairline) solid var(--rule); border-radius: var(--r-control);
+  padding: 0.75rem var(--s4); min-height: 2.75rem;
+  font: inherit;
+  transition: border-color var(--quick) var(--ease-body);
+}
+.qz-tracks button:hover { border-color: var(--ink); }
+.qz-tracks button:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 2px; }
+.qz-tracks b { font-size: var(--t-small); font-weight: 600; line-height: 1.35; }
+.qz-tracks span { color: var(--body-ink); font-size: var(--t-caption); line-height: 1.45; }
+
+/* What the questions do, said once, in plain words. It never says adaptive,
+   intelligent or AI: "the questions follow what you answer" is the whole
+   truth and anyone can check it against what happens next. */
+.qz-hint { margin: 0; color: var(--body-ink); font-size: var(--t-caption); line-height: 1.55; }
+
+/* The header while answering: which track you are in, and where you are.
+   No "3 of 12", because the length is not fixed any more and a denominator
+   that moves is worse than none. */
+.qz-n { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); }
+.qz-n i { font-style: normal; letter-spacing: 0.06em; }
+
+/* What you answered, under the result. Closed by default: the list above is
+   the page you take in, and this is where each line on it came from. */
+.qz-said { margin-top: var(--s3); border-top: var(--hairline) solid var(--rule); }
+.qz-said summary {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
+  cursor: pointer; list-style: none; padding: var(--s3) 0; min-height: 2.75rem;
+  color: var(--ink); font-size: var(--t-small);
+}
+.qz-said summary::-webkit-details-marker { display: none; }
+.qz-said summary:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 2px; }
+/* the same plus that every other disclosure on the site uses */
+.qz-said summary i {
+  position: relative; flex: none; width: 0.75rem; height: 0.75rem;
+}
+.qz-said summary i::before, .qz-said summary i::after {
+  content: ''; position: absolute; inset: 0; margin: auto;
+  background: var(--meta-ink);
+}
+.qz-said summary i::before { width: 100%; height: var(--hairline); }
+.qz-said summary i::after { width: var(--hairline); height: 100%; transition: opacity var(--quick) var(--ease-body); }
+.qz-said[open] summary i::after { opacity: 0; }
+.qz-said dl { margin: 0 0 var(--s3); display: grid; gap: var(--s3); }
+.qz-said dt { color: var(--body-ink); font-size: var(--t-caption); line-height: 1.45; }
+.qz-said dd { margin: 2px 0 0; color: var(--ink); font-size: var(--t-small); line-height: 1.4; }
+
 .qz-sub { margin: var(--s3) 0 0; font-size: var(--t-caption); font-weight: 600;
   letter-spacing: 0.16em; text-transform: uppercase; color: var(--meta-ink); }
 .qz-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }

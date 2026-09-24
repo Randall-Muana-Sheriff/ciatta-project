@@ -1,221 +1,182 @@
 import { useState } from 'react';
+import {
+  TRACKS, next, progress, result, get,
+  type Given, type Track, type Weight,
+} from '../lib/quiz';
 
 /**
- * The quiz: twelve questions, and what to do with the answers.
+ * The quiz: where to start, what it asks, and what you take away.
  *
- * WHAT THIS DOES NOT DO, AND WHY.
+ * THREE STEPS.
  *
- * The quiz it is modelled on ends on "Low Likelihood — your answers indicate
- * a low likelihood of having endometriosis". Ciatta cannot end there. The
- * site's own FAQ says naming a condition is a clinician's job and that
- * Ciatta "does not do it, suggest it, or hint at it", and the footer of
- * every page says it does not diagnose, treat or prevent any condition. A
- * likelihood band is a hint at a condition, and it would have put the
- * loudest claim on the site in the one place nothing supports it.
+ *   1. Where to start. Six ways in, named for what she arrived with rather
+ *      than for a body system: "My cycle or my periods", not "Hormones &
+ *      cycle". The last one is for the largest group of all, the people who
+ *      know something is wrong and cannot say which box it belongs in, and
+ *      it is not labelled as a lesser path.
  *
- * So the questions are the same kind of questions, and the ending is
- * Ciatta's: what she has just told it, sorted into what is worth raising
- * first and what is worth mentioning, in words she can say out loud in an
- * appointment. That is "Prepare for care" from the membership card, done
- * once, for free, before she has an account. No score, no band, no verdict,
- * and no condition named anywhere in it.
+ *   2. The questions, which follow what she answers. The rules live in
+ *      lib/quiz.ts and they are rules you can read, not a model: answer at
+ *      the top of the scale and the questions that follow from that answer
+ *      are asked next; answer at the bottom and they are never asked. If the
+ *      opening questions all come back quiet it stops early rather than
+ *      working through nine to arrive at the same place.
  *
- * It lives at /quiz/ and nowhere else. It was a popup first; a page is a
- * better home for something that asks twelve questions about your body,
- * because a page is chosen rather than sprung, and nobody has to find the
- * way out of it.
+ *   3. What to take to your clinician: what she just said, sorted into what
+ *      is worth raising first and what is worth mentioning.
+ *
+ * WHAT IT DOES NOT DO, AND WHY.
+ *
+ * It does not name a condition, in any form, at any strength. The quiz this
+ * was modelled on ends on a likelihood band for one; the site's own FAQ says
+ * naming a condition is a clinician's job and that Ciatta "does not do it,
+ * suggest it, or hint at it", and the footer of every page says it does not
+ * diagnose, treat or prevent. A band would have put the loudest claim on the
+ * site in the one place nothing supports it.
+ *
+ * It is also never described as intelligent, adaptive or AI, here or in the
+ * copy around it. It follows what you answer. That is a sentence anyone can
+ * check, and it is the whole truth about what is happening.
+ *
+ * It lives on the home page and at /quiz/, and it is not a popup: a page is
+ * chosen rather than sprung, and nobody has to find the way out of something
+ * that asks twelve questions about their body.
  */
 
-type Weight = 0 | 1 | 2;
-
-/** A question, its domain, and three answers from least to most. */
-type Q = {
-  /** What this question is about, in the words the result uses. */
-  domain: string;
-  q: string;
-  /** Each answer carries how much it is worth raising, not how likely anything is. */
-  a: [string, Weight][];
-};
-
-const QUESTIONS: Q[] = [
-  { domain: 'Period pain',
-    q: 'How would you describe your period pain?',
-    a: [
-      ['Uncomfortable, but nothing I would call painful', 0],
-      ['Painful, though over-the-counter painkillers handle it', 1],
-      ['Bad enough that I cannot work or do my usual day', 2],
-    ] },
-  { domain: 'Pain between periods',
-    q: 'Do you get pelvic pain when you are not on your period?',
-    a: [
-      ['Rarely or never', 0],
-      ['Sometimes, around ovulation or before my period', 1],
-      ['Often, at any point in the month', 2],
-    ] },
-  { domain: 'How heavy your periods are',
-    q: 'Are your periods heavy?',
-    a: [
-      ['No, ordinary protection is enough', 0],
-      ['Sometimes heavy enough to need changing more often', 1],
-      ['Almost always heavy, and I plan around it', 2],
-    ] },
-  { domain: 'How long your periods last',
-    q: 'How long does your period usually last?',
-    a: [
-      ['Around five days or fewer', 0],
-      ['Six or seven days', 1],
-      ['More than seven days, or it is hard to say where it ends', 2],
-    ] },
-  { domain: 'Digestive symptoms',
-    q: 'How often do you get bloating, nausea, constipation or diarrhoea?',
-    a: [
-      ['Rarely', 0],
-      ['Sometimes, often around my period', 1],
-      ['Most of the time', 2],
-    ] },
-  { domain: 'Bladder symptoms',
-    q: 'Do you get pain or urgency when you empty your bladder?',
-    a: [
-      ['No', 0],
-      ['Occasionally, usually during my period', 1],
-      ['Often, period or not', 2],
-    ] },
-  { domain: 'Pain during or after sex',
-    q: 'Do you get pain during or after sex?',
-    a: [
-      ['No, or this does not apply to me', 0],
-      ['Sometimes', 1],
-      ['Often, and it has changed what I do', 2],
-    ] },
-  { domain: 'Fatigue',
-    q: 'How often are you tired in a way that rest does not fix?',
-    a: [
-      ['Rarely', 0],
-      ['Some weeks, usually around my period', 1],
-      ['Most weeks', 2],
-    ] },
-  { domain: 'Whether pain relief works',
-    q: 'When you take something for the pain, does it help?',
-    a: [
-      ['Yes, it settles', 0],
-      ['Somewhat, or it comes back', 1],
-      ['Not really, whatever I take', 2],
-    ] },
-  { domain: 'The effect on your life',
-    q: 'Have symptoms changed your work, study or plans?',
-    a: [
-      ['No', 0],
-      ['Occasionally I have had to change something', 1],
-      ['Regularly, and I plan around them', 2],
-    ] },
-  { domain: 'How long this has gone on',
-    q: 'How long have you been noticing these symptoms?',
-    a: [
-      ['Under a year', 0],
-      ['One to three years', 1],
-      ['More than three years', 2],
-    ] },
-  { domain: 'What you have been told before',
-    q: 'Have you raised this with a clinician before?',
-    a: [
-      ['No, not yet', 0],
-      ['Yes, and I am still working it out with them', 1],
-      ['Yes, and I was told it was normal or nothing was found', 2],
-    ] },
-];
-
-/** The quiz itself. Rendered by /quiz/, in the card on that page. */
-export function QuizFlow() {
-  const [i, setI] = useState(0);
-  const [answers, setAnswers] = useState<Weight[]>([]);
-
-  const done = answers.length === QUESTIONS.length;
-  const answer = (w: Weight) => {
-    const next = [...answers.slice(0, i), w];
-    setAnswers(next);
-    setI(i + 1);
-  };
-  const back = () => setI(Math.max(0, i - 1));
-  const restart = () => { setAnswers([]); setI(0); };
-
-  /* The result: her own answers, sorted. Nothing is scored and nothing is
-     named. "Worth raising first" is simply where she chose the strongest
-     answer, said back to her in the order she gave it. */
-  const first = QUESTIONS.filter((_, n) => answers[n] === 2).map((q) => q.domain);
-  const also = QUESTIONS.filter((_, n) => answers[n] === 1).map((q) => q.domain);
-
+/* The note stands through the whole flow, not just at the ends. It was in
+   the lede before the first question and in the note after the last one,
+   which is the two moments anyone is least likely to be reading it. */
+function Note({ long = false }: { long?: boolean }) {
   return (
-    <>
-      {!done ? (
-          <>
-            <div className="qz-bar" role="presentation">
-              <span style={{ width: `${(i / QUESTIONS.length) * 100}%` }} />
-            </div>
-            <p className="qz-n">{i + 1} of {QUESTIONS.length}</p>
-
-            <h3 className="qz-q">{QUESTIONS[i].q}</h3>
-            <ul className="qz-a">
-              {QUESTIONS[i].a.map(([label, w]) => (
-                <li key={label}>
-                  <button type="button" onClick={() => answer(w)}>{label}</button>
-                </li>
-              ))}
-            </ul>
-
-            <div className="qz-foot">
-              {i > 0 && <button type="button" className="qz-back" onClick={back}>Back</button>}
-            </div>
-
-            {/* Standing, not just at the ends. It was in the lede before the
-                first question and in the note after the last one, which is
-                the two moments someone is least likely to be reading it.
-                Anyone on question seven, answering about pain they actually
-                have, can see it without going anywhere. */}
-            <p className="qz-note">
-              This is not a diagnosis. It cannot tell you whether you have any
-              condition, and it is not a substitute for medical advice. Only a
-              clinician can do that.
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="qz-kind">Your answers</p>
-            <h2 className="qz-h">What to take to your clinician</h2>
-
-            {first.length > 0 && (
-              <>
-                <p className="qz-sub">Worth raising first</p>
-                <ul className="qz-list">{first.map((d) => <li key={d}>{d}</li>)}</ul>
-              </>
-            )}
-            {also.length > 0 && (
-              <>
-                <p className="qz-sub">Worth mentioning</p>
-                <ul className="qz-list is-quiet">{also.map((d) => <li key={d}>{d}</li>)}</ul>
-              </>
-            )}
-            {first.length === 0 && also.length === 0 && (
-              <p className="qz-lede">
-                Nothing you answered stood out as something to raise. That is
-                worth knowing too, and it is still worth saying to a clinician
-                if something feels wrong to you.
-              </p>
-            )}
-
-            <p className="qz-note">
-              This is not a diagnosis. It cannot tell you whether you have any
-              condition, and it is not a substitute for medical advice. Only a
-              clinician can do that. What it is for is arriving with your own
-              answers already written down.
-            </p>
-
-            <div className="qz-cta">
-              <a className="qz-go" href="/member/#membership">Reserve your place</a>
-              <button type="button" className="qz-back" onClick={restart}>Start again</button>
-            </div>
-          </>
-        )}
-    </>
+    <p className="qz-note">
+      This is not a diagnosis. It cannot tell you whether you have any
+      condition, and it is not a substitute for medical advice. Only a
+      clinician can do that.
+      {long && ' What it is for is arriving with your own answers already written down.'}
+    </p>
   );
 }
 
+export function QuizFlow() {
+  const [track, setTrack] = useState<Track | null>(null);
+  const [given, setGiven] = useState<Given[]>([]);
+
+  const q = track ? next(track, given) : null;
+  const info = TRACKS.find((t) => t.key === track);
+
+  const answer = (w: Weight) => q && setGiven([...given, { id: q.id, w }]);
+  const back = () => setGiven(given.slice(0, -1));
+  const restart = () => { setGiven([]); setTrack(null); };
+
+  /* ---- 1 · where to start --------------------------------------------- */
+  if (!track) {
+    return (
+      <>
+        <p className="qz-kind">Where would you like to start?</p>
+        <h3 className="qz-q">What is on your mind?</h3>
+        <ul className="qz-tracks">
+          {TRACKS.map((t) => (
+            <li key={t.key}>
+              <button type="button" onClick={() => setTrack(t.key)}>
+                <b>{t.label}</b>
+                <span>{t.line}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <p className="qz-hint">
+          The questions follow what you answer, so this is usually five or six
+          of them rather than a form.
+        </p>
+        <Note />
+      </>
+    );
+  }
+
+  /* ---- 2 · the questions ---------------------------------------------- */
+  if (q) {
+    return (
+      <>
+        <div className="qz-bar" role="presentation">
+          <span style={{ width: `${progress(track, given) * 100}%` }} />
+        </div>
+        <p className="qz-n">
+          <span>{info?.head}</span>
+          {given.length > 0 && <i>Question {given.length + 1}</i>}
+        </p>
+
+        <h3 className="qz-q">{q.q}</h3>
+        <ul className="qz-a">
+          {q.a.map((opt) => (
+            <li key={opt.label}>
+              <button type="button" onClick={() => answer(opt.w)}>{opt.label}</button>
+            </li>
+          ))}
+        </ul>
+
+        <div className="qz-foot">
+          {given.length > 0
+            ? <button type="button" className="qz-back" onClick={back}>Back</button>
+            : <button type="button" className="qz-back" onClick={restart}>Start somewhere else</button>}
+        </div>
+
+        <Note />
+      </>
+    );
+  }
+
+  /* ---- 3 · what to take with you --------------------------------------- */
+  const { first, also } = result(given);
+
+  return (
+    <>
+      <p className="qz-kind">Your answers</p>
+      <h2 className="qz-h">What to take to your clinician</h2>
+
+      {first.length > 0 && (
+        <>
+          <p className="qz-sub">Worth raising first</p>
+          <ul className="qz-list">{first.map((d) => <li key={d}>{d}</li>)}</ul>
+        </>
+      )}
+      {also.length > 0 && (
+        <>
+          <p className="qz-sub">Worth mentioning</p>
+          <ul className="qz-list is-quiet">{also.map((d) => <li key={d}>{d}</li>)}</ul>
+        </>
+      )}
+      {first.length === 0 && also.length === 0 && (
+        <p className="qz-lede">
+          Nothing you answered stood out as something to raise. That is worth
+          knowing too, and it is still worth saying to a clinician if
+          something feels wrong to you.
+        </p>
+      )}
+
+      {/* What she said, in her own words, under what it is filed as. The
+          list above is the page she takes in; this is where each line on it
+          came from, so nothing on it is a claim she cannot account for. */}
+      <details className="qz-said">
+        <summary><span>What you answered</span><i aria-hidden="true" /></summary>
+        <dl>
+          {given.map((g) => {
+            const src = get(g.id);
+            return (
+              <div key={g.id}>
+                <dt>{src?.q}</dt>
+                <dd>{src?.a.find((x) => x.w === g.w)?.label}</dd>
+              </div>
+            );
+          })}
+        </dl>
+      </details>
+
+      <Note long />
+
+      <div className="qz-cta">
+        <a className="qz-go" href="/member/#membership">Reserve your place</a>
+        <button type="button" className="qz-back" onClick={restart}>Start again</button>
+      </div>
+    </>
+  );
+}
