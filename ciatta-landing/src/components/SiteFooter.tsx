@@ -34,7 +34,7 @@ const SOCIAL: { label: string; href: string }[] = [
 const COLUMNS: [string, { label: string; href: string }[]][] = [
   ['Company', [
     { label: 'How it works', href: '/how-it-works/' },
-    { label: 'Symptom check', href: '/quiz/' },
+    { label: 'Take the quiz', href: '/quiz/' },
     { label: 'Membership', href: '/member/' },
     { label: 'Privacy Policy', href: '/privacy/' },
     { label: 'Terms of Use', href: '/terms/' },

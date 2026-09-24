@@ -1314,13 +1314,7 @@ p { margin: 0; text-wrap: pretty; }
   min-height: 2.75rem; padding-inline: 0.72em; margin-inline: -0.72em;
 }
 .m-mark .wordmark { color: #F7F4EE; }
-.m-top-link {
-  display: inline-flex; align-items: center; min-height: 44px;
-  padding-inline: var(--s2); margin-inline: calc(var(--s2) * -1);
-  color: #F7F4EE; font-size: 0.9375rem; font-weight: 500;
-  text-underline-offset: 0.28em;
-}
-.m-top-link:hover { color: #F7F4EE; }
+
 
 /* --- the film ------------------------------------------------------------ */
 .m-hero {
@@ -2966,10 +2960,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 /* the closing headline is one sentence now; the rule that split it in two
    is gone with the sentence that needed splitting */
-.close-disclaimer {
-  margin: var(--s4) 0 0; color: var(--meta-ink);
-  font-size: var(--t-caption); line-height: 1.5; max-width: 52ch;
-}
+
 
 /* ===========================================================================
    A section that shows a screen. The phone takes the room a photograph would,
@@ -4153,7 +4144,6 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .qa-item summary span { font-size: var(--t-lede); font-weight: 500; }
 
 /* --- small: secondary text and every control --------------------------- */
-.m-top-link,
 .m-free-note,
 .m-hero-note {
   font-size: var(--t-small);
@@ -4201,7 +4191,6 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    to the caption step. */
 .ex-points dt,
 .hm-pill { font-size: var(--t-caption); }
-.close-disclaimer,
 .ft-base,
 .waitlist-consent,
 .mb-card-foot {
@@ -4315,8 +4304,14 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 .qz-list.is-quiet li { background: none; color: var(--body-ink); }
 
-.qz-note { margin: var(--s3) 0 0; color: var(--meta-ink);
-  font-size: var(--t-caption); line-height: 1.55; }
+/* The disclaimer. It stands under the questions as well as the result, and
+   it is set off by a rule so it reads as a condition of the thing rather
+   than as the last sentence of it. */
+.qz-note {
+  margin: var(--s3) 0 0; padding-top: var(--s3);
+  border-top: var(--hairline) solid var(--rule);
+  color: var(--meta-ink); font-size: var(--t-caption); line-height: 1.55;
+}
 
 .qz-cta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); margin-top: var(--s3); }
 .qz-go {

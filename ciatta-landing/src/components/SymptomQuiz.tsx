@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 /**
- * The symptom check: twelve questions, and what to do with the answers.
+ * The quiz: twelve questions, and what to do with the answers.
  *
  * WHAT THIS DOES NOT DO, AND WHY.
  *
@@ -165,6 +165,17 @@ export function QuizFlow() {
             <div className="qz-foot">
               {i > 0 && <button type="button" className="qz-back" onClick={back}>Back</button>}
             </div>
+
+            {/* Standing, not just at the ends. It was in the lede before the
+                first question and in the note after the last one, which is
+                the two moments someone is least likely to be reading it.
+                Anyone on question seven, answering about pain they actually
+                have, can see it without going anywhere. */}
+            <p className="qz-note">
+              This is not a diagnosis. It cannot tell you whether you have any
+              condition, and it is not a substitute for medical advice. Only a
+              clinician can do that.
+            </p>
           </>
         ) : (
           <>
@@ -192,9 +203,10 @@ export function QuizFlow() {
             )}
 
             <p className="qz-note">
-              This is not a diagnosis and it does not say whether you have any
-              condition. Only a clinician can do that. It is a way of arriving
-              with your own answers already written down.
+              This is not a diagnosis. It cannot tell you whether you have any
+              condition, and it is not a substitute for medical advice. Only a
+              clinician can do that. What it is for is arriving with your own
+              answers already written down.
             </p>
 
             <div className="qz-cta">

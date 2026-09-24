@@ -316,10 +316,6 @@ export default function App() {
                   consent="I agree to receive emails about early access and product updates."
                 />
               </div>
-              <p className="close-disclaimer">
-                Ciatta provides health information, observations, and recommendations
-                for exploration. It does not diagnose or replace medical care.
-              </p>
             </div>
           </div>
         </section>

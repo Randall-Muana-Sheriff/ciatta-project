@@ -4,7 +4,7 @@ import { CookieBanner } from './components/CookieBanner';
 import { QuizFlow } from './components/SymptomQuiz';
 
 /**
- * The symptom check, as a page.
+ * The quiz, as a page.
  *
  * The same twelve questions and the same ending as the popup, from the same
  * component: one implementation, so the questions and what they conclude
@@ -17,7 +17,7 @@ import { QuizFlow } from './components/SymptomQuiz';
 export default function Quiz() {
   return (
     <>
-      <a className="skip" href="#quiz-main">Skip to the symptom check</a>
+      <a className="skip" href="#quiz-main">Skip to the quiz</a>
 
       <SiteHeader current="/quiz/" />
 

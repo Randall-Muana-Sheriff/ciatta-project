@@ -94,11 +94,12 @@ export default function Member() {
     <>
       <a className="skip" href="#member-main">Skip to the form</a>
 
+      {/* The wordmark is the way back: it links home and says so to a screen
+          reader, so "Back to Ciatta" beside it was the same door twice. */}
       <header className="m-top">
         <a className="m-mark" href="/" aria-label="Ciatta, home">
           <Wordmark size="sm" />
         </a>
-        <a className="m-top-link" href="/">Back to Ciatta</a>
       </header>
 
       <main id="member-main" className="member">
