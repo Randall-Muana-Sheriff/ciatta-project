@@ -75,7 +75,17 @@ const TARGETS = [
  * be there on arrival, and it was measured to fit above the fold. The
  * statement has its own slide-over and would be animating twice.
  */
-const EXCLUDE = '.hero, .hero *, .statement, .statement *, .ck, .ck *';
+const EXCLUDE = [
+  '.hero', '.hero *',
+  '.statement', '.statement *',
+  '.ck', '.ck *',
+  /* The safety section is a heading and one paragraph, and both of them are
+     .band-head children. If the reveal ever fails to fire there, the section
+     does not render at all — which is what happened, and was reported as the
+     section being blank. Nothing whose entire content is a reveal target may
+     depend on the reveal. */
+  '.safety', '.safety *',
+].join(', ');
 
 const REVEALED = 'is-in';
 
@@ -84,7 +94,7 @@ export function initReveal(): void {
 
   const root = document.documentElement;
   const nodes = Array.from(document.querySelectorAll<HTMLElement>(TARGETS))
-    .filter((el) => !el.matches(EXCLUDE) && !el.closest('.hero, .statement'));
+    .filter((el) => !el.matches(EXCLUDE) && !el.closest('.hero, .statement, .safety'));
 
   if (!nodes.length) return;
 

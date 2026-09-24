@@ -88,7 +88,6 @@ export function MembershipCard() {
             <b>$99</b> <span>/ year</span>
           </p>
 
-          <p className="mb-card-label">Membership includes</p>
           {/* All six, open. They were a <details> accordion for a while, six
               headings with their sentences a tap away, and the argument for
               that was the wall of type six titles and six sentences make in
