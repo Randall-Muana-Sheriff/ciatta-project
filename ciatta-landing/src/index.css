@@ -3181,6 +3181,9 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    own measure, because a break written for 1440 lands mid-phrase on 390. */
 .st-br { display: none; }
 @media (min-width: 701px) { .st-br { display: inline; } }
+/* Only where the line it breaks would wrap on its own. */
+.st-br2 { display: none; }
+@media (min-width: 701px) and (max-width: 1279px) { .st-br2 { display: inline; } }
 
 .statement-title {
   /* a sentence rather than a phrase now, so it gets a measure a sentence can

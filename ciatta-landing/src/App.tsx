@@ -209,17 +209,24 @@ export default function App() {
                 The breaks are authored, so they are switched off below a
                 tablet: a line break written for a 1440 window lands in the
                 middle of a phrase on a 390 one. There the block wraps to
-                its own measure instead. The {' '} before each break is not
+                its own measure instead.
+
+                st-br2 is the second kind: a break that only exists between a
+                tablet and 1280. The wearable line is the longest of the six
+                and wraps there on its own, leaving "recovery." alone on a
+                line. Above 1280 it fits and the break is off; below a tablet
+                every break is off. The {' '} before each break is not
                 decoration: JSX strips the whitespace either side of an
                 element, so with the breaks switched off the lines ran
                 together as "connectsyour health data". */}
             <h2 id="statement-heading" className="statement-title">
-              Your health unfolds continuously,{' '}<br className="st-br" />
-              but healthcare sees it in fragments.{' '}<br className="st-br" />
-              A wearable captures a moment.{' '}<br className="st-br" />
-              A lab captures a result.{' '}<br className="st-br" />
-              A clinic captures a visit.{' '}<br className="st-br" />
-              Your life holds everything in between.
+              Your health is continuous,{' '}<br className="st-br" />
+              but your data is still divided.{' '}<br className="st-br" />
+              Your wearable tracks sleep,{' '}<br className="st-br2" />
+              movement, and recovery.{' '}<br className="st-br" />
+              Your labs capture measurements.{' '}<br className="st-br" />
+              Your clinic sees your visits.{' '}<br className="st-br" />
+              Your life holds everything around them.
             </h2>
           </div>
         </section>
