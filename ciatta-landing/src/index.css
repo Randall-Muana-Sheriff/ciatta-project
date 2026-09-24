@@ -2905,11 +2905,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    The section itself is the shared module (see .hw2-body): a numbered
    accordion beside the screen each promise is about. All that is left here
    is the line pointing at the binding documents. */
-.sf-foot {
-  margin: var(--s6) 0 0; color: var(--meta-ink);
-  font-size: var(--t-small); line-height: 1.5;
-}
-.sf-foot a { color: var(--ink); }
+
 
 /* --- the historian, with a photograph of its own ------------------------- *
    Cut from the same art direction as the four tiles above it, and carrying
@@ -3836,6 +3832,10 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
      the name over the sentence, the sentence over the form */
   .hero-copy { align-items: center; text-align: center; }
   .hero-lede, .waitlist, .joined { margin-inline: auto; }
+  /* The hero column centres its children, so the form shrank to the width of
+     its own contents: 256px against the 318px the closing CTA gets. It takes
+     the column now, like every other call to action on the site. */
+  .hero-copy #join, .hero-copy .waitlist, .hero-copy .joined { width: 100%; }
   /* On a phone the home hero's sentence sets on one line and its paragraph on
      three. Both sizes are the widest that still fit, written against the
      gutter rather than the viewport, so they hold from a 360 to a 430 screen
@@ -4263,7 +4263,6 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
     .hm-title,
     .ex-title,
     .ex-lede,
-    .sf-foot,
     .mb-time > *,
     .split-lead > *,
     .split-body > p,

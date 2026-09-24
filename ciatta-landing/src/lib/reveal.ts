@@ -57,7 +57,6 @@ const TARGETS = [
   '.hm-title',
   '.ex-title',
   '.ex-lede',
-  '.sf-foot',
   '.mb-time > *',
   '.split-lead > *',
   /* p only. `.split-body > *` swept up the FAQ's <details> items and the

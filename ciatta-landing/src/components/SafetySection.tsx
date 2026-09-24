@@ -18,7 +18,9 @@ import { Module, type Item } from './Module';
  *
  * Every line here is also in the Privacy Policy and the Terms of Use, because
  * a claim that lives only on a landing page is marketing. These are the short
- * forms; the documents are the binding ones.
+ * forms; the documents are the binding ones. The section used to say so in a
+ * line underneath itself; both documents are linked from the footer of every
+ * page, so the sentence was paying for itself twice.
  */
 
 const PROMISES: Item[] = [
@@ -40,17 +42,9 @@ export function SafetySection() {
   return (
     <Module
       id="safety-heading"
-      kind="Safety & Privacy"
       title="Your health data, protected end-to-end."
       lede="Health data is the most sensitive data you have. Ciatta is built on infrastructure, policies, and a privacy-first posture that treat it that way, and that keep you in control."
       items={PROMISES}
-      foot={
-        <>
-          The binding versions are in the{' '}
-          <a href="/privacy/">Privacy Policy</a> and the{' '}
-          <a href="/terms/">Terms of Use</a>.
-        </>
-      }
     />
   );
 }

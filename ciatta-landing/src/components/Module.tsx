@@ -130,16 +130,15 @@ export function Finding({
  * never empties the device beside the list.
  */
 export function Module({
-  id, kind, title, lede, items, reversed, foot,
+  id, kind, title, lede, items, reversed,
 }: {
   id: string;
-  kind: string;
+  /** The small label over the heading. A module can go without one. */
+  kind?: string;
   title: string;
   lede?: string;
   items: Item[];
   reversed?: boolean;
-  /** A line under the body: where the binding version of this lives. */
-  foot?: React.ReactNode;
 }) {
   const [open, setOpen] = useState<number | null>(0);
   const [shown, setShown] = useState(0);
@@ -151,7 +150,7 @@ export function Module({
     <section className="section hw2-module" aria-labelledby={id}>
       <div className="shell">
         <div className="band-head">
-          <span className="hw2-kind">{kind}</span>
+          {kind && <span className="hw2-kind">{kind}</span>}
           <h2 id={id} className="band-title">{title}</h2>
           {lede && <p className="band-sub">{lede}</p>}
         </div>
@@ -196,7 +195,6 @@ export function Module({
           )}
         </div>
 
-        {foot && <p className="sf-foot">{foot}</p>}
       </div>
     </section>
   );

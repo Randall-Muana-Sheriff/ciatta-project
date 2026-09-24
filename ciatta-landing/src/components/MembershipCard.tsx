@@ -19,12 +19,10 @@ import { ReserveButton } from './ReserveButton';
  * no sentence attached. It stacks below a laptop, text first.
  *
  * A NOTE ON THE YEAR. The annual price is not a discounted monthly plan and
- * is never written as one — no "works out at", no per-month equivalent, no
- * struck-through figure. A membership is a membership: one payment, and
- * continuous access to what Ciatta learns with you across the year. The copy
- * on the left says why, and it is the product thesis rather than a pricing
- * tactic: health does not reset every month, so the membership does not
- * either.
+ * is never written as one: no "works out at", no per-month equivalent, no
+ * struck-through figure. A membership is a membership, one payment, and the
+ * heading says so in four words. The sentence that used to argue the case
+ * underneath it has gone; "One membership. One year." does not need help.
  */
 
 /**
@@ -65,10 +63,6 @@ export function MembershipCard() {
               disclosure in the Questions below, and the billing in clause 6
               of the Terms. What stays is what she needs before she decides
               to press the button. */}
-          <p className="m-h2-sub">
-            Your health doesn’t reset every month. Your membership doesn’t
-            either.
-          </p>
           <p className="m-h2-sub">
             Opens Quarter 3 of 2027. Reserving saves your card and charges
             nothing; remove it any time before launch.
