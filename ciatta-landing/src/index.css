@@ -1555,6 +1555,29 @@ p { margin: 0; text-wrap: pretty; }
   display: grid; gap: var(--s2); text-align: center;
 }
 .m-band.is-alt .mb-card { background: var(--canvas); }
+
+/* A short window is the only place this section does not already fit, so it
+   is the only place that pays: the band gives back its air and the card its
+   inset, and every taller window keeps the spacing it had.
+
+   Declared after the base rule on purpose. The first attempt at this sat
+   above it, and with equal specificity the base rule won on source order —
+   the same trap the hero's device cap fell into earlier in this file. The
+   summary rows are not touched here either: 44px is the floor whatever the
+   window is doing. */
+@media (max-height: 760px) {
+  .mb-join.section { padding-block: var(--s3); }
+  .mb-card { padding: var(--s5); gap: var(--s1); }
+  .mb-card-list { margin-bottom: var(--s3); }
+  .mb-card-price { margin-top: var(--s2); padding-top: var(--s3); }
+}
+/* Shorter still: a 640px window, or a tall one at 150% zoom. The line under
+   the price is the last thing that can go, because the price above it and
+   the six inclusions below already say it. */
+@media (max-height: 660px) {
+  .mb-join.section { padding-block: var(--s2); }
+  .mb-card-when { display: none; }
+}
 .mb-card-name { display: grid; gap: 2px; }
 .mb-card-brand {
   font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.16em;
