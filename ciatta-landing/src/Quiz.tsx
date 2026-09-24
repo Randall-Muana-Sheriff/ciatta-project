@@ -37,7 +37,7 @@ export default function Quiz() {
             </div>
 
             <div className="qz-page-card">
-              <QuizFlow intro={false} />
+              <QuizFlow />
             </div>
           </div>
         </section>

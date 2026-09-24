@@ -9,7 +9,6 @@ import { SafetySection } from './components/SafetySection';
 import { MembershipCard } from './components/MembershipCard';
 import { SiteHeader } from './components/SiteHeader';
 import { CookieBanner } from './components/CookieBanner';
-import { SymptomQuiz } from './components/SymptomQuiz';
 import { SiteFooter } from './components/SiteFooter';
 
 /**
@@ -320,7 +319,6 @@ export default function App() {
 
       <SiteFooter />
       <CookieBanner />
-      <SymptomQuiz />
     </>
   );
 }
