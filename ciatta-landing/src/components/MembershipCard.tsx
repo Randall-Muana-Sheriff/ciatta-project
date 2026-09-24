@@ -28,21 +28,25 @@ import { ReserveButton } from './ReserveButton';
 /**
  * What membership includes. Each is a thing Ciatta does with her record, in
  * the order she meets them: bring it together, read it, say what it means,
- * act, take it to a clinician, and keep score of what worked.
+ * act on it, and take it to a clinician.
+ *
+ * Five, not six. "Learn What Works" was a sixth row saying what two of the
+ * others already imply, so its halves went where they belong: what changes
+ * over time is part of seeing a pattern, and tracking what you tried and
+ * what happened next is part of acting on one. A list of five things you get
+ * is read; a list of six where one restates two others is skimmed.
  */
 const INCLUDED: [string, string][] = [
   ['Connect Your Health',
    'Bring your health data, experiences, and care together.'],
   ['See Your Patterns',
-   'Spot meaningful trends and relationships across your health.'],
+   'Spot meaningful trends and relationships across your health, and what changes over time.'],
   ['Get Personalized Insights',
    'Turn your health history and evidence into relevant insights.'],
   ['Take Informed Action',
-   'Try personalized routines, plans, and everyday changes.'],
+   'Try personalized routines, plans and everyday changes, then track what you tried and what happened next.'],
   ['Prepare for Care',
    'Organize your health story, prepare questions, and arrive informed.'],
-  ['Learn What Works',
-   'Track what you try, what happens next, and what changes over time.'],
 ];
 
 export function MembershipCard() {
@@ -82,10 +86,6 @@ export function MembershipCard() {
               discount on a subscription rather than as the thing itself. */}
           <p className="mb-card-price">
             <b>$99</b> <span>/ year</span>
-          </p>
-          <p className="mb-card-when">
-            One membership. Everything Ciatta learns with you, throughout the
-            year.
           </p>
 
           <p className="mb-card-label">Membership includes</p>

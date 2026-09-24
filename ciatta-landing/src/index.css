@@ -1672,14 +1672,7 @@ p { margin: 0; text-wrap: pretty; }
   font-weight: 500; letter-spacing: -0.04em;
 }
 .mb-card-price span { font-size: var(--t-body); color: var(--meta-ink); }
-/* Under the price: what the payment buys, in a sentence. It used to be the
-   three words "when membership opens" and could sit at the caption step;
-   it is a line of prose now, so it takes the step prose takes. */
-.mb-card-when {
-  margin: var(--s3) 0 0; color: var(--body-ink);
-  font-size: var(--t-small); line-height: 1.45; max-width: 44ch;
-  margin-inline: auto;
-}
+
 .mb-card-foot span { white-space: nowrap; }
 .mb-card .m-btn { justify-self: center; margin-top: var(--s2); }
 .mb-card-foot { margin: 0; color: var(--meta-ink); font-size: var(--t-caption); line-height: 1.5; }
