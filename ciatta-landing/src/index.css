@@ -4379,6 +4379,17 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 .qz-go:hover { opacity: 0.88; }
 
+/* On its own page the flow sits in a card the width of a reading column,
+   rather than a dialog floating over a darkened page. Same contents. */
+.qz-page-card {
+  max-width: 34rem;
+  background: var(--surface); border-radius: var(--r-surface);
+  box-shadow: 0 0 0 var(--hairline) var(--rule), var(--float-above);
+  padding: clamp(var(--s5), 3vw, var(--s7));
+  display: grid; gap: var(--s3);
+}
+.qz-page .band-head { margin-bottom: clamp(var(--s5), 3vw, var(--s6)); }
+
 .qz-foot { display: flex; align-items: center; gap: var(--s4); margin-top: var(--s2); }
 .qz-back, .qz-skip {
   appearance: none; border: 0; background: none; cursor: pointer; font: inherit;

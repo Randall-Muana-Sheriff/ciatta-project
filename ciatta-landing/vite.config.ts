@@ -15,6 +15,7 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         briefs: resolve(__dirname, 'briefs/index.html'),
         how: resolve(__dirname, 'how-it-works/index.html'),
+        quiz: resolve(__dirname, 'quiz/index.html'),
         member: resolve(__dirname, 'member/index.html'),
         privacy: resolve(__dirname, 'privacy/index.html'),
         terms: resolve(__dirname, 'terms/index.html'),

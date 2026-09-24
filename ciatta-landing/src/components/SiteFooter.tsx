@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { Wordmark } from './Wordmark';
 import { CookieChoicesLink } from './CookieBanner';
-import { QuizLink } from './SymptomQuiz';
 import { LEGAL } from '../legal/config';
 import { initReveal } from '../lib/reveal';
 
@@ -35,6 +34,7 @@ const SOCIAL: { label: string; href: string }[] = [
 const COLUMNS: [string, { label: string; href: string }[]][] = [
   ['Company', [
     { label: 'How it works', href: '/how-it-works/' },
+    { label: 'Symptom check', href: '/quiz/' },
     { label: 'Membership', href: '/member/' },
     { label: 'Privacy Policy', href: '/privacy/' },
     { label: 'Terms of Use', href: '/terms/' },
@@ -90,7 +90,6 @@ export function SiteFooter() {
                   </li>
                 ))}
                 <li><a href={`mailto:${LEGAL.contactEmail}`}>{LEGAL.contactEmail}</a></li>
-                <li><QuizLink /></li>
                 <li><CookieChoicesLink /></li>
               </ul>
             </div>

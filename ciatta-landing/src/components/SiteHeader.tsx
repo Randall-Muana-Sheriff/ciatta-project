@@ -16,6 +16,7 @@ import { Wordmark } from './Wordmark';
 
 const LINKS: [string, string][] = [
   ['/how-it-works/', 'How it works'],
+  ['/quiz/', 'Symptom check'],
   ['/briefs/', 'Briefs'],
 ];
 

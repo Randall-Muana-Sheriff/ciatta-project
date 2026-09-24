@@ -136,8 +136,6 @@ function wasDismissed(): boolean {
 
 export function SymptomQuiz() {
   const [open, setOpen] = useState(false);
-  const [i, setI] = useState(0);
-  const [answers, setAnswers] = useState<Weight[]>([]);
   const panel = useRef<HTMLDivElement>(null);
   const closeBtn = useRef<HTMLButtonElement>(null);
   const opener = useRef<Element | null>(null);
@@ -207,6 +205,44 @@ export function SymptomQuiz() {
 
   if (!open) return null;
 
+  return (
+    <div className="qz" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
+      <div
+        className="qz-panel"
+        ref={panel}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="qz-title"
+      >
+        {/* First in the DOM, so the way out is the first thing she reaches. */}
+        <button type="button" className="qz-x" onClick={close} ref={closeBtn} aria-label="Close the quiz">
+          <svg viewBox="0 0 16 16" aria-hidden="true" width="16" height="16">
+            <path d="M2 2l12 12M14 2L2 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+        </button>
+        <QuizFlow onLeave={close} leaveLabel="Not now" />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The quiz itself, with no chrome around it. The popup wraps it in a dialog;
+ * /quiz/ renders it on a page. One implementation, so the questions and the
+ * ending cannot drift into two versions of themselves.
+ */
+export function QuizFlow({
+  onLeave, leaveLabel, intro = true,
+}: {
+  onLeave?: () => void;
+  leaveLabel?: string;
+  /** The popup introduces itself; the page has already done it in its own
+      heading, and two of the same sentence is one too many. */
+  intro?: boolean;
+}) {
+  const [i, setI] = useState(0);
+  const [answers, setAnswers] = useState<Weight[]>([]);
+
   const done = answers.length === QUESTIONS.length;
   const answer = (w: Weight) => {
     const next = [...answers.slice(0, i), w];
@@ -223,30 +259,20 @@ export function SymptomQuiz() {
   const also = QUESTIONS.filter((_, n) => answers[n] === 1).map((q) => q.domain);
 
   return (
-    <div className="qz" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
-      <div
-        className="qz-panel"
-        ref={panel}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="qz-title"
-      >
-        {/* First in the DOM, so the way out is the first thing she reaches. */}
-        <button type="button" className="qz-x" onClick={close} ref={closeBtn} aria-label="Close the quiz">
-          <svg viewBox="0 0 16 16" aria-hidden="true" width="16" height="16">
-            <path d="M2 2l12 12M14 2L2 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-        </button>
-
-        {!done ? (
+    <>
+      {!done ? (
           <>
-            <p className="qz-kind">Symptom check</p>
-            <h2 className="qz-h" id="qz-title">What would you want a clinician to know?</h2>
-            <p className="qz-lede">
-              Twelve questions, about a minute. It does not diagnose anything;
-              it turns what you already know into something you can take to an
-              appointment.
-            </p>
+            {intro && (
+              <>
+                <p className="qz-kind">Symptom check</p>
+                <h2 className="qz-h" id="qz-title">What would you want a clinician to know?</h2>
+                <p className="qz-lede">
+                  Twelve questions, about a minute. It does not diagnose
+                  anything; it turns what you already know into something you
+                  can take to an appointment.
+                </p>
+              </>
+            )}
 
             <div className="qz-bar" role="presentation">
               <span style={{ width: `${(i / QUESTIONS.length) * 100}%` }} />
@@ -264,13 +290,17 @@ export function SymptomQuiz() {
 
             <div className="qz-foot">
               {i > 0 && <button type="button" className="qz-back" onClick={back}>Back</button>}
-              <button type="button" className="qz-skip" onClick={close}>Not now</button>
+              {onLeave && (
+                <button type="button" className="qz-skip" onClick={onLeave}>
+                  {leaveLabel ?? 'Close'}
+                </button>
+              )}
             </div>
           </>
         ) : (
           <>
             <p className="qz-kind">Your answers</p>
-            <h2 className="qz-h" id="qz-title">What to take to your clinician</h2>
+            <h2 className="qz-h" id={intro ? 'qz-title' : undefined}>What to take to your clinician</h2>
 
             {first.length > 0 && (
               <>
@@ -302,25 +332,14 @@ export function SymptomQuiz() {
               <a className="qz-go" href="/member/#membership">Reserve your place</a>
               <button type="button" className="qz-back" onClick={restart}>Start again</button>
             </div>
-            <div className="qz-foot">
-              <button type="button" className="qz-skip" onClick={close}>Close</button>
-            </div>
+            {onLeave && (
+              <div className="qz-foot">
+                <button type="button" className="qz-skip" onClick={onLeave}>Close</button>
+              </div>
+            )}
           </>
         )}
-      </div>
-    </div>
+    </>
   );
 }
 
-/** The way back in, for the footer. */
-export function QuizLink() {
-  return (
-    <button
-      type="button"
-      className="ck-link"
-      onClick={() => window.dispatchEvent(new Event('ciatta:quiz'))}
-    >
-      Symptom check
-    </button>
-  );
-}
