@@ -67,15 +67,6 @@ export function MembershipCard() {
               on the same three words. The argument moves into the paragraph,
               where it reads as a reason rather than as a slogan. */}
           <h2 className="m-h2" id="plan-heading">One membership. One year.</h2>
-          {/* Short enough that the whole section is one screen. Everything
-              cut from here is still said in full where it binds: the card
-              disclosure in the Questions below, and the billing in clause 6
-              of the Terms. What stays is what she needs before she decides
-              to press the button. */}
-          <p className="m-h2-sub">
-            Opens Q3 of 2027. Reserving saves your card and charges
-            nothing; remove it any time before launch.
-          </p>
         </div>
 
         <div className="mb-card">
@@ -116,9 +107,15 @@ export function MembershipCard() {
               collect a card. It says so. The email forms elsewhere on the
               site take no card and still say "No card", because there the
               sentence is true. */}
-          <p className="mb-card-foot">
-            <span>Card saved</span> <span>&middot; Nothing charged</span>
-          </p>
+          {/* The date, under the button, where the question "so when?" lands.
+              It replaced "Card saved · Nothing charged", which was written
+              for a Stripe Checkout that is not switched on: with no keys set
+              the button falls back to the email form, which takes no card at
+              all, so the line was describing something that does not happen
+              yet. What a card is used for is still said in the Questions
+              below and in clause 6 of the Terms, and it belongs back here
+              the day Stripe goes live. */}
+          <p className="mb-card-foot">Opens Q3 of 2027</p>
         </div>
       </div>
     </section>
