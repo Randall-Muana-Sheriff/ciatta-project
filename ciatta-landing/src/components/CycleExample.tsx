@@ -43,7 +43,13 @@ const POINTS: [string, number, string][] = [
    question nobody is asking yet. Provenance is still on the page where it
    belongs: on the tour, on the How it works page, and in the Questions. */
 const AROUND: [string, string][] = [
-  ['Symptoms', 'Energy low for four days from 26 Jan, and three days from 23 Feb.'],
+  /* The symptom row carries what she actually logs: how bad the pain was,
+     how long the flare ran, and how heavy the bleeding was — which is the
+     detail that decides a day and the detail she is least likely to recall
+     in June. "Flare" and "super and overnight" are her words for her own
+     experience, not a finding: no condition is named here, or anywhere on
+     this site, because naming one is a clinician's job. */
+  ['Symptoms', 'Energy low and pain at 8 of 10 across four days from 26 Jan, and three from 23 Feb. Both flares ran through super and overnight protection every two hours.'],
   ['Sleep', 'Your two lowest weeks were 26 Jan and 23 Feb, averaging 6h 02m and 6h 14m.'],
   ['Treatment', 'Levothyroxine went from 50 mcg to 75 mcg on 3 Mar.'],
   ['Labs', 'On 14 Mar, ferritin 24: inside its range, close to the floor of it.'],

@@ -115,8 +115,8 @@ const TOPICS: Topic[] = [
       kind: 'log',
       head: 'Symptoms',
       rows: [
-        ['26 Jan', 'Energy low · four days', 'You told Ciatta'],
-        ['23 Feb', 'Energy low · three days', 'You told Ciatta'],
+        ['26 Jan', 'Pain 8/10 · energy low · four days', 'You told Ciatta'],
+        ['23 Feb', 'Pain 8/10 · energy low · three days', 'You told Ciatta'],
         ['28 Mar', 'Cycle began · day 5 today', 'You told Ciatta'],
       ],
     },
