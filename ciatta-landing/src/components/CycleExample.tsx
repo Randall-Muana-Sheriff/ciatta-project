@@ -113,30 +113,49 @@ export function CycleExample() {
             </p>
           </div>
 
-          <figure className="ex-card">
-            <figcaption className="ex-card-head">
-              <span>Cycle length</span>
-              <i>days</i>
-            </figcaption>
-            <div className="ex-card-body"><Plot /></div>
-          </figure>
-        </div>
+          {/* THE CHANGE, AND WHAT IS AROUND IT, AS ONE OBJECT.
+              The rows used to sit in a block under the photograph, which made
+              them a second section about the first one: you read the cycle,
+              the panel ended, and then a list started. They are inside the
+              panel now, in the same column as the plot and directly under it,
+              and a hairline rail runs from the foot of the plot card down
+              through a dot on every row.
 
-        {/* Not a reveal target, on purpose: the rows are the substance of the
-            section, and nothing whose whole content is a reveal target may
-            depend on the reveal to exist. */}
-        <div className="cy-around">
-          <p className="cy-around-head">What else your record holds from the same months</p>
-          <ul className="cy-rows">
-            {AROUND.map(([name, fact, from]) => (
-              <li key={name}>
-                <b>{name}</b>
-                <span>{fact}</span>
-                <i>{from}</i>
-              </li>
-            ))}
-          </ul>
-          <p className="cy-close">One pattern. More context.</p>
+              The rail is the whole point of the arrangement. It says these
+              hang off that change — which is true, they are the same months —
+              and it says it without an arrow, because an arrow from a cause
+              to an effect is the one thing this section must not draw. */}
+          <div className="cy-stack">
+            <figure className="ex-card cy-plot-card">
+              <figcaption className="ex-card-head">
+                <span>Cycle length</span>
+                <i>days</i>
+              </figcaption>
+              <div className="ex-card-body"><Plot /></div>
+            </figure>
+
+            {/* Not a reveal target, on purpose: these rows are the substance
+                of the section, and nothing whose whole content is a reveal
+                target may depend on the reveal to exist. */}
+            <div className="ex-card cy-card">
+              <p className="cy-card-head">
+                What else your record holds from the same months
+              </p>
+              <ul className="cy-rows">
+                {AROUND.map(([name, fact, from]) => (
+                  <li key={name}>
+                    <span className="cy-dot" aria-hidden="true" />
+                    <span className="cy-row-top">
+                      <b>{name}</b>
+                      <i>{from}</i>
+                    </span>
+                    <span className="cy-fact">{fact}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="cy-close">One pattern. More context.</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>

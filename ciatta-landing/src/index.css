@@ -4124,38 +4124,106 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .lp-more a { color: var(--ink); text-decoration: underline; text-underline-offset: 0.3em; }
 
 /* -- the worked example ---------------------------------------------------
-   The panel is the record tour's own .ex-panel, unchanged. What is new is
-   the five rows under it: what else the record holds from those months,
-   each with where it came from, so the provenance is on the page. */
-.cy-around { margin-top: clamp(var(--s6), 4vw, var(--s7)); }
-.cy-around-head {
-  margin: 0 0 var(--s4); color: var(--meta-ink);
-  font-size: var(--t-caption); letter-spacing: 0.06em; text-transform: uppercase;
+   THE CHANGE AND ITS CONTEXT ARE ONE OBJECT, ON THE PHOTOGRAPH.
+
+   The five rows were a block under the panel, which read as a second section
+   about the first: the panel ended, and then a list about it started. They
+   are inside the panel now, stacked in the same column as the plot, directly
+   under it, so the composition is the argument — one change, and what the
+   record holds around it, in one frame.
+
+   A hairline rail runs down the left of the rows with a dot on each, and it
+   begins where the plot card ends. That is the visual claim, and it is the
+   only claim this section is allowed to make: these belong to the same
+   months as that line. No arrow, no join from one row to another, nothing
+   that draws a cause.
+
+   The right column widens for this section, because five facts need a
+   measure the tour's single figure card does not. ------------------------ */
+.cycle-ex .ex-panel { align-items: start; }
+@media (min-width: 900px) {
+  .cycle-ex .ex-panel { grid-template-columns: minmax(0, 1fr) minmax(0, 26rem); }
 }
-.cy-rows { list-style: none; margin: 0; padding: 0; }
+@media (min-width: 1400px) {
+  .cycle-ex .ex-panel { grid-template-columns: minmax(0, 1fr) minmax(0, 31rem); }
+}
+/* The copy is the only thing in the left column, so it holds its own height
+   rather than stretching beside a column that is now much taller. */
+@media (min-width: 900px) { .cycle-ex .ex-copy { position: sticky; top: var(--s6); } }
+
+.cy-stack { display: grid; gap: 0; min-width: 0; }
+
+/* The two cards are one object: no gap, the adjoining corners squared, and
+   one hairline where they meet. The change and what surrounds it are not two
+   panels that happen to be near each other. */
+.cy-plot-card {
+  padding-bottom: var(--s4);
+  border-radius: var(--r-surface) var(--r-surface) 0 0;
+}
+.cy-card {
+  gap: var(--s4);
+  border-radius: 0 0 var(--r-surface) var(--r-surface);
+  border-top: var(--hairline) solid rgba(247,244,238,0.18);
+}
+.cy-card-head {
+  margin: 0; color: rgba(247,244,238,0.72);
+  font-size: var(--t-caption); font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+}
+
+/* The rail. One hairline behind the dots, drawn on the list rather than per
+   row so it is continuous, and stopped at the first and last dot's centre so
+   it does not run off either end into nothing. */
+.cy-rows {
+  list-style: none; margin: 0; padding: 0;
+  position: relative; display: grid; gap: var(--s4);
+}
+/* It starts above the first dot, at the card's head, so it reads as coming
+   down out of the plot rather than as a bracket around five rows. */
+.cy-rows::before {
+  content: ''; position: absolute; left: 3px;
+  top: calc(var(--s4) * -2); bottom: 0.55em;
+  width: var(--hairline); background: rgba(247,244,238,0.28);
+}
 .cy-rows > li {
-  display: grid; gap: var(--s1) var(--s5);
-  padding: var(--s4) 0;
-  border-top: var(--hairline) solid var(--rule);
+  position: relative; display: grid; gap: 2px;
+  grid-template-columns: 1.25rem 1fr;
+  min-width: 0;
 }
-.cy-rows > li:last-child { border-bottom: var(--hairline) solid var(--rule); }
-.cy-rows b { color: var(--ink); font-size: var(--t-body); font-weight: 600; }
-.cy-rows span { color: var(--body-ink); font-size: var(--t-small); line-height: 1.55; }
-.cy-rows i {
-  color: var(--meta-ink); font-size: var(--t-caption); font-style: normal;
+.cy-dot {
+  grid-column: 1; grid-row: 1;
+  width: 7px; height: 7px; margin-top: 0.42em; border-radius: 50%;
+  background: var(--ember-dark);
+  box-shadow: 0 0 0 3px rgba(24,25,27,0.72);
 }
-@media (min-width: 860px) {
-  .cy-rows > li {
-    grid-template-columns: minmax(8rem, 10rem) 1fr minmax(6rem, 8rem);
-    align-items: baseline;
-  }
-  .cy-rows i { text-align: right; }
+.cy-row-top {
+  grid-column: 2; grid-row: 1;
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--s3); min-width: 0;
 }
-/* The line the section closes on. Larger than the rows, quieter than a
-   heading: it is the conclusion, not a new subject. */
+.cy-row-top b { color: #F7F4EE; font-size: var(--t-body); font-weight: 600; }
+/* where the fact came from, at the end of its own row: the provenance is on
+   the page rather than implied, and it never competes with the fact */
+.cy-row-top i {
+  flex: none; font-style: normal;
+  color: rgba(247,244,238,0.60); font-size: var(--t-caption);
+}
+.cy-fact {
+  grid-column: 2; grid-row: 2;
+  color: rgba(247,244,238,0.86); font-size: var(--t-small); line-height: 1.5;
+}
+@media (max-width: 460px) {
+  /* the source drops under the name rather than squeezing the fact */
+  .cy-row-top { display: grid; gap: 0; }
+  .cy-row-top i { order: 2; }
+}
+
+/* The line the stack closes on. Inside the card, above its foot, separated
+   by the same hairline the rows are tied with. */
 .cy-close {
-  margin: clamp(var(--s5), 3vw, var(--s6)) 0 0;
-  color: var(--ink); font-size: var(--t-lede); font-weight: 500;
+  margin: 0; padding-top: var(--s4);
+  border-top: var(--hairline) solid rgba(247,244,238,0.20);
+  color: #F7F4EE; font-size: var(--t-lede); font-weight: 500;
   letter-spacing: -0.01em;
 }
 
