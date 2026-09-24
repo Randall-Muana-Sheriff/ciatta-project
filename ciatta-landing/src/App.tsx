@@ -194,9 +194,12 @@ export default function App() {
                   memories, and connect in ways
                   never before possible.
 
-                The dash goes with it. The clause it was holding open is a
-                sentence of its own now, which is what "So you can..." was
-                always doing anyway.
+                What it says has changed as well. It used to be the hero's
+                own sentence again: 83% of the content words in common, one
+                screen apart, which reads as a stutter rather than emphasis.
+                The hero says what Ciatta does, so this says why it has to
+                exist at all, which nothing else on the page says and which
+                is what "one membership, one year" rests on further down.
 
                 The breaks are authored, so they are switched off below a
                 tablet: a line break written for a 1440 window lands in the
@@ -206,12 +209,10 @@ export default function App() {
                 element, so with the breaks switched off the lines ran
                 together as "connectsyour health data". */}
             <h2 id="statement-heading" className="statement-title">
-              Ciatta continuously connects{' '}<br className="st-br" />
-              your health data, your care,{' '}<br className="st-br" />
-              and your everyday context.{' '}<br className="st-br" />
-              So you can see what changed,{' '}<br className="st-br" />
-              what may be connected,{' '}<br className="st-br" />
-              and what you can do next.
+              Your body keeps no record.{' '}<br className="st-br" />
+              Your clinic keeps part of one.{' '}<br className="st-br" />
+              Ciatta keeps all of it,{' '}<br className="st-br" />
+              and reads it as one thing.
             </h2>
           </div>
         </section>
