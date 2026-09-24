@@ -31,15 +31,23 @@ const POINTS: [string, number, string][] = [
   ['2 Mar', 26, '26'],
 ];
 
-/* What else the record holds from those months. Name, the fact, and where
-   the fact came from — the same three-part row the tour's log cards use, so
-   the provenance is on the page rather than implied. */
-const AROUND: [string, string, string][] = [
-  ['Symptoms', 'Energy low for four days from 26 Jan, and three days from 23 Feb.', 'You told Ciatta'],
-  ['Sleep', 'Your two lowest weeks were 26 Jan and 23 Feb, averaging 6h 02m and 6h 14m.', 'Connected'],
-  ['Treatment', 'Levothyroxine went from 50 mcg to 75 mcg on 3 Mar.', 'Imported'],
-  ['Labs', 'On 14 Mar, ferritin 24: inside its range, close to the floor of it.', 'Imported'],
-  ['Your own words', '“Waking several times a night,” written on 26 Jan.', 'You told Ciatta'],
+/* What else the record holds from those months. A name and the fact, and
+   nothing else.
+
+   Each row used to carry where the fact came from as well — "You told
+   Ciatta", "Connected", "Imported" — which is the three-part row the record
+   tour's log cards use. On those cards the source is the subject: they are
+   about what Ciatta reads and from where. Here it is not. This section is
+   about one change and what sits around it, and a third column repeating
+   one of three words down the side of five sentences was answering a
+   question nobody is asking yet. Provenance is still on the page where it
+   belongs: on the tour, on the How it works page, and in the Questions. */
+const AROUND: [string, string][] = [
+  ['Symptoms', 'Energy low for four days from 26 Jan, and three days from 23 Feb.'],
+  ['Sleep', 'Your two lowest weeks were 26 Jan and 23 Feb, averaging 6h 02m and 6h 14m.'],
+  ['Treatment', 'Levothyroxine went from 50 mcg to 75 mcg on 3 Mar.'],
+  ['Labs', 'On 14 Mar, ferritin 24: inside its range, close to the floor of it.'],
+  ['Your own words', '“Waking several times a night,” written on 26 Jan.'],
 ];
 
 /** The plot, drawn from the four points. One scale, the last point marked. */
@@ -142,13 +150,10 @@ export function CycleExample() {
                 What else your record holds from the same months
               </p>
               <ul className="cy-rows">
-                {AROUND.map(([name, fact, from]) => (
+                {AROUND.map(([name, fact]) => (
                   <li key={name}>
                     <span className="cy-dot" aria-hidden="true" />
-                    <span className="cy-row-top">
-                      <b>{name}</b>
-                      <i>{from}</i>
-                    </span>
+                    <b>{name}</b>
                     <span className="cy-fact">{fact}</span>
                   </li>
                 ))}

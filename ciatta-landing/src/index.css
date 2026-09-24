@@ -4196,28 +4196,17 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   background: var(--ember-dark);
   box-shadow: 0 0 0 3px rgba(24,25,27,0.72);
 }
-.cy-row-top {
+/* A name and its sentence. The third column — where the fact came from —
+   has gone: five sentences with one of three words repeated down the side
+   of them answered a question this section is not asking. */
+.cy-rows b {
   grid-column: 2; grid-row: 1;
-  display: flex; align-items: baseline; justify-content: space-between;
-  gap: var(--s3); min-width: 0;
-}
-.cy-row-top b { color: #F7F4EE; font-size: var(--t-body); font-weight: 600; }
-/* where the fact came from, at the end of its own row: the provenance is on
-   the page rather than implied, and it never competes with the fact */
-.cy-row-top i {
-  flex: none; font-style: normal;
-  color: rgba(247,244,238,0.60); font-size: var(--t-caption);
+  color: #F7F4EE; font-size: var(--t-body); font-weight: 600;
 }
 .cy-fact {
   grid-column: 2; grid-row: 2;
   color: rgba(247,244,238,0.86); font-size: var(--t-small); line-height: 1.5;
 }
-@media (max-width: 460px) {
-  /* the source drops under the name rather than squeezing the fact */
-  .cy-row-top { display: grid; gap: 0; }
-  .cy-row-top i { order: 2; }
-}
-
 /* The line the stack closes on. Inside the card, above its foot, separated
    by the same hairline the rows are tied with. */
 .cy-close {
