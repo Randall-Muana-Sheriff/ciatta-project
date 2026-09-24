@@ -22,7 +22,7 @@ re-dating every customer if it slips.
 1. **A Stripe account**, with business details verified and a bank account
    connected for payouts. Live keys do not work until this is done.
 2. **A Product and Price.** Create a product "Ciatta Core" with a recurring
-   price of **$99 / year**, billing interval **yearly** (one payment a year,
+   price of **$89 / year** (the founding price; the regular price is $119), billing interval **yearly** (one payment a year,
    not twelve monthly instalments). Copy the price ID (`price_…`).
 3. **Three secrets**, set as Cloudflare Pages secrets. Do not put them in the
    repo, in `.env`, or in a message to anyone:

@@ -1,41 +1,78 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 /**
  * The reserve action, wired to Stripe.
  *
- * "Reserve" everywhere it appears in the page body. Only the header keeps
- * the full "Reserve your place": it is the one that has to stand alone,
- * with no sentence above it saying what is being reserved.
+ * "Reserve your place" everywhere, in the header, the hero, the membership
+ * card, and the closing ask. One action with one name: a page that calls the
+ * same thing "Join now" in one place and "Reserve" in another is asking twice.
  *
  * Pressing it asks the site for a Checkout session and hands the browser to
  * Stripe, which collects the card and charges nothing. Stripe collects the
  * email too, so there is no form in front of the button.
  *
- * Three things it has to survive.
+ * THIS BUTTON MUST NEVER DEAD-END, AND STRIPE IS NOT CONFIGURED YET.
  *
- * Reservations not being open yet. Until the keys are set the endpoint
- * answers 503, and a button that reports an error for a thing that was never
- * switched on is a bug she can do nothing about. So it falls back: it sends
- * her to the email form, which works today, and says why.
+ * With no STRIPE_SECRET_KEY set the endpoint answers 503. A 503 is not an
+ * outcome anyone can act on, so it is never shown: every failure lands on the
+ * email reservation form, which works today, takes no card, and is the actual
+ * reservation mechanism until Stripe goes live. The button finds the nearest
+ * email form below it, scrolls to it, puts the cursor in the field, and says
+ * in one sentence what happens next.
  *
- * A slow network. The label says what is happening and the button stops
+ * It falls back the same way for every failure, not only 503 — a network that
+ * dropped, an endpoint that answered 500, a body that would not parse. There
+ * is no state of this button in which someone is told to try again later.
+ *
+ * What it never does: claim a payment happened, ask for payment details
+ * itself, or describe leaving an address as a subscription. The message says
+ * free, no card, and nothing charged, because that is what the email path is.
+ *
+ * WHEN STRIPE IS CONFIGURED, nothing here changes shape. The endpoint starts
+ * answering with a Checkout URL instead of 503, the first branch below takes
+ * it, and the fallback stays where it is for the days Stripe is down. The CTA
+ * label, the markup and the styling are untouched by the switch.
+ *
+ * A slow network: the label says what is happening and the button stops
  * accepting presses, because two presses is two Stripe customers.
- *
- * No JavaScript, or JavaScript that failed. It renders as a link to the email
- * form and upgrades itself to a button, so the path to reserving a place
- * never depends on this file loading.
  */
 
-type State = { kind: 'idle' } | { kind: 'opening' } | { kind: 'closed' } | { kind: 'error'; message: string };
+type State = { kind: 'idle' } | { kind: 'opening' } | { kind: 'closed' };
 
 export function ReserveButton({
   className = 'm-btn',
-  label = 'Reserve',
+  label = 'Reserve your place',
 }: {
   className?: string;
   label?: string;
 }) {
   const [state, setState] = useState<State>({ kind: 'idle' });
+  const me = useRef<HTMLButtonElement | null>(null);
+
+  /**
+   * The email form to send her to. The nearest one below this button in
+   * document order, because a button in the middle of a page should not
+   * scroll someone back up to the hero to finish — which is exactly what a
+   * hard-coded #join did on the home page, where the hero form sits above
+   * the membership card. The last form on the page is the fallback's
+   * fallback, and #join the one after that.
+   */
+  function reach() {
+    const fields = Array.from(
+      document.querySelectorAll<HTMLInputElement>('.waitlist input[type="email"]'),
+    );
+    const btn = me.current;
+    const below = btn
+      ? fields.find((f) => btn.compareDocumentPosition(f) & Node.DOCUMENT_POSITION_FOLLOWING)
+      : undefined;
+    const field = below ?? fields[fields.length - 1];
+    const target: HTMLElement | null = field ?? document.getElementById('join');
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Focus after the scroll has been asked for, so the browser does not
+    // jump to the field and then animate to it from there.
+    window.setTimeout(() => field?.focus({ preventScroll: true }), 400);
+  }
 
   async function open() {
     if (state.kind === 'opening') return;
@@ -46,26 +83,24 @@ export function ReserveButton({
         headers: { 'content-type': 'application/json' },
         body: '{}',
       });
-      const body = (await res.json().catch(() => ({}))) as { ok?: boolean; url?: string; message?: string };
+      const body = (await res.json().catch(() => ({}))) as { ok?: boolean; url?: string };
 
-      if (res.status === 503) {
-        setState({ kind: 'closed' });
-        document.getElementById('join')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-      }
-      if (body.ok && body.url) {
+      // The only path that leaves this page is a real Checkout URL.
+      if (res.ok && body.ok && body.url) {
         window.location.href = body.url;
         return;
       }
-      setState({ kind: 'error', message: body.message ?? "That didn't work. Try again in a moment." });
     } catch {
-      setState({ kind: 'error', message: 'Check your connection and try again.' });
+      // Falls through to the same place as every other failure.
     }
+    setState({ kind: 'closed' });
+    reach();
   }
 
   return (
     <>
       <button
+        ref={me}
         type="button"
         className={className}
         onClick={open}
@@ -76,12 +111,9 @@ export function ReserveButton({
 
       {state.kind === 'closed' && (
         <p className="rs-msg" role="status">
-          Leave your address below to hold your place. No card, and nothing is
-          charged.
+          Leave your address below to hold your place. Reserving is free, no
+          card is taken, and you are not subscribing to anything.
         </p>
-      )}
-      {state.kind === 'error' && (
-        <p className="rs-msg is-error" role="alert">{state.message}</p>
       )}
     </>
   );

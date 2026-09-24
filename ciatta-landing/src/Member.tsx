@@ -82,7 +82,7 @@ const QUESTIONS: [string, string][] = [
    'To build your record and read it for you, and nothing else. It is encrypted in transit and at rest, access is audited, and we will never sell, rent, or share it with advertisers, brokers, or insurers. You can export everything at any time, and if you delete your account we delete every byte.'],
 
   ['What does it cost, and can I cancel?',
-   'Ciatta Core is $99 for the year: one membership, one payment, and continuous access for the year rather than a subscription that starts over every thirty days. You can cancel at any time and keep your record: export everything before you go, or delete it outright. Cancelling stops the next annual payment rather than ending your access that day, and we email you before each renewal.'],
+   'Ciatta Core is $119 for the year: one membership, one payment, and continuous access for the year rather than a subscription that starts over every thirty days. Reserve a place before Ciatta opens and your membership is held at the founding price of $89 for the year, for as long as it runs without a break. You can cancel at any time and keep your record: export everything before you go, or delete it outright. Cancelling stops the next annual payment rather than ending your access that day, and we email you before each renewal.'],
 
   ['What does reserving a place do, and when does membership begin?',
    'Reserving puts you on the early-access list, in the order people are let in, and it is free. Leave your address and no card is taken. Reserve with a card and it is saved against your place rather than billed, so membership can begin the day Ciatta opens, and you can remove it at any time before then. Either way you are not a member and not subscribed until you choose to begin. Membership begins when Ciatta opens, which we are building towards for Q3 of 2027. Nothing is billed before then, and if the date moves we will tell you.'],
@@ -108,14 +108,17 @@ export default function Member() {
           <Film base="member" className="m-hero-film" scrim="m-hero-scrim" width={1080} height={1920} />
           <div className="m-hero-inner">
             <span className="m-eyebrow">Reservations open</span>
-            <h1 className="m-hero-title">Your health, continuously connected.</h1>
+            <h1 className="m-hero-title">
+              Everything you&rsquo;ve been tracking, finally in one place that
+              thinks.
+            </h1>
             <p className="m-hero-lede">
               Your records, your symptoms, your treatments, your everyday
-              context and your own words, read together over time. Ciatta
-              Core is $99 for the year when membership opens; reserving a
-              place today is free.
+              context and your own words, read together over time. Membership
+              is $119 for the year; reserve a place before Ciatta opens and
+              yours is held at the founding price of $89. Reserving is free.
             </p>
-            <a className="m-btn is-light" href="#join">Reserve</a>
+            <a className="m-btn is-light" href="#join">Reserve your place</a>
             <p className="m-hero-note">
               <span>No card</span> <span>&middot; Nothing charged</span>
             </p>
@@ -125,15 +128,18 @@ export default function Member() {
         {/* ============ 02 · the whole argument for membership ========== */}
         <section className="m-band mb-say" aria-labelledby="why-heading">
           <div className="m-wrap">
+            {/* The heading here was "A record is not the product. What it
+                becomes is." — an argument about the product rather than
+                anything she can use, and one that framed Ciatta as a
+                records company in the same breath. The timeline below is
+                the argument, so it makes it without a slogan on top. */}
             <h2 id="why-heading" className="mb-say-line">
-              A record is not the product.
-              <span> What it becomes is.</span>
+              A change in April means more<span> when January is still there.</span>
             </h2>
             <p className="mb-say-sub">
-              Your health becomes more useful in context. A change in April
-              means more when Ciatta remembers what happened in January,
-              February and March. The longer you use it, the richer your
-              health record becomes.
+              Your health becomes more useful in context. The longer you use
+              Ciatta, the more of your own history it has to read a change
+              against.
             </p>
 
             <ol className="mb-time">
@@ -152,7 +158,7 @@ export default function Member() {
         <section className="m-band is-alt" aria-labelledby="care-heading">
           <div className="m-wrap">
             <div className="band-head">
-              <span className="m-eyebrow is-ink">Ciatta Care</span>
+              <span className="m-eyebrow is-ink">Ciatta Care · included in membership</span>
               <h2 className="m-h2" id="care-heading">Healthcare doesn’t end when you close the app.</h2>
               <p className="m-h2-sub">
                 The work around an appointment that currently falls to you.
@@ -195,11 +201,11 @@ export default function Member() {
         {/* ============ 05 · permission, and privacy ===================== */}
         <section className="m-band is-alt mb-trustline" aria-labelledby="control-heading">
           <div className="m-wrap">
-            <h2 className="m-h2" id="control-heading">Your health. Your record. Your decisions.</h2>
+            <h2 className="m-h2" id="control-heading">Nothing happens without your permission.</h2>
             <p className="m-h2-sub">
-              Nothing happens without your permission, and Ciatta shows where
-              every figure came from. Your record is encrypted, never sold or
-              shared, exportable at any time, and deleted in full if you ask.
+              Ciatta shows where every figure came from. Your health data is
+              encrypted, never sold or shared, exportable at any time, and
+              deleted in full if you ask.
               The <a href="/privacy/">Privacy Policy</a> and{' '}
               <a href="/terms/">Terms of Use</a> are the binding versions.
             </p>
@@ -234,7 +240,7 @@ export default function Member() {
             </div>
             <div className="split-body">
               <ReservedNotice />
-              <SubscribeForm id="waitlist-member" source="member" kind="waitlist" offerBriefs cta="Reserve" note="" />
+              <SubscribeForm id="waitlist-member" source="member" kind="waitlist" offerBriefs cta="Reserve your place" note="" />
               <p className="m-free-note">
                 <span>No card</span> <span>&middot; Nothing charged</span>{' '}
                 <span>&middot; You are not subscribed to anything</span>

@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react';
 import { HeroFilm } from './components/HeroFilm';
 import { HeroStory } from './components/HeroStory';
 import { SubscribeForm } from './components/SubscribeForm';
-import { ExploreSection } from './components/ExploreSection';
+import { CycleExample } from './components/CycleExample';
 import { HowSection } from './components/HowSection';
-import { HumanSection } from './components/HumanSection';
-import { SafetySection } from './components/SafetySection';
+import { QuizFlow } from './components/SymptomQuiz';
 import { MembershipCard } from './components/MembershipCard';
 import { SiteHeader } from './components/SiteHeader';
 import { CookieBanner } from './components/CookieBanner';
@@ -129,13 +128,21 @@ export default function App() {
           <HeroFilm />
           <div className="shell hero-inner">
             <div className="hero-copy">
+              {/* Her sentence, not the product's. "See what's changing in
+                  your health" was an instruction about a feature; this is the
+                  thing she already knows when she arrives, and the line under
+                  it is the reason she is still looking. */}
               <h1 className="display hero-title">
-                See what’s changing in your health.
+                You know something has changed.
               </h1>
-              {/* One paragraph: what Ciatta holds, and what it does with it. */}
+              <p className="hero-lede hero-lede-lead">
+                But you don’t always have the full picture to show it.
+              </p>
+              {/* Then, and only then, what Ciatta does about that. */}
               <p className="hero-lede">
-                Ciatta connects your health data and everyday context to help you see
-                what changed, what may be connected, and what you can do about it.
+                Ciatta connects your symptoms, labs, treatments, daily life, and
+                health data over time, so you can see what changed, what may be
+                connected, and what to do next.
               </p>
               {/* The hero's action is the shortest word on the page. It sits
                   inside the field on a phone, where "Reserve your place" left
@@ -146,7 +153,7 @@ export default function App() {
                   id="waitlist-hero"
                   source="hero"
                   kind="waitlist"
-                  cta="Join now"
+                  cta="Reserve your place"
                   note=""
                 />
               </div>
@@ -232,22 +239,27 @@ export default function App() {
         </section>
         </div>
 
-        {/* ------ EXPLORE: the whole record, before the page explains it ---- */}
-        <ExploreSection />
-
-        {/* -------------------------- HOW IT WORKS -------------------------- */}
-        <HowSection />
-
+        {/* ==== 02 · IF THIS IS YOU =========================================
+            Moved. These four tiles were at roughly half the page's depth,
+            under a heading naming the audience, which meant the one section
+            written to make a visitor say "that is me" arrived long after most
+            visitors had gone. Recognition is the second thing the page does
+            now, immediately after the hero. Nothing in it changed but the
+            heading above it and where it sits. ========================== */}
         {/* ------------------- GROUNDED IN EVIDENCE ------------------------- */}
         <section className="section who" aria-labelledby="who-heading">
           <div className="shell">
             <div className="band-head">
+              {/* "If this is you" rather than "built for the questioner":
+                  the second is Ciatta describing its own audience, which is a
+                  thing she has to agree to be. The first is a question she
+                  answers in the time it takes to read four lines, and it is
+                  why this section moved from halfway down the page to here. */}
               <h2 id="who-heading" className="band-title">
-                Grounded in evidence, built for the questioner
+                If this is you, Ciatta was built for you.
               </h2>
               <p className="band-sub">
-                The health intelligence platform for women who question,
-                research, and take their health into their own hands.
+                Four women. You only have to recognise one of them.
               </p>
             </div>
 
@@ -266,20 +278,102 @@ export default function App() {
           </div>
         </section>
 
-        {/* ------------------------ THE HUMAN PROBLEM ----------------------- */}
-        <HumanSection />
+        {/* ==== 03 · ONE EXAMPLE, ALL THE WAY THROUGH ======================
+            This replaced the nine-tab tour of the record. The tour is intact
+            and now lives on the How it works page, where someone who wants
+            all nine layers can have them. ============================== */}
+        <CycleExample />
 
-        {/* --------------------- SAFETY AND PRIVACY ------------------------ */}
-        <SafetySection />
+        {/* ==== 04 · THE QUIZ ==============================================
+            The real quiz, the same component /quiz/ renders, ending on the
+            same real result. It is on the home page because it is the one
+            thing here someone can do rather than read, and doing it produces
+            something of hers: her own answers, sorted, in words she can say
+            in an appointment. The dedicated page stays, linked from the
+            header and the footer, for anyone who arrives looking for it.
 
-        {/* -------------------------- MEMBERSHIP ---------------------------- */}
-        <MembershipCard />
+            The card wrapper is the one that page uses, so the quiz is styled
+            by what already exists rather than by a second set of rules. */}
+        <section className="section quiz-home" aria-labelledby="quiz-heading">
+          <div className="shell">
+            <div className="band-head">
+              <h2 id="quiz-heading" className="band-title">
+                What should you be paying attention to?
+              </h2>
+              <p className="band-sub">
+                Take 60 seconds to see what may be worth exploring in your
+                health.
+              </p>
+            </div>
+            <div className="qz-page-card">
+              <QuizFlow />
+            </div>
+          </div>
+        </section>
 
-        {/* ---------------------------- QUESTIONS --------------------------- */}
-        <section className="section" aria-labelledby="q-heading">
+        {/* ==== 05 · HOW CIATTA WORKS ======================================
+            The loop, in five words. The four illustrated steps that used to
+            be here are on the How it works page, once. ================= */}
+        <HowSection />
+
+        {/* ==== 06 · MEMBERSHIP =========================================== */}
+        <MembershipCard heading="Everything you’ve been tracking, finally in one place that thinks." />
+
+        {/* ==== 07 · WHY RESERVE NOW =======================================
+            The one thing the page never said: what reserving is for. No
+            countdown, no places-left counter, no closing date. The reason to
+            do it now is the price, and the reason it is safe to do now is
+            that it costs nothing and commits to nothing, so both are said in
+            two sentences and neither is dressed up. ==================== */}
+        <section className="section why-now" aria-labelledby="why-now-heading">
+          <div className="shell">
+            <div className="band-head">
+              <h2 id="why-now-heading" className="band-title">
+                Reserve now and lock in the $89 founding price.
+              </h2>
+              <p className="band-sub">
+                Free to reserve. No card required. You decide when membership
+                opens.
+              </p>
+            </div>
+            <dl className="wn-rows">
+              <div>
+                <dt>$89 / year</dt>
+                <dd>Your price as a founding member, held for as long as your membership runs.</dd>
+              </div>
+              <div>
+                <dt>$119 / year</dt>
+                <dd>The price of membership after Ciatta opens.</dd>
+              </div>
+              <div>
+                <dt>$0 today</dt>
+                <dd>Reserving is free, takes an address, and is not a subscription.</dd>
+              </div>
+            </dl>
+          </div>
+        </section>
+
+        {/* ==== 08 · TRUST ================================================
+            One section. It was three: a privacy band with its own heading,
+            the six questions below it, and a third pass at the same claims
+            on the membership page. The promise is the heading here, and the
+            questions that carry the detail sit under it rather than in a
+            separate section further down, so someone checking whether to
+            trust this finds all of it in one place.
+
+            The binding versions are the Privacy Policy and the Terms, linked
+            from the footer of every page. A claim that lives only on a
+            landing page is marketing. ================================= */}
+        <section className="section trust" aria-labelledby="trust-heading">
           <div className="shell split">
             <div className="split-lead">
-              <h2 id="q-heading" className="band-title">Questions</h2>
+              <h2 id="trust-heading" className="band-title">
+                Your health data, protected end-to-end.
+              </h2>
+              <p className="band-sub">
+                Encrypted in transit and at rest, audited inside Ciatta, never
+                sold or shared, and yours to export or delete at any time.
+              </p>
             </div>
             <div className="qa split-body">
               {QUESTIONS.map(([q, a]) => (
@@ -295,21 +389,23 @@ export default function App() {
           </div>
         </section>
 
-        {/* -------------------------------- CTA ---------------------------- */}
+        {/* ==== 09 · THE ASK ==============================================
+            The heading is what the section before the last one used to be: a
+            whole photographic band about becoming your own medical historian,
+            six pills of the work she is already doing. The band said it at
+            length in the middle of the page; here it is one line, at the
+            moment she is deciding, which is where it is worth something. */}
         <section className="section" aria-labelledby="cta-heading">
           <div className="shell split is-centred">
             <div className="split-lead close-inner">
-              {/* The line people actually read is the heading now, so the
-                  section keeps an accessible name without a label above it
-                  restating what the sentence already says. */}
               <h2 id="cta-heading" className="display">
-                You shouldn’t have to piece together your own health.
+                Stop being the only person keeping track.
               </h2>
               <p className="close-lines">
-                We are building the intelligence layer for personal health,
-                connecting what’s happening across your body, your care, and
-                your everyday life so you can see what’s changing, make
-                informed decisions, and move forward with greater clarity.
+                Ciatta connects what is happening across your body, your care,
+                and your everyday life, so you can see what is changing, make
+                informed decisions, and arrive at your next appointment with
+                all of it in order.
               </p>
             </div>
             <div className="split-body">
@@ -318,7 +414,7 @@ export default function App() {
                   id="waitlist-close"
                   source="closing"
                   kind="waitlist"
-                  cta="Reserve"
+                  cta="Reserve your place"
                   note=""
                   consent="I agree to receive emails about early access and product updates."
                 />

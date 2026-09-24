@@ -54,7 +54,6 @@ const TARGETS = [
   /* not .mb-card either: it holds the six <details> inclusions and the
      reserve button, so it is the same hazard as the accordions above */
   '.who-tile p',
-  '.hm-title',
   '.ex-title',
   '.ex-lede',
   '.mb-time > *',
@@ -79,12 +78,14 @@ const EXCLUDE = [
   '.hero', '.hero *',
   '.statement', '.statement *',
   '.ck', '.ck *',
-  /* The safety section is a heading and one paragraph, and both of them are
-     .band-head children. If the reveal ever fails to fire there, the section
-     does not render at all — which is what happened, and was reported as the
-     section being blank. Nothing whose entire content is a reveal target may
-     depend on the reveal. */
-  '.safety', '.safety *',
+  /* WHAT THE SAFETY SECTION LEFT BEHIND. That section was a heading and one
+     paragraph, both of them .band-head children, so a reveal that failed to
+     fire there left no section at all. It was reported as the section being
+     blank. It has since been folded into the trust section, whose questions
+     are not reveal targets, so the section renders whatever the reveal does.
+
+     The rule stands for anything added later: nothing whose entire content
+     is a reveal target may depend on the reveal to exist. */
 ].join(', ');
 
 const REVEALED = 'is-in';
@@ -94,7 +95,7 @@ export function initReveal(): void {
 
   const root = document.documentElement;
   const nodes = Array.from(document.querySelectorAll<HTMLElement>(TARGETS))
-    .filter((el) => !el.matches(EXCLUDE) && !el.closest('.hero, .statement, .safety'));
+    .filter((el) => !el.matches(EXCLUDE) && !el.closest('.hero, .statement'));
 
   if (!nodes.length) return;
 

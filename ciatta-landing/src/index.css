@@ -1268,7 +1268,7 @@ p { margin: 0; text-wrap: pretty; }
 .briefs-search input:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 2px; }
 
 /* ===========================================================================
-   Member — the page "Become a member" goes to.
+   Member — the page "Reserve your place" goes to.
 
    Composed after whoop.com/membership: film, then the membership, then what
    it promises, then "Start free, choose later", then the questions. WHOOP's
@@ -1674,6 +1674,15 @@ p { margin: 0; text-wrap: pretty; }
   font-weight: 500; letter-spacing: -0.04em;
 }
 .mb-card-price span { font-size: var(--t-body); color: var(--meta-ink); }
+
+/* What the figure above is, and what it is instead of. One line, in the
+   caption size, no strikethrough: a struck-out price is a sale banner, and
+   the founding price is a price rather than a discount. */
+.mb-card-was {
+  margin: var(--s2) 0 0; color: var(--ink);
+  font-size: var(--t-caption); line-height: 1.5;
+}
+.mb-card-was span { color: var(--meta-ink); }
 
 .mb-card-foot span { white-space: nowrap; }
 /* Wider and shorter: it takes the card's full measure instead of sitting as
@@ -3699,7 +3708,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 
      14rem, not 11: the play control and its progress bar sit under the
      device inside the same column, and they are part of what has to fit. */
-  max-height: calc(100svh - 14rem);
+  max-height: calc(100svh - 15.5rem);
   overflow: hidden;
   margin-left: auto;
   padding: 0.3125rem 0.3125rem 0;
@@ -3714,7 +3723,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 /* Stacked, so the whole copy column counts against the device as well. After
    the base rule, not before: same specificity, later declaration wins. */
-@media (max-width: 999px) { .ha-device { max-height: calc(100svh - 33rem); } }
+@media (max-width: 999px) { .ha-device { max-height: calc(100svh - 34.5rem); } }
 @media (min-width: 1000px) { .ha-device { width: min(21rem, 26vw); } }
 
 .ha {
@@ -3843,7 +3852,9 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
      the sentence, the form, and the form's clearance. */
   .ha-device {
     width: min(15.5rem, 66vw);
-    max-height: calc(100svh - 23rem);
+    /* 24.5rem, up from 23: the hero gained a line when "But you don't always
+       have the full picture to show it." went in above the paragraph. */
+    max-height: calc(100svh - 24.5rem);
     overflow: hidden;
     margin-inline: auto;
     border-radius: 1.75rem 1.75rem 0 0;
@@ -4072,6 +4083,126 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   .hs-area, .hs-pain, .hs-nowdot { opacity: 1; }
   .hs-now { opacity: 0.55; }
 }
+
+/* =========================================================================
+   THE JOURNEY'S NEW SECTIONS
+   =========================================================================
+   Four blocks, for the four things the home page now does that it did not:
+   the loop in five words, one worked example with the record around it, the
+   reason to reserve today, and the trust section that three sections became.
+
+   Everything here is built out of tokens that already exist: the same rule
+   colour, the same hairline, the same spacing steps, the same type scale. No
+   new colour, no gradient, and no card with a shadow where a rule will do.
+   ========================================================================= */
+
+/* -- the loop -------------------------------------------------------------
+   Five numbered rows separated by hairlines, the way the care pairs on the
+   membership page are. Two columns from a tablet up: the stage's name holds
+   its own column so the five words read down the page as a list of five
+   words, which is the point of the section. */
+.lp-rows { list-style: none; margin: clamp(var(--s6), 4vw, var(--s7)) 0 0; padding: 0; }
+.lp-rows > li {
+  display: grid; gap: var(--s1) var(--s5);
+  grid-template-columns: auto 1fr;
+  padding: var(--s4) 0;
+  border-top: var(--hairline) solid var(--rule);
+}
+.lp-rows > li:last-child { border-bottom: var(--hairline) solid var(--rule); }
+.lp-n { color: var(--meta-ink); font-size: var(--t-caption); font-variant-numeric: tabular-nums; }
+.lp-rows b {
+  grid-column: 2; color: var(--ink);
+  font-size: var(--t-lede); font-weight: 500; letter-spacing: -0.01em;
+}
+.lp-line { grid-column: 2; color: var(--body-ink); font-size: var(--t-small); line-height: 1.55; }
+@media (min-width: 760px) {
+  .lp-rows > li { grid-template-columns: 2.5rem minmax(7rem, 9rem) 1fr; align-items: baseline; }
+  .lp-rows b { grid-column: 2; }
+  .lp-line { grid-column: 3; }
+}
+.lp-more { margin: var(--s5) 0 0; font-size: var(--t-small); }
+.lp-more a { color: var(--ink); text-decoration: underline; text-underline-offset: 0.3em; }
+
+/* -- the worked example ---------------------------------------------------
+   The panel is the record tour's own .ex-panel, unchanged. What is new is
+   the five rows under it: what else the record holds from those months,
+   each with where it came from, so the provenance is on the page. */
+.cy-around { margin-top: clamp(var(--s6), 4vw, var(--s7)); }
+.cy-around-head {
+  margin: 0 0 var(--s4); color: var(--meta-ink);
+  font-size: var(--t-caption); letter-spacing: 0.06em; text-transform: uppercase;
+}
+.cy-rows { list-style: none; margin: 0; padding: 0; }
+.cy-rows > li {
+  display: grid; gap: var(--s1) var(--s5);
+  padding: var(--s4) 0;
+  border-top: var(--hairline) solid var(--rule);
+}
+.cy-rows > li:last-child { border-bottom: var(--hairline) solid var(--rule); }
+.cy-rows b { color: var(--ink); font-size: var(--t-body); font-weight: 600; }
+.cy-rows span { color: var(--body-ink); font-size: var(--t-small); line-height: 1.55; }
+.cy-rows i {
+  color: var(--meta-ink); font-size: var(--t-caption); font-style: normal;
+}
+@media (min-width: 860px) {
+  .cy-rows > li {
+    grid-template-columns: minmax(8rem, 10rem) 1fr minmax(6rem, 8rem);
+    align-items: baseline;
+  }
+  .cy-rows i { text-align: right; }
+}
+/* The line the section closes on. Larger than the rows, quieter than a
+   heading: it is the conclusion, not a new subject. */
+.cy-close {
+  margin: clamp(var(--s5), 3vw, var(--s6)) 0 0;
+  color: var(--ink); font-size: var(--t-lede); font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* -- why reserve now ------------------------------------------------------
+   Three figures and what each one is. No countdown, no counter, no closing
+   date: the rows are facts about the price, and the third one is the reason
+   it is safe to do this today. */
+.wn-rows { margin: clamp(var(--s6), 4vw, var(--s7)) 0 0; display: grid; gap: var(--s5); }
+@media (min-width: 760px) { .wn-rows { grid-template-columns: repeat(3, 1fr); gap: var(--s5) var(--s7); } }
+.wn-rows > div { padding-top: var(--s4); border-top: var(--hairline) solid var(--rule); }
+.wn-rows dt {
+  color: var(--ink); font-size: var(--t-card); font-weight: 500;
+  letter-spacing: -0.02em; margin-bottom: var(--s2);
+}
+.wn-rows dd { margin: 0; color: var(--body-ink); font-size: var(--t-small); line-height: 1.55; }
+
+/* -- trust ----------------------------------------------------------------
+   The promise on the left, the questions that carry the detail on the right,
+   in the split the page already uses for its FAQ. One section where there
+   were three.
+
+   The questions are not reveal targets and never have been, so the section
+   renders whatever the reveal does — which is the rule this file learned the
+   hard way when a heading-and-paragraph section came out blank. */
+.trust .split-lead .band-sub { margin-top: var(--s4); max-width: 30rem; }
+
+/* -- the hero's second line ----------------------------------------------
+   "But you don't always have the full picture to show it." sits between the
+   H1 and the paragraph about what Ciatta does, and is the same size as that
+   paragraph, one step darker: it is the other half of her sentence rather
+   than a subheading over the copy. */
+.hero-lede-lead { color: inherit; font-weight: 500; }
+/* The two hero paragraphs are one sentence in two halves, so they sit as a
+   pair rather than as two blocks in the column's s5 rhythm. The negative
+   margin pulls the second up to an s2 gap from the first: .hero-copy is a
+   flex column with one gap for every child, and this is the one place two
+   children want a different one.
+
+   This matters for the fold, not only the look. Adding the lead line pushed
+   the email field and its button below the first screen on a 667px-tall
+   phone, which is the one thing the hero is not allowed to do. */
+.hero-lede-lead + .hero-lede { margin-top: calc(var(--s2) - var(--s5)); }
+
+/* -- the quiz, on the home page ------------------------------------------
+   The same card the /quiz/ page puts it in, centred in the column rather
+   than flush left, because the section above it is centred. */
+.quiz-home .qz-page-card { margin-inline: auto; }
 
 /* =========================================================================
    THE TYPE SCALE

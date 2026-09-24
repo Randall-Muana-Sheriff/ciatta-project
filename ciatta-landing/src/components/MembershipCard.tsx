@@ -50,11 +50,23 @@ const INCLUDED: [string, string][] = [
    'Turn your health history and the evidence into individualized insights and recommendations.'],
   ['Take Informed Action',
    'Try personalized routines, plans and everyday changes, then track what you tried and what happened next.'],
+  /* Ciatta Care sits here, inside this row, rather than as a second tier
+     further down the page. It is the part of membership that does the work
+     around an appointment, so it belongs under the row about appointments —
+     not beside the price, where it reads as an upsell. */
   ['Prepare for Care',
-   'Organize your health story, prepare questions, and arrive informed.'],
+   'Organize your health story, prepare questions, and arrive informed. Ciatta Care handles the work around a visit: messages, referrals, and what needs to happen next.'],
 ];
 
-export function MembershipCard() {
+/**
+ * `heading` is the left column's line. The home page and the membership page
+ * want different ones — the home page has to make the case in the heading,
+ * the membership page has already made it in its own H1 — so it is a prop
+ * rather than two copies of this card.
+ */
+export function MembershipCard({
+  heading = 'One membership. One year.',
+}: { heading?: string } = {}) {
   return (
     <section className="section mb-join" id="membership" aria-labelledby="plan-heading">
       <div className="shell mb-split">
@@ -66,7 +78,7 @@ export function MembershipCard() {
               happen in pieces."), so the home page had two headings starting
               on the same three words. The argument moves into the paragraph,
               where it reads as a reason rather than as a slogan. */}
-          <h2 className="m-h2" id="plan-heading">One membership. One year.</h2>
+          <h2 className="m-h2" id="plan-heading">{heading}</h2>
         </div>
 
         <div className="mb-card">
@@ -81,7 +93,13 @@ export function MembershipCard() {
               monthly equivalent, because that would frame the year as a
               discount on a subscription rather than as the thing itself. */}
           <p className="mb-card-price">
-            <b>$99</b> <span>/ year</span>
+            <b>$89</b> <span>/ year</span>
+          </p>
+          {/* The regular price, said plainly rather than struck through: a
+              strikethrough is a sale, and this is not one. $89 is what a place
+              reserved before Ciatta opens is held at. */}
+          <p className="mb-card-was">
+            Founding price. <span>$119 / year after launch.</span>
           </p>
 
           {/* All six, open. They were a <details> accordion for a while, six
@@ -102,7 +120,7 @@ export function MembershipCard() {
             ))}
           </ul>
 
-          <ReserveButton label="Reserve" />
+          <ReserveButton label="Reserve your place" />
           {/* This button goes to Stripe Checkout in setup mode, which does
               collect a card. It says so. The email forms elsewhere on the
               site take no card and still say "No card", because there the
