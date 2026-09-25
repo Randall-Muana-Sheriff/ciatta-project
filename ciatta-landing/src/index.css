@@ -4047,49 +4047,34 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    screen's faded foot, and without this the screen wins the hit test and the
    button cannot be tapped at all. */
 /* -- the hero's one control ----------------------------------------------
-   A circle with a progress ring around it, and it drives the film and the
-   phone story together.
+   Two bars, or a triangle. Nothing around them.
 
-   It was a 2rem circle with a 2px bar beside it, and the bar was the reason
-   the row had a width at all. Wrapping the progress around the button it
-   belongs to makes the control one object rather than two, and leaves the
-   hero with a single small mark instead of a strip across it.
+   It was a translucent disc, then a disc with a progress ring, and both were
+   a container drawn around a symbol that has not needed one since the first
+   tape deck. On a scrimmed film the disc was a smudge and the ring was a
+   second thing to read; the glyph alone is legible at every frame the clip
+   passes through, helped by one soft shadow rather than a plate.
 
-   No fill and no border: the ring is the edge. On a film that is already
-   scrimmed, a translucent white disc was a smudge, and the ring reads at
-   every frame the clip passes through. */
+   The tap target is unchanged at 44px. It is the ::after, not the button, so
+   the mark stays small while the thing you press stays large. */
 .hs-controls { position: relative; z-index: 3; display: flex; align-items: center; }
 .hs-btn {
   appearance: none; cursor: pointer; flex: none; padding: 0;
   position: relative;
-  width: 2.25rem; height: 2.25rem; border-radius: 50%;
+  width: 1.5rem; height: 1.5rem;
   display: grid; place-items: center;
   background: none; border: 0; color: #FFFFFF;
+  transition: opacity var(--quick) var(--ease-body);
 }
-/* accessibility.md > Mobility: a 44x44 target. The circle stays 2.25rem to
-   the eye and the target grows around it rather than the button getting
-   bigger. -0.25rem on a 36px box is exactly 44. */
-.hs-btn::after { content: ''; position: absolute; inset: -0.25rem; border-radius: 50%; }
-.hs-btn:focus-visible { outline: var(--strong) solid #FFFFFF; outline-offset: 3px; }
+/* accessibility.md > Mobility: a 44x44 target around a 24px mark. */
+.hs-btn::after { content: ''; position: absolute; inset: -0.625rem; border-radius: 50%; }
+.hs-btn:hover { opacity: 0.82; }
+.hs-btn:focus-visible { outline: var(--strong) solid #FFFFFF; outline-offset: 6px; border-radius: 2px; }
 
-/* Both circles sit on the same 36-unit box, r 15.915, whose circumference is
-   100 — so the dash array is the percentage and nothing is converted. The
-   run starts at twelve o'clock rather than three. */
-.hs-ring {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  transform: rotate(-90deg); overflow: visible;
+.hs-glyph {
+  width: 100%; height: 100%; display: block;
+  filter: drop-shadow(0 1px 3px rgba(24,25,27,0.55));
 }
-.hs-ring circle { fill: none; stroke-width: 1.6; }
-.hs-ring-track { stroke: rgba(255,255,255,0.32); }
-.hs-ring-run {
-  stroke: #FFFFFF; stroke-linecap: round;
-  transition: stroke-dasharray 420ms linear;
-}
-@media (prefers-reduced-motion: reduce) { .hs-ring-run { transition: none; } }
-
-/* The glyph, optically centred inside the ring. */
-.hs-glyph { position: relative; width: 0.875rem; height: 0.875rem; }
-.hs-btn:hover .hs-ring-track { stroke: rgba(255,255,255,0.5); }
 
 /* On a phone the fold is the whole budget, so the control sits up inside the
    screen's faded foot rather than costing the hero another row. */

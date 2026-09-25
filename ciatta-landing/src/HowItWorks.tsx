@@ -59,10 +59,61 @@ const StartScreen = () => (
   ]} />
 );
 
-const FirstScreen = () => (
+/* -- the first ninety days, one screen each -------------------------------
+ * Ninety rather than thirty, and five stages rather than two, because thirty
+ * days is not long enough for the thing this page claims. Ciatta reads a
+ * change against what came before it, and in week one there is nothing
+ * before it: the first cycle has no cycle to be read against, the first
+ * result has no second result. Saying so is the honest version of a
+ * getting-started section, and it is also the argument for the membership —
+ * a record compounds, and the page should show that happening rather than
+ * promise it.
+ *
+ * Nothing here is brought forward. Week 4 is the first time anything is
+ * called an observation, because Ciatta waits until it has seen a thing more
+ * than once; week 8 is the first time there is a before and an after to
+ * compare; week 12 is the first brief, because that is the first point there
+ * is enough in the record to make one worth taking anywhere.               */
+
+const D1Screen = () => (
+  <Rows title="Sources" head={['Connected', 'Day 1']} rows={[
+    ['Oura', 'Sleep, HRV, temperature', 'Measured'],
+    ['St. Luke\u2019s MyChart', 'Lab results, medications', 'Imported'],
+    ['Bloodwork results.pdf', 'Read from your document', 'Uploaded'],
+    ['Your own words', 'Whenever you write them', 'Told'],
+  ]} />
+);
+
+const W1Screen = () => (
+  <Rows title="Today" head={['Your first week', '7 nights']} caret rows={[
+    ['Sleep', 'Averaging 6h 58m', '7 of 7'],
+    ['Symptoms', 'Logged on 3 days', 'You told Ciatta'],
+    ['Cycle', 'Day 12 today', 'Measured'],
+    ['Not yet', 'No second cycle to read this one against', ''],
+  ]} />
+);
+
+const W4Screen = () => (
   <Finding tag="First observation"
            finding="Your sleep has been lower during high-demand weeks."
-           basis="Seen twice. Ciatta waits until it has seen a thing more than once, and says how thin the evidence still is." />
+           basis="Seen twice, across four weeks. Ciatta waits until it has seen a thing more than once, and says how thin the evidence still is." />
+);
+
+const W8Screen = () => (
+  <Rows title="Today" head={['What happened next', 'Weeks 5 to 8']} rows={[
+    ['Wind down by 10:30pm', 'Kept on 19 of 28 nights', 'You tried'],
+    ['Sleep', 'Up 34 minutes on those nights', 'Measured'],
+    ['Symptom days', 'Nine, down from fourteen', 'Logged'],
+  ]} />
+);
+
+const W12Screen = () => (
+  <Rows title="Health brief" head={['Your first 90 days', 'Ready to take']} caret rows={[
+    ['Three cycles', '29, 28 and 27 days', ''],
+    ['What you tried', 'And what happened after', ''],
+    ['Two results', 'Each beside the last one', ''],
+    ['Questions to discuss', 'Three, from your own record', ''],
+  ]} />
 );
 
 /* -- the loop, five stages ------------------------------------------------ *
@@ -100,11 +151,20 @@ const LOOP: Item[] = [
 
 const DAYS: Item[] = [
   { n: 'Day 1', title: 'Bring what you already have',
-    body: 'Connect one source and upload one document. Ciatta reads what is there and says plainly what it cannot see yet.',
-    Screen: StartScreen },
-  { n: 'Weeks 2 to 4', title: 'The first observations',
-    body: 'Ciatta waits until it has seen something more than once before it calls it anything. When it does, it shows the working, and it says how thin the evidence still is.',
-    Screen: FirstScreen },
+    body: 'Connect a wearable, link a portal, upload the last document your provider sent, and write down the thing you keep meaning to mention. It takes about ten minutes, and Ciatta reads what is there and says plainly what it cannot see yet.',
+    Screen: D1Screen },
+  { n: 'Week 1', title: 'Your record starts filling in',
+    body: 'Your nights arrive on their own; your symptoms arrive when you write them. Ciatta shows you the week and calls nothing. There is nothing before this week for it to read this week against, and it says so rather than making something of a single reading.',
+    Screen: W1Screen },
+  { n: 'Week 4', title: 'The first observation',
+    body: 'Enough has happened twice for Ciatta to say it out loud. It shows what the observation is based on, how many times it has seen it and over what period, and it says a connection is not a cause. This is also the first month you could take something to an appointment.',
+    Screen: W4Screen },
+  { n: 'Week 8', title: 'Something you tried, and what came of it',
+    body: 'You tried one thing Ciatta suggested and it kept the result: what you did, how often you managed it, and what your own measurements did afterwards. Whether it worked or not, that is now part of the record the next change gets read against.',
+    Screen: W8Screen },
+  { n: 'Week 12', title: 'A record worth taking with you',
+    body: 'Three cycles instead of one, two results instead of one, and a season of your own words. Ciatta makes the page: what changed, what was happening around it, what you tried, and the questions worth asking. This is the point the record starts being more useful than your memory.',
+    Screen: W12Screen },
 ];
 
 /* -- a module: a numbered accordion, and the screen it is about ------------ */
@@ -150,8 +210,8 @@ export default function HowItWorks() {
         <Module
           id="start-heading"
           kind="Getting started"
-          title="What to expect in your first 30 days"
-          lede="Ciatta is more useful in month six than in week one, and it does not pretend otherwise."
+          title="What to expect in your first 90 days"
+          lede="Ciatta is more useful in month six than in week one, and it does not pretend otherwise. This is what the first three months actually look like."
           items={DAYS}
         />
 

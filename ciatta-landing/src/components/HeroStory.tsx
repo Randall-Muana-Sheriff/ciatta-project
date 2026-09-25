@@ -250,15 +250,17 @@ export function HeroStory() {
 
       {!reduced && (
         <div className="hs-controls">
-          {/* ONE CONTROL, AND IT MEANS BOTH.
-              It used to be a circle with a separate bar beside it, and it
-              stopped the phone story while the film behind it carried on,
-              which is not what pause means. The ring around the circle is
-              that bar, wrapped around the button it belongs to, and the
-              press now stops the film as well.
+          {/* TWO STATES, AND NOTHING AROUND THEM.
+              It was a circle, then a circle with a progress ring, and both
+              were a container drawn around a symbol that does not need one:
+              two bars mean pause and a right-facing triangle means play in
+              every player anyone has ever used. The ring went with the
+              circle, and the third state went with it too — a replay glyph
+              is a third thing to learn for a press that does what play
+              does. Finished, it shows play, and play starts it again.
 
-              A ring rather than a line for the same reason the two states
-              merged: the control and what it reports are one object. */}
+              The press still means both: the film behind and the story in
+              front stop and start together. */}
           <button
             type="button"
             className="hs-btn"
@@ -271,33 +273,18 @@ export function HeroStory() {
             }}
           >
             <span className="sr-only">
-              {done
-                ? 'Replay the story'
-                : playing ? 'Pause the film and the story' : 'Play the film and the story'}
+              {playing ? 'Pause the film and the story' : 'Play the film and the story'}
             </span>
 
-            {/* The ring. Drawn as a circle of circumference 100 so the dash
-                is the percentage itself and nothing has to be converted. */}
-            <svg className="hs-ring" viewBox="0 0 36 36" aria-hidden="true">
-              <circle className="hs-ring-track" cx="18" cy="18" r="15.915" />
-              <circle
-                className="hs-ring-run" cx="18" cy="18" r="15.915"
-                strokeDasharray={`${Math.min(100, (step / S.DONE) * 100)} 100`}
-              />
-            </svg>
-
-            <svg className="hs-glyph" viewBox="0 0 16 16" aria-hidden="true"
-                 fill="none" stroke="currentColor" strokeWidth="1.4"
-                 strokeLinecap="round" strokeLinejoin="round">
-              {done ? (
-                <>
-                  <path d="M13.5 8a5.5 5.5 0 1 1-1.9-4.15" />
-                  <path d="M13.6 2.4v3.2h-3.2" />
-                </>
-              ) : playing ? (
-                <><path d="M6 3.5v9M10 3.5v9" /></>
+            <svg className="hs-glyph" viewBox="0 0 16 16" aria-hidden="true">
+              {playing ? (
+                <g fill="currentColor">
+                  <rect x="4" y="2.5" width="2.6" height="11" rx="0.6" />
+                  <rect x="9.4" y="2.5" width="2.6" height="11" rx="0.6" />
+                </g>
               ) : (
-                <path d="M5.5 3.4 12.5 8l-7 4.6V3.4Z" fill="currentColor" />
+                <path d="M4.6 2.6 13.2 8l-8.6 5.4V2.6Z" fill="currentColor"
+                      strokeLinejoin="round" strokeWidth="1.2" stroke="currentColor" />
               )}
             </svg>
           </button>
