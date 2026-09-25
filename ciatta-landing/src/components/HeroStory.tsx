@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { setPaused } from '../lib/film';
+import { onProgress, progress as filmProgress, setPaused } from '../lib/film';
 import { S, TodayScreen } from './TodayScreen';
 
 /**
@@ -167,6 +167,13 @@ export function HeroStory() {
   const [step, setStep] = useState<number>(reduced ? S.DONE : S.NOTHING);
   const [typed, setTyped] = useState(reduced ? NOTE.length : 0);
   const [playing, setPlaying] = useState(!reduced);
+  /* How far through the hero clip is, for the ring around the button. It
+     comes from the <video> itself rather than from this story: the ring
+     reports the film's own duration, which is what a play control's ring
+     reports everywhere else. */
+  const [played, setPlayed] = useState(filmProgress);
+  useEffect(() => onProgress(setPlayed), []);
+
   const frame = useRef<number | null>(null);
   const clock = useRef(0);
 
@@ -275,6 +282,23 @@ export function HeroStory() {
             <span className="sr-only">
               {playing ? 'Pause the film and the story' : 'Play the film and the story'}
             </span>
+
+            {/* Apple's own, copied from apple.com/apple-vision-pro:
+                  <svg class="play-progress-circle" viewBox="0 0 100 100">
+                    <circle class="progress-background" cx=50 cy=50 r=45>
+                    <circle class="progress-circle" cx=50 cy=50 r=45
+                            style="stroke-dasharray:283; stroke-dashoffset:…">
+                Two circles at r 45 on a 100 box, stroke-width 6, round caps,
+                the whole svg rotated -90 so it starts at twelve o'clock.
+                283 is the circumference, 2π·45, and the offset counts down
+                from it as the clip plays. */}
+            <svg className="hs-ring" viewBox="0 0 100 100" aria-hidden="true">
+              <circle className="progress-background" cx="50" cy="50" r="45" />
+              <circle
+                className="progress-circle" cx="50" cy="50" r="45"
+                style={{ strokeDasharray: 283, strokeDashoffset: 283 * (1 - played) }}
+              />
+            </svg>
 
             <svg className="hs-glyph" viewBox="0 0 16 16" aria-hidden="true">
               {playing ? (
