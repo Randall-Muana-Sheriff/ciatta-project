@@ -265,12 +265,29 @@ export default function App() {
                   thing she has to agree to be. The first is a question she
                   answers in the time it takes to read four lines, and it is
                   why this section moved from halfway down the page to here. */}
-              {/* No line under it. The four tiles are the sentence's
-                  other half, and a line telling you how to read them was
-                  the heading's work done twice. */}
+              {/* WHERE THE TWO CLAIMS GO, AND WHY.
+
+                  "Grounded in evidence" is a claim about Ciatta; "you
+                  question, research, and take your health into your own
+                  hands" is a claim about her. They cannot both live in the
+                  tiles: every tile is a thing she does, and a line about
+                  what Ciatta rests on would be the one that is not about
+                  her. So both sit here, under the heading, where the
+                  section says what it is before the four say who it is for.
+
+                  The second half is turned into second person to match the
+                  tiles, and it is the last line under this heading — the
+                  one that was here before said how to read the tiles, which
+                  was the heading's own work said twice. This says something
+                  the heading does not. */}
               <h2 id="who-heading" className="band-title">
                 If this is you, Ciatta was built for you.
               </h2>
+              <p className="band-sub">
+                Grounded in evidence, and built for the questioner. You
+                question, you research, and you take your health into your
+                own hands.
+              </p>
             </div>
 
             <ul className="who-grid">
