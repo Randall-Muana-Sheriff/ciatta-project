@@ -63,18 +63,22 @@ type WhoTile = { line: string; img: string; alt: string };
    tiles were written in the third — "Reads the study, not the summary",
    "Has been told her results are normal" — which is a profile of somebody
    else, and reading a profile is not the same act as recognising yourself.
-   Under "If this is you", the four lines have to be addressed to you. */
+
+   No leading "You", though. The heading has already said it, so four lines
+   each opening on the same word is the pronoun four times over where the
+   grammar only needs it once. They are fragments that continue the heading,
+   and "your" stays wherever dropping it would cost the sense. */
 const WHO_TILES: WhoTile[] = [
-  { line: 'You read the study, not the summary.',
+  { line: 'Read the study, not the summary.',
     img: '/images/who/reads.jpg',
     alt: 'A woman in an infinity pool, facing an open sea.' },
-  { line: 'You have been told your results are normal.',
+  { line: 'Been told your results are normal.',
     img: '/images/who/normal.jpg',
     alt: 'A black and white photograph of a woman in a downward-facing dog position.' },
-  { line: 'You arrive with a list, and you want it answered.',
+  { line: 'Arrive with a list, and want it answered.',
     img: '/images/who/list.jpg',
     alt: 'A woman sitting on a wooden bench in warm, low light.' },
-  { line: 'You keep your own notes, because no one else does.',
+  { line: 'Keep your own notes, because no one else does.',
     img: '/images/who/notes-own.jpg',
     alt: 'A close frame of a woman\u2019s back and shoulder against a plain wall.' },
 ];
