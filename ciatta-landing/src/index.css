@@ -3828,6 +3828,23 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .fm-go:focus-visible { outline: var(--strong) solid #F7F4EE; outline-offset: 2px; }
 .fm-go[disabled] { cursor: default; opacity: 0.8; }
 
+/* ONE ACTION ON A SMALL SCREEN, AND IT IS THE ONE ABOVE.
+
+   Stacked, the card sits a few hundred pixels under the hero's own email
+   form, and two Reserve buttons that far apart in one column is the same
+   ask twice — the second reads as a second offer. So below a laptop the
+   card states the offer and the form above it takes the address. Above a
+   laptop the card floats away from the form and keeps its own button.
+
+   display:none rather than a prop, because this is a question about how
+   wide the window is, and the component should not have to know. It also
+   takes the button out of the tab order, which is what should happen to a
+   control nobody can see. */
+@media (max-width: 999px) {
+  .fm .fm-go, .fm .fm-note, .fm .rs-msg { display: none; }
+  .fm-cap { padding-bottom: var(--s1); }
+}
+
 .fm-note {
   margin: 0; text-align: center;
   color: rgba(247, 244, 238, 0.68);
@@ -3909,10 +3926,26 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    paint, over a moving image. Black and white only, because no accent holds
    at this size over film. */
 .hero-app { width: 100%; }
-/* below the split the copy takes the row, and the card goes above it */
+/* BELOW THE SPLIT, THE ORDER IS THE ARGUMENT.
+
+   The screen used to come first, arriving from the top of the frame before
+   anything had been said. That was right while the hero was one screen and
+   the device was the thing that made it look like a product; it is wrong now
+   that there is a founding card underneath, because it put the picture
+   before the sentence and the offer three screens from the words it follows.
+
+   Sentence, then the thing to do about it, then the proof, then the offer:
+
+     You know something has changed.  (headline, both paragraphs)
+     [ email and Reserve your place ]
+     the screen
+     the founding card
+
+   Nothing is reordered in the markup — the flex `order` that lifted the
+   device above the copy has simply gone, so the DOM order is the reading
+   order. */
 @media (max-width: 999px) {
   .hero-inner { display: flex; flex-direction: column; gap: var(--s5); }
-  .hero-app { order: -1; }
 }
 @media (min-width: 1000px) { .hero-app { justify-self: end; width: auto; } }
 
@@ -3954,7 +3987,10 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 /* Stacked, so the whole copy column counts against the device as well. After
    the base rule, not before: same specificity, later declaration wins. */
-@media (max-width: 999px) { .ha-device { max-height: calc(100svh - 34.5rem); } }
+/* The device is below the fold now — the copy and the form are above it —
+   so it no longer has to be squeezed into what is left of the first screen.
+   A plain cap keeps the hero from running away instead. */
+@media (max-width: 999px) { .ha-device { max-height: 21rem; } }
 @media (min-width: 1000px) { .ha-device { width: min(21rem, 26vw); } }
 
 .ha {
@@ -4083,9 +4119,15 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
      the sentence, the form, and the form's clearance. */
   .ha-device {
     width: min(15.5rem, 66vw);
-    /* 24.5rem, up from 23: the hero gained a line when "But you don't always
-       have the full picture to show it." went in above the paragraph. */
-    max-height: calc(100svh - 24.5rem);
+    /* No longer measured against the first screen: the form sits above the
+       device now, so nothing below it can push the form off the fold.
+
+       18rem rather than the device's full drawn height. It is drawn rounded
+       at the top and open at the foot precisely so it can be cut, and the
+       lower third of it is the empty part of the screen below the card —
+       uncropped that is a hand's width of nothing between the product and
+       the offer under it. */
+    max-height: 18rem;
     overflow: hidden;
     margin-inline: auto;
     border-radius: 1.75rem 1.75rem 0 0;
