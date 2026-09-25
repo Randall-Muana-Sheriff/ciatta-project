@@ -428,6 +428,22 @@ p { margin: 0; text-wrap: pretty; }
 .hero-title {
   color: #F7F4EE; font-weight: 500; text-wrap: wrap;
   font-size: var(--t-display);
+}
+/* A STEP UNDER THE DISPLAY, ON THE HOME HERO ONLY.
+
+   At the full display step "You know something has changed." ran three
+   lines and took 331px of a 1000px window, which left the frame crowded
+   rather than commanding — the headline, the paragraphs, the screen and the
+   founding block all pressing on each other with nothing between them. At
+   0.78 it sets on two lines at most widths and gives the rest of the hero
+   air to stand in.
+
+   Only this hero. The page heroes keep the display step: their headings are
+   two or three words and have nothing else in the frame to make room for,
+   and the closing CTA keeps it too, because there the sentence IS the
+   section. */
+.hero:not(.is-page) .hero-title {
+  font-size: calc(var(--t-display) * 0.78);
   letter-spacing: -0.04em; line-height: var(--lh-display);
 }
 /* WHOOP sets its hero heavier on a tall screen and lighter on a wide one:
@@ -4114,7 +4130,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
      gutter rather than the viewport, so they hold from a 360 to a 430 screen
      instead of only the one they were measured on. The page heroes keep the
      display step: their headings are short and do not need giving up. */
-  .hero:not(.is-page) .hero-title { font-size: min(var(--t-display), calc(6.85vw - 2.7px)); }
+  .hero:not(.is-page) .hero-title { font-size: min(calc(var(--t-display) * 0.78), calc(6.2vw - 2.4px)); }
   .hero:not(.is-page) .hero-lede { font-size: min(var(--t-lede), calc(4.7vw - 1.9px)); }
   .waitlist-consent { text-align: center; }
   /* The device is the only thing on the first screen that can give way, and
