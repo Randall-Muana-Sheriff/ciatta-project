@@ -4155,7 +4155,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
        This rule is in the phone block because the one further up the file
        loses to it on source order — the fifth time that has caught this
        stylesheet. */
-    max-height: max(8rem, calc(100svh - 41rem));
+    max-height: max(8rem, calc(100svh - 38rem));
     overflow: hidden;
     margin-inline: auto;
     border-radius: 1.75rem 1.75rem 0 0;
@@ -4432,7 +4432,24 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    Over the film rather than over the device: it sits to the right of the
    screen, which is centred and narrower than the column, so it never lands
    on anything being read. */
+/* THE CARD GIVES ITS HEIGHT TO THE SCREEN.
+
+   On a phone the card and the screen are competing for the same window, so
+   the card is set as tight as it can be read at: its own gaps close to a
+   single step, its padding comes down one, and the eyebrow goes.
+
+   The eyebrow is the only line of it that is a label rather than a fact —
+   "FOUNDING MEMBER PRICING" over a card that opens "Be among the first
+   500." and then quotes both prices. It stays on a laptop, where the card
+   floats on the photograph and wants naming; on a phone the card is a block
+   in a column and the headline names it. That is about 50px, and every one
+   of them goes to the screen through the calc above. */
 @media (max-width: 700px) {
+  .fm { gap: var(--s2); }
+  .fm-card { gap: var(--s1); padding: var(--s3); }
+  .fm-eyebrow { display: none; }
+  .fm-lede, .fm-benefit { margin-top: var(--s1); }
+
   .hs { position: relative; gap: 0; }
   .hs-controls {
     position: absolute; right: 0; bottom: var(--s3); margin-top: 0;
