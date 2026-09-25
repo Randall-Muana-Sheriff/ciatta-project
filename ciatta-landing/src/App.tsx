@@ -148,7 +148,7 @@ export default function App() {
                 You know something has changed.
               </h1>
               <p className="hero-lede hero-lede-lead">
-                But you don’t always have the full picture to show it.
+                But you don’t always have the full picture.
               </p>
               {/* Then, and only then, what Ciatta does about that. */}
               <p className="hero-lede">

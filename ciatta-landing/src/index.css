@@ -4145,7 +4145,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
        This rule is in the phone block because the one further up the file
        loses to it on source order — the fifth time that has caught this
        stylesheet. */
-    max-height: max(8rem, calc(100svh - 36.5rem));
+    max-height: max(8rem, calc(100svh - 33rem));
     overflow: hidden;
     margin-inline: auto;
     border-radius: 1.75rem 1.75rem 0 0;
@@ -4432,6 +4432,15 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    The eyebrow that used to be dropped here has gone from the card
    altogether — see FoundingCard. */
 @media (max-width: 700px) {
+  /* THE BLOCK SITS ON THE FOLD, and the screen takes what that frees.
+
+     The hero's bottom padding is a clamp written for a desktop frame — 48px
+     on a phone, all of it under the form, all of it doing nothing but
+     holding the block off the bottom of the window. On a laptop that air is
+     the composition; on a phone the window IS the composition, and every
+     pixel of it belongs to the screen. */
+  .hero.has-film { padding-bottom: var(--s4); }
+
   .fm { gap: var(--s2); }
   .fm-card { gap: var(--s1); padding: var(--s3); }
   .fm-lede, .fm-benefit { margin-top: var(--s1); }
@@ -4698,7 +4707,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   .hero-inner { gap: var(--s2); }
   .fm { gap: var(--s2); }
   .fm-card { padding: var(--s3); }
-  .ha-device { max-height: max(5rem, calc(100svh - 39.5rem)); }
+  .ha-device { max-height: max(5rem, calc(100svh - 38rem)); }
 }
 
 /* =========================================================================
