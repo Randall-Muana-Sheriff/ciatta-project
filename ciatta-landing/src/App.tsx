@@ -265,12 +265,12 @@ export default function App() {
                   thing she has to agree to be. The first is a question she
                   answers in the time it takes to read four lines, and it is
                   why this section moved from halfway down the page to here. */}
+              {/* No line under it. The four tiles are the sentence's
+                  other half, and a line telling you how to read them was
+                  the heading's work done twice. */}
               <h2 id="who-heading" className="band-title">
                 If this is you, Ciatta was built for you.
               </h2>
-              <p className="band-sub">
-                You only have to recognise one of them.
-              </p>
             </div>
 
             <ul className="who-grid">

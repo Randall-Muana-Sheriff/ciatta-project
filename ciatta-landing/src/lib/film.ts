@@ -32,34 +32,3 @@ export function onPause(fn: (p: boolean) => void): () => void {
   listeners.add(fn);
   return () => { listeners.delete(fn); };
 }
-
-/* -------------------------------------------------------------------------
-   HOW FAR THROUGH THE FILM IS
-   -------------------------------------------------------------------------
-   The ring around the hero's button reports the clip's own position, so the
-   figure has to travel from the <video> to the button, which are two
-   components apart. Same twenty lines as the pause switch, for the same
-   reason: one number, read by one component, on one page.
-
-   0 to 1. The hero clip loops, so this sweeps and starts again, which is
-   what a looping video actually does and what Apple's own inline controls
-   show when their clips loop.
-   ------------------------------------------------------------------------- */
-
-let played = 0;
-const watchers = new Set<(p: number) => void>();
-
-export const progress = () => played;
-
-export function setProgress(p: number): void {
-  const next = Number.isFinite(p) ? Math.min(1, Math.max(0, p)) : 0;
-  if (next === played) return;
-  played = next;
-  for (const fn of watchers) fn(played);
-}
-
-/** Subscribe. Returns the unsubscribe, for useEffect's cleanup. */
-export function onProgress(fn: (p: number) => void): () => void {
-  watchers.add(fn);
-  return () => { watchers.delete(fn); };
-}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { isPaused, onPause, setProgress } from '../lib/film';
+import { isPaused, onPause } from '../lib/film';
 
 /**
  * A background film layer: the clip, a scrim over it, and a poster for anyone
@@ -65,24 +65,7 @@ export function Film({
       else void el.play().catch(() => {});
     };
     apply(isPaused());
-    const off = onPause(apply);
-
-    /* The clip reports its own position, for the ring around the hero's
-       button. timeupdate fires about four times a second, which is more
-       than enough for a 40px ring and far less than a rAF loop would cost. */
-    const el = film.current;
-    const tick = () => {
-      if (!el || !el.duration || !Number.isFinite(el.duration)) return;
-      setProgress(el.currentTime / el.duration);
-    };
-    el?.addEventListener('timeupdate', tick);
-    el?.addEventListener('loadedmetadata', tick);
-
-    return () => {
-      off();
-      el?.removeEventListener('timeupdate', tick);
-      el?.removeEventListener('loadedmetadata', tick);
-    };
+    return onPause(apply);
   }, [controlled, motionOk]);
 
   const poster = `/video/${base}-poster.jpg`;

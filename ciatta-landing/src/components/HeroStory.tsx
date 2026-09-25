@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { onProgress, progress as filmProgress, setPaused } from '../lib/film';
+import { setPaused } from '../lib/film';
 import { S, TodayScreen } from './TodayScreen';
 
 /**
@@ -167,13 +167,6 @@ export function HeroStory() {
   const [step, setStep] = useState<number>(reduced ? S.DONE : S.NOTHING);
   const [typed, setTyped] = useState(reduced ? NOTE.length : 0);
   const [playing, setPlaying] = useState(!reduced);
-  /* How far through the hero clip is, for the ring around the button. It
-     comes from the <video> itself rather than from this story: the ring
-     reports the film's own duration, which is what a play control's ring
-     reports everywhere else. */
-  const [played, setPlayed] = useState(filmProgress);
-  useEffect(() => onProgress(setPlayed), []);
-
   const frame = useRef<number | null>(null);
   const clock = useRef(0);
 
@@ -291,12 +284,22 @@ export function HeroStory() {
                 Two circles at r 45 on a 100 box, stroke-width 6, round caps,
                 the whole svg rotated -90 so it starts at twelve o'clock.
                 283 is the circumference, 2π·45, and the offset counts down
-                from it as the clip plays. */}
+                from it as the story runs.
+
+                IT REPORTS THE STORY, NOT THE FILM. It reported the film's
+                currentTime for a version, and the film is a ten-second loop,
+                so the ring filled and snapped back to empty every ten
+                seconds for as long as anyone stayed on the page — a control
+                that keeps resetting reads as broken rather than as
+                looping. The story has a beginning and an end: the ring
+                fills once, stays full, and starts again only when she
+                presses play. That is what the bar beside the button did in
+                the first version of this, and it was right. */}
             <svg className="hs-ring" viewBox="0 0 100 100" aria-hidden="true">
               <circle className="progress-background" cx="50" cy="50" r="45" />
               <circle
                 className="progress-circle" cx="50" cy="50" r="45"
-                style={{ strokeDasharray: 283, strokeDashoffset: 283 * (1 - played) }}
+                style={{ strokeDasharray: 283, strokeDashoffset: 283 * (1 - Math.min(1, step / S.DONE)) }}
               />
             </svg>
 
