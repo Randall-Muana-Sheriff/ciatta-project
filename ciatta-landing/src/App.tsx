@@ -3,6 +3,7 @@ import { HeroFilm } from './components/HeroFilm';
 import { HeroStory } from './components/HeroStory';
 import { SubscribeForm } from './components/SubscribeForm';
 import { CycleExample } from './components/CycleExample';
+import { FoundingCard } from './components/FoundingCard';
 import { HowSection } from './components/HowSection';
 import { QuizPopup } from './components/QuizPopup';
 import { StickyReserve } from './components/StickyReserve';
@@ -177,6 +178,12 @@ export default function App() {
             <div className="hero-app">
               <HeroStory />
             </div>
+
+            {/* The third thing the hero says, after what she knows and what
+                Ciatta shows. From 1100 up it floats at the lower right over
+                the foot of the screen; below that it leaves the overlap
+                alone and becomes a block under it. */}
+            <FoundingCard />
           </div>
         </section>
 

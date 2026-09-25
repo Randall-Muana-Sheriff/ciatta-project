@@ -42,9 +42,17 @@ type State = { kind: 'idle' } | { kind: 'opening' } | { kind: 'closed' };
 export function ReserveButton({
   className = 'm-btn',
   label = 'Reserve your place',
+  fallbackId,
 }: {
   className?: string;
   label?: string;
+  /**
+   * The id of the email field to fall back to, when the nearest one below
+   * this button is not the right one. The founding card sits in the hero
+   * and the hero's own form is ABOVE it in the document, so without this it
+   * would send someone the length of the page to the closing form.
+   */
+  fallbackId?: string;
 }) {
   const [state, setState] = useState<State>({ kind: 'idle' });
   const me = useRef<HTMLButtonElement | null>(null);
@@ -58,6 +66,13 @@ export function ReserveButton({
    * fallback, and #join the one after that.
    */
   function reach() {
+    const named = fallbackId ? document.getElementById(fallbackId) : null;
+    if (named instanceof HTMLInputElement) {
+      named.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      window.setTimeout(() => named.focus({ preventScroll: true }), 400);
+      return;
+    }
+
     const fields = Array.from(
       document.querySelectorAll<HTMLInputElement>('.waitlist input[type="email"]'),
     );
