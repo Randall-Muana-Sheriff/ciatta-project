@@ -4047,32 +4047,54 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    screen's faded foot, and without this the screen wins the hit test and the
    button cannot be tapped at all. */
 /* -- the hero's one control ----------------------------------------------
-   Two states inside a circle: two bars for pause, a right-facing triangle
-   for play, and nothing else. No progress ring — the ring was a second
-   thing to read on a control that only has to say which of two things
-   pressing it will do.
+   Built to apple.com/apple-vision-pro's own play/pause button, measured off
+   the page rather than guessed at. Theirs is:
 
-   The circle is a translucent disc with a hairline edge, which is what
-   gives the glyph a ground on a film whose frames run from bright to dark.
-   36px to the eye, with a 44px target around it: the ::after grows, not the
-   button, so the mark stays small while the thing you press stays large. */
+     .play-pause-button   38 x 38, border-radius 50%, background transparent,
+                          no border, no shadow
+     ::before             a 30px circle at inset 4, also transparent
+     ::after              the glyph, 20px at inset 9, a solid fill masked to
+                          the shape — white over dark sections, rgba(0,0,0,
+                          0.56) over light ones
+
+   So Apple's circle is not a disc. It is a 38px round button with a 30px
+   round inner shape, both transparent, and the only thing anyone sees is a
+   20px glyph in one flat colour. No fill behind it, no hairline edge, no
+   blur, no shadow. On the film here that glyph is white, which is Apple's
+   own choice over a dark section.
+
+   The circle earns its keep as the shape that lights on hover and the shape
+   the focus ring follows — which is what a transparent circle in a control
+   is for.
+
+   One departure, and it is deliberate: Apple's button is 38px and the
+   Human Interface Guidelines ask for 44. The 38 is kept for the look and a
+   44px target is grown around it, so the mark matches and the thumb does
+   not lose out. */
 .hs-controls { position: relative; z-index: 3; display: flex; align-items: center; }
 .hs-btn {
   appearance: none; cursor: pointer; flex: none; padding: 0;
   position: relative;
-  width: 2.25rem; height: 2.25rem; border-radius: 50%;
+  width: 2.375rem; height: 2.375rem; border-radius: 50%;
   display: grid; place-items: center;
-  background: rgba(255,255,255,0.16); color: #FFFFFF;
-  border: 1px solid rgba(255,255,255,0.34);
-  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  background: none; border: 0; color: #FFFFFF;
+}
+/* Apple's ::before: the 30px circle inside the 38px button. Transparent, as
+   theirs is, and the surface that answers a pointer. */
+.hs-btn::before {
+  content: ''; position: absolute; inset: 4px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0);
   transition: background var(--quick) var(--ease-body);
 }
-.hs-btn:hover { background: rgba(255,255,255,0.28); }
-/* accessibility.md > Mobility: a 44x44 target around a 36px circle. */
-.hs-btn::after { content: ''; position: absolute; inset: -0.25rem; border-radius: 50%; }
-.hs-btn:focus-visible { outline: var(--strong) solid #FFFFFF; outline-offset: 3px; }
+.hs-btn:hover::before { background: rgba(255, 255, 255, 0.18); }
+/* 44px of target around Apple's 38px mark. */
+.hs-btn::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; }
+.hs-btn:focus-visible { outline: var(--strong) solid #FFFFFF; outline-offset: 2px; }
 
-.hs-glyph { width: 0.875rem; height: 0.875rem; display: block; }
+/* 20px, the size Apple sets its glyph at, in one flat colour and nothing
+   else: no shadow, because theirs has none. */
+.hs-glyph { position: relative; width: 1.25rem; height: 1.25rem; display: block; }
+
 
 
 /* On a phone the fold is the whole budget, so the control sits up inside the
