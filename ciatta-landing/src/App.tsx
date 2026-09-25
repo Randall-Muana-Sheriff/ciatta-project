@@ -266,13 +266,11 @@ export default function App() {
                   thing she has to agree to be. The first is a question she
                   answers in the time it takes to read four lines, and it is
                   why this section moved from halfway down the page to here. */}
-              {/* The heading is the thing she does, not the thing she is.
-                  "If this is you, Ciatta was built for you" asked her to
-                  agree to a category first; this is a sentence she would
-                  say about herself, and the four tiles underneath are it
-                  happening. */}
+              {/* The heading names who the section is for and the lede
+                  under it is what she does, so the four tiles arrive as
+                  that happening rather than as a list to agree with. */}
               <h2 id="who-heading" className="band-title">
-                You don&rsquo;t stop at the first answer.
+                For women who want the bigger picture.
               </h2>
               <p className="band-sub">
                 You question. You research. You keep track. And when
