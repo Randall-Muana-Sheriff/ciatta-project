@@ -3783,45 +3783,52 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 /* The size of the offer, last, and the only line of the card that is not a
    call to action — which is why it is the one that stays on a phone, where
    the button is hidden. One line, no counter, no countdown. */
+/* Left, with the rest of the card. It was centred while it sat under the
+   card's own button; the button has gone and it is the card's last line. */
 .fm-cap {
-  margin: 0; text-align: center;
+  margin: var(--s2) 0 0;
   color: rgba(247, 244, 238, 0.62);
   font-size: var(--t-caption); line-height: 1.45;
 }
 
-/* The action takes the card's full measure, as every other reserve button
-   on the site takes its container's. Paper on the dark card, which is what
-   the hero's own form button does. */
-.fm-go {
-  appearance: none; cursor: pointer; font: inherit; width: 100%;
-  display: inline-flex; align-items: center; justify-content: center;
-  min-height: 2.75rem; padding: 0 var(--s5);
-  border: 0; border-radius: var(--r-control);
-  background: #F7F4EE; color: #18191B;
-  font-size: var(--t-small); font-weight: 500;
-  transition: opacity var(--quick) var(--ease-body);
+/* THE FORM IS THE ACTION, and it sits under the card rather than inside it.
+   The card had a button and the hero's form said the same words a few
+   hundred pixels away, which is one offer asked twice.
+
+   Inside this column the row becomes the control the way it does on a
+   phone: the row carries the ground, the border and the radius, the input
+   goes transparent inside it, and the button is a pill at the end. That
+   treatment exists below 700 because two controls side by side need about
+   that much width; this column is 384 at its widest, so it needs the same
+   thing at every width. */
+.fm #join { width: 100%; }
+.fm .waitlist-row {
+  align-items: center; gap: 0;
+  padding: 0.3125rem;
+  background: rgba(247, 244, 238, 0.10);
+  border: var(--hairline) solid rgba(247, 244, 238, 0.32);
+  border-radius: var(--r-control);
 }
-.fm-go:hover { opacity: 0.92; }
-.fm-go:focus-visible { outline: var(--strong) solid #F7F4EE; outline-offset: 2px; }
-.fm-go[disabled] { cursor: default; opacity: 0.8; }
-
-/* ONE ACTION ON A SMALL SCREEN, AND IT IS THE ONE ABOVE.
-
-   Stacked, the card sits a few hundred pixels under the hero's own email
-   form, and two Reserve buttons that far apart in one column is the same
-   ask twice — the second reads as a second offer. So below a laptop the
-   card states the offer and the form above it takes the address. Above a
-   laptop the card floats away from the form and keeps its own button.
-
-   display:none rather than a prop, because this is a question about how
-   wide the window is, and the component should not have to know. It also
-   takes the button out of the tab order, which is what should happen to a
-   control nobody can see. */
-@media (max-width: 999px) {
-  .fm .fm-go, .fm .fm-note, .fm .rs-msg { display: none; }
-  /* with the button gone it is the card's last line, so it reads left with
-     everything else rather than centred under nothing */
-  .fm-cap { text-align: left; margin-top: var(--s2); }
+.fm .waitlist .waitlist-row:focus-within { outline: var(--strong) solid #F7F4EE; outline-offset: 2px; }
+.fm .waitlist .waitlist-field input {
+  height: calc(var(--control-h) - 0.625rem);
+  background: none; border: 0; border-radius: 0;
+  padding: 0 var(--s3);
+}
+.fm .waitlist .waitlist-field input:focus,
+.fm .waitlist .waitlist-field input:focus-visible { outline: none; }
+/* three classes deep on purpose: .btn-primary is redeclared later in this
+   file with uppercase and wide tracking, and on source order alone that
+   kept the button too wide for a 384px row. */
+.fm .waitlist .waitlist-row .btn-primary {
+  flex: none;
+  height: calc(var(--control-h) - 0.625rem);
+  /* concentric with the row: the outer radius less the row's own padding */
+  border-radius: calc(var(--r-control) - 0.3125rem);
+  padding: 0 var(--s3);
+  font-size: var(--t-caption);
+  letter-spacing: 0.01em;
+  text-transform: none;
 }
 
 .fm-note {
@@ -3829,8 +3836,8 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   color: rgba(247, 244, 238, 0.68);
   font-size: var(--t-caption); line-height: 1.45;
 }
-/* the fallback line the reserve button shows when Stripe is not configured */
-.fm .rs-msg { margin: 0; color: rgba(247, 244, 238, 0.86); font-size: var(--t-caption); line-height: 1.45; }
+/* the card and its action are one block, a step apart */
+.fm { display: flex; flex-direction: column; gap: var(--s3); }
 
 /* -- under a laptop: in flow, after the phone, no overlap ----------------- */
 @media (max-width: 999px) {
@@ -3933,8 +3940,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 
        You know something has changed.   (headline, both paragraphs)
        the screen
-       the founding card
-       [ email and Reserve your place ]
+       the founding card, with the form under it
 
      What .hero-copy carried that matters is inherited rather than laid out
      — the Paper colour passes through — and the gap it set is the one this
@@ -3945,8 +3951,6 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   .hero-lede { order: 2; }
   .hero-app { order: 3; }
   .fm { order: 4; }
-  .hero-copy #join { order: 5; width: 100%; }
-
   /* The device's own cap is set where it wins on source order — see
      .ha-device in the phone block further down. */
   .hs { gap: var(--s3); }
@@ -3995,7 +3999,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    takes what the rest of the column leaves. Same shape as the phone rule
    further down, with a smaller subtrahend: a tablet's hero column is wider,
    so its paragraphs run to fewer lines. */
-@media (max-width: 999px) { .ha-device { max-height: max(9rem, calc(100svh - 43rem)); } }
+@media (max-width: 999px) { .ha-device { max-height: max(9rem, calc(100svh - 45rem)); } }
 @media (min-width: 1000px) { .ha-device { width: min(21rem, 26vw); } }
 
 .ha {
@@ -4656,10 +4660,12 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    between the form sitting 47px below the fold and sitting on it. */
 @media (max-width: 999px) and (max-height: 780px) {
   .hero.has-film {
-    padding-block: calc(var(--header-h) + var(--s4)) var(--s5);
+    padding-block: calc(var(--header-h) + var(--s4)) var(--s4);
   }
   .hero-inner { gap: var(--s2); }
-  .ha-device { max-height: max(3.5rem, calc(100svh - 43rem)); }
+  /* the card and its form close up too */
+  .fm { gap: var(--s2); }
+  .ha-device { max-height: max(3rem, calc(100svh - 43rem)); }
   .fm-card { padding: var(--s3); }
 }
 

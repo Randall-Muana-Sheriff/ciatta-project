@@ -152,23 +152,9 @@ export default function App() {
               </p>
               {/* Then, and only then, what Ciatta does about that. */}
               <p className="hero-lede">
-                Ciatta connects your symptoms, labs, treatments, daily life, and
-                health data over time, so you can see what changed, what may be
-                connected, and what to do next.
+                Ciatta connects your health data and daily context, so you can
+                see what changed, what may be connected, and what to do next.
               </p>
-              {/* The hero's action is the shortest word on the page. It sits
-                  inside the field on a phone, where "Reserve your place" left
-                  barely a hundred pixels to type an address into, and the
-                  sentence above it has already said what she is joining. */}
-              <div id="join">
-                <SubscribeForm
-                  id="waitlist-hero"
-                  source="hero"
-                  kind="waitlist"
-                  cta="Reserve your place"
-                  note=""
-                />
-              </div>
             </div>
 
             {/* The app, running over the film rather than beside it: the
@@ -183,7 +169,20 @@ export default function App() {
                 Ciatta shows. From 1100 up it floats at the lower right over
                 the foot of the screen; below that it leaves the overlap
                 alone and becomes a block under it. */}
-            <FoundingCard />
+            <FoundingCard>
+              {/* The hero's one action, under the offer it belongs to rather
+                  than under the paragraph three items above it. Same id, so
+                  the skip link and every reserve fallback still find it. */}
+              <div id="join">
+                <SubscribeForm
+                  id="waitlist-hero"
+                  source="hero"
+                  kind="waitlist"
+                  cta="Reserve your place"
+                  note=""
+                />
+              </div>
+            </FoundingCard>
           </div>
         </section>
 

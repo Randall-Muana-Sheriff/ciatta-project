@@ -1,5 +1,3 @@
-import { ReserveButton } from './ReserveButton';
-
 /**
  * The founding offer, in the hero.
  *
@@ -24,11 +22,16 @@ import { ReserveButton } from './ReserveButton';
  * no countdown and no "only N left", because none of those could be
  * supported and the whole site is built on not saying what it cannot show.
  *
- * WHAT THE BUTTON DOES. The existing reservation flow, unchanged: Stripe
- * Checkout when the keys are set, and until then the email form, which is
- * free and takes no card. `fallbackId` points it at the hero's own form,
- * which sits ABOVE this card in the document — without it the button would
- * send someone the length of the page to the closing form.
+ * THE CARD HAS NO BUTTON OF ITS OWN. It had one, and the hero's email form
+ * sat a few hundred pixels away saying the same words, which is one offer
+ * asked twice. The form is the action now and it comes in as `children`,
+ * directly under the card, so the offer and the thing to do about it are one
+ * block wherever that block lands — floating at the lower right on a laptop,
+ * stacked at the foot of the first screen on a phone.
+ *
+ * That also means there is one reservation path again rather than two: the
+ * form, which is free, takes no card and works today whether or not Stripe
+ * is configured.
  */
 
 /* The three lines became one.
@@ -39,7 +42,7 @@ import { ReserveButton } from './ReserveButton';
  * read better joined than stacked.
  */
 
-export function FoundingCard() {
+export function FoundingCard({ children }: { children?: React.ReactNode }) {
   return (
     <div className="fm">
       {/* No badge above the card. "FIRST 500 MEMBERS" sat over the
@@ -57,15 +60,14 @@ export function FoundingCard() {
           Early access when Ciatta opens, and a say in what comes next.
         </p>
 
-        {/* Directly under the sentence it follows. The size of the offer
-            used to sit between them, which put a fact about supply between
-            the reason and the action. */}
-        <ReserveButton className="fm-go" label="Reserve your place" fallbackId="waitlist-hero" />
-        <p className="fm-note">Free to reserve &middot; No card required</p>
-        {/* Last, and it stays on a phone where the button does not: it is
-            the one line of the offer that is not a call to action. */}
+        {/* Last line of the card. Not a counter and not a countdown:
+            nothing here claims any of the 500 have gone. */}
         <p className="fm-cap">500 founding memberships</p>
       </div>
+
+      {/* The action, directly under the card it follows. */}
+      {children}
+      <p className="fm-note">Free to reserve &middot; No card required</p>
     </div>
   );
 }
