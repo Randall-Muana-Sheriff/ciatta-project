@@ -299,13 +299,6 @@ export default function App() {
               ))}
             </ul>
 
-            {/* The claim about Ciatta, after the four about her. It was above
-                the tiles, where it asked her to accept what Ciatta is before
-                she had recognised herself; it reads better as the answer to
-                the four than as a preface to them. */}
-            <p className="who-foot">
-              Grounded in evidence. Built around your health story.
-            </p>
           </div>
         </section>
 

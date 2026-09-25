@@ -2389,14 +2389,6 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   color: rgba(247, 244, 238, 0.86);
 }
 
-/* The claim about Ciatta, under the four about her. Centred with the band
-   head above, a step quieter than the tiles, and given room so it reads as
-   the section signing off rather than as a fifth tile. */
-.who-foot {
-  margin: clamp(var(--s5), 3vw, var(--s6)) 0 0;
-  color: var(--ink); font-size: var(--t-lede); font-weight: 500;
-  letter-spacing: -0.01em; text-wrap: balance;
-}
 @media (max-width: 639px) { .who-tile { min-height: 12rem; } }
 
 /* --- newsletter form additions ------------------------------------------
