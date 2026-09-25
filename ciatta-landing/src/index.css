@@ -3738,25 +3738,6 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 
 .fm { --fm-w: 24rem; width: 100%; }
 
-/* A label, not a sticker. It was a filled pill in Paper at 600, floating on
-   the photograph, and on a dark screen that is the brightest small thing in
-   the frame — the one element that read as an advert stuck to the hero. It
-   is the same badge at a whisper now: a tenth of a tint behind it, Medium
-   rather than Semibold, and the type a step down from the card's own. */
-/* Tucked against the card's top edge rather than floating clear of it,
-   so the two read as one object on the photograph rather than as a label
-   stuck to the picture. */
-.fm-badge {
-  margin: 0 0 var(--s1); align-self: flex-end;
-  display: inline-flex; align-items: center;
-  padding: 0.26rem 0.64rem; border-radius: var(--r-pill);
-  background: rgba(247, 244, 238, 0.10);
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-  color: rgba(247, 244, 238, 0.82);
-  font-size: var(--t-caption); font-weight: 500;
-  letter-spacing: 0.12em; text-transform: uppercase;
-}
-
 .fm-card {
   display: grid; gap: var(--s2);
   padding: var(--s4);
@@ -3786,29 +3767,25 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   font-size: var(--t-small); line-height: 1.45;
 }
 
-/* Three benefits, each a name and what it means. Hairlines between them
-   rather than icons beside them: the site has no icon set, and inventing
-   one for three rows in a corner of the hero is how a design starts
-   drifting. */
-.fm-list { margin: 0; display: grid; gap: var(--s2); margin-top: var(--s2); }
-.fm-list > div {
-  padding-top: var(--s2);
+/* What membership gets you beyond the price, in one sentence under a rule.
+   It was three rows, each a name with a sentence beneath it repeating the
+   name; then three single lines; now one, because two of the three were a
+   pair of fragments that read better joined and the third was the price a
+   third time. No icons: the site has no icon set, and inventing one for a
+   card in the corner of a hero is how a design starts drifting. */
+.fm-benefit {
+  margin: var(--s2) 0 0; padding-top: var(--s3);
   border-top: var(--hairline) solid rgba(247, 244, 238, 0.16);
-}
-.fm-list dt {
-  color: #F7F4EE; font-size: var(--t-small); font-weight: 600;
-  line-height: 1.3; margin-bottom: 2px;
-}
-.fm-list dd {
-  margin: 0; color: rgba(247, 244, 238, 0.78);
-  font-size: var(--t-caption); line-height: 1.45;
+  color: #F7F4EE; font-size: var(--t-small); font-weight: 500;
+  line-height: 1.4;
 }
 
-/* The size of the offer, under its own rule. One line, no counter. */
+/* The size of the offer, last, and the only line of the card that is not a
+   call to action — which is why it is the one that stays on a phone, where
+   the button is hidden. One line, no counter, no countdown. */
 .fm-cap {
-  margin: var(--s2) 0 0; padding-top: var(--s3);
-  border-top: var(--hairline) solid rgba(247, 244, 238, 0.22);
-  color: rgba(247, 244, 238, 0.78);
+  margin: 0; text-align: center;
+  color: rgba(247, 244, 238, 0.62);
   font-size: var(--t-caption); line-height: 1.45;
 }
 
@@ -3842,7 +3819,9 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    control nobody can see. */
 @media (max-width: 999px) {
   .fm .fm-go, .fm .fm-note, .fm .rs-msg { display: none; }
-  .fm-cap { padding-bottom: var(--s1); }
+  /* with the button gone it is the card's last line, so it reads left with
+     everything else rather than centred under nothing */
+  .fm-cap { text-align: left; margin-top: var(--s2); }
 }
 
 .fm-note {
@@ -3859,7 +3838,6 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
     display: flex; flex-direction: column;
     width: min(90%, 28.75rem); margin-inline: auto;
   }
-  .fm-badge { align-self: center; }
 }
 
 /* -- laptop and up: floating at the lower right --------------------------- */
@@ -3876,8 +3854,8 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
      column was bottom-anchored with empty frame above it. The screen now
      ends where the card's upper half begins, so the card floats over its
      foot and the day on the screen stays readable above. */
-  .hero-app { margin-bottom: 8.5rem; }
-  @media (min-width: 1280px) { .hero-app { margin-bottom: 10rem; } }
+  .hero-app { margin-bottom: 6rem; }
+  @media (min-width: 1280px) { .hero-app { margin-bottom: 7rem; } }
 
   .fm {
     position: absolute; z-index: 4;
@@ -3945,7 +3923,33 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    device above the copy has simply gone, so the DOM order is the reading
    order. */
 @media (max-width: 999px) {
-  .hero-inner { display: flex; flex-direction: column; gap: var(--s5); }
+  .hero-inner { display: flex; flex-direction: column; gap: var(--s3); }
+
+  /* THE FORM GOES LAST, AND IT IS NOT A SIBLING OF THE THINGS IT HAS TO
+     FOLLOW. It lives inside .hero-copy, which is one flex item; the screen
+     and the founding card are two others. `display: contents` drops the
+     copy's own box so its children become items of this column too, and
+     then a plain `order` can put them in the reading order:
+
+       You know something has changed.   (headline, both paragraphs)
+       the screen
+       the founding card
+       [ email and Reserve your place ]
+
+     What .hero-copy carried that matters is inherited rather than laid out
+     — the Paper colour passes through — and the gap it set is the one this
+     column already provides. Its z-index is not needed: the film sits at
+     -1, so there is nothing here to sit above. */
+  .hero-copy { display: contents; }
+  .hero-title { order: 1; }
+  .hero-lede { order: 2; }
+  .hero-app { order: 3; }
+  .fm { order: 4; }
+  .hero-copy #join { order: 5; width: 100%; }
+
+  /* The device's own cap is set where it wins on source order — see
+     .ha-device in the phone block further down. */
+  .hs { gap: var(--s3); }
 }
 @media (min-width: 1000px) { .hero-app { justify-self: end; width: auto; } }
 
@@ -3987,10 +3991,11 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 /* Stacked, so the whole copy column counts against the device as well. After
    the base rule, not before: same specificity, later declaration wins. */
-/* The device is below the fold now — the copy and the form are above it —
-   so it no longer has to be squeezed into what is left of the first screen.
-   A plain cap keeps the hero from running away instead. */
-@media (max-width: 999px) { .ha-device { max-height: 21rem; } }
+/* Below a laptop the whole hero has to fit the first screen, so the device
+   takes what the rest of the column leaves. Same shape as the phone rule
+   further down, with a smaller subtrahend: a tablet's hero column is wider,
+   so its paragraphs run to fewer lines. */
+@media (max-width: 999px) { .ha-device { max-height: max(9rem, calc(100svh - 43rem)); } }
 @media (min-width: 1000px) { .ha-device { width: min(21rem, 26vw); } }
 
 .ha {
@@ -4119,15 +4124,22 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
      the sentence, the form, and the form's clearance. */
   .ha-device {
     width: min(15.5rem, 66vw);
-    /* No longer measured against the first screen: the form sits above the
-       device now, so nothing below it can push the form off the fold.
+    /* THE SCREEN IS THE PART THAT GIVES WAY, and this is the rule that
+       decides it — the one further up the file in the 999 block loses to
+       this one on source order, which is the fifth time that has caught
+       this stylesheet, so the calc lives here where it wins.
 
-       18rem rather than the device's full drawn height. It is drawn rounded
-       at the top and open at the foot precisely so it can be cut, and the
-       lower third of it is the empty part of the screen below the card —
-       uncropped that is a hand's width of nothing between the product and
-       the offer under it. */
-    max-height: 18rem;
+       Everything else in the hero's column is text or a control at a fixed
+       size. The device is the only item that can be cut, and it is drawn
+       rounded at the top and open at the foot precisely so it can be. The
+       subtrahend is everything else — the headline, both paragraphs, the
+       play control, the founding card, the form, the gaps and the hero's
+       own padding — so the screen takes what is left of the window.
+
+       The floor keeps it a screen rather than a sliver on a very short
+       phone, where the last inch of the form is the one thing allowed to
+       fall below the fold. */
+    max-height: max(7rem, calc(100svh - 44.5rem));
     overflow: hidden;
     margin-inline: auto;
     border-radius: 1.75rem 1.75rem 0 0;
@@ -4393,11 +4405,15 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 
 
 
-/* On a phone the fold is the whole budget, so the control sits up inside the
-   screen's faded foot rather than costing the hero another row. */
+/* The control used to be pulled up into the screen's faded foot, to save the
+   hero a row when the fold was the whole budget. The screen is cropped to
+   whatever the column leaves now, so its foot is no longer empty — the pull
+   landed the button on "Read from the document you uploaded". It sits under
+   the device instead, and the row it costs comes out of the device's own
+   height through the calc below, which is where that trade belongs. */
 @media (max-width: 700px) {
-  .hs { gap: 0; }
-  .hs-controls { margin-top: -1.75rem; }
+  .hs { gap: var(--s2); }
+  .hs-controls { margin-top: 0; }
 }
 
 /* Reduce Motion: the finished screen, and none of the performance */
@@ -4626,6 +4642,26 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    The same card the /quiz/ page puts it in, centred in the column rather
    than flush left, because the section above it is centred. */
 .quiz-home .qz-page-card { margin-inline: auto; }
+
+/* -- short phones --------------------------------------------------------
+   An SE, an 8, a small Android, anything under about 780 tall. The hero has the same seven
+   things to show in 180 fewer pixels, so every part of the column gives a
+   little rather than the screen giving all of it: the gaps close by a step,
+   the card's padding by a step, the hero's own top padding by a step, and
+   the screen's floor comes down from 7rem to 5rem.
+
+   It sits here, near the end of the file, because it has to win on source
+   order against the phone rules further up — the same override that has
+   caught this stylesheet five times before. Measured at 667: the difference
+   between the form sitting 47px below the fold and sitting on it. */
+@media (max-width: 999px) and (max-height: 780px) {
+  .hero.has-film {
+    padding-block: calc(var(--header-h) + var(--s4)) var(--s5);
+  }
+  .hero-inner { gap: var(--s2); }
+  .ha-device { max-height: max(3.5rem, calc(100svh - 43rem)); }
+  .fm-card { padding: var(--s3); }
+}
 
 /* =========================================================================
    THE TYPE SCALE

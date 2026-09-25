@@ -31,46 +31,40 @@ import { ReserveButton } from './ReserveButton';
  * send someone the length of the page to the closing form.
  */
 
-const INCLUDED: [string, string][] = [
-  ['$89/year founding price',
-   'Lock in founding pricing for as long as you remain a member.'],
-  ['Early access',
-   'Be among the first to experience Ciatta.'],
-  ['Shape what’s next',
-   'Help shape the product as Ciatta grows.'],
-];
+/* The three lines became one.
+ *
+ * "$89/year, for as long as you stay" went because the sentence above it
+ * already says stay at $89/year, not $119 — it was the price a third time
+ * in a card of fifty words. The other two were a pair of fragments that
+ * read better joined than stacked.
+ */
 
 export function FoundingCard() {
   return (
     <div className="fm">
-      {/* The label is part of the card, not a banner over the hero: it sits
-          on the card's own right edge and shares its measure, so the two
-          read as one object rather than as a badge dropped on a photograph. */}
-      <p className="fm-badge">First 500 members</p>
-
+      {/* No badge above the card. "FIRST 500 MEMBERS" sat over the
+          photograph saying what "Be among the first 500." says an inch
+          below it, and a floating pill is the one shape on a hero that
+          always reads as an advert stuck to it. */}
       <div className="fm-card">
         <p className="fm-eyebrow">Founding member pricing</p>
         <h2 className="fm-title">Be among the first 500.</h2>
         <p className="fm-lede">
-          Founding members lock in $89/year before Ciatta opens at the regular
-          $119/year membership.
+          Reserve before Ciatta opens and stay at $89/year, not $119.
         </p>
 
-        <dl className="fm-list">
-          {INCLUDED.map(([name, line]) => (
-            <div key={name}>
-              <dt>{name}</dt>
-              <dd>{line}</dd>
-            </div>
-          ))}
-        </dl>
+        <p className="fm-benefit">
+          Early access when Ciatta opens, and a say in what comes next.
+        </p>
 
-        {/* The size of the thing, said once, under a rule. Not a counter and
-            not a countdown: nothing here claims any of them have gone. */}
-        <p className="fm-cap">500 founding memberships</p>
-
+        {/* Directly under the sentence it follows. The size of the offer
+            used to sit between them, which put a fact about supply between
+            the reason and the action. */}
         <ReserveButton className="fm-go" label="Reserve your place" fallbackId="waitlist-hero" />
         <p className="fm-note">Free to reserve &middot; No card required</p>
+        {/* Last, and it stays on a phone where the button does not: it is
+            the one line of the offer that is not a call to action. */}
+        <p className="fm-cap">500 founding memberships</p>
       </div>
     </div>
   );
