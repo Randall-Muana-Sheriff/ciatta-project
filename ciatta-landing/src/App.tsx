@@ -57,30 +57,31 @@ function useScrolled(offset = 8) {
       mosaic shape. Each tile is the woman Ciatta is for, said in her own
       terms rather than in the product's: what she already does, which is
       what makes her the questioner the heading names. ------------------- */
-type WhoTile = { line: string; img: string; alt: string };
+/* Two lines each: what is true, and what follows from it. One line was a
+   label — "Been told your results are normal" — and the second is the half
+   that stings, which is the half that makes someone recognise herself.
 
-/* Second person, because the heading asks a second-person question. The
-   tiles were written in the third — "Reads the study, not the summary",
-   "Has been told her results are normal" — which is a profile of somebody
-   else, and reading a profile is not the same act as recognising yourself.
+   The order follows the photographs rather than the other way round; each
+   tile keeps the frame it was shot for. */
+type WhoTile = { lead: string; then: string; img: string; alt: string };
 
-   No leading "You", though. The heading has already said it, so four lines
-   each opening on the same word is the pronoun four times over where the
-   grammar only needs it once. They are fragments that continue the heading,
-   and "your" stays wherever dropping it would cost the sense. */
 const WHO_TILES: WhoTile[] = [
-  { line: 'Read the study, not the summary.',
-    img: '/images/who/reads.jpg',
-    alt: 'A woman in an infinity pool, facing an open sea.' },
-  { line: 'Been told your results are normal.',
+  { lead: 'Your results were \u201cnormal.\u201d',
+    then: 'Something still feels different.',
     img: '/images/who/normal.jpg',
     alt: 'A black and white photograph of a woman in a downward-facing dog position.' },
-  { line: 'Arrive with a list, and want it answered.',
+  { lead: 'You arrive with questions.',
+    then: 'You want more than a five-minute answer.',
     img: '/images/who/list.jpg',
     alt: 'A woman sitting on a wooden bench in warm, low light.' },
-  { line: 'Keep your own notes, because no one else does.',
+  { lead: 'You keep your own notes.',
+    then: 'Because you know what happened between visits.',
     img: '/images/who/notes-own.jpg',
     alt: 'A close frame of a woman\u2019s back and shoulder against a plain wall.' },
+  { lead: 'You research before you ask.',
+    then: 'You want to know what\u2019s worth exploring.',
+    img: '/images/who/reads.jpg',
+    alt: 'A woman in an infinity pool, facing an open sea.' },
 ];
 
 /* Six, not ten.
@@ -265,43 +266,48 @@ export default function App() {
                   thing she has to agree to be. The first is a question she
                   answers in the time it takes to read four lines, and it is
                   why this section moved from halfway down the page to here. */}
-              {/* WHERE THE TWO CLAIMS GO, AND WHY.
-
-                  "Grounded in evidence" is a claim about Ciatta; "you
-                  question, research, and take your health into your own
-                  hands" is a claim about her. They cannot both live in the
-                  tiles: every tile is a thing she does, and a line about
-                  what Ciatta rests on would be the one that is not about
-                  her. So both sit here, under the heading, where the
-                  section says what it is before the four say who it is for.
-
-                  The second half is turned into second person to match the
-                  tiles, and it is the last line under this heading — the
-                  one that was here before said how to read the tiles, which
-                  was the heading's own work said twice. This says something
-                  the heading does not. */}
+              {/* The heading is the thing she does, not the thing she is.
+                  "If this is you, Ciatta was built for you" asked her to
+                  agree to a category first; this is a sentence she would
+                  say about herself, and the four tiles underneath are it
+                  happening. */}
               <h2 id="who-heading" className="band-title">
-                If this is you, Ciatta was built for you.
+                You don&rsquo;t stop at the first answer.
               </h2>
               <p className="band-sub">
-                Grounded in evidence, and built for the questioner. You
-                question, you research, and you take your health into your
-                own hands.
+                You question. You research. You keep track. And when
+                something doesn&rsquo;t make sense, you keep looking for the
+                bigger picture.
               </p>
             </div>
 
             <ul className="who-grid">
               {WHO_TILES.map((tile) => (
-                <li key={tile.line} className="who-tile">
+                <li key={tile.lead} className="who-tile">
                   <img src={tile.img} alt={tile.alt} width={900} height={900}
                        loading="lazy" decoding="async" />
                   <span className="who-scrim" aria-hidden="true" />
                   <div>
-                    <p>{tile.line}</p>
+                    {/* Both lines stay inside the one <p>. It is the reveal
+                        target and the type-scale entry, and splitting it in
+                        two would have meant registering a second selector in
+                        both places to say the same thing. */}
+                    <p>
+                      <b>{tile.lead}</b>
+                      <span>{tile.then}</span>
+                    </p>
                   </div>
                 </li>
               ))}
             </ul>
+
+            {/* The claim about Ciatta, after the four about her. It was above
+                the tiles, where it asked her to accept what Ciatta is before
+                she had recognised herself; it reads better as the answer to
+                the four than as a preface to them. */}
+            <p className="who-foot">
+              Grounded in evidence. Built around your health story.
+            </p>
           </div>
         </section>
 

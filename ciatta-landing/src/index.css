@@ -2371,11 +2371,31 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   position: absolute; inset: 0; z-index: -1;
   background: linear-gradient(to top, rgba(24,25,27,0.90) 0%, rgba(24,25,27,0.52) 46%, rgba(24,25,27,0.24) 100%);
 }
+/* Two lines: the statement, and what follows from it. The <b> keeps the
+   card step the type scale sets for .who-tile p; the second line drops to
+   body size and to the quieter weight, so the pair reads as one thought
+   with a beat in it rather than as two headlines stacked. */
 .who-tile p {
   margin: 0; text-wrap: pretty;
+  display: grid; gap: var(--s2);
   color: #F7F4EE; font-weight: 600;
   font-size: var(--t-card);
   line-height: 1; letter-spacing: -0.04em;
+}
+.who-tile p b { font: inherit; letter-spacing: inherit; }
+.who-tile p span {
+  font-size: var(--t-small); font-weight: 400;
+  line-height: 1.35; letter-spacing: -0.01em;
+  color: rgba(247, 244, 238, 0.86);
+}
+
+/* The claim about Ciatta, under the four about her. Centred with the band
+   head above, a step quieter than the tiles, and given room so it reads as
+   the section signing off rather than as a fifth tile. */
+.who-foot {
+  margin: clamp(var(--s5), 3vw, var(--s6)) 0 0;
+  color: var(--ink); font-size: var(--t-lede); font-weight: 500;
+  letter-spacing: -0.01em; text-wrap: balance;
 }
 @media (max-width: 639px) { .who-tile { min-height: 12rem; } }
 
