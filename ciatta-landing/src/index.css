@@ -4144,22 +4144,18 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
      the sentence, the form, and the form's clearance. */
   .ha-device {
     width: min(15.5rem, 66vw);
-    /* THE SCREEN IS THE POINT, NOT THE PART THAT GIVES WAY.
+    /* THE SCREEN TAKES WHAT THE HERO LEAVES, and the hero has to leave
+       enough: everything in it, down to the form, is above the fold.
 
-       It was sized as whatever the rest of the column left over, which on
-       an 844 phone came to 130px — a band showing one card at a time, with
-       the founding offer and the form crammed above the fold around it.
-       That put the price in front of the proof.
-
-       It takes a little over half the window now and reads as the product.
-       The offer and the form follow it, below the fold, which is where a
-       next step belongs: the first screen says what she knows and shows
-       what Ciatta does, and scrolling is what asks for the price.
+       It is still the largest item in the column by a distance, and it is
+       larger than it was before the control moved — that move took a whole
+       row out of the subtrahend and gave it to the screen. On a tall phone
+       it runs to about 280px; on an 844 it is about 190.
 
        This rule is in the phone block because the one further up the file
        loses to it on source order — the fifth time that has caught this
        stylesheet. */
-    max-height: min(52svh, 26rem);
+    max-height: max(8rem, calc(100svh - 41rem));
     overflow: hidden;
     margin-inline: auto;
     border-radius: 1.75rem 1.75rem 0 0;
@@ -4692,6 +4688,14 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   .hero.has-film {
     padding-block: calc(var(--header-h) + var(--s4)) var(--s4);
   }
+  /* Every part gives a little so the form still clears the fold: the gaps
+     close by a step, the card's padding by a step, and the screen's floor
+     comes down from 8rem to 5rem. Measured at 667 that is 730 down to 646
+     against a 651 budget. */
+  .hero-inner { gap: var(--s2); }
+  .fm { gap: var(--s2); }
+  .fm-card { padding: var(--s3); }
+  .ha-device { max-height: max(5rem, calc(100svh - 41rem)); }
 }
 
 /* =========================================================================
