@@ -4,7 +4,7 @@ import { HeroStory } from './components/HeroStory';
 import { SubscribeForm } from './components/SubscribeForm';
 import { CycleExample } from './components/CycleExample';
 import { HowSection } from './components/HowSection';
-import { QuizFlow } from './components/SymptomQuiz';
+import { QuizPopup } from './components/QuizPopup';
 import { MembershipCard } from './components/MembershipCard';
 import { SiteHeader } from './components/SiteHeader';
 import { CookieBanner } from './components/CookieBanner';
@@ -284,33 +284,15 @@ export default function App() {
             all nine layers can have them. ============================== */}
         <CycleExample />
 
-        {/* ==== 04 · THE QUIZ ==============================================
-            The real quiz, the same component /quiz/ renders, ending on the
-            same real result. It is on the home page because it is the one
-            thing here someone can do rather than read, and doing it produces
-            something of hers: her own answers, sorted, in words she can say
-            in an appointment. The dedicated page stays, linked from the
-            header and the footer, for anyone who arrives looking for it.
-
-            The card wrapper is the one that page uses, so the quiz is styled
-            by what already exists rather than by a second set of rules. */}
-        <section className="section quiz-home" aria-labelledby="quiz-heading">
-          <div className="shell">
-            <div className="band-head">
-              <h2 id="quiz-heading" className="band-title">
-                What should you be paying attention to?
-              </h2>
-              <p className="band-sub">
-                Take 60 seconds to see what may be worth exploring in your
-                health.
-              </p>
-            </div>
-            <div className="qz-page-card">
-              <QuizFlow />
-            </div>
-          </div>
-        </section>
-
+        {/* 04 · THE QUIZ IS NOT A SECTION ANY MORE.
+            It was here, between the worked example and the loop, and as a
+            section it was a wall: a card of twelve possible questions that
+            everybody scrolled past on the way to the price. It is offered
+            once instead, as a dialog, at the moment she scrolls past the
+            example above — the first point on this page where she has been
+            shown what Ciatta does rather than told. See QuizPopup for the
+            rules it is built to, and /quiz/ for the way in that is always
+            there, in the header and the footer of every page. */}
         {/* ==== 05 · HOW CIATTA WORKS ======================================
             The loop, in five words. The four illustrated steps that used to
             be here are on the How it works page, once. ================= */}
@@ -426,6 +408,9 @@ export default function App() {
 
       <SiteFooter />
       <CookieBanner />
+      {/* Offered after she has scrolled past the worked example. Once ever,
+          remembered, and with four ways out. */}
+      <QuizPopup after=".cycle-ex" />
     </>
   );
 }

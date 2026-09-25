@@ -4643,6 +4643,75 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 .qz-go:hover { opacity: 0.88; }
 
+/* -- the quiz, offered once ----------------------------------------------
+   A dialog that asks about someone's body has to be easy to leave, so the
+   close button is full size and in the corner, "Not now" is spelled out at
+   the foot, and the backdrop and Escape both work. Nothing is delayed and
+   nothing is hidden.
+
+   Set in the site's own paper and type. A dialog that arrives in colours
+   the page does not use reads as an advert that got through. */
+.qp {
+  position: fixed; inset: 0; z-index: 90;
+  display: grid; place-items: center;
+  padding: max(var(--s4), env(safe-area-inset-top, 0px)) var(--s4)
+           max(var(--s4), env(safe-area-inset-bottom, 0px));
+  background: rgba(24,25,27,0.58);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+  animation: qp-in 220ms var(--ease-body) both;
+}
+@keyframes qp-in { from { opacity: 0 } to { opacity: 1 } }
+
+.qp-card {
+  position: relative;
+  width: min(34rem, 100%); max-height: 100%; overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--surface); color: var(--ink);
+  border-radius: var(--r-surface);
+  box-shadow: 0 0 0 var(--hairline) var(--rule), var(--float-above);
+  padding: clamp(var(--s5), 3vw, var(--s6));
+  display: grid; gap: var(--s4);
+  animation: qp-rise 260ms var(--ease-body) both;
+}
+@keyframes qp-rise { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
+.qp-card:focus { outline: none; }
+.qp-card:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 3px; }
+
+/* Reduce Motion: it appears, it does not arrive. */
+@media (prefers-reduced-motion: reduce) {
+  .qp, .qp-card { animation: none; }
+}
+
+.qp-head { display: grid; gap: var(--s2); padding-right: 2.5rem; }
+.qp-title {
+  margin: 0; font-size: var(--t-card); font-weight: 500;
+  line-height: 1.12; letter-spacing: -0.02em;
+}
+.qp-sub { margin: 0; color: var(--body-ink); font-size: var(--t-small); line-height: 1.5; }
+
+/* The quiz itself, on the card's own ground rather than in a second card. */
+.qp-body { display: grid; gap: var(--s3); }
+
+.qp-x {
+  position: absolute; top: var(--s3); right: var(--s3);
+  appearance: none; cursor: pointer; padding: 0;
+  width: 2.75rem; height: 2.75rem; border: 0; border-radius: 50%;
+  display: grid; place-items: center;
+  background: none; color: var(--meta-ink);
+}
+.qp-x:hover { color: var(--ink); }
+.qp-x:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 2px; }
+.qp-x svg { width: 1rem; height: 1rem; }
+
+.qp-not {
+  appearance: none; border: 0; background: none; cursor: pointer; font: inherit;
+  justify-self: start; min-height: 2.75rem; padding: 0;
+  color: var(--meta-ink); font-size: var(--t-small);
+  text-decoration: underline; text-underline-offset: 0.3em;
+}
+.qp-not:hover { color: var(--ink); }
+.qp-not:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 2px; }
+
 /* On its own page the flow sits in a card the width of a reading column,
    rather than a dialog floating over a darkened page. Same contents. */
 .qz-page-card {
