@@ -259,7 +259,7 @@ export default function App() {
                 If this is you, Ciatta was built for you.
               </h2>
               <p className="band-sub">
-                Four women. You only have to recognise one of them.
+                You only have to recognise one of them.
               </p>
             </div>
 
