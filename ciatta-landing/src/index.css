@@ -4340,6 +4340,16 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 .wn-rows dd { margin: 0; color: var(--body-ink); font-size: var(--t-small); line-height: 1.55; }
 
+/* The three figures as one sentence, under them. A step up from the card
+   copy and a step down from the heading, so it reads as the row summed
+   rather than as a fourth card or a second headline. */
+.wn-foot {
+  margin: clamp(var(--s5), 3vw, var(--s6)) 0 0;
+  max-width: 44rem;
+  color: var(--ink); font-size: var(--t-lede); font-weight: 500;
+  line-height: 1.35; letter-spacing: -0.01em; text-wrap: pretty;
+}
+
 /* -- trust ----------------------------------------------------------------
    The promise on the left, the questions that carry the detail on the right,
    in the split the page already uses for its FAQ. One section where there

@@ -356,6 +356,16 @@ export default function App() {
                 <dd>Reserving is free, takes an address, and is not a subscription.</dd>
               </div>
             </dl>
+
+            {/* The three figures, said once as a sentence. Someone who reads
+                the cards has it; someone who skims them has it here. It
+                carries all four facts — an address, nothing charged, the
+                price held, and that the timing is hers — and it manufactures
+                nothing: no deadline, no counter, no places left. */}
+            <p className="wn-foot">
+              Leave an address today, pay nothing, and your membership is $89
+              a year instead of $119 whenever you decide to begin.
+            </p>
           </div>
         </section>
 
