@@ -3936,7 +3936,23 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    device above the copy has simply gone, so the DOM order is the reading
    order. */
 @media (max-width: 999px) {
-  .hero-inner { display: flex; flex-direction: column; gap: var(--s3); }
+  /* A RHYTHM RATHER THAN A STACK.
+
+     At one step between every item the hero read as seven things pressed
+     together — legible, but nothing to rest on. The column runs on a larger
+     step now, and the two paragraphs keep their own smaller one through the
+     negative margin below, so the hero reads as four blocks with air
+     between them rather than as seven lines in a row:
+
+       the sentence   (headline and its two paragraphs, close together)
+       the screen
+       the offer
+       the form
+
+     The step comes out of the screen, which is the only item that can give
+     it, and that is the right trade: a screen 56px shorter is still the
+     largest thing in the frame, and the frame is now readable at a glance. */
+  .hero-inner { display: flex; flex-direction: column; gap: var(--s5); }
 
   /* THE FORM GOES LAST, AND IT IS NOT A SIBLING OF THE THINGS IT HAS TO
      FOLLOW. It lives inside .hero-copy, which is one flex item; the screen
@@ -4145,7 +4161,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
        This rule is in the phone block because the one further up the file
        loses to it on source order — the fifth time that has caught this
        stylesheet. */
-    max-height: max(8rem, calc(100svh - 33rem));
+    max-height: max(8rem, calc(100svh - 37.5rem));
     overflow: hidden;
     margin-inline: auto;
     border-radius: 1.75rem 1.75rem 0 0;
@@ -4432,17 +4448,17 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    The eyebrow that used to be dropped here has gone from the card
    altogether — see FoundingCard. */
 @media (max-width: 700px) {
-  /* THE BLOCK SITS ON THE FOLD, and the screen takes what that frees.
+  /* THE BLOCK SITS NEAR THE FOLD, and the screen takes what that frees.
 
      The hero's bottom padding is a clamp written for a desktop frame — 48px
      on a phone, all of it under the form, all of it doing nothing but
      holding the block off the bottom of the window. On a laptop that air is
      the composition; on a phone the window IS the composition, and every
      pixel of it belongs to the screen. */
-  .hero.has-film { padding-bottom: var(--s4); }
+  .hero.has-film { padding-bottom: var(--s5); }
 
-  .fm { gap: var(--s2); }
-  .fm-card { gap: var(--s1); padding: var(--s3); }
+  .fm { gap: var(--s3); }
+  .fm-card { gap: var(--s1); padding: var(--s4); }
   .fm-lede, .fm-benefit { margin-top: var(--s1); }
 
   .hs { position: relative; gap: 0; }
@@ -4707,7 +4723,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   .hero-inner { gap: var(--s2); }
   .fm { gap: var(--s2); }
   .fm-card { padding: var(--s3); }
-  .ha-device { max-height: max(5rem, calc(100svh - 38rem)); }
+  .ha-device { max-height: max(4rem, calc(100svh - 42rem)); }
 }
 
 /* =========================================================================
