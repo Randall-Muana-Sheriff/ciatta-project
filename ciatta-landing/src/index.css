@@ -4651,6 +4651,61 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 .qz-go:hover { opacity: 0.88; }
 
+/* -- the bar at the foot ------------------------------------------------
+   WHOOP's shape, Ciatta's materials: paper, one hairline, and the same pill
+   the header's call to action uses. A bar that arrives in colours the page
+   does not use reads as an advert that got through.
+
+   z-index 30, deliberately under the cookie banner's 40 and the dialog's 90.
+   The component hides it when either is present, and the stacking order is
+   the second guarantee behind the first: a consent notice fixed to the same
+   edge is never something a marketing bar may cover. */
+.sr-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  display: flex; align-items: center; justify-content: center;
+  gap: var(--s4) var(--s5); flex-wrap: wrap;
+  padding: var(--s3) var(--s5);
+  padding-bottom: calc(var(--s3) + env(safe-area-inset-bottom, 0px));
+  background: var(--surface);
+  border-top: var(--hairline) solid var(--rule);
+  box-shadow: 0 -1px 24px rgba(24,25,27,0.06);
+  animation: sr-up 260ms var(--ease-body) both;
+}
+@keyframes sr-up { from { transform: translateY(100%) } to { transform: none } }
+@media (prefers-reduced-motion: reduce) { .sr-bar { animation: none; } }
+
+.sr-bar-line {
+  margin: 0; display: flex; align-items: baseline; gap: var(--s3);
+  flex-wrap: wrap; min-width: 0;
+}
+.sr-bar-line b {
+  color: var(--ink); font-size: var(--t-body); font-weight: 600;
+  letter-spacing: -0.01em; white-space: nowrap;
+}
+.sr-bar-line span { color: var(--body-ink); font-size: var(--t-small); line-height: 1.4; }
+
+.sr-bar-go {
+  appearance: none; cursor: pointer; font: inherit; flex: none;
+  display: inline-flex; align-items: center; min-height: 2.75rem;
+  padding: 0 var(--s5); border: 0; border-radius: var(--r-pill);
+  background: var(--ink); color: var(--on-ink);
+  font-size: var(--t-small); font-weight: 500;
+}
+.sr-bar-go:hover { opacity: 0.88; }
+.sr-bar-go:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 2px; }
+
+/* On a phone the reason stacks over itself and the action stays beside it,
+   rather than the whole bar becoming two full-width rows. Stacked it stood
+   134px tall on a 360 screen, which is a sixth of the window given over to a
+   bar; this is about 70. The button keeps its whole label and its 44px. */
+@media (max-width: 600px) {
+  .sr-bar { flex-wrap: nowrap; gap: var(--s4); padding-inline: var(--s4); }
+  .sr-bar-line { flex-direction: column; align-items: flex-start; gap: 0; flex: 1; }
+  .sr-bar-line b { font-size: var(--t-small); }
+  .sr-bar-line span { font-size: var(--t-caption); line-height: 1.35; }
+  .sr-bar-go { padding-inline: var(--s4); }
+}
+
 /* -- the quiz, offered once ----------------------------------------------
    A dialog that asks about someone's body has to be easy to leave, so the
    close button is full size and in the corner, "Not now" is spelled out at

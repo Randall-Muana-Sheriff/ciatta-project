@@ -5,6 +5,7 @@ import { SubscribeForm } from './components/SubscribeForm';
 import { CycleExample } from './components/CycleExample';
 import { HowSection } from './components/HowSection';
 import { QuizPopup } from './components/QuizPopup';
+import { StickyReserve } from './components/StickyReserve';
 import { MembershipCard } from './components/MembershipCard';
 import { SiteHeader } from './components/SiteHeader';
 import { CookieBanner } from './components/CookieBanner';
@@ -411,6 +412,9 @@ export default function App() {
       {/* Offered after she has scrolled past the worked example. Once ever,
           remembered, and with four ways out. */}
       <QuizPopup after=".cycle-ex" />
+      {/* The action, kept within reach once the hero's own form has scrolled
+          away, and out of the way whenever the real ask is on screen. */}
+      <StickyReserve />
     </>
   );
 }

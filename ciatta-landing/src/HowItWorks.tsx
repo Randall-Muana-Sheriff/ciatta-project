@@ -147,17 +147,6 @@ export default function HowItWorks() {
             because they want the detail. */}
         <ExploreSection />
 
-        {/* ------------------------------ THE FILM ------------------------- */}
-        <section className="hw2-film" aria-label="Ciatta in a sentence">
-          <Film base="hero-2" className="hw2-film-layer" scrim="hw2-film-scrim" />
-          <div className="shell">
-            <p className="hw2-film-line">
-              A connection is not a diagnosis. Ciatta shows what an observation
-              is based on, and what is still too thin to call.
-            </p>
-          </div>
-        </section>
-
         <Module
           id="start-heading"
           kind="Getting started"
