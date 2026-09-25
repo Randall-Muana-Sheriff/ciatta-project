@@ -4113,9 +4113,14 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 .hs-ring circle { fill: none; stroke-width: 6; stroke-linecap: round; }
 .hs-ring .progress-background { stroke: rgb(134, 134, 139); }
+/* The offset is set five times a second and the transition covers the gap
+   between readings, so the sweep is continuous rather than five steps a
+   second. Linear, and a shade longer than the interval: an eased transition
+   would accelerate and settle between every pair of readings, which is the
+   stutter this was fixing. */
 .hs-ring .progress-circle {
   stroke: #FFFFFF;
-  transition: stroke-dashoffset 260ms linear;
+  transition: stroke-dashoffset 220ms linear;
 }
 @media (prefers-reduced-motion: reduce) {
   .hs-ring .progress-circle { transition: none; }

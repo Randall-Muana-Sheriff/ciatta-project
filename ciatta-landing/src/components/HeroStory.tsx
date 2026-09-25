@@ -170,6 +170,18 @@ export function HeroStory() {
   const frame = useRef<number | null>(null);
   const clock = useRef(0);
 
+  /* THE RING RUNS ON THE CLOCK, NOT ON THE STEPS.
+     It was drawn from step / S.DONE, and the steps are twelve moments in
+     fifteen seconds, so the ring sat still and then jumped, twelve times.
+     That reads as a thing going wrong rather than as a thing filling.
+
+     Elapsed milliseconds are continuous, so the ring is too. It is set five
+     times a second rather than sixty — a 40px ring cannot show more than
+     that, and the CSS interpolates between the readings anyway, which is
+     what makes the sweep look like one movement. */
+  const [elapsed, setElapsed] = useState(0);
+  const lastRing = useRef(0);
+
   useEffect(() => {
     if (reduced || !playing) return;
     const started = performance.now() - clock.current;
@@ -180,6 +192,11 @@ export function HeroStory() {
       const next = STEPS.filter((s) => s.at <= t).pop();
       if (next) setStep(next.step);
 
+      if (t - lastRing.current >= 200) {
+        lastRing.current = t;
+        setElapsed(t);
+      }
+
       const chars = Math.round(((t - TYPE_AT) / TYPE_MS) * NOTE.length);
       setTyped((was) => {
         const now = Math.max(0, Math.min(NOTE.length, chars));
@@ -187,6 +204,7 @@ export function HeroStory() {
       });
 
       if (t >= END) {
+        setElapsed(END);
         setPlaying(false);
         return;
       }
@@ -210,6 +228,8 @@ export function HeroStory() {
   const done = step >= S.DONE;
   const replay = () => {
     clock.current = 0;
+    lastRing.current = 0;
+    setElapsed(0);
     setStep(S.NOTHING);
     setTyped(0);
     setPlaying(true);
@@ -286,6 +306,10 @@ export function HeroStory() {
                 283 is the circumference, 2π·45, and the offset counts down
                 from it as the story runs.
 
+                It runs on elapsed milliseconds rather than on the twelve
+                steps, because twelve steps in fifteen seconds is a ring that
+                sits still and jumps rather than one that fills.
+
                 IT REPORTS THE STORY, NOT THE FILM. It reported the film's
                 currentTime for a version, and the film is a ten-second loop,
                 so the ring filled and snapped back to empty every ten
@@ -299,7 +323,7 @@ export function HeroStory() {
               <circle className="progress-background" cx="50" cy="50" r="45" />
               <circle
                 className="progress-circle" cx="50" cy="50" r="45"
-                style={{ strokeDasharray: 283, strokeDashoffset: 283 * (1 - Math.min(1, step / S.DONE)) }}
+                style={{ strokeDasharray: 283, strokeDashoffset: 283 * (1 - Math.min(1, elapsed / END)) }}
               />
             </svg>
 
