@@ -10,5 +10,7 @@ import { Film } from './Film';
  * `.hero-film` / `.hero-scrim`, because they are properties of this clip.
  */
 export function HeroFilm() {
-  return <Film base="hero-2" />;
+  // `controlled`: the hero's pause button stops this clip as well as the
+  // phone story in front of it. Pause means pause.
+  return <Film base="hero-2" controlled />;
 }

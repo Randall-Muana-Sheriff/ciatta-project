@@ -84,10 +84,6 @@ export function QuizFlow() {
             </li>
           ))}
         </ul>
-        <p className="qz-hint">
-          The questions follow what you answer, so this is usually five or six
-          of them rather than a form.
-        </p>
         <Note />
       </>
     );

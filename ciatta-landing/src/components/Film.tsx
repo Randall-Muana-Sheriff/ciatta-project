@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { isPaused, onPause } from '../lib/film';
 
 /**
  * A background film layer: the clip, a scrim over it, and a poster for anyone
@@ -16,6 +17,11 @@ import { useEffect, useState } from 'react';
  * <base>-poster.jpg. `className` and `scrim` let a section keep its own crop
  * and its own scrim weighting, because where the calm part of the frame sits
  * is a property of the clip, not of this component.
+ *
+ * `controlled` hands the clip to the hero's pause button. Only the home
+ * hero passes it: the How it works and membership pages draw films with this
+ * same component and have no button, and a switch on one page must not stop
+ * a video on another.
  */
 export function Film({
   base,
@@ -23,12 +29,15 @@ export function Film({
   scrim = 'hero-scrim',
   width = 1600,
   height = 900,
+  controlled = false,
 }: {
   base: string;
   className?: string;
   scrim?: string;
   width?: number;
   height?: number;
+  /** Obey the hero's pause button. */
+  controlled?: boolean;
 }) {
   // Assume reduced until proven otherwise, so a reduced-motion viewer never
   // catches a frame of playback during hydration.
@@ -42,12 +51,29 @@ export function Film({
     return () => mq.removeEventListener('change', apply);
   }, []);
 
+  /* The element, so the switch can reach it. Pausing the <video> rather than
+     unmounting it keeps the frame on screen: a paused film is a still, and a
+     removed one is a hole in the page. */
+  const film = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    if (!controlled) return;
+    const apply = (p: boolean) => {
+      const el = film.current;
+      if (!el) return;
+      if (p) el.pause();
+      else void el.play().catch(() => {});
+    };
+    apply(isPaused());
+    return onPause(apply);
+  }, [controlled, motionOk]);
+
   const poster = `/video/${base}-poster.jpg`;
 
   return (
     <div className={className} aria-hidden="true">
       {motionOk ? (
-        <video poster={poster} autoPlay muted loop playsInline preload="metadata">
+        <video ref={film} poster={poster} autoPlay muted loop playsInline preload="metadata">
           <source src={`/video/${base}.webm`} type="video/webm" />
           <source src={`/video/${base}.mp4`} type="video/mp4" />
         </video>

@@ -4038,32 +4038,50 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 /* Above the device, not under it: on a phone the row is pulled up into the
    screen's faded foot, and without this the screen wins the hit test and the
    button cannot be tapped at all. */
-.hs-controls {
-  position: relative; z-index: 3;
-  display: flex; align-items: center; gap: var(--s3); width: min(15.5rem, 66vw);
-}
-@media (min-width: 1000px) { .hs-controls { width: min(21rem, 26vw); } }
+/* -- the hero's one control ----------------------------------------------
+   A circle with a progress ring around it, and it drives the film and the
+   phone story together.
+
+   It was a 2rem circle with a 2px bar beside it, and the bar was the reason
+   the row had a width at all. Wrapping the progress around the button it
+   belongs to makes the control one object rather than two, and leaves the
+   hero with a single small mark instead of a strip across it.
+
+   No fill and no border: the ring is the edge. On a film that is already
+   scrimmed, a translucent white disc was a smudge, and the ring reads at
+   every frame the clip passes through. */
+.hs-controls { position: relative; z-index: 3; display: flex; align-items: center; }
 .hs-btn {
-  appearance: none; cursor: pointer; flex: none;
-  width: 2rem; height: 2rem; border-radius: 50%;
+  appearance: none; cursor: pointer; flex: none; padding: 0;
+  position: relative;
+  width: 2.25rem; height: 2.25rem; border-radius: 50%;
   display: grid; place-items: center;
-  background: rgba(255,255,255,0.16); color: #FFFFFF;
-  border: 1px solid rgba(255,255,255,0.34);
-  transition: background var(--quick) var(--ease-caused);
+  background: none; border: 0; color: #FFFFFF;
 }
-.hs-btn:hover { background: rgba(255,255,255,0.26); }
-/* accessibility.md > Mobility: a 44x44 target. The circle stays 2rem to the
-   eye and the target grows around it rather than the button getting bigger. */
-.hs-btn { position: relative; }
-/* -7px, not -6: the offsets resolve against the padding box, and the button
-   carries a 1px border, so -6 would leave the target 2px short of 44. */
-.hs-btn::after { content: ''; position: absolute; inset: -0.4375rem; border-radius: 50%; }
-.hs-btn svg { width: 0.875rem; height: 0.875rem; }
-.hs-btn:focus-visible { outline: var(--strong) solid #FFFFFF; outline-offset: 2px; }
-/* it reports progress and takes no presses, so it cannot stand in front of
-   the button's target where the two overlap */
-.hs-progress { pointer-events: none; flex: 1; height: 2px; background: rgba(255,255,255,0.24); border-radius: 999px; overflow: hidden; }
-.hs-progress i { display: block; height: 100%; background: #FFFFFF; transition: width 420ms linear; }
+/* accessibility.md > Mobility: a 44x44 target. The circle stays 2.25rem to
+   the eye and the target grows around it rather than the button getting
+   bigger. -0.25rem on a 36px box is exactly 44. */
+.hs-btn::after { content: ''; position: absolute; inset: -0.25rem; border-radius: 50%; }
+.hs-btn:focus-visible { outline: var(--strong) solid #FFFFFF; outline-offset: 3px; }
+
+/* Both circles sit on the same 36-unit box, r 15.915, whose circumference is
+   100 — so the dash array is the percentage and nothing is converted. The
+   run starts at twelve o'clock rather than three. */
+.hs-ring {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  transform: rotate(-90deg); overflow: visible;
+}
+.hs-ring circle { fill: none; stroke-width: 1.6; }
+.hs-ring-track { stroke: rgba(255,255,255,0.32); }
+.hs-ring-run {
+  stroke: #FFFFFF; stroke-linecap: round;
+  transition: stroke-dasharray 420ms linear;
+}
+@media (prefers-reduced-motion: reduce) { .hs-ring-run { transition: none; } }
+
+/* The glyph, optically centred inside the ring. */
+.hs-glyph { position: relative; width: 0.875rem; height: 0.875rem; }
+.hs-btn:hover .hs-ring-track { stroke: rgba(255,255,255,0.5); }
 
 /* On a phone the fold is the whole budget, so the control sits up inside the
    screen's faded foot rather than costing the hero another row. */
@@ -4565,11 +4583,6 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 .qz-tracks button:focus-visible { outline: var(--strong) solid var(--ink); outline-offset: 2px; }
 .qz-tracks b { font-size: var(--t-small); font-weight: 600; line-height: 1.35; }
 .qz-tracks span { color: var(--body-ink); font-size: var(--t-caption); line-height: 1.45; }
-
-/* What the questions do, said once, in plain words. It never says adaptive,
-   intelligent or AI: "the questions follow what you answer" is the whole
-   truth and anyone can check it against what happens next. */
-.qz-hint { margin: 0; color: var(--body-ink); font-size: var(--t-caption); line-height: 1.55; }
 
 /* The header while answering: which track you are in, and where you are.
    No "3 of 12", because the length is not fixed any more and a denominator

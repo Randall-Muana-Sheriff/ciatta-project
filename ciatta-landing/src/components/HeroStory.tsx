@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { setPaused } from '../lib/film';
 import { S, TodayScreen } from './TodayScreen';
 
 /**
@@ -197,6 +198,15 @@ export function HeroStory() {
     };
   }, [playing, reduced]);
 
+  /* The one switch. The story and the film behind it are the same pause:
+     whenever this component starts or stops, the film does too.
+
+     Not when the story reaches its end, though. The story is fifteen seconds
+     long and the film is a loop with no end, so a finished story must not
+     freeze the hero; the button turns into Replay and the film keeps
+     running. Only a press pauses. */
+  useEffect(() => () => setPaused(false), []);
+
   const done = step >= S.DONE;
   const replay = () => {
     clock.current = 0;
@@ -240,15 +250,45 @@ export function HeroStory() {
 
       {!reduced && (
         <div className="hs-controls">
+          {/* ONE CONTROL, AND IT MEANS BOTH.
+              It used to be a circle with a separate bar beside it, and it
+              stopped the phone story while the film behind it carried on,
+              which is not what pause means. The ring around the circle is
+              that bar, wrapped around the button it belongs to, and the
+              press now stops the film as well.
+
+              A ring rather than a line for the same reason the two states
+              merged: the control and what it reports are one object. */}
           <button
             type="button"
             className="hs-btn"
-            onClick={() => (done ? replay() : setPlaying((p) => !p))}
+            aria-pressed={!done && !playing}
+            onClick={() => {
+              if (done) { setPaused(false); replay(); return; }
+              const next = !playing;
+              setPlaying(next);
+              setPaused(!next);
+            }}
           >
             <span className="sr-only">
-              {done ? 'Replay the story' : playing ? 'Pause the story' : 'Play the story'}
+              {done
+                ? 'Replay the story'
+                : playing ? 'Pause the film and the story' : 'Play the film and the story'}
             </span>
-            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+
+            {/* The ring. Drawn as a circle of circumference 100 so the dash
+                is the percentage itself and nothing has to be converted. */}
+            <svg className="hs-ring" viewBox="0 0 36 36" aria-hidden="true">
+              <circle className="hs-ring-track" cx="18" cy="18" r="15.915" />
+              <circle
+                className="hs-ring-run" cx="18" cy="18" r="15.915"
+                strokeDasharray={`${Math.min(100, (step / S.DONE) * 100)} 100`}
+              />
+            </svg>
+
+            <svg className="hs-glyph" viewBox="0 0 16 16" aria-hidden="true"
+                 fill="none" stroke="currentColor" strokeWidth="1.4"
+                 strokeLinecap="round" strokeLinejoin="round">
               {done ? (
                 <>
                   <path d="M13.5 8a5.5 5.5 0 1 1-1.9-4.15" />
@@ -261,9 +301,6 @@ export function HeroStory() {
               )}
             </svg>
           </button>
-          <span className="hs-progress" aria-hidden="true">
-            <i style={{ width: `${Math.min(100, (step / S.DONE) * 100)}%` }} />
-          </span>
         </div>
       )}
     </div>
