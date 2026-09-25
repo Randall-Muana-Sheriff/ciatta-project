@@ -4047,34 +4047,33 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    screen's faded foot, and without this the screen wins the hit test and the
    button cannot be tapped at all. */
 /* -- the hero's one control ----------------------------------------------
-   Two bars, or a triangle. Nothing around them.
+   Two states inside a circle: two bars for pause, a right-facing triangle
+   for play, and nothing else. No progress ring — the ring was a second
+   thing to read on a control that only has to say which of two things
+   pressing it will do.
 
-   It was a translucent disc, then a disc with a progress ring, and both were
-   a container drawn around a symbol that has not needed one since the first
-   tape deck. On a scrimmed film the disc was a smudge and the ring was a
-   second thing to read; the glyph alone is legible at every frame the clip
-   passes through, helped by one soft shadow rather than a plate.
-
-   The tap target is unchanged at 44px. It is the ::after, not the button, so
-   the mark stays small while the thing you press stays large. */
+   The circle is a translucent disc with a hairline edge, which is what
+   gives the glyph a ground on a film whose frames run from bright to dark.
+   36px to the eye, with a 44px target around it: the ::after grows, not the
+   button, so the mark stays small while the thing you press stays large. */
 .hs-controls { position: relative; z-index: 3; display: flex; align-items: center; }
 .hs-btn {
   appearance: none; cursor: pointer; flex: none; padding: 0;
   position: relative;
-  width: 1.5rem; height: 1.5rem;
+  width: 2.25rem; height: 2.25rem; border-radius: 50%;
   display: grid; place-items: center;
-  background: none; border: 0; color: #FFFFFF;
-  transition: opacity var(--quick) var(--ease-body);
+  background: rgba(255,255,255,0.16); color: #FFFFFF;
+  border: 1px solid rgba(255,255,255,0.34);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  transition: background var(--quick) var(--ease-body);
 }
-/* accessibility.md > Mobility: a 44x44 target around a 24px mark. */
-.hs-btn::after { content: ''; position: absolute; inset: -0.625rem; border-radius: 50%; }
-.hs-btn:hover { opacity: 0.82; }
-.hs-btn:focus-visible { outline: var(--strong) solid #FFFFFF; outline-offset: 6px; border-radius: 2px; }
+.hs-btn:hover { background: rgba(255,255,255,0.28); }
+/* accessibility.md > Mobility: a 44x44 target around a 36px circle. */
+.hs-btn::after { content: ''; position: absolute; inset: -0.25rem; border-radius: 50%; }
+.hs-btn:focus-visible { outline: var(--strong) solid #FFFFFF; outline-offset: 3px; }
 
-.hs-glyph {
-  width: 100%; height: 100%; display: block;
-  filter: drop-shadow(0 1px 3px rgba(24,25,27,0.55));
-}
+.hs-glyph { width: 0.875rem; height: 0.875rem; display: block; }
+
 
 /* On a phone the fold is the whole budget, so the control sits up inside the
    screen's faded foot rather than costing the hero another row. */
