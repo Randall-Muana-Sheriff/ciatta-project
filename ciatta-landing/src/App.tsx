@@ -59,17 +59,22 @@ function useScrolled(offset = 8) {
       what makes her the questioner the heading names. ------------------- */
 type WhoTile = { line: string; img: string; alt: string };
 
+/* Second person, because the heading asks a second-person question. The
+   tiles were written in the third — "Reads the study, not the summary",
+   "Has been told her results are normal" — which is a profile of somebody
+   else, and reading a profile is not the same act as recognising yourself.
+   Under "If this is you", the four lines have to be addressed to you. */
 const WHO_TILES: WhoTile[] = [
-  { line: 'Reads the study, not the summary.',
+  { line: 'You read the study, not the summary.',
     img: '/images/who/reads.jpg',
     alt: 'A woman in an infinity pool, facing an open sea.' },
-  { line: 'Has been told her results are normal.',
+  { line: 'You have been told your results are normal.',
     img: '/images/who/normal.jpg',
     alt: 'A black and white photograph of a woman in a downward-facing dog position.' },
-  { line: 'Arrives with a list, and wants it answered.',
+  { line: 'You arrive with a list, and you want it answered.',
     img: '/images/who/list.jpg',
     alt: 'A woman sitting on a wooden bench in warm, low light.' },
-  { line: 'Keeps her own notes, because no one else does.',
+  { line: 'You keep your own notes, because no one else does.',
     img: '/images/who/notes-own.jpg',
     alt: 'A close frame of a woman\u2019s back and shoulder against a plain wall.' },
 ];
