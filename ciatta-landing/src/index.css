@@ -3764,11 +3764,6 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   color: #F7F4EE;
 }
 
-.fm-eyebrow {
-  margin: 0; color: rgba(247, 244, 238, 0.72);
-  font-size: var(--t-caption); font-weight: 600;
-  letter-spacing: 0.14em; text-transform: uppercase;
-}
 /* The lede step, three below the hero's display. It was the card step and
    it read as a second headline in the frame; at this size it reads as the
    next thing to do, which is what it is. The hero's own sentence stays the
@@ -3847,11 +3842,6 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   text-transform: none;
 }
 
-.fm-note {
-  margin: 0; text-align: center;
-  color: rgba(247, 244, 238, 0.68);
-  font-size: var(--t-caption); line-height: 1.45;
-}
 /* the card and its action are one block, a step apart */
 .fm { display: flex; flex-direction: column; gap: var(--s3); }
 
@@ -4015,7 +4005,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
    takes what the rest of the column leaves. Same shape as the phone rule
    further down, with a smaller subtrahend: a tablet's hero column is wider,
    so its paragraphs run to fewer lines. */
-@media (max-width: 999px) { .ha-device { max-height: max(9rem, calc(100svh - 45rem)); } }
+@media (max-width: 999px) { .ha-device { max-height: max(9rem, calc(100svh - 43.5rem)); } }
 @media (min-width: 1000px) { .ha-device { width: min(21rem, 26vw); } }
 
 .ha {
@@ -4155,7 +4145,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
        This rule is in the phone block because the one further up the file
        loses to it on source order — the fifth time that has caught this
        stylesheet. */
-    max-height: max(8rem, calc(100svh - 38rem));
+    max-height: max(8rem, calc(100svh - 36.5rem));
     overflow: hidden;
     margin-inline: auto;
     border-radius: 1.75rem 1.75rem 0 0;
@@ -4436,18 +4426,14 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 
    On a phone the card and the screen are competing for the same window, so
    the card is set as tight as it can be read at: its own gaps close to a
-   single step, its padding comes down one, and the eyebrow goes.
+   single step and its padding comes down one. Every pixel of it goes to the
+   screen through the calc above.
 
-   The eyebrow is the only line of it that is a label rather than a fact —
-   "FOUNDING MEMBER PRICING" over a card that opens "Be among the first
-   500." and then quotes both prices. It stays on a laptop, where the card
-   floats on the photograph and wants naming; on a phone the card is a block
-   in a column and the headline names it. That is about 50px, and every one
-   of them goes to the screen through the calc above. */
+   The eyebrow that used to be dropped here has gone from the card
+   altogether — see FoundingCard. */
 @media (max-width: 700px) {
   .fm { gap: var(--s2); }
   .fm-card { gap: var(--s1); padding: var(--s3); }
-  .fm-eyebrow { display: none; }
   .fm-lede, .fm-benefit { margin-top: var(--s1); }
 
   .hs { position: relative; gap: 0; }
@@ -4712,7 +4698,7 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
   .hero-inner { gap: var(--s2); }
   .fm { gap: var(--s2); }
   .fm-card { padding: var(--s3); }
-  .ha-device { max-height: max(5rem, calc(100svh - 41rem)); }
+  .ha-device { max-height: max(5rem, calc(100svh - 39.5rem)); }
 }
 
 /* =========================================================================

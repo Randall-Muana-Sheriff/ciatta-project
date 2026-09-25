@@ -50,7 +50,9 @@ export function FoundingCard({ children }: { children?: React.ReactNode }) {
           below it, and a floating pill is the one shape on a hero that
           always reads as an advert stuck to it. */}
       <div className="fm-card">
-        <p className="fm-eyebrow">Founding member pricing</p>
+        {/* No eyebrow. "FOUNDING MEMBER PRICING" was the only line of the
+            card that was a label rather than a fact, over a card that opens
+            "Be among the first 500." and then quotes both prices. */}
         <h2 className="fm-title">Be among the first 500.</h2>
         <p className="fm-lede">
           Reserve before Ciatta opens and stay at $89/year, not $119.
@@ -65,9 +67,10 @@ export function FoundingCard({ children }: { children?: React.ReactNode }) {
         <p className="fm-cap">500 founding memberships</p>
       </div>
 
-      {/* The action, directly under the card it follows. */}
+      {/* The action, directly under the card it follows. No line under it:
+          the form takes an address and nothing else, and the card above it
+          has already said the price is held rather than charged. */}
       {children}
-      <p className="fm-note">Free to reserve &middot; No card required</p>
     </div>
   );
 }
