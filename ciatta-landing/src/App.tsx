@@ -326,42 +326,20 @@ export default function App() {
         <MembershipCard heading="Everything you’ve been tracking, finally in one place that thinks." />
 
         {/* ==== 07 · WHY RESERVE NOW =======================================
-            The one thing the page never said: what reserving is for. No
-            countdown, no places-left counter, no closing date. The reason to
-            do it now is the price, and the reason it is safe to do now is
-            that it costs nothing and commits to nothing, so both are said in
-            two sentences and neither is dressed up. ==================== */}
-        <section className="section why-now" aria-labelledby="why-now-heading">
-          <div className="shell">
-            <div className="band-head">
-              <h2 id="why-now-heading" className="band-title">
-                Reserve now and lock in the $89 founding price.
-              </h2>
-              <p className="band-sub">
-                Free to reserve. No card required. You decide when membership
-                opens.
-              </p>
-            </div>
-            <dl className="wn-rows">
-              <div>
-                <dt>$89 / year</dt>
-                <dd>Your price as a founding member, held for as long as your membership runs.</dd>
-              </div>
-              <div>
-                <dt>$119 / year</dt>
-                <dd>The price of membership after Ciatta opens.</dd>
-              </div>
-              <div>
-                <dt>$0 today</dt>
-                <dd>Reserving is free, takes an address, and is not a subscription.</dd>
-              </div>
-            </dl>
+            One sentence, and that is the whole section.
 
-            {/* The three figures, said once as a sentence. Someone who reads
-                the cards has it; someone who skims them has it here. It
-                carries all four facts — an address, nothing charged, the
-                price held, and that the timing is hers — and it manufactures
-                nothing: no deadline, no counter, no places left. */}
+            It was a heading, a lede and three cards — $89, $119, $0 today —
+            which is four ways of saying one thing on a page that has just
+            shown the price on the membership card above it. The sentence
+            carries all of it: an address, nothing charged, the price held,
+            and that the timing is hers.
+
+            No heading, so the section is not a landmark and does not add a
+            fifth entry to the page's outline for one line of type. What it
+            still refuses to do is manufacture anything: no deadline, no
+            counter, no places left. ================================== */}
+        <section className="section why-now">
+          <div className="shell">
             <p className="wn-foot">
               Leave an address today, pay nothing, and your membership is $89
               a year instead of $119 whenever you decide to begin.

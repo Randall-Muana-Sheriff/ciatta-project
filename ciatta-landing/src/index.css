@@ -4328,26 +4328,18 @@ html:has(.ex-sheet[open]) { overflow: hidden; }
 }
 
 /* -- why reserve now ------------------------------------------------------
-   Three figures and what each one is. No countdown, no counter, no closing
-   date: the rows are facts about the price, and the third one is the reason
-   it is safe to do this today. */
-.wn-rows { margin: clamp(var(--s6), 4vw, var(--s7)) 0 0; display: grid; gap: var(--s5); }
-@media (min-width: 760px) { .wn-rows { grid-template-columns: repeat(3, 1fr); gap: var(--s5) var(--s7); } }
-.wn-rows > div { padding-top: var(--s4); border-top: var(--hairline) solid var(--rule); }
-.wn-rows dt {
-  color: var(--ink); font-size: var(--t-card); font-weight: 500;
-  letter-spacing: -0.02em; margin-bottom: var(--s2);
-}
-.wn-rows dd { margin: 0; color: var(--body-ink); font-size: var(--t-small); line-height: 1.55; }
+   One sentence and nothing else. It was a heading, a lede and three cards
+   for $89, $119 and $0, which is four ways of saying one thing directly
+   under a membership card that has just shown the price.
 
-/* The three figures as one sentence, under them. A step up from the card
-   copy and a step down from the heading, so it reads as the row summed
-   rather than as a fourth card or a second headline. */
+   Set at the card step: larger than body copy, because it is the only thing
+   in the section, and smaller than a band title, because it is a sentence
+   rather than a heading. Its measure is capped so it breaks where the
+   writing breaks instead of running the full shell. */
 .wn-foot {
-  margin: clamp(var(--s5), 3vw, var(--s6)) 0 0;
-  max-width: 44rem;
-  color: var(--ink); font-size: var(--t-lede); font-weight: 500;
-  line-height: 1.35; letter-spacing: -0.01em; text-wrap: pretty;
+  margin: 0; max-width: 38rem;
+  color: var(--ink); font-size: var(--t-card); font-weight: 500;
+  line-height: 1.25; letter-spacing: -0.02em; text-wrap: pretty;
 }
 
 /* -- trust ----------------------------------------------------------------
