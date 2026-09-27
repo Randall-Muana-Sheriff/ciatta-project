@@ -5,6 +5,7 @@ import { QUANTITY_SPECS } from './healthMetrics';
 import {
   anchorKey,
   runHealthSync,
+  syncWindow,
   type AnchorStore,
   type SyncPort,
   type SyncProgress,
@@ -163,17 +164,53 @@ test('600 observations for one metric produce three posts, and the anchor advanc
   assert.equal(result.observations >= 600, true);
 });
 
-test('recovery mode ignores a stored anchor and asks for 90 days', async () => {
+test('recovery mode ignores a stored anchor and asks for 90 whole days', async () => {
   const stored = 'anchor.steps.stored';
   const { anchors } = memoryAnchors({ [anchorKey(USER_ID, STEPS.identifier)]: stored });
 
   const recoveryPort = fakePort();
-  await runHealthSync(USER_ID, { port: recoveryPort.port, anchors, mode: 'recovery' });
+  await runHealthSync(USER_ID, { port: recoveryPort.port, anchors, mode: 'recovery', now: new Date(2026, 8, 27, 15, 20) });
   const recoveryCall = recoveryPort.queryCalls.find((c) => c.identifier === STEPS.identifier)!;
   assert.equal(recoveryCall.opts.anchor, undefined);
-  assert.ok(recoveryCall.opts.since instanceof Date);
-  const daysAgo = (Date.now() - recoveryCall.opts.since!.getTime()) / (24 * 60 * 60 * 1000);
-  assert.ok(Math.abs(daysAgo - 90) < 1, `expected about 90 days back, got ${daysAgo}`);
+  // Ninety days ending 27 September begin on 30 June, and the read starts
+  // the evening before so that first night is whole.
+  assert.deepEqual(recoveryCall.opts.since, new Date(2026, 5, 29, 18, 0));
+});
+
+test('refresh mode ignores a stored anchor and asks for the last week', async () => {
+  const stored = 'anchor.steps.stored';
+  const { anchors } = memoryAnchors({ [anchorKey(USER_ID, STEPS.identifier)]: stored });
+
+  const refreshPort = fakePort();
+  await runHealthSync(USER_ID, { port: refreshPort.port, anchors, mode: 'refresh', now: new Date(2026, 8, 27, 15, 20) });
+  const call = refreshPort.queryCalls.find((c) => c.identifier === STEPS.identifier)!;
+  assert.equal(call.opts.anchor, undefined);
+  assert.deepEqual(call.opts.since, new Date(2026, 8, 20, 18, 0));
+  assert.deepEqual(syncWindow(7, new Date(2026, 8, 27, 15, 20)), { since: new Date(2026, 8, 20, 18, 0), firstDay: '2026-09-21' });
+});
+
+test('the part of a day the read picked up before its first whole day is never written as the day', async () => {
+  const { anchors } = memoryAnchors();
+  const { port, posts } = fakePort({
+    responses: {
+      [STEPS.identifier]: {
+        samples: [
+          // The evening before the window: read, because the night is, but
+          // only the tail of that day's steps.
+          stepsSample('2026-09-20T19:00:00', '2026-09-20T19:01:00', 300, 'eve'),
+          stepsSample('2026-09-21T09:00:00', '2026-09-21T09:01:00', 900, 'first'),
+        ],
+        newAnchor: 'anchor.steps.w',
+      },
+    },
+  });
+
+  await runHealthSync(USER_ID, { port, anchors, mode: 'refresh', now: new Date(2026, 8, 27, 15, 20) });
+
+  const stepPost = posts.find((batch) => batch.observations.some((o) => (o as { metric?: string }).metric === 'steps'))!;
+  // Both readings are kept as observations; only the whole day gets a row.
+  assert.equal(stepPost.observations.length, 2);
+  assert.deepEqual(stepPost.days, [{ day: '2026-09-21', steps: 900 }]);
 });
 
 test('incremental mode passes the stored anchor', async () => {
@@ -232,7 +269,7 @@ test('a day foldDay left a field out of is posted with that field still absent',
     },
   });
 
-  await runHealthSync(USER_ID, { port, anchors, mode: 'recovery' });
+  await runHealthSync(USER_ID, { port, anchors, mode: 'recovery', now: new Date(2026, 0, 5, 12, 0) });
 
   const stepPost = posts.find((batch) =>
     batch.observations.some((o) => (o as { metric?: string }).metric === 'steps'),

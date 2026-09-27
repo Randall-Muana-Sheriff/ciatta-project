@@ -5,10 +5,11 @@
 // network call lives here. `SyncPort` is the seam a device layer (see
 // healthKit.ts) implements for real, and a test implements with a fake, so
 // this file's behaviour is provable without a phone.
+import { addDays, isoDay, startOfDay } from '../data/cycleLog';
 import type { DailyRow, MetricSpec, SleepSpec, WorkoutSpec } from './healthMetrics';
 import { QUANTITY_SPECS, SLEEP_SPEC, WORKOUT_SPEC } from './healthMetrics';
 import type { CategorySample, FoldableSample, NewObservation, QuantitySample, WorkoutSample } from './healthSamples';
-import { foldDay, sampleToObservation } from './healthSamples';
+import { foldDay, NIGHT_TURNS_AT_HOUR, sampleToObservation } from './healthSamples';
 
 // ── The seam ─────────────────────────────────────────────────────
 
@@ -38,7 +39,12 @@ export function anchorKey(userId: string, identifier: string): string {
   return `hk-anchor.v1.${userId}.${identifier}`;
 }
 
-export type SyncMode = 'recovery' | 'incremental';
+// recovery reads the last 90 days, refresh the last 7; both read whole days
+// and write a row for each. incremental reads only what is new since the
+// stored anchor, which is right for observations and wrong for a day's
+// row: a sum over the new samples alone would replace the day's total. It
+// is kept for the observations it can carry and is not what the app runs.
+export type SyncMode = 'recovery' | 'refresh' | 'incremental';
 
 export type SyncProgress = {
   identifier: string;
@@ -84,6 +90,21 @@ const SYNC_SPECS: readonly { kind: SpecKind; spec: AnySpec }[] = [
 
 // How far back a recovery sync reaches when there is no anchor to trust yet.
 export const RECOVERY_WINDOW_DAYS = 90;
+// How far back the refresh on opening the app reaches. A week covers a
+// phone left in a drawer over a holiday, and a watch that hands over its
+// nights days late.
+export const REFRESH_WINDOW_DAYS = 7;
+
+// The whole days a windowed pass covers, ending today. The read starts the
+// evening before the first of them, at the hour a night's day turns over,
+// so the night she woke from on that first day is read whole. What the
+// read picks up from before the first day is part of a day, and a part of
+// a day is never written as the day.
+export function syncWindow(days: number, now: Date): { since: Date; firstDay: string } {
+  const first = addDays(startOfDay(now), -(days - 1));
+  const since = new Date(first.getFullYear(), first.getMonth(), first.getDate() - 1, NIGHT_TURNS_AT_HOUR);
+  return { since, firstDay: isoDay(first) };
+}
 
 // The most observations one post carries. Well under the edge function's
 // own cap of 500, so a single sync never leans on that ceiling.
@@ -126,10 +147,15 @@ export async function runHealthSync(
     anchors: AnchorStore;
     onProgress?: (progress: SyncProgress) => void;
     mode: SyncMode;
+    // The moment the pass runs at. Only a test passes it.
+    now?: Date;
   },
 ): Promise<SyncResult> {
   const { port, anchors, onProgress, mode } = deps;
-  const since = mode === 'recovery' ? new Date(Date.now() - RECOVERY_WINDOW_DAYS * 24 * 60 * 60 * 1000) : undefined;
+  const window =
+    mode === 'incremental'
+      ? null
+      : syncWindow(mode === 'recovery' ? RECOVERY_WINDOW_DAYS : REFRESH_WINDOW_DAYS, deps.now ?? new Date());
 
   const metrics: MetricOutcome[] = [];
   const failed: string[] = [];
@@ -169,8 +195,8 @@ export async function runHealthSync(
     };
 
     const opts: { anchor?: string; limit: number; since?: Date } = { limit: 0 };
-    if (mode === 'recovery') {
-      opts.since = since;
+    if (window) {
+      opts.since = window.since;
     } else {
       let stored: string | null;
       try {
@@ -194,7 +220,8 @@ export async function runHealthSync(
     const observations = rawSamples.map((raw) => toObservation(kind, spec, raw));
     // foldDay's output is passed through untouched below: a field it left
     // out for a day never gets reintroduced, not even as a zero.
-    const days = Object.values(foldDay(rawSamples.map((raw) => toFoldable(kind, spec, raw)))) as DailyRow[];
+    const folded = Object.values(foldDay(rawSamples.map((raw) => toFoldable(kind, spec, raw)))) as DailyRow[];
+    const days = window ? folded.filter((row) => row.day >= window.firstDay) : folded;
 
     const batches = chunk(observations, BATCH_SIZE);
     let posted = 0;
