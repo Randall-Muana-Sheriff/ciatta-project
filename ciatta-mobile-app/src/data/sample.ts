@@ -38,10 +38,18 @@ export const insight = {
 };
 
 export const sleep = {
+  caption: 'Average, last 4 weeks',
   average: { hours: 6, minutes: 54 },
   averageLabel: '6h 54m',
   vsTypical: '11m under your typical 7h 05m',
+  below: true,
   weekly: [0.84, 0.87, 0.82, 0.8, 0.78, 0.82, 0.84, 0.83, 0.57, 0.8, 0.82, 0.83, 0.8, 0.79, 0.61, 0.82, 0.85, 0.87],
+  weekLabels: [
+    { label: 'Jan', i: 0 },
+    { label: 'Mar', i: 8 },
+    { label: 'May', i: 14 },
+    { label: 'Jul', i: 17 },
+  ],
   lowWeeks: [8, 14],
   tiles: [
     { value: '7h 21m', label: 'Time in bed' },

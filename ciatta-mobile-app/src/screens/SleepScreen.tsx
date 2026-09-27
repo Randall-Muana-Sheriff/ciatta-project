@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { displayCopy } from '../lib/displayCopy';
 import { useNav } from '../navigation';
 import { useData } from '../state/session';
 import { C, font, numeral } from '../theme';
@@ -11,9 +12,9 @@ const PERIODS = ['3M', '6M', '12M', 'All'] as const;
 
 export function SleepScreen() {
   const nav = useNav();
-  const { sleep } = useData();
+  const { sleep, mode } = useData();
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>('12M');
-  const [open, setOpen] = useState<string | null>(sleep?.lowest[0].week ?? null);
+  const [open, setOpen] = useState<string | null>(sleep?.lowest[0]?.week ?? null);
 
   if (!sleep) {
     return (
@@ -25,20 +26,24 @@ export function SleepScreen() {
 
   return (
     <DetailScreen title="Sleep" onBack={nav.back} footer={<SourceFooter kind="measured" text={sleep.source} />}>
-      <SegmentedControl segments={PERIODS} active={period} onChange={setPeriod} />
+      {/* Her own record reaches back thirteen weeks, so there is no longer
+          span to choose; the sample person has the year. */}
+      {mode === 'demo' ? <SegmentedControl segments={PERIODS} active={period} onChange={setPeriod} /> : null}
 
-      <Text style={[font('caption1'), { color: C.muted, marginBottom: 4 }]}>Average, last 4 weeks</Text>
+      <Text style={[font('caption1'), { color: C.muted, marginBottom: 4 }]}>{displayCopy(sleep.caption)}</Text>
       <View style={sl.big} accessible accessibilityLabel={`${sleep.average.hours} hours ${sleep.average.minutes} minutes`}>
         <Text style={[numeral(48), sl.num]}>{sleep.average.hours}</Text>
         <Text style={[font('title1', 'semibold'), sl.unit]}>h</Text>
         <Text style={[numeral(48), sl.num]}>{sleep.average.minutes}</Text>
         <Text style={[font('title1', 'semibold'), sl.unit]}>m</Text>
       </View>
-      <Text style={[font('subhead', 'semibold'), { color: C.orangeText, marginBottom: 20 }]}>{sleep.vsTypical}</Text>
+      <Text style={[font('subhead', 'semibold'), { color: sleep.below ? C.orangeText : C.secondary, marginBottom: 20 }]}>
+        {displayCopy(sleep.vsTypical)}
+      </Text>
 
       <SecLabel right="Weekly average">Duration</SecLabel>
       <View style={{ marginBottom: 8 }}>
-        <SleepBarChart bars={sleep.weekly} highlight={sleep.lowWeeks} />
+        <SleepBarChart bars={sleep.weekly} highlight={sleep.lowWeeks} labels={sleep.weekLabels} />
       </View>
 
       <View style={sl.tiles}>
@@ -50,7 +55,7 @@ export function SleepScreen() {
         ))}
       </View>
 
-      <SecLabel right={`${sleep.lowest.length} found`}>Lowest weeks</SecLabel>
+      {sleep.lowest.length ? <SecLabel right={`${sleep.lowest.length} found`}>Lowest weeks</SecLabel> : null}
       {sleep.lowest.map((w, n) => (
         <Expandable
           key={w.week}

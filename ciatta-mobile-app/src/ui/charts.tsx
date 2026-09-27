@@ -82,19 +82,23 @@ export function Legend({
 }
 
 // ── Sleep: weekly averages with the low weeks called out ───────
-export function SleepBarChart({ bars, highlight }: { bars: number[]; highlight: number[] }) {
+// A null bar is a week with no night recorded: nothing is drawn for it,
+// and its place in the row is kept.
+export function SleepBarChart({
+  bars,
+  highlight,
+  labels,
+}: {
+  bars: (number | null)[];
+  highlight: number[];
+  labels: { label: string; i: number }[];
+}) {
   const W = 333;
   const H = 120;
   const barW = 13;
   const gap = 5;
   const offsetX = (W - (bars.length * barW + (bars.length - 1) * gap)) / 2;
   const refY = H * (1 - 0.86);
-  const labels = [
-    { label: 'Jan', i: 0 },
-    { label: 'Mar', i: 8 },
-    { label: 'May', i: 14 },
-    { label: 'Jul', i: 17 },
-  ];
 
   return (
     <Frame w={W} h={H + 24}>
@@ -103,6 +107,7 @@ export function SleepBarChart({ bars, highlight }: { bars: number[]; highlight: 
         7h
       </SvgText>
       {bars.map((h, i) => {
+        if (h == null) return null;
         const low = highlight.includes(i);
         return (
           <Rect
@@ -128,16 +133,18 @@ export function SleepBarChart({ bars, highlight }: { bars: number[]; highlight: 
 }
 
 // ── Sleep: one week, night by night ────────────────────────────
-export function MiniWeekChart({ bars }: { bars: number[] }) {
+export function MiniWeekChart({ bars }: { bars: (number | null)[] }) {
   const H = 44;
   const bw = 22;
   const gap = 6;
   const W = bars.length * bw + (bars.length - 1) * gap;
   return (
     <Svg width={W} height={H + 16}>
-      {bars.map((h, i) => (
-        <Rect key={i} x={i * (bw + gap)} y={H - h * H} width={bw} height={h * H} rx={3} fill={C.blue} opacity={0.6} />
-      ))}
+      {bars.map((h, i) =>
+        h == null ? null : (
+          <Rect key={i} x={i * (bw + gap)} y={H - h * H} width={bw} height={h * H} rx={3} fill={C.blue} opacity={0.6} />
+        ),
+      )}
       {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
         <SvgText key={i} x={i * (bw + gap) + bw / 2} y={H + 14} {...axisFont} textAnchor="middle">
           {d}

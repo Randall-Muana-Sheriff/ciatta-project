@@ -2,6 +2,7 @@ import { type Day, loadDays } from './daily';
 import type { InsightView } from './insightRows';
 import { sinceCopy, type TodayLoop } from './loopRows';
 import * as sample from './sample';
+import { type SleepView, sleepView } from './sleepView';
 
 // What each screen reads, per mode. Demo is the sample person; real is only
 // what her record holds, and a piece her record can't supply yet is null.
@@ -13,7 +14,8 @@ export type Data = {
   person: { firstName: string } | null;
   today: TodayCopy;
   records: typeof sample.records | null;
-  sleep: typeof sample.sleep | null;
+  // Her own nights in real mode, and null until her record holds one.
+  sleep: SleepView | null;
   symptoms: typeof sample.symptoms | null;
   medications: typeof sample.medications | null;
   journey: typeof sample.journey | null;
@@ -93,7 +95,7 @@ export function dataFor(
       ...(insight ? { headline: insight.headline, kicker: loop?.insight ? sinceCopy(loop.insight.since) : insight.meta } : {}),
     },
     records: null,
-    sleep: null,
+    sleep: sleepView(days),
     symptoms: null,
     medications: null,
     journey: null,
