@@ -289,8 +289,7 @@ export function foldDay(samples: readonly FoldableSample[]): Record<string, Part
     // Sleep is written only when something measured sleep. A phone with no
     // watch beside it records the hours she was in bed and nothing about
     // whether she slept, and that night was once stored as zero hours of
-    // sleep: eighteen of one person's first thirty three nights. Unknown
-    // stays absent.
+    // sleep. Unknown stays absent.
     if (asleep > 0) row.sleep_hours = asleep / 60;
     // Stage keys are written together, only when at least one sample that
     // night actually classified a stage. A night with no staged sample never
