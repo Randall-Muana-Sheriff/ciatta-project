@@ -118,17 +118,21 @@ const DAY_FIELDS = [
 // already are. Her own check in columns are not merged here at all: they
 // are off the allowlist above, so this path cannot touch them either way.
 //
+// A key sent as null is carried as null and clears the column: that is how
+// the app says a day holds no night, after reading the source and finding
+// none there.
+//
 // One value is refused outright: sleep_hours of zero. Nothing measures a
 // night of no sleep at all; what arrives as zero is a night the phone knew
 // she was in bed for and nothing knew whether she slept, which an earlier
 // build of the app summed to 0. That build is still on phones, so the rule
 // is held here as well as in the app: the key is dropped, the rest of the
-// day is kept, and her sleep that night stays unknown.
+// day is kept, and whatever her record holds for that night's sleep stays.
 export function buildDayRow(day: IncomingDay, extra: { user_id: string; source_id: string }): Record<string, unknown> {
   const row: Record<string, unknown> = { day: day.day, ...extra };
   for (const field of DAY_FIELDS) {
     if (!(field in day) || day[field] === undefined) continue;
-    if (field === 'sleep_hours' && !(Number(day[field]) > 0)) continue;
+    if (field === 'sleep_hours' && day[field] !== null && !(Number(day[field]) > 0)) continue;
     row[field] = day[field];
   }
   return row;

@@ -6,7 +6,7 @@
 // healthKit.ts) implements for real, and a test implements with a fake, so
 // this file's behaviour is provable without a phone.
 import { addDays, isoDay, startOfDay } from '../data/cycleLog';
-import type { DailyRow, MetricSpec, SleepSpec, WorkoutSpec } from './healthMetrics';
+import type { DailyRow, DayNumbers, MetricSpec, SleepSpec, WorkoutSpec } from './healthMetrics';
 import { QUANTITY_SPECS, SLEEP_SPEC, WORKOUT_SPEC } from './healthMetrics';
 import type { CategorySample, FoldableSample, NewObservation, QuantitySample, WorkoutSample } from './healthSamples';
 import { foldDay, NIGHT_TURNS_AT_HOUR, sampleToObservation } from './healthSamples';
@@ -22,8 +22,13 @@ export type SyncPort = {
     identifier: string,
     opts: { anchor?: string; limit: number; since?: Date },
   ): Promise<{ samples: unknown[]; newAnchor: string }>;
-  post(batch: { observations: NewObservation[]; days: DailyRow[] }): Promise<void>;
+  post(batch: { observations: NewObservation[]; days: PostedDay[] }): Promise<void>;
 };
+
+// A day as it is posted. A field left out is left as it is in her record;
+// a field sent as null is cleared there. Only clearedNight below ever sends
+// one.
+export type PostedDay = Omit<DailyRow, keyof DayNumbers> & { [K in keyof DayNumbers]?: DayNumbers[K] | null };
 
 // Where each metric's anchor was left off. Backed by AsyncStorage on the
 // device; a plain in memory object in tests.
@@ -100,10 +105,17 @@ export const REFRESH_WINDOW_DAYS = 7;
 // so the night she woke from on that first day is read whole. What the
 // read picks up from before the first day is part of a day, and a part of
 // a day is never written as the day.
-export function syncWindow(days: number, now: Date): { since: Date; firstDay: string } {
+export function syncWindow(days: number, now: Date): { since: Date; firstDay: string; lastDay: string; days: string[] } {
   const first = addDays(startOfDay(now), -(days - 1));
   const since = new Date(first.getFullYear(), first.getMonth(), first.getDate() - 1, NIGHT_TURNS_AT_HOUR);
-  return { since, firstDay: isoDay(first) };
+  return { since, firstDay: isoDay(first), lastDay: isoDay(now), days: Array.from({ length: days }, (_, i) => isoDay(addDays(first, i))) };
+}
+
+// A day her record is told holds no night. Every field a night writes is
+// cleared together, so nothing of an earlier reading of that night is left
+// standing beside the absence of the rest.
+function clearedNight(day: string): PostedDay {
+  return { day, sleep_hours: null, time_in_bed: null, stage_awake: null, stage_rem: null, stage_light: null, stage_deep: null };
 }
 
 // The most observations one post carries. Well under the edge function's
@@ -221,7 +233,20 @@ export async function runHealthSync(
     // foldDay's output is passed through untouched below: a field it left
     // out for a day never gets reintroduced, not even as a zero.
     const folded = Object.values(foldDay(rawSamples.map((raw) => toFoldable(kind, spec, raw)))) as DailyRow[];
-    const days = window ? folded.filter((row) => row.day >= window.firstDay) : folded;
+    // Whole days only. What was read from before the first day is part of
+    // a day, and an evening's sleep belongs to a night that has not ended:
+    // it is written tomorrow, when the read holds the whole of it.
+    const days: PostedDay[] = window ? folded.filter((row) => row.day >= window.firstDay && row.day <= window.lastDay) : folded;
+    // Sleep was read, so Apple Health is answering, and a day in the
+    // window it holds no night for has none. Her record is told so: a night
+    // an earlier build split at midnight left its first hour on the day
+    // before, and nothing else would ever take it away. A read that came
+    // back with no sleep at all clears nothing, because access taken away
+    // looks exactly like that, and what she already gave stays hers.
+    if (window && kind === 'sleep' && rawSamples.length > 0) {
+      const held = new Set(days.map((row) => row.day));
+      for (const day of window.days) if (!held.has(day)) days.push(clearedNight(day));
+    }
 
     const batches = chunk(observations, BATCH_SIZE);
     let posted = 0;

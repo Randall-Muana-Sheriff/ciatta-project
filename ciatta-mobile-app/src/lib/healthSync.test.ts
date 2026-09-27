@@ -186,7 +186,11 @@ test('refresh mode ignores a stored anchor and asks for the last week', async ()
   const call = refreshPort.queryCalls.find((c) => c.identifier === STEPS.identifier)!;
   assert.equal(call.opts.anchor, undefined);
   assert.deepEqual(call.opts.since, new Date(2026, 8, 20, 18, 0));
-  assert.deepEqual(syncWindow(7, new Date(2026, 8, 27, 15, 20)), { since: new Date(2026, 8, 20, 18, 0), firstDay: '2026-09-21' });
+  const window = syncWindow(7, new Date(2026, 8, 27, 15, 20));
+  assert.deepEqual(window.since, new Date(2026, 8, 20, 18, 0));
+  assert.equal(window.firstDay, '2026-09-21');
+  assert.equal(window.lastDay, '2026-09-27');
+  assert.deepEqual(window.days, ['2026-09-21', '2026-09-22', '2026-09-23', '2026-09-24', '2026-09-25', '2026-09-26', '2026-09-27']);
 });
 
 test('the part of a day the read picked up before its first whole day is never written as the day', async () => {
@@ -277,6 +281,95 @@ test('a day foldDay left a field out of is posted with that field still absent',
   assert.equal(stepPost.days.length, 1);
   const day = stepPost.days[0] as Record<string, unknown>;
   assert.deepEqual(Object.keys(day).sort(), ['day', 'steps']);
+});
+
+const SLEEP_IDENTIFIER = 'HKCategoryTypeIdentifierSleepAnalysis';
+const NO_NIGHT = { sleep_hours: null, time_in_bed: null, stage_awake: null, stage_rem: null, stage_light: null, stage_deep: null };
+
+function sleepSample(startIso: string, endIso: string, value: number, uuid: string) {
+  return { uuid, startDate: new Date(startIso), endDate: new Date(endIso), value };
+}
+
+test('a pass that read sleep tells her record which days in the window hold no night', async () => {
+  const { anchors } = memoryAnchors();
+  const { port, posts } = fakePort({
+    responses: {
+      [SLEEP_IDENTIFIER]: {
+        samples: [sleepSample('2026-09-24T23:00:00', '2026-09-25T06:00:00', 1, 'night')],
+        newAnchor: 'anchor.sleep.a',
+      },
+    },
+  });
+
+  await runHealthSync(USER_ID, { port, anchors, mode: 'refresh', now: new Date(2026, 8, 27, 15, 20) });
+
+  const days = posts.flatMap((batch) => batch.days) as Array<Record<string, unknown>>;
+  assert.deepEqual(days.map((d) => d.day).sort(), ['2026-09-21', '2026-09-22', '2026-09-23', '2026-09-24', '2026-09-25', '2026-09-26', '2026-09-27']);
+  assert.deepEqual(days.find((d) => d.day === '2026-09-25'), { day: '2026-09-25', sleep_hours: 7, time_in_bed: 7 });
+  for (const day of days.filter((d) => d.day !== '2026-09-25')) {
+    assert.deepEqual(day, { day: day.day, ...NO_NIGHT });
+  }
+});
+
+test('a pass that read no sleep at all clears nothing: access taken away looks the same', async () => {
+  const { anchors } = memoryAnchors();
+  const { port, posts } = fakePort({
+    responses: {
+      [STEPS.identifier]: {
+        samples: [stepsSample('2026-09-25T09:00:00', '2026-09-25T09:01:00', 900, 'a')],
+        newAnchor: 'anchor.steps.b',
+      },
+    },
+  });
+
+  await runHealthSync(USER_ID, { port, anchors, mode: 'refresh', now: new Date(2026, 8, 27, 15, 20) });
+
+  const days = posts.flatMap((batch) => batch.days) as Array<Record<string, unknown>>;
+  assert.deepEqual(days, [{ day: '2026-09-25', steps: 900 }]);
+});
+
+test('only sleep is ever cleared: a day with no steps read keeps the steps it has', async () => {
+  const { anchors } = memoryAnchors();
+  const { port, posts } = fakePort({
+    responses: {
+      [STEPS.identifier]: {
+        samples: [stepsSample('2026-09-25T09:00:00', '2026-09-25T09:01:00', 900, 'a')],
+        newAnchor: 'anchor.steps.c',
+      },
+      [SLEEP_IDENTIFIER]: {
+        samples: [sleepSample('2026-09-24T23:00:00', '2026-09-25T06:00:00', 1, 'night')],
+        newAnchor: 'anchor.sleep.c',
+      },
+    },
+  });
+
+  await runHealthSync(USER_ID, { port, anchors, mode: 'refresh', now: new Date(2026, 8, 27, 15, 20) });
+
+  const days = posts.flatMap((batch) => batch.days) as Array<Record<string, unknown>>;
+  assert.equal(days.some((d) => 'steps' in d && d.steps == null), false);
+});
+
+test('an evening in bed belongs to a night that has not ended, and is not written as tomorrow', async () => {
+  const { anchors } = memoryAnchors();
+  const { port, posts } = fakePort({
+    responses: {
+      [SLEEP_IDENTIFIER]: {
+        samples: [
+          sleepSample('2026-09-26T23:00:00', '2026-09-27T06:00:00', 1, 'last-night'),
+          sleepSample('2026-09-27T18:30:00', '2026-09-27T19:30:00', 1, 'this-evening'),
+        ],
+        newAnchor: 'anchor.sleep.d',
+      },
+    },
+  });
+
+  await runHealthSync(USER_ID, { port, anchors, mode: 'refresh', now: new Date(2026, 8, 27, 20, 0) });
+
+  const posted = posts.flatMap((batch) => batch.days) as Array<Record<string, unknown>>;
+  assert.equal(posted.some((d) => d.day === '2026-09-28'), false);
+  assert.deepEqual(posted.find((d) => d.day === '2026-09-27'), { day: '2026-09-27', sleep_hours: 7, time_in_bed: 7 });
+  // Both stretches are still kept as observations.
+  assert.equal(posts.flatMap((batch) => batch.observations).length, 2);
 });
 
 // ── Fix round 1: the anchor store itself can fail ───────────────────
