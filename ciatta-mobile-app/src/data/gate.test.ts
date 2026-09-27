@@ -67,7 +67,7 @@ const TODAY = '2026-05-01';
 
 function fixture(over: Partial<ThreadInput> = {}): { input: ThreadInput; rows: GateRows; candidate: ThreadCandidate } {
   const input: ThreadInput = {
-    changes: [change('c1', '2026-03-25')],
+    changes: [change('c1', '2026-03-25'), change('c2', '2026-04-20')],
     links: [link('l3', s3, periods[3]), link('l4', s4, periods[4])],
     observations: [...periods, s3, s4],
     episodes: [],
@@ -86,10 +86,10 @@ test('the spec shape passes: four shortening cycles, a sleep change, two traced 
   assert.deepEqual(gate(candidate, rows, TODAY), { pass: true });
 });
 
-test('no_finding: neither side has a change row the candidate cites', () => {
-  const { candidate, rows } = fixture({ changes: [] });
-  assert.ok(candidate.missing.includes('no_change_row'));
-  assert.deepEqual(gate(candidate, rows, TODAY), { pass: false, reason: 'no_finding' });
+test('no_finding: a candidate that cites no change row at all', () => {
+  const { candidate, rows } = fixture();
+  const bare = { ...candidate, evidence: candidate.evidence.filter((e) => !e.changeId) };
+  assert.deepEqual(gate(bare, rows, TODAY), { pass: false, reason: 'no_finding' });
 });
 
 test('no_finding: the cited change row is no longer in the window', () => {
@@ -136,7 +136,7 @@ test('stale: last seen more than 120 days ago fails, and exactly 120 still passe
 });
 
 test('the reasons are checked in chain order: a finding is asked for before a source', () => {
-  const { candidate, rows } = fixture({ changes: [] });
+  const { candidate, rows } = fixture();
   const unsourced = rows.observations.map((o) => (o.id === 's4' ? { ...o, source_id: null } : o));
-  assert.deepEqual(gate(candidate, { ...rows, observations: unsourced }, TODAY), { pass: false, reason: 'no_finding' });
+  assert.deepEqual(gate(candidate, { ...rows, changes: [], observations: unsourced }, TODAY), { pass: false, reason: 'no_finding' });
 });
