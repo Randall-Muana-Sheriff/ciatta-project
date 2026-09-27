@@ -172,3 +172,9 @@ export const healthKitAnchors: AnchorStore = {
     await AsyncStorage.setItem(key, anchor);
   },
 };
+
+// Who is signed in right now, for portFor in healthSync.ts.
+export async function signedInUserId(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user.id ?? null;
+}

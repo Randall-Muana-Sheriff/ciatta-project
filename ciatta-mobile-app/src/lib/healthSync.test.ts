@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import { QUANTITY_SPECS } from './healthMetrics';
 import {
   anchorKey,
+  portFor,
   runHealthSync,
   syncWindow,
   type AnchorStore,
@@ -518,4 +519,55 @@ test('a partial batch failure leaves the anchor at its old value, and a retry re
     .map((o) => o.dedupe_key);
   assert.equal(secondKeys.length, 600);
   for (const key of firstKeys) assert.ok(secondKeys.includes(key));
+});
+
+// ── The account boundary during a read ──────────────────────────────
+
+test('a read stops sending the moment someone else is signed in, and marks nothing as done', async () => {
+  const { anchors, store } = memoryAnchors();
+  const inner = fakePort({
+    responses: {
+      [STEPS.identifier]: { samples: manySteps(600), newAnchor: 'anchor.steps.z' },
+    },
+  });
+  // Hers for the first post, somebody else's from the second.
+  let asked = 0;
+  const port = portFor(USER_ID, inner.port, async () => (asked++ === 0 ? USER_ID : 'user-2'));
+
+  const result = await runHealthSync(USER_ID, { port, anchors, mode: 'incremental' });
+
+  assert.equal(inner.posts.length, 1, 'only the post made while she was signed in went out');
+  assert.deepEqual(result.failed, [STEPS.identifier]);
+  assert.equal(store[anchorKey(USER_ID, STEPS.identifier)], undefined);
+});
+
+test('a read sends nothing at all once she has signed out', async () => {
+  const { anchors } = memoryAnchors();
+  const inner = fakePort({
+    responses: {
+      [STEPS.identifier]: { samples: [stepsSample('2026-01-01T08:00:00Z', '2026-01-01T08:01:00Z', 500, 'a')], newAnchor: 'anchor.steps.y' },
+    },
+  });
+  const port = portFor(USER_ID, inner.port, async () => null);
+
+  const result = await runHealthSync(USER_ID, { port, anchors, mode: 'incremental' });
+
+  assert.equal(inner.posts.length, 0);
+  assert.deepEqual(result.failed, [STEPS.identifier]);
+});
+
+test('while she stays signed in the port is the port', async () => {
+  const { anchors } = memoryAnchors();
+  const inner = fakePort({
+    responses: {
+      [STEPS.identifier]: { samples: [stepsSample('2026-01-01T08:00:00Z', '2026-01-01T08:01:00Z', 500, 'a')], newAnchor: 'anchor.steps.x' },
+    },
+  });
+  const port = portFor(USER_ID, inner.port, async () => USER_ID);
+
+  const result = await runHealthSync(USER_ID, { port, anchors, mode: 'incremental' });
+
+  assert.equal(inner.posts.length, 1);
+  assert.deepEqual(result.failed, []);
+  assert.equal(inner.queryCalls.length > 0, true);
 });

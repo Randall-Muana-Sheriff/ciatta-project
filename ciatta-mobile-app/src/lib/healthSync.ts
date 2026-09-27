@@ -30,6 +30,23 @@ export type SyncPort = {
 // one.
 export type PostedDay = Omit<DailyRow, keyof DayNumbers> & { [K in keyof DayNumbers]?: DayNumbers[K] | null };
 
+// A port that sends only while the account it was made for is still the
+// one signed in. A read takes a while, and the post goes out under
+// whoever's session is current at that moment: if she signs out and
+// someone else signs in on the same phone while one is under way, what is
+// left of her read must not land in their record. Each post asks who is
+// signed in first, and refuses when it is not her. A refused post is a
+// failed one, so the anchor does not move and nothing is marked as done.
+export function portFor(userId: string, port: SyncPort, signedIn: () => Promise<string | null>): SyncPort {
+  return {
+    query: (identifier, opts) => port.query(identifier, opts),
+    async post(batch) {
+      if ((await signedIn()) !== userId) throw new Error('The account changed while reading');
+      await port.post(batch);
+    },
+  };
+}
+
 // Where each metric's anchor was left off. Backed by AsyncStorage on the
 // device; a plain in memory object in tests.
 export type AnchorStore = {

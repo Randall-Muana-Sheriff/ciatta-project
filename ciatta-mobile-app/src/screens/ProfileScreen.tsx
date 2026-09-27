@@ -9,9 +9,9 @@ import type { SourceKind, Tone } from '../data/sample';
 import type { SourceView } from '../data/rows';
 import { outcomeForConnectAttempt } from '../lib/connectSource';
 import { displayCopy } from '../lib/displayCopy';
-import { healthKitAnchors, healthKitPort, isHealthAvailable, requestHealthPermission } from '../lib/healthKit';
+import { healthKitAnchors, healthKitPort, isHealthAvailable, requestHealthPermission, signedInUserId } from '../lib/healthKit';
 import { recordRefresh } from '../lib/healthRefresh';
-import { runHealthSync } from '../lib/healthSync';
+import { portFor, runHealthSync } from '../lib/healthSync';
 import { userFacingError } from '../lib/userFacingError';
 import { type Screen, useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
@@ -326,7 +326,7 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
       setSourceNote('Connected. Reading your Apple Health data now.');
 
       const result = await runHealthSync(userId, {
-        port: healthKitPort,
+        port: portFor(userId, healthKitPort, signedInUserId),
         anchors: healthKitAnchors,
         mode: 'recovery',
         // progress.metric is an internal key (resting_heart_rate, sleep_analysis),
@@ -339,9 +339,9 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
 
       const outcome = outcomeForConnectAttempt({ kind: 'synced', result });
       await repo.saveSourceStatus('apple_health', outcome.status, outcome.status === 'active' ? new Date().toISOString() : undefined);
-      // A read that went through whole is the one the app will not repeat
-      // on opening; one that did not is left for it to make again.
-      if (result.failed.length === 0) await recordRefresh(userId, healthKitAnchors, 'recovery', new Date()).catch(() => {});
+      // So the app does not make the same read again on opening. What this
+      // one leaves behind is decided where the rule is, in healthRefresh.ts.
+      await recordRefresh(userId, healthKitAnchors, 'recovery', result, new Date()).catch(() => {});
       setSourceNote(outcome.message);
       refreshSources();
       // What was just read is hers to see now, not the next time the app
