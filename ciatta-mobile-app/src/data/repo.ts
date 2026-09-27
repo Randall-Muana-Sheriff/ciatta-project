@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { readsOnItsOwn } from '../lib/connectSource';
 import { type CycleProfile, normalizeProfile } from '../lib/cycleProfile';
 import type { DailyRow } from '../lib/healthMetrics';
 import { type Day, loadDays as loadSampleDays } from './daily';
@@ -65,6 +66,9 @@ export type Repo = {
   loadJournal(): Promise<JournalView>;
   addJournal(text: string, kind: EntryKind): Promise<void>;
   loadSources(): Promise<SourceView[]>;
+  // Whether she has connected Apple Health herself. The app reads it again
+  // on its own only then. Never true for the example person.
+  appleHealthConnected(): Promise<boolean>;
   loadDays(): Promise<Day[]>;
   // Her newest live insight, or null when the server has not written one:
   // the Insight screen shows its empty note then, never the sample.
@@ -122,6 +126,7 @@ export function demoRepo(): Repo {
       view = { ...view, count: view.count + 1, months: [{ month, items: [item, ...(current?.items ?? [])] }, ...rest] };
     },
     loadSources: async () => sources,
+    appleHealthConnected: async () => false,
     loadDays: async () => loadSampleDays(),
     loadInsight: async () => sampleInsight,
     loadToday: async () => null,
@@ -185,6 +190,10 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
     async loadSources() {
       const rows = must(await db.from('health_sources').select('kind, name, status, last_synced_at, created_at').order('created_at')) as SourceRow[];
       return rows.map(sourceView);
+    },
+    async appleHealthConnected() {
+      const rows = must(await db.from('health_sources').select('kind, status')) as Pick<SourceRow, 'kind' | 'status'>[];
+      return rows.some(readsOnItsOwn);
     },
     async loadDays() {
       const rows = await paginateAll<DailyRow>(

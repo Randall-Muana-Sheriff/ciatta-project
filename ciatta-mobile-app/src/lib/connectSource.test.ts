@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { outcomeForConnectAttempt } from './connectSource';
+import { readsOnItsOwn, outcomeForConnectAttempt } from './connectSource';
 import type { MetricOutcome, SyncResult } from './healthSync';
 
 function outcome(ok: boolean, id: string): MetricOutcome {
@@ -59,4 +59,15 @@ test('no user facing copy uses an em dash, en dash or hyphen', () => {
     outcomeForConnectAttempt({ kind: 'synced', result: result([outcome(false, 'a')]) }).message,
   ];
   for (const m of messages) assert.doesNotMatch(m, /[—–−‐‑‒-]/);
+});
+
+test('the app reads Apple Health on its own only once she has connected it', () => {
+  for (const status of ['connected', 'active', 'error'] as const) {
+    assert.equal(readsOnItsOwn({ kind: 'apple_health', status }), true, status);
+  }
+  for (const status of ['requested', 'refused', 'disconnected', 'unsupported'] as const) {
+    assert.equal(readsOnItsOwn({ kind: 'apple_health', status }), false, status);
+  }
+  assert.equal(readsOnItsOwn({ kind: 'health_connect', status: 'active' }), false);
+  assert.equal(readsOnItsOwn({ kind: 'manual', status: 'active' }), false);
 });

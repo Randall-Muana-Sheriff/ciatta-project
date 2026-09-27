@@ -192,3 +192,16 @@ test('demo mode has no loop and its loop writes are no ops', async () => {
   await repo.reportOutcome('a1', 'improved');
   await repo.dismissRecommendation('r1', 'not_relevant');
 });
+
+// ── appleHealthConnected ─────────────────────────────────────────
+
+test('Apple Health counts as connected only once her own source row says so', async () => {
+  const dbWith = (rows: Row[]) =>
+    ({ from: () => ({ select: async () => ({ data: rows, error: null }) }) }) as unknown as SupabaseClient;
+
+  assert.equal(await realRepo(dbWith([]), 'user-a').appleHealthConnected(), false);
+  assert.equal(await realRepo(dbWith([{ kind: 'manual', status: 'active' }]), 'user-a').appleHealthConnected(), false);
+  assert.equal(await realRepo(dbWith([{ kind: 'apple_health', status: 'refused' }]), 'user-a').appleHealthConnected(), false);
+  assert.equal(await realRepo(dbWith([{ kind: 'apple_health', status: 'active' }]), 'user-a').appleHealthConnected(), true);
+  assert.equal(await demoRepo().appleHealthConnected(), false, 'the example person has nothing to read');
+});

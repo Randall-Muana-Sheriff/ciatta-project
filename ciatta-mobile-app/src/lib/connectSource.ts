@@ -4,7 +4,7 @@
 // (all succeeded goes to active, some failed goes to active with a
 // warning, none succeeded goes to error, refused stays refused, unavailable
 // stays unsupported) can be proven directly, without a renderer.
-import type { DbSourceStatus } from '../data/rows';
+import type { DbSourceKind, DbSourceStatus } from '../data/rows';
 import type { SyncResult } from './healthSync';
 
 export type ConnectAttempt =
@@ -46,4 +46,14 @@ export function outcomeForConnectAttempt(attempt: ConnectAttempt): ConnectOutcom
     status: 'error',
     message: 'Apple Health connected, but none of your data could be sent right now. You can try again from this screen.',
   };
+}
+
+// Whether the app may read Apple Health again without being asked: only a
+// source she connected herself. Needs attention counts, because that is a
+// read that was given access and did not get through, and trying again is
+// what clears it. Refused, disconnected and never asked do not: the app
+// reads nothing she has not said it may, and never asks on its own.
+export function readsOnItsOwn(source: { kind: DbSourceKind; status: DbSourceStatus }): boolean {
+  if (source.kind !== 'apple_health') return false;
+  return source.status === 'connected' || source.status === 'active' || source.status === 'error';
 }

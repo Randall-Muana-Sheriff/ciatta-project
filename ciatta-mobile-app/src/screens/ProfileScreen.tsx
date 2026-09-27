@@ -10,6 +10,7 @@ import type { SourceView } from '../data/rows';
 import { outcomeForConnectAttempt } from '../lib/connectSource';
 import { displayCopy } from '../lib/displayCopy';
 import { healthKitAnchors, healthKitPort, isHealthAvailable, requestHealthPermission } from '../lib/healthKit';
+import { recordRefresh } from '../lib/healthRefresh';
 import { runHealthSync } from '../lib/healthSync';
 import { userFacingError } from '../lib/userFacingError';
 import { type Screen, useNav } from '../navigation';
@@ -265,7 +266,7 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
   const [connecting, setConnecting] = useState(false);
   const [dataFooter, setDataFooter] = useState<string | null>(null);
   const [accountNote, setAccountNote] = useState<string | null>(null);
-  const { mode, userId, signOut } = useSession();
+  const { mode, userId, signOut, reloadRecord } = useSession();
   const repo = useRepo();
 
   useEffect(() => {
@@ -338,8 +339,14 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
 
       const outcome = outcomeForConnectAttempt({ kind: 'synced', result });
       await repo.saveSourceStatus('apple_health', outcome.status, outcome.status === 'active' ? new Date().toISOString() : undefined);
+      // A read that went through whole is the one the app will not repeat
+      // on opening; one that did not is left for it to make again.
+      if (result.failed.length === 0) await recordRefresh(userId, healthKitAnchors, 'recovery', new Date()).catch(() => {});
       setSourceNote(outcome.message);
       refreshSources();
+      // What was just read is hers to see now, not the next time the app
+      // is opened.
+      await reloadRecord();
     } catch (e) {
       setSourceNote(userFacingError(e, 'Apple Health did not connect. Try again.'));
     } finally {

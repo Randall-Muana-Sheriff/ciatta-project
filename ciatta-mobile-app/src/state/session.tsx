@@ -1,5 +1,6 @@
 import type { Session } from '@supabase/supabase-js';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 
 import { type Data, dataForSession } from '../data/adapter';
 import type { Day } from '../data/daily';
@@ -7,6 +8,7 @@ import type { InsightView } from '../data/insightRows';
 import type { TodayLoop } from '../data/loopRows';
 import { demoRepo, realRepo, type Repo } from '../data/repo';
 import { supabase } from '../lib/supabase';
+import { refreshAppleHealth } from './healthRefresh';
 
 export type Mode = 'loading' | 'signedOut' | 'demo' | 'real';
 
@@ -21,6 +23,9 @@ type SessionValue = {
   // Read the loop again after she changed it (watched, tried); the since
   // she saw at the start of the session is kept.
   reloadLoop: () => Promise<void>;
+  // Read her days and her insight again, after something wrote to her
+  // record: a source she has just connected, or a read of one on opening.
+  reloadRecord: () => Promise<void>;
   enterDemo: () => void;
   signOut: () => Promise<void>;
 };
@@ -132,6 +137,47 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     );
   }, [mode, repo]);
 
+  const reloadRecord = useCallback(async () => {
+    if (mode !== 'real' || !repo) return;
+    // Each is kept as it was when its read fails: a screen never goes
+    // empty for want of a signal.
+    await Promise.all([
+      repo.loadDays().then(setDays).catch(() => {}),
+      repo.loadInsight().then(setInsight).catch(() => {}),
+    ]);
+  }, [mode, repo]);
+
+  // Her record stopped on the day she connected a source unless something
+  // reads the source again. So it is read when the app opens and each time
+  // it comes back to the front, as often as planRefresh allows, and her
+  // days are loaded again once a read has gone through.
+  const refreshing = useRef(false);
+  useEffect(() => {
+    if (mode !== 'real' || !repo || !userId) return;
+    let ignore = false;
+    const refresh = async () => {
+      if (refreshing.current) return;
+      refreshing.current = true;
+      try {
+        const read = await refreshAppleHealth(userId, repo);
+        if (read && !ignore) await reloadRecord();
+      } catch {
+        // Nothing to say: what she already has stays on screen, and the
+        // next time the app comes to the front it tries again.
+      } finally {
+        refreshing.current = false;
+      }
+    };
+    refresh();
+    const listener = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refresh();
+    });
+    return () => {
+      ignore = true;
+      listener.remove();
+    };
+  }, [mode, repo, userId, reloadRecord]);
+
   const value = useMemo<SessionValue>(
     () => ({
       mode,
@@ -142,13 +188,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       insight,
       loop,
       reloadLoop,
+      reloadRecord,
       enterDemo: () => setDemo(true),
       signOut: async () => {
         if (demo) setDemo(false);
         else await supabase.auth.signOut();
       },
     }),
-    [mode, userId, repo, firstName, days, insight, loop, reloadLoop, demo],
+    [mode, userId, repo, firstName, days, insight, loop, reloadLoop, reloadRecord, demo],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
