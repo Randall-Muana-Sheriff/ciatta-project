@@ -2,7 +2,7 @@
 // Pure functions only: the sample shapes below are what device code adapts
 // a real HealthKit sample into, not the HealthKit types themselves.
 
-import { isoDay } from '../data/cycleLog';
+import { addDays, isoDay } from '../data/cycleLog';
 import {
   type DailyRow,
   type DayNumbers,
@@ -143,13 +143,23 @@ function foldValues(fold: MetricSpec['fold'], entries: NumericEntry[]): number {
   }
 }
 
-type SleepMinutes = {
-  sleep_hours: number;
-  time_in_bed: number;
-  stage_awake: number;
-  stage_rem: number;
-  stage_light: number;
-  stage_deep: number;
+// A stretch of time, as two instants in milliseconds.
+type Span = [number, number];
+
+// One night, kept as the stretches each sample covered and not as running
+// totals. Apple Health holds a night more than once: the phone writes one
+// long "in bed" stretch, a watch writes the stages inside it, and a sleep
+// app may write the same hours again. Adding durations counts every minute
+// once per source; the stretches are merged first, so a minute is counted
+// once however many samples cover it.
+type SleepNight = {
+  // Every sample, whatever it says: she was in bed for all of it.
+  inBed: Span[];
+  asleep: Span[];
+  awake: Span[];
+  rem: Span[];
+  light: Span[];
+  deep: Span[];
   // True once a sample with an actual stage classification (awake, core,
   // deep, rem) lands that night. Sleep trackers that are not an Apple Watch
   // commonly report only the generic unstaged "asleep" category, in which
@@ -158,12 +168,37 @@ type SleepMinutes = {
   hasStagedSample: boolean;
 };
 
+// Minutes covered by at least one of the stretches.
+function minutesCovered(spans: Span[]): number {
+  const sorted = [...spans].sort((a, b) => a[0] - b[0]);
+  let total = 0;
+  let reached = -Infinity;
+  for (const [start, end] of sorted) {
+    if (end <= reached) continue;
+    total += end - Math.max(start, reached);
+    reached = end;
+  }
+  return total / 60000;
+}
+
+// The hour a night's day turns over. A night belongs to the day she woke
+// on, so a stretch that ends in the evening belongs to the night that is
+// beginning, and counts toward tomorrow. Going by the calendar day a sample
+// ended on split every night that began before midnight in two: a watch
+// reports a night as dozens of short stretches, and the ones that ended
+// before midnight landed on the day before.
+export const NIGHT_TURNS_AT_HOUR = 18;
+
+export function nightOf(end: Date): string {
+  return isoDay(end.getHours() >= NIGHT_TURNS_AT_HOUR ? addDays(end, 1) : end);
+}
+
 // Groups samples by local calendar day and folds each metric into the
 // field its spec names. A day that had no sample for a metric never gets
 // that key: it stays entirely absent, not zero and not an empty list.
 export function foldDay(samples: readonly FoldableSample[]): Record<string, Partial<DailyRow>> {
   const numeric: Record<string, Partial<Record<keyof DayNumbers, NumericAccumulator>>> = {};
-  const sleep: Record<string, SleepMinutes> = {};
+  const sleep: Record<string, SleepNight> = {};
   const workouts: Record<string, Workout[]> = {};
 
   for (const item of samples) {
@@ -179,40 +214,38 @@ export function foldDay(samples: readonly FoldableSample[]): Record<string, Part
 
     if (item.kind === 'sleep') {
       const { sample } = item;
-      // A night's sleep is counted on the day it ended: the wake day.
-      const day = isoDay(sample.endDate);
-      const bucket = (sleep[day] ??= {
-        sleep_hours: 0,
-        time_in_bed: 0,
-        stage_awake: 0,
-        stage_rem: 0,
-        stage_light: 0,
-        stage_deep: 0,
+      const night = (sleep[nightOf(sample.endDate)] ??= {
+        inBed: [],
+        asleep: [],
+        awake: [],
+        rem: [],
+        light: [],
+        deep: [],
         hasStagedSample: false,
       });
-      const minutes = (sample.endDate.getTime() - sample.startDate.getTime()) / 60000;
+      const span: Span = [sample.startDate.getTime(), sample.endDate.getTime()];
       const stage = sleepStageLabel(sample.value);
-      bucket.time_in_bed += minutes;
+      night.inBed.push(span);
       if (stage === 'awake') {
-        bucket.stage_awake += minutes;
-        bucket.hasStagedSample = true;
+        night.awake.push(span);
+        night.hasStagedSample = true;
       } else if (stage === 'asleep_deep') {
-        bucket.stage_deep += minutes;
-        bucket.sleep_hours += minutes;
-        bucket.hasStagedSample = true;
+        night.deep.push(span);
+        night.asleep.push(span);
+        night.hasStagedSample = true;
       } else if (stage === 'asleep_rem') {
-        bucket.stage_rem += minutes;
-        bucket.sleep_hours += minutes;
-        bucket.hasStagedSample = true;
+        night.rem.push(span);
+        night.asleep.push(span);
+        night.hasStagedSample = true;
       } else if (stage === 'asleep_core') {
-        bucket.stage_light += minutes;
-        bucket.sleep_hours += minutes;
-        bucket.hasStagedSample = true;
+        night.light.push(span);
+        night.asleep.push(span);
+        night.hasStagedSample = true;
       } else if (stage === 'asleep') {
         // The generic unstaged category: real sleep, but no stage claim.
-        bucket.sleep_hours += minutes;
+        night.asleep.push(span);
       }
-      // 'in_bed' contributes only to time_in_bed, already added above.
+      // 'in_bed' says where she was, not whether she slept.
       continue;
     }
 
@@ -246,18 +279,27 @@ export function foldDay(samples: readonly FoldableSample[]): Record<string, Part
     }
   }
 
-  for (const [day, minutes] of Object.entries(sleep)) {
+  for (const [day, night] of Object.entries(sleep)) {
+    const inBed = minutesCovered(night.inBed);
+    const asleep = minutesCovered(night.asleep);
+    // A sample with no length measured nothing.
+    if (inBed <= 0) continue;
     const row = rowFor(day);
-    row.sleep_hours = minutes.sleep_hours / 60;
-    row.time_in_bed = minutes.time_in_bed / 60;
+    row.time_in_bed = inBed / 60;
+    // Sleep is written only when something measured sleep. A phone with no
+    // watch beside it records the hours she was in bed and nothing about
+    // whether she slept, and that night was once stored as zero hours of
+    // sleep: eighteen of one person's first thirty three nights. Unknown
+    // stays absent.
+    if (asleep > 0) row.sleep_hours = asleep / 60;
     // Stage keys are written together, only when at least one sample that
     // night actually classified a stage. A night with no staged sample never
     // gets these keys: sleep_hours and time_in_bed alone were measured.
-    if (minutes.hasStagedSample) {
-      row.stage_awake = minutes.stage_awake;
-      row.stage_rem = minutes.stage_rem;
-      row.stage_light = minutes.stage_light;
-      row.stage_deep = minutes.stage_deep;
+    if (night.hasStagedSample) {
+      row.stage_awake = minutesCovered(night.awake);
+      row.stage_rem = minutesCovered(night.rem);
+      row.stage_light = minutesCovered(night.light);
+      row.stage_deep = minutesCovered(night.deep);
     }
   }
 

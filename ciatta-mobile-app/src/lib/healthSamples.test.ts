@@ -110,6 +110,62 @@ test('a night with one staged sample writes all four stages, including genuine z
   assert.equal(day.stage_deep, 0);
 });
 
+test('a night the phone only knew she was in bed for has time in bed and no sleep at all', () => {
+  // A phone with no watch beside it writes "in bed" and nothing else. That
+  // is where she was, not whether she slept, so sleep stays unknown: never
+  // zero hours.
+  const days = foldDay([sleepSegment('2026-06-07T23:10:00', '2026-06-08T05:40:00', 0)]);
+  const day = days['2026-06-08'];
+  assert.ok(day);
+  assert.equal(day.time_in_bed, 6.5);
+  assert.equal('sleep_hours' in day, false);
+  assert.equal('stage_deep' in day, false);
+});
+
+test('a night held by the phone and the watch at once is counted once', () => {
+  const days = foldDay([
+    // The phone: one long stretch in bed.
+    sleepSegment('2026-06-08T23:00:00', '2026-06-09T07:00:00', 0),
+    // The watch: the stages inside it.
+    sleepSegment('2026-06-08T23:30:00', '2026-06-09T02:30:00', 3),
+    sleepSegment('2026-06-09T02:30:00', '2026-06-09T03:30:00', 4),
+    sleepSegment('2026-06-09T03:30:00', '2026-06-09T06:30:00', 5),
+    // A sleep app writing the same hours again, unstaged.
+    sleepSegment('2026-06-08T23:30:00', '2026-06-09T06:30:00', 1),
+  ]);
+  const day = days['2026-06-09'];
+  assert.equal(day.time_in_bed, 8);
+  assert.equal(day.sleep_hours, 7);
+  assert.equal(day.stage_light, 180);
+  assert.equal(day.stage_deep, 60);
+  assert.equal(day.stage_rem, 180);
+});
+
+test('a night that began before midnight is one night, on the day she woke', () => {
+  const days = foldDay([
+    // Two stretches that ended before midnight, as a watch reports them.
+    sleepSegment('2026-06-09T22:30:00', '2026-06-09T23:10:00', 3),
+    sleepSegment('2026-06-09T23:10:00', '2026-06-09T23:50:00', 4),
+    sleepSegment('2026-06-09T23:50:00', '2026-06-10T06:30:00', 3),
+  ]);
+  assert.equal('2026-06-09' in days, false);
+  assert.equal(days['2026-06-10'].sleep_hours, 8);
+});
+
+test('an afternoon nap stays on its own day, and an evening one joins the night', () => {
+  const days = foldDay([
+    sleepSegment('2026-06-11T14:00:00', '2026-06-11T15:00:00', 1),
+    sleepSegment('2026-06-11T18:30:00', '2026-06-11T19:00:00', 1),
+  ]);
+  assert.equal(days['2026-06-11'].sleep_hours, 1);
+  assert.equal(days['2026-06-12'].sleep_hours, 0.5);
+});
+
+test('a sleep sample with no length writes nothing', () => {
+  const days = foldDay([sleepSegment('2026-06-13T02:00:00', '2026-06-13T02:00:00', 3)]);
+  assert.deepEqual(days, {});
+});
+
 test('a workout with a heart rate is mapped with type, minutes and the derived intensity', () => {
   const days = foldDay([workout('2026-06-01T07:00:00', '2026-06-01T07:40:00', 'HKWorkoutActivityTypeRunning', 135)]);
   const day = days['2026-06-01'];
