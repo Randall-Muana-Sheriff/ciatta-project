@@ -217,11 +217,11 @@ async function runJob(admin: any, job: JobRow): Promise<{ metrics: string[] }> {
   // why the paging is keyset rather than offset, and why the page boundary
   // is a tuple comparison. buildLinks then bounds the work that follows,
   // since the pair count grows with the square of what this returns.
-  type ObservationRow = { id: string; metric: string; occurred_at: string };
+  type ObservationRow = { id: string; metric: string; occurred_at: string; provenance: string };
   const linkRows = await readAllPages<ObservationRow>((after, limit) => {
     const query = admin
       .from('observations')
-      .select('id, metric, occurred_at')
+      .select('id, metric, occurred_at, provenance')
       .eq('user_id', job.user_id)
       .gte('occurred_at', start.toISOString())
       .lte('occurred_at', today.toISOString());
@@ -240,7 +240,11 @@ async function runJob(admin: any, job: JobRow): Promise<{ metrics: string[] }> {
   // and temperature deviations are written by this point and they are
   // correct; throwing here would discard a finished, honest result and turn
   // it into a retry that would reach exactly this point and throw again.
-  if (!linksAreAffordable(linkRows.length)) {
+  // A continuous device reading is MEASURED; everything else (what she
+  // reported, a workout the device recorded, a document's result) is an
+  // event, and only events anchor a link. See links.ts.
+  const eventCount = linkRows.filter((row) => row.provenance !== 'MEASURED').length;
+  if (!linksAreAffordable(linkRows.length, eventCount)) {
     // A count and the fact it was skipped. No ids, no metrics, no values,
     // nothing about what she measured or when.
     console.log('baselines links skipped, window too dense', linkRows.length);
@@ -250,6 +254,7 @@ async function runJob(admin: any, job: JobRow): Promise<{ metrics: string[] }> {
         id: row.id,
         metric: row.metric,
         occurredAt: row.occurred_at,
+        measured: row.provenance === 'MEASURED',
       }))
     );
 

@@ -10,7 +10,12 @@
 
 export type Relation = 'same_day' | 'within_24h' | 'within_3d' | 'within_7d';
 
-export type LinkInput = { id: string; metric: string; occurredAt: string };
+// measured marks a continuous device reading (provenance MEASURED): a step
+// count, a heart rate sample, a night's sleep stage. Everything else is an
+// event: something she reported, a workout the device recorded, a result
+// from a document. The flag is optional and absent means event, so a
+// caller that does not know says nothing and every pair is considered.
+export type LinkInput = { id: string; metric: string; occurredAt: string; measured?: boolean };
 
 export type BuiltLink = {
   a_observation_id: string;
@@ -78,8 +83,22 @@ function byNarrowness(x: BuiltLink, y: BuiltLink): number {
 // written is at least not something false.
 export const MAX_LINKED_OBSERVATIONS = 10000;
 
-export function linksAreAffordable(observationCount: number): boolean {
-  return observationCount <= MAX_LINKED_OBSERVATIONS;
+// The most pair comparisons one run may make. The loop below scans outward
+// from each EVENT only, so its work is the number of events times the
+// readings inside their two week reach, not the square of everything she
+// has. Eight million is the iteration count the threshold above was chosen
+// to stay under.
+export const MAX_PAIR_COMPARISONS = 8_000_000;
+// An event reaches a week back and a week forward, out of a 91 day window.
+const REACH_SHARE = 14 / 91;
+
+// With one argument this is the original rule, a ceiling on the window.
+// With the event count as well it is the real one: a wearable can post
+// tens of thousands of readings and still be cheap to link, because only
+// her events anchor a scan.
+export function linksAreAffordable(observationCount: number, eventCount?: number): boolean {
+  if (eventCount == null) return observationCount <= MAX_LINKED_OBSERVATIONS;
+  return eventCount * observationCount * REACH_SHARE <= MAX_PAIR_COMPARISONS;
 }
 
 // How many times maxPairs may accumulate before the working set is sorted
@@ -92,14 +111,19 @@ function isoDay(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10);
 }
 
+type Parsed = LinkInput & { ms: number; day: string };
+
 // The narrowest relation that fits, or null when the two are further apart
 // than a week. Same calendar day is checked before the 24 hour window
 // because two readings at 23:00 and 01:00 are two hours apart but on
-// different days, and "same day" would be the wrong word for them.
-function relationFor(earlierMs: number, laterMs: number): Relation | null {
-  const gapHours = (laterMs - earlierMs) / HOUR_MS;
+// different days, and "same day" would be the wrong word for them. The
+// day is worked out once per observation, not once per pair: building a
+// date for every comparison was most of what this step cost, and on a real
+// record it cost more CPU than one request is given.
+function relationFor(earlier: Parsed, later: Parsed): Relation | null {
+  const gapHours = (later.ms - earlier.ms) / HOUR_MS;
   if (gapHours > 24 * 7) return null;
-  if (isoDay(earlierMs) === isoDay(laterMs)) return 'same_day';
+  if (earlier.day === later.day) return 'same_day';
   if (gapHours <= 24) return 'within_24h';
   if (gapHours <= 24 * 3) return 'within_3d';
   return 'within_7d';
@@ -122,10 +146,11 @@ export function buildLinks(
   // on the order the rows arrived in. The database catches that now, via
   // temporal_links_pair_once, by raising 23505 rather than storing the pair
   // twice, so an unstable order here would turn into a failed run.
-  const parsed = observations
-    .map((o) => ({ ...o, ms: Date.parse(o.occurredAt) }))
+  const parsed: Parsed[] = observations
+    .map((o) => ({ ...o, ms: Date.parse(o.occurredAt), day: '' }))
     .filter((o) => Number.isFinite(o.ms))
     .sort((x, y) => x.ms - y.ms || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
+  for (const o of parsed) o.day = isoDay(o.ms);
 
   // The pair count grows with the square of how much she has logged: 1001
   // observations in the window is 63,700 pairs, 4550 is 1,338,925, and 9100
@@ -153,24 +178,43 @@ export function buildLinks(
     out.length = limit;
   };
 
+  const WEEK_MS = 24 * 7 * HOUR_MS;
+  // a is the earlier of the two, as the table requires.
+  const consider = (a: Parsed, b: Parsed) => {
+    // Two readings of the same metric are a series, not a relationship.
+    if (a.metric === b.metric) return;
+    const relation = relationFor(a, b);
+    if (!relation) return;
+    out.push({
+      a_observation_id: a.id,
+      b_observation_id: b.id,
+      relation,
+      gap_hours: (b.ms - a.ms) / HOUR_MS,
+      occurred_on: b.day,
+    });
+    if (out.length > threshold) compact();
+  };
+
+  // Every link has at least one event in it. Two continuous device
+  // readings near each other are two series running side by side, which
+  // they do every day of her life: pairing them says nothing, and on a
+  // real record there are about a million such pairs. So the scan starts
+  // from each event and looks a week forward and a week back. Forward
+  // takes every partner; backward takes device readings only, because an
+  // earlier EVENT already met this one on its own forward scan, and taking
+  // it again would record the pair twice.
   for (let i = 0; i < parsed.length; i++) {
+    const anchor = parsed[i];
+    if (anchor.measured) continue;
     for (let j = i + 1; j < parsed.length; j++) {
-      const a = parsed[i];
-      const b = parsed[j];
-      // Sorted ascending, so once b is out of range every later b is too.
-      if (b.ms - a.ms > 24 * 7 * HOUR_MS) break;
-      // Two readings of the same metric are a series, not a relationship.
-      if (a.metric === b.metric) continue;
-      const relation = relationFor(a.ms, b.ms);
-      if (!relation) continue;
-      out.push({
-        a_observation_id: a.id,
-        b_observation_id: b.id,
-        relation,
-        gap_hours: (b.ms - a.ms) / HOUR_MS,
-        occurred_on: isoDay(b.ms),
-      });
-      if (out.length > threshold) compact();
+      // Sorted ascending, so once one is out of range every later one is.
+      if (parsed[j].ms - anchor.ms > WEEK_MS) break;
+      consider(anchor, parsed[j]);
+    }
+    for (let j = i - 1; j >= 0; j--) {
+      if (anchor.ms - parsed[j].ms > WEEK_MS) break;
+      if (!parsed[j].measured) continue;
+      consider(parsed[j], anchor);
     }
   }
 
