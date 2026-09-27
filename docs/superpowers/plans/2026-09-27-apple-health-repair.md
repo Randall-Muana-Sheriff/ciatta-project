@@ -29,7 +29,8 @@ The connection and the first read had worked. Ninety days of samples reached the
 | `supabase/functions/ingest-health/batch.ts` | `sleep_hours` of zero is dropped, because build 13 still sends it. A null is carried through and clears the column. |
 | `supabase/migrations/20260927100100_sleep_zero_is_unknown.sql` | Clears the zeros already stored and adds the check `sleep_hours is null or sleep_hours > 0`. |
 | `src/lib/healthSync.ts` | A read covers whole days: it starts at 18:00 on the evening before its first day, and writes a row only for days from the first through today. A new mode, `refresh`, reads the last seven days. When a read returned any sleep at all, the days in its window it found no night for are written with their sleep fields null; when it returned none, nothing is cleared, because access taken away looks the same. |
-| `src/lib/healthRefresh.ts`, `src/state/healthRefresh.ts` | On opening and on coming back to the front: if she has connected Apple Health herself, read the last week, at most once an hour. A phone that last wrote days under an older fold reads the ninety days again, once. It never asks for access. |
+| `src/lib/healthRefresh.ts`, `src/state/healthRefresh.ts` | On opening and on coming back to the front: if she has connected Apple Health herself, read the last week, at most once an hour. A phone that last wrote days under an older fold reads the ninety days again, once. It never asks for access. A read made with no signal leaves nothing behind and is made again; one measure that never arrives does not bring the ninety days back on every open. |
+| `src/lib/healthSync.ts` (`portFor`) | Every post first asks who is signed in, and refuses when it is no longer the account the read was started for, so what is left of a read never lands in the record of whoever signs in next. |
 | `src/state/session.tsx`, `src/screens/ProfileScreen.tsx` | `reloadRecord()` reads her days and her insight again after any read that went through. |
 | `src/data/sleepView.ts`, `src/screens/SleepScreen.tsx`, `src/ui/charts.tsx` | The Sleep screen is drawn from her own nights. A week with no night is a gap in the chart. Her typical is named only once twenty nights stand behind it, the same floor the server holds a baseline to. |
 
@@ -43,13 +44,13 @@ Applied to the live project through the Supabase connector on 27 September:
 
 After the deploy the first real record ran through whole: the baselines job finished on its first attempt in under two seconds, wrote its links, and the intelligence job that follows it finished on its first attempt.
 
-iOS build 14 (1.3.0) was sent to TestFlight the same day.
+iOS build 15 (1.3.0) was sent to TestFlight the same day. Build 14 was cancelled before it was submitted and never reached a tester.
 
-Test counts at close: `npm test` 441, `supabase test db` 470, `npm run test:loop` and `npm run test:loop2` PASS, `npm run check:functions` clean.
+Test counts at close: `npm test` 449, `supabase test db` 470, `npm run test:loop` and `npm run test:loop2` PASS, `npm run check:functions` clean.
 
 ## What a tester has to do
 
-Update to build 14 and open the app. Nothing else. On its first open the app reads the last ninety days again, which rewrites every night under the corrected fold, and the screens load what was read.
+Update to build 15 and open the app. Nothing else. On its first open the app reads the last ninety days again, which rewrites every night under the corrected fold, and the screens load what was read.
 
 ## What this does not change
 
