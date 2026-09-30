@@ -16,8 +16,10 @@ import type { AnchorStore, SyncMode, SyncResult } from './healthSync';
 // older fold reads the whole ninety days again, once, so every day in her
 // record is one this fold wrote. 2 is the fold that counts a night once
 // however many sources hold it, puts a night on the day she woke, and
-// leaves sleep unknown when only time in bed was recorded.
-export const FOLD_VERSION = 2;
+// leaves sleep unknown when only time in bed was recorded. 3 takes a day's
+// steps and exercise minutes from HealthKit's own daily statistics, which
+// count a walk once however many devices recorded it.
+export const FOLD_VERSION = 3;
 
 export const REFRESH_EVERY_MS = 60 * 60 * 1000;
 

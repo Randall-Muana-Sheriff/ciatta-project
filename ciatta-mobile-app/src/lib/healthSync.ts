@@ -5,7 +5,7 @@
 // network call lives here. `SyncPort` is the seam a device layer (see
 // healthKit.ts) implements for real, and a test implements with a fake, so
 // this file's behaviour is provable without a phone.
-import { addDays, isoDay, startOfDay } from '../data/cycleLog';
+import { addDays, isoDay, parseDay, startOfDay } from '../data/cycleLog';
 import type { DailyRow, DayNumbers, MetricSpec, SleepSpec, WorkoutSpec } from './healthMetrics';
 import { QUANTITY_SPECS, SLEEP_SPEC, WORKOUT_SPEC } from './healthMetrics';
 import type { CategorySample, FoldableSample, NewObservation, QuantitySample, WorkoutSample } from './healthSamples';
@@ -22,6 +22,14 @@ export type SyncPort = {
     identifier: string,
     opts: { anchor?: string; limit: number; since?: Date },
   ): Promise<{ samples: unknown[]; newAnchor: string }>;
+  // A day's total for a summed quantity (steps, exercise minutes), as
+  // HealthKit works it out: one figure per local day, with the readings
+  // two devices took of the same walk counted once. Adding up raw samples
+  // cannot do that, because a phone in a pocket and a watch on a wrist
+  // both record the walk, and both samples arrive. Optional so a port
+  // without it (a test's, or an older device layer) falls back to the sum
+  // of samples.
+  dailyTotals?(identifier: string, opts: { from: Date; to: Date; unit: string }): Promise<{ day: string; value: number }[]>;
   post(batch: { observations: NewObservation[]; days: PostedDay[] }): Promise<void>;
 };
 
@@ -249,7 +257,26 @@ export async function runHealthSync(
     const observations = rawSamples.map((raw) => toObservation(kind, spec, raw));
     // foldDay's output is passed through untouched below: a field it left
     // out for a day never gets reintroduced, not even as a zero.
-    const folded = Object.values(foldDay(rawSamples.map((raw) => toFoldable(kind, spec, raw)))) as DailyRow[];
+    let folded = Object.values(foldDay(rawSamples.map((raw) => toFoldable(kind, spec, raw)))) as DailyRow[];
+    // For a summed quantity the day's figure comes from HealthKit's own
+    // statistics when the port can ask for them, which count a reading once
+    // however many devices took it. The samples are still kept as
+    // observations. When the statistics cannot be read the fold's sums
+    // stand, as they did before: a total that may run high on a day two
+    // devices were worn, rather than no total at all.
+    if (window && kind === 'quantity' && (spec as MetricSpec).fold === 'sum' && (spec as MetricSpec).dayField && port.dailyTotals && rawSamples.length > 0) {
+      const field = (spec as MetricSpec).dayField!;
+      try {
+        const totals = await port.dailyTotals(spec.identifier, {
+          from: parseDay(window.firstDay),
+          to: deps.now ?? new Date(),
+          unit: (spec as MetricSpec).unit,
+        });
+        folded = totals.map((t) => ({ day: t.day, [field]: t.value }) as DailyRow);
+      } catch {
+        // The sums of samples stand.
+      }
+    }
     // Whole days only. What was read from before the first day is part of
     // a day, and an evening's sleep belongs to a night that has not ended:
     // it is written tomorrow, when the read holds the whole of it.

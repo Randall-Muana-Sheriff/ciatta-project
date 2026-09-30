@@ -571,3 +571,135 @@ test('while she stays signed in the port is the port', async () => {
   assert.deepEqual(result.failed, []);
   assert.equal(inner.queryCalls.length > 0, true);
 });
+
+// ── A day's total comes from HealthKit's statistics, not a sum of samples ──
+
+const EXERCISE = QUANTITY_SPECS.find((s) => s.identifier === 'HKQuantityTypeIdentifierAppleExerciseTime')!;
+
+function portWithTotals(
+  totals: Record<string, { day: string; value: number }[]> | ((identifier: string) => never),
+  responses: Record<string, { samples: unknown[]; newAnchor: string }>,
+) {
+  const inner = fakePort({ responses });
+  const asked: Array<{ identifier: string; from: Date; to: Date; unit: string }> = [];
+  const port: SyncPort = {
+    query: inner.port.query,
+    post: inner.port.post,
+    async dailyTotals(identifier, opts) {
+      asked.push({ identifier, ...opts });
+      if (typeof totals === 'function') return totals(identifier);
+      return totals[identifier] ?? [];
+    },
+  };
+  return { port, posts: inner.posts, asked };
+}
+
+test('a summed quantity takes its day figure from the statistics, which count a walk once', async () => {
+  const { anchors } = memoryAnchors();
+  const { port, posts, asked } = portWithTotals(
+    { [STEPS.identifier]: [{ day: '2026-09-25', value: 6200 }, { day: '2026-09-26', value: 300 }] },
+    {
+      [STEPS.identifier]: {
+        samples: [
+          // The phone and the watch, both recording the same walk.
+          stepsSample('2026-09-25T09:00:00', '2026-09-25T09:30:00', 3100, 'phone'),
+          stepsSample('2026-09-25T09:00:00', '2026-09-25T09:30:00', 3100, 'watch'),
+          stepsSample('2026-09-25T15:00:00', '2026-09-25T15:10:00', 3100, 'later'),
+        ],
+        newAnchor: 'anchor.steps.t',
+      },
+    },
+  );
+
+  await runHealthSync(USER_ID, { port, anchors, mode: 'refresh', now: new Date(2026, 8, 27, 15, 20) });
+
+  const stepPost = posts.find((batch) => batch.observations.some((o) => (o as { metric?: string }).metric === 'steps'))!;
+  // Every sample is still an observation; the day carries HealthKit's figure.
+  assert.equal(stepPost.observations.length, 3);
+  assert.deepEqual(stepPost.days, [
+    { day: '2026-09-25', steps: 6200 },
+    { day: '2026-09-26', steps: 300 },
+  ]);
+  assert.equal(asked.length, 1);
+  assert.equal(asked[0].identifier, STEPS.identifier);
+  assert.equal(asked[0].unit, 'count');
+  assert.deepEqual(asked[0].from, new Date(2026, 8, 21));
+});
+
+test('the statistics are asked for whole days only, and a day outside the window is not written', async () => {
+  const { anchors } = memoryAnchors();
+  const { port, posts } = portWithTotals(
+    { [EXERCISE.identifier]: [{ day: '2026-09-20', value: 40 }, { day: '2026-09-22', value: 25 }, { day: '2026-09-28', value: 5 }] },
+    {
+      [EXERCISE.identifier]: {
+        samples: [{ uuid: 'e', startDate: new Date('2026-09-22T07:00:00'), endDate: new Date('2026-09-22T07:25:00'), value: 25 }],
+        newAnchor: 'anchor.exercise.t',
+      },
+    },
+  );
+
+  await runHealthSync(USER_ID, { port, anchors, mode: 'refresh', now: new Date(2026, 8, 27, 15, 20) });
+
+  const post = posts.find((batch) => batch.observations.some((o) => (o as { metric?: string }).metric === 'exercise_time'))!;
+  assert.deepEqual(post.days, [{ day: '2026-09-22', active_minutes: 25 }]);
+});
+
+test('when the statistics cannot be read, the sum of samples stands', async () => {
+  const { anchors } = memoryAnchors();
+  const { port, posts } = portWithTotals(
+    () => {
+      throw new Error('statistics unavailable');
+    },
+    {
+      [STEPS.identifier]: {
+        samples: [
+          stepsSample('2026-09-25T09:00:00', '2026-09-25T09:30:00', 3100, 'phone'),
+          stepsSample('2026-09-25T09:00:00', '2026-09-25T09:30:00', 3100, 'watch'),
+        ],
+        newAnchor: 'anchor.steps.u',
+      },
+    },
+  );
+
+  const result = await runHealthSync(USER_ID, { port, anchors, mode: 'refresh', now: new Date(2026, 8, 27, 15, 20) });
+
+  const stepPost = posts.find((batch) => batch.observations.some((o) => (o as { metric?: string }).metric === 'steps'))!;
+  assert.deepEqual(stepPost.days, [{ day: '2026-09-25', steps: 6200 }]);
+  assert.deepEqual(result.failed, []);
+});
+
+test('a port without statistics, and a read with no window, sum the samples as before', async () => {
+  const { anchors } = memoryAnchors();
+  const plain = fakePort({
+    responses: {
+      [STEPS.identifier]: {
+        samples: [
+          stepsSample('2026-09-25T09:00:00', '2026-09-25T09:30:00', 3100, 'phone'),
+          stepsSample('2026-09-25T09:00:00', '2026-09-25T09:30:00', 3100, 'watch'),
+        ],
+        newAnchor: 'anchor.steps.v',
+      },
+    },
+  });
+  await runHealthSync(USER_ID, { port: plain.port, anchors, mode: 'refresh', now: new Date(2026, 8, 27, 15, 20) });
+  assert.deepEqual(plain.posts.flatMap((b) => b.days), [{ day: '2026-09-25', steps: 6200 }]);
+
+  const { port, posts, asked } = portWithTotals({ [STEPS.identifier]: [{ day: '2026-09-25', value: 1 }] }, {
+    [STEPS.identifier]: { samples: [stepsSample('2026-09-25T09:00:00', '2026-09-25T09:30:00', 3100, 'phone')], newAnchor: 'anchor.steps.w' },
+  });
+  await runHealthSync(USER_ID, { port, anchors: memoryAnchors().anchors, mode: 'incremental' });
+  assert.equal(asked.length, 0, 'an incremental read has no window of whole days to ask about');
+  assert.deepEqual(posts.flatMap((b) => b.days), [{ day: '2026-09-25', steps: 3100 }]);
+});
+
+test('a mean quantity never asks for totals', async () => {
+  const { anchors } = memoryAnchors();
+  const { port, asked } = portWithTotals({}, {
+    [RESTING_HR.identifier]: {
+      samples: [{ uuid: 'r', startDate: new Date('2026-09-25T07:00:00'), endDate: new Date('2026-09-25T07:00:00'), value: 58 }],
+      newAnchor: 'anchor.rhr.t',
+    },
+  });
+  await runHealthSync(USER_ID, { port, anchors, mode: 'refresh', now: new Date(2026, 8, 27, 15, 20) });
+  assert.equal(asked.some((a) => a.identifier === RESTING_HR.identifier), false);
+});

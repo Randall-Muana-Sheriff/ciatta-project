@@ -12,6 +12,7 @@ import {
   isHealthDataAvailableAsync,
   queryCategorySamplesWithAnchor,
   queryQuantitySamplesWithAnchor,
+  queryStatisticsCollectionForQuantity,
   queryWorkoutSamplesWithAnchor,
   requestAuthorization,
   WorkoutActivityType,
@@ -19,6 +20,7 @@ import {
 } from '@kingstinct/react-native-healthkit';
 import type { CategoryTypeIdentifier, ObjectTypeIdentifier, QuantityTypeIdentifier } from '@kingstinct/react-native-healthkit';
 
+import { isoDay } from '../data/cycleLog';
 import { QUANTITY_SPECS, SLEEP_SPEC, WORKOUT_SPEC } from './healthMetrics';
 import type { CategorySample, QuantitySample, WorkoutSample } from './healthSamples';
 import type { AnchorStore, SyncPort } from './healthSync';
@@ -136,6 +138,28 @@ async function queryWorkouts(opts: QueryOpts): Promise<{ samples: unknown[]; new
   return { samples, newAnchor: result.newAnchor };
 }
 
+// One figure per local day, from a statistics collection anchored at the
+// first day's midnight so the buckets are her calendar days. HealthKit
+// merges the sources itself here, which is the whole reason to ask it
+// rather than add the samples up. A bucket with no readings has no
+// sumQuantity and is left out: a day nothing measured is not a day of
+// zero.
+async function queryDailyTotals(identifier: string, opts: { from: Date; to: Date; unit: string }): Promise<{ day: string; value: number }[]> {
+  const buckets = await queryStatisticsCollectionForQuantity(
+    identifier as QuantityTypeIdentifier,
+    ['cumulativeSum'],
+    opts.from,
+    { day: 1 },
+    { unit: opts.unit as never, filter: { date: { startDate: opts.from, endDate: opts.to } } },
+  );
+  const out: { day: string; value: number }[] = [];
+  for (const bucket of buckets) {
+    if (!bucket.sumQuantity || !bucket.startDate) continue;
+    out.push({ day: isoDay(bucket.startDate), value: bucket.sumQuantity.quantity });
+  }
+  return out;
+}
+
 // The real SyncPort: HealthKit on the read side, the ingest-health edge
 // function on the write side. The caller's session supplies the bearer
 // token; this file never reads or sends a user id itself.
@@ -145,6 +169,7 @@ export const healthKitPort: SyncPort = {
     if (identifier === SLEEP_SPEC.identifier) return querySleep(opts);
     return queryQuantity(identifier, opts);
   },
+  dailyTotals: queryDailyTotals,
   async post(batch) {
     const { data, error } = await supabase.functions.invoke('ingest-health', { body: batch });
     if (error) throw error;
