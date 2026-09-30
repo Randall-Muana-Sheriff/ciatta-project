@@ -444,3 +444,39 @@ enabled = true
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# ── The user's own copy of the backend ───────────────────────────
+# Overrides that apply only when the linked project is this one, so a
+# `config push` carries the sign in providers there without landing the
+# local development values above (site_url, redirect urls) on a remote.
+# The app signs in natively with id tokens (src/lib/socialAuth.ts), so each
+# provider needs only the client ids those tokens name as their audience;
+# no OAuth secret is involved and none is stored here.
+[remotes.staging]
+project_id = "rqtfsilzcjbczjxntoyc"
+
+[remotes.staging.auth]
+site_url = "https://ciatta.io"
+additional_redirect_urls = []
+
+[remotes.staging.auth.external.google]
+enabled = true
+client_id = "326095655806-budauidiiqoo65jo8kgc5b5ee3slm67q.apps.googleusercontent.com,326095655806-po3vgir44qdql8s6a6ibfg1frej4am64.apps.googleusercontent.com"
+secret = ""
+skip_nonce_check = true
+
+[remotes.staging.auth.external.apple]
+enabled = true
+client_id = "com.ciatta.mobileapp"
+secret = ""
+
+# The values below only repeat what the remote already holds, so a push
+# does not carry the looser local development settings there.
+[remotes.staging.auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[remotes.staging.auth.email]
+enable_confirmations = true
+max_frequency = "1m0s"
+otp_length = 8
