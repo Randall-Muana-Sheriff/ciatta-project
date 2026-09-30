@@ -56,9 +56,12 @@ Update to build 15 and open the app. Nothing else. On its first open the app rea
 
 A record that has just begun has no usual yet. A baseline needs twenty days of a measure between 35 and 90 days back, and an insight needs a sustained change near something that recurred. Until her record holds that, Today says there is nothing to compare, and that is the truth of her record and not a fault.
 
+## Closed on 30 September
+
+- **Summed quantities now come from HealthKit's own daily statistics** (`queryStatisticsCollectionForQuantity`, cumulative sum, one bucket per local day), which count a walk once however many devices recorded it. The samples are still kept as observations; when the statistics cannot be read the sum of samples stands. `FOLD_VERSION` moved to 3, so every phone reads the ninety days again once. Shipped in iOS build 16. Still unverified on a device.
+- **The drains post only for jobs that are waiting** (`20260930100000_drains_post_only_pending`): `least(batch, waiting)`, where waiting is what the claim RPC would take. Applied to the user's own project; not yet on the live project, which this machine can no longer reach.
+
 ## Still open
 
-- **Summed quantities are summed from raw samples.** A phone and a watch that both counted the same walk are both added, so steps and exercise minutes can read high for someone who carries both. HealthKit removes that overlap itself when asked for statistics instead of samples. This needs a device to verify and was left alone.
-- **Both drains post ten requests every five minutes whether or not a job is waiting.** Posting `least(batch, pending)` would end that.
-- **Health Connect on Android** is deferred.
+- **Health Connect on Android** is deferred at the user's request.
 - **`npx expo lint` is not set up**, and running it rewrites `package.json` and the lockfile to install ESLint. Revert with `git checkout` and `npm ci` if it is run by accident.
