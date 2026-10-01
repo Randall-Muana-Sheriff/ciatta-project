@@ -74,8 +74,11 @@ export function OnboardingScreen() {
     }
   };
 
+  // The inset sits on the frame, not inside the scroll: a long step (the
+  // cycle form) otherwise scrolls its text up under the status bar.
   return (
-    <ScrollView style={s.fill} contentContainerStyle={[s.body, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 }]} keyboardShouldPersistTaps="handled">
+    <View style={[s.fill, { paddingTop: insets.top }]}>
+    <ScrollView style={s.fill} contentContainerStyle={[s.body, { paddingTop: 16, paddingBottom: insets.bottom + 32 }]} keyboardShouldPersistTaps="handled">
       <StepProgress index={index} total={STEPS.length} />
 
       {step === 'welcome' ? (
@@ -183,6 +186,7 @@ export function OnboardingScreen() {
         </View>
       ) : null}
     </ScrollView>
+    </View>
   );
 }
 
