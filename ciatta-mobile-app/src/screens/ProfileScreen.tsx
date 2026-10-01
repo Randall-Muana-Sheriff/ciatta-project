@@ -261,7 +261,7 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
   const [list, setList] = useState<SourceView[]>([]);
   const [dataFooter, setDataFooter] = useState<string | null>(null);
   const [accountNote, setAccountNote] = useState<string | null>(null);
-  const { mode, userId, signOut } = useSession();
+  const { mode, userId, signOut, reopenOnboarding } = useSession();
   const repo = useRepo();
 
   useEffect(() => {
@@ -355,6 +355,12 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
         </View>
         {sourceNote ? <Text style={[font('footnote'), { color: C.secondary, marginTop: 8 }]}>{displayCopy(sourceNote)}</Text> : null}
       </View>
+
+      {mode === 'real' ? (
+        <ListGroup header="First steps" footer="The screens shown after you first signed in. Nothing you set there is changed by looking again.">
+          <ListRow first title="See the first steps again" onPress={reopenOnboarding} />
+        </ListGroup>
+      ) : null}
 
       <ListGroup header="Notifications" footer="No nudges to log, and no reminders to take anything.">
         <ListRow
