@@ -7,13 +7,10 @@ import { deleteAccount, exportAndShare } from '../data/account';
 import type { Data } from '../data/adapter';
 import type { SourceKind, Tone } from '../data/sample';
 import type { SourceView } from '../data/rows';
-import { outcomeForConnectAttempt } from '../lib/connectSource';
 import { displayCopy } from '../lib/displayCopy';
-import { healthKitAnchors, healthKitPort, isHealthAvailable, requestHealthPermission, signedInUserId } from '../lib/healthKit';
-import { recordRefresh } from '../lib/healthRefresh';
-import { portFor, runHealthSync } from '../lib/healthSync';
 import { userFacingError } from '../lib/userFacingError';
 import { type Screen, useNav } from '../navigation';
+import { useConnectAppleHealth } from '../state/connectAppleHealth';
 import { useCycle } from '../state/cycleStore';
 import { useData, useRepo, useSession } from '../state/session';
 import { C, font, GUTTER, numeral, RADIUS } from '../theme';
@@ -262,11 +259,9 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
   const [newFindings, setNewFindings] = useState(true);
   const [appointments, setAppointments] = useState(false);
   const [list, setList] = useState<SourceView[]>([]);
-  const [sourceNote, setSourceNote] = useState<string | null>(null);
-  const [connecting, setConnecting] = useState(false);
   const [dataFooter, setDataFooter] = useState<string | null>(null);
   const [accountNote, setAccountNote] = useState<string | null>(null);
-  const { mode, userId, signOut, reloadRecord } = useSession();
+  const { mode, userId, signOut } = useSession();
   const repo = useRepo();
 
   useEffect(() => {
@@ -293,66 +288,8 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
     />
   );
 
-  // Real mode walks availability, then permission, then a recovery sync,
-  // writing the Apple Health source's status at each step so it always
-  // reflects what actually happened, never what was merely attempted. Demo
-  // mode keeps today's honest notice: nothing here is hers to connect.
-  const onConnectSource = async () => {
-    if (mode === 'demo') {
-      setSourceNote('This is an example person. Sign in to connect your own sources.');
-      return;
-    }
-    if (!userId || connecting) return;
-    setConnecting(true);
-    setSourceNote('Checking whether Apple Health is available.');
-    try {
-      const available = await isHealthAvailable();
-      if (!available) {
-        await repo.saveSourceStatus('apple_health', 'unsupported');
-        setSourceNote(outcomeForConnectAttempt({ kind: 'unavailable' }).message);
-        refreshSources();
-        return;
-      }
-
-      const permission = await requestHealthPermission();
-      if (!permission.granted) {
-        await repo.saveSourceStatus('apple_health', 'refused');
-        setSourceNote(outcomeForConnectAttempt({ kind: 'refused' }).message);
-        refreshSources();
-        return;
-      }
-
-      await repo.saveSourceStatus('apple_health', 'connected');
-      setSourceNote('Connected. Reading your Apple Health data now.');
-
-      const result = await runHealthSync(userId, {
-        port: portFor(userId, healthKitPort, signedInUserId),
-        anchors: healthKitAnchors,
-        mode: 'recovery',
-        // progress.metric is an internal key (resting_heart_rate, sleep_analysis),
-        // not copy fit for her screen, so this only ever says how far along
-        // the read is, never which internal field it is on.
-        onProgress: (progress) => {
-          setSourceNote(`Reading your Apple Health data, ${progress.index} of ${progress.total}.`);
-        },
-      });
-
-      const outcome = outcomeForConnectAttempt({ kind: 'synced', result });
-      await repo.saveSourceStatus('apple_health', outcome.status, outcome.status === 'active' ? new Date().toISOString() : undefined);
-      // So the app does not make the same read again on opening. What this
-      // one leaves behind is decided where the rule is, in healthRefresh.ts.
-      await recordRefresh(userId, healthKitAnchors, 'recovery', result, new Date()).catch(() => {});
-      setSourceNote(outcome.message);
-      refreshSources();
-      // What was just read is hers to see now, not the next time the app
-      // is opened.
-      await reloadRecord();
-    } catch (e) {
-      setSourceNote(userFacingError(e, 'Apple Health did not connect. Try again.'));
-    } finally {
-      setConnecting(false);
-    }
-  };
+  // One flow, shared with the first steps: see src/state/connectAppleHealth.ts.
+  const { note: sourceNote, connecting, connect: onConnectSource } = useConnectAppleHealth(refreshSources);
 
   const onDownload = () => {
     if (mode === 'demo') {
