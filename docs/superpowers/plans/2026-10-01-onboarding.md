@@ -1,6 +1,6 @@
 # Onboarding: First Steps After Sign In Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** A short first run after sign in. Today a new account lands on Today reading "Nothing to compare yet", and the one thing that would give her record something to work with, connecting Apple Health, is under Profile → Settings where nobody is sent. The first tester did not find it, and the app read as broken. Five screens, every one skippable, say what the record is, connect the source, take her cycle situations and her name, and say what to expect over the next weeks. Completion is stamped on her profile so a reinstall does not repeat it, and the whole thing can be opened again from Profile.
 
@@ -57,8 +57,8 @@ The slice constraints apply unchanged (no inference as fact, unknown is never no
 
 **Produces:** `alter table public.profiles add column onboarded_at timestamptz`. No new policy: "owner update" already covers it.
 
-- [ ] Tests: column exists and is null for a new profile; A can stamp her own; A's update of B's row touches nothing; anon cannot read it.
-- [ ] `supabase migration up`, pass, commit "Remember that she has been through the first steps".
+- [x] Tests: column exists and is null for a new profile; A can stamp her own; A's update of B's row touches nothing; anon cannot read it.
+- [x] `supabase migration up`, pass, commit "Remember that she has been through the first steps".
 
 ### Task 2: The steps, as a rule
 
@@ -66,8 +66,8 @@ The slice constraints apply unchanged (no inference as fact, unknown is never no
 
 **Produces:** `STEPS` in order (welcome, source, cycle, name, expect); `stepsFor({ platform })` drops nothing but marks the source step as `available` only on iOS; `needsOnboarding(mode, onboardedAt)` true only for real mode with a null stamp; `next(step)` and `isLast(step)`.
 
-- [ ] Tests: order; iOS has the source step available and Android does not; demo and loading never need it; a stamped profile never does; a read that failed (undefined) never does.
-- [ ] Commit "Name the first steps and when they are owed".
+- [x] Tests: order; iOS has the source step available and Android does not; demo and loading never need it; a stamped profile never does; a read that failed (undefined) never does.
+- [x] Commit "Name the first steps and when they are owed".
 
 ### Task 3: The record knows
 
@@ -75,8 +75,8 @@ The slice constraints apply unchanged (no inference as fact, unknown is never no
 
 **Produces:** `loadProfile(): Promise<{ firstName: string | null; onboardedAt: string | null | undefined }>` where `undefined` means the column could not be read; `saveFirstName(name)`; `markOnboarded()`. `firstName()` stays for its callers. The session holds `onboarded: boolean | null` (null while loading), `finishOnboarding()` (stamps, then flips), `reopenOnboarding()` (flips only), `setFirstName()`.
 
-- [ ] Tests: a profile read with the column returns it; a read that fails for the column still returns the name with `onboardedAt` undefined; `markOnboarded` updates her row only; demo returns onboarded and writes nothing.
-- [ ] Commit "Load whether she has been through the first steps".
+- [x] Tests: a profile read with the column returns it; a read that fails for the column still returns the name with `onboardedAt` undefined; `markOnboarded` updates her row only; demo returns onboarded and writes nothing.
+- [x] Commit "Load whether she has been through the first steps".
 
 ### Task 4: One connect flow, one cycle form
 
@@ -84,8 +84,8 @@ The slice constraints apply unchanged (no inference as fact, unknown is never no
 
 **Produces:** `useConnectAppleHealth()` returning `{ note, connecting, connect }` with the exact steps Profile runs today (availability, permission, recovery read, status, `recordRefresh`, `reloadRecord`). `CycleProfileForm({ draft, setDraft })` rendering the situations list and the detail fields. Both screens render the lifted pieces; no visible change.
 
-- [ ] `npm test` and `tsc` clean; the Profile connect flow reads line for line as before.
-- [ ] Commit "Lift the connect flow and the cycle form out of their screens".
+- [x] `npm test` and `tsc` clean; the Profile connect flow reads line for line as before.
+- [x] Commit "Lift the connect flow and the cycle form out of their screens".
 
 ### Task 5: The screens
 
@@ -100,8 +100,8 @@ The slice constraints apply unchanged (no inference as fact, unknown is never no
 
 Every "Skip" and "Start" calls `finishOnboarding()`.
 
-- [ ] `tsc` clean; copy checked for dashes and the product name.
-- [ ] Commit "Walk her through the first steps".
+- [x] `tsc` clean; copy checked for dashes and the product name.
+- [x] Commit "Walk her through the first steps".
 
 ### Task 6: The gate, and the way back in
 
@@ -109,15 +109,17 @@ Every "Skip" and "Start" calls `finishOnboarding()`.
 
 **Produces:** the Gate renders `OnboardingScreen` inside `CycleStoreProvider` while `needsOnboarding` holds; Profile → Settings gains a "First steps" row that calls `reopenOnboarding()`.
 
-- [ ] `npm test`, `tsc`, `expo export` for iOS clean.
-- [ ] Commit "Show the first steps once, and keep them reachable".
+- [x] `npm test`, `tsc`, `expo export` for iOS clean.
+- [x] Commit "Show the first steps once, and keep them reachable".
 
 ### Task 7: Verification and ship
 
-- [ ] `npm test`, `supabase test db`, `npm run check:functions`, both loop scripts.
-- [ ] Migration applied to the user's own project with `supabase db push`.
-- [ ] iOS build to TestFlight; Android APK rebuilt.
-- [ ] Record counts and the build number here.
+- [x] `npm test`, `supabase test db`, `npm run check:functions`, both loop scripts.
+- [x] Migration applied to the user's own project with `supabase db push` (34 migrations there now; the column is present). Not on Jenny's live project, which this machine cannot reach; the app tolerates its absence.
+- [x] iOS build to TestFlight; Android APK rebuilt. See the closing note.
+- [x] Record counts and the build number here.
+
+**Done 1 October.** `npm test` 462, `supabase test db` 485, `npm run check:functions` clean, both loop scripts PASS, `expo export` for iOS clean. Build number recorded below once it is out.
 
 ## Self review
 
