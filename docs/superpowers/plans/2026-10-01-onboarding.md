@@ -119,7 +119,7 @@ Every "Skip" and "Start" calls `finishOnboarding()`.
 - [x] iOS build to TestFlight; Android APK rebuilt. See the closing note.
 - [x] Record counts and the build number here.
 
-**Done 1 October.** `npm test` 462, `supabase test db` 485, `npm run check:functions` clean, both loop scripts PASS, `expo export` for iOS clean. Build number recorded below once it is out.
+**Done 1 October.** `npm test` 462, `supabase test db` 485, `npm run check:functions` clean, both loop scripts PASS, `expo export` for iOS clean. iOS build 17 (1.3.0) was uploaded on 1 October and released to the Client Testers group the same day.
 
 ## Self review
 
