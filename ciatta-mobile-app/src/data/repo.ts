@@ -91,6 +91,13 @@ export type Repo = {
   // stored there untouched, rather than clearing it.
   saveSourceStatus(kind: DbSourceKind, status: DbSourceStatus, lastSyncedAt?: string): Promise<void>;
   firstName(): Promise<string | null>;
+  // Her name and whether she has been through the first steps. onboardedAt
+  // is null until she has, and undefined when it could not be read at all
+  // (a project without the column yet): the two are different answers, and
+  // only null means the steps are owed.
+  loadProfile(): Promise<{ firstName: string | null; onboardedAt: string | null | undefined }>;
+  saveFirstName(name: string): Promise<void>;
+  markOnboarded(): Promise<void>;
 };
 
 export type StartAction = {
@@ -138,6 +145,10 @@ export function demoRepo(): Repo {
     dismissRecommendation: async () => {},
     saveSourceStatus: async () => {},
     firstName: async () => person.firstName,
+    // The example person has nothing to set up, and nothing about her changes.
+    loadProfile: async () => ({ firstName: person.firstName, onboardedAt: '1970-01-01T00:00:00.000Z' }),
+    saveFirstName: async () => {},
+    markOnboarded: async () => {},
   };
 }
 
@@ -269,6 +280,24 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
     async firstName() {
       const row = must(await db.from('profiles').select('first_name').eq('id', userId).maybeSingle()) as { first_name: string | null } | null;
       return row?.first_name ?? null;
+    },
+    async loadProfile() {
+      const { data, error } = await db.from('profiles').select('first_name, onboarded_at').eq('id', userId).maybeSingle();
+      if (!error) {
+        const row = data as { first_name: string | null; onboarded_at: string | null } | null;
+        return { firstName: row?.first_name ?? null, onboardedAt: row?.onboarded_at ?? null };
+      }
+      // A project that does not hold the column yet answers the first read
+      // with an error. Her name still loads; whether the steps are owed is
+      // unknown, and unknown is never "owed".
+      const row = must(await db.from('profiles').select('first_name').eq('id', userId).maybeSingle()) as { first_name: string | null } | null;
+      return { firstName: row?.first_name ?? null, onboardedAt: undefined };
+    },
+    async saveFirstName(name) {
+      must(await db.from('profiles').update({ first_name: name }).eq('id', userId));
+    },
+    async markOnboarded() {
+      must(await db.from('profiles').update({ onboarded_at: new Date().toISOString() }).eq('id', userId));
     },
   };
 }

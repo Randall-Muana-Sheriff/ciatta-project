@@ -3,6 +3,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useM
 import { AppState } from 'react-native';
 
 import { type Data, dataForSession } from '../data/adapter';
+import { needsOnboarding } from '../lib/onboarding';
 import type { Day } from '../data/daily';
 import type { InsightView } from '../data/insightRows';
 import type { TodayLoop } from '../data/loopRows';
@@ -26,6 +27,14 @@ type SessionValue = {
   // Read her days and her insight again, after something wrote to her
   // record: a source she has just connected, or a read of one on opening.
   reloadRecord: () => Promise<void>;
+  // Whether she has been through the first steps: null while that is still
+  // being read, true for the example person and for a record that could
+  // not say. finishOnboarding stamps her profile and moves on even when the
+  // stamp fails; reopenOnboarding shows the steps again without clearing it.
+  onboarded: boolean | null;
+  finishOnboarding: () => Promise<void>;
+  reopenOnboarding: () => void;
+  setFirstName: (name: string) => Promise<void>;
   enterDemo: () => void;
   signOut: () => Promise<void>;
 };
@@ -56,16 +65,47 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const repo = useMemo(() => (demo ? demoRepo() : userId ? realRepo(supabase, userId) : null), [demo, userId]);
   const mode: Mode = demo ? 'demo' : session === undefined ? 'loading' : userId ? 'real' : 'signedOut';
 
+  const [onboarded, setOnboarded] = useState<boolean | null>(null);
+
   useEffect(() => {
     let ignore = false;
     setFirstName(null);
-    repo?.firstName().then((name) => {
-      if (!ignore) setFirstName(name);
-    }).catch(() => {});
+    setOnboarded(null);
+    if (!repo) return;
+    repo
+      .loadProfile()
+      .then((profile) => {
+        if (ignore) return;
+        setFirstName(profile.firstName);
+        setOnboarded(!needsOnboarding(mode, profile.onboardedAt));
+      })
+      .catch(() => {
+        // Her record is never held behind a read that failed.
+        if (!ignore) setOnboarded(true);
+      });
     return () => {
       ignore = true;
     };
+  }, [repo, mode]);
+
+  const finishOnboarding = useCallback(async () => {
+    await repo?.markOnboarded().catch(() => {});
+    setOnboarded(true);
   }, [repo]);
+
+  const reopenOnboarding = useCallback(() => {
+    if (mode === 'real') setOnboarded(false);
+  }, [mode]);
+
+  const saveFirstName = useCallback(
+    async (name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed || !repo) return;
+      await repo.saveFirstName(trimmed);
+      setFirstName(trimmed);
+    },
+    [repo],
+  );
 
   // Real days come from her own record, loaded once here so every screen
   // that reads useData() shares one fetch rather than each mounting its own.
@@ -189,13 +229,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       loop,
       reloadLoop,
       reloadRecord,
+      onboarded,
+      finishOnboarding,
+      reopenOnboarding,
+      setFirstName: saveFirstName,
       enterDemo: () => setDemo(true),
       signOut: async () => {
         if (demo) setDemo(false);
         else await supabase.auth.signOut();
       },
     }),
-    [mode, userId, repo, firstName, days, insight, loop, reloadLoop, reloadRecord, demo],
+    [mode, userId, repo, firstName, days, insight, loop, reloadLoop, reloadRecord, onboarded, finishOnboarding, reopenOnboarding, saveFirstName, demo],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

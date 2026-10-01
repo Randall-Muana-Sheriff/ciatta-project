@@ -205,3 +205,63 @@ test('Apple Health counts as connected only once her own source row says so', as
   assert.equal(await realRepo(dbWith([{ kind: 'apple_health', status: 'active' }]), 'user-a').appleHealthConnected(), true);
   assert.equal(await demoRepo().appleHealthConnected(), false, 'the example person has nothing to read');
 });
+
+// ── The first steps ──────────────────────────────────────────────
+
+// A profiles table that answers reads with `answers` in order and records
+// every update it is handed.
+function profilesDb(answers: Array<{ data: Row | null; error: { code: string } | null }>) {
+  const updates: Array<{ patch: Row; id: unknown }> = [];
+  const db = {
+    from: (table: string) => {
+      assert.equal(table, 'profiles');
+      return {
+        select: () => ({ eq: () => ({ maybeSingle: async () => answers.shift() ?? { data: null, error: null } }) }),
+        update: (patch: Row) => ({
+          eq: async (_column: string, id: unknown) => {
+            updates.push({ patch, id });
+            return { data: null, error: null };
+          },
+        }),
+      };
+    },
+  } as unknown as SupabaseClient;
+  return { db, updates };
+}
+
+test('loadProfile reads her name and whether she has been through the first steps', async () => {
+  const { db } = profilesDb([{ data: { first_name: 'Ada', onboarded_at: null }, error: null }]);
+  assert.deepEqual(await realRepo(db, 'user-a').loadProfile(), { firstName: 'Ada', onboardedAt: null });
+
+  const stamped = profilesDb([{ data: { first_name: 'Ada', onboarded_at: '2026-10-01T09:00:00+00:00' }, error: null }]);
+  assert.deepEqual(await realRepo(stamped.db, 'user-a').loadProfile(), { firstName: 'Ada', onboardedAt: '2026-10-01T09:00:00+00:00' });
+});
+
+test('a project without the column still gives her name, and leaves the steps unknown rather than owed', async () => {
+  const { db } = profilesDb([
+    { data: null, error: { code: '42703' } },
+    { data: { first_name: 'Ada' }, error: null },
+  ]);
+  assert.deepEqual(await realRepo(db, 'user-a').loadProfile(), { firstName: 'Ada', onboardedAt: undefined });
+});
+
+test('markOnboarded and saveFirstName write her row only', async () => {
+  const { db, updates } = profilesDb([]);
+  const repo = realRepo(db, 'user-a');
+  await repo.markOnboarded();
+  await repo.saveFirstName('Ada');
+  assert.equal(updates.length, 2);
+  assert.equal(updates[0].id, 'user-a');
+  assert.equal(typeof updates[0].patch.onboarded_at, 'string');
+  assert.deepEqual(updates[1], { patch: { first_name: 'Ada' }, id: 'user-a' });
+});
+
+test('the example person has been through the first steps already and is never changed', async () => {
+  const repo = demoRepo();
+  const profile = await repo.loadProfile();
+  assert.equal(profile.firstName, 'Maya');
+  assert.equal(typeof profile.onboardedAt, 'string');
+  await repo.markOnboarded();
+  await repo.saveFirstName('Someone');
+  assert.equal(await repo.firstName(), 'Maya');
+});
