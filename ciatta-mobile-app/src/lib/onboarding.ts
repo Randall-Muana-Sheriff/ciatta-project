@@ -309,3 +309,35 @@ export function consentsFor(marketingEmail: boolean): Consent[] {
     { kind: 'marketing_email', granted: marketingEmail, policyVersion: POLICY_VERSION },
   ];
 }
+
+// Which step a correction should open.
+//
+// The labels are the ones buildReflection puts on each known line, so tapping
+// a line on the reflect screen opens the question that produced it. A
+// correction is supposed to change one answer; returning her to question one
+// after she answered nine is the restart the promise rules out.
+const CORRECTION_STEPS: Record<string, StepId> = {
+  'In your words': 'tell',
+  'What brought you here': 'intent',
+  'Age range': 'about',
+  'Life stage': 'about',
+  'Typical cycle': 'cycle',
+  Conditions: 'conditions',
+  Surgeries: 'conditions',
+  Medications: 'medications',
+  Supplements: 'medications',
+  Symptoms: 'symptoms',
+  'What you want': 'symptoms',
+};
+
+export function correctionTarget(a: Answers, label: string): StepId {
+  const steps = stepsFor(a);
+  const wanted = CORRECTION_STEPS[label];
+  // A step she was never shown is not somewhere to send her: choosing
+  // menopause removes the cycle question, and a stale label must not put it
+  // back. Falling through to the last question she did see keeps her near
+  // where she was rather than at the beginning.
+  if (wanted && steps.includes(wanted)) return wanted;
+  const answered = steps.filter((s) => s !== 'welcome' && s !== 'reflect');
+  return answered[answered.length - 1] ?? 'tell';
+}

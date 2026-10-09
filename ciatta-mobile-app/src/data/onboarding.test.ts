@@ -5,6 +5,7 @@ import {
   AGE_RANGES,
   buildReflection,
   consentsFor,
+  correctionTarget,
   cycleIsRelevant,
   emptyAnswers,
   hasAnything,
@@ -201,4 +202,35 @@ test('signing up always grants terms and privacy, which are not optional', () =>
     assert.equal(c.find((x) => x.kind === 'terms')?.granted, true);
     assert.equal(c.find((x) => x.kind === 'privacy')?.granted, true);
   }
+});
+
+// ── Corrections change one answer, not all of them ────────────────────
+
+test('a correction opens the step that holds that answer', () => {
+  const a = answers({ conditions: ['Endometriosis'], medications: ['Levothyroxine'] });
+  assert.equal(correctionTarget(a, 'Conditions'), 'conditions');
+  assert.equal(correctionTarget(a, 'Medications'), 'medications');
+  assert.equal(correctionTarget(a, 'Symptoms'), 'symptoms');
+  assert.equal(correctionTarget(a, 'In your words'), 'tell');
+  assert.equal(correctionTarget(a, 'What brought you here'), 'intent');
+  assert.equal(correctionTarget(a, 'Age range'), 'about');
+  assert.equal(correctionTarget(a, 'Life stage'), 'about');
+});
+
+test('a correction never sends her back to the start by default', () => {
+  const a = answers({ opening: 'something' });
+  // An unrecognised label is a bug in the caller, not a reason to restart her
+  // session. It opens the last question she answered instead.
+  const target = correctionTarget(a, 'Not A Real Label');
+  assert.notEqual(target, 'welcome', 'an unknown correction label restarted onboarding');
+  assert.ok(stepsFor(a).includes(target), 'correction target is not a step in her sequence');
+});
+
+test('a correction never opens a step she was never shown', () => {
+  // Menopause removes the cycle step; a stale correction label for it must
+  // not reintroduce a question the flow decided not to ask.
+  const a = answers({ lifeStage: 'menopause' });
+  const target = correctionTarget(a, 'Typical cycle');
+  assert.ok(stepsFor(a).includes(target), 'correction opened a step not in her sequence');
+  assert.notEqual(target, 'cycle', 'reintroduced the cycle question she was never asked');
 });

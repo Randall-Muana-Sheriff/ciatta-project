@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { displayCopy } from '../lib/displayCopy';
@@ -8,6 +8,7 @@ import {
   type AgeRange,
   type Answers,
   buildReflection,
+  correctionTarget,
   emptyAnswers,
   INTENTS,
   type Intent,
@@ -404,10 +405,17 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             {reflection.known.length ? (
               <Card style={s.card}>
                 {reflection.known.map((k) => (
-                  <View key={k.label} style={s.knownRow}>
+                  <Pressable
+                    key={k.label}
+                    onPress={() => setI(steps.indexOf(correctionTarget(a, k.label)))}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Change ${k.label}`}
+                    style={({ pressed }) => [s.knownRow, pressed && s.pressed]}
+                  >
                     <Text style={[font('caption1'), s.quiet]}>{k.label}</Text>
                     <Text style={[font('body'), { color: C.text }]}>{displayCopy(k.value)}</Text>
-                  </View>
+                    <Text style={[font('caption2'), { color: C.tint }]}>Change</Text>
+                  </Pressable>
                 ))}
                 <Text style={[font('caption2'), s.stamp]}>You told Ciatta this</Text>
               </Card>
@@ -436,7 +444,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             ) : null}
 
             <View style={s.block}>
-              <TextButton label="That's not quite right, let me change something" onPress={() => setI(1)} />
+              <TextButton label="Start the questions again" onPress={() => setI(1)} />
             </View>
 
             {error ? (
@@ -508,6 +516,7 @@ const s = StyleSheet.create({
   block: { marginTop: 22 },
   card: { marginTop: 12 },
   knownRow: { marginBottom: 12 },
+  pressed: { opacity: 0.55 },
   stamp: { color: C.muted, marginTop: 4 },
   textarea: {
     color: C.text,
