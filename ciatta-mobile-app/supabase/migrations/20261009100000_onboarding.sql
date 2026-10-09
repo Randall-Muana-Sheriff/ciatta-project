@@ -94,5 +94,5 @@ revoke all on public.conditions from anon, authenticated;
 grant select, insert, update, delete on public.conditions to authenticated;
 grant all on public.conditions to service_role;
 
-comment on table public.conditions is 'Conditions and surgeries as she reports them, kept apart by kind. Her words, unmapped: a name that does not resolve to a standard concept is still stored, because losing what she typed is worse than storing it unmapped.';
+comment on table public.conditions is 'Conditions, surgeries and reported symptoms, kept apart by kind. Her words, unmapped: a name that does not resolve to a standard concept is still stored, because losing what she typed is worse than storing it unmapped.';
 comment on column public.conditions.status is 'active, resolved or unknown. Defaults to unknown: that she listed something does not establish it is current, and defaulting to active would invent a clinical fact she did not give.';

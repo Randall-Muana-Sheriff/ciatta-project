@@ -327,7 +327,6 @@ const CORRECTION_STEPS: Record<string, StepId> = {
   Medications: 'medications',
   Supplements: 'medications',
   Symptoms: 'symptoms',
-  'What you want': 'symptoms',
 };
 
 export function correctionTarget(a: Answers, label: string): StepId {
@@ -338,6 +337,13 @@ export function correctionTarget(a: Answers, label: string): StepId {
   // back. Falling through to the last question she did see keeps her near
   // where she was rather than at the beginning.
   if (wanted && steps.includes(wanted)) return wanted;
-  const answered = steps.filter((s) => s !== 'welcome' && s !== 'reflect');
-  return answered[answered.length - 1] ?? 'tell';
+  // Falls back to the first question, not the last step.
+  //
+  // "The last step she saw" was wrong and review caught it by running it: the
+  // last step is 'connect', which is the Apple Health offer, holds no answer
+  // and is not a question. The reachable case is real rather than theoretical.
+  // She answers a cycle length, reaches reflect, changes her life stage to
+  // menopause, and the cycle line is still on screen because cycleLength was
+  // never cleared. Tapping it then opened a permission prompt.
+  return 'tell';
 }

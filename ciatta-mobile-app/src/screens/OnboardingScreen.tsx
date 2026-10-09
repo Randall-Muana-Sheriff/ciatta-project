@@ -409,7 +409,13 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
                     key={k.label}
                     onPress={() => setI(steps.indexOf(correctionTarget(a, k.label)))}
                     accessibilityRole="button"
-                    accessibilityLabel={`Change ${k.label}`}
+                    // The label carries the value, not just the action. An
+                    // accessibilityLabel replaces the children for a screen
+                    // reader, so "Change Conditions" would have made the one
+                    // screen whose job is showing her what Ciatta recorded
+                    // the one screen a blind user cannot hear it from.
+                    accessibilityLabel={`${k.label}, ${k.value}`}
+                    accessibilityHint="Opens this question so you can change your answer"
                     style={({ pressed }) => [s.knownRow, pressed && s.pressed]}
                   >
                     <Text style={[font('caption1'), s.quiet]}>{k.label}</Text>
@@ -515,7 +521,7 @@ const s = StyleSheet.create({
   hint: { color: C.secondary, marginTop: 4, lineHeight: 19 },
   block: { marginTop: 22 },
   card: { marginTop: 12 },
-  knownRow: { marginBottom: 12 },
+  knownRow: { marginBottom: 12, minHeight: 44, justifyContent: 'center' },
   pressed: { opacity: 0.55 },
   stamp: { color: C.muted, marginTop: 4 },
   textarea: {

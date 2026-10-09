@@ -66,21 +66,50 @@ function GoogleMark({ size = 18 }: { size?: number }) {
   );
 }
 
-// Written the moment she taps, against the session the sign in just created.
-// Failing here must not fail the sign up: she has an account either way, and
-// an unrecorded consent is a gap to repair rather than a reason to throw away
-// a working account. It is logged so the gap is visible rather than silent.
-async function recordConsent(marketingEmail: boolean) {
+// Consent, recorded once per account and repaired if it was ever missed.
+//
+// Two things this must not do, both found in review.
+//
+// It must not key off which pane she tapped. Both panes call
+// signInWithIdToken, which CREATES the user when none exists, so the login
+// pane can mint an account and the sign up pane can be tapped by someone who
+// already has one. Keying off the pane meant a new account via login got no
+// consent row at all, and a returning woman tapping sign up got a fresh
+// marketing_email row at granted false, because the checkbox resets on mount.
+// That last one is worse than recording nothing: consents_user_kind reads the
+// newest row per kind, so the table would have said she withdrew a consent
+// she never touched.
+//
+// So it keys off the record instead. No terms row means this account has
+// never consented, which is true exactly once per account however she got
+// here. Running on every successful sign in is what makes it a repair: a
+// write that failed on the network last time lands on the next launch.
+async function ensureConsent(marketingEmail: boolean) {
   const { data } = await supabase.auth.getUser();
-  if (!data.user) return;
+  const user = data.user;
+  if (!user) return;
+
+  const { data: existing, error: readError } = await supabase
+    .from('consents')
+    .select('id')
+    .eq('kind', 'terms')
+    .limit(1);
+  // A failed read must not cause a second set of rows to be written on top of
+  // a set that may already be there. Doing nothing leaves the repair for the
+  // next sign in, which is the safe direction to fail in.
+  if (readError) return;
+  if (existing && existing.length > 0) return;
+
   const rows = consentsFor(marketingEmail).map((c) => ({
-    user_id: data.user!.id,
+    user_id: user.id,
     kind: c.kind,
     granted: c.granted,
     policy_version: c.policyVersion,
   }));
   const { error } = await supabase.from('consents').insert(rows);
-  if (error && __DEV__) console.log('[consent] not recorded', JSON.stringify({ code: (error as { code?: string }).code }));
+  if (error && __DEV__) {
+    console.log('[consent] not recorded', JSON.stringify({ code: (error as { code?: string }).code }));
+  }
 }
 
 // Apple only gives a name the first time, so it is kept straight away, and
@@ -160,17 +189,16 @@ export function SignInScreen() {
     setPane(next);
   };
 
-  const run = (signIn: () => Promise<{ fullName: string | null }>, signUp = false) => async () => {
+  const run = (signIn: () => Promise<{ fullName: string | null }>) => async () => {
     if (busy) return;
     setBusy(true);
     setError('');
     try {
       const { fullName } = await signIn();
-      // Recorded here, at the tap that gave it, and only on the sign up pane.
-      // Logging in is not consenting again, and deferring this to the end of
-      // onboarding would leave anyone who quits mid flow holding an account
-      // with no consent on file.
-      if (signUp) await recordConsent(marketingEmail);
+      // Run on both panes. Either can create an account, and ensureConsent
+      // writes only when the account has no terms row, so this is both the
+      // first record and the repair for one that failed earlier.
+      await ensureConsent(marketingEmail);
       try {
         await keepFirstName(fullName);
       } catch {
@@ -227,11 +255,11 @@ export function SignInScreen() {
           }
           cornerRadius={RADIUS}
           style={s.apple}
-          onPress={run(signInWithApple, signUp)}
+          onPress={run(signInWithApple)}
         />
       ) : null}
       <Pressable
-        onPress={run(signInWithGoogle, signUp)}
+        onPress={run(signInWithGoogle)}
         accessibilityRole="button"
         accessibilityLabel={signUp ? 'Sign up with Google' : 'Continue with Google'}
         style={({ pressed }) => [s.google, light && s.googleSolid, pressed && s.pressed]}
@@ -265,31 +293,6 @@ export function SignInScreen() {
     >
       <Text style={[font('body'), { color: light ? C.bg : C.text }]}>Back</Text>
     </Pressable>
-  );
-
-  // Just the two labels, linked. The sign up pane says the same thing inside a
-  // sentence, because that is where consent is actually given; here they are
-  // reference, so they are only named.
-  const legalLinks = (
-    <View style={s.legal}>
-      <Pressable
-        onPress={() => Linking.openURL(PRIVACY_URL)}
-        accessibilityRole="link"
-        accessibilityHint="Opens the privacy policy on the Ciatta website"
-        style={({ pressed }) => [s.inlineHit, pressed && s.pressed]}
-      >
-        <Text style={[font('footnote'), { color: light ? C.tertiary : C.text }]}>Privacy Policy</Text>
-      </Pressable>
-      <Text style={[font('footnote'), { color: light ? C.tertiary : C.secondary }]}>·</Text>
-      <Pressable
-        onPress={() => Linking.openURL(TERMS_URL)}
-        accessibilityRole="link"
-        accessibilityHint="Opens the terms of use on the Ciatta website"
-        style={({ pressed }) => [s.inlineHit, pressed && s.pressed]}
-      >
-        <Text style={[font('footnote'), { color: light ? C.tertiary : C.text }]}>Terms of Use</Text>
-      </Pressable>
-    </View>
   );
 
   // Back and the wordmark, carried by every pane.
@@ -454,7 +457,27 @@ export function SignInScreen() {
           </View>
         ) : null}
 
-        {pane === 'login' ? <View style={s.pad}>{legalLinks}</View> : null}
+        {pane === 'login' ? (
+          <View style={s.pad}>
+            {/*
+              The same agreement as the sign up pane, because signing in with
+              an Apple or Google identity that has no account here creates
+              one. A path that can create an account has to show her what she
+              is agreeing to, whichever button it is behind.
+            */}
+            <Text style={[font('caption1'), s.terms]}>
+              By continuing you agree to Ciatta&rsquo;s{' '}
+              <Text style={s.termsLink} onPress={() => Linking.openURL(TERMS_URL)} accessibilityRole="link">
+                Terms of Use
+              </Text>
+              , and you acknowledge that you have read our{' '}
+              <Text style={s.termsLink} onPress={() => Linking.openURL(PRIVACY_URL)} accessibilityRole="link">
+                Privacy Policy
+              </Text>
+              .
+            </Text>
+          </View>
+        ) : null}
       </ScrollView>
     </View>
   );

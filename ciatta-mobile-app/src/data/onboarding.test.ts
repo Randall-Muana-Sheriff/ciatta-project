@@ -217,20 +217,53 @@ test('a correction opens the step that holds that answer', () => {
   assert.equal(correctionTarget(a, 'Life stage'), 'about');
 });
 
-test('a correction never sends her back to the start by default', () => {
+test('a correction always lands on a question she can answer', () => {
+  // The earlier version of this asserted only that the target was in her
+  // sequence, which 'connect' satisfies, so it could not fail. 'connect' is
+  // the Apple Health offer: it is a step, it holds no answer, and sending a
+  // correction there opens a permission prompt. Name the questions.
+  const QUESTIONS = ['tell', 'intent', 'about', 'cycle', 'conditions', 'medications', 'symptoms'];
   const a = answers({ opening: 'something' });
-  // An unrecognised label is a bug in the caller, not a reason to restart her
-  // session. It opens the last question she answered instead.
   const target = correctionTarget(a, 'Not A Real Label');
-  assert.notEqual(target, 'welcome', 'an unknown correction label restarted onboarding');
-  assert.ok(stepsFor(a).includes(target), 'correction target is not a step in her sequence');
+  assert.ok(
+    QUESTIONS.includes(target),
+    `an unknown label sent her to "${target}", which is not a question`,
+  );
 });
 
-test('a correction never opens a step she was never shown', () => {
-  // Menopause removes the cycle step; a stale correction label for it must
-  // not reintroduce a question the flow decided not to ask.
-  const a = answers({ lifeStage: 'menopause' });
+test('a stale correction label does not reopen a question her answers removed', () => {
+  // The reachable path, not a hypothetical: she answers a cycle length,
+  // reaches reflect, changes her life stage to menopause, and the cycle line
+  // is still rendered because cycleLength was never cleared. Tapping it must
+  // not reintroduce the cycle question, and must not land on Apple Health.
+  const QUESTIONS = ['tell', 'intent', 'about', 'cycle', 'conditions', 'medications', 'symptoms'];
+  const a = answers({ lifeStage: 'menopause', cycleLength: 28 });
   const target = correctionTarget(a, 'Typical cycle');
   assert.ok(stepsFor(a).includes(target), 'correction opened a step not in her sequence');
   assert.notEqual(target, 'cycle', 'reintroduced the cycle question she was never asked');
+  assert.notEqual(target, 'connect', 'a correction opened the Apple Health offer');
+  assert.ok(QUESTIONS.includes(target), `landed on "${target}", which is not a question`);
+});
+
+test('every correction label maps to a step that actually exists', () => {
+  // A label in the table that buildReflection never emits, or a step id that
+  // is not a step, is dead weight that reads as working.
+  const a = answers({
+    opening: 'x',
+    intents: ['cycle'],
+    ageRange: '35_44',
+    lifeStage: 'cycling',
+    cycleLength: 28,
+    conditions: ['Endometriosis'],
+    surgeries: ['Laparoscopy'],
+    medications: ['Levothyroxine'],
+    supplements: ['Magnesium'],
+    symptoms: ['Fatigue'],
+  });
+  const steps = stepsFor(a);
+  for (const k of buildReflection(a).known) {
+    const target = correctionTarget(a, k.label);
+    assert.ok(steps.includes(target), `"${k.label}" maps to ${target}, not in her sequence`);
+    assert.notEqual(target, 'connect', `"${k.label}" maps to the Apple Health offer`);
+  }
 });
