@@ -212,9 +212,15 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       // Conditions and surgeries, one row each, REPORTED and status unknown.
       // The default is deliberate: that she listed something does not
       // establish it is current, and the column default says so.
+      // Symptoms join conditions and surgeries here rather than becoming
+      // episodes, because she gave no date and no severity and an episode
+      // without those is an occurrence nobody reported. status stays at the
+      // column default of unknown for the same reason: that she named it does
+      // not establish she has it today.
       const named = [
         ...a.conditions.map((name) => ({ name, kind: 'condition' as const })),
         ...a.surgeries.map((name) => ({ name, kind: 'surgery' as const })),
+        ...a.symptoms.map((name) => ({ name, kind: 'symptom' as const })),
       ].filter((r) => r.name.trim());
       if (named.length) {
         must(

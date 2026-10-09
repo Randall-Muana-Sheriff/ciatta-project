@@ -1,0 +1,13 @@
+-- A symptom she reports at onboarding is not an episode.
+--
+-- An episode is something that happened, with a time and usually a severity.
+-- At onboarding she is answering "what have you been noticing", which has
+-- neither. Writing an episode would invent an occurrence and hand the
+-- intelligence layer a dated event that never happened.
+--
+-- What she is actually giving is the same shape as a condition: a named thing
+-- she says is true of her, undated, that changes how a later finding should
+-- be read. So it goes in the same table under its own kind, and the reflect
+-- screen's promise that Ciatta will watch for these becomes something a query
+-- can act on rather than a sentence with nothing behind it.
+alter type public.condition_kind add value if not exists 'symptom';
