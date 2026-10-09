@@ -7,6 +7,7 @@ import Svg, { Path } from 'react-native-svg';
 
 import { displayCopy } from '../lib/displayCopy';
 import { isAppleSignInAvailable, signInWithApple, signInWithGoogle, SocialAuthCancelled } from '../lib/socialAuth';
+import { consentsFor } from '../lib/onboarding';
 import { supabase } from '../lib/supabase';
 import { userFacingError } from '../lib/userFacingError';
 import { useSession } from '../state/session';
@@ -65,6 +66,23 @@ function GoogleMark({ size = 18 }: { size?: number }) {
   );
 }
 
+// Written the moment she taps, against the session the sign in just created.
+// Failing here must not fail the sign up: she has an account either way, and
+// an unrecorded consent is a gap to repair rather than a reason to throw away
+// a working account. It is logged so the gap is visible rather than silent.
+async function recordConsent(marketingEmail: boolean) {
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) return;
+  const rows = consentsFor(marketingEmail).map((c) => ({
+    user_id: data.user!.id,
+    kind: c.kind,
+    granted: c.granted,
+    policy_version: c.policyVersion,
+  }));
+  const { error } = await supabase.from('consents').insert(rows);
+  if (error && __DEV__) console.log('[consent] not recorded', JSON.stringify({ code: (error as { code?: string }).code }));
+}
+
 // Apple only gives a name the first time, so it is kept straight away, and
 // never over a name she already has.
 async function keepFirstName(fullName: string | null) {
@@ -84,6 +102,8 @@ export function SignInScreen() {
   // Starts true so the first frame is the still image rather than motion she
   // asked not to see. The check below lowers it only once it has answered.
   const [reduceMotion, setReduceMotion] = useState(true);
+  // Off by default. A box already ticked is not consent she gave.
+  const [marketingEmail, setMarketingEmail] = useState(false);
 
   const player = useVideoPlayer(HERO_VIDEO, (p) => {
     p.loop = true;
@@ -140,12 +160,17 @@ export function SignInScreen() {
     setPane(next);
   };
 
-  const run = (signIn: () => Promise<{ fullName: string | null }>) => async () => {
+  const run = (signIn: () => Promise<{ fullName: string | null }>, signUp = false) => async () => {
     if (busy) return;
     setBusy(true);
     setError('');
     try {
       const { fullName } = await signIn();
+      // Recorded here, at the tap that gave it, and only on the sign up pane.
+      // Logging in is not consenting again, and deferring this to the end of
+      // onboarding would leave anyone who quits mid flow holding an account
+      // with no consent on file.
+      if (signUp) await recordConsent(marketingEmail);
       try {
         await keepFirstName(fullName);
       } catch {
@@ -202,11 +227,11 @@ export function SignInScreen() {
           }
           cornerRadius={RADIUS}
           style={s.apple}
-          onPress={run(signInWithApple)}
+          onPress={run(signInWithApple, signUp)}
         />
       ) : null}
       <Pressable
-        onPress={run(signInWithGoogle)}
+        onPress={run(signInWithGoogle, signUp)}
         accessibilityRole="button"
         accessibilityLabel={signUp ? 'Sign up with Google' : 'Continue with Google'}
         style={({ pressed }) => [s.google, light && s.googleSolid, pressed && s.pressed]}
@@ -388,12 +413,32 @@ export function SignInScreen() {
               <Text style={s.termsLink} onPress={() => Linking.openURL(TERMS_URL)} accessibilityRole="link">
                 Terms of Use
               </Text>
-              , to get emails and updates, and you acknowledge that you have read our{' '}
+              , and you acknowledge that you have read our{' '}
               <Text style={s.termsLink} onPress={() => Linking.openURL(PRIVACY_URL)} accessibilityRole="link">
                 Privacy Policy
               </Text>
               .
             </Text>
+            {/*
+              Its own control, off by default. Marketing consent has to be
+              separately given to be worth anything, and bundling it into the
+              same tap as the terms makes it consent to nothing. Declining
+              does not block sign up.
+            */}
+            <Pressable
+              onPress={() => setMarketingEmail((v) => !v)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: marketingEmail }}
+              accessibilityLabel="Send me emails and updates"
+              style={({ pressed }) => [s.consentRow, pressed && s.pressed]}
+            >
+              <View style={[s.checkbox, marketingEmail && s.checkboxOn]}>
+                {marketingEmail ? <Text style={[font('caption1'), { color: C.text }]}>&#10003;</Text> : null}
+              </View>
+              <Text style={[font('caption1'), s.consentLabel]}>
+                Send me emails and updates. Optional, and you can stop at any time.
+              </Text>
+            </Pressable>
           </View>
         ) : null}
 
@@ -508,4 +553,16 @@ const s = StyleSheet.create({
   // they interrupt rather than disappearing into the page.
   terms: { color: C.tertiary, marginTop: 24, lineHeight: 17, textAlign: 'center' },
   termsLink: { color: C.bg, textDecorationLine: 'underline' },
+  consentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 14 },
+  consentLabel: { color: C.tertiary, flex: 1, lineHeight: 17 },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: C.tertiary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxOn: { backgroundColor: C.tint, borderColor: C.tint },
 });

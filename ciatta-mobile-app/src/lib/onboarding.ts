@@ -280,3 +280,32 @@ export function hasAnything(a: Answers): boolean {
     a.goals.length > 0
   );
 }
+
+export type ConsentKind = 'terms' | 'privacy' | 'marketing_email';
+
+export type Consent = { kind: ConsentKind; granted: boolean; policyVersion: string };
+
+// Bump this when the wording at ciatta.io/terms or ciatta.io/privacy changes.
+// A consent to the old text is not a consent to the new one, and the stored
+// version is what lets anyone tell which she actually saw.
+export const POLICY_VERSION = '2026-10-09';
+
+// Three records from one tap, because they have three different lifetimes.
+// Terms and privacy are conditions of having an account at all. Marketing is
+// hers to withdraw tomorrow without losing the account, and a record that
+// cannot express that cannot honour it.
+//
+// Takes the marketing answer rather than Answers, because consent is given on
+// the sign up screen and no onboarding Answers exist yet at that point. That
+// ordering is the whole reason this is recorded at sign up: a woman who signs
+// up and closes the app mid onboarding would otherwise hold an account with
+// no consent on file, which is the one state this table exists to prevent.
+export function consentsFor(marketingEmail: boolean): Consent[] {
+  return [
+    { kind: 'terms', granted: true, policyVersion: POLICY_VERSION },
+    { kind: 'privacy', granted: true, policyVersion: POLICY_VERSION },
+    // Stored either way. A decline is something she did, and the record must
+    // tell "asked and said no" apart from "never asked".
+    { kind: 'marketing_email', granted: marketingEmail, policyVersion: POLICY_VERSION },
+  ];
+}

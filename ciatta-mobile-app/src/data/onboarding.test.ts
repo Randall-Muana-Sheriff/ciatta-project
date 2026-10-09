@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import {
   AGE_RANGES,
   buildReflection,
+  consentsFor,
   cycleIsRelevant,
   emptyAnswers,
   hasAnything,
@@ -171,5 +172,33 @@ test('no option label carries a dash, which the copy rule forbids', () => {
     for (const o of list) {
       assert.ok(!/[—–-]/.test(o.label), `"${o.label}" contains a dash`);
     }
+  }
+});
+
+// ── Consent: recorded per kind, so marketing can be withdrawn alone ────
+
+test('consent is recorded per kind, so marketing can be withdrawn on its own', () => {
+  const c = consentsFor(true);
+  assert.equal(c.length, 3, 'terms, privacy and marketing are three records');
+  assert.deepEqual(c.map((x) => x.kind).sort(), ['marketing_email', 'privacy', 'terms']);
+  for (const x of c) {
+    assert.ok(x.policyVersion.trim().length > 0, `${x.kind} recorded with no policy version`);
+  }
+});
+
+test('declining marketing is recorded as declined, not omitted', () => {
+  const c = consentsFor(false);
+  const marketing = c.find((x) => x.kind === 'marketing_email');
+  assert.ok(marketing, 'declining marketing dropped the record entirely');
+  assert.equal(marketing.granted, false, 'a decline must be stored as a decline');
+  // Being asked and saying no is not the same as never being asked, and only
+  // a stored false can tell those apart later.
+});
+
+test('signing up always grants terms and privacy, which are not optional', () => {
+  for (const m of [true, false]) {
+    const c = consentsFor(m);
+    assert.equal(c.find((x) => x.kind === 'terms')?.granted, true);
+    assert.equal(c.find((x) => x.kind === 'privacy')?.granted, true);
   }
 });
