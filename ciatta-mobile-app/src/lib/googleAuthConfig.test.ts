@@ -11,7 +11,7 @@ import {
 test('ios URL scheme reverses to the iOS client id used by Google Sign In', () => {
   assert.equal(
     googleIosClientIdFromScheme(GOOGLE_IOS_URL_SCHEME),
-    '326095655806-po3vgir44qdql8s6a6ibfg1frej4am64.apps.googleusercontent.com'
+    '183018363133-4k2da19sr8us67t7q2588hlk2lrm94vi.apps.googleusercontent.com'
   );
 });
 
@@ -22,7 +22,7 @@ test('placeholder env values fall back to the scheme client id', () => {
   });
   assert.equal(
     resolved?.iosClientId,
-    '326095655806-po3vgir44qdql8s6a6ibfg1frej4am64.apps.googleusercontent.com'
+    '183018363133-4k2da19sr8us67t7q2588hlk2lrm94vi.apps.googleusercontent.com'
   );
   assert.equal(resolved?.webClientId, resolved?.iosClientId);
 });

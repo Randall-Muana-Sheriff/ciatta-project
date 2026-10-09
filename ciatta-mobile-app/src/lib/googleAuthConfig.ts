@@ -1,6 +1,6 @@
 /** Must match app.json google-signin iosUrlScheme. Public identifier, not a secret. */
 export const GOOGLE_IOS_URL_SCHEME =
-  'com.googleusercontent.apps.326095655806-po3vgir44qdql8s6a6ibfg1frej4am64';
+  'com.googleusercontent.apps.183018363133-4k2da19sr8us67t7q2588hlk2lrm94vi';
 
 const GOOGLE_SCHEME_PREFIX = 'com.googleusercontent.apps.';
 const GOOGLE_CLIENT_SUFFIX = '.apps.googleusercontent.com';
