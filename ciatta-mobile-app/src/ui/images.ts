@@ -11,4 +11,6 @@ export const images = {
   movement: require('../../assets/images/cia/movement.jpg'),
   // Canonical front view from the Ciatta design system (07 · Body).
   body: require('../../assets/images/cia/body.png'),
+  // The Ciatta wordmark, used on the sign in screen.
+  wordmark: require('../../assets/images/wordmark.png'),
 };
