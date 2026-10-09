@@ -86,7 +86,7 @@
       [
         "@react-native-google-signin/google-signin",
         {
-          "iosUrlScheme": "com.googleusercontent.apps.326095655806-po3vgir44qdql8s6a6ibfg1frej4am64"
+          "iosUrlScheme": "com.googleusercontent.apps.183018363133-4k2da19sr8us67t7q2588hlk2lrm94vi"
         }
       ],
       [
@@ -108,7 +108,14 @@
         }
       ],
       "expo-document-picker",
-      "expo-video"
+      "expo-video",
+      [
+        "expo-speech-recognition",
+        {
+          "speechRecognitionPermission": "Ciatta turns what you say into text so you can describe your health out loud instead of typing.",
+          "microphonePermission": "Ciatta uses the microphone only while you are dictating, and stops as soon as you do."
+        }
+      ]
     ],
     "extra": {
       "eas": {

@@ -1,0 +1,282 @@
+// The first session, as a sequence and a reflection.
+//
+// No React and no Supabase in this file, the same arrangement as engine.ts and
+// cycleModel.ts: the decisions worth testing are which questions she is asked
+// and what Ciatta says it knows, and both are pure functions of her answers.
+// The screen renders what this returns.
+//
+// The rule the reflection turns on, and it is the project's rule rather than
+// this file's: nothing here may state something she did not say. At the end of
+// onboarding there is no measured data at all, so every line the reflection
+// produces is either her own report or an honest statement of absence. There
+// is no third category yet, and a first session that implied otherwise would
+// be the most damaging place in the whole app to do it.
+
+export type Intent =
+  | 'noticing_change'
+  | 'managing_condition'
+  | 'life_stage'
+  | 'cycle'
+  | 'symptoms'
+  | 'appointment';
+
+export const INTENTS: { id: Intent; label: string }[] = [
+  { id: 'noticing_change', label: 'Something has changed' },
+  { id: 'cycle', label: 'My cycle' },
+  { id: 'symptoms', label: 'Symptoms I want to understand' },
+  { id: 'life_stage', label: 'A life stage I am in' },
+  { id: 'managing_condition', label: 'A condition I am managing' },
+  { id: 'appointment', label: 'Preparing for an appointment' },
+];
+
+export type AgeRange = 'under_25' | '25_34' | '35_44' | '45_54' | '55_plus' | 'prefer_not';
+
+export const AGE_RANGES: { id: AgeRange; label: string }[] = [
+  { id: 'under_25', label: 'Under 25' },
+  { id: '25_34', label: '25 to 34' },
+  { id: '35_44', label: '35 to 44' },
+  { id: '45_54', label: '45 to 54' },
+  { id: '55_plus', label: '55 or older' },
+  { id: 'prefer_not', label: 'Rather not say' },
+];
+
+export type LifeStage =
+  | 'cycling'
+  | 'cycle_irregular'
+  | 'perimenopause'
+  | 'menopause'
+  | 'postpartum'
+  | 'pregnant'
+  | 'contraception'
+  | 'unsure';
+
+export const LIFE_STAGES: { id: LifeStage; label: string }[] = [
+  { id: 'cycling', label: 'Cycling regularly' },
+  { id: 'cycle_irregular', label: 'Cycles are irregular' },
+  { id: 'perimenopause', label: 'Perimenopause' },
+  { id: 'menopause', label: 'Menopause' },
+  { id: 'postpartum', label: 'Postpartum' },
+  { id: 'pregnant', label: 'Pregnant' },
+  { id: 'contraception', label: 'On contraception' },
+  { id: 'unsure', label: 'Not sure' },
+];
+
+export type StepId =
+  | 'welcome'
+  | 'tell'
+  | 'intent'
+  | 'about'
+  | 'cycle'
+  | 'conditions'
+  | 'medications'
+  | 'symptoms'
+  | 'connect'
+  | 'reflect';
+
+export type Answers = {
+  // Her own words, kept verbatim. This is the one answer that is never turned
+  // into a checkbox: it goes to raw_inputs as she said it.
+  opening: string;
+  openingMode: 'typed' | 'spoken' | null;
+  intents: Intent[];
+  ageRange: AgeRange | null;
+  lifeStage: LifeStage | null;
+  // Only asked when a cycle is relevant to her. See stepsFor.
+  cycleLength: number | null;
+  cycleRegular: boolean | null;
+  lastPeriodOn: string | null;
+  conditions: string[];
+  surgeries: string[];
+  medications: string[];
+  supplements: string[];
+  symptoms: string[];
+  goals: string[];
+  // Steps she passed over. Kept apart from steps never shown, because a
+  // question she declined is not a gap Ciatta can go and fill, and the
+  // reflection must not describe it as one.
+  skipped: StepId[];
+};
+
+export function emptyAnswers(): Answers {
+  return {
+    opening: '',
+    openingMode: null,
+    intents: [],
+    ageRange: null,
+    lifeStage: null,
+    cycleLength: null,
+    cycleRegular: null,
+    lastPeriodOn: null,
+    conditions: [],
+    surgeries: [],
+    medications: [],
+    supplements: [],
+    symptoms: [],
+    goals: [],
+    skipped: [],
+  };
+}
+
+// Which questions she is actually asked.
+//
+// The cycle step is the only conditional one, and the condition is about
+// whether the answer could change an interpretation rather than about whether
+// the question is polite. A woman in menopause has no cycle to describe, so
+// asking her for a cycle length collects a null and spends a screen; a woman
+// who came to understand her cycle gets asked even if she has not named a life
+// stage yet.
+export function stepsFor(a: Answers): StepId[] {
+  const steps: StepId[] = ['welcome', 'tell', 'intent', 'about'];
+  if (cycleIsRelevant(a)) steps.push('cycle');
+  steps.push('conditions', 'medications', 'symptoms', 'connect', 'reflect');
+  return steps;
+}
+
+export function cycleIsRelevant(a: Answers): boolean {
+  if (a.lifeStage === 'menopause' || a.lifeStage === 'pregnant') return false;
+  // Everything else has a cycle worth asking about, including an unstated
+  // life stage: not knowing is a reason to ask, not a reason to skip.
+  return true;
+}
+
+// One line of what Ciatta can say, each tied to where it came from.
+export type Known = { label: string; value: string; source: 'reported' };
+
+// One thing Ciatta cannot say yet, and why that matters. `why` is required:
+// a gap listed without a reason reads as a chore she has been set, and the
+// point of naming it is to show what it would change.
+export type Gap = { label: string; why: string; fillable: boolean };
+
+export type Reflection = {
+  known: Known[];
+  gaps: Gap[];
+  // What Ciatta is able to interpret right now. At the end of a first session
+  // this is almost always empty, and saying so plainly is the honest answer.
+  // It exists as a field rather than a sentence so the screen cannot render a
+  // finding that was never produced.
+  findings: string[];
+  // The single next step, when there is one worth naming.
+  nextStep: string | null;
+};
+
+const INTENT_SUMMARY: Record<Intent, string> = {
+  noticing_change: 'something that has changed',
+  managing_condition: 'a condition you are managing',
+  life_stage: 'the life stage you are in',
+  cycle: 'your cycle',
+  symptoms: 'symptoms you want to understand',
+  appointment: 'an appointment you are preparing for',
+};
+
+// What Ciatta knows, what it does not, and nothing in between.
+//
+// Every entry in `known` is something she typed or chose. There is no entry
+// that combines two of her answers into a third claim, because a combination
+// is an inference, and at this point there is nothing to check an inference
+// against.
+export function buildReflection(a: Answers): Reflection {
+  const known: Known[] = [];
+  const gaps: Gap[] = [];
+
+  if (a.opening.trim()) {
+    known.push({ label: 'In your words', value: a.opening.trim(), source: 'reported' });
+  }
+  if (a.intents.length) {
+    known.push({
+      label: 'What brought you here',
+      value: a.intents.map((i) => INTENT_SUMMARY[i]).join(', '),
+      source: 'reported',
+    });
+  }
+  if (a.ageRange && a.ageRange !== 'prefer_not') {
+    const label = AGE_RANGES.find((r) => r.id === a.ageRange)?.label ?? '';
+    if (label) known.push({ label: 'Age range', value: label, source: 'reported' });
+  }
+  if (a.lifeStage) {
+    const label = LIFE_STAGES.find((s) => s.id === a.lifeStage)?.label ?? '';
+    if (label) known.push({ label: 'Life stage', value: label, source: 'reported' });
+  }
+  if (a.cycleLength != null) {
+    known.push({ label: 'Typical cycle', value: `${a.cycleLength} days`, source: 'reported' });
+  }
+  if (a.conditions.length) {
+    known.push({ label: 'Conditions', value: a.conditions.join(', '), source: 'reported' });
+  }
+  if (a.surgeries.length) {
+    known.push({ label: 'Surgeries', value: a.surgeries.join(', '), source: 'reported' });
+  }
+  if (a.medications.length) {
+    known.push({ label: 'Medications', value: a.medications.join(', '), source: 'reported' });
+  }
+  if (a.supplements.length) {
+    known.push({ label: 'Supplements', value: a.supplements.join(', '), source: 'reported' });
+  }
+  if (a.symptoms.length) {
+    known.push({ label: 'Symptoms', value: a.symptoms.join(', '), source: 'reported' });
+  }
+  if (a.goals.length) {
+    known.push({ label: 'What you want', value: a.goals.join(', '), source: 'reported' });
+  }
+
+  // The gaps. Each one names what it would let Ciatta do, and `fillable` says
+  // whether Ciatta can close it by asking again or whether only time can.
+  if (!a.symptoms.length && !a.skipped.includes('symptoms')) {
+    gaps.push({
+      label: 'What you have been feeling',
+      why: 'A symptom logged with a date is the thing a change in sleep or cycle can be lined up against.',
+      fillable: true,
+    });
+  }
+  if (cycleIsRelevant(a) && a.cycleLength == null) {
+    gaps.push({
+      label: 'Your cycle timing',
+      why: 'Without a typical length there is nothing to call a short cycle short.',
+      fillable: true,
+    });
+  }
+
+  // The one gap that is never fillable by asking. Said plainly because it is
+  // the truthful answer to "why can you not tell me anything yet".
+  gaps.push({
+    label: 'Time',
+    why: 'Everything above is what you told Ciatta today. A pattern needs the same thing happening more than once, so the first comparisons arrive after a few weeks of logging.',
+    fillable: false,
+  });
+
+  return {
+    known,
+    gaps,
+    // Empty, and not by accident. Nothing has been measured, nothing has been
+    // compared, and there is no observation in her record to interpret. A
+    // finding here would be invented.
+    findings: [],
+    nextStep: nextStepFor(a),
+  };
+}
+
+function nextStepFor(a: Answers): string | null {
+  if (a.intents.includes('appointment')) return 'Add what you want to raise, so it is ready when you go.';
+  if (a.symptoms.length) return 'Log the next time one of these shows up, and Ciatta starts building the picture.';
+  if (cycleIsRelevant(a)) return 'Log your next period, and Ciatta can start tracking the timing.';
+  return 'Log anything you notice, and Ciatta starts from there.';
+}
+
+// True when she has given enough for the reflection to be worth showing. One
+// answer is enough: the screen is honest about how little it has, and a woman
+// who skipped everything still deserves to see that stated rather than be sent
+// to a blank Today with no explanation.
+export function hasAnything(a: Answers): boolean {
+  return (
+    a.opening.trim().length > 0 ||
+    a.intents.length > 0 ||
+    a.ageRange !== null ||
+    a.lifeStage !== null ||
+    a.cycleLength !== null ||
+    a.conditions.length > 0 ||
+    a.surgeries.length > 0 ||
+    a.medications.length > 0 ||
+    a.supplements.length > 0 ||
+    a.symptoms.length > 0 ||
+    a.goals.length > 0
+  );
+}

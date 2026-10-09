@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { type CycleProfile, normalizeProfile } from '../lib/cycleProfile';
+import type { Answers as OnboardingAnswers } from '../lib/onboarding';
 import type { DailyRow } from '../lib/healthMetrics';
 import { type Day, loadDays as loadSampleDays } from './daily';
 import { daysFromRows } from './dailyRows';
@@ -62,6 +63,14 @@ export type Repo = {
   saveEpisode(e: Episode, extra?: Record<string, unknown>): Promise<void>;
   loadCycleProfile(): Promise<CycleProfile | null>;
   saveCycleProfile(p: CycleProfile): Promise<void>;
+  // Null until she finishes the first session. The Gate reads this to decide
+  // whether to show onboarding, so an unfinished session resumes rather than
+  // being skipped.
+  loadOnboardedAt(): Promise<string | null>;
+  // One call rather than a save per step, because a half written first
+  // session is worse than none: it would leave her with a record that says
+  // things she never finished saying. Everything lands or nothing does.
+  completeOnboarding(a: OnboardingAnswers): Promise<void>;
   loadJournal(): Promise<JournalView>;
   addJournal(text: string, kind: EntryKind): Promise<void>;
   loadSources(): Promise<SourceView[]>;
@@ -112,6 +121,11 @@ export function demoRepo(): Repo {
     },
     loadCycleProfile: async () => null,
     saveCycleProfile: async () => {},
+    // Demo never onboards: the example person arrives with a record already
+    // built, and walking a first session for someone who is not her would
+    // teach the wrong thing about what Ciatta does with her answers.
+    loadOnboardedAt: async () => new Date().toISOString(),
+    completeOnboarding: async () => {},
     loadJournal: async () => view,
     addJournal: async (text, kind) => {
       const d = new Date();
@@ -166,6 +180,94 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
     },
     async saveCycleProfile(p) {
       must(await db.from('profiles').update({ cycle_profile: p }).eq('id', userId));
+    },
+    async loadOnboardedAt() {
+      const row = must(
+        await db.from('profiles').select('onboarded_at').eq('id', userId).maybeSingle(),
+      ) as { onboarded_at: string | null } | null;
+      return row?.onboarded_at ?? null;
+    },
+    async completeOnboarding(a) {
+      const now = new Date().toISOString();
+
+      // Her own words first, and on their own row. They go to raw_inputs
+      // rather than into the profile blob because they are evidence: a
+      // sentence she wrote, at a time, in a mode, which a later interpretation
+      // can point back at. parse_status stays pending, since nothing has read
+      // it yet and marking it parsed would claim work that did not happen.
+      const opening = a.opening.trim();
+      if (opening) {
+        must(
+          await db.from('raw_inputs').insert({
+            user_id: userId,
+            text: opening,
+            input_mode: a.openingMode === 'spoken' ? 'spoken' : 'typed',
+            parse_status: 'pending',
+            occurred_at: now,
+            metadata: { source: 'onboarding' },
+          }),
+        );
+      }
+
+      // Conditions and surgeries, one row each, REPORTED and status unknown.
+      // The default is deliberate: that she listed something does not
+      // establish it is current, and the column default says so.
+      const named = [
+        ...a.conditions.map((name) => ({ name, kind: 'condition' as const })),
+        ...a.surgeries.map((name) => ({ name, kind: 'surgery' as const })),
+      ].filter((r) => r.name.trim());
+      if (named.length) {
+        must(
+          await db.from('conditions').insert(
+            named.map((r) => ({ user_id: userId, kind: r.kind, name: r.name.trim(), provenance: 'REPORTED' })),
+          ),
+        );
+      }
+
+      // Medications and supplements. No dose and no start date: she was not
+      // asked, and writing a null is honest where inventing "as needed" would
+      // not be.
+      const meds = a.medications.map((n) => n.trim()).filter(Boolean);
+      if (meds.length) {
+        must(
+          await db.from('medications').insert(
+            meds.map((name) => ({ user_id: userId, name, provenance: 'REPORTED', occurred_at: now })),
+          ),
+        );
+      }
+      const sups = a.supplements.map((n) => n.trim()).filter(Boolean);
+      if (sups.length) {
+        must(
+          await db.from('supplements').insert(
+            sups.map((name) => ({ user_id: userId, name, provenance: 'REPORTED', occurred_at: now })),
+          ),
+        );
+      }
+
+      // The profile last, and onboarded_at with it. If any write above threw,
+      // this one never runs and onboarded_at stays null, so the next launch
+      // resumes the first session rather than dropping her into a Today built
+      // on half an answer.
+      must(
+        await db
+          .from('profiles')
+          .update({
+            onboarded_at: now,
+            onboarding: {
+              intents: a.intents,
+              ageRange: a.ageRange,
+              lifeStage: a.lifeStage,
+              cycle:
+                a.cycleLength == null && a.cycleRegular == null && a.lastPeriodOn == null
+                  ? null
+                  : { length: a.cycleLength, regular: a.cycleRegular, lastPeriodOn: a.lastPeriodOn },
+              goals: a.goals,
+              symptoms: a.symptoms,
+              skipped: a.skipped,
+            },
+          })
+          .eq('id', userId),
+      );
     },
     async loadJournal() {
       const rows = await paginateAll<JournalRow>(
