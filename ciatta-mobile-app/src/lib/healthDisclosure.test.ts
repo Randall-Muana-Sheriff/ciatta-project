@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import {
   healthCategories,
   healthCategoryClause,
-  healthDisclosureParagraph,
+  healthDisclosureLines,
   overstatedCategories,
   requestedTypes,
   unnamedCategories,
@@ -64,35 +64,39 @@ test('the clause lists every category and reads as a sentence would', () => {
   assert.ok(clause.includes(' and '), 'the categories were run together with no conjunction');
 });
 
-test('the paragraph names every category and says what they are for', () => {
-  const p = healthDisclosureParagraph();
-  assert.ok(p.includes(healthCategoryClause()), 'the paragraph does not name the categories');
-  assert.ok(/compare a week to your own usual/.test(p), 'the paragraph does not say what the data is for');
+test('the three lines name every category and say what the data is for', () => {
+  const lines = healthDisclosureLines();
+  assert.equal(lines.length, 3, 'the disclosure is not three lines');
+  const all = lines.join(' ');
+  for (const c of healthCategories()) {
+    assert.ok(all.toLowerCase().includes(c.toLowerCase()), `the disclosure dropped ${c}`);
+  }
+  assert.ok(/compares your week to your own usual/.test(all), 'it never says what the data is for');
 });
 
-test('the paragraph is one sentence and does not describe the sheet that follows', () => {
-  // The button says Continue to Apple Health and Apple's own sheet arrives a
-  // moment later to speak for itself. Describing it here is a sentence she
-  // reads once and never needs again.
-  const p = healthDisclosureParagraph();
-  assert.equal(p.split('. ').length, 1, 'the paragraph grew a second sentence');
-  assert.ok(!/Apple asks/.test(p), 'the paragraph narrates the sheet that follows it');
+test('no line narrates the sheet that follows it', () => {
+  // The button says Connect Apple Health and Apple's own sheet arrives a
+  // moment later to speak for itself.
+  const all = healthDisclosureLines().join(' ');
+  assert.ok(!/Apple asks/.test(all), 'the disclosure narrates the sheet that follows it');
 });
 
-test('the paragraph is one paragraph and holds no dash of any kind', () => {
-  const p = healthDisclosureParagraph();
-  assert.ok(!p.includes('\n'), 'the prose was broken into lines');
-  assert.ok(!/\s\s/.test(p), 'a missing clause left a double space');
-  for (const dash of ['—', '–', '-']) {
-    assert.ok(!p.includes(dash), `the paragraph contains ${dash}`);
+test('each line is a line, with no dash of any kind', () => {
+  for (const line of healthDisclosureLines()) {
+    assert.ok(line.length > 0, 'an empty line');
+    assert.ok(!line.includes('\n'), 'a line contains a break of its own');
+    assert.ok(!/\s\s/.test(line), 'a missing clause left a double space');
+    assert.equal(line.trim(), line, 'a line is padded');
+    for (const dash of ['\u2014', '\u2013', '-']) {
+      assert.ok(!line.includes(dash), `"${line}" contains ${dash}`);
+    }
   }
 });
 
-test('the paragraph claims nothing about what a reading means', () => {
-  // It renders before a single sample has been read, so a sentence about
-  // what any of this reveals would be a finding with nothing to find it in.
-  const p = healthDisclosureParagraph().toLowerCase();
+test('no line claims anything about what a reading means', () => {
+  // They render before a single sample has been read.
+  const all = healthDisclosureLines().join(' ').toLowerCase();
   for (const claim of ['diagnos', 'detects', 'predicts', 'proves', 'means you', 'tells you whether']) {
-    assert.ok(!p.includes(claim), `the paragraph claims a finding: ${claim}`);
+    assert.ok(!all.includes(claim), `the disclosure claims a finding: ${claim}`);
   }
 });

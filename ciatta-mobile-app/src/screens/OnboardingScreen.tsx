@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { connectAppleHealth } from '../lib/connectHealth';
 import { useDictation } from '../lib/dictation';
 import { displayCopy } from '../lib/displayCopy';
-import { healthDisclosureParagraph } from '../lib/healthDisclosure';
+import { healthDisclosureLines } from '../lib/healthDisclosure';
 import {
   AGE_RANGES,
   type AgeRange,
@@ -56,6 +56,12 @@ const BOTTOM: StepId[] = ['tell', 'lifeStage', 'reflect'];
 // here is a second tap that adds nothing, and a woman who has already told
 // Ciatta her age has no reason to confirm it.
 const AUTO: StepId[] = ['age', 'lifeStage', 'cycle'];
+
+// Screens that render no Continue at the foot. The three above answer
+// themselves, and connect carries its own action: a Continue under Connect
+// Apple Health is a second button for a screen with one thing to do, and the
+// quieter of the two would be the one that does nothing.
+const NO_CONTINUE: StepId[] = [...AUTO, 'connect'];
 
 
 const INK = '#111113';
@@ -726,7 +732,11 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             <Text style={[font('title1'), s.titleCentre]} accessibilityRole="header">
               Connect Apple Health
             </Text>
-            <Text style={[font('subhead'), s.connectLede]}>{displayCopy(healthDisclosureParagraph())}</Text>
+            {healthDisclosureLines().map((line) => (
+              <Text key={line} style={[font('subhead'), s.connectLede]}>
+                {displayCopy(line)}
+              </Text>
+            ))}
 
             <Pressable
               onPress={onConnectHealth}
@@ -793,7 +803,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               <Text style={[font('headline'), { color: '#FFFFFF' }]}>{saving ? 'Saving' : 'Done'}</Text>
             </Pressable>
           </View>
-        ) : AUTO.includes(step) ? null : (
+        ) : NO_CONTINUE.includes(step) ? null : (
           <View style={s.actions}>
             <Pressable onPress={next} accessibilityRole="button" style={({ pressed }) => [s.primary, pressed && s.pressed]}>
               <Text style={[font('headline'), { color: '#FFFFFF' }]}>Continue</Text>
@@ -849,7 +859,7 @@ const s = StyleSheet.create({
     marginBottom: 18,
   },
   titleCentre: { color: INK, letterSpacing: -0.4, textAlign: 'center' },
-  connectLede: { color: MUTED, marginTop: 10, lineHeight: 21, textAlign: 'center' },
+  connectLede: { color: MUTED, marginTop: 8, lineHeight: 21, textAlign: 'center' },
   // A plain row, not a card each. Twelve cards on one screen is twelve
   // objects to separate; these are twelve items in one list.
   connect: { marginTop: 28 },

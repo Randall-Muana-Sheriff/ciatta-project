@@ -26,11 +26,11 @@ const CATEGORY_NAMES: Record<string, string> = {
   activity: 'movement',
   vitals: 'heart and breathing',
   sleep: 'sleep',
-  body: 'body measurements',
-  nutrition: 'what you eat and drink',
-  environment: 'your surroundings',
-  behaviour: 'daily habits',
-  other: 'other readings Apple Health holds',
+  body: 'body',
+  nutrition: 'food and drink',
+  environment: 'surroundings',
+  behaviour: 'habits',
+  other: 'anything else Health holds',
 };
 
 // The order they are said in. Movement first: it is the easiest to recognise
@@ -78,12 +78,18 @@ export function healthCategoryClause(): string {
   return `${xs.slice(0, -1).join(', ')}, and ${xs[xs.length - 1]}`;
 }
 
-// The whole disclosure, in one sentence.
+// The whole disclosure, in three lines.
 //
-// The kinds and what they are for, and nothing about what happens next: the
-// button underneath says Continue to Apple Health, and Apple's sheet arrives
-// to speak for itself a moment later. A sentence describing that sheet is a
-// sentence she reads once and never needs again.
-export function healthDisclosureParagraph(): string {
-  return `Ciatta reads your ${healthCategoryClause()} from Apple Health, so it can compare a week to your own usual rather than to anybody else.`;
+// One sentence could not carry eight categories without becoming a wall, so
+// the shape does the work the punctuation was failing at: what Ciatta reads,
+// the list, and what it is for. The list stays complete rather than being
+// trimmed to fit, because a disclosure that drops a category to read better
+// is a disclosure that is wrong.
+export function healthDisclosureLines(): string[] {
+  const clause = healthCategoryClause();
+  return [
+    'Ciatta reads what Apple Health already holds for you.',
+    `${clause.charAt(0).toUpperCase()}${clause.slice(1)}.`,
+    'It compares your week to your own usual, never to anybody else.',
+  ];
 }
