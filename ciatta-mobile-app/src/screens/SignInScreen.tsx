@@ -375,7 +375,7 @@ export function SignInScreen() {
               <Text style={[font('headline', 'bold'), { color: C.text }]}>Login</Text>
             </Pressable>
             <View style={s.inlineRow}>
-              <Text style={[font('footnote'), { color: C.text }]}>Not ready? See how it works.</Text>
+              <Text style={[font('footnote'), { color: C.text }]}>Not ready?</Text>
               <Pressable
                 onPress={enterDemo}
                 accessibilityRole="button"
