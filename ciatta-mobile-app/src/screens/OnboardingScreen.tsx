@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { connectAppleHealth } from '../lib/connectHealth';
 import { useDictation } from '../lib/dictation';
 import { displayCopy } from '../lib/displayCopy';
-import { healthDisclosureParagraph } from '../lib/healthDisclosure';
+import { encryptionNote, healthDisclosureParagraph, monogram, SYNC_APPS } from '../lib/healthDisclosure';
 import {
   AGE_RANGES,
   type AgeRange,
@@ -49,7 +49,7 @@ import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 // screens with enough on them to want the foot of the page: the text area she
 // writes into, the eight life stages, and the reflection paragraph. Every
 // other screen holds one question and sits at eye level.
-const BOTTOM: StepId[] = ['tell', 'lifeStage', 'reflect'];
+const BOTTOM: StepId[] = ['tell', 'lifeStage', 'connect', 'reflect'];
 
 // The screens that hold exactly one answer, and so need no Continue: the tap
 // that answers the question is the tap that moves her on. A Continue button
@@ -256,6 +256,22 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   const [error, setError] = useState('');
   const [connecting, setConnecting] = useState(false);
   const [sourceNote, setSourceNote] = useState('');
+  // Whether Apple Health is actually connected, read from health_sources
+  // rather than inferred from having tapped the button. A label saying
+  // Connected when the row says refused would be the screen stating
+  // something it does not know.
+  const [appleConnected, setAppleConnected] = useState(false);
+
+  const refreshAppleStatus = useCallback(async () => {
+    try {
+      const sources = await repo.loadSources();
+      setAppleConnected(sources.some((x) => x.name === 'Apple Health' && x.status === 'active'));
+    } catch {
+      // A failed read leaves the label off. Showing Connected because the
+      // check failed would be the one wrong answer.
+    }
+  }, [repo]);
+
 
   const dictation = useDictation((text) => {
     setA((prev) => ({
@@ -268,6 +284,12 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   const steps = useMemo(() => stepsFor(a), [a]);
   const step: StepId = steps[Math.min(i, steps.length - 1)];
   const paragraph = useMemo(() => reflectionParagraph(a), [a]);
+
+  // Read when she arrives at the connect screen, so a source connected on an
+  // earlier run shows as connected rather than waiting on a tap.
+  useEffect(() => {
+    if (step === 'connect') void refreshAppleStatus();
+  }, [step, refreshAppleStatus]);
 
   const set = (patch: Partial<Answers>) => setA((prev) => ({ ...prev, ...patch }));
   const next = () => setI((n) => Math.min(n + 1, steps.length - 1));
@@ -305,6 +327,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         onNote: () => {},
       });
       setSourceNote(result.connected ? '' : result.message);
+      await refreshAppleStatus();
     } catch {
       setSourceNote('That did not connect. You can try again from Profile.');
     } finally {
@@ -714,39 +737,68 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
         {step === 'connect' ? (
           <View>
-            {/*
-              One paragraph, not a list. Apple's sheet names all twelve types
-              with a real toggle beside each one tap later, so naming them
-              here as well asked her to read the same list in a form she
-              could not act on. The categories say the same true thing in a
-              sentence, and the sheet stays the place the detail lives,
-              because that is the place the detail can be changed.
-            */}
-            <View style={s.healthTile}>
-              <Icon name="heart" size={30} color={INK} />
-            </View>
-
             <Text style={[font('title1'), s.titleCentre]} accessibilityRole="header">
-              Connect Apple Health
+              Sync your health data
             </Text>
             <Text style={[font('subhead'), s.connectLede]}>{displayCopy(healthDisclosureParagraph())}</Text>
 
+            {/*
+              Apple Health on its own card, because it is the only one of
+              these she acts on. Connected is read from the stored source row,
+              so the label is a fact rather than the screen assuming the tap
+              worked.
+            */}
             <Pressable
-              onPress={onConnectHealth}
+              onPress={appleConnected ? undefined : onConnectHealth}
               accessibilityRole="button"
-              style={({ pressed }) => [s.primary, s.connect, pressed && s.pressed]}
+              accessibilityState={{ disabled: appleConnected }}
+              accessibilityLabel={appleConnected ? 'Apple Health, connected' : 'Connect Apple Health'}
+              style={({ pressed }) => [s.sourceCard, pressed && !appleConnected && s.pressed]}
             >
-              <Text style={[font('headline'), { color: '#FFFFFF' }]}>
-                {connecting ? 'Connecting' : 'Connect Apple Health'}
-              </Text>
+              <Image source={images.appleHealth} style={s.sourceMark} resizeMode="contain" accessible={false} />
+              <View style={s.rowText}>
+                <Text style={[font('headline'), { color: INK }]}>Apple Health</Text>
+                <Text style={[font('footnote'), s.rowDetail]}>
+                  {appleConnected ? 'Syncing in the background' : connecting ? 'Connecting' : 'Not connected yet'}
+                </Text>
+              </View>
+              {appleConnected ? (
+                <View style={s.connectedPill}>
+                  <Icon name="check" size={13} color="#0B7A4B" />
+                  <Text style={[font('caption1', 'semibold'), s.connectedText]}>Connected</Text>
+                </View>
+              ) : null}
             </Pressable>
 
             {/*
-              Only failures speak here. A success needs no sentence: she
-              watched Apple ask and she answered it, and a line telling her
-              what she just did is the app narrating itself. A failure has to
-              be said, because nothing else on screen would show it.
+              Named rather than integrated. Ciatta reads Apple Health; these
+              are apps that write there, so the heading has to say via Apple
+              Health or the list reads as a set of partnerships that do not
+              exist.
             */}
+            <Text style={[font('subhead', 'semibold'), s.groupHeading]}>Apps that sync via Apple Health</Text>
+            <View style={s.appCard}>
+              {SYNC_APPS.map((app, n) => (
+                <View key={app.name} style={[s.appRow, n > 0 && s.rowDivided]}>
+                  {app.mark ? (
+                    <Image source={images[app.mark]} style={s.appMark} resizeMode="contain" accessible={false} />
+                  ) : (
+                    // No artwork yet. A monogram is a visible gap; another
+                    // company's logo would be a wrong answer.
+                    <View style={s.appMonogram}>
+                      <Text style={[font('caption1', 'semibold'), { color: MUTED }]}>{monogram(app.name)}</Text>
+                    </View>
+                  )}
+                  <Text style={[font('subhead'), { color: INK }]}>{app.name}</Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={s.encryptionCard}>
+              <Icon name="shield" size={18} color={INK} />
+              <Text style={[font('footnote'), s.encryptionText]}>{displayCopy(encryptionNote())}</Text>
+            </View>
+
             {sourceNote ? (
               <Text style={[font('footnote'), s.cardSub]} accessibilityLiveRegion="polite">
                 {displayCopy(sourceNote)}
@@ -844,6 +896,54 @@ const s = StyleSheet.create({
   },
   titleCentre: { color: INK, letterSpacing: -0.4, textAlign: 'center' },
   connectLede: { color: MUTED, marginTop: 8, lineHeight: 21, textAlign: 'center' },
+  sourceCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 24,
+    padding: 14,
+    borderRadius: RADIUS,
+    backgroundColor: FIELD,
+  },
+  sourceMark: { width: 38, height: 38, borderRadius: 9 },
+  rowText: { flex: 1 },
+  rowDetail: { color: MUTED, marginTop: 2 },
+  connectedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: '#E3F5EA',
+  },
+  connectedText: { color: '#0B7A4B' },
+  groupHeading: { color: INK, marginTop: 28, marginBottom: 10 },
+  appCard: { backgroundColor: FIELD, borderRadius: RADIUS, paddingHorizontal: 14 },
+  appRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 },
+  rowDivided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
+  appMark: { width: 26, height: 26, borderRadius: 6 },
+  appMonogram: {
+    width: 26,
+    height: 26,
+    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: LINE,
+  },
+  encryptionCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginTop: 24,
+    padding: 14,
+    borderRadius: RADIUS,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: LINE,
+  },
+  encryptionText: { flex: 1, color: MUTED, lineHeight: 18 },
   // A plain row, not a card each. Twelve cards on one screen is twelve
   // objects to separate; these are twelve items in one list.
   connect: { marginTop: 28 },

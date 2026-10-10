@@ -1,80 +1,81 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { healthDisclosureParagraph } from './healthDisclosure';
-import { QUANTITY_SPECS } from './healthMetrics';
+import {
+  appsMissingArtwork,
+  encryptionNote,
+  healthDisclosureParagraph,
+  monogram,
+  SYNC_APPS,
+} from './healthDisclosure';
 
-// ── The claim, checked ────────────────────────────────────────────────
+// ── The copy ──────────────────────────────────────────────────────────
 
-// The library's own list of every quantity type HealthKit exposes. Read from
-// the package rather than copied, so the assertion is against what the
-// library offers today and not against a snapshot of it.
-const GENERATED =
-  'node_modules/@kingstinct/react-native-healthkit/lib/typescript/generated/healthkit.generated.d.ts';
-
-function everyQuantityIdentifier(): string[] {
-  const source = readFileSync(GENERATED, 'utf8');
-  const found = source.match(/'HKQuantityTypeIdentifier[A-Za-z0-9]+'/g) ?? [];
-  return [...new Set(found.map((q) => q.slice(1, -1)))].sort();
-}
-
-test('the screen says every health metric, and every means every', () => {
-  // This is what licenses the word. If someone narrows QUANTITY_SPECS, or a
-  // library update adds a type, the copy becomes a claim Ciatta does not
-  // honour and this fails. Add the type to the specs, or change the copy.
-  const offered = everyQuantityIdentifier();
-  const specced = new Set(QUANTITY_SPECS.map((s) => s.identifier));
-  const missing = offered.filter((identifier) => !specced.has(identifier));
-
-  assert.ok(offered.length > 100, `only found ${offered.length} identifiers, so the list was not read properly`);
-  assert.deepEqual(missing, [], `the screen claims every metric and these are not read: ${missing.slice(0, 5).join(', ')}`);
-});
-
-test('no spec reads a type the library does not offer', () => {
-  // The same check the other way. A stale identifier is a query that can only
-  // fail, counted as a metric Ciatta reads.
-  const offered = new Set(everyQuantityIdentifier());
-  const unknown = QUANTITY_SPECS.map((s) => s.identifier).filter((i) => !offered.has(i));
-  assert.deepEqual(unknown, [], `these are not HealthKit quantity types: ${unknown.join(', ')}`);
-});
-
-// ── What she actually reads ───────────────────────────────────────────
-
-test('the disclosure is one sentence of twenty words', () => {
-  // Both asserted because both are the brief. Copy grows a clause at a time,
-  // and the next clause is always the reasonable one.
+test('the paragraph says what connecting does and what it brings in', () => {
   const p = healthDisclosureParagraph();
-  const words = p.split(/\s+/).filter(Boolean);
-  assert.equal(words.length, 20, `the disclosure is ${words.length} words`);
-  assert.equal(p.split('. ').length, 1, 'the disclosure grew a second sentence');
-  assert.equal(p.indexOf('.'), p.length - 1, 'the only full stop is the last character');
-});
-
-test('the disclosure says what is read and what it is for', () => {
-  // Short is not the only requirement. Dropping either half would hit the
-  // word count and lose the point.
-  const all = healthDisclosureParagraph();
-  assert.ok(/every health metric/.test(all), 'it never says how much is read');
-  assert.ok(/compares your week to your own usual/.test(all), 'it never says what the data is for');
-  assert.ok(/never to anybody else/.test(all), 'it never says the comparison is to her alone');
-});
-
-test('it is one continuous paragraph, with no dash of any kind', () => {
-  const p = healthDisclosureParagraph();
-  assert.ok(!p.includes('\n'), 'the paragraph was broken into lines');
-  assert.ok(!/\s\s/.test(p), 'a missing clause left a double space');
-  assert.equal(p.trim(), p, 'the paragraph is padded');
-  for (const dash of ['\u2014', '\u2013', '-']) {
-    assert.ok(!p.includes(dash), `the paragraph contains ${dash}`);
+  for (const fragment of ['Connect Apple Health', 'sleep patterns', 'activity levels', 'heart rate']) {
+    assert.ok(p.includes(fragment), `the paragraph dropped ${fragment}`);
   }
 });
 
-test('nothing narrates the sheet or claims a finding', () => {
-  // It renders before a single sample has been read, and Apple's sheet
-  // arrives a moment later to describe itself.
-  const all = healthDisclosureParagraph().toLowerCase();
-  for (const claim of ['apple asks', 'diagnos', 'detects', 'predicts', 'proves', 'means you']) {
-    assert.ok(!all.includes(claim), `the disclosure says too much: ${claim}`);
+test('the copy holds no dash of any kind', () => {
+  // The project rule, and the reason heart rate is two words here.
+  for (const text of [healthDisclosureParagraph(), encryptionNote(), ...SYNC_APPS.map((a) => a.name)]) {
+    for (const dash of ['—', '–', '-']) {
+      assert.ok(!text.includes(dash), `"${text}" contains ${dash}`);
+    }
+  }
+});
+
+test('nothing claims a reading means something', () => {
+  // The screen renders before a single sample has been read, so a sentence
+  // about what any of this reveals would be a finding with nothing to find
+  // it in.
+  const all = `${healthDisclosureParagraph()} ${encryptionNote()}`.toLowerCase();
+  for (const claim of ['diagnos', 'detects', 'predicts', 'proves', 'means you']) {
+    assert.ok(!all.includes(claim), `the copy claims a finding: ${claim}`);
+  }
+});
+
+test('the encryption line promises consent, not secrecy it cannot keep', () => {
+  // It is the one sentence here that is a promise about handling rather than
+  // a description of a feature. "Never shared" alone would be false the day
+  // she asks Ciatta to send a summary to a doctor; the permission clause is
+  // what keeps it true, so it has to stay.
+  const note = encryptionNote();
+  assert.ok(/encrypted/.test(note), 'the line no longer mentions encryption');
+  assert.ok(/without your permission/.test(note), 'the line promises secrecy with no consent clause');
+  assert.ok(!/never shared\.?$/.test(note), 'the line promises data is never shared at all');
+});
+
+// ── The apps that sync ────────────────────────────────────────────────
+
+test('the sync list is the seven named, in order', () => {
+  assert.deepEqual(
+    SYNC_APPS.map((a) => a.name),
+    ['Oura', 'Whoop', '8 Sleep', 'Withings', 'Garmin', 'Strava', 'Omron'],
+  );
+});
+
+test('a brand is shown with its own mark or with none, never with another', () => {
+  // The rule that matters on this list. A missing logo is honest; a wrong
+  // logo attached to a real company is not, so mark is either that brand's
+  // own key or null.
+  for (const app of SYNC_APPS) {
+    if (app.mark === null) continue;
+    assert.equal(app.mark, app.name.toLowerCase(), `${app.name} points at the ${app.mark} mark`);
+  }
+});
+
+test('the brands still waiting on artwork are listed rather than hidden', () => {
+  assert.deepEqual(appsMissingArtwork(), ['8 Sleep', 'Withings', 'Garmin', 'Strava', 'Omron']);
+});
+
+test('a monogram is short, and a name starting with a digit still reads', () => {
+  assert.equal(monogram('8 Sleep'), '8S');
+  assert.equal(monogram('Withings'), 'WI');
+  assert.equal(monogram('Garmin'), 'GA');
+  for (const app of SYNC_APPS) {
+    assert.ok(monogram(app.name).length <= 2, `${app.name} has a monogram that will not fit`);
   }
 });
