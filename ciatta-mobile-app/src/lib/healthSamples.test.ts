@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { QUANTITY_SPECS, SLEEP_SPEC, WORKOUT_SPEC } from './healthMetrics';
+import { CORE_QUANTITY_SPECS, QUANTITY_SPECS, SLEEP_SPEC, WORKOUT_SPEC } from './healthMetrics';
+import { EXTRA_QUANTITY_SPECS } from './healthMetricsAll';
 import {
   type FoldableSample,
   foldDay,
@@ -260,4 +261,45 @@ test('dedupe key is namespaced by metric so two metrics on the same sample time 
   const steps = sampleToObservation(STEPS, { ...at, value: 100 });
   const heartRate = sampleToObservation(HEART_RATE, { ...at, value: 60 });
   assert.notEqual(steps.dedupe_key, heartRate.dedupe_key);
+});
+
+// ── Reading everything must not reach the daily row ──────────────────
+
+test('a generated metric produces no daily row at all', () => {
+  // The risk the hundred and ten new metrics introduced. foldDay runs once
+  // per metric and its output is upserted into daily_metrics, so a spec with
+  // no dayField that still produced a row would write a day of nulls for
+  // every day she has data, and Today reads those rows.
+  const day = new Date('2026-10-09T08:00:00.000Z');
+  const samples = EXTRA_QUANTITY_SPECS.slice(0, 20).map((spec) => ({
+    kind: 'quantity' as const,
+    spec,
+    sample: { startDate: day, endDate: day, value: 42, unit: 'count' },
+  }));
+  assert.deepEqual(foldDay(samples), {}, 'a metric with no day column still wrote a daily row');
+});
+
+test('a hand checked metric still produces its daily row', () => {
+  // The other half: proving the test above is not passing because foldDay
+  // stopped working.
+  const day = new Date('2026-10-09T08:00:00.000Z');
+  const steps = CORE_QUANTITY_SPECS.find((s) => s.metric === 'steps');
+  assert.ok(steps);
+  const rows = foldDay([
+    { kind: 'quantity', spec: steps, sample: { startDate: day, endDate: day, value: 1200, unit: 'count' } },
+    { kind: 'quantity', spec: steps, sample: { startDate: day, endDate: day, value: 800, unit: 'count' } },
+  ]);
+  assert.equal(Object.keys(rows).length, 1, 'steps produced no daily row');
+  assert.equal(Object.values(rows)[0].steps, 2000, 'steps did not sum into the day');
+});
+
+test('the unit stored is the one HealthKit reported, not the one the spec guessed', () => {
+  // The latent bug found while adding the bulk metrics: our sample type was
+  // dropping HealthKit's unit and the spec's hand written one was stored
+  // instead. Harmless across twelve checked specs, wrong somewhere across a
+  // hundred and twenty.
+  const spec = { identifier: 'X', metric: 'x', domain: 'other', fold: 'mean' as const };
+  const at = new Date('2026-10-09T08:00:00.000Z');
+  const observation = sampleToObservation(spec, { startDate: at, endDate: at, value: 7, unit: 'mmol<K>/L' });
+  assert.equal(observation.unit, 'mmol<K>/L');
 });
