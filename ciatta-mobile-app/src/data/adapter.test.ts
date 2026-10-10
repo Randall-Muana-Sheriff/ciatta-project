@@ -75,3 +75,22 @@ test('real mode says what changed about her insight since she last looked, once 
   assert.equal(dataFor('real', 'Ada', [], view).today.kicker, view.meta, 'the count line stands in until the loop has loaded');
   assert.equal(dataFor('demo', null).loop, null);
 });
+
+test('the standing text is marked as standing text, so a screen can leave it out', () => {
+  // Real mode with nothing written yet. The words are about the app, not
+  // about her, and a card carrying them sits above a chart that has
+  // already said the same thing.
+  const empty = dataFor('real', 'Jenny', [], null, null);
+  assert.equal(empty.todayIsPlaceholder, true);
+  assert.match(empty.today.kicker, /record starts/);
+});
+
+test('a written insight is not standing text', () => {
+  const withInsight = dataFor('real', 'Jenny', [], sample.insight, null);
+  assert.equal(withInsight.todayIsPlaceholder, false);
+  assert.equal(withInsight.today.headline, sample.insight.headline);
+});
+
+test('demo is never standing text: the example person has a day', () => {
+  assert.equal(dataFor('demo', null).todayIsPlaceholder, false);
+});

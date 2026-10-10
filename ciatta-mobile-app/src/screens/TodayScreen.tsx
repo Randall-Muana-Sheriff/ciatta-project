@@ -146,7 +146,7 @@ export function TodayScreen() {
   const { startDraft, accept, setFocus, watching, setWatching } = useCycle();
   const { today: brief } = useInsights();
   const { windows } = useCycleInsights();
-  const { person, today, days } = useData();
+  const { person, today, days, todayIsPlaceholder } = useData();
   const repo = useRepo();
 
   // Today's measured readings, by the hour they happened. daily_metrics is
@@ -348,15 +348,20 @@ export function TodayScreen() {
 
         {/*
           The one tile that is the point of the screen: the sentence written
-          from whatever ranks highest today. Inked so nothing else competes
-          with it, and only ever one, because emphasis applied twice is
-          decoration. The kicker is its eyebrow now rather than a tinted
-          line floating under the headline.
+          from whatever ranks highest today. Daylight, which the system
+          keeps for a single sentence, and never two of them.
+
+          Absent until there is something to say. The standing text was a
+          card reading "nothing to compare yet" sitting above a chart that
+          had already said so, which is two ways of saying nothing where one
+          is plenty.
         */}
-        <Tile span={2} emphasis style={t.lead}>
-          {today.kicker ? <Text style={[font('caption1'), t.leadEyebrow]}>{today.kicker.toUpperCase()}</Text> : null}
-          <Text style={[font('body'), t.leadText]}>{displayCopy(brief.text)}</Text>
-        </Tile>
+        {todayIsPlaceholder ? null : (
+          <Tile span={2} emphasis style={t.lead}>
+            {today.kicker ? <Text style={[font('caption1'), t.leadEyebrow]}>{today.kicker.toUpperCase()}</Text> : null}
+            <Text style={[font('body'), t.leadText]}>{displayCopy(brief.text)}</Text>
+          </Tile>
+        )}
 
         <ListGroup light style={{ marginTop: 12 }}>
           {actions.map((a, n) => (

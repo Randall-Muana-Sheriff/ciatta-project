@@ -12,6 +12,11 @@ export type Data = {
   days: Day[];
   person: { firstName: string } | null;
   today: TodayCopy;
+  // True when today's words are the standing text rather than anything
+  // about her: real mode with no insight written yet. The screen uses it to
+  // leave the space empty instead of filling it with a card that says
+  // nothing has happened.
+  todayIsPlaceholder: boolean;
   records: typeof sample.records | null;
   sleep: typeof sample.sleep | null;
   symptoms: typeof sample.symptoms | null;
@@ -69,6 +74,7 @@ export function dataFor(
       days: loadDays(),
       person: { firstName: sample.person.firstName },
       today: sample.today,
+      todayIsPlaceholder: false,
       records: sample.records,
       sleep: sample.sleep,
       symptoms: sample.symptoms,
@@ -92,6 +98,7 @@ export function dataFor(
       ...REAL_TODAY_TEXT,
       ...(insight ? { headline: insight.headline, kicker: loop?.insight ? sinceCopy(loop.insight.since) : insight.meta } : {}),
     },
+    todayIsPlaceholder: insight == null,
     records: null,
     sleep: null,
     symptoms: null,
