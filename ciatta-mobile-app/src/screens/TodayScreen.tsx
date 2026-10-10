@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
 import { displayCopy } from '../lib/displayCopy';
@@ -6,10 +7,13 @@ import { type CyclePoint, cycleTrend, fmtHours } from '../lib/engine';
 import { type Screen, useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
-import { useData } from '../state/session';
+import { useData, useRepo } from '../state/session';
 import { font, fonts, GUTTER, numeral } from '../theme';
 import { Tile } from '../ui/bento';
-import { L, mark, SPACE, TILE_RADIUS, NAV_CLEARANCE } from '../ui/light';
+import { images } from '../ui/images';
+import { AXIS, buildDay, type DayChart, VIEW } from '../lib/todayChart';
+import type { IntradayPoint } from '../data/repo';
+import { ground, L, mark, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/light';
 import { ListGroup, ListRow } from '../ui/chrome';
 import type { IconName } from '../ui/icons';
 import { Icon } from '../ui/icons';
@@ -81,6 +85,60 @@ function TrendChart({ points }: { points: CyclePoint[] }) {
   );
 }
 
+// The day, drawn the way the concept draws it, on this app's ground.
+//
+// Every stroke is a mark, so each takes a Base step; the wash under the
+// line is the same hue's Tint, which is the one place a tint belongs. The
+// concept drew all of this in white because its screen was Graphite.
+function DayChartView({ day, label }: { day: DayChart; label: string }) {
+  return (
+    <View accessible accessibilityRole="image" accessibilityLabel={label}>
+      <Svg width="100%" height={undefined} viewBox={`0 0 ${VIEW.w} ${VIEW.h}`} style={t.day}>
+        {/* the night she has already had */}
+        {day.asleep.map((a, i) => (
+          <Rect key={i} x={a.x} y={0} width={a.width} height={VIEW.base} rx={2} fill={L.rule} />
+        ))}
+
+        {/* her own usual, across the hours she was awake */}
+        {day.usual ? (
+          <Line
+            x1={day.usual.from}
+            x2={day.usual.to}
+            y1={day.usual.y}
+            y2={day.usual.y}
+            stroke={L.meta}
+            strokeDasharray="1.6 2.4"
+            strokeWidth={0.6}
+          />
+        ) : null}
+        <Line x1={0} x2={VIEW.w} y1={VIEW.base} y2={VIEW.base} stroke={L.rule} strokeWidth={0.6} />
+
+        <Path d={day.area} fill={ground('measured')} />
+        <Path d={day.line} fill="none" stroke={mark('measured')} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* where now is, and the last reading it follows */}
+        <Line x1={day.nowX} x2={day.nowX} y1={VIEW.top - 2} y2={VIEW.rail} stroke={L.rule} strokeWidth={0.6} />
+        <Circle cx={day.points[day.points.length - 1].x} cy={day.points[day.points.length - 1].y} r={2} fill={mark('measured')} />
+
+        {/* what she logged, on its own rail so it does not fight the line */}
+        {day.marks.map((m, i) => (
+          <G key={i}>
+            <Line x1={m.x} x2={m.x} y1={VIEW.base} y2={VIEW.rail} stroke={L.rule} strokeWidth={0.5} />
+            <Circle cx={m.x} cy={VIEW.rail} r={m.r} fill={mark('reported')} />
+          </G>
+        ))}
+      </Svg>
+      <View style={t.axis}>
+        {AXIS.map((a) => (
+          <Text key={a} style={[font('caption2'), t.axisText]}>
+            {a}
+          </Text>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 type Action = { key: string; icon: IconName; title: string; sub?: string; onPress?: () => void };
 
 export function TodayScreen() {
@@ -89,6 +147,58 @@ export function TodayScreen() {
   const { today: brief } = useInsights();
   const { windows } = useCycleInsights();
   const { person, today, days } = useData();
+  const repo = useRepo();
+
+  // Today's measured readings, by the hour they happened. daily_metrics is
+  // one row per day, which cannot draw a day.
+  const [intraday, setIntraday] = useState<IntradayPoint[]>([]);
+  useEffect(() => {
+    const midnight = new Date();
+    midnight.setHours(0, 0, 0, 0);
+    let ignore = false;
+    repo
+      .loadIntraday(midnight.toISOString())
+      .then((rows) => {
+        if (!ignore) setIntraday(rows);
+      })
+      .catch(() => {
+        // No chart rather than an invented one.
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [repo]);
+
+  // Today's own row, when there is one. days arrives oldest first.
+  const todayDay = useMemo(() => {
+    const iso = new Date();
+    const key = `${iso.getFullYear()}-${String(iso.getMonth() + 1).padStart(2, '0')}-${String(iso.getDate()).padStart(2, '0')}`;
+    return days.find((d) => d.date === key) ?? null;
+  }, [days]);
+
+  // The day, built only from what arrived. buildDay returns null when there
+  // is not enough to draw, which is the honest state on a first morning.
+  const day = useMemo(() => {
+    const readings = intraday
+      .filter((r) => r.metric === 'heart_rate' && r.value != null)
+      .map((r) => ({ at: new Date(r.at), value: r.value as number }));
+    const sleepEnds = intraday.filter((r) => r.metric === 'sleep_analysis').map((r) => new Date(r.at));
+    const woke = sleepEnds.length ? new Date(Math.max(...sleepEnds.map((d) => d.getTime()))) : null;
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    // Her own usual for this metric, from her own history and nowhere else.
+    const restingHistory = days.map((d) => d.restingHR).filter((v): v is number => v != null);
+    const usual = restingHistory.length >= 3
+      ? restingHistory.reduce((a, b) => a + b, 0) / restingHistory.length
+      : null;
+    return buildDay({
+      readings,
+      asleep: woke ? [{ from: startOfDay, to: woke }] : [],
+      marks: [],
+      usual,
+      now: new Date(),
+    });
+  }, [intraday, days]);
   const go = (screen: Screen) => () => nav.push(screen);
   const now = new Date();
 
@@ -140,23 +250,69 @@ export function TodayScreen() {
   return (
     <ScrollView style={t.fill} contentContainerStyle={t.body}>
       {/*
-        The date, the day's line, and who is being spoken to. Same three
-        pieces as before, set as a masthead now that there is no photograph
-        behind them to compete with.
+        The concept's shape: the mark sits alone at the top of the screen
+        and the day introduces itself underneath.
       */}
+      <View style={t.wordmarkRow}>
+        <Image
+          source={images.wordmark}
+          style={t.wordmark}
+          resizeMode="contain"
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel="Ciatta"
+        />
+      </View>
+
       <View style={t.pad}>
-        <Text style={[font('caption1'), t.eyebrow]}>
-          {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase()}
-        </Text>
-        <Text style={[font('largeTitle'), t.headline]} accessibilityRole="header">
-          {displayCopy(today.headline)}
-        </Text>
-        <Text style={[font('body'), t.greeting]}>
+        <Text style={[font('title2'), t.hello]} accessibilityRole="header">
           {displayCopy(person ? `${greeting(now)}, ${person.firstName}.` : `${greeting(now)}.`)}
         </Text>
 
+        {/*
+          Today's patterns: the day itself, or a plain line saying there is
+          not enough of it yet. A chart drawn from one reading would be a
+          shape Ciatta chose rather than one she produced.
+        */}
+        <View style={t.dayCard}>
+          <View style={t.dayHead}>
+            <Text style={[font('caption1'), t.dayHeadText]}>TODAY&rsquo;S PATTERNS</Text>
+            <Text style={[font('caption1'), t.dayHeadText]}>
+              {now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
+            </Text>
+          </View>
+          {day ? (
+            <DayChartView
+              day={day}
+              label={`Your heart rate through today, ${day.points.length} readings between ${day.low.toFixed(0)} and ${day.high.toFixed(0)}.`}
+            />
+          ) : (
+            <Text style={[font('subhead'), t.dayEmpty]}>
+              Not enough readings today to draw your day yet. Ciatta will fill this in as your devices record.
+            </Text>
+          )}
+        </View>
+
         {/* The chart, then the daily brief written from whatever ranks highest. */}
         <View style={t.card}>
+        {/*
+          Three figures from today, as the concept has them. Each is the
+          value actually recorded; a figure with nothing behind it says so
+          rather than showing a dash that reads as zero.
+        */}
+        <View style={t.pills}>
+          {[
+            ['Sleep', todayDay?.sleepHours != null ? fmtHours(todayDay.sleepHours) : null],
+            ['HRV', todayDay?.hrv != null ? `${Math.round(todayDay.hrv)} ms` : null],
+            ['Steps', todayDay?.steps != null ? Math.round(todayDay.steps).toLocaleString('en-US') : null],
+          ].map(([label, value]) => (
+            <View key={label as string} style={t.pill}>
+              <Text style={[font('caption1'), t.pillLabel]}>{(label as string).toUpperCase()}</Text>
+              <Text style={[font('headline'), value ? t.pillValue : t.pillNone]}>{value ?? 'Not yet'}</Text>
+            </View>
+          ))}
+        </View>
+
         {points.length >= 2 ? (
           <>
             <Pressable
@@ -235,9 +391,34 @@ const t = StyleSheet.create({
   pad: { paddingHorizontal: GUTTER },
   pressed: { opacity: 0.6 },
   section: { marginTop: 28 },
-  eyebrow: { color: L.meta, letterSpacing: 1.1 },
-  headline: { color: L.ink, letterSpacing: -0.8, marginTop: 6 },
-  greeting: { color: L.body, marginTop: SPACE.tight },
+  // The mark alone at the top, as the concept has it.
+  wordmarkRow: { alignItems: 'center', paddingTop: 6, paddingBottom: 18 },
+  wordmark: { width: 74, height: 22, tintColor: L.ink },
+  hello: { color: L.ink, letterSpacing: -0.4 },
+
+  dayCard: {
+    marginTop: SPACE.near,
+    backgroundColor: L.recessed,
+    borderRadius: TILE_RADIUS,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 10,
+  },
+  dayHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+  dayHeadText: { color: L.meta, letterSpacing: 0.9 },
+  // The viewBox is 132 by 40, so the box it draws into keeps that ratio
+  // and the geometry is never stretched.
+  day: { width: '100%', aspectRatio: 132 / 40 },
+  dayEmpty: { color: L.body, lineHeight: 21, paddingVertical: 10 },
+  axis: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 },
+  axisText: { color: L.meta },
+
+  pills: { flexDirection: 'row', gap: SPACE.grid, marginTop: SPACE.grid },
+  pill: { flex: 1, backgroundColor: L.recessed, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 12, gap: 2 },
+  pillLabel: { color: L.meta, letterSpacing: 0.9 },
+  pillValue: { color: L.ink },
+  // A figure she has not produced today reads as absent, not as zero.
+  pillNone: { color: L.meta },
   lead: { marginTop: SPACE.block },
   leadEyebrow: { color: L.meta, letterSpacing: 1.1 },
   leadText: { color: L.ink, lineHeight: 25, marginTop: 6 },

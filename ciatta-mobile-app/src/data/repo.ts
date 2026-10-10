@@ -96,7 +96,17 @@ export type Repo = {
   // stored there untouched, rather than clearing it.
   saveSourceStatus(kind: DbSourceKind, status: DbSourceStatus, lastSyncedAt?: string): Promise<void>;
   firstName(): Promise<string | null>;
+  // Today's measured readings, by the hour they happened.
+  //
+  // daily_metrics holds one row per day, which is the wrong shape for a
+  // chart of a day. These come from observations, which carry the time each
+  // sample was taken, so the line is drawn where readings actually are.
+  loadIntraday(sinceIso: string): Promise<IntradayPoint[]>;
 };
+
+// One measured sample with the moment it was taken. value_text carries the
+// sleep stage for sleep_analysis, where there is no number to plot.
+export type IntradayPoint = { metric: string; value: number | null; valueText: string | null; at: string };
 
 export type StartAction = {
   kind: string;
@@ -147,7 +157,29 @@ export function demoRepo(): Repo {
     dismissRecommendation: async () => {},
     saveSourceStatus: async () => {},
     firstName: async () => person.firstName,
+    // The example person's day. Demo is explicitly not her record, so a
+    // drawn day here is an illustration rather than a claim.
+    loadIntraday: async () => sampleIntraday(),
   };
+}
+
+// A plausible day for the example person: a night, then a heart rate that
+// rises through the morning and settles after lunch. Deterministic, so the
+// demo screen does not change shape between launches.
+function sampleIntraday(): IntradayPoint[] {
+  const base = new Date();
+  const at = (h: number, m = 0) => {
+    const d = new Date(base);
+    d.setHours(h, m, 0, 0);
+    return d.toISOString();
+  };
+  const hr: [number, number][] = [
+    [7, 62], [8, 68], [9, 74], [10, 71], [11, 69], [12, 73], [13, 70], [14, 66], [15, 64], [16, 63],
+  ];
+  return [
+    { metric: 'sleep_analysis', value: null, valueText: 'asleep_core', at: at(6, 26) },
+    ...hr.map(([h, v]) => ({ metric: 'heart_rate', value: v, valueText: null, at: at(h) })),
+  ];
 }
 
 function must<T>(res: { data: T; error: unknown }): T {
@@ -378,6 +410,20 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
     async firstName() {
       const row = must(await db.from('profiles').select('first_name').eq('id', userId).maybeSingle()) as { first_name: string | null } | null;
       return row?.first_name ?? null;
+    },
+    async loadIntraday(sinceIso) {
+      // Only the two metrics the day chart draws, and only today's. Reading
+      // every observation since midnight would pull the whole of Apple
+      // Health's firehose for a chart that plots one line.
+      const rows = must(
+        await db
+          .from('observations')
+          .select('metric, value, value_text, occurred_at')
+          .in('metric', ['heart_rate', 'sleep_analysis'])
+          .gte('occurred_at', sinceIso)
+          .order('occurred_at'),
+      ) as { metric: string; value: number | null; value_text: string | null; occurred_at: string }[];
+      return rows.map((r) => ({ metric: r.metric, value: r.value, valueText: r.value_text, at: r.occurred_at }));
     },
   };
 }
