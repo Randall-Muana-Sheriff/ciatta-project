@@ -346,10 +346,17 @@ export function SignInScreen() {
         {pane === 'welcome' ? (
           <View style={s.pad}>
             {/*
-              One card and one line under it. White, so it is the single thing
-              on the screen that reads as the way forward: everything else here
-              is footage, and a lone light card on moving darkness is hard to
-              mistake for anything but the next step.
+              Two cards, one solid and one glass. White stays the way forward:
+              on moving darkness a lone light card is hard to mistake for
+              anything but the next step. Login is the same object in glass,
+              which reads as available without competing with it.
+
+              The glass is the recipe the Google card below already uses, and
+              for the same reason: a real frosted pane needs expo-blur, a
+              native module this dev client was not built with, so it is a
+              white wash at low alpha with a brighter hairline edge, set where
+              the white label clears contrast against the brightest frame in
+              the clip rather than at the glassiest value.
             */}
             <Pressable
               onPress={go('signup')}
@@ -357,18 +364,16 @@ export function SignInScreen() {
               accessibilityLabel="Get Started"
               style={({ pressed }) => [s.primaryCard, pressed && s.pressed]}
             >
-              <Text style={[font('headline'), { color: C.bg }]}>Get Started</Text>
+              <Text style={[font('headline', 'bold'), { color: C.bg }]}>Get Started</Text>
             </Pressable>
-            <View style={s.inlineRow}>
-              <Text style={[font('footnote'), { color: C.text }]}>Already have an account?</Text>
-              <Pressable
-                onPress={go('login')}
-                accessibilityRole="button"
-                style={({ pressed }) => [s.inlineHit, pressed && s.pressed]}
-              >
-                <Text style={[font('footnote'), { color: C.tint }]}>Login</Text>
-              </Pressable>
-            </View>
+            <Pressable
+              onPress={go('login')}
+              accessibilityRole="button"
+              accessibilityLabel="Login"
+              style={({ pressed }) => [s.glassCard, pressed && s.pressed]}
+            >
+              <Text style={[font('headline', 'bold'), { color: C.text }]}>Login</Text>
+            </Pressable>
             <View style={s.inlineRow}>
               <Text style={[font('footnote'), { color: C.text }]}>Not ready? See how it works.</Text>
               <Pressable
@@ -522,6 +527,19 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
+  },
+  // Same height, radius and padding as the card above it, so the pair reads
+  // as two of one thing rather than a button and a link.
+  glassCard: {
+    height: 50,
+    borderRadius: RADIUS,
+    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255, 255, 255, 0.28)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    marginTop: 12,
   },
   buttons: { gap: 12, marginTop: 20 },
   apple: { height: 50 },
