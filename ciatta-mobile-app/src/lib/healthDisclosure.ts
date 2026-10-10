@@ -1,4 +1,4 @@
-// What Ciatta reads from Apple Health, in twenty words.
+// What Ciatta reads from Apple Health, in one sentence of twenty words.
 //
 // This stopped listing categories, and the reason is worth keeping. Reading
 // every metric took the list from three categories to eight, and eight
@@ -16,9 +16,6 @@
 // The enumeration still exists where she can act on it: Apple's sheet names
 // every type with a real toggle, one tap after this screen.
 
-export function healthDisclosureLines(): string[] {
-  return [
-    'Ciatta reads every health metric Apple Health records.',
-    'It compares your week to your own usual, never to anybody else.',
-  ];
+export function healthDisclosureParagraph(): string {
+  return 'Ciatta reads every health metric Apple Health records, and compares your week to your own usual, never to anybody else.';
 }

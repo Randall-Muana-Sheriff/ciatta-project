@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { healthDisclosureLines } from './healthDisclosure';
+import { healthDisclosureParagraph } from './healthDisclosure';
 import { QUANTITY_SPECS } from './healthMetrics';
 
 // ── The claim, checked ────────────────────────────────────────────────
@@ -41,38 +41,39 @@ test('no spec reads a type the library does not offer', () => {
 
 // ── What she actually reads ───────────────────────────────────────────
 
-test('the disclosure is twenty words', () => {
-  // Asserted because it is the whole brief. Copy grows a clause at a time,
+test('the disclosure is one sentence of twenty words', () => {
+  // Both asserted because both are the brief. Copy grows a clause at a time,
   // and the next clause is always the reasonable one.
-  const words = healthDisclosureLines().join(' ').split(/\s+/).filter(Boolean);
+  const p = healthDisclosureParagraph();
+  const words = p.split(/\s+/).filter(Boolean);
   assert.equal(words.length, 20, `the disclosure is ${words.length} words`);
+  assert.equal(p.split('. ').length, 1, 'the disclosure grew a second sentence');
+  assert.equal(p.indexOf('.'), p.length - 1, 'the only full stop is the last character');
 });
 
 test('the disclosure says what is read and what it is for', () => {
   // Short is not the only requirement. Dropping either half would hit the
   // word count and lose the point.
-  const all = healthDisclosureLines().join(' ');
+  const all = healthDisclosureParagraph();
   assert.ok(/every health metric/.test(all), 'it never says how much is read');
   assert.ok(/compares your week to your own usual/.test(all), 'it never says what the data is for');
   assert.ok(/never to anybody else/.test(all), 'it never says the comparison is to her alone');
 });
 
-test('each line is a line, with no dash of any kind', () => {
-  for (const line of healthDisclosureLines()) {
-    assert.ok(line.length > 0, 'an empty line');
-    assert.ok(!line.includes('\n'), 'a line contains a break of its own');
-    assert.ok(!/\s\s/.test(line), 'a missing clause left a double space');
-    assert.equal(line.trim(), line, 'a line is padded');
-    for (const dash of ['—', '–', '-']) {
-      assert.ok(!line.includes(dash), `"${line}" contains ${dash}`);
-    }
+test('it is one continuous paragraph, with no dash of any kind', () => {
+  const p = healthDisclosureParagraph();
+  assert.ok(!p.includes('\n'), 'the paragraph was broken into lines');
+  assert.ok(!/\s\s/.test(p), 'a missing clause left a double space');
+  assert.equal(p.trim(), p, 'the paragraph is padded');
+  for (const dash of ['\u2014', '\u2013', '-']) {
+    assert.ok(!p.includes(dash), `the paragraph contains ${dash}`);
   }
 });
 
 test('nothing narrates the sheet or claims a finding', () => {
   // It renders before a single sample has been read, and Apple's sheet
   // arrives a moment later to describe itself.
-  const all = healthDisclosureLines().join(' ').toLowerCase();
+  const all = healthDisclosureParagraph().toLowerCase();
   for (const claim of ['apple asks', 'diagnos', 'detects', 'predicts', 'proves', 'means you']) {
     assert.ok(!all.includes(claim), `the disclosure says too much: ${claim}`);
   }

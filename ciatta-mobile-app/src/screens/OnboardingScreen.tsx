@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { connectAppleHealth } from '../lib/connectHealth';
 import { useDictation } from '../lib/dictation';
 import { displayCopy } from '../lib/displayCopy';
-import { healthDisclosureLines } from '../lib/healthDisclosure';
+import { healthDisclosureParagraph } from '../lib/healthDisclosure';
 import {
   AGE_RANGES,
   type AgeRange,
@@ -732,11 +732,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             <Text style={[font('title1'), s.titleCentre]} accessibilityRole="header">
               Connect Apple Health
             </Text>
-            {healthDisclosureLines().map((line) => (
-              <Text key={line} style={[font('subhead'), s.connectLede]}>
-                {displayCopy(line)}
-              </Text>
-            ))}
+            <Text style={[font('subhead'), s.connectLede]}>{displayCopy(healthDisclosureParagraph())}</Text>
 
             <Pressable
               onPress={onConnectHealth}
