@@ -2,30 +2,24 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-// The order the connect sequence runs in, asserted against the source.
+// What the connect sequence may and may not do, asserted against the source.
 //
 // connectHealth.ts imports the HealthKit native module, so it cannot be
 // loaded in node and the sequence cannot be exercised here. Reading the file
-// is a blunt instrument and it is the right one for this: the bug it guards
-// shipped once, and it was invisible in every unit test because it was not a
-// wrong value anywhere, only two correct calls in the wrong order.
+// is a blunt instrument and the right one for this: the bug it guards
+// shipped twice, and both times it was invisible to every unit test because
+// nothing held a wrong value. The sequence simply did the right things in an
+// order that stopped Apple's sheet from ever appearing.
 
 const SOURCE = readFileSync('src/lib/connectHealth.ts', 'utf8');
 
-test('the permission request goes out before the caller is told no sheet is coming', () => {
-  // The bug: onAskState fires first, the screen opens the Health app on a
-  // false, Ciatta is backgrounded, and the sheet she was waiting for never
-  // gets asked for. Apple's sheet is the only thing that can grant access,
-  // so nothing may come between the tap and the request.
-  const request = SOURCE.indexOf('await requestHealthPermission()');
-  const ask = SOURCE.indexOf('onAskState?.(willAsk)');
-
-  assert.ok(request > 0, 'the permission request is gone');
-  assert.ok(ask > 0, 'the ask state callback is gone');
-  assert.ok(
-    request < ask,
-    'onAskState runs before requestHealthPermission, so the caller can background the app before iOS is asked',
-  );
+test('nothing navigates away from Ciatta during a connect', () => {
+  // The regression this guards shipped twice. Opening the Health app when no
+  // sheet is coming backgrounds Ciatta, and the button that exists to raise
+  // Apple's sheet stops raising it. If a route out of the app is wanted
+  // again, it belongs after the attempt and behind something she taps.
+  assert.ok(!/openURL|openSettings/.test(SOURCE), 'the connect sequence navigates away on its own');
+  assert.ok(!/onAskState/.test(SOURCE), 'the callback that drove the navigation is back');
 });
 
 test('the request is not made conditional on willAsk', () => {

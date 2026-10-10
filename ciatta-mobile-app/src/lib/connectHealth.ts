@@ -22,10 +22,6 @@ export type ConnectHealthDeps = {
   // Progress and outcome copy, as it should appear on screen. Called several
   // times; the last call is the outcome.
   onNote: (note: string) => void;
-  // False when iOS will not raise its sheet, because she answered before.
-  // The caller uses it to send her to the Health app, which is the only
-  // place the answer can still be changed.
-  onAskState?: (willAsk: boolean) => void;
 };
 
 // What actually arrived, for the screen to show her.
@@ -57,7 +53,7 @@ export type ConnectHealthResult = {
 };
 
 export async function connectAppleHealth(deps: ConnectHealthDeps): Promise<ConnectHealthResult> {
-  const { userId, saveStatus, onNote, onAskState } = deps;
+  const { userId, saveStatus, onNote } = deps;
 
   onNote('Checking whether Apple Health is available.');
 
@@ -69,8 +65,10 @@ export async function connectAppleHealth(deps: ConnectHealthDeps): Promise<Conne
     return { ...outcome, connected: false, imported: null };
   }
 
-  // Whether iOS still has a question to put to her. Read before asking,
-  // because afterwards the answer is always no, but acted on only after.
+  // Whether iOS still has a question to put to her. Reported in the note,
+  // and nothing navigates away on it: taking her to the Health app on a
+  // false meant the button stopped raising the sheet at all, which is the
+  // one thing this screen exists to do.
   const willAsk = await healthPermissionWillAsk();
   onNote(
     willAsk
@@ -78,26 +76,15 @@ export async function connectAppleHealth(deps: ConnectHealthDeps): Promise<Conne
       : 'You answered this before, so Apple will not ask again.',
   );
 
-  // The request goes out first, always, whatever willAsk said.
+  // The request goes out, always, whatever willAsk said.
   //
-  // This used to run after onAskState, and that ordering was a bug with a
-  // plain symptom: the caller opens the Health app when no sheet is coming,
-  // so Ciatta was backgrounded before the sheet was ever asked for, and the
-  // sheet she was waiting on could not appear. It also trusted willAsk to be
-  // right, and willAsk reports unknown as no, so any uncertainty sent her
-  // away rather than letting iOS decide.
-  //
-  // iOS is the only thing that actually knows. Asking is free when there is
-  // nothing to ask, and when a new type has been added since she last
-  // answered, which is exactly what happened when this build went from
-  // twelve metrics to a hundred and twenty, the sheet comes up again for the
-  // undetermined ones. Calling it unconditionally is what makes that work.
+  // iOS is the only thing that actually knows whether a sheet is due, and it
+  // decides per type: when a type has been added since she last answered,
+  // which is what happened when this build went from twelve metrics to a
+  // hundred and ninety one, the sheet comes back up for the undetermined
+  // ones. Calling it unconditionally is what makes that work, and willAsk
+  // reports unknown as no, so a guard here would also fail closed.
   const permission = await requestHealthPermission();
-
-  // Only now, once iOS has had its chance. The caller uses this to open the
-  // Health app, which is the only place an answer already given can be
-  // changed, and doing it before the request is what broke it.
-  onAskState?.(willAsk);
   if (!permission.granted) {
     // Refused is recorded, not left blank. A woman who said no has said
     // something, and the record should be able to tell that apart from never

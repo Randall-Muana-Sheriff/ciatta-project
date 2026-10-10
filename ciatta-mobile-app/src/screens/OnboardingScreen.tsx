@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Appearance, Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Appearance, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { connectAppleHealth } from '../lib/connectHealth';
@@ -360,14 +360,6 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         // while it happened, and what she sees instead is the button reading
         // Connecting, which says the same thing without a sentence.
         onNote: () => {},
-        // iOS raises its sheet once per type per install. When it will not,
-        // the Health app is the only place the answer can still be changed,
-        // so she is taken there rather than left tapping a button that
-        // cannot do anything. A first time sign up never takes this path:
-        // on a fresh install the sheet always comes up.
-        onAskState: (willAsk) => {
-          if (!willAsk) void Linking.openURL('x-apple-health://').catch(() => {});
-        },
       });
       setSourceNote(result.connected ? '' : result.message);
       setImported(importSummaryLine(result.imported));
