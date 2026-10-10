@@ -250,6 +250,15 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
         );
       }
 
+      // The name she gave wins over the one the sign in trigger copied out of
+      // her Google or Apple account. The email authenticates her; it does not
+      // get to decide what she is called.
+      //
+      // Only written when she actually typed one. An empty string over the
+      // provider's name would leave a woman who skipped the question with no
+      // name at all, which is worse than a name she did not choose.
+      const name = a.name.trim();
+
       // The profile last, and onboarded_at with it. If any write above threw,
       // this one never runs and onboarded_at stays null, so the next launch
       // resumes the first session rather than dropping her into a Today built
@@ -258,6 +267,7 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
         await db
           .from('profiles')
           .update({
+            ...(name ? { first_name: name } : {}),
             onboarded_at: now,
             onboarding: {
               intents: a.intents,

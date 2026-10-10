@@ -15,6 +15,11 @@ type SessionValue = {
   userId: string | null;
   repo: Repo | null;
   firstName: string | null;
+  // Read first_name again. Needed once, at the end of onboarding: the load
+  // below is keyed on the repo, which does not change when she renames
+  // herself, so without this Today would greet her by the account name she
+  // just replaced until the next launch.
+  reloadFirstName: () => Promise<void>;
   days: Day[];
   insight: InsightView | null;
   loop: TodayLoop | null;
@@ -50,6 +55,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const userId = session?.user.id ?? null;
   const repo = useMemo(() => (demo ? demoRepo() : userId ? realRepo(supabase, userId) : null), [demo, userId]);
   const mode: Mode = demo ? 'demo' : session === undefined ? 'loading' : userId ? 'real' : 'signedOut';
+
+  const reloadFirstName = useCallback(async () => {
+    if (!repo) return;
+    try {
+      setFirstName(await repo.firstName());
+    } catch {
+      // A failed read leaves the name as it was. The greeting is not worth
+      // an error on screen.
+    }
+  }, [repo]);
 
   useEffect(() => {
     let ignore = false;
@@ -138,6 +153,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       userId,
       repo,
       firstName,
+      reloadFirstName,
       days,
       insight,
       loop,
@@ -148,7 +164,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         else await supabase.auth.signOut();
       },
     }),
-    [mode, userId, repo, firstName, days, insight, loop, reloadLoop, demo],
+    [mode, userId, repo, firstName, reloadFirstName, days, insight, loop, reloadLoop, demo],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

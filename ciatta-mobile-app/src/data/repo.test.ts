@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { addDays, emptyForm, formToEpisode, isoDay } from './cycleLog';
+import { emptyAnswers } from '../lib/onboarding';
 import { demoRepo, realRepo } from './repo';
 import { episodeToRow } from './rows';
 import { journal, sources } from './sample';
@@ -180,6 +181,43 @@ test('saveSourceStatus without a synced time leaves last_synced_at out, rather t
   const { db, upserts } = fakeUpsertDb();
   await realRepo(db, 'user-a').saveSourceStatus('apple_health', 'refused');
   assert.equal('last_synced_at' in upserts[0].payload, false, 'an existing last_synced_at must not be nulled out by a status only update');
+});
+
+// ── completeOnboarding and the name ──────────────────────────────
+
+type UpdateCall = { table: string; payload: Record<string, unknown> };
+
+function fakeUpdateDb() {
+  const updates: UpdateCall[] = [];
+  const from = (table: string) => ({
+    insert: async () => ({ data: null, error: null }),
+    update: (payload: Record<string, unknown>) => ({
+      eq: async () => {
+        updates.push({ table, payload });
+        return { data: null, error: null };
+      },
+    }),
+  });
+  return { db: { from } as unknown as SupabaseClient, updates };
+}
+
+test('the name she typed becomes the name the app calls her, not the one on her email', async () => {
+  const { db, updates } = fakeUpdateDb();
+  await realRepo(db, 'user-a').completeOnboarding({ ...emptyAnswers(), name: '  Jenny  ' });
+  const profile = updates.find((u) => u.table === 'profiles');
+  assert.ok(profile, 'onboarding finished without writing the profile');
+  assert.equal(profile.payload.first_name, 'Jenny', 'the typed name never reached first_name');
+});
+
+test('skipping the name leaves first_name alone rather than blanking it', async () => {
+  // The sign in trigger seeds first_name from the provider. Writing an empty
+  // string over it would lose the only name available to a woman who skipped
+  // the question, which is worse than the provider's version of her name.
+  const { db, updates } = fakeUpdateDb();
+  await realRepo(db, 'user-a').completeOnboarding({ ...emptyAnswers(), name: '   ' });
+  const profile = updates.find((u) => u.table === 'profiles');
+  assert.ok(profile);
+  assert.equal('first_name' in profile.payload, false, 'a skipped name overwrote the stored one');
 });
 
 test('demo mode has no loop and its loop writes are no ops', async () => {

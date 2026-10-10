@@ -192,7 +192,7 @@ function cycleFromChoice(label: string, a: Answers): Partial<Answers> {
 
 export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   const repo = useRepo();
-  const { userId } = useSession();
+  const { userId, reloadFirstName } = useSession();
   const insets = useSafeAreaInsets();
   const [a, setA] = useState<Answers>(emptyAnswers());
   const [i, setI] = useState(0);
@@ -245,6 +245,9 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
     setError('');
     try {
       await repo.completeOnboarding(a);
+      // The greeting reads the name she just set rather than the one the sign
+      // in copied off her account.
+      await reloadFirstName();
       onDone();
     } catch {
       // Her answers stay on screen. A failed save must not look like a
@@ -324,6 +327,35 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
       >
         <Dots index={i - 1} total={steps.length - 1} />
 
+
+        {/*
+          Her name, and the first question she is asked. The account's name is
+          not used: on a Google or Apple sign in it is whatever the account
+          holder typed, often a full legal name, and greeting her with it every
+          morning would be the app talking to a stranger. One field, no
+          surname, because nothing in Ciatta needs one.
+        */}
+        {step === 'name' ? (
+          <View>
+            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+              What may I call you?
+            </Text>
+            <Text style={[font('subhead'), s.sub]}>Whatever you actually go by.</Text>
+            <TextInput
+              value={a.name}
+              onChangeText={(t) => set({ name: t })}
+              placeholder="Your name"
+              placeholderTextColor={MUTED}
+              autoCapitalize="words"
+              autoComplete="given-name"
+              autoCorrect={false}
+              returnKeyType="done"
+              onSubmitEditing={next}
+              style={[font('body'), s.input]}
+              accessibilityLabel="What may I call you"
+            />
+          </View>
+        ) : null}
 
         {step === 'intent' ? (
           <View>

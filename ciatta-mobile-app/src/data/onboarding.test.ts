@@ -119,11 +119,43 @@ test('she is asked about her cycle when that is what she came for, even with no 
   assert.ok(cycleIsRelevant(answers({ intents: ['cycle'] })));
 });
 
-test('the sequence is six screens, opening on the promise and closing on the reflection', () => {
+test('the sequence opens on the promise and closes on the reflection', () => {
   const s = stepsFor(answers());
-  assert.deepEqual(s, ['welcome', 'intent', 'tell', 'snapshot', 'connect', 'reflect']);
+  assert.deepEqual(s, ['welcome', 'name', 'intent', 'tell', 'snapshot', 'connect', 'reflect']);
   assert.equal(s[0], 'welcome', 'the first session must open with the promise, not a question');
   assert.equal(s[s.length - 1], 'reflect', 'she must be shown what Ciatta made of it');
+});
+
+test('her name is the first thing asked, before anything about her health', () => {
+  // Her email is how she authenticates. The name on it belongs to whoever set
+  // the account up, which on a Google sign in is a legal name she may not use
+  // and did not choose for this. Asking is the only way to get the name she
+  // wants Ciatta to call her.
+  const s = stepsFor(answers());
+  assert.equal(s[1], 'name', 'Begin must lead straight to the name question');
+  assert.ok(s.indexOf('name') < s.indexOf('intent'), 'a health question came before her name');
+});
+
+test('the name she gives is read back to her as her own report', () => {
+  const r = buildReflection(answers({ name: '  Jenny  ' }));
+  const line = r.known.find((k) => k.label === 'Name');
+  assert.ok(line, 'the name she typed never appeared in what Ciatta knows');
+  assert.equal(line.value, 'Jenny', 'the name was stored with her whitespace');
+  assert.equal(line.source, 'reported');
+});
+
+test('no name means no name line, rather than a blank one', () => {
+  const r = buildReflection(answers({ name: '   ' }));
+  assert.equal(r.known.find((k) => k.label === 'Name'), undefined);
+});
+
+test('tapping her name on the reflection reopens the name question', () => {
+  assert.equal(correctionTarget(answers({ name: 'Jenny' }), 'Name'), 'name');
+});
+
+test('a name on its own is enough to have told Ciatta something', () => {
+  assert.ok(hasAnything(answers({ name: 'Jenny' })));
+  assert.ok(!hasAnything(answers({ name: '  ' })), 'whitespace counted as an answer');
 });
 
 test('the tags come before the open box, so she has a frame to write against', () => {

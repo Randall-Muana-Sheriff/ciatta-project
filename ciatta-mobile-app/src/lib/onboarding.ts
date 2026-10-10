@@ -75,6 +75,7 @@ export const LIFE_STAGES: { id: LifeStage; label: string }[] = [
 // her tap Continue between them was pacing, not progress.
 export type StepId =
   | 'welcome'
+  | 'name'
   | 'intent'
   | 'tell'
   | 'snapshot'
@@ -82,6 +83,15 @@ export type StepId =
   | 'reflect';
 
 export type Answers = {
+  // What she wants Ciatta to call her.
+  //
+  // Asked rather than taken from the account, and the distinction matters.
+  // The email is how she proves who she is; the name attached to it was set
+  // by whoever created the Google or Apple account, which is often a legal
+  // name she does not use and never chose for this. Personalisation runs on
+  // this field alone, so an account whose name is wrong is still greeted
+  // right.
+  name: string;
   // Her own words, kept verbatim. This is the one answer that is never turned
   // into a checkbox: it goes to raw_inputs as she said it.
   opening: string;
@@ -107,6 +117,7 @@ export type Answers = {
 
 export function emptyAnswers(): Answers {
   return {
+    name: '',
     opening: '',
     openingMode: null,
     intents: [],
@@ -138,7 +149,7 @@ export function emptyAnswers(): Answers {
 // section renders. A question that vanishes from a scroll costs her nothing,
 // where a step that vanishes from a count makes the progress indicator jump.
 export function stepsFor(_a: Answers): StepId[] {
-  return ['welcome', 'intent', 'tell', 'snapshot', 'connect', 'reflect'];
+  return ['welcome', 'name', 'intent', 'tell', 'snapshot', 'connect', 'reflect'];
 }
 
 export function cycleIsRelevant(a: Answers): boolean {
@@ -187,6 +198,9 @@ export function buildReflection(a: Answers): Reflection {
   const known: Known[] = [];
   const gaps: Gap[] = [];
 
+  if (a.name.trim()) {
+    known.push({ label: 'Name', value: a.name.trim(), source: 'reported' });
+  }
   if (a.opening.trim()) {
     known.push({ label: 'In your words', value: a.opening.trim(), source: 'reported' });
   }
@@ -276,6 +290,7 @@ function nextStepFor(a: Answers): string | null {
 // to a blank Today with no explanation.
 export function hasAnything(a: Answers): boolean {
   return (
+    a.name.trim().length > 0 ||
     a.opening.trim().length > 0 ||
     a.intents.length > 0 ||
     a.ageRange !== null ||
@@ -326,6 +341,7 @@ export function consentsFor(marketingEmail: boolean): Consent[] {
 // correction is supposed to change one answer; returning her to question one
 // after she answered nine is the restart the promise rules out.
 const CORRECTION_STEPS: Record<string, StepId> = {
+  Name: 'name',
   'In your words': 'tell',
   'What brought you here': 'intent',
   // Everything below lives on the one snapshot screen now.
