@@ -346,13 +346,27 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
   return (
     <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/*
+        Progress stays at the top; everything she touches goes to the bottom.
+        The dots are read, not tapped, so they keep the one position where
+        they cannot be mistaken for part of the question. Out of the scroll
+        view as well, so they hold still while a long screen moves.
+      */}
+      <View style={[s.header, { paddingTop: insets.top + 24 }]}>
+        <Dots index={i - 1} total={steps.length - 1} />
+      </View>
+
+      {/*
+        Bottom aligned, because the question and its answer belong where her
+        thumb already is. flexGrow with flex end does this without costing the
+        long screens anything: when the content outgrows the viewport the
+        alignment stops applying and it scrolls as before.
+      */}
       <ScrollView
         style={s.fill}
-        contentContainerStyle={[s.body, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 28 }]}
+        contentContainerStyle={[s.body, { paddingBottom: insets.bottom + 28 }]}
         keyboardShouldPersistTaps="handled"
       >
-        <Dots index={i - 1} total={steps.length - 1} />
-
 
         {/*
           Her name, and the first question she is asked. The account's name is
@@ -602,7 +616,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
 const s = StyleSheet.create({
   fill: { flex: 1, backgroundColor: '#FFFFFF' },
-  body: { paddingHorizontal: GUTTER, flexGrow: 1 },
+  body: { paddingHorizontal: GUTTER, flexGrow: 1, justifyContent: 'flex-end', paddingTop: 16 },
   bg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
   welcomeTop: { alignItems: 'center', paddingHorizontal: GUTTER },
   welcomeMid: { flex: 1, justifyContent: 'center', paddingHorizontal: GUTTER },
@@ -636,7 +650,8 @@ const s = StyleSheet.create({
   lede: { color: MUTED, marginTop: 16, lineHeight: 26 },
   quiet: { color: MUTED, marginTop: 14 },
 
-  dots: { flexDirection: 'row', gap: 6, marginBottom: 36 },
+  header: { paddingHorizontal: GUTTER },
+  dots: { flexDirection: 'row', gap: 6 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: LINE },
   dotOn: { backgroundColor: INK },
 
