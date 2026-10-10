@@ -3,64 +3,85 @@ import type { TextStyle } from 'react-native';
 // Apple's dark appearance system colors (HIG › Color) with Ciatta coral as
 // the app accent. The documented values are mirrored here because the charts
 // draw with react-native-svg, which can't resolve PlatformColor.
+// The light surface, from 05.ciatta-design-system-foundations-tokens.
+//
+// Same key names as the dark set they replace, so every screen moved at
+// once without a line of layout or content changing. Mode is a resolution,
+// not a token: a semantic mark is Base on light where it was Dark on
+// Graphite, same hue and same meaning.
+//
+// The paired background and text tokens below are the system's rule made
+// concrete: a tint is a ground at roughly 1.2:1, so the text on it is that
+// hue's Deep step and never anything lighter.
 export const C = {
-  // Grouped backgrounds: primary for the view, secondary for groups,
-  // tertiary for elements inside groups.
-  bg: '#000000',
-  card: '#1C1C1E',
-  cardHi: '#2C2C2E',
-  surface: '#1C1C1E',
-  fill: '#2C2C2E',
-  fillSelected: '#636366',
-  border: '#38383A',
-  borderSub: '#38383A',
-  separator: '#38383A',
+  // Four grounds. Depth is a change of ground, never a stack, which is why
+  // there is no elevation scale here.
+  bg: '#FDFDFC', // White, the default canvas
+  card: '#F7F4EE', // Paper, grouping and secondary panels
+  cardHi: '#EFEBE3', // Paper pressed
+  surface: '#F7F4EE',
+  fill: '#EFEBE3',
+  fillSelected: '#E8E4DC',
+  border: '#E8E4DC', // Mist. Never a text colour.
+  borderSub: '#E8E4DC',
+  separator: '#E8E4DC',
 
-  // Labels. Secondary is 5.8:1 on card, muted 5.2:1, both above 4.5:1.
-  text: '#FFFFFF',
-  secondary: '#98989F',
-  muted: '#8E8E93',
-  tertiary: '#48484A',
-  chevron: '#5A5A5F',
+  // Three inks. 17.3:1, 6.0:1 and 4.5:1 on White.
+  //
+  // muted is the system's amendment rather than the brand's Quiet, which
+  // measures 2.8:1 and fails: a source, a date and a provenance label are
+  // the evidence first promise in its smallest form, not decoration.
+  text: '#18191B', // Graphite
+  secondary: '#5F6265', // Slate
+  muted: '#737577',
+  tertiary: '#A9ABAD', // Inactive, never type that must be read
+  chevron: '#BCBEC0',
 
-  // Accent and chart series.
-  tint: '#F2957A',
-  coral: '#F2957A',
-  lavender: '#A5A3FF',
-  indigo: '#5E5CE6',
-  violet: '#BF5AF2',
-  mint: '#63E6E2',
-  green: '#30D158',
-  red: '#FF453A',
-  gray: '#8E8E93',
+  // The accent is ink. On this ground the eight hues carry meaning, so
+  // spending one of them on "this is tappable" would make the legend lie.
+  tint: '#18191B',
+  blueLink: '#1C35AC', // Sky Deep, the only blue step legible as text
 
-  rose: '#FF6482',
-  blue: '#0A84FF',
-  blueLink: '#F2957A',
-  sleepLine: '#A5A3FF',
+  // The eight meanings at their Base step: lines, points, strokes, marks.
+  coral: '#CD4290', // Rose, what she said, felt or wrote
+  rose: '#CD4290',
+  pink: '#CD4290',
+  lavender: '#915ADB', // Lavender, long horizons
+  indigo: '#915ADB',
+  violet: '#915ADB',
+  blue: '#486FE9', // Sky, anything instrumented
+  mint: '#486FE9',
+  sleepLine: '#486FE9',
+  orange: '#C7702A', // Ember, where something turned
+  orangeText: '#6B3910', // Ember Deep, since this one is read as text
+  amber: '#CD9132', // Amber, ranges and research, never about her
+  gray: '#737577',
 
-  orange: '#FF9F0A',
-  orangeText: '#FF9F0A',
+  // Flare is the anchor and is gated, never casual: refusals and
+  // destructive actions only.
+  red: '#C52D1E',
+  pinkSevere: '#C52D1E',
+  pinkMild: '#FCDAE8', // Rose Tint, a ground
 
-  pink: '#FF375F',
-  pinkMild: '#8A2A45',
-  pinkSevere: '#FF453A',
+  // Grounds and the text that sits on them, paired so the pairing cannot
+  // be got wrong at a call site.
+  amberBg: '#FCE0BB',
+  amberBorder: '#F0CF9A',
+  amberInk: '#5F4110', // Amber Deep
+  lowBg: '#F8E3AC', // Mustard Tint, a gap
+  lowText: '#574610', // Mustard Deep
+  loggedBg: '#FCDAE8', // Rose Tint, reported
+  loggedInk: '#7C1653', // Rose Deep
+  measuredBg: '#DBE5FC', // Sky Tint, instrumented
+  measuredText: '#1C35AC', // Sky Deep
+  labBg: '#FCE0BB', // Amber Tint: a lab result is research, not her
+  labText: '#5F4110', // Amber Deep
 
-  amber: '#FFD60A',
-  amberBg: '#2A2505',
-  amberBorder: '#3D3508',
-  amberInk: '#E6D38A',
-
-  inBg: '#0E2C17',
-  inText: '#30D158',
-  lowBg: '#2E2208',
-  lowText: '#FF9F0A',
-
-  loggedBg: '#5A1F3A',
-  measuredBg: '#0B2540',
-  measuredText: '#64D2FF',
-  labBg: '#0E2C17',
-  labText: '#30D158',
+  // In range is not one of the eight meanings, so it carries no hue. A
+  // reading that is where it usually is does not need a colour to say so.
+  inBg: '#F7F4EE',
+  inText: '#5F6265',
+  green: '#5F6265',
 
   white: '#FFFFFF',
 } as const;
@@ -107,16 +128,16 @@ export function numeral(size: number, weight: Weight = 'semibold'): TextStyle {
 // The eight meanings from the Ciatta design system, at their Dark step (the
 // base re-lit for a dark ground). Colour carries meaning, never decoration.
 export const M = {
-  measured: '#789AF3', // Sky: anything instrumented
-  timeDepth: '#B188F3', // Lavender: long horizons, receded periods
-  reported: '#F46EB4', // Rose: what she said, felt or wrote
-  escalation: '#EC5D4A', // Flare: gated, never casual
-  change: '#EC9658', // Ember: where something turned, and every relationship
-  evidence: '#F2B863', // Amber: ranges and research, never about her
-  uncertainty: '#E4C058', // Mustard: a gap, always drawn dashed
-  attention: '#CECB47', // Citron: worth raising, marks only
-  historical: '#83868D',
-  unlit: '#3A3E47',
+  measured: '#486FE9', // Sky: anything instrumented
+  timeDepth: '#915ADB', // Lavender: long horizons, receded periods
+  reported: '#CD4290', // Rose: what she said, felt or wrote
+  escalation: '#C52D1E', // Flare: gated, never casual
+  change: '#C7702A', // Ember: where something turned, and every relationship
+  evidence: '#CD9132', // Amber: ranges and research, never about her
+  uncertainty: '#D2AC3A', // Mustard: a gap, always drawn dashed
+  attention: '#D5D244', // Citron: worth raising, marks only
+  historical: '#A9ABAD',
+  unlit: '#E8E4DC',
 } as const;
 
 // iPhone layout margin and the corner radius shared by cards and groups.

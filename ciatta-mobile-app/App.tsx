@@ -8,7 +8,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Appearance, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Root } from './src/Root';
@@ -68,6 +68,15 @@ function Gate() {
 }
 
 export default function App() {
+  // Info.plist forces dark so the record's system UI matched it. The app is
+  // on the light surface now, and this is what makes iOS draw its own
+  // pieces to match: keyboards, menus, and Apple's HealthKit sheet, which
+  // is drawn by iOS in the app's interface style and cannot be styled any
+  // other way.
+  useEffect(() => {
+    Appearance.setColorScheme('light');
+  }, []);
+
   const [loaded, error] = useFonts({
     Jost_400Regular,
     Jost_400Regular_Italic,
@@ -87,7 +96,9 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
+      {/* The whole app is on the light surface now. The welcome
+          screen overrides this back to light for its photograph. */}
+      <StatusBar style="dark" />
       <SessionProvider>
         <Gate />
       </SessionProvider>

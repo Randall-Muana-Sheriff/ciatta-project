@@ -110,7 +110,7 @@ const TONES: Record<Tone, { bg: string; fg: string }> = {
   orange: { bg: '#3A2410', fg: C.orange },
   in: { bg: C.inBg, fg: C.inText },
   low: { bg: C.lowBg, fg: C.lowText },
-  logged: { bg: C.loggedBg, fg: C.white },
+  logged: { bg: C.loggedBg, fg: C.loggedInk },
   measured: { bg: C.measuredBg, fg: C.measuredText },
   lab: { bg: C.labBg, fg: C.labText },
 };

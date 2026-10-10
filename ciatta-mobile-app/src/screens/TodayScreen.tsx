@@ -1,4 +1,3 @@
-import { StatusBar } from 'expo-status-bar';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
@@ -140,11 +139,6 @@ export function TodayScreen() {
 
   return (
     <ScrollView style={t.fill} contentContainerStyle={t.body}>
-      {/*
-        The app sets light status bar content for the dark record. On a
-        white page that paints the clock and the battery white on white.
-      */}
-      <StatusBar style="dark" />
       {/*
         The date, the day's line, and who is being spoken to. Same three
         pieces as before, set as a masthead now that there is no photograph

@@ -79,7 +79,7 @@ export function BodyMap({ selected, onToggle }: { selected: string[]; onToggle: 
           {regions.map((r) => {
             const on = selected.includes(r.location);
             const paint = {
-              fill: on ? C.coral : C.white,
+              fill: on ? C.coral : C.bg,
               fillOpacity: on ? 0.7 : 0.001,
               stroke: on ? C.coral : C.tertiary,
               strokeWidth: 1,

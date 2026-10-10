@@ -87,7 +87,7 @@ function Glow({ x, y, color }: { x: number; y: number; color: string }) {
   return (
     <G>
       <Circle cx={x} cy={y} r={10} fill={color} opacity={0.25} />
-      <Circle cx={x} cy={y} r={5} fill={C.white} stroke={color} strokeWidth={2.5} />
+      <Circle cx={x} cy={y} r={5} fill={C.bg} stroke={color} strokeWidth={2.5} />
     </G>
   );
 }
@@ -407,7 +407,7 @@ export function JourneyScreen() {
             </View>
             <Svg width={plotW} height={lane.height}>
               {months.map((m, i) => (
-                <Line key={m} x1={i * col} y1={0} x2={i * col} y2={lane.height} stroke={C.white} opacity={0.06} />
+                <Line key={m} x1={i * col} y1={0} x2={i * col} y2={lane.height} stroke={C.text} opacity={0.07} />
               ))}
               <LaneMarks lane={lane.key} x={x} signals={signals} cycle={cycle} journey={journey} />
             </Svg>

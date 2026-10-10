@@ -194,7 +194,10 @@ export function BottomNav({ active, onTab }: { active: Tab; onTab: (tab: Tab) =>
       <View style={s.nav} accessibilityRole="tablist">
       {TABS.map((t) => {
         const on = t.key === active;
-        const color = on ? C.tint : C.muted;
+        // Ink when selected, meta when not. The selected tab is also the
+        // only one sitting on the nude ground, so the state is carried by
+        // the ground rather than by a colour spent on it.
+        const color = on ? C.text : C.muted;
         return (
           <Pressable
             key={t.key}
@@ -202,7 +205,7 @@ export function BottomNav({ active, onTab }: { active: Tab; onTab: (tab: Tab) =>
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
             accessibilityLabel={t.label}
-            style={s.tab}
+            style={[s.tab, on && s.tabOn]}
           >
             <Icon name={t.icon} size={25} color={color} weight={1.6} filled />
             <Text style={[s.tabLabel, { color }]} maxFontSizeMultiplier={1.2}>
@@ -258,7 +261,8 @@ const s = StyleSheet.create({
   navWrap: { paddingHorizontal: 14, paddingTop: 8 },
   nav: {
     flexDirection: 'row',
-    backgroundColor: '#121214',
+    padding: 5,
+    backgroundColor: C.bg,
     // Fully rounded against a 60pt bar, so the ends are true half circles
     // rather than a rectangle with soft corners.
     borderRadius: 30,
@@ -268,12 +272,15 @@ const s = StyleSheet.create({
     // Lifted off the page rather than drawn onto it. Low opacity and a
     // wide spread: a floating bar needs to read as above the content
     // without announcing a shadow.
-    shadowColor: '#000000',
-    shadowOpacity: 0.18,
+    shadowColor: '#18191B',
+    shadowOpacity: 0.1,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
-  tab: { flex: 1, height: 60, alignItems: 'center', justifyContent: 'center', gap: 3 },
+  tab: { flex: 1, height: 54, alignItems: 'center', justifyContent: 'center', gap: 3, borderRadius: 25 },
+  // The nude ground the Worth Doing Next tiles use. The selected tab is
+  // the one standing on it.
+  tabOn: { backgroundColor: C.card },
   tabLabel: { fontFamily: fonts.medium, fontSize: 11, lineHeight: 13 },
 });

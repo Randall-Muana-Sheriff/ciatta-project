@@ -35,7 +35,7 @@ function StepsChart({ movement }: { movement: MovementSummary }) {
       <Svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`}>
         {band ? (
           <>
-            <Rect x={0} y={y(band.high)} width={W} height={y(band.low) - y(band.high)} fill={C.white} opacity={0.07} />
+            <Rect x={0} y={y(band.high)} width={W} height={y(band.low) - y(band.high)} fill={C.text} opacity={0.05} />
             <Line x1={0} y1={y(band.usual)} x2={W} y2={y(band.usual)} stroke={C.secondary} strokeDasharray="3 4" opacity={0.6} />
           </>
         ) : null}
