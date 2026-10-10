@@ -15,9 +15,21 @@ import {
 
 test('the paragraph says what connecting does and what it brings in', () => {
   const p = healthDisclosureParagraph();
-  for (const fragment of ['Connect Apple Health', 'sleep patterns', 'activity levels', 'heart rate']) {
+  for (const fragment of [
+    'Connect Apple Health',
+    'steps',
+    'heart rate',
+    'heart rate variability',
+    'sleep time',
+    'workouts',
+    'cycle tracking',
+    'complete health picture',
+  ]) {
     assert.ok(p.includes(fragment), `the paragraph dropped ${fragment}`);
   }
+  // The list is a sample of 191 types, so it has to say so. Closing it after
+  // cycle tracking would promise less than the sheet she sees next.
+  assert.ok(/and more/.test(p), 'the list reads as everything Ciatta asks for');
 });
 
 test('the copy holds no dash of any kind', () => {

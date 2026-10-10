@@ -1,12 +1,18 @@
 // What the connect screen says, and which apps it names.
 //
+// The paragraph names metrics rather than categories, and the named ones are
+// the ones she would recognise as hers. "and more" is doing real work at the
+// end of it: Ciatta asks for 191 types, so a list that closed after cycle
+// tracking would be a shorter promise than the permission sheet she sees a
+// moment later, and the sheet is the one that counts.
+//
 // Pure data and pure strings, so the copy can be held to the rules in tests
 // rather than read off a screenshot: no dashes, no claim about what a
 // reading means, and no promise about data handling that the app does not
 // keep.
 
 export function healthDisclosureParagraph(): string {
-  return 'Connect Apple Health to import your sleep patterns, activity levels, and heart rate data for a complete health picture.';
+  return 'Connect Apple Health to import your steps, heart rate, heart rate variability, sleep time, workouts, cycle tracking, and more for a complete health picture.';
 }
 
 // The encryption line.
