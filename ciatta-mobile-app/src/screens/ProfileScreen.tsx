@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Switch, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
@@ -7,6 +7,8 @@ import { deleteAccount, exportAndShare } from '../data/account';
 import type { Data } from '../data/adapter';
 import type { SourceKind, Tone } from '../data/sample';
 import type { SourceView } from '../data/rows';
+import type { Reported } from '../data/repo';
+import { profileOverview } from '../lib/profileOverview';
 import { connectAppleHealth } from '../lib/connectHealth';
 import { displayCopy } from '../lib/displayCopy';
 import { userFacingError } from '../lib/userFacingError';
@@ -14,7 +16,7 @@ import { type Screen, useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
 import { useData, useRepo, useSession } from '../state/session';
 import { C, font, GUTTER, numeral, RADIUS } from '../theme';
-import { NAV_CLEARANCE } from '../ui/light';
+import { L, NAV_CLEARANCE, TILE_RADIUS } from '../ui/light';
 import { LargeTitle, ListGroup, ListRow, Panel, TextButton } from '../ui/chrome';
 import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
@@ -23,7 +25,11 @@ import { EmptyNote, Expandable, Facts, LinkButton, SecondaryButton, SegmentedCon
 
 type Profile = NonNullable<Data['profile']>;
 
-const SEGMENTS = ['Overview', 'Health Info', 'Biomarkers', 'Care', 'Settings'] as const;
+// Three, not five. Health Info, Biomarkers and Care were three doors into
+// one subject: what is in her record and who is looking after it. Splitting
+// them meant a lab result and the clinician who ordered it lived on
+// different screens.
+const SEGMENTS = ['Overview', 'Health', 'Settings'] as const;
 type Segment = (typeof SEGMENTS)[number];
 
 const TONE: Record<Tone, string> = {
@@ -419,8 +425,61 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
 export function ProfileScreen() {
   const nav = useNav();
   const { width } = useWindowDimensions();
+  const repo = useRepo();
+  const { profile, person, mode, days } = useData();
+  const [sources, setSources] = useState<SourceView[]>([]);
+
+  useEffect(() => {
+    let ignore = false;
+    repo
+      .loadSources()
+      .then((rows) => {
+        if (!ignore) setSources(rows);
+      })
+      .catch(() => {
+        // No source named rather than one assumed.
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [repo]);
   const [seg, setSeg] = useState<Segment>('Overview');
-  const { profile, person, mode } = useData();
+  const [reported, setReported] = useState<Reported | null>(null);
+  const [onboardedAt, setOnboardedAt] = useState<Date | null>(null);
+
+  useEffect(() => {
+    let ignore = false;
+    void Promise.all([repo.loadReported(), repo.loadOnboardedAt()])
+      .then(([r, at]) => {
+        if (ignore) return;
+        setReported(r);
+        setOnboardedAt(at ? new Date(at) : null);
+      })
+      .catch(() => {
+        // The paragraph says the record is empty rather than guessing.
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [repo]);
+
+  const overview = useMemo(
+    () =>
+      profileOverview({
+        name: person?.firstName ?? null,
+        since: onboardedAt,
+        conditions: reported?.conditions ?? [],
+        surgeries: reported?.surgeries ?? [],
+        medications: reported?.medications ?? [],
+        supplements: reported?.supplements ?? [],
+        symptoms: [],
+        observationCount: days.reduce((n, d) => n + (d.steps != null ? 1 : 0) + (d.sleepHours != null ? 1 : 0), 0),
+        daysWithData: days.length,
+        sources: sources.filter((x) => x.status === 'active').map((x) => x.name),
+        now: new Date(),
+      }),
+    [person, onboardedAt, reported, days, sources],
+  );
   const cols = width >= 430 ? 4 : 2;
   // Her own first name until her record holds a full profile.
   const name = profile?.name ?? person?.firstName ?? null;
@@ -467,30 +526,34 @@ export function ProfileScreen() {
         ) : null}
         {profile && seg === 'Overview' ? (
           <>
+            {/*
+              Her record in a paragraph before any of it is counted. The
+              tiles and rings said how much is there; this says what is
+              there, which is the question someone opens their own profile
+              to answer. It grows as the record does.
+            */}
+            <View style={p.overviewCard}>
+              <Text style={[font('body'), p.overviewText]}>{displayCopy(overview)}</Text>
+            </View>
             <StatTiles cols={cols} profile={profile} />
             <HealthOverview profile={profile} />
+          </>
+        ) : null}
+        {profile && seg === 'Health' ? (
+          <>
+            {/*
+              One subject, one screen: what she told Ciatta, what her
+              cycle looks like, what the labs say, and who is looking
+              after her. A lab result and the clinician who ordered it
+              belong in the same place.
+            */}
+            <DetailsGroup onOpen={nav.push} profile={profile} />
+            <CycleGroup onOpen={nav.push} />
+            <Biomarkers onOpen={nav.push} profile={profile} />
+            <BodySystems profile={profile} />
             <CareGroup profile={profile} />
-            <DetailsGroup onOpen={nav.push} profile={profile} />
-            <CycleGroup onOpen={nav.push} />
-            <Biomarkers onOpen={nav.push} profile={profile} />
-            <BodySystems profile={profile} />
           </>
         ) : null}
-        {profile && seg === 'Health Info' ? (
-          <>
-            <StatTiles cols={cols} profile={profile} />
-            <DetailsGroup onOpen={nav.push} profile={profile} />
-            <CycleGroup onOpen={nav.push} />
-          </>
-        ) : null}
-        {profile && seg === 'Biomarkers' ? (
-          <>
-            <HealthOverview profile={profile} />
-            <Biomarkers onOpen={nav.push} profile={profile} />
-            <BodySystems profile={profile} />
-          </>
-        ) : null}
-        {profile && seg === 'Care' ? <CareGroup profile={profile} /> : null}
         {seg === 'Settings' ? <Settings onOpen={nav.push} /> : null}
       </View>
     </ScrollView>
@@ -512,6 +575,15 @@ const p = StyleSheet.create({
   tile: { backgroundColor: C.card, borderRadius: RADIUS, padding: 14 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
 
+  // The paragraph sits on the statement ground the system keeps for one
+  // sentence at a time.
+  overviewCard: {
+    backgroundColor: L.statement,
+    borderRadius: TILE_RADIUS,
+    padding: 18,
+    marginTop: 4,
+  },
+  overviewText: { color: L.ink, lineHeight: 25 },
   overviewTop: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   ring: { width: 88, height: 88, alignItems: 'center', justifyContent: 'center' },
   progressRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
