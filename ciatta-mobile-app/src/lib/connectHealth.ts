@@ -21,6 +21,10 @@ export type ConnectHealthDeps = {
   // Progress and outcome copy, as it should appear on screen. Called several
   // times; the last call is the outcome.
   onNote: (note: string) => void;
+  // False when iOS will not raise its sheet because she has answered before.
+  // The screen uses it to offer the Health app, which is the only place the
+  // answer can be changed, the way Oura and Whoop do.
+  onAskState?: (willAsk: boolean) => void;
 };
 
 export type ConnectHealthResult = {
@@ -33,7 +37,7 @@ export type ConnectHealthResult = {
 };
 
 export async function connectAppleHealth(deps: ConnectHealthDeps): Promise<ConnectHealthResult> {
-  const { userId, saveStatus, onNote } = deps;
+  const { userId, saveStatus, onNote, onAskState } = deps;
 
   onNote('Checking whether Apple Health is available.');
 
@@ -51,10 +55,11 @@ export async function connectAppleHealth(deps: ConnectHealthDeps): Promise<Conne
   // advance is the difference between "Apple is asking you now" and silence
   // she has to interpret.
   const willAsk = await healthPermissionWillAsk();
+  onAskState?.(willAsk);
   onNote(
     willAsk
       ? 'Apple is asking you now. Choose what Ciatta may read.'
-      : 'You have answered this before, so Apple will not ask again. To change it, open Settings, then Health, then Data Access and Devices.',
+      : 'You answered this before, so Apple will not ask again. Open Health to change what Ciatta may read.',
   );
 
   const permission = await requestHealthPermission();

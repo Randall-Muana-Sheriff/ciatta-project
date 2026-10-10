@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { connectAppleHealth } from '../lib/connectHealth';
@@ -269,6 +269,8 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   const [error, setError] = useState('');
   const [connecting, setConnecting] = useState(false);
   const [sourceNote, setSourceNote] = useState('');
+  // True once a connect attempt found iOS would not ask again.
+  const [needsHealthApp, setNeedsHealthApp] = useState(false);
 
   const dictation = useDictation((text) => {
     setA((prev) => ({
@@ -313,6 +315,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         userId,
         saveStatus: (kind, status, lastSyncedAt) => repo.saveSourceStatus(kind, status, lastSyncedAt),
         onNote: setSourceNote,
+        onAskState: (willAsk) => setNeedsHealthApp(!willAsk),
       });
     } catch {
       setSourceNote('That did not connect. You can try again from Profile.');
@@ -783,6 +786,21 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               <Text style={[font('footnote'), s.cardSub]} accessibilityLiveRegion="polite">
                 {displayCopy(sourceNote)}
               </Text>
+            ) : null}
+            {/*
+              iOS puts its sheet up once per type per install. After that the
+              only place the answer changes is the Health app, so offer it
+              rather than describing a path through Settings she has to
+              follow by hand.
+            */}
+            {needsHealthApp ? (
+              <Pressable
+                onPress={() => Linking.openURL('x-apple-health://')}
+                accessibilityRole="button"
+                style={({ pressed }) => [s.ghost, pressed && s.pressed]}
+              >
+                <Text style={[font('subhead', 'semibold'), { color: INK }]}>Open Health</Text>
+              </Pressable>
             ) : null}
           </View>
         ) : null}
