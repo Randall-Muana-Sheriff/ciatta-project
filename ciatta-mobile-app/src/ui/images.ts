@@ -13,10 +13,17 @@ export const images = {
   body: require('../../assets/images/cia/body.png'),
   // The welcome screen's photograph, resized from the 3512x6240 original.
   welcomeBg: require('../../assets/welcome-bg.jpg'),
-  // Source marks for the apps that write into Apple Health. Oura and Whoop
-  // came from the landing site; the other five were taken from each
-  // company's own site, at 128px, and checked by eye against the brand
-  // before being committed.
+  // Source marks for the apps that write into Apple Health.
+  //
+  // Whoop, Withings and Garmin are the publishers' own App Store icons at
+  // 256px, taken from the listings by Whoop Incorporated, Withings and
+  // Garmin International. Their favicons were 32 and 48px and looked it
+  // next to the others once upscaled; an app icon is also the artwork she
+  // actually recognises, since it is what she taps to open the app.
+  //
+  // Oura came from the landing site. 8 Sleep, Strava and Omron came from
+  // each company's own apple-touch-icon, which is already a real 128px.
+  // Every one was looked at before being committed.
   oura: require('../../assets/images/sources/oura.png'),
   whoop: require('../../assets/images/sources/whoop.png'),
   eightsleep: require('../../assets/images/sources/eightsleep.png'),
