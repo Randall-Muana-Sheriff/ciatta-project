@@ -1,4 +1,5 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
 import { displayCopy } from '../lib/displayCopy';
@@ -7,10 +8,12 @@ import { type Screen, useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
 import { useData } from '../state/session';
-import { font, fonts, GUTTER } from '../theme';
-import { ActionTile, BentoRow, Eyebrow, Figure, Masthead, Tile } from '../ui/bento';
-import { L, LA } from '../ui/light';
+import { font, fonts, GUTTER, numeral } from '../theme';
+import { Tile } from '../ui/bento';
+import { L, LA, TILE_RADIUS } from '../ui/light';
+import { ListGroup, ListRow } from '../ui/chrome';
 import type { IconName } from '../ui/icons';
+import { Icon } from '../ui/icons';
 
 function greeting(now: Date): string {
   const h = now.getHours();
@@ -52,7 +55,7 @@ function TrendChart({ points }: { points: CyclePoint[] }) {
   return (
     <View style={t.chart} accessible={false} importantForAccessibility="no-hide-descendants">
       <Svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`}>
-        <Rect x={xs[last] - 18} y={0} width={36} height={base} rx={6} fill={L.ink} opacity={0.05} />
+        <Rect x={xs[last] - 18} y={0} width={36} height={base} rx={4} fill={L.ink} opacity={0.05} />
         <Line x1={4} y1={base} x2={W} y2={base} stroke={L.line} />
         <Path d={line(cys)} stroke={LA.reported} strokeWidth={2} fill="none" />
         {points.every((p) => p.sleep != null) ? <Path d={line(sys)} stroke={LA.measured} strokeWidth={2} fill="none" /> : null}
@@ -135,149 +138,120 @@ export function TodayScreen() {
     { key: 'evidence', icon: 'doc', title: 'View the Evidence', onPress: evidence(brief.lead?.id) },
   );
 
-  const dateLine = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-
   return (
     <ScrollView style={t.fill} contentContainerStyle={t.body}>
       {/*
-        Editorial header rather than a photograph. The hero image was the
-        darkest thing on the screen and said nothing; the date and the
-        greeting say where she is and who is being spoken to, which is what
-        a masthead is for.
+        The app sets light status bar content for the dark record. On a
+        white page that paints the clock and the battery white on white.
       */}
-      <Masthead
-        eyebrow={dateLine}
-        title={displayCopy(today.headline)}
-        sub={displayCopy(person ? `${greeting(now)}, ${person.firstName}.` : `${greeting(now)}.`)}
-      />
-
+      <StatusBar style="dark" />
+      {/*
+        The date, the day's line, and who is being spoken to. Same three
+        pieces as before, set as a masthead now that there is no photograph
+        behind them to compete with.
+      */}
       <View style={t.pad}>
+        <Text style={[font('caption1'), t.eyebrow]}>
+          {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase()}
+        </Text>
+        <Text style={[font('largeTitle'), t.headline]} accessibilityRole="header">
+          {displayCopy(today.headline)}
+        </Text>
+        <Text style={[font('body'), t.greeting]}>
+          {displayCopy(person ? `${greeting(now)}, ${person.firstName}.` : `${greeting(now)}.`)}
+        </Text>
+
+        {/* The chart, then the daily brief written from whatever ranks highest. */}
+        <View style={t.card}>
+        {points.length >= 2 ? (
+          <>
+            <Pressable
+              onPress={go('cycle')}
+              accessibilityRole="button"
+              accessibilityLabel={`Cycle length went from ${first.length} to ${latest.length} days.${sleepText} Opens Cycle.`}
+              style={({ pressed }) => [t.trend, pressed && t.pressed]}
+            >
+              <View style={t.trendLeft}>
+                <Text style={[font('footnote'), { color: L.muted }]}>Cycle length, days</Text>
+                <View style={t.fromTo}>
+                  <Text style={[numeral(28), { color: L.muted }]}>{first.length}</Text>
+                  <Icon name="arrowRight" size={16} color={L.muted} weight={2} />
+                  <Text style={[numeral(28), { color: LA.reported }]}>{latest.length}</Text>
+                </View>
+                {sleepFrom && sleepTo ? (
+                  <>
+                    <Text style={[font('footnote'), { color: L.muted, marginTop: 14 }]}>Sleep, final week</Text>
+                    <View style={t.fromTo}>
+                      <Text style={[numeral(17), { color: L.muted }]}>{sleepFrom}</Text>
+                      <Icon name="arrowRight" size={14} color={L.muted} weight={2} />
+                      <Text style={[numeral(17), { color: LA.measured }]}>{sleepTo}</Text>
+                    </View>
+                  </>
+                ) : null}
+              </View>
+              <TrendChart points={points} />
+            </Pressable>
+            <View style={t.divider} />
+          </>
+        ) : null}
+        </View>
+
         {/*
-          One tile is the point of the screen and it is the brief: the
-          sentence written from whatever ranks highest today. Inked, so
-          nothing else on the page competes with it, and only ever one.
+          The one tile that is the point of the screen: the sentence written
+          from whatever ranks highest today. Inked so nothing else competes
+          with it, and only ever one, because emphasis applied twice is
+          decoration. The kicker is its eyebrow now rather than a tinted
+          line floating under the headline.
         */}
-        <Tile span={2} emphasis>
-          <Text style={[font('caption1'), t.leadEyebrow]}>{today.kicker.toUpperCase()}</Text>
+        <Tile span={2} emphasis style={t.lead}>
+          {today.kicker ? <Text style={[font('caption1'), t.leadEyebrow]}>{today.kicker.toUpperCase()}</Text> : null}
           <Text style={[font('body'), t.leadText]}>{displayCopy(brief.text)}</Text>
         </Tile>
 
-        {points.length >= 2 ? (
-          <>
-            {/*
-              The two figures side by side, then the chart under them. A
-              figure she can read at a glance and a shape she can read at a
-              look are different jobs, and the old card made one object of
-              both.
-            */}
-            <BentoRow>
-              <Tile
-                onPress={go('cycle')}
-                accessibilityLabel={`Cycle length went from ${first.length} to ${latest.length} days. Opens Cycle.`}
-              >
-                <Figure
-                  label="Cycle length"
-                  value={`${first.length} to ${latest.length}`}
-                  note="days, first to latest"
-                  tint={LA.reported}
-                />
-              </Tile>
-              {sleepFrom && sleepTo ? (
-                <Tile onPress={go('cycle')} accessibilityLabel={`Sleep in the final week went from ${sleepFrom} to ${sleepTo}. Opens Cycle.`}>
-                  <Figure label="Sleep, final week" value={`${sleepFrom} to ${sleepTo}`} note="hours" tint={LA.measured} />
-                </Tile>
-              ) : (
-                <Tile>
-                  <Figure label="Sleep, final week" value="Not recorded" note="no nights measured yet" />
-                </Tile>
-              )}
-            </BentoRow>
+        <ListGroup light style={{ marginTop: 12 }}>
+          {actions.map((a, n) => (
+            <ListRow light key={a.key} first={n === 0} icon={a.icon} title={a.title} sub={a.sub} onPress={a.onPress} />
+          ))}
+        </ListGroup>
 
-            <BentoRow>
-              <Tile span={2} onPress={go('cycle')} accessibilityLabel="Cycle length and sleep over recent cycles. Opens Cycle.">
-                <Text style={[font('footnote'), t.chartLabel]}>Recent cycles</Text>
-                <View style={t.chartWrap}>
-                  <TrendChart points={points} />
-                </View>
-              </Tile>
-            </BentoRow>
-          </>
-        ) : null}
-
-        {/*
-          What today suggests doing, as tiles rather than a settings list.
-          Two to a row, and an odd one takes the full width rather than
-          leaving a hole: a bento with a gap in it reads as broken.
-        */}
-        {actions.length ? (
-          <View style={t.section}>
-            <Eyebrow>Today</Eyebrow>
-            {pairs(actions).map((pair, n) => (
-              <BentoRow key={n}>
-                {pair.map((a) => (
-                  <ActionTile
-                    key={a.key}
-                    icon={a.icon}
-                    title={a.title}
-                    sub={a.sub}
-                    span={pair.length === 1 ? 2 : 1}
-                    onPress={a.onPress}
-                  />
-                ))}
-              </BentoRow>
-            ))}
-          </View>
-        ) : null}
-
-        <View style={t.section}>
-          <Eyebrow>Worth doing next</Eyebrow>
-          <BentoRow>
-            <ActionTile
-              icon="plus"
-              title="Log cycle experience"
-              sub="Bleeding, pain, symptoms, and what was going on."
-              onPress={() => {
-                startDraft();
-                nav.push('cycleLog');
-              }}
-            />
-            <ActionTile
-              icon="journey"
-              title="Movement"
-              sub="Activity against your usual, and what it lines up with."
-              onPress={go('movement')}
-            />
-          </BentoRow>
-          <BentoRow>
-            <ActionTile icon="bars" title="Track next cycle" sub="Cycle timing and sleep." onPress={go('cycle')} />
-            <ActionTile icon="notebook" title="Add a note" sub="Write down what you are noticing." onPress={go('journal')} />
-          </BentoRow>
-        </View>
+        <ListGroup light header="Worth Doing Next" style={t.section}>
+          <ListRow light
+            first
+            
+icon="plus"
+            title="Log Cycle Experience"
+            sub="Bleeding, pain, symptoms, and what was going on."
+            onPress={() => {
+              startDraft();
+              nav.push('cycleLog');
+            }}
+          />
+          <ListRow light icon="journey" title="Movement" sub="Activity against your usual, and what it lines up with." onPress={go('movement')} />
+          <ListRow light icon="bars" title="Track Next Cycle" sub="Keep an eye on cycle timing and sleep." onPress={go('cycle')} />
+          <ListRow light icon="notebook" title="Add a Note" sub="Write down what you're noticing." onPress={go('journal')} />
+        </ListGroup>
       </View>
     </ScrollView>
   );
 }
 
-// Two to a row, with any odd one left on its own to take the full width.
-function pairs<T>(items: T[]): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < items.length; i += 2) out.push(items.slice(i, i + 2));
-  return out;
-}
-
 const t = StyleSheet.create({
   fill: { flex: 1, backgroundColor: L.bg },
-  body: { paddingBottom: 40 },
+  body: { paddingBottom: 40, paddingTop: 8 },
   pad: { paddingHorizontal: GUTTER },
-  section: { marginTop: 30 },
-
-  // The one inked tile. Its eyebrow is the kicker, which was a tinted line
-  // floating under the headline and is now the label of the thing it
-  // belongs to.
+  pressed: { opacity: 0.6 },
+  section: { marginTop: 28 },
+  eyebrow: { color: L.muted, letterSpacing: 1.1 },
+  headline: { color: L.ink, letterSpacing: -0.8, marginTop: 6 },
+  greeting: { color: L.muted, marginTop: 8 },
+  lead: { marginTop: 20 },
   leadEyebrow: { color: 'rgba(255,255,255,0.6)', letterSpacing: 1.1 },
   leadText: { color: '#FFFFFF', lineHeight: 25, marginTop: 6 },
 
-  chartLabel: { color: L.muted },
-  chartWrap: { alignItems: 'center', marginTop: 4 },
-  chart: { width: '100%', aspectRatio: 190 / 150 },
+  card: { marginTop: 24, backgroundColor: L.field, borderRadius: TILE_RADIUS, padding: 16 },
+  trend: { flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: -8 },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: L.line, marginVertical: 16 },
+  trendLeft: { width: 136 },
+  fromTo: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
+  chart: { flex: 1, aspectRatio: 190 / 150 },
 });

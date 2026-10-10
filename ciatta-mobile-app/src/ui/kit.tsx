@@ -5,14 +5,21 @@ import Svg, { Path } from 'react-native-svg';
 import type { SourceKind } from '../data/sample';
 import { displayCopy } from '../lib/displayCopy';
 import { C, font, GUTTER, RADIUS } from '../theme';
+import { L } from './light';
 
 // ── Icons ──────────────────────────────────────────────────────
 
 // Disclosure indicator, drawn like chevron.forward.
-export function ChevronRight() {
+export function ChevronRight({ light }: { light?: boolean } = {}) {
   return (
     <Svg width={8} height={13} viewBox="0 0 8 13" fill="none">
-      <Path d="M1.5 1.5l5 5-5 5" stroke={C.chevron} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <Path
+        d="M1.5 1.5l5 5-5 5"
+        stroke={light ? L.line : C.chevron}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </Svg>
   );
 }

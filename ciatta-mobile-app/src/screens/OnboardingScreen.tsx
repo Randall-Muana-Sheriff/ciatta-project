@@ -1,3 +1,4 @@
+import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Appearance, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -443,6 +444,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   if (step === 'welcome') {
     return (
       <View style={s.fill}>
+        <StatusBar style="light" />
         <Image source={images.welcomeBg} style={s.bg} resizeMode="cover" accessible={false} />
         <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" pointerEvents="none">
           <Defs>
@@ -523,6 +525,8 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
   return (
     <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* White pages need dark status bar content; the app sets light. */}
+      <StatusBar style="dark" />
       {/*
         Back, progress, and Skip, in one row that holds still while a long
         screen moves under it. Back is an arrow in the corner because that is

@@ -6,6 +6,7 @@ import { displayCopy } from '../lib/displayCopy';
 import type { Tab } from '../navigation';
 import { C, font, fonts, GUTTER, RADIUS } from '../theme';
 import { Icon, type IconName } from './icons';
+import { L, TILE_RADIUS } from './light';
 import { ChevronRight } from './kit';
 
 // ── Navigation bar items ───────────────────────────────────────
@@ -89,20 +90,28 @@ export function ListGroup({
   footer,
   children,
   style,
+  light,
 }: {
   header?: string;
   footer?: string;
   children: ReactNode;
   style?: object;
+  // Renders on the white surface instead of the dark record. A variant
+  // rather than a second component, because six other screens use these
+  // rows and must not move until each is moved deliberately.
+  light?: boolean;
 }) {
   return (
     <View style={style}>
       {header ? (
-        <Text style={[font('title3', 'semibold'), s.groupHeader]} accessibilityRole="header">
+        <Text
+          style={[font('title3', 'semibold'), s.groupHeader, light && s.groupHeaderLight]}
+          accessibilityRole="header"
+        >
           {header}
         </Text>
       ) : null}
-      <View style={s.group}>{children}</View>
+      <View style={[s.group, light && s.groupLight]}>{children}</View>
       {footer ? <Text style={[font('footnote'), s.groupFooter]}>{footer}</Text> : null}
     </View>
   );
@@ -119,6 +128,7 @@ export function ListRow({
   destructive = false,
   right,
   selected,
+  light,
 }: {
   icon?: IconName;
   tint?: string;
@@ -132,6 +142,10 @@ export function ListRow({
   // When set, the row is a toggle: a check mark stands in for `right` and
   // the chevron, and the selected state is exposed to VoiceOver.
   selected?: boolean;
+  // See ListGroup. On the white surface the glyph loses its coloured
+  // square: a column of tinted tiles was the busiest thing on the old
+  // screen, and ink reads as considered where seven hues read as a legend.
+  light?: boolean;
 }) {
   return (
     <Pressable
@@ -139,17 +153,19 @@ export function ListRow({
       disabled={!onPress}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityState={selected === undefined ? undefined : { selected }}
-      style={({ pressed }) => [s.row, pressed && { backgroundColor: C.cardHi }]}
+      style={({ pressed }) => [s.row, pressed && { backgroundColor: light ? L.line : C.cardHi }]}
     >
-      {icon ? <IconSquare icon={icon} color={tint ?? C.tint} /> : null}
-      <View style={[s.rowBody, !first && s.rowSep]}>
+      {icon ? light ? <Icon name={icon} size={20} color={L.ink} /> : <IconSquare icon={icon} color={tint ?? C.tint} /> : null}
+      <View style={[s.rowBody, !first && (light ? s.rowSepLight : s.rowSep)]}>
         <View style={{ flex: 1 }}>
-          <Text style={[font('body'), { color: destructive ? C.red : C.text }]}>{displayCopy(title)}</Text>
-          {sub ? <Text style={[font('footnote'), { color: C.secondary, marginTop: 2 }]}>{displayCopy(sub)}</Text> : null}
+          <Text style={[font('body'), { color: destructive ? C.red : light ? L.ink : C.text }]}>{displayCopy(title)}</Text>
+          {sub ? (
+            <Text style={[font('footnote'), { color: light ? L.muted : C.secondary, marginTop: 2 }]}>{displayCopy(sub)}</Text>
+          ) : null}
         </View>
-        {value ? <Text style={[font('body'), { color: C.secondary }]}>{displayCopy(value)}</Text> : null}
-        {selected === undefined ? right : selected ? <Icon name="check" size={20} color={C.tint} weight={2} /> : <View style={s.checkBlank} />}
-        {selected === undefined && onPress && !destructive ? <ChevronRight /> : null}
+        {value ? <Text style={[font('body'), { color: light ? L.muted : C.secondary }]}>{displayCopy(value)}</Text> : null}
+        {selected === undefined ? right : selected ? <Icon name="check" size={20} color={light ? L.ink : C.tint} weight={2} /> : <View style={s.checkBlank} />}
+        {selected === undefined && onPress && !destructive ? <ChevronRight light={light} /> : null}
       </View>
     </Pressable>
   );
@@ -218,6 +234,9 @@ const s = StyleSheet.create({
 
   iconSquare: { width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   groupHeader: { color: C.text, marginBottom: 8 },
+  groupHeaderLight: { color: L.ink },
+  groupLight: { backgroundColor: L.field, borderRadius: TILE_RADIUS },
+  rowSepLight: { borderTopColor: L.line },
   group: { backgroundColor: C.card, borderRadius: RADIUS, overflow: 'hidden' },
   groupFooter: { color: C.secondary, marginTop: 6, paddingHorizontal: 16 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 16, minHeight: 44 },
