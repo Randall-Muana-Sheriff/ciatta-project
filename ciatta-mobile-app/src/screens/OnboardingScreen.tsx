@@ -743,23 +743,24 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             <Text style={[font('subhead'), s.connectLede]}>{displayCopy(healthDisclosureParagraph())}</Text>
 
             {/*
-              Apple Health on its own card, because it is the only one of
-              these she acts on. Connected is read from the stored source row,
-              so the label is a fact rather than the screen assuming the tap
-              worked.
+              Apple Health, described rather than operated. The button that
+              raises Apple's sheet sits at the foot of the screen now, after
+              the encryption line, so she reads what is collected and how it
+              is held before anything asks her for it.
+
+              The heart is drawn from Ciatta's own icon set in Health's pink,
+              not Apple's app icon. Apple's artwork is theirs, and the only
+              copy of it in this repo turned out to be the plain black Apple
+              mark, which is a different logo for a different thing.
             */}
-            <Pressable
-              onPress={appleConnected ? undefined : onConnectHealth}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: appleConnected }}
-              accessibilityLabel={appleConnected ? 'Apple Health, connected' : 'Connect Apple Health'}
-              style={({ pressed }) => [s.sourceCard, pressed && !appleConnected && s.pressed]}
-            >
-              <Image source={images.appleHealth} style={s.sourceMark} resizeMode="contain" accessible={false} />
+            <View style={s.sourceCard}>
+              <View style={s.appleTile}>
+                <Icon name="heart" size={22} color="#FA114F" filled />
+              </View>
               <View style={s.rowText}>
                 <Text style={[font('headline'), { color: INK }]}>Apple Health</Text>
                 <Text style={[font('footnote'), s.rowDetail]}>
-                  {appleConnected ? 'Syncing in the background' : connecting ? 'Connecting' : 'Not connected yet'}
+                  Sync data from your iPhone, Apple Watch and other connected apps.
                 </Text>
               </View>
               {appleConnected ? (
@@ -768,18 +769,27 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
                   <Text style={[font('caption1', 'semibold'), s.connectedText]}>Connected</Text>
                 </View>
               ) : null}
-            </Pressable>
+            </View>
 
             {/*
               Named rather than integrated. Ciatta reads Apple Health; these
               are apps that write there, so the heading has to say via Apple
               Health or the list reads as a set of partnerships that do not
               exist.
+
+              A row that scrolls sideways rather than a list down the page:
+              seven names stacked would be the tallest thing on a screen
+              where they are the least important thing on it.
             */}
             <Text style={[font('subhead', 'semibold'), s.groupHeading]}>Apps that sync via Apple Health</Text>
-            <View style={s.appCard}>
-              {SYNC_APPS.map((app, n) => (
-                <View key={app.name} style={[s.appRow, n > 0 && s.rowDivided]}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={s.appRail}
+              contentContainerStyle={s.appRailInner}
+            >
+              {SYNC_APPS.map((app) => (
+                <View key={app.name} style={s.appTile}>
                   {app.mark ? (
                     <Image source={images[app.mark]} style={s.appMark} resizeMode="contain" accessible={false} />
                   ) : (
@@ -789,15 +799,33 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
                       <Text style={[font('caption1', 'semibold'), { color: MUTED }]}>{monogram(app.name)}</Text>
                     </View>
                   )}
-                  <Text style={[font('subhead'), { color: INK }]}>{app.name}</Text>
+                  <Text style={[font('caption1'), s.appLabel]} numberOfLines={1}>
+                    {app.name}
+                  </Text>
                 </View>
               ))}
-            </View>
+            </ScrollView>
 
             <View style={s.encryptionCard}>
               <Icon name="shield" size={18} color={INK} />
               <Text style={[font('footnote'), s.encryptionText]}>{displayCopy(encryptionNote())}</Text>
             </View>
+
+            {/*
+              The one control on the screen, and the last thing on it. It
+              raises Apple's sheet, where the per type toggles are real and
+              Turn On All is hers to tap.
+            */}
+            <Pressable
+              onPress={onConnectHealth}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: connecting }}
+              style={({ pressed }) => [s.primary, s.connect, pressed && s.pressed]}
+            >
+              <Text style={[font('headline'), { color: '#FFFFFF' }]}>
+                {connecting ? 'Connecting' : 'Connect to Apple Health'}
+              </Text>
+            </Pressable>
 
             {sourceNote ? (
               <Text style={[font('footnote'), s.cardSub]} accessibilityLiveRegion="polite">
@@ -905,7 +933,16 @@ const s = StyleSheet.create({
     borderRadius: RADIUS,
     backgroundColor: FIELD,
   },
-  sourceMark: { width: 38, height: 38, borderRadius: 9 },
+  appleTile: {
+    width: 38,
+    height: 38,
+    borderRadius: 9,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: LINE,
+  },
   rowText: { flex: 1 },
   rowDetail: { color: MUTED, marginTop: 2 },
   connectedPill: {
@@ -919,14 +956,24 @@ const s = StyleSheet.create({
   },
   connectedText: { color: '#0B7A4B' },
   groupHeading: { color: INK, marginTop: 28, marginBottom: 10 },
-  appCard: { backgroundColor: FIELD, borderRadius: RADIUS, paddingHorizontal: 14 },
-  appRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 },
-  rowDivided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
-  appMark: { width: 26, height: 26, borderRadius: 6 },
+  // The rail bleeds into the gutter so a tile can sit half off the edge,
+  // which is what tells her it scrolls without a scrollbar saying so.
+  appRail: { marginHorizontal: -GUTTER },
+  appRailInner: { paddingHorizontal: GUTTER, gap: 10 },
+  appTile: {
+    width: 78,
+    paddingVertical: 12,
+    borderRadius: RADIUS,
+    backgroundColor: FIELD,
+    alignItems: 'center',
+    gap: 8,
+  },
+  appLabel: { color: MUTED, maxWidth: 66, textAlign: 'center' },
+  appMark: { width: 28, height: 28, borderRadius: 7 },
   appMonogram: {
-    width: 26,
-    height: 26,
-    borderRadius: 6,
+    width: 28,
+    height: 28,
+    borderRadius: 7,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',

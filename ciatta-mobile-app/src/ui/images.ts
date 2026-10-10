@@ -14,9 +14,8 @@ export const images = {
   // The welcome screen's photograph, resized from the 3512x6240 original.
   welcomeBg: require('../../assets/welcome-bg.jpg'),
   // Source marks, copied from the landing site where they already ship.
-  // Only these three exist; the rest of the sync list falls back to a
+  // Only these two exist; the rest of the sync list falls back to a
   // monogram until the artwork is supplied.
-  appleHealth: require('../../assets/images/sources/apple-health.png'),
   oura: require('../../assets/images/sources/oura.png'),
   whoop: require('../../assets/images/sources/whoop.png'),
   // The Ciatta wordmark, used on the sign in screen.
