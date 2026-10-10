@@ -63,6 +63,14 @@ export type WorkoutSample = {
   workoutActivityType: string;
   duration?: { unit?: string; quantity?: number };
   averageHeartRate?: number | null;
+  // HealthKit reports both on a workout and both were being dropped. Each
+  // carries its own unit, because a distance is metres or miles depending on
+  // the watch that recorded it and a number without its unit is not a
+  // distance.
+  distance?: { unit?: string; quantity?: number };
+  energyBurned?: { unit?: string; quantity?: number };
+  swimmingStrokes?: { unit?: string; quantity?: number };
+  flightsClimbed?: { unit?: string; quantity?: number };
 };
 
 // One flat list of samples, each tagged with what it is, is what a sync
@@ -102,8 +110,20 @@ export function sampleToObservation(
       occurred_at: toIso(workout.endDate),
       provenance: 'MEASURED',
       dedupe_key: dedupeKey(spec.metric, workout),
-      // Absent, not defaulted, when nothing about effort was measured.
-      metadata: intensity == null ? {} : { intensity },
+      // Absent, not defaulted. A workout with no distance recorded has
+      // unknown distance, not zero distance, and a zero here would be a
+      // number she never produced.
+      metadata: {
+        ...(intensity == null ? {} : { intensity }),
+        ...(workout.distance?.quantity == null
+          ? {}
+          : { distance: workout.distance.quantity, distance_unit: workout.distance.unit ?? null }),
+        ...(workout.energyBurned?.quantity == null
+          ? {}
+          : { energy_burned: workout.energyBurned.quantity, energy_unit: workout.energyBurned.unit ?? null }),
+        ...(workout.swimmingStrokes?.quantity == null ? {} : { swimming_strokes: workout.swimmingStrokes.quantity }),
+        ...(workout.flightsClimbed?.quantity == null ? {} : { flights_climbed: workout.flightsClimbed.quantity }),
+      },
     };
   }
 

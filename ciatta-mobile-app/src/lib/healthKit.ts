@@ -157,6 +157,11 @@ async function queryWorkouts(opts: QueryOpts): Promise<{ samples: unknown[]; new
       endDate: workout.endDate,
       workoutActivityType: workoutActivityTypeIdentifier(workout.workoutActivityType as unknown as number),
       duration: workout.duration,
+      // HealthKit's own names for these. All four were being dropped.
+      distance: workout.totalDistance,
+      energyBurned: workout.totalEnergyBurned,
+      swimmingStrokes: workout.totalSwimmingStrokeCount,
+      flightsClimbed: workout.totalFlightsClimbed,
       averageHeartRate: await averageHeartRateFor(workout as never),
     })),
   );

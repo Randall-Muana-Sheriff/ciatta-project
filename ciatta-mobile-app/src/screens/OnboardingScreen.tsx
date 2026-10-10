@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Appearance, Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { connectAppleHealth } from '../lib/connectHealth';
@@ -250,6 +250,18 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   const repo = useRepo();
   const { userId, reloadFirstName, signOut } = useSession();
   const insets = useSafeAreaInsets();
+
+  // Apple's permission sheet is drawn by iOS in the app's interface style,
+  // and the app forces dark in Info.plist, so the sheet came up black over a
+  // white onboarding. Nothing about the sheet can be styled, but which of
+  // its two appearances iOS picks is the app's to set.
+  //
+  // Scoped to the first session rather than changed globally: the rest of
+  // Ciatta is a dark record and its own system UI should stay dark with it.
+  useEffect(() => {
+    Appearance.setColorScheme('light');
+    return () => Appearance.setColorScheme('dark');
+  }, []);
   const [a, setA] = useState<Answers>(emptyAnswers());
   const [i, setI] = useState(0);
   const [saving, setSaving] = useState(false);

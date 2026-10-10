@@ -303,3 +303,37 @@ test('the unit stored is the one HealthKit reported, not the one the spec guesse
   const observation = sampleToObservation(spec, { startDate: at, endDate: at, value: 7, unit: 'mmol<K>/L' });
   assert.equal(observation.unit, 'mmol<K>/L');
 });
+
+// ── What a workout carries ───────────────────────────────────────────
+
+test('a workout keeps its distance and the energy it burned', () => {
+  // Both were being dropped. HealthKit reports them on every workout that
+  // has them, and a run with no distance is a run reduced to its duration.
+  const at = new Date('2026-10-09T08:00:00.000Z');
+  const obs = sampleToObservation(WORKOUT_SPEC, {
+    startDate: at,
+    endDate: new Date('2026-10-09T08:30:00.000Z'),
+    workoutActivityType: 'HKWorkoutActivityTypeRunning',
+    duration: { unit: 's', quantity: 1800 },
+    distance: { unit: 'm', quantity: 5200 },
+    energyBurned: { unit: 'kcal', quantity: 410 },
+  });
+  assert.equal(obs.metadata.distance, 5200);
+  assert.equal(obs.metadata.distance_unit, 'm');
+  assert.equal(obs.metadata.energy_burned, 410);
+  assert.equal(obs.metadata.energy_unit, 'kcal');
+});
+
+test('a workout with neither recorded says neither, rather than zero', () => {
+  // The backend rule on screen: missing is unknown, never none. A zero here
+  // is a distance she never covered.
+  const at = new Date('2026-10-09T08:00:00.000Z');
+  const obs = sampleToObservation(WORKOUT_SPEC, {
+    startDate: at,
+    endDate: new Date('2026-10-09T08:30:00.000Z'),
+    workoutActivityType: 'HKWorkoutActivityTypeYoga',
+    duration: { unit: 's', quantity: 1800 },
+  });
+  assert.equal('distance' in obs.metadata, false, 'an unrecorded distance became a value');
+  assert.equal('energy_burned' in obs.metadata, false, 'unrecorded energy became a value');
+});
