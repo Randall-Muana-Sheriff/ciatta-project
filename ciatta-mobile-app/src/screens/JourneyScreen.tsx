@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
@@ -13,15 +13,14 @@ import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useData } from '../state/session';
 import { C, font, fonts, GUTTER, RADIUS } from '../theme';
 import { NAV_CLEARANCE } from '../ui/light';
+import { type Axis, axisFor, emptyFor, posIn, type Scale, SCALES } from '../lib/timeAxis';
 import { LargeTitle, Panel } from '../ui/chrome';
 import { Icon, type IconName } from '../ui/icons';
-import { ChevronRight, Row, SecondaryButton, SegmentedControl } from '../ui/kit';
+import { ChevronRight, Row, SecondaryButton } from '../ui/kit';
 
-// First visible month for each range. The timeline holds seven months, so a
-// year and everything look the same for now.
-const RANGES = { '3M': 4, '6M': 1, '1Y': 0, All: 0 } as const;
-type Range = keyof typeof RANGES;
-const RANGE_KEYS = Object.keys(RANGES) as Range[];
+// The window is chosen now, not assumed. Day reads in hours, year in
+// months, and every lane positions against whichever is picked rather than
+// against a fixed run of months.
 
 type Lane = 'cycle' | 'pain' | 'flare' | 'sleep' | 'symptoms' | 'medications' | 'records' | 'notes';
 
@@ -40,25 +39,28 @@ const SIDE = 8;
 const LABEL_W = 124;
 const NOW = journeyAxis.now;
 
-// Where a date sits on the month axis, in the same units as the lanes.
-function monthPos(d: Date): number {
-  const base = journeyAxis.monthDate(0);
-  const index = (d.getFullYear() - base.getFullYear()) * 12 + d.getMonth() - base.getMonth();
-  const days = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-  return index + (d.getDate() - 0.5) / days - 0.5;
+// The sample lanes carry month positions rather than dates. This turns one
+// back into a date so every lane, hers and the example's, is placed by the
+// same axis instead of two systems sharing a chart.
+function dateAtMonthPos(m: number): Date {
+  const i = Math.floor(m);
+  const base = journeyAxis.monthDate(i);
+  const inMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+  return new Date(base.getFullYear(), base.getMonth(), 1 + Math.round((m - i) * inMonth));
 }
 
-type CyclePoint = { m: number; days: number; expected?: boolean };
+type CyclePoint = { at: Date; days: number; expected?: boolean };
 
-// Each completed cycle sits at the month it ended, at its length. The expected
+// Each completed cycle sits on the day it ended, at its length. The expected
 // point is the current cycle's start plus the usual length, only when timing
-// is predictable. Points off the seven month axis are left out.
+// is predictable. Dates rather than month positions, so the axis decides
+// what is in view rather than this function assuming seven months.
 function cycleLane(windows: CycleWindow[], current: CycleWindow | null, usual: number | null): CyclePoint[] {
   const points: CyclePoint[] = windows
     .filter((w) => w.end && w.length != null)
-    .map((w) => ({ m: monthPos(w.end!), days: w.length! }));
-  if (current && usual != null) points.push({ m: monthPos(addDays(current.start, usual)), days: usual, expected: true });
-  return points.filter((p) => p.m >= -0.5 && p.m < journeyAxis.months.length - 0.5);
+    .map((w) => ({ at: w.end as Date, days: w.length as number }));
+  if (current && usual != null) points.push({ at: addDays(current.start, usual), days: usual, expected: true });
+  return points;
 }
 
 const sameMonth = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
@@ -102,7 +104,7 @@ function LaneMarks({
   journey,
 }: {
   lane: Lane;
-  x: (m: number) => number;
+  x: (at: Date) => number | null;
   signals: Signal[];
   cycle: CyclePoint[];
   journey: Data['journey'];
@@ -120,29 +122,29 @@ function LaneMarks({
       return (
         <G>
           <Path
-            d={past.map((c, i) => `${i ? 'L' : 'M'}${x(c.m)},${y(c.days)}`).join(' ')}
+            d={past.map((c, i) => `${i ? 'L' : 'M'}${x(c.at) ?? -99},${y(c.days)}`).join(' ')}
             stroke={C.coral}
             strokeWidth={2}
             fill="none"
           />
           {next && nowPt ? (
             <G>
-              <Line x1={x(nowPt.m)} y1={y(nowPt.days)} x2={x(next.m)} y2={y(next.days)} stroke={C.gray} strokeDasharray="2 3" />
-              <Circle cx={x(next.m)} cy={y(next.days)} r={3} fill={C.gray} />
-              <Label x={x(next.m)} y={y(next.days) - 12} opacity={0.7}>
+              <Line x1={x(nowPt.at) ?? -99} y1={y(nowPt.days)} x2={x(next.at) ?? -99} y2={y(next.days)} stroke={C.gray} strokeDasharray="2 3" />
+              <Circle cx={x(next.at) ?? -99} cy={y(next.days)} r={3} fill={C.gray} />
+              <Label x={x(next.at) ?? -99} y={y(next.days) - 12} opacity={0.7}>
                 {next.days}
               </Label>
             </G>
           ) : null}
           {past.map((c, i) =>
             c === nowPt ? (
-              <Glow key={i} x={x(c.m)} y={y(c.days)} color={C.coral} />
+              <Glow key={i} x={x(c.at) ?? -99} y={y(c.days)} color={C.coral} />
             ) : (
-              <Circle key={i} cx={x(c.m)} cy={y(c.days)} r={3.5} fill={C.coral} />
+              <Circle key={i} cx={x(c.at) ?? -99} cy={y(c.days)} r={3.5} fill={C.coral} />
             ),
           )}
           {past.map((c, i) => (
-            <Label key={`t${i}`} x={x(c.m)} y={y(c.days) - 13} color={c === nowPt ? C.coral : C.text}>
+            <Label key={`t${i}`} x={x(c.at) ?? -99} y={y(c.days) - 13} color={c === nowPt ? C.coral : C.text}>
               {c.days}
             </Label>
           ))}
@@ -160,7 +162,7 @@ function LaneMarks({
               return (
                 <Circle
                   key={s.episode.id}
-                  cx={x(monthPos(s.date))}
+                  cx={x(s.date) ?? -99}
                   cy={76 - sev * 5.5}
                   r={3 + sev * 0.25}
                   fill={C.coral}
@@ -176,7 +178,7 @@ function LaneMarks({
           {signals
             .filter((s) => s.episode.flareUpUserReported)
             .map((s) => {
-              const cx = x(monthPos(s.date));
+              const cx = x(s.date) ?? -99;
               return (
                 <Rect
                   key={s.episode.id}
@@ -201,7 +203,7 @@ function LaneMarks({
             return (
               <G key={i}>
                 <Rect
-                  x={x(s.m) - 3}
+                  x={x(dateAtMonthPos(s.m)) ?? -99 - 3}
                   y={56 - bar}
                   width={6}
                   height={bar}
@@ -210,7 +212,7 @@ function LaneMarks({
                   opacity={s.expected ? 0.5 : 1}
                 />
                 {s.label ? (
-                  <Label x={x(s.m)} y={78} color={C.text}>
+                  <Label x={x(dateAtMonthPos(s.m)) ?? -99} y={78} color={C.text}>
                     {s.label.replace(' ', '')}
                   </Label>
                 ) : null}
@@ -224,7 +226,7 @@ function LaneMarks({
       return (
         <G>
           {journey.symptoms.map((s, i) => (
-            <Circle key={i} cx={x(s.m)} cy={s.y} r={3.5} fill={s.expected ? C.gray : C.violet} />
+            <Circle key={i} cx={x(dateAtMonthPos(s.m)) ?? -99} cy={s.y} r={3.5} fill={s.expected ? C.gray : C.violet} />
           ))}
         </G>
       );
@@ -236,16 +238,16 @@ function LaneMarks({
             const color = med.tone === 'mint' ? C.mint : C.lavender;
             return (
               <G key={med.name}>
-                <Line x1={x(med.from)} y1={med.y} x2={x(med.to)} y2={med.y} stroke={color} strokeWidth={2.5} strokeLinecap="round" />
-                <Circle cx={x(med.from)} cy={med.y} r={3.5} fill={color} />
-                <Circle cx={x(med.to)} cy={med.y} r={3.5} fill={color} />
+                <Line x1={x(dateAtMonthPos(med.from)) ?? -99} y1={med.y} x2={x(dateAtMonthPos(med.to)) ?? -99} y2={med.y} stroke={color} strokeWidth={2.5} strokeLinecap="round" />
+                <Circle cx={x(dateAtMonthPos(med.from)) ?? -99} cy={med.y} r={3.5} fill={color} />
+                <Circle cx={x(dateAtMonthPos(med.to)) ?? -99} cy={med.y} r={3.5} fill={color} />
                 {med.ongoing ? (
                   <G>
-                    <Line x1={x(med.to)} y1={med.y} x2={x(med.ongoing)} y2={med.y} stroke={C.gray} strokeDasharray="2 3" />
-                    <Circle cx={x(med.ongoing)} cy={med.y} r={3} fill={C.gray} />
+                    <Line x1={x(dateAtMonthPos(med.to)) ?? -99} y1={med.y} x2={x(dateAtMonthPos(med.ongoing)) ?? -99} y2={med.y} stroke={C.gray} strokeDasharray="2 3" />
+                    <Circle cx={x(dateAtMonthPos(med.ongoing)) ?? -99} cy={med.y} r={3} fill={C.gray} />
                   </G>
                 ) : null}
-                <Label x={x(med.labelAt)} y={med.y - 10} color={C.text}>
+                <Label x={x(dateAtMonthPos(med.labelAt)) ?? -99} y={med.y - 10} color={C.text}>
                   {med.name}
                 </Label>
               </G>
@@ -259,8 +261,8 @@ function LaneMarks({
         <G>
           {journey.records.map((r) => (
             <G key={r.label}>
-              <Circle cx={x(r.m)} cy={36} r={3.5} fill={C.green} />
-              <Label x={x(r.m)} y={60}>
+              <Circle cx={x(dateAtMonthPos(r.m)) ?? -99} cy={36} r={3.5} fill={C.green} />
+              <Label x={x(dateAtMonthPos(r.m)) ?? -99} y={60}>
                 {r.label}
               </Label>
             </G>
@@ -273,9 +275,9 @@ function LaneMarks({
         <G>
           {journey.notes.map((n) => (
             <G key={n.m}>
-              {n.m === NOW ? <Glow x={x(n.m)} y={34} color={C.indigo} /> : <Circle cx={x(n.m)} cy={34} r={3.5} fill={C.lavender} />}
+              {n.m === NOW ? <Glow x={x(dateAtMonthPos(n.m)) ?? -99} y={34} color={C.indigo} /> : <Circle cx={x(dateAtMonthPos(n.m)) ?? -99} cy={34} r={3.5} fill={C.lavender} />}
               {n.lines.map((line, k) => (
-                <Label key={line} x={x(n.m)} y={60 + k * 15}>
+                <Label key={line} x={x(dateAtMonthPos(n.m)) ?? -99} y={60 + k * 15}>
                   {line}
                 </Label>
               ))}
@@ -347,16 +349,19 @@ export function JourneyScreen() {
   const { width } = useWindowDimensions();
   const current = windows[windows.length - 1] ?? null;
   const cycle = cycleLane(windows, current, lens.predicts ? medianLength(countedWindows(windows, profile)) : null);
-  const [range, setRange] = useState<Range>('All');
+  const [scale, setScale] = useState<Scale>('year');
+  const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState<Lane[]>([]);
-  const [picked, setPicked] = useState(NOW);
 
-  const start = RANGES[range];
-  const months = journeyAxis.months.slice(start);
+  const axis = useMemo(() => axisFor(scale, new Date()), [scale]);
   const plotW = width - SIDE * 2 - LABEL_W;
-  const col = plotW / months.length;
-  const x = (m: number) => (m - start) * col + col / 2;
-  const shown = Math.max(picked, start);
+
+  // Every lane places its marks through this, so a mark outside the window
+  // is not drawn rather than being pinned to an edge it did not happen at.
+  const x = (at: Date): number | null => {
+    const p = posIn(axis, at);
+    return p == null ? null : p * plotW;
+  };
 
   const toggle = (lane: Lane) =>
     setHidden((h) => (h.includes(lane) ? h.filter((l) => l !== lane) : [...h, lane]));
@@ -369,31 +374,59 @@ export function JourneyScreen() {
         <Text style={[font('subhead'), { color: C.secondary, marginBottom: 16 }]}>
           Your cycle, pain, sleep, symptoms, medications, results, and notes on one timeline.
         </Text>
-        <SegmentedControl segments={RANGE_KEYS} active={range} onChange={setRange} style={{ marginBottom: 8 }} />
+        {/*
+          The window, as a dropdown rather than four fixed spans. Day reads
+          in hours and year in months, and the axis under the lanes is built
+          from whichever is chosen.
+        */}
+        <Pressable
+          onPress={() => setOpen((v) => !v)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: open }}
+          accessibilityLabel={`View by ${SCALES.find((v) => v.key === scale)?.label}`}
+          style={j.picker}
+        >
+          <Text style={[font('subhead', 'semibold'), { color: C.text }]}>
+            View by {SCALES.find((v) => v.key === scale)?.label}
+          </Text>
+          <Icon name={open ? 'chevronDown' : 'chevronRight'} size={16} color={C.secondary} />
+        </Pressable>
+        {open ? (
+          <View style={j.pickerMenu}>
+            {SCALES.map((v) => (
+              <Pressable
+                key={v.key}
+                onPress={() => {
+                  setScale(v.key);
+                  setOpen(false);
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: v.key === scale }}
+                style={j.pickerItem}
+              >
+                <Text style={[font('subhead', v.key === scale ? 'semibold' : 'regular'), { color: C.text }]}>{v.label}</Text>
+                {v.key === scale ? <Icon name="check" size={16} color={C.text} /> : null}
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
       </View>
 
       <View style={j.grid}>
-        <View pointerEvents="none" style={[j.now, { left: SIDE + LABEL_W + (NOW - start) * col, width: col }]} />
+        {/* The axis, built from the chosen window rather than a fixed run
+            of months. Labels sit where the axis puts them. */}
         <View style={[j.monthRow, { marginLeft: SIDE + LABEL_W }]}>
-          {months.map((m, i) => {
-            const idx = start + i;
-            const year = i === 0 || m === 'Jan' ? journeyAxis.yearOf(idx) : '';
-            const on = idx === shown;
-            return (
-              <Pressable
-                key={m}
-                onPress={() => setPicked(idx)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: on }}
-                accessibilityLabel={`${m} ${journeyAxis.yearOf(idx)}`}
-                style={{ width: col, alignItems: 'center', minHeight: 44, justifyContent: 'flex-end' }}
-              >
-                <Text style={[font('caption2'), { color: C.secondary, height: 14 }]}>{year}</Text>
-                <Text style={[font('caption1', on ? 'semibold' : 'regular'), { color: on ? C.text : C.secondary }]}>{m}</Text>
-                <View style={[j.pickedRule, on && { backgroundColor: C.tint }]} />
-              </Pressable>
-            );
-          })}
+          {axis.ticks.map((tick) => (
+            <Text
+              key={`${tick.label}-${tick.at}`}
+              style={[
+                font('caption1'),
+                { color: C.secondary, position: 'absolute', left: tick.at * plotW - 18, width: 36, textAlign: 'center' },
+              ]}
+            >
+              {tick.label}
+            </Text>
+          ))}
         </View>
 
         {LANES.filter((l) => !hidden.includes(l.key)).map((lane) => (
@@ -406,8 +439,18 @@ export function JourneyScreen() {
               </View>
             </View>
             <Svg width={plotW} height={lane.height}>
-              {months.map((m, i) => (
-                <Line key={m} x1={i * col} y1={0} x2={i * col} y2={lane.height} stroke={C.text} opacity={0.07} />
+              {/* One rule per axis label, so the grid matches what is
+                  written under it at any scale. */}
+              {axis.ticks.map((tick) => (
+                <Line
+                  key={`${tick.label}-${tick.at}`}
+                  x1={tick.at * plotW}
+                  y1={0}
+                  x2={tick.at * plotW}
+                  y2={lane.height}
+                  stroke={C.text}
+                  opacity={0.07}
+                />
               ))}
               <LaneMarks lane={lane.key} x={x} signals={signals} cycle={cycle} journey={journey} />
             </Svg>
@@ -436,8 +479,13 @@ export function JourneyScreen() {
       </ScrollView>
 
       <View style={j.pad}>
+        {/*
+          The detail below the chart stays on the current month. Picking a
+          month by tapping its label went with the month axis, and a day or
+          a week does not have a month to pick.
+        */}
         <MonthDetail
-          index={shown}
+          index={NOW}
           signals={signals}
           windows={windows}
           ovulations={fertility.show ? fertility.past : null}
@@ -484,6 +532,23 @@ const j = StyleSheet.create({
   grid: { marginTop: 12, paddingHorizontal: SIDE },
   now: { position: 'absolute', top: 0, bottom: 0, backgroundColor: C.coral, opacity: 0.1, borderRadius: 8 },
   monthRow: { flexDirection: 'row', paddingBottom: 8 },
+  picker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: RADIUS,
+    backgroundColor: C.card,
+  },
+  pickerMenu: { marginTop: 6, borderRadius: RADIUS, backgroundColor: C.card, overflow: 'hidden' },
+  pickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 44,
+    paddingHorizontal: 14,
+  },
   pickedRule: { height: 2, width: 18, borderRadius: 1, marginTop: 3, backgroundColor: 'transparent' },
   lane: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.separator },
   laneLabel: { width: LABEL_W, flexDirection: 'row', gap: 6, paddingTop: 12, paddingLeft: 8, paddingRight: 4 },
