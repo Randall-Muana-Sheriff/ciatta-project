@@ -1,96 +1,40 @@
-// What Ciatta reads from Apple Health, in her words, on the screen that asks.
+// What Ciatta reads from Apple Health, as the kinds of thing rather than the
+// list of them.
 //
-// Derived from the same specs READ_TYPES in healthKit.ts is built from, and
-// that is the whole point of the file. A disclosure typed out by hand is a
-// promise that drifts: the day someone adds a metric to QUANTITY_SPECS, the
-// permission request asks for one more thing than the screen admits to, and
-// nothing fails. Here, adding a metric without describing it fails a test.
+// The screen used to name all twelve types with a line each. It was accurate
+// and it was a wall: Apple's own sheet lists every type with a real toggle
+// beside it one tap later, so naming them twice asked her to read the same
+// list in a form she could not act on. Categories say the same true thing in
+// a sentence she can take in, and the sheet remains the place the detail
+// lives, because that is the place the detail can be changed.
 //
-// No pure data file imports the native module, so this one derives from
-// healthMetrics rather than from READ_TYPES itself. The two share one source,
-// and a test asserts the derivation covers it.
+// Derived from the specs the permission request is built from rather than
+// typed out. A hand written disclosure drifts: the day someone adds a metric
+// in a new domain, the request asks for something the sentence does not
+// cover and nothing fails. Here it fails a test.
+//
+// No pure data file imports the native module, so this derives from
+// healthMetrics, which READ_TYPES in healthKit.ts is also built from. A test
+// asserts the two stay the same set.
 
 import { QUANTITY_SPECS, SLEEP_SPEC, WORKOUT_SPEC } from './healthMetrics';
 
-export type Disclosed = {
-  identifier: string;
-  // What she would call it.
-  label: string;
-  // What it is, and where it is useful. Never what it proves: a line here
-  // that said resting heart rate reveals anything on its own would be the
-  // screen making a claim before a single sample has been read.
-  detail: string;
+// What she would call each domain. Keyed by the domain the specs carry, so a
+// metric filed under something new has no name here and fails the guard
+// rather than printing an internal word on her screen.
+const CATEGORY_NAMES: Record<string, string> = {
+  activity: 'movement',
+  vitals: 'heart and breathing',
+  sleep: 'sleep',
 };
 
-export type DisclosureGroup = { title: string; items: Disclosed[] };
+// The order they are said in. Movement first: it is the easiest to recognise
+// as your own.
+const CATEGORY_ORDER = ['activity', 'vitals', 'sleep'];
 
-// One entry per identifier Ciatta asks Apple Health for. Keyed by the
-// identifier rather than the metric name, because the identifier is what the
-// permission request carries.
-const COPY: Record<string, { label: string; detail: string }> = {
-  HKQuantityTypeIdentifierStepCount: {
-    label: 'Steps',
-    detail: 'How much you moved each day.',
-  },
-  HKQuantityTypeIdentifierAppleExerciseTime: {
-    label: 'Exercise minutes',
-    detail: 'The minutes Apple Health counts as exercise.',
-  },
-  HKQuantityTypeIdentifierActiveEnergyBurned: {
-    label: 'Active energy',
-    detail: 'The energy you burned moving, in calories.',
-  },
-  HKQuantityTypeIdentifierRestingHeartRate: {
-    label: 'Resting heart rate',
-    detail: 'Your heart rate at rest. It is one of the few numbers that moves with a cycle, with illness, and with a hard week.',
-  },
-  HKQuantityTypeIdentifierHeartRateVariabilitySDNN: {
-    label: 'Heart rate variability',
-    detail: 'How much the spacing between beats varies. It tends to fall when your body is under load.',
-  },
-  HKQuantityTypeIdentifierHeartRate: {
-    label: 'Heart rate',
-    detail: 'Individual readings through the day, not only the resting one.',
-  },
-  HKQuantityTypeIdentifierRespiratoryRate: {
-    label: 'Breathing rate',
-    detail: 'Breaths per minute, mostly recorded while you sleep.',
-  },
-  HKQuantityTypeIdentifierOxygenSaturation: {
-    label: 'Blood oxygen',
-    detail: 'The percentage your watch records, when it records one.',
-  },
-  HKQuantityTypeIdentifierAppleSleepingWristTemperature: {
-    label: 'Wrist temperature',
-    detail: 'Skin temperature while you sleep, in degrees.',
-  },
-  HKQuantityTypeIdentifierBasalBodyTemperature: {
-    label: 'Basal body temperature',
-    detail: 'A waking temperature, if you or a device record one.',
-  },
-  HKCategoryTypeIdentifierSleepAnalysis: {
-    label: 'Sleep',
-    detail: 'When you slept, how long, and the stages your device recorded.',
-  },
-  HKWorkoutTypeIdentifier: {
-    label: 'Workouts',
-    detail: 'The kind, the length, and the effort, for each workout you record.',
-  },
-};
-
-const GROUP_TITLES: Record<string, string> = {
-  activity: 'Movement',
-  vitals: 'Heart and breathing',
-  sleep: 'Sleep',
-};
-
-// The order the groups appear in, which is deliberate: movement is the
-// easiest to recognise as your own, so it goes first.
-const GROUP_ORDER = ['activity', 'vitals', 'sleep'];
-
-// Every identifier Ciatta requests, paired with its domain. Sleep and
+// Every identifier Ciatta requests, with the domain it belongs to. Sleep and
 // workouts are separate specs rather than entries in QUANTITY_SPECS, so they
-// are appended here in the same order READ_TYPES appends them.
+// are appended in the order READ_TYPES appends them.
 export function requestedTypes(): { identifier: string; domain: string }[] {
   return [
     ...QUANTITY_SPECS.map((spec) => ({ identifier: spec.identifier, domain: spec.domain })),
@@ -99,44 +43,48 @@ export function requestedTypes(): { identifier: string; domain: string }[] {
   ];
 }
 
-// Identifiers Ciatta asks for that nobody has written copy for. Empty is the
-// only acceptable value; a test asserts it.
-export function undisclosedTypes(): string[] {
-  return requestedTypes()
-    .map((t) => t.identifier)
-    .filter((identifier) => !COPY[identifier]);
+// Domains Ciatta requests that nobody has named. Empty is the only acceptable
+// value, and a test says so: a metric added under a new domain must be
+// described before it can be asked for.
+export function unnamedCategories(): string[] {
+  const named = new Set(Object.keys(CATEGORY_NAMES));
+  return [...new Set(requestedTypes().map((t) => t.domain))].filter((d) => !named.has(d));
 }
 
-// Copy for something Ciatta does not ask for. Also must be empty: a screen
-// listing a metric the permission request never mentions is overstating what
-// Ciatta collects, which is the same failure in the other direction.
-export function overstatedTypes(): string[] {
-  const asked = new Set(requestedTypes().map((t) => t.identifier));
-  return Object.keys(COPY).filter((identifier) => !asked.has(identifier));
+// A name for something Ciatta never asks for. Also must be empty: a sentence
+// claiming more than the request covers is the same failure in the other
+// direction, and the kind a reader cannot check.
+export function overstatedCategories(): string[] {
+  const asked = new Set(requestedTypes().map((t) => t.domain));
+  return Object.keys(CATEGORY_NAMES).filter((d) => !asked.has(d));
 }
 
-export function healthDisclosure(): DisclosureGroup[] {
-  const byDomain = new Map<string, Disclosed[]>();
-  for (const { identifier, domain } of requestedTypes()) {
-    const copy = COPY[identifier];
-    // An identifier with no copy is dropped rather than rendered as a blank
-    // row or an internal name. The test above is what keeps that from being
-    // a silent omission on her screen.
-    if (!copy) continue;
-    const items = byDomain.get(domain) ?? [];
-    items.push({ identifier, label: copy.label, detail: copy.detail });
-    byDomain.set(domain, items);
-  }
-
-  return GROUP_ORDER.filter((domain) => (byDomain.get(domain) ?? []).length > 0).map((domain) => ({
-    title: GROUP_TITLES[domain] ?? domain,
-    items: byDomain.get(domain) ?? [],
-  }));
+// The categories actually requested, in reading order.
+export function healthCategories(): string[] {
+  const asked = new Set(requestedTypes().map((t) => t.domain));
+  return CATEGORY_ORDER.filter((d) => asked.has(d)).map((d) => CATEGORY_NAMES[d]);
 }
 
-// How many separate things she is agreeing to share, for the one line on
-// screen that says so. Counted rather than written down, for the same reason
-// as everything else here.
+// How many separate readings she is agreeing to share. Counted rather than
+// written down, for the same reason as everything else here.
 export function disclosedCount(): number {
-  return healthDisclosure().reduce((n, g) => n + g.items.length, 0);
+  return requestedTypes().length;
+}
+
+// The categories as one clause: "movement, heart and breathing, and sleep".
+export function healthCategoryClause(): string {
+  const xs = healthCategories();
+  if (xs.length <= 1) return xs[0] ?? '';
+  if (xs.length === 2) return `${xs[0]} and ${xs[1]}`;
+  return `${xs.slice(0, -1).join(', ')}, and ${xs[xs.length - 1]}`;
+}
+
+// The whole disclosure, in one sentence pair.
+//
+// It says the count as well as the kinds, because "movement and sleep" alone
+// could be two readings or forty, and the number is the part that tells her
+// how much she is being asked for. It ends on Apple, because what she does
+// next is answer Apple rather than Ciatta.
+export function healthDisclosureParagraph(): string {
+  return `Ciatta reads your ${healthCategoryClause()} from Apple Health, ${disclosedCount()} kinds of reading in all, so it can compare a week to your own usual rather than to anybody else. Apple asks next, and you choose there, one at a time or all at once.`;
 }

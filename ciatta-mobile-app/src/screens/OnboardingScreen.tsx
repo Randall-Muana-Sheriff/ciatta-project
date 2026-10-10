@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { connectAppleHealth } from '../lib/connectHealth';
 import { useDictation } from '../lib/dictation';
 import { displayCopy } from '../lib/displayCopy';
-import { disclosedCount, healthDisclosure } from '../lib/healthDisclosure';
+import { healthDisclosureParagraph } from '../lib/healthDisclosure';
 import {
   AGE_RANGES,
   type AgeRange,
@@ -22,7 +22,7 @@ import {
 } from '../lib/onboarding';
 import { useRepo, useSession } from '../state/session';
 import { font, GUTTER, RADIUS } from '../theme';
-import { Icon, type IconName } from '../ui/icons';
+import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
@@ -45,12 +45,11 @@ import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 // screen bottom aligns, so the answer and the controls stay in reach and the
 // overflow runs upward into space the screen has anyway.
 //
-// Membership is about content, not importance. The four below are the only
+// Membership is about content, not importance. The three below are the only
 // screens with enough on them to want the foot of the page: the text area she
-// writes into, the eight life stages, the twelve data types Apple Health can
-// hand over, and the reflection paragraph. Every other screen holds one
-// question and sits at eye level.
-const BOTTOM: StepId[] = ['tell', 'lifeStage', 'connect', 'reflect'];
+// writes into, the eight life stages, and the reflection paragraph. Every
+// other screen holds one question and sits at eye level.
+const BOTTOM: StepId[] = ['tell', 'lifeStage', 'reflect'];
 
 // The screens that hold exactly one answer, and so need no Continue: the tap
 // that answers the question is the tap that moves her on. A Continue button
@@ -58,24 +57,6 @@ const BOTTOM: StepId[] = ['tell', 'lifeStage', 'connect', 'reflect'];
 // Ciatta her age has no reason to confirm it.
 const AUTO: StepId[] = ['age', 'lifeStage', 'cycle'];
 
-// A glyph per Apple Health type, keyed by the identifier the permission
-// request carries. Monochrome rather than Apple's colour coding: this is the
-// white and black onboarding, and twelve coloured glyphs would be the
-// busiest thing in the flow.
-const HEALTH_ICON: Record<string, IconName> = {
-  HKQuantityTypeIdentifierStepCount: 'journey',
-  HKQuantityTypeIdentifierAppleExerciseTime: 'clock',
-  HKQuantityTypeIdentifierActiveEnergyBurned: 'flame',
-  HKWorkoutTypeIdentifier: 'bars',
-  HKQuantityTypeIdentifierRestingHeartRate: 'heart',
-  HKQuantityTypeIdentifierHeartRate: 'heart',
-  HKQuantityTypeIdentifierHeartRateVariabilitySDNN: 'wave',
-  HKQuantityTypeIdentifierRespiratoryRate: 'leaf',
-  HKQuantityTypeIdentifierOxygenSaturation: 'drop',
-  HKQuantityTypeIdentifierAppleSleepingWristTemperature: 'sun',
-  HKQuantityTypeIdentifierBasalBodyTemperature: 'sun',
-  HKCategoryTypeIdentifierSleepAnalysis: 'moon',
-};
 
 const INK = '#111113';
 const MUTED = '#6B6B70';
@@ -311,12 +292,16 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
     if (connecting || !userId) return;
     setConnecting(true);
     try {
-      await connectAppleHealth({
+      const result = await connectAppleHealth({
         userId,
         saveStatus: (kind, status, lastSyncedAt) => repo.saveSourceStatus(kind, status, lastSyncedAt),
-        onNote: setSourceNote,
+        // Dropped on purpose. The progress lines said what was happening
+        // while it happened, and what she sees instead is the button reading
+        // Connecting, which says the same thing without a sentence.
+        onNote: () => {},
         onAskState: (willAsk) => setNeedsHealthApp(!willAsk),
       });
+      setSourceNote(result.connected ? '' : result.message);
     } catch {
       setSourceNote('That did not connect. You can try again from Profile.');
     } finally {
@@ -727,16 +712,12 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         {step === 'connect' ? (
           <View>
             {/*
-              Built to read as the page before Apple's sheet rather than as a
-              copy of it. Apple's sheet is the thing that grants access, it is
-              drawn by iOS and cannot be restyled, and a screen imitating a
-              system permission dialog is a phishing pattern whatever it is
-              for. So this takes its shape, a tile, a list of named rows in
-              one grouped card, and says plainly that Apple asks next.
-
-              There are no toggles here, deliberately. The toggles on Apple's
-              sheet are real and refusing one there works. A toggle on this
-              screen would look like the same control and change nothing.
+              One paragraph, not a list. Apple's sheet names all twelve types
+              with a real toggle beside each one tap later, so naming them
+              here as well asked her to read the same list in a form she
+              could not act on. The categories say the same true thing in a
+              sentence, and the sheet stays the place the detail lives,
+              because that is the place the detail can be changed.
             */}
             <View style={s.healthTile}>
               <Icon name="heart" size={30} color={INK} />
@@ -745,33 +726,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             <Text style={[font('title1'), s.titleCentre]} accessibilityRole="header">
               Apple Health
             </Text>
-            <Text style={[font('subhead'), s.connectLede]}>
-              {displayCopy(
-                `Ciatta reads ${disclosedCount()} kinds of reading, listed below. Apple asks next and you choose there, one by one or all at once.`,
-              )}
-            </Text>
-
-            {healthDisclosure().map((group) => (
-              <View key={group.title} style={s.group}>
-                <Text style={[font('caption1'), s.groupTitle]}>{group.title.toUpperCase()}</Text>
-                <View style={s.groupCard}>
-                  {group.items.map((item, n) => (
-                    <View key={item.identifier} style={[s.row, n > 0 && s.rowDivided]}>
-                      <Icon name={HEALTH_ICON[item.identifier] ?? 'today'} size={20} color={INK} />
-                      <View style={s.rowText}>
-                        <Text style={[font('subhead', 'semibold'), { color: INK }]}>{item.label}</Text>
-                        <Text style={[font('footnote'), s.rowDetail]}>{displayCopy(item.detail)}</Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            ))}
-
-            <Text style={[font('footnote'), s.quiet]}>
-              Measured, not remembered. This is what lets Ciatta compare a week to your own usual rather than to
-              anybody else.
-            </Text>
+            <Text style={[font('subhead'), s.connectLede]}>{displayCopy(healthDisclosureParagraph())}</Text>
 
             <Pressable
               onPress={onConnectHealth}
@@ -782,17 +737,18 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
                 {connecting ? 'Connecting' : 'Continue to Apple Health'}
               </Text>
             </Pressable>
+
+            {/*
+              Only failures speak here. A success needs no sentence: she
+              watched Apple ask and she answered it, and a line telling her
+              what she just did is the app narrating itself. A failure has to
+              be said, because nothing else on screen would show it.
+            */}
             {sourceNote ? (
               <Text style={[font('footnote'), s.cardSub]} accessibilityLiveRegion="polite">
                 {displayCopy(sourceNote)}
               </Text>
             ) : null}
-            {/*
-              iOS puts its sheet up once per type per install. After that the
-              only place the answer changes is the Health app, so offer it
-              rather than describing a path through Settings she has to
-              follow by hand.
-            */}
             {needsHealthApp ? (
               <Pressable
                 onPress={() => Linking.openURL('x-apple-health://')}
@@ -881,13 +837,7 @@ const s = StyleSheet.create({
     marginTop: 32,
   },
   prose: { color: INK, lineHeight: 22, marginTop: 8 },
-  connectLede: { color: MUTED, marginTop: 10, lineHeight: 21, textAlign: 'center' },
-  group: { marginTop: 24 },
-  groupTitle: { color: MUTED, letterSpacing: 0.8, marginBottom: 10 },
-  // A plain row, not a card each. Twelve cards on one screen is twelve
-  // objects to separate; these are twelve items in one list.
-  // The sheet's shape: one grouped card per section, rows divided inside it
-  // rather than each row being its own object.
+  // The tile echoes Apple's own, which is the screen she sees one tap later.
   healthTile: {
     width: 62,
     height: 62,
@@ -899,11 +849,9 @@ const s = StyleSheet.create({
     marginBottom: 18,
   },
   titleCentre: { color: INK, letterSpacing: -0.4, textAlign: 'center' },
-  groupCard: { backgroundColor: FIELD, borderRadius: RADIUS, paddingHorizontal: 14 },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 12 },
-  rowDivided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
-  rowText: { flex: 1 },
-  rowDetail: { color: MUTED, marginTop: 2, lineHeight: 18 },
+  connectLede: { color: MUTED, marginTop: 10, lineHeight: 21, textAlign: 'center' },
+  // A plain row, not a card each. Twelve cards on one screen is twelve
+  // objects to separate; these are twelve items in one list.
   connect: { marginTop: 28 },
   choices: { marginTop: 20, gap: 8 },
   // Full width, 56pt, label left and the check right. A row list answers the
