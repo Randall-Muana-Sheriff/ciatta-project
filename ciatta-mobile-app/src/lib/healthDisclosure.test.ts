@@ -1,84 +1,60 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import {
-  healthCategories,
-  healthCategoryClause,
-  healthDisclosureLines,
-  overstatedCategories,
-  requestedTypes,
-  unnamedCategories,
-} from './healthDisclosure';
-import { QUANTITY_SPECS, SLEEP_SPEC, WORKOUT_SPEC } from './healthMetrics';
+import { healthDisclosureLines } from './healthDisclosure';
+import { QUANTITY_SPECS } from './healthMetrics';
 
-// ── The drift guard, which is the reason this file exists ─────────────
+// ── The claim, checked ────────────────────────────────────────────────
 
-test('every kind of data Ciatta asks for is covered by a category she is shown', () => {
-  // The failure this prevents: someone adds a metric under a new domain, the
-  // permission request asks for something the sentence does not cover, and
-  // nothing anywhere complains. If this fails, name the category.
-  assert.deepEqual(
-    unnamedCategories(),
-    [],
-    'Ciatta requests these domains and the screen does not name them. Add them to CATEGORY_NAMES.',
-  );
+// The library's own list of every quantity type HealthKit exposes. Read from
+// the package rather than copied, so the assertion is against what the
+// library offers today and not against a snapshot of it.
+const GENERATED =
+  'node_modules/@kingstinct/react-native-healthkit/lib/typescript/generated/healthkit.generated.d.ts';
+
+function everyQuantityIdentifier(): string[] {
+  const source = readFileSync(GENERATED, 'utf8');
+  const found = source.match(/'HKQuantityTypeIdentifier[A-Za-z0-9]+'/g) ?? [];
+  return [...new Set(found.map((q) => q.slice(1, -1)))].sort();
+}
+
+test('the screen says every health metric, and every means every', () => {
+  // This is what licenses the word. If someone narrows QUANTITY_SPECS, or a
+  // library update adds a type, the copy becomes a claim Ciatta does not
+  // honour and this fails. Add the type to the specs, or change the copy.
+  const offered = everyQuantityIdentifier();
+  const specced = new Set(QUANTITY_SPECS.map((s) => s.identifier));
+  const missing = offered.filter((identifier) => !specced.has(identifier));
+
+  assert.ok(offered.length > 100, `only found ${offered.length} identifiers, so the list was not read properly`);
+  assert.deepEqual(missing, [], `the screen claims every metric and these are not read: ${missing.slice(0, 5).join(', ')}`);
 });
 
-test('the sentence does not claim a kind of data Ciatta never asks for', () => {
-  // The same failure the other way round, and the kind a reader cannot check.
-  assert.deepEqual(
-    overstatedCategories(),
-    [],
-    'the screen names these and Ciatta never requests them. Remove the name or request the type.',
-  );
-});
-
-test('the requested list is exactly the specs the permission request is built from', () => {
-  // requestedTypes has to stay the set READ_TYPES in healthKit.ts composes,
-  // or the guards above guard the wrong thing. healthKit.ts imports the
-  // native module and cannot be loaded here, so the shared source is
-  // asserted instead.
-  assert.deepEqual(requestedTypes().map((t) => t.identifier), [
-    ...QUANTITY_SPECS.map((s) => s.identifier),
-    SLEEP_SPEC.identifier,
-    WORKOUT_SPEC.identifier,
-  ]);
+test('no spec reads a type the library does not offer', () => {
+  // The same check the other way. A stale identifier is a query that can only
+  // fail, counted as a metric Ciatta reads.
+  const offered = new Set(everyQuantityIdentifier());
+  const unknown = QUANTITY_SPECS.map((s) => s.identifier).filter((i) => !offered.has(i));
+  assert.deepEqual(unknown, [], `these are not HealthKit quantity types: ${unknown.join(', ')}`);
 });
 
 // ── What she actually reads ───────────────────────────────────────────
 
-test('the categories are words rather than internal domains', () => {
-  const categories = healthCategories();
-  assert.ok(categories.length > 0);
-  for (const c of categories) {
-    assert.ok(c.length > 0);
-    assert.ok(!['activity', 'vitals'].includes(c), `"${c}" is the internal domain, not a word she uses`);
-  }
+test('the disclosure is twenty words', () => {
+  // Asserted because it is the whole brief. Copy grows a clause at a time,
+  // and the next clause is always the reasonable one.
+  const words = healthDisclosureLines().join(' ').split(/\s+/).filter(Boolean);
+  assert.equal(words.length, 20, `the disclosure is ${words.length} words`);
 });
 
-test('the clause lists every category and reads as a sentence would', () => {
-  const clause = healthCategoryClause();
-  for (const c of healthCategories()) {
-    assert.ok(clause.includes(c), `the clause dropped ${c}`);
-  }
-  assert.ok(clause.includes(' and '), 'the categories were run together with no conjunction');
-});
-
-test('the three lines name every category and say what the data is for', () => {
-  const lines = healthDisclosureLines();
-  assert.equal(lines.length, 3, 'the disclosure is not three lines');
-  const all = lines.join(' ');
-  for (const c of healthCategories()) {
-    assert.ok(all.toLowerCase().includes(c.toLowerCase()), `the disclosure dropped ${c}`);
-  }
-  assert.ok(/compares your week to your own usual/.test(all), 'it never says what the data is for');
-});
-
-test('no line narrates the sheet that follows it', () => {
-  // The button says Connect Apple Health and Apple's own sheet arrives a
-  // moment later to speak for itself.
+test('the disclosure says what is read and what it is for', () => {
+  // Short is not the only requirement. Dropping either half would hit the
+  // word count and lose the point.
   const all = healthDisclosureLines().join(' ');
-  assert.ok(!/Apple asks/.test(all), 'the disclosure narrates the sheet that follows it');
+  assert.ok(/every health metric/.test(all), 'it never says how much is read');
+  assert.ok(/compares your week to your own usual/.test(all), 'it never says what the data is for');
+  assert.ok(/never to anybody else/.test(all), 'it never says the comparison is to her alone');
 });
 
 test('each line is a line, with no dash of any kind', () => {
@@ -87,16 +63,17 @@ test('each line is a line, with no dash of any kind', () => {
     assert.ok(!line.includes('\n'), 'a line contains a break of its own');
     assert.ok(!/\s\s/.test(line), 'a missing clause left a double space');
     assert.equal(line.trim(), line, 'a line is padded');
-    for (const dash of ['\u2014', '\u2013', '-']) {
+    for (const dash of ['—', '–', '-']) {
       assert.ok(!line.includes(dash), `"${line}" contains ${dash}`);
     }
   }
 });
 
-test('no line claims anything about what a reading means', () => {
-  // They render before a single sample has been read.
+test('nothing narrates the sheet or claims a finding', () => {
+  // It renders before a single sample has been read, and Apple's sheet
+  // arrives a moment later to describe itself.
   const all = healthDisclosureLines().join(' ').toLowerCase();
-  for (const claim of ['diagnos', 'detects', 'predicts', 'proves', 'means you', 'tells you whether']) {
-    assert.ok(!all.includes(claim), `the disclosure claims a finding: ${claim}`);
+  for (const claim of ['apple asks', 'diagnos', 'detects', 'predicts', 'proves', 'means you']) {
+    assert.ok(!all.includes(claim), `the disclosure says too much: ${claim}`);
   }
 });
