@@ -85,7 +85,7 @@ test('time is always named as a gap, and as one that asking cannot close', () =>
 });
 
 test('a question she skipped is not reported back as a gap Ciatta could fill', () => {
-  const skipped = buildReflection(answers({ skipped: ['snapshot'] }));
+  const skipped = buildReflection(answers({ skipped: ['symptoms'] }));
   assert.ok(
     !skipped.gaps.some((g) => g.label === 'What you have been feeling'),
     'a declined question was listed as missing data',
@@ -106,10 +106,10 @@ test('a cycle gap is only raised when a cycle is relevant to her', () => {
 // ── Which questions she is actually asked ──────────────────────────────
 
 test('the cycle question is hidden where it could not change an interpretation', () => {
-  // It is a section inside the snapshot screen now, not a step of its own, so
-  // the rule lives in cycleIsRelevant and the screen reads it. A question that
-  // vanishes from a scroll costs her nothing; a step that vanishes from a
-  // count makes the progress indicator jump.
+  // A step of its own again, so the rule has to hold in two places: the
+  // predicate, and the sequence that reads it.
+  assert.ok(!stepsFor(answers({ lifeStage: 'menopause' })).includes('cycle'), 'menopause was asked for a cycle length');
+  assert.ok(stepsFor(answers({ lifeStage: 'perimenopause' })).includes('cycle'));
   assert.equal(cycleIsRelevant(answers({ lifeStage: 'menopause' })), false);
   assert.equal(cycleIsRelevant(answers({ lifeStage: 'pregnant' })), false);
   assert.equal(cycleIsRelevant(answers({ lifeStage: 'perimenopause' })), true);
@@ -122,7 +122,23 @@ test('she is asked about her cycle when that is what she came for, even with no 
 
 test('the sequence opens on the promise and closes on the reflection', () => {
   const s = stepsFor(answers());
-  assert.deepEqual(s, ['welcome', 'name', 'intent', 'tell', 'snapshot', 'connect', 'reflect']);
+  assert.deepEqual(s, [
+    'welcome',
+    'name',
+    'intent',
+    'tell',
+    'age',
+    'lifeStage',
+    'cycle',
+    'symptoms',
+    'conditions',
+    'surgeries',
+    'medications',
+    'supplements',
+    'goals',
+    'connect',
+    'reflect',
+  ]);
   assert.equal(s[0], 'welcome', 'the first session must open with the promise, not a question');
   assert.equal(s[s.length - 1], 'reflect', 'she must be shown what Ciatta made of it');
 });
@@ -170,7 +186,7 @@ test('the tags come before the open box, so she has a frame to write against', (
 test('connecting a source is asked last, after she has told her story', () => {
   const s = stepsFor(answers());
   assert.ok(s.indexOf('connect') > s.indexOf('tell'));
-  assert.ok(s.indexOf('connect') > s.indexOf('snapshot'), 'asked for permissions before she had invested anything');
+  assert.ok(s.indexOf('connect') > s.indexOf('goals'), 'asked for permissions before she had invested anything');
 });
 
 // ── Ending with something useful ───────────────────────────────────────
@@ -256,14 +272,43 @@ test('signing up always grants terms and privacy, which are not optional', () =>
 
 // ── Corrections change one answer, not all of them ────────────────────
 
+// Every step that holds an answer. 'welcome' and 'connect' are not here:
+// welcome is the promise and connect is a permission prompt, and a correction
+// that lands on either has lost her answer rather than opened it.
+const QUESTION_STEPS = [
+  'name',
+  'intent',
+  'tell',
+  'age',
+  'lifeStage',
+  'cycle',
+  'symptoms',
+  'conditions',
+  'surgeries',
+  'medications',
+  'supplements',
+  'goals',
+];
+
 test('a correction opens the step that holds that answer', () => {
   const a = answers({ conditions: ['Endometriosis'], medications: ['Levothyroxine'] });
   assert.equal(correctionTarget(a, 'In your words'), 'tell');
   assert.equal(correctionTarget(a, 'What brought you here'), 'intent');
-  // The rest share the snapshot screen, which is the whole point of merging
-  // them: one scroll holds every answer of that kind.
-  for (const label of ['Conditions', 'Medications', 'Symptoms', 'Age range', 'Life stage', 'Typical cycle']) {
-    assert.equal(correctionTarget(a, label), 'snapshot', `${label} did not open the snapshot`);
+  // Each answer has its own screen now, so a correction opens the one
+  // question she meant rather than the top of a scroll holding nine.
+  const OWN: Record<string, string> = {
+    Conditions: 'conditions',
+    Surgeries: 'surgeries',
+    Medications: 'medications',
+    Supplements: 'supplements',
+    Symptoms: 'symptoms',
+    'Age range': 'age',
+    'Life stage': 'lifeStage',
+    'Typical cycle': 'cycle',
+    'What you want': 'goals',
+  };
+  for (const [label, step] of Object.entries(OWN)) {
+    assert.equal(correctionTarget(a, label), step, `${label} did not open its own question`);
   }
 });
 
@@ -272,7 +317,7 @@ test('a correction always lands on a question she can answer', () => {
   // sequence, which 'connect' satisfies, so it could not fail. 'connect' is
   // the Apple Health offer: it is a step, it holds no answer, and sending a
   // correction there opens a permission prompt. Name the questions.
-  const QUESTIONS = ['intent', 'tell', 'snapshot'];
+  const QUESTIONS = QUESTION_STEPS;
   const a = answers({ opening: 'something' });
   const target = correctionTarget(a, 'Not A Real Label');
   assert.ok(
@@ -286,7 +331,7 @@ test('a stale correction label does not reopen a question her answers removed', 
   // reaches reflect, changes her life stage to menopause, and the cycle line
   // is still rendered because cycleLength was never cleared. Tapping it must
   // not reintroduce the cycle question, and must not land on Apple Health.
-  const QUESTIONS = ['intent', 'tell', 'snapshot'];
+  const QUESTIONS = QUESTION_STEPS;
   const a = answers({ lifeStage: 'menopause', cycleLength: 28 });
   const target = correctionTarget(a, 'Typical cycle');
   assert.ok(stepsFor(a).includes(target), 'correction opened a step not in her sequence');

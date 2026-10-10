@@ -78,7 +78,15 @@ export type StepId =
   | 'name'
   | 'intent'
   | 'tell'
-  | 'snapshot'
+  | 'age'
+  | 'lifeStage'
+  | 'cycle'
+  | 'symptoms'
+  | 'conditions'
+  | 'surgeries'
+  | 'medications'
+  | 'supplements'
+  | 'goals'
   | 'connect'
   | 'reflect';
 
@@ -144,12 +152,41 @@ export function emptyAnswers(): Answers {
 // asking her for a cycle length collects a null and spends a screen; a woman
 // who came to understand her cycle gets asked even if she has not named a life
 // stage yet.
-// The sequence is now fixed. The cycle question did not disappear: it moved
-// inside the snapshot screen, where cycleIsRelevant still decides whether the
-// section renders. A question that vanishes from a scroll costs her nothing,
-// where a step that vanishes from a count makes the progress indicator jump.
-export function stepsFor(_a: Answers): StepId[] {
-  return ['welcome', 'name', 'intent', 'tell', 'snapshot', 'connect', 'reflect'];
+// One question per screen, and each question gets the input that suits it.
+//
+// This reverses the merge. The snapshot screen put nine questions on one
+// scroll, reasoning that conditions, medications and cycle are the same kind
+// of answer and that tapping Continue between them was pacing rather than
+// progress. What it produced was a form: nine labelled sections, and a woman
+// reading a label to work out what each field wanted. One question alone on a
+// screen needs no label, because the heading is the question, and that is
+// also what lets each answer take the control that fits it instead of nine
+// variations on a chip.
+//
+// The cycle question is conditional again, which it has to be: a woman in
+// menopause has no cycle to describe, and a screen of its own cannot be
+// hidden the way a section could. So the dot count does change when she picks
+// menopause, one screen before the question would have come. That is the
+// honest trade, and the alternative is asking her something that cannot
+// apply to her.
+export function stepsFor(a: Answers): StepId[] {
+  return [
+    'welcome',
+    'name',
+    'intent',
+    'tell',
+    'age',
+    'lifeStage',
+    ...(cycleIsRelevant(a) ? (['cycle'] as StepId[]) : []),
+    'symptoms',
+    'conditions',
+    'surgeries',
+    'medications',
+    'supplements',
+    'goals',
+    'connect',
+    'reflect',
+  ];
 }
 
 export function cycleIsRelevant(a: Answers): boolean {
@@ -257,7 +294,7 @@ export function buildReflection(a: Answers): Reflection {
 
   // The gaps. Each one names what it would let Ciatta do, and `fillable` says
   // whether Ciatta can close it by asking again or whether only time can.
-  if (!a.symptoms.length && !a.skipped.includes('snapshot')) {
+  if (!a.symptoms.length && !a.skipped.includes('symptoms')) {
     gaps.push({
       label: 'What you have been feeling',
       why: 'A symptom logged with a date is the thing a change in sleep or cycle can be lined up against.',
@@ -464,16 +501,18 @@ const CORRECTION_STEPS: Record<string, StepId> = {
   Name: 'name',
   'In your words': 'tell',
   'What brought you here': 'intent',
-  // Everything below lives on the one snapshot screen now.
-  'Age range': 'snapshot',
-  'Life stage': 'snapshot',
-  'Typical cycle': 'snapshot',
-  Conditions: 'snapshot',
-  Surgeries: 'snapshot',
-  Medications: 'snapshot',
-  Supplements: 'snapshot',
-  Symptoms: 'snapshot',
-  'What you want': 'snapshot',
+  // Each answer has a screen of its own to go back to, which is the thing
+  // the merge cost her: a correction that opened the snapshot dropped her at
+  // the top of nine questions to hunt for the one she meant.
+  'Age range': 'age',
+  'Life stage': 'lifeStage',
+  'Typical cycle': 'cycle',
+  Conditions: 'conditions',
+  Surgeries: 'surgeries',
+  Medications: 'medications',
+  Supplements: 'supplements',
+  Symptoms: 'symptoms',
+  'What you want': 'goals',
 };
 
 export function correctionTarget(a: Answers, label: string): StepId {

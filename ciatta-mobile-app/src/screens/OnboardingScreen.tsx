@@ -44,10 +44,11 @@ import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 // screen bottom aligns, so the answer and the controls stay in reach and the
 // overflow runs upward into space the screen has anyway.
 //
-// Membership is about content, not importance. The three below hold a field,
-// six chips and one card; the other three hold a text area she writes into,
-// the whole snapshot, and the reflection paragraph.
-const CENTRED: StepId[] = ['name', 'intent', 'connect'];
+// Membership is about content, not importance. The three below are the only
+// screens with enough on them to want the foot of the page: the text area she
+// writes into, the eight life stages, and the reflection paragraph. Every
+// other screen holds one question and sits at eye level.
+const BOTTOM: StepId[] = ['tell', 'lifeStage', 'reflect'];
 
 const INK = '#111113';
 const MUTED = '#6B6B70';
@@ -63,6 +64,36 @@ function Dots({ index, total }: { index: number; total: number }) {
       {Array.from({ length: total }, (_, n) => (
         <View key={n} style={[s.dot, n <= index && s.dotOn]} />
       ))}
+    </View>
+  );
+}
+
+function Choices({
+  options,
+  selected,
+  onPick,
+}: {
+  options: readonly string[];
+  selected: string | null;
+  onPick: (o: string) => void;
+}) {
+  return (
+    <View style={s.choices} accessibilityRole="radiogroup">
+      {options.map((o) => {
+        const on = o === selected;
+        return (
+          <Pressable
+            key={o}
+            onPress={() => onPick(o)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: on }}
+            style={({ pressed }) => [s.choice, on && s.choiceOn, pressed && s.pressed]}
+          >
+            <Text style={[font('body'), { color: INK }]}>{o}</Text>
+            {on ? <Icon name="check" size={18} color={INK} /> : null}
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -98,15 +129,15 @@ function Chips({
 
 // A free text list. Nobody's medication list is a multiple choice question.
 function AddList({
-  label,
   placeholder,
   items,
   onChange,
+  accessibilityLabel,
 }: {
-  label: string;
   placeholder: string;
   items: string[];
   onChange: (next: string[]) => void;
+  accessibilityLabel: string;
 }) {
   const [draft, setDraft] = useState('');
   const add = () => {
@@ -119,7 +150,6 @@ function AddList({
   };
   return (
     <View style={s.field}>
-      <Text style={[font('subhead', 'semibold'), { color: INK }]}>{label}</Text>
       <View style={s.addRow}>
         <TextInput
           value={draft}
@@ -129,7 +159,7 @@ function AddList({
           placeholderTextColor={MUTED}
           returnKeyType="done"
           style={[font('body'), s.input]}
-          accessibilityLabel={label}
+          accessibilityLabel={accessibilityLabel}
         />
         <Pressable onPress={add} accessibilityRole="button" style={({ pressed }) => [s.add, pressed && s.pressed]}>
           <Text style={[font('subhead', 'semibold'), { color: INK }]}>Add</Text>
@@ -379,7 +409,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         style={s.fill}
         contentContainerStyle={[
           s.body,
-          { justifyContent: CENTRED.includes(step) ? 'center' : 'flex-end', paddingBottom: insets.bottom + 28 },
+          { justifyContent: BOTTOM.includes(step) ? 'flex-end' : 'center', paddingBottom: insets.bottom + 28 },
         ]}
         keyboardShouldPersistTaps="handled"
       >
@@ -490,92 +520,132 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
           </View>
         ) : null}
 
-        {step === 'snapshot' ? (
+        {/*
+          Nine questions, nine screens, and the control is chosen per question
+          rather than applied uniformly.
+
+          Single answer, short closed list: a full width row list. Several
+          answers from a known set: chips, which is what they were always for.
+          An answer only she can supply: a text field that adds to a list, so
+          a woman on four medications is not fighting a control built for one.
+        */}
+        {step === 'age' ? (
           <View>
             <Text style={[font('title1'), s.title]} accessibilityRole="header">
-              A quick picture of you
+              How old are you?
             </Text>
+            <Choices
+              options={AGE_RANGES.map((o) => o.label)}
+              selected={AGE_RANGES.find((o) => o.id === a.ageRange)?.label ?? null}
+              onPick={(label) => {
+                const id = AGE_RANGES.find((o) => o.label === label)?.id;
+                set({ ageRange: (a.ageRange === id ? null : id) as AgeRange | null });
+              }}
+            />
+          </View>
+        ) : null}
 
-            <View style={s.field}>
-              <Text style={[font('subhead', 'semibold'), { color: INK }]}>Your age</Text>
-              <Chips
-                options={AGE_RANGES.map((o) => o.label)}
-                selected={a.ageRange ? [AGE_RANGES.find((o) => o.id === a.ageRange)?.label ?? ''] : []}
-                onToggle={(label) => {
-                  const id = AGE_RANGES.find((o) => o.label === label)?.id;
-                  set({ ageRange: (a.ageRange === id ? null : id) as AgeRange | null });
-                }}
-              />
-            </View>
+        {step === 'lifeStage' ? (
+          <View>
+            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+              Where are you right now?
+            </Text>
+            <Choices
+              options={LIFE_STAGES.map((o) => o.label)}
+              selected={LIFE_STAGES.find((o) => o.id === a.lifeStage)?.label ?? null}
+              onPick={(label) => {
+                const id = LIFE_STAGES.find((o) => o.label === label)?.id;
+                set({ lifeStage: (a.lifeStage === id ? null : id) as LifeStage | null });
+              }}
+            />
+          </View>
+        ) : null}
 
-            <View style={s.field}>
-              <Text style={[font('subhead', 'semibold'), { color: INK }]}>Where you are now</Text>
-              <Chips
-                options={LIFE_STAGES.map((o) => o.label)}
-                selected={a.lifeStage ? [LIFE_STAGES.find((o) => o.id === a.lifeStage)?.label ?? ''] : []}
-                onToggle={(label) => {
-                  const id = LIFE_STAGES.find((o) => o.label === label)?.id;
-                  set({ lifeStage: (a.lifeStage === id ? null : id) as LifeStage | null });
-                }}
-              />
-            </View>
+        {step === 'cycle' ? (
+          <View>
+            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+              How long is your usual cycle?
+            </Text>
+            <Choices
+              options={CYCLE_CHOICES}
+              selected={cycleChoice(a.cycleLength, a.cycleRegular)[0] ?? null}
+              onPick={(label) => set(cycleFromChoice(label, a))}
+            />
+          </View>
+        ) : null}
 
-            {/*
-              A section, not a step. cycleIsRelevant still decides, so a woman
-              in menopause never sees it, and the dots above do not change
-              count when she picks that.
-            */}
-            {cycleIsRelevant(a) ? (
-              <View style={s.field}>
-                <Text style={[font('subhead', 'semibold'), { color: INK }]}>Your usual cycle</Text>
-                <Chips
-                  options={CYCLE_CHOICES}
-                  selected={cycleChoice(a.cycleLength, a.cycleRegular)}
-                  onToggle={(label) => set(cycleFromChoice(label, a))}
-                />
-              </View>
-            ) : null}
+        {step === 'symptoms' ? (
+          <View>
+            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+              What have you been noticing?
+            </Text>
+            <Chips options={SYMPTOMS} selected={a.symptoms} onToggle={(v) => set({ symptoms: toggle(a.symptoms, v) })} />
+          </View>
+        ) : null}
 
-            <View style={s.field}>
-              <Text style={[font('subhead', 'semibold'), { color: INK }]}>What you have noticed</Text>
-              <Chips
-                options={SYMPTOMS}
-                selected={a.symptoms}
-                onToggle={(v) => set({ symptoms: toggle(a.symptoms, v) })}
-              />
-            </View>
-
+        {step === 'conditions' ? (
+          <View>
+            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+              Anything you have been diagnosed with?
+            </Text>
             <AddList
-              label="Diagnosed conditions"
+              accessibilityLabel="Diagnosed conditions"
               placeholder="Endometriosis, PCOS, thyroid"
               items={a.conditions}
               onChange={(conditions) => set({ conditions })}
             />
+          </View>
+        ) : null}
+
+        {step === 'surgeries' ? (
+          <View>
+            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+              Any surgeries?
+            </Text>
             <AddList
-              label="Surgeries"
+              accessibilityLabel="Surgeries"
               placeholder="Laparoscopy"
               items={a.surgeries}
               onChange={(surgeries) => set({ surgeries })}
             />
+          </View>
+        ) : null}
+
+        {step === 'medications' ? (
+          <View>
+            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+              What do you take?
+            </Text>
             <AddList
-              label="Medications"
+              accessibilityLabel="Medications"
               placeholder="Levothyroxine"
               items={a.medications}
               onChange={(medications) => set({ medications })}
             />
+          </View>
+        ) : null}
+
+        {step === 'supplements' ? (
+          <View>
+            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+              Any supplements?
+            </Text>
             <AddList
-              label="Supplements"
+              accessibilityLabel="Supplements"
               placeholder="Magnesium"
               items={a.supplements}
               onChange={(supplements) => set({ supplements })}
             />
-            {/*
-              goals was in the type from the first build and no screen ever
-              set it, so the reflection line for it could never render. The
-              spec asks for it; now something asks her.
-            */}
+          </View>
+        ) : null}
+
+        {step === 'goals' ? (
+          <View>
+            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+              What do you want to understand?
+            </Text>
             <AddList
-              label="What you want to understand"
+              accessibilityLabel="What you want to understand"
               placeholder="Why I am so tired"
               items={a.goals}
               onChange={(goals) => set({ goals })}
@@ -689,6 +759,21 @@ const s = StyleSheet.create({
     marginTop: 32,
   },
   prose: { color: INK, lineHeight: 22, marginTop: 8 },
+  choices: { marginTop: 20, gap: 8 },
+  // Full width, 56pt, label left and the check right. A row list answers the
+  // question "which one" where a wrapped row of pills asks it again.
+  choice: {
+    minHeight: 56,
+    borderRadius: RADIUS,
+    backgroundColor: FIELD,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'transparent',
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  choiceOn: { backgroundColor: '#FFFFFF', borderColor: INK },
   boxWrap: { position: 'relative' },
   // Room at the foot of the box for the control, so a long answer scrolls
   // behind it rather than under it.
