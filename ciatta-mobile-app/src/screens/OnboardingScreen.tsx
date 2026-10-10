@@ -22,7 +22,7 @@ import {
 } from '../lib/onboarding';
 import { useRepo, useSession } from '../state/session';
 import { font, GUTTER, RADIUS } from '../theme';
-import { Icon } from '../ui/icons';
+import { Icon, type IconName } from '../ui/icons';
 import { images } from '../ui/images';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
@@ -57,6 +57,25 @@ const BOTTOM: StepId[] = ['tell', 'lifeStage', 'connect', 'reflect'];
 // here is a second tap that adds nothing, and a woman who has already told
 // Ciatta her age has no reason to confirm it.
 const AUTO: StepId[] = ['age', 'lifeStage', 'cycle'];
+
+// A glyph per Apple Health type, keyed by the identifier the permission
+// request carries. Monochrome rather than Apple's colour coding: this is the
+// white and black onboarding, and twelve coloured glyphs would be the
+// busiest thing in the flow.
+const HEALTH_ICON: Record<string, IconName> = {
+  HKQuantityTypeIdentifierStepCount: 'journey',
+  HKQuantityTypeIdentifierAppleExerciseTime: 'clock',
+  HKQuantityTypeIdentifierActiveEnergyBurned: 'flame',
+  HKWorkoutTypeIdentifier: 'bars',
+  HKQuantityTypeIdentifierRestingHeartRate: 'heart',
+  HKQuantityTypeIdentifierHeartRate: 'heart',
+  HKQuantityTypeIdentifierHeartRateVariabilitySDNN: 'wave',
+  HKQuantityTypeIdentifierRespiratoryRate: 'leaf',
+  HKQuantityTypeIdentifierOxygenSaturation: 'drop',
+  HKQuantityTypeIdentifierAppleSleepingWristTemperature: 'sun',
+  HKQuantityTypeIdentifierBasalBodyTemperature: 'sun',
+  HKCategoryTypeIdentifierSleepAnalysis: 'moon',
+};
 
 const INK = '#111113';
 const MUTED = '#6B6B70';
@@ -704,38 +723,45 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
         {step === 'connect' ? (
           <View>
-            <Text style={[font('title1'), s.title]} accessibilityRole="header">
-              Bring in what you already have
-            </Text>
-
             {/*
-              Every data type Ciatta asks for, before she is asked to grant
-              anything. The list is derived from the same specs the permission
-              request is built from, so it cannot quietly fall behind what the
-              app actually reads: adding a metric without describing it fails
-              a test rather than shipping a screen that understates.
+              Built to read as the page before Apple's sheet rather than as a
+              copy of it. Apple's sheet is the thing that grants access, it is
+              drawn by iOS and cannot be restyled, and a screen imitating a
+              system permission dialog is a phishing pattern whatever it is
+              for. So this takes its shape, a tile, a list of named rows in
+              one grouped card, and says plainly that Apple asks next.
 
-              Apple's own sheet follows the Connect button and is the thing
-              that grants access. It lists the same types, with per type
-              toggles, which is where she can refuse any one of them. This
-              screen exists because that sheet appears after she has decided,
-              and a woman should be able to read the list before she taps.
+              There are no toggles here, deliberately. The toggles on Apple's
+              sheet are real and refusing one there works. A toggle on this
+              screen would look like the same control and change nothing.
             */}
+            <View style={s.healthTile}>
+              <Icon name="heart" size={30} color={INK} />
+            </View>
+
+            <Text style={[font('title1'), s.titleCentre]} accessibilityRole="header">
+              Apple Health
+            </Text>
             <Text style={[font('subhead'), s.connectLede]}>
               {displayCopy(
-                `Apple Health can hand Ciatta ${disclosedCount()} kinds of reading. Apple asks next, and you can refuse any of them there.`,
+                `Ciatta reads ${disclosedCount()} kinds of reading, listed below. Apple asks next and you choose there, one by one or all at once.`,
               )}
             </Text>
 
             {healthDisclosure().map((group) => (
               <View key={group.title} style={s.group}>
                 <Text style={[font('caption1'), s.groupTitle]}>{group.title.toUpperCase()}</Text>
-                {group.items.map((item) => (
-                  <View key={item.identifier} style={s.row}>
-                    <Text style={[font('subhead', 'semibold'), { color: INK }]}>{item.label}</Text>
-                    <Text style={[font('footnote'), s.rowDetail]}>{displayCopy(item.detail)}</Text>
-                  </View>
-                ))}
+                <View style={s.groupCard}>
+                  {group.items.map((item, n) => (
+                    <View key={item.identifier} style={[s.row, n > 0 && s.rowDivided]}>
+                      <Icon name={HEALTH_ICON[item.identifier] ?? 'today'} size={20} color={INK} />
+                      <View style={s.rowText}>
+                        <Text style={[font('subhead', 'semibold'), { color: INK }]}>{item.label}</Text>
+                        <Text style={[font('footnote'), s.rowDetail]}>{displayCopy(item.detail)}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
               </View>
             ))}
 
@@ -750,7 +776,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               style={({ pressed }) => [s.primary, s.connect, pressed && s.pressed]}
             >
               <Text style={[font('headline'), { color: '#FFFFFF' }]}>
-                {connecting ? 'Connecting' : 'Connect Apple Health'}
+                {connecting ? 'Connecting' : 'Continue to Apple Health'}
               </Text>
             </Pressable>
             {sourceNote ? (
@@ -837,12 +863,28 @@ const s = StyleSheet.create({
     marginTop: 32,
   },
   prose: { color: INK, lineHeight: 22, marginTop: 8 },
-  connectLede: { color: MUTED, marginTop: 8, lineHeight: 21 },
+  connectLede: { color: MUTED, marginTop: 10, lineHeight: 21, textAlign: 'center' },
   group: { marginTop: 24 },
   groupTitle: { color: MUTED, letterSpacing: 0.8, marginBottom: 10 },
   // A plain row, not a card each. Twelve cards on one screen is twelve
   // objects to separate; these are twelve items in one list.
-  row: { paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
+  // The sheet's shape: one grouped card per section, rows divided inside it
+  // rather than each row being its own object.
+  healthTile: {
+    width: 62,
+    height: 62,
+    borderRadius: 15,
+    backgroundColor: FIELD,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: 18,
+  },
+  titleCentre: { color: INK, letterSpacing: -0.4, textAlign: 'center' },
+  groupCard: { backgroundColor: FIELD, borderRadius: RADIUS, paddingHorizontal: 14 },
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 12 },
+  rowDivided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
+  rowText: { flex: 1 },
   rowDetail: { color: MUTED, marginTop: 2, lineHeight: 18 },
   connect: { marginTop: 28 },
   choices: { marginTop: 20, gap: 8 },

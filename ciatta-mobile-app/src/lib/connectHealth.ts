@@ -1,5 +1,5 @@
 import { outcomeForConnectAttempt } from './connectSource';
-import { healthKitAnchors, healthKitPort, isHealthAvailable, requestHealthPermission } from './healthKit';
+import { healthKitAnchors, healthKitPort, healthPermissionWillAsk, isHealthAvailable, requestHealthPermission } from './healthKit';
 import { runHealthSync } from './healthSync';
 import type { DbSourceKind, DbSourceStatus } from '../data/rows';
 
@@ -44,6 +44,18 @@ export async function connectAppleHealth(deps: ConnectHealthDeps): Promise<Conne
     onNote(outcome.message);
     return { ...outcome, connected: false };
   }
+
+  // Asked before requesting, because afterwards it is too late to tell her.
+  // iOS shows its sheet once per type per install, so a woman who has already
+  // answered taps Connect and sees nothing at all appear. Knowing that in
+  // advance is the difference between "Apple is asking you now" and silence
+  // she has to interpret.
+  const willAsk = await healthPermissionWillAsk();
+  onNote(
+    willAsk
+      ? 'Apple is asking you now. Choose what Ciatta may read.'
+      : 'You have answered this before, so Apple will not ask again. To change it, open Settings, then Health, then Data Access and Devices.',
+  );
 
   const permission = await requestHealthPermission();
   if (!permission.granted) {

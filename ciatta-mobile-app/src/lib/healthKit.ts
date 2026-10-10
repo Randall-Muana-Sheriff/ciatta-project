@@ -13,6 +13,7 @@ import {
   queryCategorySamplesWithAnchor,
   queryQuantitySamplesWithAnchor,
   queryWorkoutSamplesWithAnchor,
+  getRequestStatusForAuthorization,
   requestAuthorization,
   WorkoutActivityType,
   WorkoutTypeIdentifier,
@@ -34,6 +35,27 @@ export async function isHealthAvailable(): Promise<boolean> {
   if (Platform.OS !== 'ios') return false;
   try {
     return await isHealthDataAvailableAsync();
+  } catch {
+    return false;
+  }
+}
+
+// Whether tapping Connect will actually raise Apple's sheet.
+//
+// iOS shows that sheet once per type per install. Once she has answered it,
+// requestAuthorization resolves immediately and nothing appears on screen, so
+// a woman who refused the first time taps Connect and watches nothing happen.
+// HealthKit will not say whether she allowed or refused a read type, by
+// design, so this cannot report which she chose. It can only say whether
+// there is still a question to put to her, and that is enough to stop the
+// screen from promising a sheet that will not come.
+export async function healthPermissionWillAsk(): Promise<boolean> {
+  if (!(await isHealthAvailable())) return false;
+  try {
+    // 1 is shouldRequest. 0 is unknown and 2 is unnecessary, and both mean
+    // no sheet. Unknown is treated as no sheet rather than yes, because
+    // promising one that does not arrive is the failure being fixed.
+    return (await getRequestStatusForAuthorization({ toRead: READ_TYPES })) === 1;
   } catch {
     return false;
   }
