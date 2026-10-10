@@ -191,7 +191,7 @@ function cycleFromChoice(label: string, a: Answers): Partial<Answers> {
 
 export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   const repo = useRepo();
-  const { userId, reloadFirstName } = useSession();
+  const { userId, reloadFirstName, signOut } = useSession();
   const insets = useSafeAreaInsets();
   const [a, setA] = useState<Answers>(emptyAnswers());
   const [i, setI] = useState(0);
@@ -311,6 +311,22 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             style={({ pressed }) => [s.primaryOnPhoto, pressed && s.pressed]}
           >
             <Text style={[font('headline'), { color: INK }]}>Begin</Text>
+          </Pressable>
+
+          {/*
+            The only way out of a first session she has not finished.
+            Sign Out otherwise lives in Profile, which sits behind Root, which
+            she cannot reach until onboarding completes: signing in on the
+            wrong account left her with no way back to the sign in screen and
+            no way to switch. One quiet line fixes that, and it is the reason
+            this is here rather than a design flourish.
+          */}
+          <Pressable
+            onPress={signOut}
+            accessibilityRole="button"
+            style={({ pressed }) => [s.signOut, pressed && s.pressed]}
+          >
+            <Text style={[font('subhead'), s.signOutText]}>Not your account? Sign out</Text>
           </Pressable>
         </View>
       </View>
@@ -580,6 +596,8 @@ const s = StyleSheet.create({
   welcomeTop: { alignItems: 'center', paddingHorizontal: GUTTER },
   welcomeMid: { flex: 1, justifyContent: 'center', paddingHorizontal: GUTTER },
   logo: { width: 74, height: 22 },
+  signOut: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
+  signOutText: { color: 'rgba(255,255,255,0.8)' },
   titleOnPhoto: { color: '#FFFFFF', letterSpacing: -0.4 },
   ledeOnPhoto: { color: 'rgba(255,255,255,0.88)', marginTop: 16, lineHeight: 26 },
   primaryOnPhoto: {
