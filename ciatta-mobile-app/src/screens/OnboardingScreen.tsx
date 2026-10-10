@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { connectAppleHealth } from '../lib/connectHealth';
 import { useDictation } from '../lib/dictation';
 import { displayCopy } from '../lib/displayCopy';
-import { encryptionNote, healthDisclosureParagraph, monogram, SYNC_APPS } from '../lib/healthDisclosure';
+import { encryptionNote, healthDisclosureParagraph, importSummaryLine, monogram, SYNC_APPS } from '../lib/healthDisclosure';
 import {
   AGE_RANGES,
   type AgeRange,
@@ -261,6 +261,8 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   // Connected when the row says refused would be the screen stating
   // something it does not know.
   const [appleConnected, setAppleConnected] = useState(false);
+  // What the last run actually brought in. Null until one has run.
+  const [imported, setImported] = useState<ReturnType<typeof importSummaryLine>>('');
 
   const refreshAppleStatus = useCallback(async () => {
     try {
@@ -325,8 +327,17 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         // while it happened, and what she sees instead is the button reading
         // Connecting, which says the same thing without a sentence.
         onNote: () => {},
+        // iOS raises its sheet once per type per install. When it will not,
+        // the Health app is the only place the answer can still be changed,
+        // so she is taken there rather than left tapping a button that
+        // cannot do anything. A first time sign up never takes this path:
+        // on a fresh install the sheet always comes up.
+        onAskState: (willAsk) => {
+          if (!willAsk) void Linking.openURL('x-apple-health://').catch(() => {});
+        },
       });
       setSourceNote(result.connected ? '' : result.message);
+      setImported(importSummaryLine(result.imported));
       await refreshAppleStatus();
     } catch {
       setSourceNote('That did not connect. You can try again from Profile.');
@@ -827,6 +838,17 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               </Text>
             </Pressable>
 
+            {/*
+              What actually arrived, counted from the run rather than implied
+              by it. "Your data has been imported" is a sentence a failed run
+              could print too; these are numbers that are zero when nothing
+              came in.
+            */}
+            {imported ? (
+              <Text style={[font('footnote'), s.imported]} accessibilityLiveRegion="polite">
+                {displayCopy(imported)}
+              </Text>
+            ) : null}
             {sourceNote ? (
               <Text style={[font('footnote'), s.cardSub]} accessibilityLiveRegion="polite">
                 {displayCopy(sourceNote)}
@@ -991,6 +1013,7 @@ const s = StyleSheet.create({
     borderColor: LINE,
   },
   encryptionText: { flex: 1, color: MUTED, lineHeight: 18 },
+  imported: { color: INK, marginTop: 14, lineHeight: 18, textAlign: 'center' },
   // A plain row, not a card each. Twelve cards on one screen is twelve
   // objects to separate; these are twelve items in one list.
   connect: { marginTop: 28 },

@@ -5,6 +5,8 @@ import {
   appsMissingArtwork,
   encryptionNote,
   healthDisclosureParagraph,
+  importSummaryLine,
+  metricWords,
   monogram,
   SYNC_APPS,
 } from './healthDisclosure';
@@ -88,5 +90,67 @@ test('a monogram is short, and a name starting with a digit still reads', () => 
   assert.equal(monogram('Garmin'), 'GA');
   for (const app of SYNC_APPS) {
     assert.ok(monogram(app.name).length <= 2, `${app.name} has a monogram that will not fit`);
+  }
+});
+
+// ── What came in ──────────────────────────────────────────────────────
+
+test('no import means no line at all, rather than a hopeful one', () => {
+  assert.equal(importSummaryLine(null), '');
+});
+
+test('a run that found nothing says so, and does not read as a failure', () => {
+  const line = importSummaryLine({ observations: 0, metrics: 0, failed: 0, top: [] });
+  assert.ok(/Nothing to import yet/.test(line));
+  assert.ok(!/0 readings/.test(line), 'it printed a zero at her');
+  for (const alarm of ['error', 'failed', 'problem', 'wrong']) {
+    assert.ok(!line.toLowerCase().includes(alarm), `an empty Apple Health read as a failure: ${alarm}`);
+  }
+});
+
+test('the line counts what actually landed and names the largest kinds', () => {
+  const line = importSummaryLine({
+    observations: 5017,
+    metrics: 9,
+    failed: 0,
+    top: [
+      { metric: 'steps', observations: 2400 },
+      { metric: 'heart_rate', observations: 1800 },
+      { metric: 'sleep_analysis', observations: 600 },
+    ],
+  });
+  assert.ok(line.includes('5017 readings'), 'the count is not hers to see');
+  assert.ok(line.includes('9 kinds'));
+  assert.ok(line.includes('steps, heart rate and sleep'), `read: ${line}`);
+});
+
+test('a partial run admits what did not arrive', () => {
+  const line = importSummaryLine({
+    observations: 12,
+    metrics: 1,
+    failed: 3,
+    top: [{ metric: 'steps', observations: 12 }],
+  });
+  assert.ok(/did not come through/.test(line), 'a partial run read as a complete one');
+  assert.ok(line.includes('1 kind'), 'it pluralised a single kind');
+});
+
+test('one reading is a reading, not 1 readings', () => {
+  const line = importSummaryLine({ observations: 1, metrics: 1, failed: 0, top: [{ metric: 'hrv', observations: 1 }] });
+  assert.ok(line.includes('1 reading across'), `read: ${line}`);
+});
+
+test('an internal metric name never reaches her', () => {
+  assert.equal(metricWords('resting_heart_rate'), 'resting heart rate');
+  assert.equal(metricWords('sleep_analysis'), 'sleep');
+  // Unmapped falls back to opened out underscores, never the raw key.
+  assert.equal(metricWords('apple_stand_time'), 'apple stand time');
+  assert.ok(!metricWords('apple_stand_time').includes('_'));
+});
+
+test('the import line holds no dash of any kind', () => {
+  const line = importSummaryLine({ observations: 9, metrics: 2, failed: 1, top: [{ metric: 'steps', observations: 9 }] });
+  for (const dash of ['—', '–', '-']) {
+    assert.ok(!line.includes(dash), `the import line contains ${dash}`);
   }
 });

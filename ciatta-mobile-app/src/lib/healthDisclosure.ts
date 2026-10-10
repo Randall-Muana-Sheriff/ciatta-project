@@ -61,3 +61,48 @@ export function monogram(name: string): string {
 export function appsMissingArtwork(): string[] {
   return SYNC_APPS.filter((a) => a.mark === null).map((a) => a.name);
 }
+
+// What came in, in her words.
+//
+// Built from the counted result rather than from the fact that a connection
+// happened. Every branch below is reachable and they say different things:
+// a run that imported nothing is not a failure and must not read as one, and
+// a run that failed must not read as a success with a small number in it.
+export type ImportSummary = { observations: number; metrics: number; failed: number; top: { metric: string; observations: number }[] };
+
+// Internal metric names are not words she uses. Anything unmapped falls back
+// to its name with the underscores opened out, which is wrong looking enough
+// to notice and never a claim about what the metric is.
+const METRIC_WORDS: Record<string, string> = {
+  steps: 'steps',
+  exercise_time: 'exercise minutes',
+  active_energy: 'active energy',
+  resting_heart_rate: 'resting heart rate',
+  heart_rate: 'heart rate',
+  hrv: 'heart rate variability',
+  sleep_analysis: 'sleep',
+  workout: 'workouts',
+  respiratory_rate: 'breathing rate',
+  oxygen_saturation: 'blood oxygen',
+  wrist_temperature: 'wrist temperature',
+  basal_body_temperature: 'basal body temperature',
+};
+
+export function metricWords(metric: string): string {
+  return METRIC_WORDS[metric] ?? metric.replace(/_/g, ' ');
+}
+
+export function importSummaryLine(imported: ImportSummary | null): string {
+  if (!imported) return '';
+  if (imported.observations === 0) {
+    // Nothing arrived, and that is usually because Apple Health holds
+    // nothing for these types yet rather than because anything broke.
+    return 'Nothing to import yet. Ciatta will pick up new readings as your devices record them.';
+  }
+  const names = imported.top.map((t) => metricWords(t.metric));
+  const list = names.length <= 1 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  const reading = imported.observations === 1 ? 'reading' : 'readings';
+  const across = imported.metrics === 1 ? '1 kind' : `${imported.metrics} kinds`;
+  const tail = imported.failed > 0 ? ' Some kinds did not come through, and Ciatta will try them again.' : '';
+  return `Imported ${imported.observations} ${reading} across ${across}, including ${list}.${tail}`;
+}
