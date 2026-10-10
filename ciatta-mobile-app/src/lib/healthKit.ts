@@ -120,6 +120,7 @@ async function queryQuantity(identifier: string, opts: QueryOpts): Promise<{ sam
     startDate: sample.startDate,
     endDate: sample.endDate,
     value: sample.quantity,
+    unit: sample.unit,
   }));
   return { samples, newAnchor: result.newAnchor };
 }

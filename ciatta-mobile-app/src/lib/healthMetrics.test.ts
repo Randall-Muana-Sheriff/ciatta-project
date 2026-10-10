@@ -10,6 +10,7 @@ import {
   workoutIntensity,
   workoutTypeLabel,
 } from './healthMetrics';
+import { EXTRA_QUANTITY_SPECS } from './healthMetricsAll';
 
 function specFor(identifier: string) {
   const spec = QUANTITY_SPECS.find((s) => s.identifier === identifier);
@@ -119,4 +120,59 @@ test('workout duration prefers the reported quantity over the date span', () => 
   assert.equal(workoutDurationMinutes({ unit: 'min', quantity: 45 }, start, end), 45);
   assert.equal(workoutDurationMinutes({ unit: 'hr', quantity: 1.5 }, start, end), 90);
   assert.equal(workoutDurationMinutes(undefined, start, end), 60);
+});
+
+// ── Reading everything HealthKit offers ──────────────────────────────
+
+test('no generated metric name collides with a hand checked one', () => {
+  // The one mistake here that could not be undone. Two identifiers sharing a
+  // metric name merge two different readings into one series, and the
+  // observations already stored under the hand checked names are what would
+  // be corrupted.
+  const names = QUANTITY_SPECS.map((s) => s.metric);
+  assert.equal(new Set(names).size, names.length, 'two specs share a metric name');
+});
+
+test('no two specs read the same HealthKit identifier', () => {
+  const ids = QUANTITY_SPECS.map((s) => s.identifier);
+  assert.equal(new Set(ids).size, ids.length, 'an identifier is specced twice');
+});
+
+test('the hand checked twelve keep their names, units and day folds', () => {
+  // Regenerating the bulk list must never touch these. Each name below is a
+  // key that observations are already stored against.
+  for (const [metric, unit, dayField] of [
+    ['steps', 'count', 'steps'],
+    ['exercise_time', 'min', 'active_minutes'],
+    ['resting_heart_rate', 'count/min', 'resting_hr'],
+    ['hrv', 'ms', 'hrv'],
+  ] as const) {
+    const spec = QUANTITY_SPECS.find((s) => s.metric === metric);
+    assert.ok(spec, `${metric} disappeared from the specs`);
+    assert.equal(spec.unit, unit, `${metric} changed unit`);
+    assert.equal(spec.dayField, dayField, `${metric} changed its daily column`);
+  }
+});
+
+test('only the hand checked metrics fold into a daily row', () => {
+  // A generated spec has no reviewed unit, so letting one write a column of
+  // daily_metrics would put an unknown unit into a number Today reads.
+  for (const spec of EXTRA_QUANTITY_SPECS) {
+    assert.equal(spec.dayField, undefined, `${spec.metric} writes a daily column without a checked unit`);
+  }
+});
+
+test('a generated spec names no unit, so HealthKit picks and the sample reports it', () => {
+  for (const spec of EXTRA_QUANTITY_SPECS) {
+    assert.equal(spec.unit, undefined, `${spec.metric} hard codes a unit nobody checked`);
+  }
+});
+
+test('every spec has a domain the connect screen can name', () => {
+  // The disclosure guard reads these. A domain invented here without a name
+  // there fails that test, which is the point.
+  for (const spec of QUANTITY_SPECS) {
+    assert.ok(spec.domain.length > 0, `${spec.metric} has no domain`);
+    assert.ok(/^[a-z]+$/.test(spec.domain), `${spec.metric} has an odd domain: ${spec.domain}`);
+  }
 });

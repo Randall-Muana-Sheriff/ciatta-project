@@ -26,11 +26,16 @@ const CATEGORY_NAMES: Record<string, string> = {
   activity: 'movement',
   vitals: 'heart and breathing',
   sleep: 'sleep',
+  body: 'body measurements',
+  nutrition: 'what you eat and drink',
+  environment: 'your surroundings',
+  behaviour: 'daily habits',
+  other: 'other readings Apple Health holds',
 };
 
 // The order they are said in. Movement first: it is the easiest to recognise
 // as your own.
-const CATEGORY_ORDER = ['activity', 'vitals', 'sleep'];
+const CATEGORY_ORDER = ['activity', 'vitals', 'sleep', 'body', 'nutrition', 'environment', 'behaviour', 'other'];
 
 // Every identifier Ciatta requests, with the domain it belongs to. Sleep and
 // workouts are separate specs rather than entries in QUANTITY_SPECS, so they

@@ -3,6 +3,8 @@
 // calls, no network, no database. Device code that reads real HealthKit
 // samples lives elsewhere and adapts its samples to the shapes here.
 
+import { EXTRA_QUANTITY_SPECS } from './healthMetricsAll';
+
 // ── The day row ──────────────────────────────────────────────────
 
 // The numeric fields of a day, each nullable in storage: a metric Apple
@@ -46,12 +48,19 @@ export type MetricSpec = {
   identifier: string;
   metric: string;
   domain: string;
-  unit: string;
+  // Optional. Omitted means HealthKit chooses its own unit for the type and
+  // the sample says which, which is the only safe way to read a metric
+  // nobody has hand checked.
+  unit?: string;
   fold: 'sum' | 'mean' | 'min' | 'last';
   dayField?: keyof DayNumbers;
 };
 
-export const QUANTITY_SPECS: readonly MetricSpec[] = [
+// The twelve hand checked metrics. Everything else HealthKit exposes is
+// appended from healthMetricsAll below, so these keep their exact names,
+// units and day folds: the observations already stored are keyed on these
+// metric names, and renaming one orphans its history.
+export const CORE_QUANTITY_SPECS: readonly MetricSpec[] = [
   { identifier: 'HKQuantityTypeIdentifierStepCount', metric: 'steps', domain: 'activity', unit: 'count', fold: 'sum', dayField: 'steps' },
   { identifier: 'HKQuantityTypeIdentifierAppleExerciseTime', metric: 'exercise_time', domain: 'activity', unit: 'min', fold: 'sum', dayField: 'active_minutes' },
   { identifier: 'HKQuantityTypeIdentifierRestingHeartRate', metric: 'resting_heart_rate', domain: 'vitals', unit: 'count/min', fold: 'mean', dayField: 'resting_hr' },
@@ -73,6 +82,10 @@ export const QUANTITY_SPECS: readonly MetricSpec[] = [
   { identifier: 'HKQuantityTypeIdentifierRespiratoryRate', metric: 'respiratory_rate', domain: 'vitals', unit: 'count/min', fold: 'mean' },
   { identifier: 'HKQuantityTypeIdentifierOxygenSaturation', metric: 'oxygen_saturation', domain: 'vitals', unit: '%', fold: 'mean' },
 ];
+
+// Everything HealthKit offers. The core twelve first, so a lookup by
+// identifier finds the hand checked spec rather than the generated one.
+export const QUANTITY_SPECS: readonly MetricSpec[] = [...CORE_QUANTITY_SPECS, ...EXTRA_QUANTITY_SPECS];
 
 // ── Sleep ────────────────────────────────────────────────────────
 

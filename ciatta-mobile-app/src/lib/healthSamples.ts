@@ -37,6 +37,14 @@ export type QuantitySample = {
   startDate: Date;
   endDate: Date;
   value: number;
+  // The unit HealthKit returned the value in.
+  //
+  // Carried from the sample rather than taken from the spec, and that is what
+  // makes reading every metric possible. A spec can only name a unit someone
+  // wrote down; with a hundred and twenty metrics, some of those would be
+  // wrong, and a number stored under the wrong unit is worse than no number.
+  // HealthKit knows the unit it used, so it is the one asked.
+  unit?: string;
 };
 
 export type CategorySample = {
@@ -119,7 +127,7 @@ export function sampleToObservation(
     metric: quantitySpec.metric,
     value: quantity.value,
     value_text: null,
-    unit: quantitySpec.unit,
+    unit: quantity.unit ?? quantitySpec.unit ?? null,
     occurred_at: toIso(quantity.endDate),
     provenance: 'MEASURED',
     dedupe_key: dedupeKey(quantitySpec.metric, quantity),

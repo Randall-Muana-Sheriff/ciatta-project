@@ -9,6 +9,12 @@ import {
   type SyncPort,
   type SyncProgress,
 } from './healthSync';
+import { QUANTITY_SPECS } from './healthMetrics';
+
+// Every quantity metric, plus sleep and workouts. Derived rather than
+// written down: these assertions are about no metric being dropped from a
+// run, not about how many metrics there happen to be this month.
+const ALL_METRICS = QUANTITY_SPECS.length + 2;
 
 const STEPS = QUANTITY_SPECS.find((s) => s.identifier === 'HKQuantityTypeIdentifierStepCount')!;
 const USER_ID = 'user-1';
@@ -209,7 +215,7 @@ test('progress is reported per metric, and the counts add up', async () => {
     onProgress: (p) => progress.push(p),
   });
 
-  assert.ok(progress.length >= 12);
+  assert.ok(progress.length >= ALL_METRICS, 'progress skipped metrics');
   assert.equal(progress.every((p) => p.total === progress.length), true);
   assert.equal(
     progress.reduce((sum, p) => sum + p.samples, 0),
@@ -273,7 +279,7 @@ test('a storage failure setting the anchor does not abort the run: the metric is
 
   // The whole run completed: every spec got an outcome, not just the ones
   // before the one whose anchor write failed.
-  assert.equal(result.metrics.length, 12);
+  assert.equal(result.metrics.length, ALL_METRICS, 'a metric was dropped from the run');
   assert.ok(result.failed.includes(STEPS.identifier));
   assert.equal(store[failingKey], undefined);
 
@@ -309,7 +315,7 @@ test('a storage failure reading the anchor does not abort the run', async () => 
 
   const result = await runHealthSync(USER_ID, { port, anchors: throwingAnchors, mode: 'incremental' });
 
-  assert.equal(result.metrics.length, 12);
+  assert.equal(result.metrics.length, ALL_METRICS, 'a metric was dropped from the run');
   assert.ok(result.failed.includes(STEPS.identifier));
   const stepsOutcome = result.metrics.find((m) => m.identifier === STEPS.identifier)!;
   assert.equal(stepsOutcome.ok, false);

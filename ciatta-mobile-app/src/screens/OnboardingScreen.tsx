@@ -734,7 +734,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               style={({ pressed }) => [s.primary, s.connect, pressed && s.pressed]}
             >
               <Text style={[font('headline'), { color: '#FFFFFF' }]}>
-                {connecting ? 'Connecting' : 'Continue to Apple Health'}
+                {connecting ? 'Connecting' : 'Connect Apple Health'}
               </Text>
             </Pressable>
 
