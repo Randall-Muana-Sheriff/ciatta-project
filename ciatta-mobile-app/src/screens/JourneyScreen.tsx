@@ -12,6 +12,7 @@ import { useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useData } from '../state/session';
 import { C, font, fonts, GUTTER, RADIUS } from '../theme';
+import { NAV_CLEARANCE } from '../ui/light';
 import { LargeTitle, Panel } from '../ui/chrome';
 import { Icon, type IconName } from '../ui/icons';
 import { ChevronRight, Row, SecondaryButton, SegmentedControl } from '../ui/kit';
@@ -476,7 +477,7 @@ export function JourneyScreen() {
 
 const j = StyleSheet.create({
   fill: { flex: 1 },
-  body: { paddingBottom: 32 },
+  body: { paddingBottom: NAV_CLEARANCE },
   pad: { paddingHorizontal: GUTTER, paddingTop: 4 },
   pressed: { opacity: 0.55 },
 

@@ -7,6 +7,7 @@ import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
 import { useData } from '../state/session';
 import { C, font, GUTTER } from '../theme';
+import { NAV_CLEARANCE } from '../ui/light';
 import { BodySystemView } from '../ui/BodySystemView';
 import { LargeTitle, ToolbarButton } from '../ui/chrome';
 import { HealthDashboard } from '../ui/HealthDashboard';
@@ -84,6 +85,6 @@ export function MyHealthScreen() {
 
 const h = StyleSheet.create({
   fill: { flex: 1 },
-  body: { paddingBottom: 32 },
+  body: { paddingBottom: NAV_CLEARANCE },
   pad: { paddingHorizontal: GUTTER, paddingTop: 4 },
 });

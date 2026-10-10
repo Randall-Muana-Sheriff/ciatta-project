@@ -15,7 +15,7 @@ export function ChevronRight({ light }: { light?: boolean } = {}) {
     <Svg width={8} height={13} viewBox="0 0 8 13" fill="none">
       <Path
         d="M1.5 1.5l5 5-5 5"
-        stroke={light ? L.line : C.chevron}
+        stroke={light ? L.rule : C.chevron}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"

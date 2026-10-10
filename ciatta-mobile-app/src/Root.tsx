@@ -88,7 +88,17 @@ export function Root() {
         <View style={r.fill} key={top ? `${tab}:${stack.length}:${top}` : tab}>
           <Current />
         </View>
-        <BottomNav active={tab} onTab={(next) => nav.goTab(next)} />
+        {/*
+          The bar floats over the screen rather than sitting under it, which
+          is what makes it read as a rounded object instead of a shelf. Each
+          screen's own ground shows around it, so a white screen keeps a
+          white foot and a dark one keeps a dark one, and screens leave
+          NAV_CLEARANCE at the bottom of their scroll so nothing hides
+          beneath it.
+        */}
+        <View style={r.navOver} pointerEvents="box-none">
+          <BottomNav active={tab} onTab={(next) => nav.goTab(next)} />
+        </View>
       </View>
     </NavContext.Provider>
   );
@@ -97,4 +107,5 @@ export function Root() {
 const r = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
   fill: { flex: 1 },
+  navOver: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });

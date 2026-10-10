@@ -14,6 +14,7 @@ import { type Screen, useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
 import { useData, useRepo, useSession } from '../state/session';
 import { C, font, GUTTER, numeral, RADIUS } from '../theme';
+import { NAV_CLEARANCE } from '../ui/light';
 import { LargeTitle, ListGroup, ListRow, Panel, TextButton } from '../ui/chrome';
 import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
@@ -498,7 +499,7 @@ export function ProfileScreen() {
 
 const p = StyleSheet.create({
   fill: { flex: 1 },
-  body: { paddingBottom: 32 },
+  body: { paddingBottom: NAV_CLEARANCE },
   pad: { paddingHorizontal: GUTTER },
   stack: { gap: 28 },
 

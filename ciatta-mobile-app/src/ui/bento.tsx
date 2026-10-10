@@ -56,8 +56,10 @@ export type TileProps = {
   // A tile with somewhere to go reads as pressable and announces itself.
   onPress?: () => void;
   accessibilityLabel?: string;
-  // Fills with ink instead of grey. For the one tile that is the point of
-  // the screen, and never for two of them.
+  // The system's surface.statement: full bleed behind one sentence,
+  // sparingly, never a card fill. For the one tile that is the point of the
+  // screen, and never for two of them. Pale rather than inked, because the
+  // system's emphasis is a change of ground and not a change of weight.
   emphasis?: boolean;
   style?: ViewStyle;
 };
@@ -134,24 +136,24 @@ export function ActionTile({
 
 const s = StyleSheet.create({
   masthead: { paddingHorizontal: GUTTER, paddingTop: 8, paddingBottom: 18 },
-  eyebrow: { color: L.muted, letterSpacing: 1.1 },
+  eyebrow: { color: L.meta, letterSpacing: 1.1 },
   title: { color: L.ink, letterSpacing: -0.8, marginTop: 6 },
-  sub: { color: L.muted, marginTop: 8, lineHeight: 24 },
+  sub: { color: L.meta, marginTop: 8, lineHeight: 24 },
 
   row: { flexDirection: 'row', gap: BENTO_GAP, marginTop: BENTO_GAP },
-  tile: { borderRadius: TILE_RADIUS, backgroundColor: L.field, overflow: 'hidden' },
+  tile: { borderRadius: TILE_RADIUS, backgroundColor: L.recessed, overflow: 'hidden' },
   // Half of a row, accounting for the gap between the two.
   span1: { flex: 1, minHeight: 112 },
   span2: { width: '100%' },
-  tileOn: { backgroundColor: L.ink },
+  tileOn: { backgroundColor: L.statement },
   tileInner: { padding: 16, gap: 6 },
   tileInnerOn: {},
   pressed: { opacity: 0.6 },
 
-  figureLabel: { color: L.muted },
+  figureLabel: { color: L.meta },
   figureValue: { color: L.ink, letterSpacing: -0.6, marginTop: 2 },
-  figureNote: { color: L.muted, marginTop: 2 },
+  figureNote: { color: L.meta, marginTop: 2 },
 
   actionTitle: { color: L.ink, marginTop: 4 },
-  actionSub: { color: L.muted, lineHeight: 17 },
+  actionSub: { color: L.meta, lineHeight: 17 },
 });

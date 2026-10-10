@@ -10,7 +10,7 @@ import { useInsights } from '../state/insights';
 import { useData } from '../state/session';
 import { font, fonts, GUTTER, numeral } from '../theme';
 import { Tile } from '../ui/bento';
-import { L, LA, TILE_RADIUS } from '../ui/light';
+import { L, mark, SPACE, TILE_RADIUS, NAV_CLEARANCE } from '../ui/light';
 import { ListGroup, ListRow } from '../ui/chrome';
 import type { IconName } from '../ui/icons';
 import { Icon } from '../ui/icons';
@@ -56,20 +56,20 @@ function TrendChart({ points }: { points: CyclePoint[] }) {
     <View style={t.chart} accessible={false} importantForAccessibility="no-hide-descendants">
       <Svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`}>
         <Rect x={xs[last] - 18} y={0} width={36} height={base} rx={4} fill={L.ink} opacity={0.05} />
-        <Line x1={4} y1={base} x2={W} y2={base} stroke={L.line} />
-        <Path d={line(cys)} stroke={LA.reported} strokeWidth={2} fill="none" />
-        {points.every((p) => p.sleep != null) ? <Path d={line(sys)} stroke={LA.measured} strokeWidth={2} fill="none" /> : null}
+        <Line x1={4} y1={base} x2={W} y2={base} stroke={L.rule} />
+        <Path d={line(cys)} stroke={mark('reported')} strokeWidth={2} fill="none" />
+        {points.every((p) => p.sleep != null) ? <Path d={line(sys)} stroke={mark('measured')} strokeWidth={2} fill="none" /> : null}
         {xs.map((x, i) => (
           <G key={i}>
-            <Circle cx={x} cy={cys[i]} r={3.5} fill={LA.reported} />
-            <SvgText x={x} y={cys[i] - 9} fill={i === last ? LA.reported : L.muted} fontFamily={fonts.regular} {...label}>
+            <Circle cx={x} cy={cys[i]} r={3.5} fill={mark('reported')} />
+            <SvgText x={x} y={cys[i] - 9} fill={i === last ? mark('reported') : L.meta} fontFamily={fonts.regular} {...label}>
               {days[i]}
             </SvgText>
-            {points[i].sleep != null ? <Circle cx={x} cy={sys[i]} r={3.5} fill={LA.measured} /> : null}
+            {points[i].sleep != null ? <Circle cx={x} cy={sys[i]} r={3.5} fill={mark('measured')} /> : null}
             <SvgText
               x={x}
               y={base + 18}
-              fill={i === last ? L.ink : L.muted}
+              fill={i === last ? L.ink : L.meta}
               fontFamily={i === last ? fonts.semibold : fonts.regular}
               {...label}
             >
@@ -172,19 +172,19 @@ export function TodayScreen() {
               style={({ pressed }) => [t.trend, pressed && t.pressed]}
             >
               <View style={t.trendLeft}>
-                <Text style={[font('footnote'), { color: L.muted }]}>Cycle length, days</Text>
+                <Text style={[font('footnote'), { color: L.meta }]}>Cycle length, days</Text>
                 <View style={t.fromTo}>
-                  <Text style={[numeral(28), { color: L.muted }]}>{first.length}</Text>
-                  <Icon name="arrowRight" size={16} color={L.muted} weight={2} />
-                  <Text style={[numeral(28), { color: LA.reported }]}>{latest.length}</Text>
+                  <Text style={[numeral(28), { color: L.meta }]}>{first.length}</Text>
+                  <Icon name="arrowRight" size={16} color={L.meta} weight={2} />
+                  <Text style={[numeral(28), { color: mark('reported') }]}>{latest.length}</Text>
                 </View>
                 {sleepFrom && sleepTo ? (
                   <>
-                    <Text style={[font('footnote'), { color: L.muted, marginTop: 14 }]}>Sleep, final week</Text>
+                    <Text style={[font('footnote'), { color: L.meta, marginTop: 14 }]}>Sleep, final week</Text>
                     <View style={t.fromTo}>
-                      <Text style={[numeral(17), { color: L.muted }]}>{sleepFrom}</Text>
-                      <Icon name="arrowRight" size={14} color={L.muted} weight={2} />
-                      <Text style={[numeral(17), { color: LA.measured }]}>{sleepTo}</Text>
+                      <Text style={[numeral(17), { color: L.meta }]}>{sleepFrom}</Text>
+                      <Icon name="arrowRight" size={14} color={L.meta} weight={2} />
+                      <Text style={[numeral(17), { color: mark('measured') }]}>{sleepTo}</Text>
                     </View>
                   </>
                 ) : null}
@@ -236,21 +236,21 @@ icon="plus"
 }
 
 const t = StyleSheet.create({
-  fill: { flex: 1, backgroundColor: L.bg },
-  body: { paddingBottom: 40, paddingTop: 8 },
+  fill: { flex: 1, backgroundColor: L.canvas },
+  body: { paddingBottom: NAV_CLEARANCE, paddingTop: 8 },
   pad: { paddingHorizontal: GUTTER },
   pressed: { opacity: 0.6 },
   section: { marginTop: 28 },
-  eyebrow: { color: L.muted, letterSpacing: 1.1 },
+  eyebrow: { color: L.meta, letterSpacing: 1.1 },
   headline: { color: L.ink, letterSpacing: -0.8, marginTop: 6 },
-  greeting: { color: L.muted, marginTop: 8 },
-  lead: { marginTop: 20 },
-  leadEyebrow: { color: 'rgba(255,255,255,0.6)', letterSpacing: 1.1 },
-  leadText: { color: '#FFFFFF', lineHeight: 25, marginTop: 6 },
+  greeting: { color: L.body, marginTop: SPACE.tight },
+  lead: { marginTop: SPACE.block },
+  leadEyebrow: { color: L.meta, letterSpacing: 1.1 },
+  leadText: { color: L.ink, lineHeight: 25, marginTop: 6 },
 
-  card: { marginTop: 24, backgroundColor: L.field, borderRadius: TILE_RADIUS, padding: 16 },
+  card: { marginTop: SPACE.block, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, padding: 18 },
   trend: { flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: -8 },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: L.line, marginVertical: 16 },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: L.rule, marginVertical: 16 },
   trendLeft: { width: 136 },
   fromTo: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   chart: { flex: 1, aspectRatio: 190 / 150 },

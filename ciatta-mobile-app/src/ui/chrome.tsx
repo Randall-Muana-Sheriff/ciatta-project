@@ -153,17 +153,17 @@ export function ListRow({
       disabled={!onPress}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityState={selected === undefined ? undefined : { selected }}
-      style={({ pressed }) => [s.row, pressed && { backgroundColor: light ? L.line : C.cardHi }]}
+      style={({ pressed }) => [s.row, pressed && { backgroundColor: light ? L.rule : C.cardHi }]}
     >
       {icon ? light ? <Icon name={icon} size={20} color={L.ink} /> : <IconSquare icon={icon} color={tint ?? C.tint} /> : null}
       <View style={[s.rowBody, !first && (light ? s.rowSepLight : s.rowSep)]}>
         <View style={{ flex: 1 }}>
           <Text style={[font('body'), { color: destructive ? C.red : light ? L.ink : C.text }]}>{displayCopy(title)}</Text>
           {sub ? (
-            <Text style={[font('footnote'), { color: light ? L.muted : C.secondary, marginTop: 2 }]}>{displayCopy(sub)}</Text>
+            <Text style={[font('footnote'), { color: light ? L.meta : C.secondary, marginTop: 2 }]}>{displayCopy(sub)}</Text>
           ) : null}
         </View>
-        {value ? <Text style={[font('body'), { color: light ? L.muted : C.secondary }]}>{displayCopy(value)}</Text> : null}
+        {value ? <Text style={[font('body'), { color: light ? L.meta : C.secondary }]}>{displayCopy(value)}</Text> : null}
         {selected === undefined ? right : selected ? <Icon name="check" size={20} color={light ? L.ink : C.tint} weight={2} /> : <View style={s.checkBlank} />}
         {selected === undefined && onPress && !destructive ? <ChevronRight light={light} /> : null}
       </View>
@@ -180,10 +180,18 @@ const TABS: { key: Tab; label: string; icon: IconName }[] = [
   { key: 'profile', label: 'Profile', icon: 'person' },
 ];
 
+// A floating rounded bar rather than a full width strip, the way Oura's
+// sits. Labels and glyphs are untouched: this is where the bar is and what
+// shape it is, nothing about what it says.
+//
+// It floats clear of the home indicator rather than padding itself down to
+// meet it, so the rounded edge stays a rounded edge instead of becoming a
+// shelf attached to the bottom of the screen.
 export function BottomNav({ active, onTab }: { active: Tab; onTab: (tab: Tab) => void }) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[s.nav, { paddingBottom: insets.bottom }]} accessibilityRole="tablist">
+    <View style={[s.navWrap, { paddingBottom: Math.max(insets.bottom, 10) }]} pointerEvents="box-none">
+      <View style={s.nav} accessibilityRole="tablist">
       {TABS.map((t) => {
         const on = t.key === active;
         const color = on ? C.tint : C.muted;
@@ -202,7 +210,8 @@ export function BottomNav({ active, onTab }: { active: Tab; onTab: (tab: Tab) =>
             </Text>
           </Pressable>
         );
-      })}
+        })}
+      </View>
     </View>
   );
 }
@@ -235,8 +244,8 @@ const s = StyleSheet.create({
   iconSquare: { width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   groupHeader: { color: C.text, marginBottom: 8 },
   groupHeaderLight: { color: L.ink },
-  groupLight: { backgroundColor: L.field, borderRadius: TILE_RADIUS },
-  rowSepLight: { borderTopColor: L.line },
+  groupLight: { backgroundColor: L.recessed, borderRadius: TILE_RADIUS },
+  rowSepLight: { borderTopColor: L.rule },
   group: { backgroundColor: C.card, borderRadius: RADIUS, overflow: 'hidden' },
   groupFooter: { color: C.secondary, marginTop: 6, paddingHorizontal: 16 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 16, minHeight: 44 },
@@ -244,12 +253,27 @@ const s = StyleSheet.create({
   rowBody: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingVertical: 11, paddingRight: 16 },
   rowSep: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.separator },
 
+  // The bar floats: the wrapper holds the safe area and lets taps through
+  // to the screen either side of it.
+  navWrap: { paddingHorizontal: 14, paddingTop: 8 },
   nav: {
     flexDirection: 'row',
     backgroundColor: '#121214',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: C.separator,
+    // Fully rounded against a 60pt bar, so the ends are true half circles
+    // rather than a rectangle with soft corners.
+    borderRadius: 30,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.separator,
+    overflow: 'hidden',
+    // Lifted off the page rather than drawn onto it. Low opacity and a
+    // wide spread: a floating bar needs to read as above the content
+    // without announcing a shadow.
+    shadowColor: '#000000',
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
   },
-  tab: { flex: 1, height: 49, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  tab: { flex: 1, height: 60, alignItems: 'center', justifyContent: 'center', gap: 3 },
   tabLabel: { fontFamily: fonts.medium, fontSize: 11, lineHeight: 13 },
 });
