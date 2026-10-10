@@ -6,6 +6,7 @@ import { connectAppleHealth } from '../lib/connectHealth';
 import { useDictation } from '../lib/dictation';
 import { displayCopy } from '../lib/displayCopy';
 import { encryptionNote, healthDisclosureParagraph, importSummaryLine, monogram, SYNC_APPS } from '../lib/healthDisclosure';
+import { latestReadings, type Reading, workoutCount } from '../lib/healthReadings';
 import {
   AGE_RANGES,
   type AgeRange,
@@ -275,6 +276,20 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   const [appleConnected, setAppleConnected] = useState(false);
   // What the last run actually brought in. Null until one has run.
   const [imported, setImported] = useState<ReturnType<typeof importSummaryLine>>('');
+  // Her own readings, straight out of the day rows Today is built from. Not
+  // counts: a woman who has just connected wants to see her step count.
+  const [readings, setReadings] = useState<Reading[]>([]);
+  const [workouts, setWorkouts] = useState(0);
+
+  const refreshReadings = useCallback(async () => {
+    try {
+      const days = await repo.loadDays();
+      setReadings(latestReadings(days));
+      setWorkouts(workoutCount(days));
+    } catch {
+      // Nothing shown rather than something invented.
+    }
+  }, [repo]);
 
   const refreshAppleStatus = useCallback(async () => {
     try {
@@ -302,8 +317,10 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   // Read when she arrives at the connect screen, so a source connected on an
   // earlier run shows as connected rather than waiting on a tap.
   useEffect(() => {
-    if (step === 'connect') void refreshAppleStatus();
-  }, [step, refreshAppleStatus]);
+    if (step !== 'connect') return;
+    void refreshAppleStatus();
+    void refreshReadings();
+  }, [step, refreshAppleStatus, refreshReadings]);
 
   const set = (patch: Partial<Answers>) => setA((prev) => ({ ...prev, ...patch }));
   const next = () => setI((n) => Math.min(n + 1, steps.length - 1));
@@ -351,6 +368,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
       setSourceNote(result.connected ? '' : result.message);
       setImported(importSummaryLine(result.imported));
       await refreshAppleStatus();
+      await refreshReadings();
     } catch {
       setSourceNote('That did not connect. You can try again from Profile.');
     } finally {
@@ -851,11 +869,36 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             </Pressable>
 
             {/*
-              What actually arrived, counted from the run rather than implied
-              by it. "Your data has been imported" is a sentence a failed run
-              could print too; these are numbers that are zero when nothing
-              came in.
+              Her own readings, which is the only proof that any of this
+              worked. A count says a sync ran; a step count says Apple Health
+              handed over her data and Ciatta can read it.
+
+              Every row here came out of a day row. A reading that never
+              arrived is absent rather than zero, and each carries the day it
+              is from, because the newest heart rate may be three days old
+              and a bare number would read as this morning's.
             */}
+            {readings.length ? (
+              <View style={s.readingCard}>
+                <Text style={[font('caption1'), s.groupTitle]}>FROM APPLE HEALTH</Text>
+                {readings.map((r, n) => (
+                  <View key={r.label} style={[s.readingRow, n > 0 && s.rowDivided]}>
+                    <Text style={[font('subhead'), { color: MUTED }]}>{r.label}</Text>
+                    <Text style={[font('subhead', 'semibold'), { color: INK }]}>{r.value}</Text>
+                  </View>
+                ))}
+                {workouts > 0 ? (
+                  <View style={[s.readingRow, s.rowDivided]}>
+                    <Text style={[font('subhead'), { color: MUTED }]}>Workouts</Text>
+                    <Text style={[font('subhead', 'semibold'), { color: INK }]}>{workouts}</Text>
+                  </View>
+                ) : null}
+                <Text style={[font('caption1'), s.readingNote]}>
+                  {displayCopy(`Most recent reading, from ${readings[0].on}.`)}
+                </Text>
+              </View>
+            ) : null}
+
             {imported ? (
               <Text style={[font('footnote'), s.imported]} accessibilityLiveRegion="polite">
                 {displayCopy(imported)}
@@ -1026,6 +1069,11 @@ const s = StyleSheet.create({
   },
   encryptionText: { flex: 1, color: MUTED, lineHeight: 18 },
   imported: { color: INK, marginTop: 14, lineHeight: 18, textAlign: 'center' },
+  readingCard: { marginTop: 24, backgroundColor: FIELD, borderRadius: RADIUS, paddingHorizontal: 14, paddingVertical: 12 },
+  readingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10 },
+  rowDivided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
+  readingNote: { color: MUTED, marginTop: 10 },
+  groupTitle: { color: MUTED, letterSpacing: 0.8, marginBottom: 2 },
   // A plain row, not a card each. Twelve cards on one screen is twelve
   // objects to separate; these are twelve items in one list.
   connect: { marginTop: 28 },
