@@ -7,6 +7,7 @@ import { useDictation } from '../lib/dictation';
 import { displayCopy } from '../lib/displayCopy';
 import { encryptionNote, healthDisclosureParagraph, importSummaryLine, monogram, SYNC_APPS } from '../lib/healthDisclosure';
 import { latestReadings, type Reading, workoutCount } from '../lib/healthReadings';
+import { compileStages, readingsHeadline, type StageId, stageState } from '../lib/firstProfile';
 import { guideFor } from '../lib/syncInstructions';
 import {
   AGE_RANGES,
@@ -63,7 +64,7 @@ const AUTO: StepId[] = ['age', 'lifeStage', 'cycle'];
 // themselves, and connect carries its own action: a Continue under Connect
 // Apple Health is a second button for a screen with one thing to do, and the
 // quieter of the two would be the one that does nothing.
-const NO_CONTINUE: StepId[] = [...AUTO, 'connect'];
+const NO_CONTINUE: StepId[] = [...AUTO, 'connect', 'compiling'];
 
 
 const INK = '#111113';
@@ -284,6 +285,10 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   // Which app's instructions are open. Null is the resting state: seven
   // cards open at once would bury the button under them.
   const [openGuide, setOpenGuide] = useState<string | null>(null);
+  // How far the first profile has got. Null means nothing has finished yet,
+  // and each value means the work that stage names is actually done.
+  const [stageDone, setStageDone] = useState<StageId | null>(null);
+  const [readingCount, setReadingCount] = useState(0);
 
   const refreshReadings = useCallback(async () => {
     try {
@@ -326,6 +331,18 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
     void refreshReadings();
   }, [step, refreshAppleStatus, refreshReadings]);
 
+  // The first profile builds itself on arrival. Guarded on stageDone so a
+  // re render cannot start a second run over the first.
+  const started = useRef(false);
+  useEffect(() => {
+    if (step !== 'compiling' || started.current) return;
+    started.current = true;
+    void buildProfile();
+    // buildProfile is stable for this screen's lifetime in practice, and
+    // listing it would restart the run on every state change it causes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
   const set = (patch: Partial<Answers>) => setA((prev) => ({ ...prev, ...patch }));
   const next = () => setI((n) => Math.min(n + 1, steps.length - 1));
 
@@ -363,8 +380,14 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
       });
       setSourceNote(result.connected ? '' : result.message);
       setImported(importSummaryLine(result.imported));
+      setReadingCount(result.imported?.observations ?? 0);
       await refreshAppleStatus();
       await refreshReadings();
+      // Permission given is the end of this screen's job. Everything on it
+      // below the button is explanation she needs once, before deciding,
+      // and leaving her to find Skip afterwards would be the app waiting
+      // for nothing.
+      next();
     } catch {
       setSourceNote('That did not connect. You can try again from Profile.');
     } finally {
@@ -372,24 +395,38 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
     }
   };
 
-  const finish = async () => {
+  // Walks the stages by doing the work, not by waiting. Each setStageDone
+  // happens after the thing it names has finished, which is the difference
+  // between a progress list and a spinner with captions.
+  const buildProfile = async () => {
     if (saving) return;
     setSaving(true);
     setError('');
+    setStageDone(null);
     try {
+      // The readings are already counted by the time this screen renders.
+      setStageDone('readings');
+      await new Promise((r) => setTimeout(r, 450));
+      setStageDone('answers');
       await repo.completeOnboarding(a);
-      // The greeting reads the name she just set rather than the one the sign
-      // in copied off her account.
+      setStageDone('saved');
       await reloadFirstName();
-      onDone();
+      await new Promise((r) => setTimeout(r, 450));
+      setStageDone('profile');
+      await new Promise((r) => setTimeout(r, 350));
+      setI((n) => Math.min(n + 1, steps.length - 1));
     } catch {
-      // Her answers stay on screen. A failed save must not look like a
-      // finished session, and must not throw away what she just typed.
+      // Her answers stay in state and the record stays unfinished, so the
+      // next launch resumes rather than dropping her into an empty Today.
       setError('That did not save. Check your connection and try again.');
     } finally {
       setSaving(false);
     }
   };
+
+  // Nothing left to write: the record was saved on the screen before, which
+  // is the only screen that could honestly tick "Saved it to your record".
+  const finish = () => onDone();
 
   // The welcome screen is its own layout, not a variant of the white one.
   // It is the only screen with a photograph behind it, and the photograph
@@ -494,19 +531,80 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         the page is a button she has to read before she can ignore it.
       */}
       <View style={[s.header, { paddingTop: insets.top + 24 }]}>
-        <Pressable
-          onPress={back}
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          hitSlop={8}
-          style={({ pressed }) => [s.headerSide, s.headerLeft, pressed && s.pressed]}
-        >
-          <Icon name="chevronLeft" size={22} color={INK} />
-        </Pressable>
+        {/*
+          Neither control renders while the profile is building. Back would
+          walk her out of a save in progress and Skip would abandon it, and
+          the screen finishes on its own in a couple of seconds anyway.
+        */}
+        {step === 'compiling' ? (
+          <View style={s.headerSide} />
+        ) : (
+          <Pressable
+            onPress={back}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+            hitSlop={8}
+            style={({ pressed }) => [s.headerSide, s.headerLeft, pressed && s.pressed]}
+          >
+            <Icon name="chevronLeft" size={22} color={INK} />
+          </Pressable>
+        )}
 
         <Dots index={i - 1} total={steps.length - 1} />
 
-        {step === 'reflect' ? (
+        {/*
+          The wait, with the work named. Each line ticks when the thing it
+          names has actually finished: the readings are counted, her answers
+          are written, the record is saved. A list that advanced on a timer
+          while nothing happened would be a lie told with a spinner, and it
+          is the easiest one in an app to tell by accident.
+        */}
+        {step === 'compiling' ? (
+          <View style={s.compile}>
+            <Text style={[font('largeTitle'), s.countBig]} accessibilityRole="header">
+              {readingsHeadline(readingCount)}
+            </Text>
+            <Text style={[font('subhead'), s.countUnder]}>
+              {readingCount === 1 ? 'reading imported' : 'readings imported'}
+            </Text>
+
+            <Text style={[font('title2'), s.compileTitle]}>Building your health profile</Text>
+
+            {compileStages(readingCount).map((stage) => {
+              const state = stageState(stage.id, stageDone);
+              return (
+                <View key={stage.id} style={[s.stageRow, state === 'waiting' && s.stageWaiting]}>
+                  <View style={[s.stageMark, state === 'done' && s.stageMarkDone]}>
+                    {state === 'done' ? <Icon name="check" size={13} color="#FFFFFF" /> : null}
+                  </View>
+                  <Text
+                    style={[font('subhead', state === 'waiting' ? 'regular' : 'semibold'), s.stageText]}
+                    accessibilityLiveRegion={state === 'running' ? 'polite' : 'none'}
+                  >
+                    {displayCopy(stage.label)}
+                  </Text>
+                </View>
+              );
+            })}
+
+            {error ? (
+              <View>
+                <Text style={[font('footnote'), s.error]} accessibilityLiveRegion="polite">
+                  {displayCopy(error)}
+                </Text>
+                <Pressable
+                  onPress={() => void buildProfile()}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [s.primary, s.connect, pressed && s.pressed]}
+                >
+                  <Text style={[font('headline'), { color: '#FFFFFF' }]}>Try again</Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {step === 'reflect' || step === 'compiling' ? (
           <View style={s.headerSide} />
         ) : (
           <Pressable
@@ -1097,6 +1195,34 @@ const s = StyleSheet.create({
   guideStep: { flexDirection: 'row', gap: 10, marginTop: 12 },
   guideNumber: { color: INK, minWidth: 18 },
   guideText: { flex: 1, color: INK, lineHeight: 21 },
+  compile: { alignItems: 'stretch' },
+  countBig: { color: INK, textAlign: 'center', letterSpacing: -1 },
+  countUnder: { color: MUTED, textAlign: 'center', marginTop: 2 },
+  compileTitle: { color: INK, textAlign: 'center', marginTop: 28, marginBottom: 6 },
+  stageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 10,
+    padding: 14,
+    borderRadius: RADIUS,
+    backgroundColor: FIELD,
+  },
+  // A step not started yet is quieter, so the one in progress is the one
+  // her eye lands on.
+  stageWaiting: { opacity: 0.45 },
+  stageMark: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: LINE,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stageMarkDone: { backgroundColor: '#0B7A4B', borderColor: '#0B7A4B' },
+  stageText: { flex: 1, color: INK },
   appMark: { width: 28, height: 28, borderRadius: 7 },
   appMonogram: {
     width: 28,

@@ -137,6 +137,7 @@ test('the sequence opens on the promise and closes on the reflection', () => {
     'supplements',
     'goals',
     'connect',
+    'compiling',
     'reflect',
   ]);
   assert.equal(s[0], 'welcome', 'the first session must open with the promise, not a question');

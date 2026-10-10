@@ -88,6 +88,7 @@ export type StepId =
   | 'supplements'
   | 'goals'
   | 'connect'
+  | 'compiling'
   | 'reflect';
 
 export type Answers = {
@@ -185,6 +186,7 @@ export function stepsFor(a: Answers): StepId[] {
     'supplements',
     'goals',
     'connect',
+    'compiling',
     'reflect',
   ];
 }
