@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type Nav, NavContext, type Screen, type Tab } from './navigation';
 import { CycleHistoryScreen } from './screens/CycleHistoryScreen';
 import { CycleLogScreen } from './screens/CycleLogScreen';
+import { AppointmentScreen } from './screens/AppointmentScreen';
 import { CycleProfileScreen } from './screens/CycleProfileScreen';
 import { CycleScreen } from './screens/CycleScreen';
 import { EvidenceScreen } from './screens/EvidenceScreen';
@@ -42,6 +43,7 @@ const DETAIL_SCREENS: Record<Screen, ComponentType> = {
   evidence: EvidenceScreen,
   movement: MovementScreen,
   cycleProfile: CycleProfileScreen,
+  appointment: AppointmentScreen,
 };
 
 // Four tabs, each with its own stack of detail screens. The tab bar stays

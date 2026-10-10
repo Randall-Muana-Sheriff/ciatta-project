@@ -102,7 +102,13 @@ export type Repo = {
   // chart of a day. These come from observations, which carry the time each
   // sample was taken, so the line is drawn where readings actually are.
   loadIntraday(sinceIso: string): Promise<IntradayPoint[]>;
+  // What she reported about herself: conditions, surgeries, medications and
+  // supplements, as she named them. Written at onboarding and never
+  // inferred, which is why the brief can print them as hers.
+  loadReported(): Promise<Reported>;
 };
+
+export type Reported = { conditions: string[]; surgeries: string[]; medications: string[]; supplements: string[] };
 
 // One measured sample with the moment it was taken. value_text carries the
 // sleep stage for sleep_analysis, where there is no number to plot.
@@ -160,6 +166,12 @@ export function demoRepo(): Repo {
     // The example person's day. Demo is explicitly not her record, so a
     // drawn day here is an illustration rather than a claim.
     loadIntraday: async () => sampleIntraday(),
+    loadReported: async () => ({
+      conditions: ['Endometriosis'],
+      surgeries: [],
+      medications: ['Levothyroxine'],
+      supplements: ['Magnesium'],
+    }),
   };
 }
 
@@ -410,6 +422,20 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
     async firstName() {
       const row = must(await db.from('profiles').select('first_name').eq('id', userId).maybeSingle()) as { first_name: string | null } | null;
       return row?.first_name ?? null;
+    },
+    async loadReported() {
+      const [conditions, meds, sups] = await Promise.all([
+        db.from('conditions').select('kind, name'),
+        db.from('medications').select('name'),
+        db.from('supplements').select('name'),
+      ]);
+      const named = (must(conditions) ?? []) as { kind: string; name: string }[];
+      return {
+        conditions: named.filter((c) => c.kind === 'condition').map((c) => c.name),
+        surgeries: named.filter((c) => c.kind === 'surgery').map((c) => c.name),
+        medications: ((must(meds) ?? []) as { name: string }[]).map((m) => m.name),
+        supplements: ((must(sups) ?? []) as { name: string }[]).map((m) => m.name),
+      };
     },
     async loadIntraday(sinceIso) {
       // Only the two metrics the day chart draws, and only today's. Reading

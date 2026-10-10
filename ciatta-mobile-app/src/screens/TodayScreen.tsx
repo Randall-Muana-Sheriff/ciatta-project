@@ -9,7 +9,7 @@ import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
 import { useData, useRepo } from '../state/session';
 import { font, fonts, GUTTER, numeral } from '../theme';
-import { Tile } from '../ui/bento';
+import { Eyebrow, Tile } from '../ui/bento';
 import { images } from '../ui/images';
 import { AXIS, buildDay, type DayChart, VIEW } from '../lib/todayChart';
 import type { IntradayPoint } from '../data/repo';
@@ -354,40 +354,50 @@ export function TodayScreen() {
           </Tile>
         )}
 
-        <ListGroup light style={{ marginTop: 12 }}>
-          {actions.map((a, n) => (
-            <ListRow light key={a.key} first={n === 0} icon={a.icon} title={a.title} sub={a.sub} onPress={a.onPress} />
-          ))}
-        </ListGroup>
+        {/*
+          What today's pattern suggests trying, which only exists when the
+          pattern does. The concept calls this the try block and gives it
+          one job: the thing she might do about what she just read.
+        */}
+        {actions.length ? (
+          <View style={t.section}>
+            <Eyebrow>What you could try</Eyebrow>
+            <ListGroup light style={{ marginTop: 10 }}>
+              {actions.map((a, n) => (
+                <ListRow light key={a.key} first={n === 0} icon={a.icon} title={a.title} sub={a.sub} onPress={a.onPress} />
+              ))}
+            </ListGroup>
+          </View>
+        ) : null}
 
-        <ListGroup light header="Worth Doing Next" style={t.section}>
-          <ListRow light
-            first
-            
-icon="plus"
-            title="Log Cycle Experience"
-            sub="Bleeding, pain, symptoms, and what was going on."
-            onPress={() => {
-              startDraft();
-              nav.push('cycleLog');
-            }}
-          />
-          <ListRow light icon="journey" title="Movement" sub="Activity against your usual, and what it lines up with." onPress={go('movement')} />
-          <ListRow light icon="bars" title="Track Next Cycle" sub="Keep an eye on cycle timing and sleep." onPress={go('cycle')} />
-          <ListRow light icon="notebook" title="Add a Note" sub="Write down what you're noticing." onPress={go('journal')} />
-          {/*
-            Last, because it is the only one here that is not about today.
-            The others add to the record; this one takes the record
-            somewhere.
-          */}
-          <ListRow
-            light
-            icon="calendarPlus"
-            title="Prepare for an Appointment"
-            sub="Gather what you want to raise, ready to take with you."
-            onPress={go('healthrecords')}
-          />
-        </ListGroup>
+        {/*
+          Two ways in, and only two. One adds to the record, the other
+          takes the record somewhere, and everything else she might do is
+          reachable from the screen it belongs to.
+        */}
+        <View style={t.section}>
+          <Eyebrow>You can</Eyebrow>
+          <ListGroup light style={{ marginTop: 10 }}>
+            <ListRow
+              light
+              first
+              icon="plus"
+              title="Log Cycle Experience and Symptoms"
+              sub="Bleeding, pain, symptoms, and what was going on."
+              onPress={() => {
+                startDraft();
+                nav.push('cycleLog');
+              }}
+            />
+            <ListRow
+              light
+              icon="calendarPlus"
+              title="Prepare for an Appointment"
+              sub="Build a brief from your record to take with you."
+              onPress={go('appointment')}
+            />
+          </ListGroup>
+        </View>
       </View>
     </ScrollView>
   );

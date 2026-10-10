@@ -22,7 +22,8 @@ export type Screen =
   | 'cycleHistory'
   | 'evidence'
   | 'movement'
-  | 'cycleProfile';
+  | 'cycleProfile'
+  | 'appointment';
 
 export type Nav = {
   tab: Tab;
