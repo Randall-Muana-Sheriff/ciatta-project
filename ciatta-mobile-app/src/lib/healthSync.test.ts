@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { CATEGORY_SPECS } from './healthCategories';
 import { QUANTITY_SPECS } from './healthMetrics';
 import {
   anchorKey,
@@ -11,10 +12,11 @@ import {
 } from './healthSync';
 import { QUANTITY_SPECS } from './healthMetrics';
 
-// Every quantity metric, plus sleep and workouts. Derived rather than
-// written down: these assertions are about no metric being dropped from a
-// run, not about how many metrics there happen to be this month.
-const ALL_METRICS = QUANTITY_SPECS.length + 2;
+// Every metric a run covers: the quantity types, every category type, plus
+// sleep and workouts. Derived rather than written down, because these
+// assertions are about no metric being dropped from a run and not about how
+// many metrics there happen to be this month.
+const ALL_METRICS = QUANTITY_SPECS.length + CATEGORY_SPECS.length + 2;
 
 const STEPS = QUANTITY_SPECS.find((s) => s.identifier === 'HKQuantityTypeIdentifierStepCount')!;
 const USER_ID = 'user-1';

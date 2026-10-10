@@ -20,6 +20,7 @@ import {
 } from '@kingstinct/react-native-healthkit';
 import type { CategoryTypeIdentifier, ObjectTypeIdentifier, QuantityTypeIdentifier } from '@kingstinct/react-native-healthkit';
 
+import { CATEGORY_SPECS } from './healthCategories';
 import { QUANTITY_SPECS, SLEEP_SPEC, WORKOUT_SPEC } from './healthMetrics';
 import type { CategorySample, QuantitySample, WorkoutSample } from './healthSamples';
 import type { AnchorStore, SyncPort } from './healthSync';
@@ -29,6 +30,7 @@ const READ_TYPES: ObjectTypeIdentifier[] = [
   ...QUANTITY_SPECS.map((spec) => spec.identifier as QuantityTypeIdentifier),
   SLEEP_SPEC.identifier as CategoryTypeIdentifier,
   WorkoutTypeIdentifier,
+  ...CATEGORY_SPECS.map((spec) => spec.identifier as CategoryTypeIdentifier),
 ];
 
 export async function isHealthAvailable(): Promise<boolean> {
@@ -125,8 +127,10 @@ async function queryQuantity(identifier: string, opts: QueryOpts): Promise<{ sam
   return { samples, newAnchor: result.newAnchor };
 }
 
-async function querySleep(opts: QueryOpts): Promise<{ samples: unknown[]; newAnchor: string }> {
-  const result = await queryCategorySamplesWithAnchor(SLEEP_SPEC.identifier as CategoryTypeIdentifier, {
+// Any category type, sleep included. Sleep differs only in what is done
+// with the value afterwards, not in how it is read.
+async function queryCategory(identifier: string, opts: QueryOpts): Promise<{ samples: unknown[]; newAnchor: string }> {
+  const result = await queryCategorySamplesWithAnchor(identifier as CategoryTypeIdentifier, {
     limit: opts.limit,
     ...(opts.anchor ? { anchor: opts.anchor } : {}),
     ...dateFilter(opts),
@@ -165,7 +169,7 @@ async function queryWorkouts(opts: QueryOpts): Promise<{ samples: unknown[]; new
 export const healthKitPort: SyncPort = {
   query(identifier, opts) {
     if (identifier === WORKOUT_SPEC.identifier) return queryWorkouts(opts);
-    if (identifier === SLEEP_SPEC.identifier) return querySleep(opts);
+    if (identifier.startsWith('HKCategoryTypeIdentifier')) return queryCategory(identifier, opts);
     return queryQuantity(identifier, opts);
   },
   async post(batch) {

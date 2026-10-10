@@ -3,6 +3,7 @@
 // a real HealthKit sample into, not the HealthKit types themselves.
 
 import { isoDay } from '../data/cycleLog';
+import type { CategorySpec } from './healthCategories';
 import {
   type DailyRow,
   type DayNumbers,
@@ -69,6 +70,7 @@ export type WorkoutSample = {
 export type FoldableSample =
   | { kind: 'quantity'; spec: MetricSpec; sample: QuantitySample }
   | { kind: 'sleep'; sample: CategorySample }
+  | { kind: 'category'; spec: CategorySpec; sample: CategorySample }
   | { kind: 'workout'; sample: WorkoutSample };
 
 function toIso(date: Date): string {
@@ -117,6 +119,27 @@ export function sampleToObservation(
       provenance: 'MEASURED',
       dedupe_key: dedupeKey(spec.metric, segment),
       metadata: {},
+    };
+  }
+
+  // A category sample that is not sleep. The value is HealthKit's code for
+  // that type, stored as the number it is: mapping it to words here would
+  // need a table per type, and a wrong entry would put a reading in her
+  // record she never gave. The metric name says which code set it belongs
+  // to, which is what a later mapping task needs.
+  if ((spec as CategorySpec).identifier.startsWith('HKCategoryTypeIdentifier')) {
+    const categorySpec = spec as CategorySpec;
+    const categorySample = sample as CategorySample;
+    return {
+      domain: categorySpec.domain,
+      metric: categorySpec.metric,
+      value: categorySample.value,
+      value_text: null,
+      unit: null,
+      occurred_at: toIso(categorySample.endDate),
+      provenance: 'MEASURED',
+      dedupe_key: dedupeKey(categorySpec.metric, categorySample),
+      metadata: { coded: true },
     };
   }
 
@@ -184,6 +207,10 @@ export function foldDay(samples: readonly FoldableSample[]): Record<string, Part
       accumulator.entries.push({ value: sample.value, at: sample.startDate.getTime() });
       continue;
     }
+
+    // No category type folds into a daily row. Sleep is the exception and
+    // it is handled by its own branch below.
+    if (item.kind === 'category') continue;
 
     if (item.kind === 'sleep') {
       const { sample } = item;

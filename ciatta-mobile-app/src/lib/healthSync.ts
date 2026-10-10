@@ -6,6 +6,7 @@
 // healthKit.ts) implements for real, and a test implements with a fake, so
 // this file's behaviour is provable without a phone.
 import type { DailyRow, MetricSpec, SleepSpec, WorkoutSpec } from './healthMetrics';
+import { CATEGORY_SPECS, type CategorySpec } from './healthCategories';
 import { QUANTITY_SPECS, SLEEP_SPEC, WORKOUT_SPEC } from './healthMetrics';
 import type { CategorySample, FoldableSample, NewObservation, QuantitySample, WorkoutSample } from './healthSamples';
 import { foldDay, sampleToObservation } from './healthSamples';
@@ -73,13 +74,14 @@ export type SyncResult = {
 
 // ── What we read ─────────────────────────────────────────────────
 
-type AnySpec = MetricSpec | SleepSpec | WorkoutSpec;
-type SpecKind = 'quantity' | 'sleep' | 'workout';
+type AnySpec = MetricSpec | SleepSpec | WorkoutSpec | CategorySpec;
+type SpecKind = 'quantity' | 'sleep' | 'workout' | 'category';
 
 const SYNC_SPECS: readonly { kind: SpecKind; spec: AnySpec }[] = [
   ...QUANTITY_SPECS.map((spec) => ({ kind: 'quantity' as const, spec: spec as AnySpec })),
   { kind: 'sleep' as const, spec: SLEEP_SPEC as AnySpec },
   { kind: 'workout' as const, spec: WORKOUT_SPEC as AnySpec },
+  ...CATEGORY_SPECS.map((spec) => ({ kind: 'category' as const, spec: spec as AnySpec })),
 ];
 
 // How far back a recovery sync reaches when there is no anchor to trust yet.
@@ -92,12 +94,13 @@ export const BATCH_SIZE = 250;
 function toFoldable(kind: SpecKind, spec: AnySpec, raw: unknown): FoldableSample {
   if (kind === 'quantity') return { kind: 'quantity', spec: spec as MetricSpec, sample: raw as QuantitySample };
   if (kind === 'sleep') return { kind: 'sleep', sample: raw as CategorySample };
+  if (kind === 'category') return { kind: 'category', spec: spec as CategorySpec, sample: raw as CategorySample };
   return { kind: 'workout', sample: raw as WorkoutSample };
 }
 
 function toObservation(kind: SpecKind, spec: AnySpec, raw: unknown): NewObservation {
   if (kind === 'quantity') return sampleToObservation(spec as MetricSpec, raw as QuantitySample);
-  if (kind === 'sleep') return sampleToObservation(spec, raw as CategorySample);
+  if (kind === 'sleep' || kind === 'category') return sampleToObservation(spec, raw as CategorySample);
   return sampleToObservation(spec, raw as WorkoutSample);
 }
 
