@@ -724,7 +724,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             </View>
 
             <Text style={[font('title1'), s.titleCentre]} accessibilityRole="header">
-              Apple Health
+              Connect Apple Health
             </Text>
             <Text style={[font('subhead'), s.connectLede]}>{displayCopy(healthDisclosureParagraph())}</Text>
 

@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
-  disclosedCount,
   healthCategories,
   healthCategoryClause,
   healthDisclosureParagraph,
@@ -46,11 +45,6 @@ test('the requested list is exactly the specs the permission request is built fr
   ]);
 });
 
-test('the count is the number of readings she is actually agreeing to', () => {
-  assert.equal(disclosedCount(), requestedTypes().length);
-  assert.ok(disclosedCount() > 0);
-});
-
 // ── What she actually reads ───────────────────────────────────────────
 
 test('the categories are words rather than internal domains', () => {
@@ -70,11 +64,19 @@ test('the clause lists every category and reads as a sentence would', () => {
   assert.ok(clause.includes(' and '), 'the categories were run together with no conjunction');
 });
 
-test('the paragraph says the kinds and the number, and ends on Apple', () => {
+test('the paragraph names every category and says what they are for', () => {
   const p = healthDisclosureParagraph();
   assert.ok(p.includes(healthCategoryClause()), 'the paragraph does not name the categories');
-  assert.ok(p.includes(String(disclosedCount())), 'the paragraph does not say how many readings');
-  assert.ok(/Apple asks next/.test(p), 'the paragraph does not say who asks next');
+  assert.ok(/compare a week to your own usual/.test(p), 'the paragraph does not say what the data is for');
+});
+
+test('the paragraph is one sentence and does not describe the sheet that follows', () => {
+  // The button says Continue to Apple Health and Apple's own sheet arrives a
+  // moment later to speak for itself. Describing it here is a sentence she
+  // reads once and never needs again.
+  const p = healthDisclosureParagraph();
+  assert.equal(p.split('. ').length, 1, 'the paragraph grew a second sentence');
+  assert.ok(!/Apple asks/.test(p), 'the paragraph narrates the sheet that follows it');
 });
 
 test('the paragraph is one paragraph and holds no dash of any kind', () => {

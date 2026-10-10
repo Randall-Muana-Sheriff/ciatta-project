@@ -65,12 +65,6 @@ export function healthCategories(): string[] {
   return CATEGORY_ORDER.filter((d) => asked.has(d)).map((d) => CATEGORY_NAMES[d]);
 }
 
-// How many separate readings she is agreeing to share. Counted rather than
-// written down, for the same reason as everything else here.
-export function disclosedCount(): number {
-  return requestedTypes().length;
-}
-
 // The categories as one clause: "movement, heart and breathing, and sleep".
 export function healthCategoryClause(): string {
   const xs = healthCategories();
@@ -79,12 +73,12 @@ export function healthCategoryClause(): string {
   return `${xs.slice(0, -1).join(', ')}, and ${xs[xs.length - 1]}`;
 }
 
-// The whole disclosure, in one sentence pair.
+// The whole disclosure, in one sentence.
 //
-// It says the count as well as the kinds, because "movement and sleep" alone
-// could be two readings or forty, and the number is the part that tells her
-// how much she is being asked for. It ends on Apple, because what she does
-// next is answer Apple rather than Ciatta.
+// The kinds and what they are for, and nothing about what happens next: the
+// button underneath says Continue to Apple Health, and Apple's sheet arrives
+// to speak for itself a moment later. A sentence describing that sheet is a
+// sentence she reads once and never needs again.
 export function healthDisclosureParagraph(): string {
-  return `Ciatta reads your ${healthCategoryClause()} from Apple Health, ${disclosedCount()} kinds of reading in all, so it can compare a week to your own usual rather than to anybody else. Apple asks next, and you choose there, one at a time or all at once.`;
+  return `Ciatta reads your ${healthCategoryClause()} from Apple Health, so it can compare a week to your own usual rather than to anybody else.`;
 }
