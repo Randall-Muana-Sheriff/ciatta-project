@@ -22,7 +22,7 @@ import {
 import { useRepo, useSession } from '../state/session';
 import { font, GUTTER, RADIUS } from '../theme';
 import { images } from '../ui/images';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 // The first session: six screens in three phases.
 //
@@ -278,7 +278,33 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
           <Rect x="0" y="0" width="100%" height="100%" fill="url(#welcomeScrim)" />
         </Svg>
 
-        <View style={[s.welcomeTop, { paddingTop: insets.top + 24 }]} pointerEvents="none">
+        <View style={[s.welcomeTop, { paddingTop: insets.top + 24 }]}>
+          {/*
+            It reads as back and it signs her out, because on this screen
+            those are the same move: the screen behind it is the sign in
+            screen, and nothing she has entered is lost by going there. The
+            hint says so, since an arrow that ends a session is otherwise a
+            surprise to anyone who cannot see where it leads.
+          */}
+          <Pressable
+            onPress={signOut}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+            accessibilityHint="Signs you out and returns to the sign in screen"
+            hitSlop={8}
+            style={({ pressed }) => [s.backAbs, { top: insets.top + 24 - 11 }, pressed && s.pressed]}
+          >
+            <Svg width={11} height={19} viewBox="0 0 11 19">
+              <Path
+                d="M9.5 1.5 2 9.5l7.5 8"
+                stroke="#FFFFFF"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+            </Svg>
+          </Pressable>
           <Image
             source={images.wordmark}
             style={s.logo}
@@ -313,21 +339,6 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             <Text style={[font('headline'), { color: INK }]}>Begin</Text>
           </Pressable>
 
-          {/*
-            The only way out of a first session she has not finished.
-            Sign Out otherwise lives in Profile, which sits behind Root, which
-            she cannot reach until onboarding completes: signing in on the
-            wrong account left her with no way back to the sign in screen and
-            no way to switch. One quiet line fixes that, and it is the reason
-            this is here rather than a design flourish.
-          */}
-          <Pressable
-            onPress={signOut}
-            accessibilityRole="button"
-            style={({ pressed }) => [s.signOut, pressed && s.pressed]}
-          >
-            <Text style={[font('subhead'), s.signOutText]}>Not your account? Sign out</Text>
-          </Pressable>
         </View>
       </View>
     );
@@ -596,8 +607,20 @@ const s = StyleSheet.create({
   welcomeTop: { alignItems: 'center', paddingHorizontal: GUTTER },
   welcomeMid: { flex: 1, justifyContent: 'center', paddingHorizontal: GUTTER },
   logo: { width: 74, height: 22 },
-  signOut: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
-  signOutText: { color: 'rgba(255,255,255,0.8)' },
+  // Centred on the mark rather than sitting on its top edge: the control is
+  // 44pt tall against a 22pt mark, so it is lifted by half the difference.
+  // The offset is applied inline because this container holds its own top
+  // padding, which makes its top edge the top of the screen rather than the
+  // top of the mark.
+  backAbs: {
+    position: 'absolute',
+    left: GUTTER,
+    zIndex: 1,
+    minHeight: 44,
+    minWidth: 44,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
   titleOnPhoto: { color: '#FFFFFF', letterSpacing: -0.4 },
   ledeOnPhoto: { color: 'rgba(255,255,255,0.88)', marginTop: 16, lineHeight: 26 },
   primaryOnPhoto: {
