@@ -61,15 +61,23 @@ export const LIFE_STAGES: { id: LifeStage; label: string }[] = [
   { id: 'unsure', label: 'Not sure' },
 ];
 
+// Six screens in three phases, down from ten.
+//
+// The order reverses what the first build did, and the reversal is the point.
+// It opened on the empty text box, reasoning that a questionnaire first
+// teaches her Ciatta wants data entry. That was the wrong read of the same
+// instinct: an empty box with no frame is the harder question, not the softer
+// one. Tapping intent first costs one gesture and gives her something to
+// write against, so by the time the box appears she knows what it is for.
+//
+// What was five separate question screens is now one scrolling snapshot.
+// Conditions, medications and cycle are the same kind of answer, and making
+// her tap Continue between them was pacing, not progress.
 export type StepId =
   | 'welcome'
-  | 'tell'
   | 'intent'
-  | 'about'
-  | 'cycle'
-  | 'conditions'
-  | 'medications'
-  | 'symptoms'
+  | 'tell'
+  | 'snapshot'
   | 'connect'
   | 'reflect';
 
@@ -125,11 +133,12 @@ export function emptyAnswers(): Answers {
 // asking her for a cycle length collects a null and spends a screen; a woman
 // who came to understand her cycle gets asked even if she has not named a life
 // stage yet.
-export function stepsFor(a: Answers): StepId[] {
-  const steps: StepId[] = ['welcome', 'tell', 'intent', 'about'];
-  if (cycleIsRelevant(a)) steps.push('cycle');
-  steps.push('conditions', 'medications', 'symptoms', 'connect', 'reflect');
-  return steps;
+// The sequence is now fixed. The cycle question did not disappear: it moved
+// inside the snapshot screen, where cycleIsRelevant still decides whether the
+// section renders. A question that vanishes from a scroll costs her nothing,
+// where a step that vanishes from a count makes the progress indicator jump.
+export function stepsFor(_a: Answers): StepId[] {
+  return ['welcome', 'intent', 'tell', 'snapshot', 'connect', 'reflect'];
 }
 
 export function cycleIsRelevant(a: Answers): boolean {
@@ -220,7 +229,7 @@ export function buildReflection(a: Answers): Reflection {
 
   // The gaps. Each one names what it would let Ciatta do, and `fillable` says
   // whether Ciatta can close it by asking again or whether only time can.
-  if (!a.symptoms.length && !a.skipped.includes('symptoms')) {
+  if (!a.symptoms.length && !a.skipped.includes('snapshot')) {
     gaps.push({
       label: 'What you have been feeling',
       why: 'A symptom logged with a date is the thing a change in sleep or cycle can be lined up against.',
@@ -319,14 +328,16 @@ export function consentsFor(marketingEmail: boolean): Consent[] {
 const CORRECTION_STEPS: Record<string, StepId> = {
   'In your words': 'tell',
   'What brought you here': 'intent',
-  'Age range': 'about',
-  'Life stage': 'about',
-  'Typical cycle': 'cycle',
-  Conditions: 'conditions',
-  Surgeries: 'conditions',
-  Medications: 'medications',
-  Supplements: 'medications',
-  Symptoms: 'symptoms',
+  // Everything below lives on the one snapshot screen now.
+  'Age range': 'snapshot',
+  'Life stage': 'snapshot',
+  'Typical cycle': 'snapshot',
+  Conditions: 'snapshot',
+  Surgeries: 'snapshot',
+  Medications: 'snapshot',
+  Supplements: 'snapshot',
+  Symptoms: 'snapshot',
+  'What you want': 'snapshot',
 };
 
 export function correctionTarget(a: Answers, label: string): StepId {

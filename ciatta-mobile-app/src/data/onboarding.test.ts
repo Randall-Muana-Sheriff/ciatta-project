@@ -84,7 +84,7 @@ test('time is always named as a gap, and as one that asking cannot close', () =>
 });
 
 test('a question she skipped is not reported back as a gap Ciatta could fill', () => {
-  const skipped = buildReflection(answers({ skipped: ['symptoms'] }));
+  const skipped = buildReflection(answers({ skipped: ['snapshot'] }));
   assert.ok(
     !skipped.gaps.some((g) => g.label === 'What you have been feeling'),
     'a declined question was listed as missing data',
@@ -104,23 +104,40 @@ test('a cycle gap is only raised when a cycle is relevant to her', () => {
 
 // ── Which questions she is actually asked ──────────────────────────────
 
-test('the cycle step is skipped where it could not change an interpretation', () => {
-  assert.ok(!stepsFor(answers({ lifeStage: 'menopause' })).includes('cycle'));
-  assert.ok(!stepsFor(answers({ lifeStage: 'pregnant' })).includes('cycle'));
-  assert.ok(stepsFor(answers({ lifeStage: 'perimenopause' })).includes('cycle'));
-  assert.ok(stepsFor(answers({ lifeStage: 'cycle_irregular' })).includes('cycle'));
+test('the cycle question is hidden where it could not change an interpretation', () => {
+  // It is a section inside the snapshot screen now, not a step of its own, so
+  // the rule lives in cycleIsRelevant and the screen reads it. A question that
+  // vanishes from a scroll costs her nothing; a step that vanishes from a
+  // count makes the progress indicator jump.
+  assert.equal(cycleIsRelevant(answers({ lifeStage: 'menopause' })), false);
+  assert.equal(cycleIsRelevant(answers({ lifeStage: 'pregnant' })), false);
+  assert.equal(cycleIsRelevant(answers({ lifeStage: 'perimenopause' })), true);
+  assert.equal(cycleIsRelevant(answers({ lifeStage: 'cycle_irregular' })), true);
 });
 
 test('she is asked about her cycle when that is what she came for, even with no life stage', () => {
   assert.ok(cycleIsRelevant(answers({ intents: ['cycle'] })));
-  assert.ok(stepsFor(answers({ intents: ['cycle'] })).includes('cycle'));
 });
 
-test('the sequence always opens on the promise and closes on the reflection', () => {
+test('the sequence is six screens, opening on the promise and closing on the reflection', () => {
   const s = stepsFor(answers());
+  assert.deepEqual(s, ['welcome', 'intent', 'tell', 'snapshot', 'connect', 'reflect']);
   assert.equal(s[0], 'welcome', 'the first session must open with the promise, not a question');
   assert.equal(s[s.length - 1], 'reflect', 'she must be shown what Ciatta made of it');
-  assert.ok(s.indexOf('tell') < s.indexOf('intent'), 'her own words must come before the checkboxes');
+});
+
+test('the tags come before the open box, so she has a frame to write against', () => {
+  // This reverses the first build, which opened on the empty box reasoning
+  // that a questionnaire first teaches her Ciatta wants data entry. An empty
+  // box with no frame is the harder question, not the softer one.
+  const s = stepsFor(answers());
+  assert.ok(s.indexOf('intent') < s.indexOf('tell'), 'the open box came before anything framed it');
+});
+
+test('connecting a source is asked last, after she has told her story', () => {
+  const s = stepsFor(answers());
+  assert.ok(s.indexOf('connect') > s.indexOf('tell'));
+  assert.ok(s.indexOf('connect') > s.indexOf('snapshot'), 'asked for permissions before she had invested anything');
 });
 
 // ── Ending with something useful ───────────────────────────────────────
@@ -208,13 +225,13 @@ test('signing up always grants terms and privacy, which are not optional', () =>
 
 test('a correction opens the step that holds that answer', () => {
   const a = answers({ conditions: ['Endometriosis'], medications: ['Levothyroxine'] });
-  assert.equal(correctionTarget(a, 'Conditions'), 'conditions');
-  assert.equal(correctionTarget(a, 'Medications'), 'medications');
-  assert.equal(correctionTarget(a, 'Symptoms'), 'symptoms');
   assert.equal(correctionTarget(a, 'In your words'), 'tell');
   assert.equal(correctionTarget(a, 'What brought you here'), 'intent');
-  assert.equal(correctionTarget(a, 'Age range'), 'about');
-  assert.equal(correctionTarget(a, 'Life stage'), 'about');
+  // The rest share the snapshot screen, which is the whole point of merging
+  // them: one scroll holds every answer of that kind.
+  for (const label of ['Conditions', 'Medications', 'Symptoms', 'Age range', 'Life stage', 'Typical cycle']) {
+    assert.equal(correctionTarget(a, label), 'snapshot', `${label} did not open the snapshot`);
+  }
 });
 
 test('a correction always lands on a question she can answer', () => {
@@ -222,7 +239,7 @@ test('a correction always lands on a question she can answer', () => {
   // sequence, which 'connect' satisfies, so it could not fail. 'connect' is
   // the Apple Health offer: it is a step, it holds no answer, and sending a
   // correction there opens a permission prompt. Name the questions.
-  const QUESTIONS = ['tell', 'intent', 'about', 'cycle', 'conditions', 'medications', 'symptoms'];
+  const QUESTIONS = ['intent', 'tell', 'snapshot'];
   const a = answers({ opening: 'something' });
   const target = correctionTarget(a, 'Not A Real Label');
   assert.ok(
@@ -236,11 +253,10 @@ test('a stale correction label does not reopen a question her answers removed', 
   // reaches reflect, changes her life stage to menopause, and the cycle line
   // is still rendered because cycleLength was never cleared. Tapping it must
   // not reintroduce the cycle question, and must not land on Apple Health.
-  const QUESTIONS = ['tell', 'intent', 'about', 'cycle', 'conditions', 'medications', 'symptoms'];
+  const QUESTIONS = ['intent', 'tell', 'snapshot'];
   const a = answers({ lifeStage: 'menopause', cycleLength: 28 });
   const target = correctionTarget(a, 'Typical cycle');
   assert.ok(stepsFor(a).includes(target), 'correction opened a step not in her sequence');
-  assert.notEqual(target, 'cycle', 'reintroduced the cycle question she was never asked');
   assert.notEqual(target, 'connect', 'a correction opened the Apple Health offer');
   assert.ok(QUESTIONS.includes(target), `landed on "${target}", which is not a question`);
 });

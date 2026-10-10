@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { connectAppleHealth } from '../lib/connectHealth';
+import { useDictation } from '../lib/dictation';
 import { displayCopy } from '../lib/displayCopy';
 import {
   AGE_RANGES,
@@ -9,6 +11,7 @@ import {
   type Answers,
   buildReflection,
   correctionTarget,
+  cycleIsRelevant,
   emptyAnswers,
   INTENTS,
   type Intent,
@@ -17,38 +20,76 @@ import {
   type StepId,
   stepsFor,
 } from '../lib/onboarding';
-import { connectAppleHealth } from '../lib/connectHealth';
-import { useDictation } from '../lib/dictation';
 import { useRepo, useSession } from '../state/session';
-import { C, font, GUTTER, RADIUS } from '../theme';
-import { TextButton } from '../ui/chrome';
-import { ChoiceChips, RemovableChips, StepHeader, StepProgress } from '../ui/cycleInputs';
-import { Card, PrimaryButton, SecondaryButton } from '../ui/kit';
+import { font, GUTTER, RADIUS } from '../theme';
 
-// The first session.
+// The first session: six screens in three phases.
 //
-// Tell, clarify, connect, reflect, correct, begin. The order is the point: she
-// says what is going on in her own words before Ciatta offers a single
-// checkbox, because a questionnaire asked first teaches her that Ciatta wants
-// data entry, and the rest of the product then has to undo that.
+// Light, not dark. The rest of the app is a dark record she reads; this is a
+// conversation she is having, and the two should not feel like one surface.
+// Black on white also buys the most contrast available on the one screen
+// where she is reading questions rather than glancing at numbers.
 //
-// Every step can be passed over. A skip is recorded rather than silently
-// treated as an empty answer, because the reflection has to tell a question
-// she declined apart from one Ciatta never asked, and only one of those is a
-// gap it can offer to fill.
+// The copy is short on purpose. Most sentences here were paragraphs in the
+// first build, and a paragraph above a text box is a second thing to read
+// before she can answer the first. What survived is the question, and where
+// it genuinely changes her answer, one line saying why it is asked.
 
-// A free text list she builds by typing and adding. Used for conditions,
-// medications and anything else where a fixed list would be a guess about her:
-// nobody's medication list is a multiple choice question.
+const INK = '#111113';
+const MUTED = '#6B6B70';
+const LINE = '#E4E4E7';
+const FIELD = '#F5F5F7';
+
+// Dots, not "Step 8 of 9". A counter invites her to work out how much is
+// left and feel it as a cost. Dots say the same thing with no number to
+// resent.
+function Dots({ index, total }: { index: number; total: number }) {
+  return (
+    <View style={s.dots} accessible accessibilityLabel={`Step ${index + 1} of ${total}`}>
+      {Array.from({ length: total }, (_, n) => (
+        <View key={n} style={[s.dot, n <= index && s.dotOn]} />
+      ))}
+    </View>
+  );
+}
+
+function Chips({
+  options,
+  selected,
+  onToggle,
+}: {
+  options: readonly string[];
+  selected: readonly string[];
+  onToggle: (o: string) => void;
+}) {
+  return (
+    <View style={s.chips}>
+      {options.map((o) => {
+        const on = selected.includes(o);
+        return (
+          <Pressable
+            key={o}
+            onPress={() => onToggle(o)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: on }}
+            style={({ pressed }) => [s.chip, on && s.chipOn, pressed && s.pressed]}
+          >
+            <Text style={[font('subhead'), { color: on ? '#FFFFFF' : INK }]}>{o}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+// A free text list. Nobody's medication list is a multiple choice question.
 function AddList({
   label,
-  hint,
   placeholder,
   items,
   onChange,
 }: {
   label: string;
-  hint?: string;
   placeholder: string;
   items: string[];
   onChange: (next: string[]) => void;
@@ -57,431 +98,67 @@ function AddList({
   const add = () => {
     const v = draft.trim();
     if (!v) return;
-    // Case insensitive, because "Magnesium" and "magnesium" are one thing and
-    // showing both back to her would look like Ciatta was not listening.
-    if (!items.some((i) => i.toLowerCase() === v.toLowerCase())) onChange([...items, v]);
+    // Case insensitive: Magnesium and magnesium are one thing, and showing
+    // both back would look like Ciatta was not listening.
+    if (!items.some((x) => x.toLowerCase() === v.toLowerCase())) onChange([...items, v]);
     setDraft('');
   };
   return (
-    <View style={s.block}>
-      <Text style={[font('headline'), { color: C.text }]}>{label}</Text>
-      {hint ? <Text style={[font('footnote'), s.hint]}>{hint}</Text> : null}
+    <View style={s.field}>
+      <Text style={[font('subhead', 'semibold'), { color: INK }]}>{label}</Text>
       <View style={s.addRow}>
         <TextInput
           value={draft}
           onChangeText={setDraft}
           onSubmitEditing={add}
           placeholder={placeholder}
-          placeholderTextColor={C.muted}
+          placeholderTextColor={MUTED}
           returnKeyType="done"
           style={[font('body'), s.input]}
           accessibilityLabel={label}
         />
-        <TextButton label="Add" onPress={add} />
+        <Pressable onPress={add} accessibilityRole="button" style={({ pressed }) => [s.add, pressed && s.pressed]}>
+          <Text style={[font('subhead', 'semibold'), { color: INK }]}>Add</Text>
+        </Pressable>
       </View>
-      {items.length ? <RemovableChips items={items} onRemove={(i) => onChange(items.filter((x) => x !== i))} /> : null}
+      {items.length ? (
+        <View style={s.chips}>
+          {items.map((x) => (
+            <Pressable
+              key={x}
+              onPress={() => onChange(items.filter((y) => y !== x))}
+              accessibilityRole="button"
+              accessibilityLabel={`Remove ${x}`}
+              style={({ pressed }) => [s.chip, s.chipOn, pressed && s.pressed]}
+            >
+              <Text style={[font('subhead'), { color: '#FFFFFF' }]}>{x}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
 
-export function OnboardingScreen({ onDone }: { onDone: () => void }) {
-  const repo = useRepo();
-  const { userId } = useSession();
-  const insets = useSafeAreaInsets();
-  const [a, setA] = useState<Answers>(emptyAnswers());
-  const [i, setI] = useState(0);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [connecting, setConnecting] = useState(false);
-  const [sourceNote, setSourceNote] = useState('');
-  const [sourceConnected, setSourceConnected] = useState(false);
+const SYMPTOMS = [
+  'Fatigue',
+  'Bloating',
+  'Poor sleep',
+  'Nausea',
+  'Headache',
+  'Mood changes',
+  'Breast tenderness',
+  'Digestion',
+  'Bowel changes',
+  'Pain',
+  'Dizziness',
+];
 
-  // Dictation appends to whatever she has already typed, rather than
-  // replacing it, so speaking and typing can be mixed in one answer.
-  const dictation = useDictation((text) => {
-    setA((prev) => ({
-      ...prev,
-      opening: prev.opening.trim() ? `${prev.opening.trim()} ${text}` : text,
-      openingMode: 'spoken',
-    }));
-  });
+const CYCLE_CHOICES = ['Under 24 days', '24 to 27 days', '28 to 31 days', '32 days or more', 'Too irregular to say'];
 
-  const onConnectHealth = async () => {
-    if (connecting || !userId) return;
-    setConnecting(true);
-    try {
-      const result = await connectAppleHealth({
-        userId,
-        saveStatus: (kind, status, lastSyncedAt) => repo.saveSourceStatus(kind, status, lastSyncedAt),
-        onNote: setSourceNote,
-      });
-      // Only a real sync sets this. The reflection may then say data was read;
-      // without it, it may not, and a refused or unsupported connection must
-      // not read as a successful one.
-      setSourceConnected(result.connected);
-    } catch {
-      setSourceNote('Apple Health did not connect. You can try again from Profile.');
-      setSourceConnected(false);
-    } finally {
-      setConnecting(false);
-    }
-  };
-
-  // Recomputed from her answers, so choosing menopause at the life stage step
-  // removes the cycle step that would have followed it.
-  const steps = useMemo(() => stepsFor(a), [a]);
-  const step: StepId = steps[Math.min(i, steps.length - 1)];
-  const reflection = useMemo(() => buildReflection(a), [a]);
-
-  const set = (patch: Partial<Answers>) => setA((prev) => ({ ...prev, ...patch }));
-  const next = () => setI((n) => Math.min(n + 1, steps.length - 1));
-  const back = () => setI((n) => Math.max(n - 1, 0));
-  const skip = () => {
-    setA((prev) => (prev.skipped.includes(step) ? prev : { ...prev, skipped: [...prev.skipped, step] }));
-    next();
-  };
-
-  const toggle = <T extends string>(list: T[], v: T): T[] =>
-    list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
-
-  const finish = async () => {
-    if (saving) return;
-    setSaving(true);
-    setError('');
-    try {
-      await repo?.completeOnboarding(a);
-      onDone();
-    } catch {
-      // Her answers stay on screen. A failed save must not look like a
-      // finished session, and it must not throw away what she just typed.
-      setError('That did not save. Check your connection and try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        style={s.fill}
-        contentContainerStyle={[s.body, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        {step === 'welcome' ? null : <StepProgress index={i - 1} total={steps.length - 1} />}
-
-        {step === 'welcome' ? (
-          <View style={s.welcome}>
-            <Text style={[font('title1'), { color: C.text }]} accessibilityRole="header">
-              Let&rsquo;s put the pieces of your health together.
-            </Text>
-            <Text style={[font('body'), s.lede]}>
-              Ciatta connects what you log, what your devices measure, and what your records hold, then shows you what
-              it can and cannot yet say. You can start with one sentence.
-            </Text>
-            <Text style={[font('footnote'), s.quiet]}>
-              Nothing here is required. Skip anything, and add it whenever you like.
-            </Text>
-          </View>
-        ) : null}
-
-        {step === 'tell' ? (
-          <View>
-            <StepHeader
-              title="What&rsquo;s been changing with your health, or what would you like to understand better?"
-              hint="In your own words. Ciatta keeps this exactly as you write it."
-            />
-            <TextInput
-              value={a.opening}
-              onChangeText={(t) => set({ opening: t, openingMode: 'typed' })}
-              placeholder="However you would say it to someone who knows you"
-              placeholderTextColor={C.muted}
-              multiline
-              textAlignVertical="top"
-              style={[font('body'), s.textarea]}
-              accessibilityLabel="What has been changing with your health"
-            />
-            {/*
-              Shown while she speaks and not yet part of her answer. Greyed
-              because it can still change: the recogniser revises a word
-              several times before settling, and showing a guess in the same
-              weight as her committed text would be claiming she said it.
-            */}
-            {dictation.listening ? (
-              <Text style={[font('body'), s.partial]}>{dictation.partial || 'Listening'}</Text>
-            ) : null}
-            <View style={s.dictateRow}>
-              <SecondaryButton
-                label={dictation.listening ? 'Stop' : 'Speak instead'}
-                onPress={dictation.listening ? dictation.stop : dictation.start}
-              />
-            </View>
-            {dictation.error ? (
-              <Text style={[font('footnote'), s.error]} accessibilityLiveRegion="polite">
-                {displayCopy(dictation.error)}
-              </Text>
-            ) : (
-              <Text style={[font('caption1'), s.quiet]}>
-                Dictation stays on your phone. The words are turned into text here, not sent anywhere to be
-                transcribed.
-              </Text>
-            )}
-          </View>
-        ) : null}
-
-        {step === 'intent' ? (
-          <View>
-            <StepHeader title="What brought you here?" hint="Choose as many as fit. Most women have more than one." />
-            <ChoiceChips
-              options={INTENTS.map((o) => o.label)}
-              selected={a.intents.map((id) => INTENTS.find((o) => o.id === id)?.label ?? '')}
-              onToggle={(label) => {
-                const id = INTENTS.find((o) => o.label === label)?.id;
-                if (id) set({ intents: toggle(a.intents, id as Intent) });
-              }}
-            />
-          </View>
-        ) : null}
-
-        {step === 'about' ? (
-          <View>
-            <StepHeader title="A little about you" hint="Only what changes how Ciatta reads the rest." />
-            <Text style={[font('headline'), s.block, { color: C.text }]}>Age range</Text>
-            <ChoiceChips
-              single
-              options={AGE_RANGES.map((o) => o.label)}
-              selected={a.ageRange ? [AGE_RANGES.find((o) => o.id === a.ageRange)?.label ?? ''] : []}
-              onToggle={(label) => {
-                const id = AGE_RANGES.find((o) => o.label === label)?.id;
-                set({ ageRange: (a.ageRange === id ? null : id) as AgeRange | null });
-              }}
-            />
-            <Text style={[font('headline'), s.block, { color: C.text }]}>Where you are right now</Text>
-            <ChoiceChips
-              single
-              options={LIFE_STAGES.map((o) => o.label)}
-              selected={a.lifeStage ? [LIFE_STAGES.find((o) => o.id === a.lifeStage)?.label ?? ''] : []}
-              onToggle={(label) => {
-                const id = LIFE_STAGES.find((o) => o.label === label)?.id;
-                set({ lifeStage: (a.lifeStage === id ? null : id) as LifeStage | null });
-              }}
-            />
-          </View>
-        ) : null}
-
-        {step === 'cycle' ? (
-          <View>
-            <StepHeader
-              title="Your cycle"
-              hint="A rough answer is useful. Without a typical length there is nothing to call a short cycle short."
-            />
-            <Text style={[font('headline'), s.block, { color: C.text }]}>Typical length</Text>
-            <ChoiceChips
-              single
-              options={['Under 24 days', '24 to 27 days', '28 to 31 days', '32 days or more', 'Too irregular to say']}
-              selected={cycleChoice(a.cycleLength, a.cycleRegular)}
-              onToggle={(label) => set(cycleFromChoice(label, a))}
-            />
-          </View>
-        ) : null}
-
-        {step === 'conditions' ? (
-          <View>
-            <StepHeader
-              title="Anything already diagnosed?"
-              hint="Conditions or surgeries. Ciatta reads later findings differently when it knows these."
-            />
-            <AddList
-              label="Conditions"
-              placeholder="Endometriosis, PCOS, thyroid"
-              items={a.conditions}
-              onChange={(conditions) => set({ conditions })}
-            />
-            <AddList
-              label="Surgeries"
-              hint="The year is enough if you remember it. It is fine if you do not."
-              placeholder="Laparoscopy"
-              items={a.surgeries}
-              onChange={(surgeries) => set({ surgeries })}
-            />
-          </View>
-        ) : null}
-
-        {step === 'medications' ? (
-          <View>
-            <StepHeader
-              title="Anything you take regularly?"
-              hint="Medications and supplements both change how a measurement should be read."
-            />
-            <AddList
-              label="Medications"
-              placeholder="Levothyroxine"
-              items={a.medications}
-              onChange={(medications) => set({ medications })}
-            />
-            <AddList
-              label="Supplements"
-              placeholder="Magnesium"
-              items={a.supplements}
-              onChange={(supplements) => set({ supplements })}
-            />
-          </View>
-        ) : null}
-
-        {step === 'symptoms' ? (
-          <View>
-            <StepHeader
-              title="What have you been noticing?"
-              hint="These become the things Ciatta watches for next time."
-            />
-            <ChoiceChips
-              options={[
-                'Fatigue',
-                'Bloating',
-                'Sleep disruption',
-                'Nausea',
-                'Headache',
-                'Mood changes',
-                'Breast tenderness',
-                'Digestive changes',
-                'Bowel changes',
-                'Abdominal discomfort',
-                'Dizziness',
-              ]}
-              selected={a.symptoms}
-              onToggle={(v) => set({ symptoms: toggle(a.symptoms, v) })}
-            />
-          </View>
-        ) : null}
-
-        {step === 'connect' ? (
-          <View>
-            <StepHeader
-              title="Bring in what already exists"
-              hint="Optional, and Ciatta works without any of it. You can connect later from Profile."
-            />
-            <Card style={s.card}>
-              <Text style={[font('headline'), { color: C.text }]}>Apple Health</Text>
-              <Text style={[font('footnote'), s.hint]}>
-                Sleep, steps, heart rate and temperature, measured rather than remembered. This is what lets Ciatta
-                compare a week to your own usual instead of to an average woman.
-              </Text>
-              <View style={s.block}>
-                <SecondaryButton
-                  label={connecting ? 'Connecting' : sourceConnected ? 'Connected' : 'Connect Apple Health'}
-                  onPress={onConnectHealth}
-                />
-              </View>
-              {/*
-                Whatever actually happened, including unsupported and refused.
-                The status behind this line is written to health_sources at
-                each step, so the screen and the record cannot disagree.
-              */}
-              {sourceNote ? (
-                <Text style={[font('footnote'), s.hint]} accessibilityLiveRegion="polite">
-                  {displayCopy(sourceNote)}
-                </Text>
-              ) : null}
-            </Card>
-            <Card style={s.card}>
-              <Text style={[font('headline'), { color: C.text }]}>Records and results</Text>
-              <Text style={[font('footnote'), s.hint]}>
-                Lab results and documents carry dates and reference ranges, which is what turns a number into something
-                Ciatta can place in time.
-              </Text>
-            </Card>
-            <Text style={[font('footnote'), s.quiet]}>
-              Connecting is done from Profile, where you can also disconnect a source or delete what it brought in.
-            </Text>
-          </View>
-        ) : null}
-
-        {step === 'reflect' ? (
-          <View>
-            <StepHeader
-              title="Here&rsquo;s what Ciatta has so far"
-              hint="Everything below is what you told it today. Nothing here is measured, and nothing is a conclusion."
-            />
-
-            {reflection.known.length ? (
-              <Card style={s.card}>
-                {reflection.known.map((k) => (
-                  <Pressable
-                    key={k.label}
-                    onPress={() => setI(steps.indexOf(correctionTarget(a, k.label)))}
-                    accessibilityRole="button"
-                    // The label carries the value, not just the action. An
-                    // accessibilityLabel replaces the children for a screen
-                    // reader, so "Change Conditions" would have made the one
-                    // screen whose job is showing her what Ciatta recorded
-                    // the one screen a blind user cannot hear it from.
-                    accessibilityLabel={`${k.label}, ${k.value}`}
-                    accessibilityHint="Opens this question so you can change your answer"
-                    style={({ pressed }) => [s.knownRow, pressed && s.pressed]}
-                  >
-                    <Text style={[font('caption1'), s.quiet]}>{k.label}</Text>
-                    <Text style={[font('body'), { color: C.text }]}>{displayCopy(k.value)}</Text>
-                    <Text style={[font('caption2'), { color: C.tint }]}>Change</Text>
-                  </Pressable>
-                ))}
-                <Text style={[font('caption2'), s.stamp]}>You told Ciatta this</Text>
-              </Card>
-            ) : (
-              <Card style={s.card}>
-                <Text style={[font('body'), { color: C.text }]}>
-                  You skipped the questions, which is allowed. Ciatta knows nothing about you yet, and will say so
-                  rather than guess.
-                </Text>
-              </Card>
-            )}
-
-            <Text style={[font('headline'), s.block, { color: C.text }]}>What Ciatta cannot say yet</Text>
-            {reflection.gaps.map((g) => (
-              <Card key={g.label} style={s.card}>
-                <Text style={[font('subhead', 'semibold'), { color: C.text }]}>{g.label}</Text>
-                <Text style={[font('footnote'), s.hint]}>{g.why}</Text>
-              </Card>
-            ))}
-
-            {reflection.nextStep ? (
-              <Card style={s.card}>
-                <Text style={[font('caption2'), s.stamp]}>Worth doing next</Text>
-                <Text style={[font('body'), { color: C.text, marginTop: 4 }]}>{reflection.nextStep}</Text>
-              </Card>
-            ) : null}
-
-            <View style={s.block}>
-              <TextButton label="Start the questions again" onPress={() => setI(1)} />
-            </View>
-
-            {error ? (
-              <Text style={[font('footnote'), s.error]} accessibilityLiveRegion="polite">
-                {displayCopy(error)}
-              </Text>
-            ) : null}
-          </View>
-        ) : null}
-
-        <View style={s.actions}>
-          {step === 'welcome' ? (
-            <PrimaryButton label="Start" onPress={next} />
-          ) : step === 'reflect' ? (
-            <PrimaryButton label={saving ? 'Saving' : 'Go to Today'} onPress={finish} />
-          ) : (
-            <>
-              <PrimaryButton label="Continue" onPress={next} />
-              <SecondaryButton label="Skip this" onPress={skip} />
-            </>
-          )}
-          {step === 'welcome' ? null : <TextButton label="Back" onPress={back} />}
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
-  );
-}
-
-// The cycle step offers ranges rather than a number field, because a woman who
-// is asked for an exact length either counts back through a calendar or
-// invents one, and an invented number is worse than a range.
+// Ranges, not a number field. A woman asked for an exact length either counts
+// back through a calendar or invents one, and an invented number is worse
+// than a range.
 function cycleChoice(length: number | null, regular: boolean | null): string[] {
   if (regular === false) return ['Too irregular to say'];
   if (length == null) return [];
@@ -492,11 +169,10 @@ function cycleChoice(length: number | null, regular: boolean | null): string[] {
 }
 
 function cycleFromChoice(label: string, a: Answers): Partial<Answers> {
-  const same = cycleChoice(a.cycleLength, a.cycleRegular)[0] === label;
-  if (same) return { cycleLength: null, cycleRegular: null };
+  if (cycleChoice(a.cycleLength, a.cycleRegular)[0] === label) return { cycleLength: null, cycleRegular: null };
   switch (label) {
-    // The midpoint of the range she chose, and the range is what she actually
-    // said. Nothing downstream may treat this as a measured cycle length.
+    // The midpoint of the range she chose. Nothing downstream may treat this
+    // as a measured cycle length.
     case 'Under 24 days':
       return { cycleLength: 22, cycleRegular: true };
     case '24 to 27 days':
@@ -512,30 +188,422 @@ function cycleFromChoice(label: string, a: Answers): Partial<Answers> {
   }
 }
 
+export function OnboardingScreen({ onDone }: { onDone: () => void }) {
+  const repo = useRepo();
+  const { userId } = useSession();
+  const insets = useSafeAreaInsets();
+  const [a, setA] = useState<Answers>(emptyAnswers());
+  const [i, setI] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [connecting, setConnecting] = useState(false);
+  const [sourceNote, setSourceNote] = useState('');
+
+  const dictation = useDictation((text) => {
+    setA((prev) => ({
+      ...prev,
+      opening: prev.opening.trim() ? `${prev.opening.trim()} ${text}` : text,
+      openingMode: 'spoken',
+    }));
+  });
+
+  const steps = useMemo(() => stepsFor(a), [a]);
+  const step: StepId = steps[Math.min(i, steps.length - 1)];
+  const reflection = useMemo(() => buildReflection(a), [a]);
+
+  const set = (patch: Partial<Answers>) => setA((prev) => ({ ...prev, ...patch }));
+  const next = () => setI((n) => Math.min(n + 1, steps.length - 1));
+  const back = () => setI((n) => Math.max(n - 1, 0));
+  const skip = () => {
+    setA((prev) => (prev.skipped.includes(step) ? prev : { ...prev, skipped: [...prev.skipped, step] }));
+    next();
+  };
+  const toggle = <T extends string>(list: T[], v: T): T[] =>
+    list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
+
+  const onConnectHealth = async () => {
+    if (connecting || !userId) return;
+    setConnecting(true);
+    try {
+      await connectAppleHealth({
+        userId,
+        saveStatus: (kind, status, lastSyncedAt) => repo.saveSourceStatus(kind, status, lastSyncedAt),
+        onNote: setSourceNote,
+      });
+    } catch {
+      setSourceNote('That did not connect. You can try again from Profile.');
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  const finish = async () => {
+    if (saving) return;
+    setSaving(true);
+    setError('');
+    try {
+      await repo.completeOnboarding(a);
+      onDone();
+    } catch {
+      // Her answers stay on screen. A failed save must not look like a
+      // finished session, and must not throw away what she just typed.
+      setError('That did not save. Check your connection and try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView
+        style={s.fill}
+        contentContainerStyle={[s.body, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 28 }]}
+        keyboardShouldPersistTaps="handled"
+      >
+        {step === 'welcome' ? null : <Dots index={i - 1} total={steps.length - 1} />}
+
+        {step === 'welcome' ? (
+          <View style={s.hero}>
+            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+              Let&rsquo;s put the pieces together.
+            </Text>
+            <Text style={[font('body'), s.lede]}>
+              Tell Ciatta what is going on. It will show you what it can see, and what it cannot.
+            </Text>
+          </View>
+        ) : null}
+
+        {step === 'intent' ? (
+          <View>
+            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+              What brings you here?
+            </Text>
+            <Text style={[font('subhead'), s.sub]}>Pick any that fit.</Text>
+            <Chips
+              options={INTENTS.map((o) => o.label)}
+              selected={a.intents.map((id) => INTENTS.find((o) => o.id === id)?.label ?? '')}
+              onToggle={(label) => {
+                const id = INTENTS.find((o) => o.label === label)?.id;
+                if (id) set({ intents: toggle(a.intents, id as Intent) });
+              }}
+            />
+          </View>
+        ) : null}
+
+        {step === 'tell' ? (
+          <View>
+            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+              What has been changing?
+            </Text>
+            <Text style={[font('subhead'), s.sub]}>In your words. Ciatta keeps them as you write them.</Text>
+            <TextInput
+              value={a.opening}
+              onChangeText={(t) => set({ opening: t, openingMode: 'typed' })}
+              placeholder="However you would say it to a friend"
+              placeholderTextColor={MUTED}
+              multiline
+              textAlignVertical="top"
+              style={[font('body'), s.textarea]}
+              accessibilityLabel="What has been changing"
+            />
+            {dictation.listening ? (
+              <Text style={[font('body'), s.partial]}>{dictation.partial || 'Listening'}</Text>
+            ) : null}
+            <Pressable
+              onPress={dictation.listening ? dictation.stop : dictation.start}
+              accessibilityRole="button"
+              style={({ pressed }) => [s.ghost, pressed && s.pressed]}
+            >
+              <Text style={[font('subhead', 'semibold'), { color: INK }]}>
+                {dictation.listening ? 'Stop' : 'Speak instead'}
+              </Text>
+            </Pressable>
+            <Text style={[font('caption1'), s.quiet]}>
+              {dictation.error ? displayCopy(dictation.error) : 'Your voice stays on this phone.'}
+            </Text>
+          </View>
+        ) : null}
+
+        {step === 'snapshot' ? (
+          <View>
+            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+              A quick picture of you
+            </Text>
+            <Text style={[font('subhead'), s.sub]}>Add what you know. Leave the rest.</Text>
+
+            <View style={s.field}>
+              <Text style={[font('subhead', 'semibold'), { color: INK }]}>Your age</Text>
+              <Chips
+                options={AGE_RANGES.map((o) => o.label)}
+                selected={a.ageRange ? [AGE_RANGES.find((o) => o.id === a.ageRange)?.label ?? ''] : []}
+                onToggle={(label) => {
+                  const id = AGE_RANGES.find((o) => o.label === label)?.id;
+                  set({ ageRange: (a.ageRange === id ? null : id) as AgeRange | null });
+                }}
+              />
+            </View>
+
+            <View style={s.field}>
+              <Text style={[font('subhead', 'semibold'), { color: INK }]}>Where you are now</Text>
+              <Chips
+                options={LIFE_STAGES.map((o) => o.label)}
+                selected={a.lifeStage ? [LIFE_STAGES.find((o) => o.id === a.lifeStage)?.label ?? ''] : []}
+                onToggle={(label) => {
+                  const id = LIFE_STAGES.find((o) => o.label === label)?.id;
+                  set({ lifeStage: (a.lifeStage === id ? null : id) as LifeStage | null });
+                }}
+              />
+            </View>
+
+            {/*
+              A section, not a step. cycleIsRelevant still decides, so a woman
+              in menopause never sees it, and the dots above do not change
+              count when she picks that.
+            */}
+            {cycleIsRelevant(a) ? (
+              <View style={s.field}>
+                <Text style={[font('subhead', 'semibold'), { color: INK }]}>Your usual cycle</Text>
+                <Chips
+                  options={CYCLE_CHOICES}
+                  selected={cycleChoice(a.cycleLength, a.cycleRegular)}
+                  onToggle={(label) => set(cycleFromChoice(label, a))}
+                />
+              </View>
+            ) : null}
+
+            <View style={s.field}>
+              <Text style={[font('subhead', 'semibold'), { color: INK }]}>What you have noticed</Text>
+              <Chips
+                options={SYMPTOMS}
+                selected={a.symptoms}
+                onToggle={(v) => set({ symptoms: toggle(a.symptoms, v) })}
+              />
+            </View>
+
+            <AddList
+              label="Diagnosed conditions"
+              placeholder="Endometriosis, PCOS, thyroid"
+              items={a.conditions}
+              onChange={(conditions) => set({ conditions })}
+            />
+            <AddList
+              label="Surgeries"
+              placeholder="Laparoscopy"
+              items={a.surgeries}
+              onChange={(surgeries) => set({ surgeries })}
+            />
+            <AddList
+              label="Medications"
+              placeholder="Levothyroxine"
+              items={a.medications}
+              onChange={(medications) => set({ medications })}
+            />
+            <AddList
+              label="Supplements"
+              placeholder="Magnesium"
+              items={a.supplements}
+              onChange={(supplements) => set({ supplements })}
+            />
+            {/*
+              goals was in the type from the first build and no screen ever
+              set it, so the reflection line for it could never render. The
+              spec asks for it; now something asks her.
+            */}
+            <AddList
+              label="What you want to understand"
+              placeholder="Why I am so tired"
+              items={a.goals}
+              onChange={(goals) => set({ goals })}
+            />
+          </View>
+        ) : null}
+
+        {step === 'connect' ? (
+          <View>
+            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+              Bring in what you already have
+            </Text>
+            <Text style={[font('subhead'), s.sub]}>Optional. You can connect later from Profile.</Text>
+
+            <View style={s.card}>
+              <Text style={[font('headline'), { color: INK }]}>Apple Health</Text>
+              <Text style={[font('footnote'), s.cardSub]}>
+                Sleep, steps and heart rate, measured rather than remembered. This is what lets Ciatta compare a week
+                to your own usual.
+              </Text>
+              <Pressable
+                onPress={onConnectHealth}
+                accessibilityRole="button"
+                style={({ pressed }) => [s.ghost, pressed && s.pressed]}
+              >
+                <Text style={[font('subhead', 'semibold'), { color: INK }]}>{connecting ? 'Connecting' : 'Connect'}</Text>
+              </Pressable>
+              {sourceNote ? (
+                <Text style={[font('footnote'), s.cardSub]} accessibilityLiveRegion="polite">
+                  {displayCopy(sourceNote)}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
+
+        {step === 'reflect' ? (
+          <View>
+            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+              Here is what Ciatta has
+            </Text>
+            <Text style={[font('subhead'), s.sub]}>All of it from you. Nothing measured yet.</Text>
+
+            {reflection.known.length ? (
+              <View style={s.card}>
+                {reflection.known.map((k) => (
+                  <Pressable
+                    key={k.label}
+                    onPress={() => setI(steps.indexOf(correctionTarget(a, k.label)))}
+                    accessibilityRole="button"
+                    // The label carries the value, not just the action. An
+                    // accessibilityLabel replaces the children, so "Change
+                    // Conditions" would make the one screen whose job is
+                    // showing her what Ciatta recorded the one screen a blind
+                    // user cannot hear it from.
+                    accessibilityLabel={`${k.label}, ${k.value}`}
+                    accessibilityHint="Opens this question so you can change your answer"
+                    style={({ pressed }) => [s.knownRow, pressed && s.pressed]}
+                  >
+                    <Text style={[font('caption1'), { color: MUTED }]}>{k.label}</Text>
+                    <Text style={[font('body'), { color: INK }]}>{displayCopy(k.value)}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : (
+              <View style={s.card}>
+                <Text style={[font('body'), { color: INK }]}>
+                  You skipped the questions. Ciatta knows nothing yet, and will say so rather than guess.
+                </Text>
+              </View>
+            )}
+
+            <Text style={[font('subhead', 'semibold'), s.sectionLabel]}>Not yet</Text>
+            {reflection.gaps.map((g) => (
+              <View key={g.label} style={s.card}>
+                <Text style={[font('subhead', 'semibold'), { color: INK }]}>{g.label}</Text>
+                <Text style={[font('footnote'), s.cardSub]}>{g.why}</Text>
+              </View>
+            ))}
+
+            {reflection.nextStep ? (
+              <View style={s.card}>
+                <Text style={[font('caption1'), { color: MUTED }]}>Next</Text>
+                <Text style={[font('body'), { color: INK }]}>{reflection.nextStep}</Text>
+              </View>
+            ) : null}
+
+            {error ? (
+              <Text style={[font('footnote'), s.error]} accessibilityLiveRegion="polite">
+                {displayCopy(error)}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
+
+        {/*
+          Skip sits beside Continue at the same height and the same type, not
+          under it as a smaller link. Ciatta works on partial answers, and a
+          skip styled as the lesser choice tells her the opposite of what the
+          product actually does.
+        */}
+        <View style={s.actions}>
+          {step === 'welcome' ? (
+            <Pressable onPress={next} accessibilityRole="button" style={({ pressed }) => [s.primary, pressed && s.pressed]}>
+              <Text style={[font('headline'), { color: '#FFFFFF' }]}>Start</Text>
+            </Pressable>
+          ) : step === 'reflect' ? (
+            <Pressable onPress={finish} accessibilityRole="button" style={({ pressed }) => [s.primary, pressed && s.pressed]}>
+              <Text style={[font('headline'), { color: '#FFFFFF' }]}>{saving ? 'Saving' : 'Done'}</Text>
+            </Pressable>
+          ) : (
+            <View style={s.pair}>
+              <Pressable onPress={skip} accessibilityRole="button" style={({ pressed }) => [s.secondary, pressed && s.pressed]}>
+                <Text style={[font('headline'), { color: INK }]}>Skip</Text>
+              </Pressable>
+              <Pressable onPress={next} accessibilityRole="button" style={({ pressed }) => [s.primary, s.grow, pressed && s.pressed]}>
+                <Text style={[font('headline'), { color: '#FFFFFF' }]}>Continue</Text>
+              </Pressable>
+            </View>
+          )}
+          {step === 'welcome' ? null : (
+            <Pressable onPress={back} accessibilityRole="button" style={({ pressed }) => [s.back, pressed && s.pressed]}>
+              <Text style={[font('subhead'), { color: MUTED }]}>Back</Text>
+            </Pressable>
+          )}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
 const s = StyleSheet.create({
-  fill: { flex: 1, backgroundColor: C.bg },
+  fill: { flex: 1, backgroundColor: '#FFFFFF' },
   body: { paddingHorizontal: GUTTER, flexGrow: 1 },
-  welcome: { paddingTop: 48 },
-  lede: { color: C.secondary, marginTop: 14, lineHeight: 25 },
-  quiet: { color: C.muted, marginTop: 14 },
-  hint: { color: C.secondary, marginTop: 4, lineHeight: 19 },
-  block: { marginTop: 22 },
-  card: { marginTop: 12 },
-  knownRow: { marginBottom: 12, minHeight: 44, justifyContent: 'center' },
-  pressed: { opacity: 0.55 },
-  stamp: { color: C.muted, marginTop: 4 },
-  textarea: {
-    color: C.text,
-    backgroundColor: C.card,
-    borderRadius: RADIUS,
-    padding: 14,
-    minHeight: 132,
-    marginTop: 16,
+  hero: { paddingTop: 72 },
+  title: { color: INK, letterSpacing: -0.4 },
+  lede: { color: MUTED, marginTop: 16, lineHeight: 26 },
+  sub: { color: MUTED, marginTop: 8, marginBottom: 20 },
+  quiet: { color: MUTED, marginTop: 14 },
+  sectionLabel: { color: INK, marginTop: 28, marginBottom: 2 },
+
+  dots: { flexDirection: 'row', gap: 6, marginBottom: 36 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: LINE },
+  dotOn: { backgroundColor: INK },
+
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  chip: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: LINE,
+    backgroundColor: '#FFFFFF',
   },
-  addRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
-  input: { flex: 1, color: C.text, backgroundColor: C.card, borderRadius: RADIUS, paddingHorizontal: 12, height: 44 },
-  error: { color: C.tint, marginTop: 12 },
-  partial: { color: C.muted, marginTop: 10, fontStyle: 'italic' },
-  dictateRow: { marginTop: 12 },
-  actions: { marginTop: 32, gap: 12, alignItems: 'stretch' },
+  chipOn: { backgroundColor: INK, borderColor: INK },
+
+  field: { marginTop: 28 },
+  addRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
+  input: { flex: 1, color: INK, backgroundColor: FIELD, borderRadius: RADIUS, paddingHorizontal: 14, height: 48 },
+  add: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 14 },
+  textarea: { color: INK, backgroundColor: FIELD, borderRadius: RADIUS, padding: 16, minHeight: 148 },
+  partial: { color: MUTED, marginTop: 12, fontStyle: 'italic' },
+  ghost: {
+    minHeight: 48,
+    marginTop: 14,
+    borderRadius: RADIUS,
+    borderWidth: 1,
+    borderColor: LINE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  card: { borderWidth: 1, borderColor: LINE, borderRadius: RADIUS, padding: 16, marginTop: 12, gap: 6 },
+  cardSub: { color: MUTED, lineHeight: 19 },
+  knownRow: { minHeight: 44, justifyContent: 'center', paddingVertical: 6 },
+
+  actions: { marginTop: 40, gap: 12 },
+  pair: { flexDirection: 'row', gap: 10 },
+  grow: { flex: 1 },
+  primary: { height: 52, borderRadius: RADIUS, backgroundColor: INK, alignItems: 'center', justifyContent: 'center' },
+  // Same height and same type as Continue. Partial answers are a supported
+  // way to use Ciatta, not a lesser one.
+  secondary: {
+    height: 52,
+    borderRadius: RADIUS,
+    borderWidth: 1,
+    borderColor: LINE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+  },
+  back: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  pressed: { opacity: 0.6 },
+  error: { color: '#B3261E', marginTop: 14 },
 });
