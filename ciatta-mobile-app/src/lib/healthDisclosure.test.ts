@@ -57,18 +57,29 @@ test('the sync list is the seven named, in order', () => {
   );
 });
 
-test('a brand is shown with its own mark or with none, never with another', () => {
-  // The rule that matters on this list. A missing logo is honest; a wrong
-  // logo attached to a real company is not, so mark is either that brand's
-  // own key or null.
+test('every brand points at its own mark and nobody else\'s', () => {
+  // The rule that matters on this list, and it is written out rather than
+  // derived from the name: the derivation used to be mark === name
+  // lowercased, which quietly stopped being true the moment 8 Sleep's file
+  // was called eightsleep. A pairing table cannot drift like that.
+  const EXPECTED: Record<string, string> = {
+    Oura: 'oura',
+    Whoop: 'whoop',
+    '8 Sleep': 'eightsleep',
+    Withings: 'withings',
+    Garmin: 'garmin',
+    Strava: 'strava',
+    Omron: 'omron',
+  };
   for (const app of SYNC_APPS) {
-    if (app.mark === null) continue;
-    assert.equal(app.mark, app.name.toLowerCase(), `${app.name} points at the ${app.mark} mark`);
+    assert.equal(app.mark, EXPECTED[app.name], `${app.name} is showing the ${app.mark} mark`);
   }
 });
 
-test('the brands still waiting on artwork are listed rather than hidden', () => {
-  assert.deepEqual(appsMissingArtwork(), ['8 Sleep', 'Withings', 'Garmin', 'Strava', 'Omron']);
+test('no brand is left showing a monogram', () => {
+  // Every app has real artwork now. The monogram path stays for the next
+  // app added, which is why it is still tested below.
+  assert.deepEqual(appsMissingArtwork(), []);
 });
 
 test('a monogram is short, and a name starting with a digit still reads', () => {

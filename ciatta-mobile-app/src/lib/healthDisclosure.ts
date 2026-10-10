@@ -29,18 +29,22 @@ export function encryptionNote(): string {
 // above the list carries that distinction and must keep carrying it.
 //
 // `mark` is the key into the app's image map. Null means no artwork has been
-// supplied yet and the row falls back to a monogram, which is a visible gap
-// rather than a wrong logo.
-export type SyncApp = { name: string; mark: 'oura' | 'whoop' | null };
+// supplied and the tile falls back to a monogram, which is a visible gap
+// rather than a wrong logo. Every app has its own mark now, each taken from
+// that company's own site and checked by eye before being committed, so the
+// fallback is kept for the next app added rather than for these.
+export type SyncAppMark = 'oura' | 'whoop' | 'eightsleep' | 'withings' | 'garmin' | 'strava' | 'omron';
+
+export type SyncApp = { name: string; mark: SyncAppMark | null };
 
 export const SYNC_APPS: readonly SyncApp[] = [
   { name: 'Oura', mark: 'oura' },
   { name: 'Whoop', mark: 'whoop' },
-  { name: '8 Sleep', mark: null },
-  { name: 'Withings', mark: null },
-  { name: 'Garmin', mark: null },
-  { name: 'Strava', mark: null },
-  { name: 'Omron', mark: null },
+  { name: '8 Sleep', mark: 'eightsleep' },
+  { name: 'Withings', mark: 'withings' },
+  { name: 'Garmin', mark: 'garmin' },
+  { name: 'Strava', mark: 'strava' },
+  { name: 'Omron', mark: 'omron' },
 ];
 
 // The letter shown when a brand has no artwork. Two characters for a name
