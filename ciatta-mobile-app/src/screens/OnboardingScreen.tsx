@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { connectAppleHealth } from '../lib/connectHealth';
 import { useDictation } from '../lib/dictation';
 import { displayCopy } from '../lib/displayCopy';
+import { disclosedCount, healthDisclosure } from '../lib/healthDisclosure';
 import {
   AGE_RANGES,
   type AgeRange,
@@ -44,11 +45,12 @@ import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 // screen bottom aligns, so the answer and the controls stay in reach and the
 // overflow runs upward into space the screen has anyway.
 //
-// Membership is about content, not importance. The three below are the only
+// Membership is about content, not importance. The four below are the only
 // screens with enough on them to want the foot of the page: the text area she
-// writes into, the eight life stages, and the reflection paragraph. Every
-// other screen holds one question and sits at eye level.
-const BOTTOM: StepId[] = ['tell', 'lifeStage', 'reflect'];
+// writes into, the eight life stages, the twelve data types Apple Health can
+// hand over, and the reflection paragraph. Every other screen holds one
+// question and sits at eye level.
+const BOTTOM: StepId[] = ['tell', 'lifeStage', 'connect', 'reflect'];
 
 // The screens that hold exactly one answer, and so need no Continue: the tap
 // that answers the question is the tap that moves her on. A Continue button
@@ -706,25 +708,56 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               Bring in what you already have
             </Text>
 
-            <View style={s.card}>
-              <Text style={[font('headline'), { color: INK }]}>Apple Health</Text>
-              <Text style={[font('footnote'), s.cardSub]}>
-                Sleep, steps and heart rate, measured rather than remembered. This is what lets Ciatta compare a week
-                to your own usual.
+            {/*
+              Every data type Ciatta asks for, before she is asked to grant
+              anything. The list is derived from the same specs the permission
+              request is built from, so it cannot quietly fall behind what the
+              app actually reads: adding a metric without describing it fails
+              a test rather than shipping a screen that understates.
+
+              Apple's own sheet follows the Connect button and is the thing
+              that grants access. It lists the same types, with per type
+              toggles, which is where she can refuse any one of them. This
+              screen exists because that sheet appears after she has decided,
+              and a woman should be able to read the list before she taps.
+            */}
+            <Text style={[font('subhead'), s.connectLede]}>
+              {displayCopy(
+                `Apple Health can hand Ciatta ${disclosedCount()} kinds of reading. Apple asks next, and you can refuse any of them there.`,
+              )}
+            </Text>
+
+            {healthDisclosure().map((group) => (
+              <View key={group.title} style={s.group}>
+                <Text style={[font('caption1'), s.groupTitle]}>{group.title.toUpperCase()}</Text>
+                {group.items.map((item) => (
+                  <View key={item.identifier} style={s.row}>
+                    <Text style={[font('subhead', 'semibold'), { color: INK }]}>{item.label}</Text>
+                    <Text style={[font('footnote'), s.rowDetail]}>{displayCopy(item.detail)}</Text>
+                  </View>
+                ))}
+              </View>
+            ))}
+
+            <Text style={[font('footnote'), s.quiet]}>
+              Measured, not remembered. This is what lets Ciatta compare a week to your own usual rather than to
+              anybody else.
+            </Text>
+
+            <Pressable
+              onPress={onConnectHealth}
+              accessibilityRole="button"
+              style={({ pressed }) => [s.primary, s.connect, pressed && s.pressed]}
+            >
+              <Text style={[font('headline'), { color: '#FFFFFF' }]}>
+                {connecting ? 'Connecting' : 'Connect Apple Health'}
               </Text>
-              <Pressable
-                onPress={onConnectHealth}
-                accessibilityRole="button"
-                style={({ pressed }) => [s.ghost, pressed && s.pressed]}
-              >
-                <Text style={[font('subhead', 'semibold'), { color: INK }]}>{connecting ? 'Connecting' : 'Connect'}</Text>
-              </Pressable>
-              {sourceNote ? (
-                <Text style={[font('footnote'), s.cardSub]} accessibilityLiveRegion="polite">
-                  {displayCopy(sourceNote)}
-                </Text>
-              ) : null}
-            </View>
+            </Pressable>
+            {sourceNote ? (
+              <Text style={[font('footnote'), s.cardSub]} accessibilityLiveRegion="polite">
+                {displayCopy(sourceNote)}
+              </Text>
+            ) : null}
           </View>
         ) : null}
 
@@ -804,6 +837,14 @@ const s = StyleSheet.create({
     marginTop: 32,
   },
   prose: { color: INK, lineHeight: 22, marginTop: 8 },
+  connectLede: { color: MUTED, marginTop: 8, lineHeight: 21 },
+  group: { marginTop: 24 },
+  groupTitle: { color: MUTED, letterSpacing: 0.8, marginBottom: 10 },
+  // A plain row, not a card each. Twelve cards on one screen is twelve
+  // objects to separate; these are twelve items in one list.
+  row: { paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
+  rowDetail: { color: MUTED, marginTop: 2, lineHeight: 18 },
+  connect: { marginTop: 28 },
   choices: { marginTop: 20, gap: 8 },
   // Full width, 56pt, label left and the check right. A row list answers the
   // question "which one" where a wrapped row of pills asks it again.
