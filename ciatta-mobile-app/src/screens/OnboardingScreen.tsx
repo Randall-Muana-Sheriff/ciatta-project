@@ -7,6 +7,7 @@ import { useDictation } from '../lib/dictation';
 import { displayCopy } from '../lib/displayCopy';
 import { encryptionNote, healthDisclosureParagraph, importSummaryLine, monogram, SYNC_APPS } from '../lib/healthDisclosure';
 import { latestReadings, type Reading, workoutCount } from '../lib/healthReadings';
+import { guideFor } from '../lib/syncInstructions';
 import {
   AGE_RANGES,
   type AgeRange,
@@ -280,6 +281,9 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   // counts: a woman who has just connected wants to see her step count.
   const [readings, setReadings] = useState<Reading[]>([]);
   const [workouts, setWorkouts] = useState(0);
+  // Which app's instructions are open. Null is the resting state: seven
+  // cards open at once would bury the button under them.
+  const [openGuide, setOpenGuide] = useState<string | null>(null);
 
   const refreshReadings = useCallback(async () => {
     try {
@@ -829,23 +833,68 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               style={s.appRail}
               contentContainerStyle={s.appRailInner}
             >
-              {SYNC_APPS.map((app) => (
-                <View key={app.name} style={s.appTile}>
-                  {app.mark ? (
-                    <Image source={images[app.mark]} style={s.appMark} resizeMode="contain" accessible={false} />
-                  ) : (
-                    // No artwork yet. A monogram is a visible gap; another
-                    // company's logo would be a wrong answer.
-                    <View style={s.appMonogram}>
-                      <Text style={[font('caption1', 'semibold'), { color: MUTED }]}>{monogram(app.name)}</Text>
-                    </View>
-                  )}
-                  <Text style={[font('caption1'), s.appLabel]} numberOfLines={1}>
-                    {app.name}
-                  </Text>
-                </View>
-              ))}
+              {SYNC_APPS.map((app) => {
+                const open = openGuide === app.name;
+                return (
+                  <Pressable
+                    key={app.name}
+                    onPress={() => setOpenGuide(open ? null : app.name)}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: open }}
+                    accessibilityLabel={`${app.name}, how to connect it to Apple Health`}
+                    style={({ pressed }) => [s.appTile, open && s.appTileOn, pressed && s.pressed]}
+                  >
+                    {app.mark ? (
+                      <Image source={images[app.mark]} style={s.appMark} resizeMode="contain" accessible={false} />
+                    ) : (
+                      // No artwork yet. A monogram is a visible gap; another
+                      // company's logo would be a wrong answer.
+                      <View style={s.appMonogram}>
+                        <Text style={[font('caption1', 'semibold'), { color: MUTED }]}>{monogram(app.name)}</Text>
+                      </View>
+                    )}
+                    <Text style={[font('caption1'), s.appLabel]} numberOfLines={1}>
+                      {app.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </ScrollView>
+
+            {/*
+              One card at a time, under the rail it belongs to. These describe
+              other companies' menus, so each one carries the date a human
+              last checked it rather than reading as permanent truth.
+            */}
+            {(() => {
+              const guide = openGuide ? guideFor(openGuide) : null;
+              if (!guide) return null;
+              return (
+                <View style={s.guideCard}>
+                  <View style={s.guideTop}>
+                    <Icon name="heart" size={16} color="#FA114F" filled />
+                    <Text style={[font('headline'), s.guideTitle]} accessibilityRole="header">
+                      {guide.title}
+                    </Text>
+                    <Pressable
+                      onPress={() => setOpenGuide(null)}
+                      accessibilityRole="button"
+                      accessibilityLabel="Close"
+                      hitSlop={10}
+                      style={({ pressed }) => [s.guideClose, pressed && s.pressed]}
+                    >
+                      <Icon name="xmark" size={15} color={MUTED} />
+                    </Pressable>
+                  </View>
+                  {guide.steps.map((stepText, n) => (
+                    <View key={stepText} style={s.guideStep}>
+                      <Text style={[font('subhead', 'semibold'), s.guideNumber]}>{n + 1}.</Text>
+                      <Text style={[font('subhead'), s.guideText]}>{displayCopy(stepText)}</Text>
+                    </View>
+                  ))}
+                </View>
+              );
+            })()}
 
             <View style={s.encryptionCard}>
               <Icon name="shield" size={18} color={INK} />
@@ -1046,6 +1095,16 @@ const s = StyleSheet.create({
     gap: 8,
   },
   appLabel: { color: MUTED, maxWidth: 66, textAlign: 'center' },
+  // The selected tile is outlined rather than filled: a filled tile would
+  // fight the brand mark sitting inside it.
+  appTileOn: { borderWidth: 1.5, borderColor: INK, backgroundColor: '#FFFFFF' },
+  guideCard: { marginTop: 14, backgroundColor: FIELD, borderRadius: RADIUS, padding: 16 },
+  guideTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  guideTitle: { flex: 1, color: INK },
+  guideClose: { width: 28, height: 28, alignItems: 'flex-end', justifyContent: 'flex-start' },
+  guideStep: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  guideNumber: { color: INK, minWidth: 18 },
+  guideText: { flex: 1, color: INK, lineHeight: 21 },
   appMark: { width: 28, height: 28, borderRadius: 7 },
   appMonogram: {
     width: 28,
