@@ -69,20 +69,35 @@ export async function connectAppleHealth(deps: ConnectHealthDeps): Promise<Conne
     return { ...outcome, connected: false, imported: null };
   }
 
-  // Asked before requesting, because afterwards it is too late to tell her.
-  // iOS shows its sheet once per type per install, so a woman who has already
-  // answered taps Connect and sees nothing at all appear. Knowing that in
-  // advance is the difference between "Apple is asking you now" and silence
-  // she has to interpret.
+  // Whether iOS still has a question to put to her. Read before asking,
+  // because afterwards the answer is always no, but acted on only after.
   const willAsk = await healthPermissionWillAsk();
-  onAskState?.(willAsk);
   onNote(
     willAsk
       ? 'Apple is asking you now. Choose what Ciatta may read.'
-      : 'You answered this before, so Apple will not ask again. Open Settings, then Health, then Data Access and Devices, to change what Ciatta may read.',
+      : 'You answered this before, so Apple will not ask again.',
   );
 
+  // The request goes out first, always, whatever willAsk said.
+  //
+  // This used to run after onAskState, and that ordering was a bug with a
+  // plain symptom: the caller opens the Health app when no sheet is coming,
+  // so Ciatta was backgrounded before the sheet was ever asked for, and the
+  // sheet she was waiting on could not appear. It also trusted willAsk to be
+  // right, and willAsk reports unknown as no, so any uncertainty sent her
+  // away rather than letting iOS decide.
+  //
+  // iOS is the only thing that actually knows. Asking is free when there is
+  // nothing to ask, and when a new type has been added since she last
+  // answered, which is exactly what happened when this build went from
+  // twelve metrics to a hundred and twenty, the sheet comes up again for the
+  // undetermined ones. Calling it unconditionally is what makes that work.
   const permission = await requestHealthPermission();
+
+  // Only now, once iOS has had its chance. The caller uses this to open the
+  // Health app, which is the only place an answer already given can be
+  // changed, and doing it before the request is what broke it.
+  onAskState?.(willAsk);
   if (!permission.granted) {
     // Refused is recorded, not left blank. A woman who said no has said
     // something, and the record should be able to tell that apart from never
