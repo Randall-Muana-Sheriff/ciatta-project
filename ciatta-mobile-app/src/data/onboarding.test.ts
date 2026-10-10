@@ -421,10 +421,13 @@ test('the paragraph states no finding, however much she told it', () => {
   }
 });
 
-test('the paragraph says what is from her and that nothing is measured', () => {
+test('the paragraph says her answers are her own report', () => {
+  // It used to also assert the words "nothing measured", which was right
+  // when nothing could be. With Apple Health connected that sentence became
+  // false, so what is pinned now is the framing rather than the denial.
   const p = reflectionParagraph(answers(FULL));
-  assert.ok(/reported/i.test(p), 'the paragraph never says her answers are her own report');
-  assert.ok(/measured/i.test(p), 'the paragraph never says nothing has been measured');
+  assert.ok(/your own report/i.test(p), 'the paragraph never says her answers are her own report');
+  assert.ok(/nothing to compare yet/i.test(p), 'the paragraph never says there is nothing to compare');
 });
 
 test('an answer she did not give never becomes an answer of none', () => {
@@ -463,4 +466,65 @@ test('the paragraph is one paragraph', () => {
   assert.ok(!p.includes('\n'), 'the prose was broken into lines');
   assert.ok(!/\s\s/.test(p), 'a missing clause left a double space');
   assert.ok(p.trim() === p, 'the prose is padded');
+});
+
+// ── Measured data in the profile ─────────────────────────────────────
+
+const MEASURED = [
+  { label: 'Steps', value: '8,432', on: '2026-10-09' },
+  { label: 'Sleep time', value: '7h 21m', on: '2026-10-09' },
+];
+
+test('the profile stops saying nothing was measured once something was', () => {
+  // The bug this fixes: she connects Apple Health, five thousand readings
+  // land, and the profile still tells her nothing has been measured. That
+  // one sentence made the whole screen read as a placeholder.
+  const withData = reflectionParagraph(answers(FULL), MEASURED);
+  assert.ok(!/rather than as anything Ciatta measured/.test(withData));
+  assert.ok(/Apple Health has also given Ciatta measurements/.test(withData));
+  assert.ok(withData.includes('8,432'));
+});
+
+test('reported and measured are never merged into one list', () => {
+  // One is her account of herself and the other is an instrument's. The
+  // record depends on telling them apart, and so does the screen.
+  const p = reflectionParagraph(answers(FULL), MEASURED);
+  const reported = p.indexOf('your own report');
+  const measured = p.indexOf('measurements of its own');
+  assert.ok(reported >= 0 && measured >= 0, 'one of the two framings is missing');
+  assert.ok(reported < measured, 'the measured sentence came before the reported framing');
+  // Her symptoms are hers, and must not appear inside the measured clause.
+  const measuredClause = p.slice(measured, p.indexOf('.', measured));
+  assert.ok(!/Fatigue|Endometriosis/.test(measuredClause), 'a reported name leaked into the measured sentence');
+});
+
+test('no measured data means the profile does not mention Apple Health', () => {
+  const p = reflectionParagraph(answers(FULL), []);
+  assert.ok(!/Apple Health/.test(p), 'it claimed measurements that do not exist');
+  assert.ok(/nothing to compare yet/.test(p));
+});
+
+test('measured data alone is still a profile, even with no answers', () => {
+  // A woman who skipped every question but connected her watch has a real
+  // record, and telling her Ciatta knows nothing would be false.
+  const p = reflectionParagraph(answers(), MEASURED);
+  assert.ok(!/knows nothing yet/.test(p), 'it told her Ciatta has nothing when it has her readings');
+  assert.ok(p.includes('8,432'));
+});
+
+test('the profile still claims no pattern, however much was measured', () => {
+  // The rule does not relax because data arrived. Nothing has been compared
+  // twice yet, so there is still nothing to conclude.
+  const p = reflectionParagraph(answers(FULL), MEASURED).toLowerCase();
+  assert.ok(/not drawing conclusions/.test(p));
+  for (const claim of ['because of', 'caused by', 'suggests', 'indicates', 'likely', 'linked to']) {
+    assert.ok(!p.includes(claim), `the profile reads as a finding: ${claim}`);
+  }
+});
+
+test('the profile with measured data holds no dash of any kind', () => {
+  const p = reflectionParagraph(answers(FULL), MEASURED);
+  for (const dash of ['—', '–', '-']) {
+    assert.ok(!p.includes(dash), `the profile contains ${dash}`);
+  }
 });

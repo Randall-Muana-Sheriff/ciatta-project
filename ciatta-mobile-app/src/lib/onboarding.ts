@@ -352,19 +352,32 @@ function listJoin(items: string[]): string {
   return `${xs.slice(0, -1).join(', ')}, and ${xs[xs.length - 1]}`;
 }
 
-export function reflectionParagraph(a: Answers): string {
+// One measured reading, as the screen already formats them.
+export type MeasuredReading = { label: string; value: string; on: string };
+
+export function reflectionParagraph(a: Answers, measured: readonly MeasuredReading[] = []): string {
   // A woman who skipped everything gets the truth in one sentence rather
   // than a paragraph built around absences.
-  if (!hasAnything(a)) {
+  if (!hasAnything(a) && measured.length === 0) {
     return 'You skipped the questions, so Ciatta knows nothing yet, and it will say so rather than guess. Whenever you want to start, anything you log is the beginning of the record.';
   }
 
   const parts: string[] = [];
   const name = a.name.trim();
 
-  parts.push(
-    `${name ? `${name}, everything` : 'Everything'} here is what you told Ciatta today, stored as reported by you rather than as anything Ciatta measured.`,
-  );
+  // The opening says which kind of knowing this is, and it has to change
+  // when there is measured data, because the old wording said nothing had
+  // been measured and that stopped being true the moment Apple Health was
+  // connected. Reported and measured are never merged into one list: one is
+  // her account of herself and the other is an instrument's, and the whole
+  // record depends on telling them apart.
+  if (hasAnything(a)) {
+    parts.push(
+      `${name ? `${name}, this` : 'This'} is what you told Ciatta today, stored as your own report.`,
+    );
+  } else if (name) {
+    parts.push(`${name}, you have not answered the questions yet.`);
+  }
 
   // What she came for, and her own sentence, together: the intent frames the
   // words, which is the same reason the intent screen comes first.
@@ -411,6 +424,16 @@ export function reflectionParagraph(a: Answers): string {
   if (named.length) parts.push(`${capitalise(listJoin(named))}.`);
   if (a.goals.length) parts.push(`What you want from Ciatta: ${listJoin(a.goals)}.`);
 
+  // What was measured, kept in its own sentence and named as measured. The
+  // day is carried because the newest reading may be days old and a bare
+  // figure would read as this morning's.
+  if (measured.length) {
+    const said = measured.slice(0, 4).map((m) => `${m.label.toLowerCase()} ${m.value}`);
+    parts.push(
+      `Apple Health has also given Ciatta measurements of its own: ${listJoin(said)}, each the most recent it holds.`,
+    );
+  }
+
   // What Ciatta cannot do, and why each one changes the answer. The fillable
   // gaps carry their own reasons; the unfillable one is written here because
   // it is about Ciatta rather than about a question she could answer.
@@ -423,7 +446,9 @@ export function reflectionParagraph(a: Answers): string {
   }
 
   parts.push(
-    'That is the whole record so far, and it is why Ciatta has no reading for you yet: a pattern needs the same thing happening more than once, so the first comparisons arrive after a few weeks of logging.',
+    measured.length
+      ? 'Ciatta is not drawing conclusions from any of it yet: a pattern needs the same thing happening more than once, so the first comparisons arrive once there are a few weeks to compare.'
+      : 'That is the whole record so far, and it is why Ciatta has nothing to compare yet: a pattern needs the same thing happening more than once, so the first comparisons arrive after a few weeks of logging.',
   );
 
   const next = nextStepFor(a);

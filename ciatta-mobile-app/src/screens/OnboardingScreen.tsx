@@ -321,7 +321,9 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
   const steps = useMemo(() => stepsFor(a), [a]);
   const step: StepId = steps[Math.min(i, steps.length - 1)];
-  const paragraph = useMemo(() => reflectionParagraph(a), [a]);
+  // Her readings go into the profile, so a woman who connected Apple Health
+  // is not told nothing was measured.
+  const paragraph = useMemo(() => reflectionParagraph(a, readings), [a, readings]);
 
   // Read when she arrives at the connect screen, so a source connected on an
   // earlier run shows as connected rather than waiting on a tap.
@@ -404,7 +406,11 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
     setError('');
     setStageDone(null);
     try {
-      // The readings are already counted by the time this screen renders.
+      // Read again here rather than trusting the connect screen to have
+      // done it. A woman who skipped that screen, having connected on an
+      // earlier run, still has readings, and a profile that omitted them
+      // would tell her nothing was measured while her record holds a year.
+      await refreshReadings();
       setStageDone('readings');
       await new Promise((r) => setTimeout(r, 450));
       setStageDone('answers');
