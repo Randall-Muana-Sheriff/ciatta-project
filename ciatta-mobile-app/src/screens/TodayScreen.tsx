@@ -143,7 +143,7 @@ type Action = { key: string; icon: IconName; title: string; sub?: string; onPres
 
 export function TodayScreen() {
   const nav = useNav();
-  const { startDraft, accept, setFocus, watching, setWatching } = useCycle();
+  const { startDraft, accept, watching, setWatching } = useCycle();
   const { today: brief } = useInsights();
   const { windows } = useCycleInsights();
   const { person, today, days, todayIsPlaceholder } = useData();
@@ -211,15 +211,6 @@ export function TodayScreen() {
   const sleepTo = latest?.sleep != null ? fmtHours(latest.sleep) : null;
   const sleepText = sleepFrom && sleepTo ? ` Sleep in the final week went from ${sleepFrom} to ${sleepTo}.` : '';
 
-  const evidence = (id?: string) => () => {
-    setFocus(id ?? null);
-    nav.push('evidence');
-  };
-  const describe = () => {
-    startDraft({ form: { kinds: ['Pain'] }, focusNote: true });
-    nav.push('cycleLog');
-  };
-
   // Actions that fit the pattern being told today.
   const actions: Action[] = [];
   if (brief.lead?.id === 'combined') {
@@ -241,11 +232,11 @@ export function TodayScreen() {
       onPress: brief.walkPlanned ? undefined : () => accept('walk'),
     });
   }
-  actions.push(
-    { key: 'describe', icon: 'chat', title: 'Describe What Changed', onPress: describe },
-    { key: 'prepare', icon: 'calendarPlus', title: 'Prepare for an Appointment', onPress: go('healthrecords') },
-    { key: 'evidence', icon: 'doc', title: 'View the Evidence', onPress: evidence(brief.lead?.id) },
-  );
+  // Nothing is pushed here unconditionally any more. What is left above is
+  // only what today's pattern earned: a watch worth setting, a walk worth
+  // trying. Preparing for an appointment is always available and has moved
+  // to the foot of Worth Doing Next, which is where the things that are
+  // always available live.
 
   return (
     <ScrollView style={t.fill} contentContainerStyle={t.body}>
@@ -384,6 +375,18 @@ icon="plus"
           <ListRow light icon="journey" title="Movement" sub="Activity against your usual, and what it lines up with." onPress={go('movement')} />
           <ListRow light icon="bars" title="Track Next Cycle" sub="Keep an eye on cycle timing and sleep." onPress={go('cycle')} />
           <ListRow light icon="notebook" title="Add a Note" sub="Write down what you're noticing." onPress={go('journal')} />
+          {/*
+            Last, because it is the only one here that is not about today.
+            The others add to the record; this one takes the record
+            somewhere.
+          */}
+          <ListRow
+            light
+            icon="calendarPlus"
+            title="Prepare for an Appointment"
+            sub="Gather what you want to raise, ready to take with you."
+            onPress={go('healthrecords')}
+          />
         </ListGroup>
       </View>
     </ScrollView>
