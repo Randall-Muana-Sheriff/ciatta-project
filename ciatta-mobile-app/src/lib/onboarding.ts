@@ -179,6 +179,20 @@ export type Reflection = {
   nextStep: string | null;
 };
 
+// Each life stage as a clause rather than a lowercased button label. The
+// words are hers in the sense that they restate the option she chose; none
+// of them adds anything she did not pick.
+const LIFE_STAGE_CLAUSE: Record<LifeStage, string> = {
+  cycling: 'you are cycling regularly',
+  cycle_irregular: 'your cycles are irregular',
+  perimenopause: 'you are in perimenopause',
+  menopause: 'you are in menopause',
+  postpartum: 'you are postpartum',
+  pregnant: 'you are pregnant',
+  contraception: 'you are on contraception',
+  unsure: 'you are not sure which life stage you are in',
+};
+
 const INTENT_SUMMARY: Record<Intent, string> = {
   noticing_change: 'something that has changed',
   managing_condition: 'a condition you are managing',
@@ -275,6 +289,112 @@ export function buildReflection(a: Answers): Reflection {
     findings: [],
     nextStep: nextStepFor(a),
   };
+}
+
+// The reflection as one paragraph rather than a stack of cards.
+//
+// The cards were honest and unreadable. Nine labelled rows, a Not yet
+// section and a Next card meant the one screen whose job is showing her what
+// Ciatta understood could not be taken in without scrolling, so the honesty
+// was there and the comprehension was not.
+//
+// Prose is the harder form to keep safe, and the rule does not move for it:
+// every clause below is either something she typed, something she chose, or
+// a statement of what Ciatta cannot do. There is no sentence that combines
+// two of her answers into a third claim, no sentence that reads as a
+// conclusion about her body, and no sentence that turns a question she was
+// never asked into an answer of none. The tests enumerate the phrasings that
+// would break that, because prose can drift into a finding one adjective at
+// a time where a card cannot.
+function listJoin(items: string[]): string {
+  const xs = items.map((x) => x.trim()).filter(Boolean);
+  if (xs.length <= 1) return xs[0] ?? '';
+  if (xs.length === 2) return `${xs[0]} and ${xs[1]}`;
+  return `${xs.slice(0, -1).join(', ')}, and ${xs[xs.length - 1]}`;
+}
+
+export function reflectionParagraph(a: Answers): string {
+  // A woman who skipped everything gets the truth in one sentence rather
+  // than a paragraph built around absences.
+  if (!hasAnything(a)) {
+    return 'You skipped the questions, so Ciatta knows nothing yet, and it will say so rather than guess. Whenever you want to start, anything you log is the beginning of the record.';
+  }
+
+  const parts: string[] = [];
+  const name = a.name.trim();
+
+  parts.push(
+    `${name ? `${name}, everything` : 'Everything'} here is what you told Ciatta today, stored as reported by you rather than as anything Ciatta measured.`,
+  );
+
+  // What she came for, and her own sentence, together: the intent frames the
+  // words, which is the same reason the intent screen comes first.
+  const intents = a.intents.map((i) => INTENT_SUMMARY[i]);
+  const opening = a.opening.trim();
+  if (intents.length && opening) {
+    parts.push(`You came about ${listJoin(intents)}, and in your words: \u201C${opening}\u201D`);
+  } else if (intents.length) {
+    parts.push(`You came about ${listJoin(intents)}.`);
+  } else if (opening) {
+    parts.push(`In your words: \u201C${opening}\u201D`);
+  }
+
+  // Her starting context. The cycle figure is the midpoint of the range she
+  // picked, so it is said as an approximation: calling it her cycle length
+  // would turn a tapped range into a measurement.
+  const context: string[] = [];
+  if (a.ageRange && a.ageRange !== 'prefer_not') {
+    const label = AGE_RANGES.find((r) => r.id === a.ageRange)?.label;
+    if (label) context.push(`you are ${label.toLowerCase()}`);
+  }
+  if (a.lifeStage) context.push(LIFE_STAGE_CLAUSE[a.lifeStage]);
+  if (a.cycleLength != null) {
+    context.push(`the range you picked puts your cycle at about ${a.cycleLength} days`);
+  }
+  if (context.length) parts.push(`${capitalise(listJoin(context))}.`);
+
+  // Everything she named, in her words. Each clause says who said it, which
+  // is what keeps the list a report rather than a chart.
+  const named: string[] = [];
+  if (a.conditions.length) named.push(`you are managing ${listJoin(a.conditions)}`);
+  if (a.surgeries.length) named.push(`your history includes ${listJoin(a.surgeries)}`);
+  if (a.medications.length) named.push(`you take ${listJoin(a.medications)}`);
+  if (a.supplements.length) {
+    named.push(`${a.medications.length ? 'you also take' : 'you take'} ${listJoin(a.supplements)}`);
+  }
+  if (a.symptoms.length) {
+    named.push(
+      a.symptoms.length === 1
+        ? `the symptom you named is ${a.symptoms[0].trim()}`
+        : `the symptoms you named are ${listJoin(a.symptoms)}`,
+    );
+  }
+  if (named.length) parts.push(`${capitalise(listJoin(named))}.`);
+  if (a.goals.length) parts.push(`What you want from Ciatta: ${listJoin(a.goals)}.`);
+
+  // What Ciatta cannot do, and why each one changes the answer. The fillable
+  // gaps carry their own reasons; the unfillable one is written here because
+  // it is about Ciatta rather than about a question she could answer.
+  const why = buildReflection(a)
+    .gaps.filter((g) => g.fillable)
+    .map((g) => g.why);
+  if (why.length) {
+    parts.push(why.length === 1 ? 'One thing would change what Ciatta can say.' : 'Two things would change what Ciatta can say.');
+    parts.push(why.join(' '));
+  }
+
+  parts.push(
+    'That is the whole record so far, and it is why Ciatta has no reading for you yet: a pattern needs the same thing happening more than once, so the first comparisons arrive after a few weeks of logging.',
+  );
+
+  const next = nextStepFor(a);
+  if (next) parts.push(next);
+
+  return parts.join(' ');
+}
+
+function capitalise(text: string): string {
+  return text ? text[0].toUpperCase() + text.slice(1) : text;
 }
 
 function nextStepFor(a: Answers): string | null {

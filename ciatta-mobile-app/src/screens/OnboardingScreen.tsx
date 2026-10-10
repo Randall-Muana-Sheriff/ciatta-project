@@ -9,14 +9,13 @@ import {
   AGE_RANGES,
   type AgeRange,
   type Answers,
-  buildReflection,
-  correctionTarget,
   cycleIsRelevant,
   emptyAnswers,
   INTENTS,
   type Intent,
   LIFE_STAGES,
   type LifeStage,
+  reflectionParagraph,
   type StepId,
   stepsFor,
 } from '../lib/onboarding';
@@ -211,7 +210,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
   const steps = useMemo(() => stepsFor(a), [a]);
   const step: StepId = steps[Math.min(i, steps.length - 1)];
-  const reflection = useMemo(() => buildReflection(a), [a]);
+  const paragraph = useMemo(() => reflectionParagraph(a), [a]);
 
   const set = (patch: Partial<Answers>) => setA((prev) => ({ ...prev, ...patch }));
   const next = () => setI((n) => Math.min(n + 1, steps.length - 1));
@@ -340,7 +339,6 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             <Text style={[font('title1'), s.title]} accessibilityRole="header">
               What may I call you?
             </Text>
-            <Text style={[font('subhead'), s.sub]}>Whatever you actually go by.</Text>
             <TextInput
               value={a.name}
               onChangeText={(t) => set({ name: t })}
@@ -362,7 +360,6 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             <Text style={[font('title1'), s.title]} accessibilityRole="header">
               What brings you here?
             </Text>
-            <Text style={[font('subhead'), s.sub]}>Pick any that fit.</Text>
             <Chips
               options={INTENTS.map((o) => o.label)}
               selected={a.intents.map((id) => INTENTS.find((o) => o.id === id)?.label ?? '')}
@@ -379,7 +376,6 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             <Text style={[font('title1'), s.title]} accessibilityRole="header">
               What has been changing?
             </Text>
-            <Text style={[font('subhead'), s.sub]}>In your words. Ciatta keeps them as you write them.</Text>
             <TextInput
               value={a.opening}
               onChangeText={(t) => set({ opening: t, openingMode: 'typed' })}
@@ -402,9 +398,11 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
                 {dictation.listening ? 'Stop' : 'Speak instead'}
               </Text>
             </Pressable>
-            <Text style={[font('caption1'), s.quiet]}>
-              {dictation.error ? displayCopy(dictation.error) : 'Your voice stays on this phone.'}
-            </Text>
+            {dictation.error ? (
+              <Text style={[font('caption1'), s.quiet]} accessibilityLiveRegion="polite">
+                {displayCopy(dictation.error)}
+              </Text>
+            ) : null}
           </View>
         ) : null}
 
@@ -413,7 +411,6 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             <Text style={[font('title1'), s.title]} accessibilityRole="header">
               A quick picture of you
             </Text>
-            <Text style={[font('subhead'), s.sub]}>Add what you know. Leave the rest.</Text>
 
             <View style={s.field}>
               <Text style={[font('subhead', 'semibold'), { color: INK }]}>Your age</Text>
@@ -507,7 +504,6 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             <Text style={[font('title1'), s.title]} accessibilityRole="header">
               Bring in what you already have
             </Text>
-            <Text style={[font('subhead'), s.sub]}>Optional. You can connect later from Profile.</Text>
 
             <View style={s.card}>
               <Text style={[font('headline'), { color: INK }]}>Apple Health</Text>
@@ -536,51 +532,8 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             <Text style={[font('title1'), s.title]} accessibilityRole="header">
               Here is what Ciatta has
             </Text>
-            <Text style={[font('subhead'), s.sub]}>All of it from you. Nothing measured yet.</Text>
 
-            {reflection.known.length ? (
-              <View style={s.card}>
-                {reflection.known.map((k) => (
-                  <Pressable
-                    key={k.label}
-                    onPress={() => setI(steps.indexOf(correctionTarget(a, k.label)))}
-                    accessibilityRole="button"
-                    // The label carries the value, not just the action. An
-                    // accessibilityLabel replaces the children, so "Change
-                    // Conditions" would make the one screen whose job is
-                    // showing her what Ciatta recorded the one screen a blind
-                    // user cannot hear it from.
-                    accessibilityLabel={`${k.label}, ${k.value}`}
-                    accessibilityHint="Opens this question so you can change your answer"
-                    style={({ pressed }) => [s.knownRow, pressed && s.pressed]}
-                  >
-                    <Text style={[font('caption1'), { color: MUTED }]}>{k.label}</Text>
-                    <Text style={[font('body'), { color: INK }]}>{displayCopy(k.value)}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            ) : (
-              <View style={s.card}>
-                <Text style={[font('body'), { color: INK }]}>
-                  You skipped the questions. Ciatta knows nothing yet, and will say so rather than guess.
-                </Text>
-              </View>
-            )}
-
-            <Text style={[font('subhead', 'semibold'), s.sectionLabel]}>Not yet</Text>
-            {reflection.gaps.map((g) => (
-              <View key={g.label} style={s.card}>
-                <Text style={[font('subhead', 'semibold'), { color: INK }]}>{g.label}</Text>
-                <Text style={[font('footnote'), s.cardSub]}>{g.why}</Text>
-              </View>
-            ))}
-
-            {reflection.nextStep ? (
-              <View style={s.card}>
-                <Text style={[font('caption1'), { color: MUTED }]}>Next</Text>
-                <Text style={[font('body'), { color: INK }]}>{reflection.nextStep}</Text>
-              </View>
-            ) : null}
+            <Text style={[font('subhead'), s.prose]}>{displayCopy(paragraph)}</Text>
 
             {error ? (
               <Text style={[font('footnote'), s.error]} accessibilityLiveRegion="polite">
@@ -637,11 +590,10 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 32,
   },
+  prose: { color: INK, lineHeight: 22, marginTop: 8 },
   title: { color: INK, letterSpacing: -0.4 },
   lede: { color: MUTED, marginTop: 16, lineHeight: 26 },
-  sub: { color: MUTED, marginTop: 8, marginBottom: 20 },
   quiet: { color: MUTED, marginTop: 14 },
-  sectionLabel: { color: INK, marginTop: 28, marginBottom: 2 },
 
   dots: { flexDirection: 'row', gap: 6, marginBottom: 36 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: LINE },
@@ -677,7 +629,6 @@ const s = StyleSheet.create({
 
   card: { borderWidth: 1, borderColor: LINE, borderRadius: RADIUS, padding: 16, marginTop: 12, gap: 6 },
   cardSub: { color: MUTED, lineHeight: 19 },
-  knownRow: { minHeight: 44, justifyContent: 'center', paddingVertical: 6 },
 
   actions: { marginTop: 40, gap: 12 },
   pair: { flexDirection: 'row', gap: 10 },

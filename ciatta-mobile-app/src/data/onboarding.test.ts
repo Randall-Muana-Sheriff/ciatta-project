@@ -11,6 +11,7 @@ import {
   hasAnything,
   INTENTS,
   LIFE_STAGES,
+  reflectionParagraph,
   stepsFor,
   type Answers,
 } from '../lib/onboarding';
@@ -314,4 +315,106 @@ test('every correction label maps to a step that actually exists', () => {
     assert.ok(steps.includes(target), `"${k.label}" maps to ${target}, not in her sequence`);
     assert.notEqual(target, 'connect', `"${k.label}" maps to the Apple Health offer`);
   }
+});
+
+// ── The reflection, as one paragraph ──────────────────────────────────
+
+const FULL: Partial<Answers> = {
+  name: 'Jenny',
+  opening: 'My cycles got shorter and I am tired all the time.',
+  intents: ['cycle', 'symptoms'],
+  ageRange: '35_44',
+  lifeStage: 'cycle_irregular',
+  cycleLength: 26,
+  conditions: ['Endometriosis'],
+  surgeries: ['Laparoscopy'],
+  medications: ['Levothyroxine'],
+  supplements: ['Magnesium'],
+  symptoms: ['Fatigue', 'Bloating'],
+  goals: ['Understand the tiredness'],
+};
+
+test('the paragraph carries every answer she gave', () => {
+  const p = reflectionParagraph(answers(FULL));
+  for (const fragment of [
+    'Jenny',
+    'My cycles got shorter and I am tired all the time.',
+    '35 to 44',
+    'Endometriosis',
+    'Laparoscopy',
+    'Levothyroxine',
+    'Magnesium',
+    'Fatigue',
+    'Bloating',
+    'Understand the tiredness',
+    '26 days',
+  ]) {
+    assert.ok(p.includes(fragment), `the paragraph dropped ${fragment}`);
+  }
+});
+
+test('the paragraph states no finding, however much she told it', () => {
+  // The same rule the card layout was held to. There is nothing measured and
+  // nothing compared at the end of a first session, so any sentence that reads
+  // as a conclusion about her would be invented.
+  const p = reflectionParagraph(answers(FULL)).toLowerCase();
+  for (const claim of [
+    'because of',
+    'caused by',
+    'due to',
+    'suggests',
+    'indicates',
+    'likely',
+    'consistent with',
+    'linked to',
+    'related to',
+    'you have ',
+    'diagnos',
+  ]) {
+    assert.ok(!p.includes(claim), `the paragraph reads as a finding: ${claim}`);
+  }
+});
+
+test('the paragraph says what is from her and that nothing is measured', () => {
+  const p = reflectionParagraph(answers(FULL));
+  assert.ok(/reported/i.test(p), 'the paragraph never says her answers are her own report');
+  assert.ok(/measured/i.test(p), 'the paragraph never says nothing has been measured');
+});
+
+test('an answer she did not give never becomes an answer of none', () => {
+  // The backend rule, on screen. A woman who was never asked about
+  // medications has unknown medications, not no medications, and a paragraph
+  // that says otherwise puts a clinical claim in her record that she did not
+  // make.
+  const p = reflectionParagraph(answers({ name: 'Jenny', intents: ['cycle'] })).toLowerCase();
+  for (const absence of ['no medications', 'no conditions', 'no symptoms', 'no supplements', 'none', 'nothing else']) {
+    assert.ok(!p.includes(absence), `missing data was stated as an absence: ${absence}`);
+  }
+});
+
+test('the paragraph names what Ciatta cannot do yet, and that time is one of them', () => {
+  const p = reflectionParagraph(answers(FULL));
+  assert.ok(/more than once|a few weeks|over time/i.test(p), 'the paragraph never says a pattern needs repetition');
+});
+
+test('a woman who skipped everything is told so plainly', () => {
+  const p = reflectionParagraph(answers());
+  assert.ok(/nothing yet/i.test(p), 'an empty first session did not say Ciatta knows nothing yet');
+  assert.ok(!/undefined|null/.test(p), 'an empty answer leaked into the prose');
+});
+
+test('the paragraph holds no dash of any kind', () => {
+  // The copy rule, which matters more here than anywhere else in onboarding:
+  // this is the longest templated string in the app.
+  const p = reflectionParagraph(answers(FULL));
+  for (const dash of ['\u2014', '\u2013', '-']) {
+    assert.ok(!p.includes(dash), `the paragraph contains a dash: ${dash}`);
+  }
+});
+
+test('the paragraph is one paragraph', () => {
+  const p = reflectionParagraph(answers(FULL));
+  assert.ok(!p.includes('\n'), 'the prose was broken into lines');
+  assert.ok(!/\s\s/.test(p), 'a missing clause left a double space');
+  assert.ok(p.trim() === p, 'the prose is padded');
 });
