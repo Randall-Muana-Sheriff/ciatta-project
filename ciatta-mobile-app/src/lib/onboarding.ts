@@ -372,9 +372,7 @@ export function reflectionParagraph(a: Answers, measured: readonly MeasuredReadi
   // her account of herself and the other is an instrument's, and the whole
   // record depends on telling them apart.
   if (hasAnything(a)) {
-    parts.push(
-      `${name ? `${name}, this` : 'This'} is what you told Ciatta today, stored as your own report.`,
-    );
+    parts.push(`${name ? `${name}, this` : 'This'} is what you told me today.`);
   } else if (name) {
     parts.push(`${name}, you have not answered the questions yet.`);
   }
@@ -383,13 +381,17 @@ export function reflectionParagraph(a: Answers, measured: readonly MeasuredReadi
   // words, which is the same reason the intent screen comes first.
   const intents = a.intents.map((i) => INTENT_SUMMARY[i]);
   const opening = a.opening.trim();
-  if (intents.length && opening) {
-    parts.push(`You came about ${listJoin(intents)}, and in your words: \u201C${opening}\u201D`);
-  } else if (intents.length) {
-    parts.push(`You came about ${listJoin(intents)}.`);
-  } else if (opening) {
-    parts.push(`In your words: \u201C${opening}\u201D`);
-  }
+  // One intent takes her phrasing exactly. Several need a different join,
+  // because "your cycle and symptoms you want to understand data" does not
+  // survive the sentence she wrote for one.
+  const shared =
+    intents.length === 1
+      ? `You shared ${intents[0]} data and experience.`
+      : intents.length > 1
+        ? `You shared ${listJoin(intents)}, and your experience of it.`
+        : '';
+  if (shared) parts.push(shared);
+  if (opening) parts.push(`\u201C${opening}\u201D`);
 
   // Her starting context. The cycle figure is the midpoint of the range she
   // picked, so it is said as an approximation: calling it her cycle length
@@ -445,14 +447,12 @@ export function reflectionParagraph(a: Answers, measured: readonly MeasuredReadi
     parts.push(why.join(' '));
   }
 
+  // The closing line, which is where the no conclusions rule is carried
+  // now. It no longer opens by naming the rule; the sentence states the
+  // condition a pattern needs and therefore why there is nothing yet.
   parts.push(
-    measured.length
-      ? 'Ciatta is not drawing conclusions from any of it yet: a pattern needs the same thing happening more than once, so the first comparisons arrive once there are a few weeks to compare.'
-      : 'That is the whole record so far, and it is why Ciatta has nothing to compare yet: a pattern needs the same thing happening more than once, so the first comparisons arrive after a few weeks of logging.',
+    'A pattern needs the same thing happening more than once, so the first comparisons arrive once there are more data over a few weeks to compare.',
   );
-
-  const next = nextStepFor(a);
-  if (next) parts.push(next);
 
   return parts.join(' ');
 }

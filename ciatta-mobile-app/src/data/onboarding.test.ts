@@ -421,13 +421,13 @@ test('the paragraph states no finding, however much she told it', () => {
   }
 });
 
-test('the paragraph says her answers are her own report', () => {
-  // It used to also assert the words "nothing measured", which was right
-  // when nothing could be. With Apple Health connected that sentence became
-  // false, so what is pinned now is the framing rather than the denial.
+test('the paragraph marks her answers as hers and says why there is nothing yet', () => {
+  // The framing is pinned, not the exact words, which have now changed
+  // twice. What must survive: these are things she said, and nothing has
+  // been concluded from them.
   const p = reflectionParagraph(answers(FULL));
-  assert.ok(/your own report/i.test(p), 'the paragraph never says her answers are her own report');
-  assert.ok(/nothing to compare yet/i.test(p), 'the paragraph never says there is nothing to compare');
+  assert.ok(/what you told me today/i.test(p), 'the paragraph never marks her answers as hers');
+  assert.ok(/more than once/i.test(p), 'the paragraph never says why there is nothing to compare');
 });
 
 test('an answer she did not give never becomes an answer of none', () => {
@@ -489,7 +489,7 @@ test('reported and measured are never merged into one list', () => {
   // One is her account of herself and the other is an instrument's. The
   // record depends on telling them apart, and so does the screen.
   const p = reflectionParagraph(answers(FULL), MEASURED);
-  const reported = p.indexOf('your own report');
+  const reported = p.indexOf('what you told me today');
   const measured = p.indexOf('measurements of its own');
   assert.ok(reported >= 0 && measured >= 0, 'one of the two framings is missing');
   assert.ok(reported < measured, 'the measured sentence came before the reported framing');
@@ -501,7 +501,7 @@ test('reported and measured are never merged into one list', () => {
 test('no measured data means the profile does not mention Apple Health', () => {
   const p = reflectionParagraph(answers(FULL), []);
   assert.ok(!/Apple Health/.test(p), 'it claimed measurements that do not exist');
-  assert.ok(/nothing to compare yet/.test(p));
+  assert.ok(!/measurements of its own/.test(p));
 });
 
 test('measured data alone is still a profile, even with no answers', () => {
@@ -516,7 +516,9 @@ test('the profile still claims no pattern, however much was measured', () => {
   // The rule does not relax because data arrived. Nothing has been compared
   // twice yet, so there is still nothing to conclude.
   const p = reflectionParagraph(answers(FULL), MEASURED).toLowerCase();
-  assert.ok(/not drawing conclusions/.test(p));
+  // The rule is carried by the closing sentence now rather than announced:
+  // it states what a pattern needs, which is why there is not one yet.
+  assert.ok(/a pattern needs the same thing happening more than once/.test(p));
   for (const claim of ['because of', 'caused by', 'suggests', 'indicates', 'likely', 'linked to']) {
     assert.ok(!p.includes(claim), `the profile reads as a finding: ${claim}`);
   }
