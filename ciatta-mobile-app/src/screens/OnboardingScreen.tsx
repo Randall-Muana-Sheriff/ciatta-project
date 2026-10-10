@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { connectAppleHealth } from '../lib/connectHealth';
@@ -22,6 +22,8 @@ import {
 } from '../lib/onboarding';
 import { useRepo, useSession } from '../state/session';
 import { font, GUTTER, RADIUS } from '../theme';
+import { images } from '../ui/images';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 // The first session: six screens in three phases.
 //
@@ -253,6 +255,66 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
     }
   };
 
+  // The welcome screen is its own layout, not a variant of the white one.
+  // It is the only screen with a photograph behind it, and the photograph
+  // runs from luminance 222 at the top to 41 at the bottom, so neither black
+  // nor white text works across the whole of it. The gradient below lands it
+  // dark enough for white type everywhere without flattening the picture
+  // where nothing sits on top of it.
+  if (step === 'welcome') {
+    return (
+      <View style={s.fill}>
+        <Image source={images.welcomeBg} style={s.bg} resizeMode="cover" accessible={false} />
+        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" pointerEvents="none">
+          <Defs>
+            <LinearGradient id="welcomeScrim" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor="#000000" stopOpacity={0.45} />
+              <Stop offset="0.45" stopColor="#000000" stopOpacity={0.5} />
+              <Stop offset="1" stopColor="#000000" stopOpacity={0.72} />
+            </LinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width="100%" height="100%" fill="url(#welcomeScrim)" />
+        </Svg>
+
+        <View style={[s.welcomeTop, { paddingTop: insets.top + 24 }]} pointerEvents="none">
+          <Image
+            source={images.wordmark}
+            style={s.logo}
+            resizeMode="contain"
+            accessible
+            accessibilityRole="image"
+            accessibilityLabel="Ciatta"
+          />
+        </View>
+
+        {/* Heading, paragraph and the button sit together in the vertical
+            middle rather than split top and bottom. */}
+        <View style={[s.welcomeMid, { paddingBottom: insets.bottom }]}>
+          <Text
+            style={[font('title2'), s.titleOnPhoto]}
+            accessibilityRole="header"
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.6}
+          >
+            Let&rsquo;s put the pieces together.
+          </Text>
+          <Text style={[font('body'), s.ledeOnPhoto]}>
+            Bring your devices, labs, and daily symptoms together. Spot clear patterns, understand what&rsquo;s
+            shifting, and get active help with appointments, referrals, and insurance.
+          </Text>
+          <Pressable
+            onPress={next}
+            accessibilityRole="button"
+            style={({ pressed }) => [s.primaryOnPhoto, pressed && s.pressed]}
+          >
+            <Text style={[font('headline'), { color: INK }]}>Begin</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
@@ -260,18 +322,8 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         contentContainerStyle={[s.body, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 28 }]}
         keyboardShouldPersistTaps="handled"
       >
-        {step === 'welcome' ? null : <Dots index={i - 1} total={steps.length - 1} />}
+        <Dots index={i - 1} total={steps.length - 1} />
 
-        {step === 'welcome' ? (
-          <View style={s.hero}>
-            <Text style={[font('title1'), s.title]} accessibilityRole="header">
-              Let&rsquo;s put the pieces together.
-            </Text>
-            <Text style={[font('body'), s.lede]}>
-              Tell Ciatta what is going on. It will show you what it can see, and what it cannot.
-            </Text>
-          </View>
-        ) : null}
 
         {step === 'intent' ? (
           <View>
@@ -513,11 +565,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
           product actually does.
         */}
         <View style={s.actions}>
-          {step === 'welcome' ? (
-            <Pressable onPress={next} accessibilityRole="button" style={({ pressed }) => [s.primary, pressed && s.pressed]}>
-              <Text style={[font('headline'), { color: '#FFFFFF' }]}>Start</Text>
-            </Pressable>
-          ) : step === 'reflect' ? (
+          {step === 'reflect' ? (
             <Pressable onPress={finish} accessibilityRole="button" style={({ pressed }) => [s.primary, pressed && s.pressed]}>
               <Text style={[font('headline'), { color: '#FFFFFF' }]}>{saving ? 'Saving' : 'Done'}</Text>
             </Pressable>
@@ -531,11 +579,9 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               </Pressable>
             </View>
           )}
-          {step === 'welcome' ? null : (
-            <Pressable onPress={back} accessibilityRole="button" style={({ pressed }) => [s.back, pressed && s.pressed]}>
-              <Text style={[font('subhead'), { color: MUTED }]}>Back</Text>
-            </Pressable>
-          )}
+          <Pressable onPress={back} accessibilityRole="button" style={({ pressed }) => [s.back, pressed && s.pressed]}>
+            <Text style={[font('subhead'), { color: MUTED }]}>Back</Text>
+          </Pressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -545,7 +591,20 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 const s = StyleSheet.create({
   fill: { flex: 1, backgroundColor: '#FFFFFF' },
   body: { paddingHorizontal: GUTTER, flexGrow: 1 },
-  hero: { paddingTop: 72 },
+  bg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
+  welcomeTop: { alignItems: 'center', paddingHorizontal: GUTTER },
+  welcomeMid: { flex: 1, justifyContent: 'center', paddingHorizontal: GUTTER },
+  logo: { width: 74, height: 22 },
+  titleOnPhoto: { color: '#FFFFFF', letterSpacing: -0.4 },
+  ledeOnPhoto: { color: 'rgba(255,255,255,0.88)', marginTop: 16, lineHeight: 26 },
+  primaryOnPhoto: {
+    height: 52,
+    borderRadius: RADIUS,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 32,
+  },
   title: { color: INK, letterSpacing: -0.4 },
   lede: { color: MUTED, marginTop: 16, lineHeight: 26 },
   sub: { color: MUTED, marginTop: 8, marginBottom: 20 },

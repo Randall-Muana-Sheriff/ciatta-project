@@ -11,6 +11,8 @@ export const images = {
   movement: require('../../assets/images/cia/movement.jpg'),
   // Canonical front view from the Ciatta design system (07 · Body).
   body: require('../../assets/images/cia/body.png'),
+  // The welcome screen's photograph, resized from the 3512x6240 original.
+  welcomeBg: require('../../assets/welcome-bg.jpg'),
   // The Ciatta wordmark, used on the sign in screen.
   wordmark: require('../../assets/images/wordmark.png'),
 };
