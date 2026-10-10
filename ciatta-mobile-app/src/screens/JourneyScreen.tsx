@@ -109,8 +109,14 @@ function LaneMarks({
   cycle: CyclePoint[];
   journey: Data['journey'];
 }) {
+  // eslint-disable-next-line prefer-const
   switch (lane) {
     case 'cycle': {
+      // Only the cycles in view. A point outside the window used to be
+      // placed at a sentinel off the canvas, which drew the path out to
+      // the left and back again across the whole lane.
+      cycle = cycle.filter((c) => x(c.at) != null);
+      if (cycle.length === 0) return null;
       // Lengths fill the lane, longer cycles higher.
       const all = cycle.map((c) => c.days);
       const lo = Math.min(...all);
@@ -156,7 +162,7 @@ function LaneMarks({
       return (
         <G>
           {signals
-            .filter((s) => s.pain && s.episode.severity != null)
+            .filter((s) => s.pain && s.episode.severity != null && x(s.date) != null)
             .map((s) => {
               const sev = s.episode.severity!;
               return (
@@ -176,7 +182,7 @@ function LaneMarks({
       return (
         <G>
           {signals
-            .filter((s) => s.episode.flareUpUserReported)
+            .filter((s) => s.episode.flareUpUserReported && x(s.date) != null)
             .map((s) => {
               const cx = x(s.date) ?? -99;
               return (
@@ -354,7 +360,14 @@ export function JourneyScreen() {
   const [hidden, setHidden] = useState<Lane[]>([]);
 
   const axis = useMemo(() => axisFor(scale, new Date()), [scale]);
-  const plotW = width - SIDE * 2 - LABEL_W;
+
+  // The plot gets the width its scale needs rather than the width the
+  // screen happens to have. Twenty four hours squeezed into 230 points is
+  // a chart nobody can read, so a slot has a floor and the whole thing
+  // scrolls sideways when the sum is wider than the phone.
+  const SLOT_MIN: Record<Scale, number> = { day: 46, week: 62, month: 40, year: 74 };
+  const visibleW = width - SIDE * 2 - LABEL_W;
+  const plotW = Math.max(visibleW, axis.slots * SLOT_MIN[scale]);
 
   // Every lane places its marks through this, so a mark outside the window
   // is not drawn rather than being pinned to an edge it did not happen at.
@@ -362,6 +375,15 @@ export function JourneyScreen() {
     const p = posIn(axis, at);
     return p == null ? null : p * plotW;
   };
+
+  const shownLanes = LANES.filter((l) => !hidden.includes(l.key));
+
+  // Whether anything at all falls in the window, so the chart can say it
+  // is empty instead of showing a grid with nothing on it.
+  const nothingInView =
+    cycle.every((c) => posIn(axis, c.at) == null) &&
+    signals.every((sg) => posIn(axis, sg.date) == null) &&
+    !journey;
 
   const toggle = (lane: Lane) =>
     setHidden((h) => (h.includes(lane) ? h.filter((l) => l !== lane) : [...h, lane]));
@@ -415,47 +437,83 @@ export function JourneyScreen() {
       <View style={j.grid}>
         {/* The axis, built from the chosen window rather than a fixed run
             of months. Labels sit where the axis puts them. */}
-        <View style={[j.monthRow, { marginLeft: SIDE + LABEL_W }]}>
-          {axis.ticks.map((tick) => (
-            <Text
-              key={`${tick.label}-${tick.at}`}
-              style={[
-                font('caption1'),
-                { color: C.secondary, position: 'absolute', left: tick.at * plotW - 18, width: 36, textAlign: 'center' },
-              ]}
-            >
-              {tick.label}
-            </Text>
-          ))}
+        <View style={j.chartRow}>
+          {/*
+            The labels are a column of their own rather than the first cell
+            of each lane, so they stay put while the plot scrolls. A lane
+            whose name has scrolled off is a row of dots.
+          */}
+          <View style={j.labelCol}>
+            <View style={j.axisSpacer} />
+            {shownLanes.map((lane) => (
+              <View key={lane.key} style={[j.laneLabel, { height: lane.height }]}>
+                <Icon name={lane.icon} size={18} color={lane.color} weight={1.8} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[font('subhead', 'semibold'), { color: C.text }]} numberOfLines={1}>
+                    {lane.title}
+                  </Text>
+                  <Text style={[font('caption1'), { color: C.secondary }]} numberOfLines={1}>
+                    {lane.sub}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            // A day and a month are both wider than the phone, so the
+            // right hand edge, which is now, is what she should land on.
+            contentOffset={{ x: Math.max(0, plotW - visibleW), y: 0 }}
+          >
+            <View style={{ width: plotW }}>
+              <View style={[j.axisSpacer, j.axisRow]}>
+                {axis.ticks.map((tick) => (
+                  <Text
+                    key={`${tick.label}-${tick.at}`}
+                    style={[
+                      font('caption1'),
+                      j.axisLabel,
+                      { left: tick.at * plotW - 24 },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {tick.label}
+                  </Text>
+                ))}
+              </View>
+
+              {shownLanes.map((lane) => (
+                <View key={lane.key} style={[j.lanePlot, { height: lane.height }]}>
+                  <Svg width={plotW} height={lane.height}>
+                    {/* One rule per axis label, so the grid matches what is
+                        written under it at any scale. */}
+                    {axis.ticks.map((tick) => (
+                      <Line
+                        key={`${tick.label}-${tick.at}`}
+                        x1={tick.at * plotW}
+                        y1={0}
+                        x2={tick.at * plotW}
+                        y2={lane.height}
+                        stroke={C.text}
+                        opacity={0.07}
+                      />
+                    ))}
+                    <LaneMarks lane={lane.key} x={x} signals={signals} cycle={cycle} journey={journey} />
+                  </Svg>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
         </View>
 
-        {LANES.filter((l) => !hidden.includes(l.key)).map((lane) => (
-          <View key={lane.key} style={[j.lane, { height: lane.height }]}>
-            <View style={j.laneLabel}>
-              <Icon name={lane.icon} size={18} color={lane.color} weight={1.8} />
-              <View style={{ flex: 1 }}>
-                <Text style={[font('subhead', 'semibold'), { color: C.text }]}>{lane.title}</Text>
-                <Text style={[font('caption1'), { color: C.secondary }]}>{lane.sub}</Text>
-              </View>
-            </View>
-            <Svg width={plotW} height={lane.height}>
-              {/* One rule per axis label, so the grid matches what is
-                  written under it at any scale. */}
-              {axis.ticks.map((tick) => (
-                <Line
-                  key={`${tick.label}-${tick.at}`}
-                  x1={tick.at * plotW}
-                  y1={0}
-                  x2={tick.at * plotW}
-                  y2={lane.height}
-                  stroke={C.text}
-                  opacity={0.07}
-                />
-              ))}
-              <LaneMarks lane={lane.key} x={x} signals={signals} cycle={cycle} journey={journey} />
-            </Svg>
-          </View>
-        ))}
+        {/*
+          An empty window says which window it is. "Nothing yet" and
+          "nothing this week" are different facts, and the second is not
+          discouraging.
+        */}
+        {nothingInView ? <Text style={[font('subhead'), j.empty]}>{emptyFor(scale)}</Text> : null}
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={j.legend}>
@@ -550,8 +608,22 @@ const j = StyleSheet.create({
     paddingHorizontal: 14,
   },
   pickedRule: { height: 2, width: 18, borderRadius: 1, marginTop: 3, backgroundColor: 'transparent' },
-  lane: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.separator },
-  laneLabel: { width: LABEL_W, flexDirection: 'row', gap: 6, paddingTop: 12, paddingLeft: 8, paddingRight: 4 },
+  chartRow: { flexDirection: 'row' },
+  labelCol: { width: LABEL_W },
+  axisSpacer: { height: 26 },
+  axisRow: { position: 'relative' },
+  axisLabel: { color: C.secondary, position: 'absolute', top: 6, width: 48, textAlign: 'center' },
+  laneLabel: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingTop: 12,
+    paddingLeft: 8,
+    paddingRight: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: C.separator,
+  },
+  lanePlot: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.separator },
+  empty: { color: C.secondary, paddingHorizontal: 8, paddingTop: 16 },
 
   legend: { gap: 8, paddingHorizontal: GUTTER, paddingVertical: 16 },
   chip: {
