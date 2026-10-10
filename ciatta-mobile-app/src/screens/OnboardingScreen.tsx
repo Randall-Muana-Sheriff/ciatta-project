@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -49,6 +49,12 @@ import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 // writes into, the eight life stages, and the reflection paragraph. Every
 // other screen holds one question and sits at eye level.
 const BOTTOM: StepId[] = ['tell', 'lifeStage', 'reflect'];
+
+// The screens that hold exactly one answer, and so need no Continue: the tap
+// that answers the question is the tap that moves her on. A Continue button
+// here is a second tap that adds nothing, and a woman who has already told
+// Ciatta her age has no reason to confirm it.
+const AUTO: StepId[] = ['age', 'lifeStage', 'cycle'];
 
 const INK = '#111113';
 const MUTED = '#6B6B70';
@@ -257,6 +263,19 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
   const set = (patch: Partial<Answers>) => setA((prev) => ({ ...prev, ...patch }));
   const next = () => setI((n) => Math.min(n + 1, steps.length - 1));
+
+  // Cleared on unmount so a pending advance cannot set state on a screen that
+  // has gone, which is what happens if she taps an answer and the save
+  // finishes underneath her.
+  const advance = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (advance.current) clearTimeout(advance.current);
+  }, []);
+  const pick = (patch: Partial<Answers>) => {
+    set(patch);
+    if (advance.current) clearTimeout(advance.current);
+    advance.current = setTimeout(next, 180);
+  };
   const back = () => setI((n) => Math.max(n - 1, 0));
   const skip = () => {
     setA((prev) => (prev.skipped.includes(step) ? prev : { ...prev, skipped: [...prev.skipped, step] }));
@@ -390,13 +409,42 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   return (
     <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/*
-        Progress stays at the top; everything she touches goes to the bottom.
-        The dots are read, not tapped, so they keep the one position where
-        they cannot be mistaken for part of the question. Out of the scroll
-        view as well, so they hold still while a long screen moves.
+        Back, progress, and Skip, in one row that holds still while a long
+        screen moves under it. Back is an arrow in the corner because that is
+        where a back arrow is, and because the bottom of the screen is for the
+        one thing she came to this screen to do.
+
+        Skip moved up here with it. It was beside Continue at the same weight,
+        on the argument that Ciatta works on partial answers and a skip styled
+        as the lesser choice says otherwise. That argument still holds and this
+        is a different one: on the screens that answer themselves there is no
+        Continue left for it to stand beside, and a lone Skip at the foot of
+        the page is a button she has to read before she can ignore it.
       */}
       <View style={[s.header, { paddingTop: insets.top + 24 }]}>
+        <Pressable
+          onPress={back}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={8}
+          style={({ pressed }) => [s.headerSide, s.headerLeft, pressed && s.pressed]}
+        >
+          <Icon name="chevronLeft" size={22} color={INK} />
+        </Pressable>
+
         <Dots index={i - 1} total={steps.length - 1} />
+
+        {step === 'reflect' ? (
+          <View style={s.headerSide} />
+        ) : (
+          <Pressable
+            onPress={skip}
+            accessibilityRole="button"
+            style={({ pressed }) => [s.headerSide, s.headerRight, pressed && s.pressed]}
+          >
+            <Text style={[font('subhead'), { color: MUTED }]}>Skip</Text>
+          </Pressable>
+        )}
       </View>
 
       {/*
@@ -537,10 +585,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             <Choices
               options={AGE_RANGES.map((o) => o.label)}
               selected={AGE_RANGES.find((o) => o.id === a.ageRange)?.label ?? null}
-              onPick={(label) => {
-                const id = AGE_RANGES.find((o) => o.label === label)?.id;
-                set({ ageRange: (a.ageRange === id ? null : id) as AgeRange | null });
-              }}
+              onPick={(label) => pick({ ageRange: AGE_RANGES.find((o) => o.label === label)?.id as AgeRange })}
             />
           </View>
         ) : null}
@@ -553,10 +598,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             <Choices
               options={LIFE_STAGES.map((o) => o.label)}
               selected={LIFE_STAGES.find((o) => o.id === a.lifeStage)?.label ?? null}
-              onPick={(label) => {
-                const id = LIFE_STAGES.find((o) => o.label === label)?.id;
-                set({ lifeStage: (a.lifeStage === id ? null : id) as LifeStage | null });
-              }}
+              onPick={(label) => pick({ lifeStage: LIFE_STAGES.find((o) => o.label === label)?.id as LifeStage })}
             />
           </View>
         ) : null}
@@ -569,7 +611,12 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             <Choices
               options={CYCLE_CHOICES}
               selected={cycleChoice(a.cycleLength, a.cycleRegular)[0] ?? null}
-              onPick={(label) => set(cycleFromChoice(label, a))}
+              // Read against a cleared cycle rather than her current one, so
+              // the toggle off branch cannot fire. On a screen that advances
+              // on tap, a tap that both deselects and moves her on would land
+              // her at the next question having dropped the answer she just
+              // gave.
+              onPick={(label) => pick(cycleFromChoice(label, { ...a, cycleLength: null, cycleRegular: null }))}
             />
           </View>
         ) : null}
@@ -703,25 +750,23 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
           skip styled as the lesser choice tells her the opposite of what the
           product actually does.
         */}
-        <View style={s.actions}>
-          {step === 'reflect' ? (
+        {/*
+          Nothing at all on the screens that answer themselves. Continue is
+          full width on the rest, since Skip no longer stands beside it.
+        */}
+        {step === 'reflect' ? (
+          <View style={s.actions}>
             <Pressable onPress={finish} accessibilityRole="button" style={({ pressed }) => [s.primary, pressed && s.pressed]}>
               <Text style={[font('headline'), { color: '#FFFFFF' }]}>{saving ? 'Saving' : 'Done'}</Text>
             </Pressable>
-          ) : (
-            <View style={s.pair}>
-              <Pressable onPress={skip} accessibilityRole="button" style={({ pressed }) => [s.secondary, pressed && s.pressed]}>
-                <Text style={[font('headline'), { color: INK }]}>Skip</Text>
-              </Pressable>
-              <Pressable onPress={next} accessibilityRole="button" style={({ pressed }) => [s.primary, s.grow, pressed && s.pressed]}>
-                <Text style={[font('headline'), { color: '#FFFFFF' }]}>Continue</Text>
-              </Pressable>
-            </View>
-          )}
-          <Pressable onPress={back} accessibilityRole="button" style={({ pressed }) => [s.back, pressed && s.pressed]}>
-            <Text style={[font('subhead'), { color: MUTED }]}>Back</Text>
-          </Pressable>
-        </View>
+          </View>
+        ) : AUTO.includes(step) ? null : (
+          <View style={s.actions}>
+            <Pressable onPress={next} accessibilityRole="button" style={({ pressed }) => [s.primary, pressed && s.pressed]}>
+              <Text style={[font('headline'), { color: '#FFFFFF' }]}>Continue</Text>
+            </Pressable>
+          </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -796,7 +841,17 @@ const s = StyleSheet.create({
   lede: { color: MUTED, marginTop: 16, lineHeight: 26 },
   quiet: { color: MUTED, marginTop: 14 },
 
-  header: { paddingHorizontal: GUTTER },
+  header: {
+    paddingHorizontal: GUTTER,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  // Both sides reserve the same width so the dots stay centred on the screen
+  // rather than centred on whatever is left over.
+  headerSide: { width: 56, minHeight: 44, justifyContent: 'center' },
+  headerLeft: { alignItems: 'flex-start' },
+  headerRight: { alignItems: 'flex-end' },
   dots: { flexDirection: 'row', gap: 6 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: LINE },
   dotOn: { backgroundColor: INK },
@@ -833,21 +888,7 @@ const s = StyleSheet.create({
   cardSub: { color: MUTED, lineHeight: 19 },
 
   actions: { marginTop: 40, gap: 12 },
-  pair: { flexDirection: 'row', gap: 10 },
-  grow: { flex: 1 },
   primary: { height: 52, borderRadius: RADIUS, backgroundColor: INK, alignItems: 'center', justifyContent: 'center' },
-  // Same height and same type as Continue. Partial answers are a supported
-  // way to use Ciatta, not a lesser one.
-  secondary: {
-    height: 52,
-    borderRadius: RADIUS,
-    borderWidth: 1,
-    borderColor: LINE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 30,
-  },
-  back: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.6 },
   error: { color: '#B3261E', marginTop: 14 },
 });
