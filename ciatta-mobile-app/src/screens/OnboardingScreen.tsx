@@ -21,6 +21,7 @@ import {
 } from '../lib/onboarding';
 import { useRepo, useSession } from '../state/session';
 import { font, GUTTER, RADIUS } from '../theme';
+import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
@@ -35,6 +36,18 @@ import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 // first build, and a paragraph above a text box is a second thing to read
 // before she can answer the first. What survived is the question, and where
 // it genuinely changes her answer, one line saying why it is asked.
+
+// Where a screen's content sits, by how much of it there is.
+//
+// A short screen centres: one question and one field at eye level is easier
+// to glance at than the same pair pushed to the foot of an empty page. A long
+// screen bottom aligns, so the answer and the controls stay in reach and the
+// overflow runs upward into space the screen has anyway.
+//
+// Membership is about content, not importance. The three below hold a field,
+// six chips and one card; the other three hold a text area she writes into,
+// the whole snapshot, and the reflection paragraph.
+const CENTRED: StepId[] = ['name', 'intent', 'connect'];
 
 const INK = '#111113';
 const MUTED = '#6B6B70';
@@ -364,7 +377,10 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
       */}
       <ScrollView
         style={s.fill}
-        contentContainerStyle={[s.body, { paddingBottom: insets.bottom + 28 }]}
+        contentContainerStyle={[
+          s.body,
+          { justifyContent: CENTRED.includes(step) ? 'center' : 'flex-end', paddingBottom: insets.bottom + 28 },
+        ]}
         keyboardShouldPersistTaps="handled"
       >
 
@@ -417,28 +433,55 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             <Text style={[font('title1'), s.title]} accessibilityRole="header">
               What has been changing?
             </Text>
-            <TextInput
-              value={a.opening}
-              onChangeText={(t) => set({ opening: t, openingMode: 'typed' })}
-              placeholder="However you would say it to a friend"
-              placeholderTextColor={MUTED}
-              multiline
-              textAlignVertical="top"
-              style={[font('body'), s.textarea]}
-              accessibilityLabel="What has been changing"
-            />
+            {/*
+              One control in the corner of the box, not a row of buttons under
+              it. Empty box: a mic. Text in the box: send, which is Continue
+              under a name that matches the gesture. Listening: stop, and it
+              stays stop even once words have arrived, because a send button
+              that replaces the only way to stop the microphone would leave
+              her holding a live mic and no way to end it.
+            */}
+            <View style={s.boxWrap}>
+              <TextInput
+                value={a.opening}
+                onChangeText={(t) => set({ opening: t, openingMode: 'typed' })}
+                placeholder="However you would say it to a friend"
+                placeholderTextColor={MUTED}
+                multiline
+                textAlignVertical="top"
+                style={[font('body'), s.textarea, s.textareaInset]}
+                accessibilityLabel="What has been changing"
+              />
+              <Pressable
+                onPress={
+                  dictation.listening
+                    ? dictation.stop
+                    : a.opening.trim()
+                      ? next
+                      : dictation.start
+                }
+                accessibilityRole="button"
+                accessibilityLabel={
+                  dictation.listening ? 'Stop recording' : a.opening.trim() ? 'Send' : 'Dictate'
+                }
+                hitSlop={6}
+                style={({ pressed }) => [
+                  s.boxAction,
+                  (a.opening.trim() || dictation.listening) && s.boxActionOn,
+                  pressed && s.pressed,
+                ]}
+              >
+                <Icon
+                  name={dictation.listening ? 'stopSquare' : a.opening.trim() ? 'send' : 'mic'}
+                  size={19}
+                  color={a.opening.trim() || dictation.listening ? '#FFFFFF' : INK}
+                  filled={dictation.listening}
+                />
+              </Pressable>
+            </View>
             {dictation.listening ? (
               <Text style={[font('body'), s.partial]}>{dictation.partial || 'Listening'}</Text>
             ) : null}
-            <Pressable
-              onPress={dictation.listening ? dictation.stop : dictation.start}
-              accessibilityRole="button"
-              style={({ pressed }) => [s.ghost, pressed && s.pressed]}
-            >
-              <Text style={[font('subhead', 'semibold'), { color: INK }]}>
-                {dictation.listening ? 'Stop' : 'Speak instead'}
-              </Text>
-            </Pressable>
             {dictation.error ? (
               <Text style={[font('caption1'), s.quiet]} accessibilityLiveRegion="polite">
                 {displayCopy(dictation.error)}
@@ -616,7 +659,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
 const s = StyleSheet.create({
   fill: { flex: 1, backgroundColor: '#FFFFFF' },
-  body: { paddingHorizontal: GUTTER, flexGrow: 1, justifyContent: 'flex-end', paddingTop: 16 },
+  body: { paddingHorizontal: GUTTER, flexGrow: 1, paddingTop: 16 },
   bg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
   welcomeTop: { alignItems: 'center', paddingHorizontal: GUTTER },
   welcomeMid: { flex: 1, justifyContent: 'center', paddingHorizontal: GUTTER },
@@ -646,6 +689,24 @@ const s = StyleSheet.create({
     marginTop: 32,
   },
   prose: { color: INK, lineHeight: 22, marginTop: 8 },
+  boxWrap: { position: 'relative' },
+  // Room at the foot of the box for the control, so a long answer scrolls
+  // behind it rather than under it.
+  textareaInset: { paddingBottom: 52 },
+  boxAction: {
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: LINE,
+  },
+  boxActionOn: { backgroundColor: INK, borderColor: INK },
   title: { color: INK, letterSpacing: -0.4 },
   lede: { color: MUTED, marginTop: 16, lineHeight: 26 },
   quiet: { color: MUTED, marginTop: 14 },

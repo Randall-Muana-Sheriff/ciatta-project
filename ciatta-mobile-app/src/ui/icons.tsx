@@ -22,6 +22,12 @@ const ICONS = {
   ],
   journey: [o(4, 17, 2), o(10, 8, 2), o(15, 15, 2), o(20, 6, 2), p('M5.2 15.4l3.6-5.8M11.3 9.6l2.4 3.8M16.1 13.3l2.8-5.6')],
   person: [o(12, 8, 4), p('M4.5 21c.8-4 3.8-6.5 7.5-6.5s6.7 2.5 7.5 6.5')],
+  mic: [p('M12 4a3 3 0 0 1 3 3v4a3 3 0 0 1-6 0V7a3 3 0 0 1 3-3z'), p('M6 11a6 6 0 0 0 12 0'), p('M12 17v3M9 20h6')],
+  // A square rather than the usual stop circle: it sits in the same 24pt box
+  // as the mic, and the mic it replaces is already round.
+  stopSquare: [p('M8 8h8v8H8z')],
+  send: [p('M4 12l16-8-6 8 6 8z')],
+  camera: [p('M3 8.5A1.5 1.5 0 0 1 4.5 7h2L8 5h8l1.5 2h2A1.5 1.5 0 0 1 21 8.5v9A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z'), o(12, 13, 3.4)],
   chevronLeft: [p('M15 5l-7 7 7 7')],
   chevronRight: [p('M9 5l7 7-7 7')],
   chevronDown: [p('M5 9l7 7 7-7')],
