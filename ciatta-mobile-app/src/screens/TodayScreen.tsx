@@ -457,12 +457,23 @@ const t = StyleSheet.create({
   // Transparent: the ground behind Root is what paints this screen, and
   // a flat fill here would cover the shift.
   fill: { flex: 1 },
-  body: { paddingBottom: NAV_CLEARANCE, paddingTop: 8 },
+  // No padding above the mark. Root has already inset the screen past the
+  // camera, and the Wordmark carries its own clear space, so anything added
+  // here is a third gap stacked on two that already exist.
+  body: { paddingBottom: NAV_CLEARANCE, paddingTop: 0 },
   pad: { paddingHorizontal: GUTTER },
   pressed: { opacity: 0.6 },
   section: { marginTop: 28 },
   // The mark alone at the top, as the concept has it.
-  wordmarkRow: { alignItems: 'center', paddingTop: 2, paddingBottom: 6 },
+  // Centred and as high as the mark is allowed to sit, which is the way
+  // Oura's own wordmark opens its home screen: the mark first, tight under
+  // the status bar, and the day introducing itself underneath.
+  //
+  // The gap above it is the Wordmark's own padding and nothing else. The
+  // Constitution sets clear space on all four sides at the cap height, so
+  // that gap is the floor: further up would be the mark touching the camera
+  // cutout, which is the one thing the clear space rule exists to prevent.
+  wordmarkRow: { alignItems: 'center', paddingTop: 0, paddingBottom: 2 },
   hello: { color: L.ink, letterSpacing: -0.4 },
 
   dayCard: {
