@@ -99,16 +99,41 @@ function Glow({ x, y, color }: { x: number; y: number; color: string }) {
 function LaneMarks({
   lane,
   x,
+  axisFrom,
+  axisTo,
   signals,
   cycle,
   journey,
+  plotW,
 }: {
   lane: Lane;
   x: (at: Date) => number | null;
+  axisFrom: Date;
+  axisTo: Date;
   signals: Signal[];
   cycle: CyclePoint[];
   journey: Data['journey'];
+  plotW: number;
 }) {
+  // Where a month position lands, or null when it is outside the window.
+  const at = (m: number) => x(dateAtMonthPos(m));
+
+  // A span that starts before the window or ends after it still happened
+  // during it. Clamping draws the part that is in view, where filtering on
+  // both ends would hide a medication she has taken all year from every
+  // view shorter than a year.
+  const span = (fromM: number, toM: number): [number, number] | null => {
+    const a = dateAtMonthPos(fromM);
+    const b = dateAtMonthPos(toM);
+    const pa = x(a);
+    const pb = x(b);
+    if (pa == null && pb == null) {
+      // Both ends outside: in view only if the span brackets the window.
+      if (!(a <= axisFrom && b >= axisTo)) return null;
+      return [0, plotW];
+    }
+    return [pa ?? 0, pb ?? plotW];
+  };
   // eslint-disable-next-line prefer-const
   switch (lane) {
     case 'cycle': {
@@ -117,6 +142,10 @@ function LaneMarks({
       // the left and back again across the whole lane.
       cycle = cycle.filter((c) => x(c.at) != null);
       if (cycle.length === 0) return null;
+      // Filtered above, so every point here has a position. Asserted once
+      // rather than each call site falling back to a sentinel that can
+      // never be reached and reads as though it can.
+      const px = (c: CyclePoint) => x(c.at) as number;
       // Lengths fill the lane, longer cycles higher.
       const all = cycle.map((c) => c.days);
       const lo = Math.min(...all);
@@ -128,29 +157,29 @@ function LaneMarks({
       return (
         <G>
           <Path
-            d={past.map((c, i) => `${i ? 'L' : 'M'}${x(c.at) ?? -99},${y(c.days)}`).join(' ')}
+            d={past.map((c, i) => `${i ? 'L' : 'M'}${px(c)},${y(c.days)}`).join(' ')}
             stroke={C.coral}
             strokeWidth={2}
             fill="none"
           />
           {next && nowPt ? (
             <G>
-              <Line x1={x(nowPt.at) ?? -99} y1={y(nowPt.days)} x2={x(next.at) ?? -99} y2={y(next.days)} stroke={C.gray} strokeDasharray="2 3" />
-              <Circle cx={x(next.at) ?? -99} cy={y(next.days)} r={3} fill={C.gray} />
-              <Label x={x(next.at) ?? -99} y={y(next.days) - 12} opacity={0.7}>
+              <Line x1={px(nowPt)} y1={y(nowPt.days)} x2={px(next)} y2={y(next.days)} stroke={C.gray} strokeDasharray="2 3" />
+              <Circle cx={px(next)} cy={y(next.days)} r={3} fill={C.gray} />
+              <Label x={px(next)} y={y(next.days) - 12} opacity={0.7}>
                 {next.days}
               </Label>
             </G>
           ) : null}
           {past.map((c, i) =>
             c === nowPt ? (
-              <Glow key={i} x={x(c.at) ?? -99} y={y(c.days)} color={C.coral} />
+              <Glow key={i} x={px(c)} y={y(c.days)} color={C.coral} />
             ) : (
-              <Circle key={i} cx={x(c.at) ?? -99} cy={y(c.days)} r={3.5} fill={C.coral} />
+              <Circle key={i} cx={px(c)} cy={y(c.days)} r={3.5} fill={C.coral} />
             ),
           )}
           {past.map((c, i) => (
-            <Label key={`t${i}`} x={x(c.at) ?? -99} y={y(c.days) - 13} color={c === nowPt ? C.coral : C.text}>
+            <Label key={`t${i}`} x={px(c)} y={y(c.days) - 13} color={c === nowPt ? C.coral : C.text}>
               {c.days}
             </Label>
           ))}
@@ -168,7 +197,7 @@ function LaneMarks({
               return (
                 <Circle
                   key={s.episode.id}
-                  cx={x(s.date) ?? -99}
+                  cx={x(s.date) as number}
                   cy={76 - sev * 5.5}
                   r={3 + sev * 0.25}
                   fill={C.coral}
@@ -184,7 +213,7 @@ function LaneMarks({
           {signals
             .filter((s) => s.episode.flareUpUserReported && x(s.date) != null)
             .map((s) => {
-              const cx = x(s.date) ?? -99;
+              const cx = x(s.date) as number;
               return (
                 <Rect
                   key={s.episode.id}
@@ -205,11 +234,16 @@ function LaneMarks({
       return (
         <G>
           {journey.sleep.map((s, i) => {
+            const cx = at(s.m);
+            if (cx == null) return null;
             const bar = 12 + (s.hours - 6) * 14;
             return (
               <G key={i}>
+                {/* The bar is 6 wide, so it is offset by half to sit on
+                    its point. The offset used to be eaten by a fallback
+                    that bound tighter than the subtraction. */}
                 <Rect
-                  x={x(dateAtMonthPos(s.m)) ?? -99 - 3}
+                  x={cx - 3}
                   y={56 - bar}
                   width={6}
                   height={bar}
@@ -218,7 +252,7 @@ function LaneMarks({
                   opacity={s.expected ? 0.5 : 1}
                 />
                 {s.label ? (
-                  <Label x={x(dateAtMonthPos(s.m)) ?? -99} y={78} color={C.text}>
+                  <Label x={cx} y={78} color={C.text}>
                     {s.label.replace(' ', '')}
                   </Label>
                 ) : null}
@@ -231,9 +265,12 @@ function LaneMarks({
       if (!journey) return null;
       return (
         <G>
-          {journey.symptoms.map((s, i) => (
-            <Circle key={i} cx={x(dateAtMonthPos(s.m)) ?? -99} cy={s.y} r={3.5} fill={s.expected ? C.gray : C.violet} />
-          ))}
+          {journey.symptoms.map((s, i) => {
+            const cx = at(s.m);
+            return cx == null ? null : (
+              <Circle key={i} cx={cx} cy={s.y} r={3.5} fill={s.expected ? C.gray : C.violet} />
+            );
+          })}
         </G>
       );
     case 'medications':
@@ -242,20 +279,36 @@ function LaneMarks({
         <G>
           {journey.medications.map((med) => {
             const color = med.tone === 'mint' ? C.mint : C.lavender;
+            // Clamped rather than filtered: a medication taken all year is
+            // in view in every window, even when neither of its ends is.
+            const line = span(med.from, med.to);
+            if (!line) return null;
+            const [x1, x2] = line;
+            const fromIn = at(med.from);
+            const toIn = at(med.to);
+            const ongoing = med.ongoing == null ? null : span(med.to, med.ongoing);
+            const labelX = at(med.labelAt);
             return (
               <G key={med.name}>
-                <Line x1={x(dateAtMonthPos(med.from)) ?? -99} y1={med.y} x2={x(dateAtMonthPos(med.to)) ?? -99} y2={med.y} stroke={color} strokeWidth={2.5} strokeLinecap="round" />
-                <Circle cx={x(dateAtMonthPos(med.from)) ?? -99} cy={med.y} r={3.5} fill={color} />
-                <Circle cx={x(dateAtMonthPos(med.to)) ?? -99} cy={med.y} r={3.5} fill={color} />
-                {med.ongoing ? (
+                <Line x1={x1} y1={med.y} x2={x2} y2={med.y} stroke={color} strokeWidth={2.5} strokeLinecap="round" />
+                {/* The end caps are only drawn where the end itself is in
+                    view, so a clamped line does not grow a dot at the edge
+                    that reads as the day she started or stopped. */}
+                {fromIn != null ? <Circle cx={fromIn} cy={med.y} r={3.5} fill={color} /> : null}
+                {toIn != null ? <Circle cx={toIn} cy={med.y} r={3.5} fill={color} /> : null}
+                {ongoing ? (
                   <G>
-                    <Line x1={x(dateAtMonthPos(med.to)) ?? -99} y1={med.y} x2={x(dateAtMonthPos(med.ongoing)) ?? -99} y2={med.y} stroke={C.gray} strokeDasharray="2 3" />
-                    <Circle cx={x(dateAtMonthPos(med.ongoing)) ?? -99} cy={med.y} r={3} fill={C.gray} />
+                    <Line x1={ongoing[0]} y1={med.y} x2={ongoing[1]} y2={med.y} stroke={C.gray} strokeDasharray="2 3" />
+                    {med.ongoing != null && at(med.ongoing) != null ? (
+                      <Circle cx={at(med.ongoing) as number} cy={med.y} r={3} fill={C.gray} />
+                    ) : null}
                   </G>
                 ) : null}
-                <Label x={x(dateAtMonthPos(med.labelAt)) ?? -99} y={med.y - 10} color={C.text}>
-                  {med.name}
-                </Label>
+                {labelX != null ? (
+                  <Label x={labelX} y={med.y - 10} color={C.text}>
+                    {med.name}
+                  </Label>
+                ) : null}
               </G>
             );
           })}
@@ -265,30 +318,37 @@ function LaneMarks({
       if (!journey) return null;
       return (
         <G>
-          {journey.records.map((r) => (
-            <G key={r.label}>
-              <Circle cx={x(dateAtMonthPos(r.m)) ?? -99} cy={36} r={3.5} fill={C.green} />
-              <Label x={x(dateAtMonthPos(r.m)) ?? -99} y={60}>
-                {r.label}
-              </Label>
-            </G>
-          ))}
+          {journey.records.map((r) => {
+            const cx = at(r.m);
+            return cx == null ? null : (
+              <G key={r.label}>
+                <Circle cx={cx} cy={36} r={3.5} fill={C.green} />
+                <Label x={cx} y={60}>
+                  {r.label}
+                </Label>
+              </G>
+            );
+          })}
         </G>
       );
     case 'notes':
       if (!journey) return null;
       return (
         <G>
-          {journey.notes.map((n) => (
+          {journey.notes.map((n) => {
+            const cx = at(n.m);
+            if (cx == null) return null;
+            return (
             <G key={n.m}>
-              {n.m === NOW ? <Glow x={x(dateAtMonthPos(n.m)) ?? -99} y={34} color={C.indigo} /> : <Circle cx={x(dateAtMonthPos(n.m)) ?? -99} cy={34} r={3.5} fill={C.lavender} />}
+              {n.m === NOW ? <Glow x={cx} y={34} color={C.indigo} /> : <Circle cx={cx} cy={34} r={3.5} fill={C.lavender} />}
               {n.lines.map((line, k) => (
-                <Label key={line} x={x(dateAtMonthPos(n.m)) ?? -99} y={60 + k * 15}>
+                <Label key={line} x={cx} y={60 + k * 15}>
                   {line}
                 </Label>
               ))}
             </G>
-          ))}
+            );
+          })}
         </G>
       );
   }
@@ -500,7 +560,16 @@ export function JourneyScreen() {
                         opacity={0.07}
                       />
                     ))}
-                    <LaneMarks lane={lane.key} x={x} signals={signals} cycle={cycle} journey={journey} />
+                    <LaneMarks
+                      lane={lane.key}
+                      x={x}
+                      axisFrom={axis.from}
+                      axisTo={axis.to}
+                      signals={signals}
+                      cycle={cycle}
+                      journey={journey}
+                      plotW={plotW}
+                    />
                   </Svg>
                 </View>
               ))}
