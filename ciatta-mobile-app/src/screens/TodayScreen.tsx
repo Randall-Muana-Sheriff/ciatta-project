@@ -11,7 +11,7 @@ import { useInsights } from '../state/insights';
 import { useData, useRepo } from '../state/session';
 import { font, fonts, GUTTER, numeral } from '../theme';
 import { Eyebrow, Tile } from '../ui/bento';
-import { images } from '../ui/images';
+import { Wordmark } from '../ui/Wordmark';
 import { AXIS, buildDay, type DayChart, VIEW } from '../lib/todayChart';
 import type { IntradayPoint } from '../data/repo';
 import { ground, L, mark, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/light';
@@ -261,14 +261,7 @@ export function TodayScreen() {
         and the day introduces itself underneath.
       */}
       <View style={t.wordmarkRow}>
-        <Image
-          source={images.wordmark}
-          style={t.wordmark}
-          resizeMode="contain"
-          accessible
-          accessibilityRole="image"
-          accessibilityLabel="Ciatta"
-        />
+        <Wordmark />
       </View>
 
       <View style={t.pad}>
@@ -438,8 +431,7 @@ const t = StyleSheet.create({
   pressed: { opacity: 0.6 },
   section: { marginTop: 28 },
   // The mark alone at the top, as the concept has it.
-  wordmarkRow: { alignItems: 'center', paddingTop: 6, paddingBottom: 18 },
-  wordmark: { width: 74, height: 22, tintColor: L.ink },
+  wordmarkRow: { alignItems: 'center', paddingTop: 2, paddingBottom: 6 },
   hello: { color: L.ink, letterSpacing: -0.4 },
 
   dayCard: {

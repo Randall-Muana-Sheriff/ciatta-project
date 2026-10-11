@@ -28,6 +28,8 @@ import { useRepo, useSession } from '../state/session';
 import { font, GUTTER, RADIUS } from '../theme';
 import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
+import { L } from '../ui/light';
+import { Wordmark } from '../ui/Wordmark';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 // The first session: six screens in three phases.
@@ -473,14 +475,9 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               />
             </Svg>
           </Pressable>
-          <Image
-            source={images.wordmark}
-            style={s.logo}
-            resizeMode="contain"
-            accessible
-            accessibilityRole="image"
-            accessibilityLabel="Ciatta"
-          />
+          {/* Paper on the photograph. The Constitution allows Graphite
+              or Paper and nothing else, and the scrim is dark here. */}
+          <Wordmark color={L.recessed} />
         </View>
 
         {/* Heading, paragraph and the button sit together in the vertical

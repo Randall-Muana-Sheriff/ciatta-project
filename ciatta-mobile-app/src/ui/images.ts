@@ -31,6 +31,4 @@ export const images = {
   garmin: require('../../assets/images/sources/garmin.png'),
   strava: require('../../assets/images/sources/strava.png'),
   omron: require('../../assets/images/sources/omron.png'),
-  // The Ciatta wordmark, used on the sign in screen.
-  wordmark: require('../../assets/images/wordmark.png'),
 };

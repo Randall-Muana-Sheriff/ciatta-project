@@ -13,6 +13,8 @@ import { userFacingError } from '../lib/userFacingError';
 import { useSession } from '../state/session';
 import { C, font, GUTTER, RADIUS } from '../theme';
 import { images } from '../ui/images';
+import { L } from '../ui/light';
+import { Wordmark } from '../ui/Wordmark';
 
 // The hero loops silently behind all three panes. It is decorative: nothing
 // here is said by the video alone, so a reader that never sees it loses
@@ -306,19 +308,11 @@ export function SignInScreen() {
       {pane === 'welcome' ? null : <View style={s.backAbs}>{back}</View>}
       <View style={s.logoWrap}>
         {/*
-          The wordmark artwork is pure white with transparency, so on the light
-          panes it would be a white shape on a white page: present, correct,
-          and entirely invisible. tintColor recolours the opaque pixels, which
-          is exactly what a single colour mark with an alpha channel is for.
+          Type rather than artwork now, so there is nothing to tint: the
+          mark takes Graphite on the white panes and Paper on the film,
+          which are the only two grounds the Constitution allows it.
         */}
-        <Image
-          source={images.wordmark}
-          style={[s.logo, light && { tintColor: C.bg }]}
-          resizeMode="contain"
-          accessible
-          accessibilityRole="image"
-          accessibilityLabel="Ciatta"
-        />
+        <Wordmark color={light ? L.ink : L.recessed} />
       </View>
     </View>
   );
@@ -513,9 +507,6 @@ const s = StyleSheet.create({
   backAbs: { position: 'absolute', left: 0, top: -11, zIndex: 1 },
   back: { minHeight: 44, justifyContent: 'center', paddingHorizontal: GUTTER, alignSelf: 'flex-start' },
   logoWrap: { alignItems: 'center', paddingHorizontal: GUTTER },
-  // The wordmark is 3575x1046, so height follows width at its own ratio and
-  // resizeMode contain keeps it from being stretched to fit a box.
-  logo: { width: 74, height: 22 },
   pad: { paddingHorizontal: GUTTER },
   // The one white card on the welcome pane. Same height and corner as the
   // Apple button the next screen opens with, so the step across feels like
