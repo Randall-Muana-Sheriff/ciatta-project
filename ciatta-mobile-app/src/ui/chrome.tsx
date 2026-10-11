@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { ViewStyle } from 'react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassView } from 'expo-glass-effect';
@@ -179,12 +180,23 @@ export function ListRow({
 
 // ── Tab bar ────────────────────────────────────────────────────
 
+// The four places in her record.
 const TABS: { key: Tab; label: string; icon: IconName }[] = [
   { key: 'today', label: 'Today', icon: 'home' },
   { key: 'myhealth', label: 'Health', icon: 'heart' },
   { key: 'journey', label: 'Journey', icon: 'journey' },
   { key: 'profile', label: 'Profile', icon: 'person' },
 ];
+
+// And the one thing that acts on it, which is why it sits in a card of its
+// own rather than as a fifth seat in theirs. The four are destinations and
+// answer "where am I looking"; Care answers "what should I do", which is a
+// different question and gets a different object.
+//
+// Labelled Care and not Ciatta: the Constitution's section 06 says the
+// wordmark set once, correctly, is the entire identity, and spending it on
+// an eleven point tab label is not setting it correctly.
+const AGENT: { key: Tab; label: string; icon: IconName } = { key: 'care', label: 'Care', icon: 'molecule' };
 
 // A floating rounded bar rather than a full width strip, the way Oura's
 // sits. Labels and glyphs are untouched: this is where the bar is and what
@@ -203,43 +215,72 @@ const TABS: { key: Tab; label: string; icon: IconName }[] = [
 // same problem with less grace.
 export function BottomNav({ active, onTab }: { active: Tab; onTab: (tab: Tab) => void }) {
   const insets = useSafeAreaInsets();
-  // Same element either way, so the bar's geometry is written once.
-  const Bar = GLASS ? GlassView : View;
   return (
     <View style={[s.navWrap, { paddingBottom: Math.max(insets.bottom, 10) }]} pointerEvents="box-none">
-      <Bar
-        style={[s.nav, GLASS ? s.navGlass : s.navPainted]}
-        accessibilityRole="tablist"
-        // Ignored by the plain View fallback. Regular rather than clear: a
-        // clear bar over a washed ground stops being a surface. The scheme
-        // is pinned dark because the app is, so the glass cannot resolve
-        // light under a system setting the rest of the app ignores.
-        {...(GLASS ? ({ glassEffectStyle: 'regular', colorScheme: 'dark' } as const) : {})}
-      >
-      {TABS.map((t) => {
-        const on = t.key === active;
-        // Ink when selected, meta when not. The selected tab is also the
-        // only one sitting on the nude ground, so the state is carried by
-        // the ground rather than by a colour spent on it.
-        const color = on ? C.text : C.muted;
-        return (
-          <Pressable
-            key={t.key}
-            onPress={() => onTab(t.key)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: on }}
-            accessibilityLabel={t.label}
-            style={[s.tab, on && s.tabOn]}
-          >
-            <Icon name={t.icon} size={25} color={color} weight={1.6} filled />
-            <Text style={[s.tabLabel, { color }]} maxFontSizeMultiplier={1.2}>
-              {t.label}
-            </Text>
-          </Pressable>
-        );
-        })}
-      </Bar>
+      {/*
+        Two cards, not one bar with a fifth seat. Same material, same
+        radius, same hairline, so they read as two objects of one kind with
+        a gap between them rather than as a bar that grew a lump.
+      */}
+      <Card style={s.navGroup} role="tablist">
+        {TABS.map((t) => (
+          <TabButton key={t.key} tab={t} on={t.key === active} onPress={() => onTab(t.key)} />
+        ))}
+      </Card>
+      <Card style={s.navAgent}>
+        <TabButton tab={AGENT} on={active === AGENT.key} onPress={() => onTab(AGENT.key)} wide />
+      </Card>
     </View>
+  );
+}
+
+// The shared surface of both cards. Glass where there is glass, the old
+// near opaque fill where there is not.
+function Card({ children, style, role }: { children: ReactNode; style: ViewStyle; role?: 'tablist' }) {
+  const Surface = GLASS ? GlassView : View;
+  return (
+    <Surface
+      style={[s.card, GLASS ? s.cardGlass : s.cardPainted, style]}
+      accessibilityRole={role}
+      // Ignored by the plain View fallback. Regular rather than clear: a
+      // clear bar over a washed ground stops being a surface. The scheme
+      // is pinned dark because the app is, so the glass cannot resolve
+      // light under a system setting the rest of the app ignores.
+      {...(GLASS ? ({ glassEffectStyle: 'regular', colorScheme: 'dark' } as const) : {})}
+    >
+      {children}
+    </Surface>
+  );
+}
+
+function TabButton({
+  tab,
+  on,
+  onPress,
+  wide = false,
+}: {
+  tab: { key: Tab; label: string; icon: IconName };
+  on: boolean;
+  onPress: () => void;
+  wide?: boolean;
+}) {
+  // Ink when selected, meta when not. The selected tab is also the only one
+  // sitting on the lifted ground, so the state is carried by the ground
+  // rather than by a colour spent on it.
+  const color = on ? C.text : C.muted;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: on }}
+      accessibilityLabel={tab.label}
+      style={[s.tab, wide && s.tabWide, on && s.tabOn]}
+    >
+      <Icon name={tab.icon} size={25} color={color} weight={1.6} filled />
+      <Text style={[s.tabLabel, { color }]} maxFontSizeMultiplier={1.2}>
+        {tab.label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -299,10 +340,14 @@ const s = StyleSheet.create({
   rowBody: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingVertical: 11, paddingRight: 16 },
   rowSep: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.separator },
 
-  // The bar floats: the wrapper holds the safe area and lets taps through
-  // to the screen either side of it.
-  navWrap: { paddingHorizontal: 14, paddingTop: 8 },
-  nav: {
+  // The bar floats: the wrapper holds the safe area, lays the two cards out
+  // in a row, and lets taps through to the screen either side of them.
+  navWrap: { paddingHorizontal: 14, paddingTop: 8, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  // The four, which share one card and divide its width between them.
+  navGroup: { flex: 1 },
+  // Care, which sizes to itself. It is not a fifth of anything.
+  navAgent: {},
+  card: {
     flexDirection: 'row',
     padding: 5,
     // Fully rounded against a 60pt bar, so the ends are true half circles
@@ -324,12 +369,15 @@ const s = StyleSheet.create({
   },
   // Glass brings its own material, so the bar adds no fill of its own: a
   // colour behind glass is a colour the glass then has to see through.
-  navGlass: {},
+  cardGlass: {},
   // No glass: the old fill, which is nearly opaque because it has to stop
   // the content by itself rather than diffusing it.
-  navPainted: { backgroundColor: 'rgba(20, 23, 28, 0.94)' },
+  cardPainted: { backgroundColor: 'rgba(20, 23, 28, 0.94)' },
 
   tab: { flex: 1, height: 54, alignItems: 'center', justifyContent: 'center', gap: 3, borderRadius: 25 },
+  // Alone in its card, Care has no siblings to divide width with, so it
+  // sets its own instead of stretching to fill.
+  tabWide: { flex: 0, paddingHorizontal: 16, minWidth: 72 },
   // The selected tab stands one step above the bar, the way the bar stands
   // one step above the page, and it is edged like a selected tile so the two
   // read as the same kind of selection.

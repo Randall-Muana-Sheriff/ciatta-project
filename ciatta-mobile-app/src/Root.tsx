@@ -6,6 +6,7 @@ import { type Nav, NavContext, type Screen, type Tab } from './navigation';
 import { CycleHistoryScreen } from './screens/CycleHistoryScreen';
 import { CycleLogScreen } from './screens/CycleLogScreen';
 import { AppointmentScreen } from './screens/AppointmentScreen';
+import { CareScreen } from './screens/CareScreen';
 import { MetricsScreen } from './screens/MetricsScreen';
 import { CycleProfileScreen } from './screens/CycleProfileScreen';
 import { CycleScreen } from './screens/CycleScreen';
@@ -34,6 +35,9 @@ const TAB_GROUND: Record<Tab, [GroundHue, GroundHue]> = {
   myhealth: ['reported', 'change'],
   journey: ['timeDepth', 'measured'],
   profile: ['evidence', 'change'],
+  // Care takes Lavender into Rose: time depth into what she reported,
+  // which is what the agent reads and what it is for.
+  care: ['timeDepth', 'reported'],
 };
 
 const TAB_SCREENS: Record<Tab, ComponentType> = {
@@ -41,6 +45,7 @@ const TAB_SCREENS: Record<Tab, ComponentType> = {
   myhealth: MyHealthScreen,
   journey: JourneyScreen,
   profile: ProfileScreen,
+  care: CareScreen,
 };
 
 const DETAIL_SCREENS: Record<Screen, ComponentType> = {

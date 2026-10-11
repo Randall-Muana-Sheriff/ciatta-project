@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 
-export type Tab = 'today' | 'myhealth' | 'journey' | 'profile';
+export type Tab = 'today' | 'myhealth' | 'journey' | 'profile' | 'care';
 
 export const TAB_ORDER: Tab[] = ['today', 'myhealth', 'journey', 'profile'];
 
