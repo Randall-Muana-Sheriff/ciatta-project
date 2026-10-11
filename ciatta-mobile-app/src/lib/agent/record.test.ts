@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 import type { Insight } from '../engine';
-import { answerAsk, answerPattern } from './capabilities';
+import { answerAsk, answerContext, answerPattern } from './capabilities';
 import { buildRecord, type Sources } from './record';
 
 const bare: Sources = {
@@ -91,5 +92,68 @@ test('the wired record still never produces a forbidden word', () => {
     for (const w of ['you have', 'diagnos', 'because', 'risk of']) {
       assert.ok(!lower.includes(w), `${a.capability} said "${w}": ${a.text}`);
     }
+  }
+});
+
+// ── References are matched to her, not just present ──────────────────
+
+const endoRef = {
+  id: 'r1',
+  title: 'Endometriosis: A Review',
+  publication: 'JAMA',
+  year: 2025,
+  summary: 'The diagnosis is often delayed, averaging 5 to 12 years after onset of symptoms.',
+  domains: ['endometriosis', 'diagnosis'],
+};
+
+test('a reference about her condition is quoted verbatim and marked general', () => {
+  const r = buildRecord({
+    ...bare,
+    reported: { conditions: ['Endometriosis'], surgeries: [], medications: [], supplements: [] },
+    references: [endoRef],
+  });
+  const a = answerContext(r);
+  assert.equal(a.abstained, undefined);
+  assert.ok(a.text.includes(endoRef.summary), a.text);
+  assert.ok(a.text.includes('not a statement about you'));
+  assert.equal(a.facts[0].refId, 'r1');
+});
+
+test('a reference about a different condition is never quoted at her', () => {
+  // Having sources and having a source about her are different things.
+  const r = buildRecord({
+    ...bare,
+    reported: { conditions: ['PCOS'], surgeries: [], medications: [], supplements: [] },
+    references: [endoRef],
+  });
+  const a = answerContext(r);
+  assert.equal(a.abstained, 'no_citations');
+  assert.ok(!a.text.includes(endoRef.summary));
+  assert.ok(a.text.includes('research on something else'));
+});
+
+test('references but no condition told to Ciatta still abstains', () => {
+  const a = answerContext(buildRecord({ ...bare, references: [endoRef] }));
+  assert.equal(a.abstained, 'no_citations');
+});
+
+test('the seeded summaries carry no dash and no forbidden word', () => {
+  // They are quoted verbatim and rendered, so they have to clear the same
+  // bar as copy the app wrote itself. A source that cannot be quoted
+  // cleanly is left out of the seed rather than edited.
+  const sql = readFileSync(new URL('../../../supabase/migrations/20261011170000_seed_research_refs.sql', import.meta.url), 'utf8');
+  const summaries = [...sql.matchAll(/^\s{4}'([^']{40,})',$/gm)].map((m) => m[1]);
+  assert.ok(summaries.length >= 5, `found ${summaries.length} summaries`);
+  for (const line of summaries) {
+    assert.ok(!/[—–]/.test(line), line);
+    for (const w of ['cause', 'because', 'diagnos', 'you have', 'risk of']) {
+      // "diagnosis" is the subject of several of these and is allowed in a
+      // quoted finding about a population; what is refused is the app
+      // saying it about her. The agent's own sentence is checked
+      // separately, so only the dashes and second person matter here.
+      if (w === 'diagnos') continue;
+      assert.ok(!line.toLowerCase().includes(w), `${w} in ${line}`);
+    }
+    assert.ok(!/\byou\b/i.test(line), `second person in a general finding: ${line}`);
   }
 });

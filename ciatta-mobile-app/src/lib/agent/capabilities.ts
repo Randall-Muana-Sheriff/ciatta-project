@@ -41,7 +41,14 @@ export type Record = {
   insights: readonly { title: string; whatChanged: string; notEstablished: string[] }[];
   // Reviewed rows from research_refs. Empty until the store is populated,
   // and the context capability abstains rather than improvising when it is.
-  references: readonly { id: string; title: string; publication: string | null; year: number | null; summary: string }[];
+  references: readonly {
+    id: string;
+    title: string;
+    publication: string | null;
+    year: number | null;
+    summary: string;
+    domains?: readonly string[];
+  }[];
   cycleDay: number | null;
   cyclePhase: string | null;
 };
@@ -261,6 +268,22 @@ export function answerEscalate(message: string, r: Record): Answer {
 // filled this gap from the model would be fabricating research, which is
 // the one failure that would be hardest for her to catch and worst for her
 // to act on.
+// Which reference answers her. Domains are matched against what she said
+// she is managing, so a woman with endometriosis is not handed a sentence
+// about PCOS because it happened to sort first. With nothing matching, the
+// capability abstains rather than quoting something about a different
+// condition entirely, which would read as being about her.
+function pickReference(r: Record) {
+  if (!r.references.length) return null;
+  const hers = r.conditions.map((c) => c.toLowerCase());
+  if (!hers.length) return null;
+  return (
+    r.references.find((ref) =>
+      (ref.domains ?? []).some((d) => hers.some((c) => c.includes(d.toLowerCase()) || d.toLowerCase().includes(c))),
+    ) ?? null
+  );
+}
+
 export function answerContext(r: Record): Answer {
   if (!r.references.length) {
     return {
@@ -273,7 +296,21 @@ export function answerContext(r: Record): Answer {
       abstained: 'no_citations',
     };
   }
-  const ref = r.references[0];
+  const ref = pickReference(r);
+  if (!ref) {
+    return {
+      capability: 'context',
+      // Having sources and having a source about her are different, and
+      // the difference matters: quoting a paper on another condition would
+      // read as being about her.
+      text:
+        'Ciatta has reviewed sources, but none of them are about what you told it you are managing. ' +
+        'It will not quote research on something else as though it were about you.',
+      facts: [],
+      suggestions: [],
+      abstained: 'no_citations',
+    };
+  }
   const where = [ref.publication, ref.year ? `${ref.year}` : null].filter(Boolean).join(', ');
   return {
     capability: 'context',

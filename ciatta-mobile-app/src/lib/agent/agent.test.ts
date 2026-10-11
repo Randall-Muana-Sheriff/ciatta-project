@@ -84,10 +84,13 @@ test('context abstains with no reviewed references, and says it will not', () =>
   assert.ok(a.text.includes('cannot cite'));
 });
 
-test('context cites the reference it was given and marks it not about her', () => {
+test('context cites a reference about what she is managing, and marks it not about her', () => {
   const a = answerContext({
     ...bare,
-    references: [{ id: 'r1', title: 'A paper', publication: 'A journal', year: 2024, summary: 'Something general.' }],
+    conditions: ['Endometriosis'],
+    references: [
+      { id: 'r1', title: 'A paper', publication: 'A journal', year: 2024, summary: 'Something general.', domains: ['endometriosis'] },
+    ],
   });
   assert.equal(a.abstained, undefined);
   assert.equal(a.facts[0].refId, 'r1');
@@ -104,7 +107,7 @@ test('no capability produces a forbidden word, a diagnosis or an instruction', (
     medications: ['Naproxen'],
     episodes: [episode({ severity: 8 }), episode({ flareUpUserReported: true })],
     insights: [{ title: 'Sleep and cycle', whatChanged: 'Sleep fell in the week before three periods.', notEstablished: ['One does not explain the other.'] }],
-    references: [{ id: 'r1', title: 'T', publication: null, year: null, summary: 'General.' }],
+    references: [{ id: 'r1', title: 'T', publication: null, year: null, summary: 'General.', domains: ['endometriosis'] }],
   };
   for (const r of [bare, full]) {
     for (const cap of ['record', 'pattern', 'prepare', 'ask', 'navigate', 'escalate', 'context', 'decline'] as const) {

@@ -42,7 +42,7 @@ import { type Screen, useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
 import { useData, useRepo } from '../state/session';
-import type { Reported } from '../data/repo';
+import type { ReferenceRow, Reported } from '../data/repo';
 import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { Composer } from '../ui/composer';
@@ -77,6 +77,9 @@ export function CareScreen() {
   // What she told Ciatta at onboarding. Null until the read lands, which
   // buildRecord treats as unknown rather than as an empty history.
   const [reported, setReported] = useState<Reported | null>(null);
+  // Reviewed references, which are the only thing context may quote. An
+  // empty list is the honest state until the seed migration is applied.
+  const [references, setReferences] = useState<ReferenceRow[]>([]);
   useEffect(() => {
     let ignore = false;
     repo
@@ -88,6 +91,15 @@ export function CareScreen() {
         // Left null. The capabilities abstain, which is the honest state
         // when the read failed: Ciatta does not know, rather than knows
         // there is nothing.
+      });
+    repo
+      .loadReferences()
+      .then((rows) => {
+        if (!ignore) setReferences(rows);
+      })
+      .catch(() => {
+        // Left empty, so context abstains. Better than quoting from a
+        // read that did not land.
       });
     return () => {
       ignore = true;
@@ -119,12 +131,11 @@ export function CareScreen() {
       episodes,
       reported,
       insights: ranked,
-      // Empty until research_refs holds reviewed rows. Context abstains.
-      references: [],
+      references,
       cycleDay: now?.day ?? null,
       cyclePhase: now?.phase ?? null,
     });
-  }, [person, todayRow, days, episodes, reported, ranked, windows, lens, profile]);
+  }, [person, todayRow, days, episodes, reported, references, ranked, windows, lens, profile]);
 
   // Recomputed whenever her record changes, by running the capabilities.
   // Readiness held separately from the answer is readiness that can lie.

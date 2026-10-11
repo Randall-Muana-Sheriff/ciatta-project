@@ -106,6 +106,22 @@ export type Repo = {
   // supplements, as she named them. Written at onboarding and never
   // inferred, which is why the brief can print them as hers.
   loadReported(): Promise<Reported>;
+  // Reviewed reference rows, which are the only thing the Care agent is
+  // allowed to cite. Reference data with no owner, so every signed in
+  // person reads the same rows.
+  loadReferences(): Promise<ReferenceRow[]>;
+};
+
+// A published finding, quoted. summary is verbatim from the source, which
+// is why the agent may show it without summarising it further.
+export type ReferenceRow = {
+  id: string;
+  title: string;
+  publication: string | null;
+  year: number | null;
+  url: string | null;
+  summary: string;
+  domains: string[];
 };
 
 export type Reported = { conditions: string[]; surgeries: string[]; medications: string[]; supplements: string[] };
@@ -172,6 +188,18 @@ export function demoRepo(): Repo {
       medications: ['Levothyroxine'],
       supplements: ['Magnesium'],
     }),
+    loadReferences: async () => [
+      {
+        id: 'sample-endo-delay',
+        title: 'Endometriosis: A Review',
+        publication: 'JAMA',
+        year: 2025,
+        url: 'https://doi.org/10.1001/jama.2025.2975',
+        summary:
+          'The diagnosis is often delayed, averaging 5 to 12 years after onset of symptoms, with most women consulting 3 or more clinicians prior to diagnosis.',
+        domains: ['endometriosis', 'diagnosis'],
+      },
+    ],
   };
 }
 
@@ -436,6 +464,19 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
         medications: ((must(meds) ?? []) as { name: string }[]).map((m) => m.name),
         supplements: ((must(sups) ?? []) as { name: string }[]).map((m) => m.name),
       };
+    },
+    async loadReferences() {
+      // Only reviewed rows. reviewed_by null means the summary has passed
+      // no check against its source, and an unchecked citation is the one
+      // kind of wrong answer she has no way to catch.
+      const rows = must(
+        await db
+          .from('research_refs')
+          .select('id, title, publication, year, url, summary, domains')
+          .not('reviewed_by', 'is', null)
+          .order('year', { ascending: false }),
+      ) as ReferenceRow[] | null;
+      return rows ?? [];
     },
     async loadIntraday(sinceIso) {
       // Only the two metrics the day chart draws, and only today's. Reading

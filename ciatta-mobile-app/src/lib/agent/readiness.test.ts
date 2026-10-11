@@ -24,7 +24,9 @@ const stocked: Sources = {
   reported: { conditions: ['Endometriosis'], surgeries: [], medications: ['Naproxen'], supplements: [] },
   today: dayRow,
   days: [dayRow],
-  references: [{ id: 'r1', title: 'A paper', publication: 'A journal', year: 2024, summary: 'Something general.' }],
+  references: [
+    { id: 'r1', title: 'A paper', publication: 'A journal', year: 2024, summary: 'Something general.', domains: ['endometriosis'] },
+  ],
 };
 
 test('escalation is never offered as a capability to browse', () => {
