@@ -90,3 +90,30 @@ export const BANDS = [
 ] as const;
 
 export const bandOf = (days: number) => BANDS.find((b) => days <= b.max)!;
+
+// Where today sits in the open cycle: the day number and the phase, when
+// there is one.
+//
+// The concept's header reads "Menstrual, day 5". Both halves have to be
+// earned: the day is counted from the period she logged, and the phase
+// comes from phaseOf, which returns null when an open cycle has run past
+// the point its phases can be known. A header that guessed either would be
+// telling her where she is in a cycle Ciatta cannot see.
+export type CycleToday = { day: number; phase: Phase | null };
+
+export function cycleToday(open: CycleWindow | null, predicted: number | null, now: Date): CycleToday | null {
+  if (!open) return null;
+  const day = daysBetween(open.start, now) + 1;
+  // A cycle that started in the future, or one so long it has clearly been
+  // left open by a period she never logged, is not a day count worth
+  // showing. Ninety days is well past any real cycle.
+  if (day < 1 || day > 90) return null;
+  return { day, phase: phaseOf(now, open, predicted) };
+}
+
+// The header line. Phase first when it is known, because it is the part
+// that means something to her.
+export function cycleTodayLabel(t: CycleToday | null): string | null {
+  if (!t) return null;
+  return t.phase ? `${t.phase} · day ${t.day}` : `Day ${t.day}`;
+}

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { addDays, emptyForm, type Episode, formToEpisode, isoDay } from '../data/cycleLog';
-import { bandOf, countedWindows, cycleWindows, medianLength, periodStarts, phaseOf, regularity } from './cycleModel';
+import { bandOf, countedWindows, cycleToday, cycleTodayLabel, cycleWindows, medianLength, periodStarts, phaseOf, regularity, type CycleWindow } from './cycleModel';
 import type { CycleProfile } from './cycleProfile';
 
 const NOW = new Date(2026, 8, 15);
@@ -108,4 +108,44 @@ test('bandOf groups days since a period', () => {
   assert.equal(bandOf(3).label, '0 to 7 days');
   assert.equal(bandOf(35).label, '22 to 35 days');
   assert.equal(bandOf(36).label, 'Over 35 days');
+});
+
+// ── Where today sits in the open cycle ───────────────────────────────
+
+const TODAY = new Date(2026, 9, 11);
+const openAt = (start: Date): CycleWindow => ({ index: 0, start, end: null, length: null });
+
+test('day one is the day the period started, not the day after', () => {
+  assert.equal(cycleToday(openAt(TODAY), 28, TODAY)?.day, 1);
+  assert.equal(cycleToday(openAt(new Date(2026, 9, 7)), 28, TODAY)?.day, 5);
+});
+
+test('the label carries the phase when there is one', () => {
+  const t = cycleToday(openAt(new Date(2026, 9, 7)), 28, TODAY);
+  // Day 5 is still inside the period by this model, which is also what
+  // the concept's "Menstrual, day 5" is saying.
+  assert.equal(cycleTodayLabel(t), 'During period · day 5');
+});
+
+test('no open cycle means no label, never a guess', () => {
+  assert.equal(cycleToday(null, 28, TODAY), null);
+  assert.equal(cycleTodayLabel(null), null);
+});
+
+test('a phase that cannot be known is left off rather than invented', () => {
+  // An open cycle with no predicted length has no phases past its first
+  // week, so the label falls back to the day count, which is still true.
+  const t = cycleToday(openAt(new Date(2026, 8, 1)), null, TODAY);
+  assert.equal(t?.phase, null);
+  assert.equal(cycleTodayLabel(t), 'Day 41');
+});
+
+test('a cycle left open far too long is not a day count worth showing', () => {
+  // A period she never logged leaves the last one open forever, and "day
+  // 400" is a number about Ciatta's bookkeeping rather than about her.
+  assert.equal(cycleToday(openAt(new Date(2025, 0, 1)), 28, TODAY), null);
+});
+
+test('a cycle starting in the future is refused', () => {
+  assert.equal(cycleToday(openAt(new Date(2027, 0, 1)), 28, TODAY), null);
 });

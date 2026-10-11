@@ -4,6 +4,7 @@ import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-
 
 import { displayCopy } from '../lib/displayCopy';
 import { type CyclePoint, cycleTrend, fmtHours } from '../lib/engine';
+import { countedWindows, cycleToday, cycleTodayLabel, medianLength } from '../lib/cycleModel';
 import { type Screen, useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
@@ -145,7 +146,7 @@ export function TodayScreen() {
   const nav = useNav();
   const { startDraft, accept, watching, setWatching } = useCycle();
   const { today: brief } = useInsights();
-  const { windows } = useCycleInsights();
+  const { windows, signals, lens, profile } = useCycleInsights();
   const { person, today, days, todayIsPlaceholder } = useData();
   const repo = useRepo();
 
@@ -169,6 +170,15 @@ export function TodayScreen() {
     };
   }, [repo]);
 
+  // Where today sits in her cycle. Null when there is no open cycle or
+  // when it has been left open too long to mean anything, and the header
+  // then says nothing rather than guessing.
+  const cycleLabel = useMemo(() => {
+    const open = windows[windows.length - 1] ?? null;
+    const predicted = lens.predicts ? medianLength(countedWindows(windows, profile)) : null;
+    return cycleTodayLabel(cycleToday(open && !open.end ? open : null, predicted, new Date()));
+  }, [windows, lens, profile]);
+
   // Today's own row, when there is one. days arrives oldest first.
   const todayDay = useMemo(() => {
     const iso = new Date();
@@ -191,14 +201,20 @@ export function TodayScreen() {
     const usual = restingHistory.length >= 3
       ? restingHistory.reduce((a, b) => a + b, 0) / restingHistory.length
       : null;
+    // What she logged today, on its own rail. Severity sizes the dot, so
+    // the rail says how much as well as when.
+    const marks = signals
+      .filter((sg) => sg.pain && sg.episode.severity != null && sg.date >= startOfDay)
+      .map((sg) => ({ at: sg.date, weight: sg.episode.severity as number }));
+
     return buildDay({
       readings,
       asleep: woke ? [{ from: startOfDay, to: woke }] : [],
-      marks: [],
+      marks,
       usual,
       now: new Date(),
     });
-  }, [intraday, days]);
+  }, [intraday, days, signals]);
   const go = (screen: Screen) => () => nav.push(screen);
   const now = new Date();
 
@@ -269,13 +285,25 @@ export function TodayScreen() {
           <View style={t.dayHead}>
             <Text style={[font('caption1'), t.dayHeadText]}>TODAY&rsquo;S PATTERNS</Text>
             <Text style={[font('caption1'), t.dayHeadText]}>
-              {now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
+              {(cycleLabel ?? now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })).toUpperCase()}
             </Text>
           </View>
           {day ? (
             <DayChartView
               day={day}
-              label={`Your heart rate through today, ${day.points.length} readings between ${day.low.toFixed(0)} and ${day.high.toFixed(0)}.`}
+              // Everything drawn, said. A chart described only by its line
+              // leaves a blind reader without the sleep block and the
+              // logs, which are half of what is on it.
+              label={[
+                `Your heart rate through today, ${day.points.length} readings between ${day.low.toFixed(0)} and ${day.high.toFixed(0)}.`,
+                day.asleep.length ? 'Your sleep is shaded at the start of the day.' : '',
+                day.marks.length
+                  ? `${day.marks.length} ${day.marks.length === 1 ? 'log' : 'logs'} marked below the line.`
+                  : '',
+                day.usual ? 'Your own usual is the dashed line.' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
             />
           ) : (
             <Text style={[font('subhead'), t.dayEmpty]}>
