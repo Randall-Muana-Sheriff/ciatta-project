@@ -154,7 +154,7 @@ const s = StyleSheet.create({
   // Half of a row, accounting for the gap between the two.
   span1: { flex: 1, minHeight: 112 },
   span2: { width: '100%' },
-  tileOn: { backgroundColor: L.statement, borderColor: 'rgba(255, 255, 255, 0.16)' },
+  tileOn: { backgroundColor: L.statement, borderColor: L.edgeOn },
   tileInner: { padding: 16, gap: 6 },
   tileInnerOn: {},
   pressed: { opacity: 0.6 },

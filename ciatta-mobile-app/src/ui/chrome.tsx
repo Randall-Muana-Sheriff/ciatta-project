@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GlassView } from 'expo-glass-effect';
 
 import { displayCopy } from '../lib/displayCopy';
 import type { Tab } from '../navigation';
 import { C, font, fonts, GUTTER, RADIUS } from '../theme';
 import { Icon, type IconName } from './icons';
+import { GLASS } from './glass';
 import { L, TILE_RADIUS } from './surface';
 import { ChevronRight } from './kit';
 
@@ -191,11 +193,29 @@ const TABS: { key: Tab; label: string; icon: IconName }[] = [
 // It floats clear of the home indicator rather than padding itself down to
 // meet it, so the rounded edge stays a rounded edge instead of becoming a
 // shelf attached to the bottom of the screen.
+//
+// The bar is the one surface in the app that is glass rather than merely
+// translucent, and it is glass for a reason the cards do not have: her own
+// content scrolls underneath it. A card sits still over a still ground and
+// can transmit it; a bar that transmitted would have her sentences sliding
+// through it. Glass diffuses instead. Where there is no glass to be had, it
+// falls back to the near opaque fill it has always used, which solves the
+// same problem with less grace.
 export function BottomNav({ active, onTab }: { active: Tab; onTab: (tab: Tab) => void }) {
   const insets = useSafeAreaInsets();
+  // Same element either way, so the bar's geometry is written once.
+  const Bar = GLASS ? GlassView : View;
   return (
     <View style={[s.navWrap, { paddingBottom: Math.max(insets.bottom, 10) }]} pointerEvents="box-none">
-      <View style={s.nav} accessibilityRole="tablist">
+      <Bar
+        style={[s.nav, GLASS ? s.navGlass : s.navPainted]}
+        accessibilityRole="tablist"
+        // Ignored by the plain View fallback. Regular rather than clear: a
+        // clear bar over a washed ground stops being a surface. The scheme
+        // is pinned dark because the app is, so the glass cannot resolve
+        // light under a system setting the rest of the app ignores.
+        {...(GLASS ? ({ glassEffectStyle: 'regular', colorScheme: 'dark' } as const) : {})}
+      >
       {TABS.map((t) => {
         const on = t.key === active;
         // Ink when selected, meta when not. The selected tab is also the
@@ -218,7 +238,7 @@ export function BottomNav({ active, onTab }: { active: Tab; onTab: (tab: Tab) =>
           </Pressable>
         );
         })}
-      </View>
+      </Bar>
     </View>
   );
 }
@@ -240,12 +260,20 @@ const s = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: C.fill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.borderSub,
     alignItems: 'center',
     justifyContent: 'center',
   },
   textButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
 
-  panel: { backgroundColor: C.card, borderRadius: RADIUS, padding: 16 },
+  panel: {
+    backgroundColor: C.card,
+    borderRadius: RADIUS,
+    padding: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.borderSub,
+  },
   panelTitle: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
 
   iconSquare: { width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
@@ -277,16 +305,13 @@ const s = StyleSheet.create({
   nav: {
     flexDirection: 'row',
     padding: 5,
-    // Nearly opaque, unlike every other surface. The bar floats over the
-    // screen, so a translucent one would have her own text scrolling
-    // through it. Dark enough to stop that, with a trace of the ground
-    // still coming through at the edges.
-    backgroundColor: 'rgba(20, 23, 28, 0.94)',
     // Fully rounded against a 60pt bar, so the ends are true half circles
     // rather than a rectangle with soft corners.
     borderRadius: 30,
+    // The same hairline every card now carries, so the bar is the same kind
+    // of object as the things it sits over.
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.separator,
+    borderColor: L.rule,
     overflow: 'hidden',
     // Lifted off the page rather than drawn onto it. Low opacity and a
     // wide spread: a floating bar needs to read as above the content
@@ -297,9 +322,21 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
+  // Glass brings its own material, so the bar adds no fill of its own: a
+  // colour behind glass is a colour the glass then has to see through.
+  navGlass: {},
+  // No glass: the old fill, which is nearly opaque because it has to stop
+  // the content by itself rather than diffusing it.
+  navPainted: { backgroundColor: 'rgba(20, 23, 28, 0.94)' },
+
   tab: { flex: 1, height: 54, alignItems: 'center', justifyContent: 'center', gap: 3, borderRadius: 25 },
-  // The selected tab stands one step above the bar, the way the bar
-  // stands one step above the page.
-  tabOn: { backgroundColor: 'rgba(255, 255, 255, 0.13)' },
+  // The selected tab stands one step above the bar, the way the bar stands
+  // one step above the page, and it is edged like a selected tile so the two
+  // read as the same kind of selection.
+  tabOn: {
+    backgroundColor: L.fillSelected,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: L.edgeOn,
+  },
   tabLabel: { fontFamily: fonts.medium, fontSize: 11, lineHeight: 13 },
 });

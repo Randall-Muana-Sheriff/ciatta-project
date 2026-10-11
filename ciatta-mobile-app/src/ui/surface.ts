@@ -41,6 +41,13 @@ export const L = {
   // further lift rather than a wash of its own.
   statement: 'rgba(255, 255, 255, 0.10)',
 
+  // Selected. One more lift than a resting surface, with an edge a step
+  // brighter than a resting edge, so a chosen thing is chosen by being
+  // nearer rather than by spending a semantic hue on it. Shared by tiles,
+  // rows and tabs, so selection looks the same wherever it happens.
+  fillSelected: 'rgba(255, 255, 255, 0.15)',
+  edgeOn: 'rgba(255, 255, 255, 0.16)',
+
   // Headings and anything carrying the sentence. White, because the ground
   // underneath is no longer flat: a wash at a fifth of a semantic hue lifts
   // the floor the type has to clear, and Paper on it reads soft rather than
