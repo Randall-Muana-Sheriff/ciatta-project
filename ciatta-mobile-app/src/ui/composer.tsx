@@ -1,0 +1,300 @@
+// One textbox, used wherever she writes in her own words.
+//
+// Onboarding's "What has been changing?" box set the shape: one control in
+// the corner rather than a row of buttons underneath, and the control is the
+// gesture. Empty box, a mic. Text in the box, send. Listening, stop, and it
+// stays stop even once words have arrived, because a send button that
+// replaced the only way to end the recording would leave her holding a live
+// microphone with no way to stop it.
+//
+// This is that box, extracted, with the two ways a document reaches a health
+// record added beside the mic: the camera, for the lab report on the kitchen
+// table, and the file picker, for the PDF a clinic emailed. Three ways in,
+// because the thing she has to hand is not always the thing she can type.
+//
+// What Ciatta does with an attachment is nothing, deliberately. See
+// lib/attachments.ts: no OCR, no parsing, no values read off a page. It is
+// named and kept with the entry, and the copy here says it stays on the
+// phone, because there is no bucket yet and an upload she was told happened
+// would be worse than one that did not.
+
+import { useState } from 'react';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
+
+import {
+  addAttachment,
+  type Attachment,
+  canAttach,
+  photoName,
+  removeAttachment,
+  shortName,
+} from '../lib/attachments';
+import { useDictation } from '../lib/dictation';
+import { displayCopy } from '../lib/displayCopy';
+import { font } from '../theme';
+import { Icon } from './icons';
+import { L, TILE_RADIUS } from './surface';
+
+export type ComposerProps = {
+  value: string;
+  onChange: (text: string) => void;
+  placeholder?: string;
+  // What the field is, for a screen reader. Not drawn: the question above
+  // the box is the visible label.
+  label: string;
+  attachments?: readonly Attachment[];
+  onAttachments?: (next: Attachment[]) => void;
+  // Given only where sending is a real action. Without it the corner control
+  // is the mic alone, because a send button that duplicates Continue is a
+  // second button for the same thing.
+  onSend?: () => void;
+  minHeight?: number;
+};
+
+const id = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+export function Composer({
+  value,
+  onChange,
+  placeholder,
+  label,
+  attachments = [],
+  onAttachments,
+  onSend,
+  minHeight = 148,
+}: ComposerProps) {
+  // Why a picker did not open. Permission refused is the common one and is
+  // not an error she did anything wrong, so it reads as a fact and says
+  // where to change it.
+  const [note, setNote] = useState('');
+
+  // Dictation appends. She may type a sentence, speak the next and correct
+  // both; a recogniser that replaced the field would destroy what she wrote.
+  const dictation = useDictation((text) => {
+    onChange(value.trim() ? `${value.trim()} ${text}` : text);
+  });
+
+  const files = attachments;
+  const canAdd = !!onAttachments && canAttach(files);
+
+  const keep = (next: Attachment) => {
+    setNote('');
+    onAttachments?.(addAttachment(files, next));
+  };
+
+  const takePhoto = async () => {
+    if (!canAdd) return;
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        setNote('Ciatta needs camera permission to take a photo. You can turn it on in Settings.');
+        return;
+      }
+      const shot = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7 });
+      if (shot.canceled || !shot.assets?.length) return;
+      const now = new Date();
+      keep({ id: id(), kind: 'photo', name: photoName(now), uri: shot.assets[0].uri, addedAt: now.toISOString() });
+    } catch {
+      setNote('The camera did not open. You can add the photo from your library instead.');
+    }
+  };
+
+  const pickDocument = async () => {
+    if (!canAdd) return;
+    try {
+      // PDFs and images, which between them are every document a clinic
+      // sends and every photo she already has of one.
+      const picked = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*'],
+        copyToCacheDirectory: true,
+      });
+      if (picked.canceled || !picked.assets?.length) return;
+      const file = picked.assets[0];
+      const now = new Date();
+      keep({
+        id: id(),
+        kind: file.mimeType?.startsWith('image/') ? 'photo' : 'document',
+        name: shortName(file.name),
+        uri: file.uri,
+        addedAt: now.toISOString(),
+      });
+    } catch {
+      setNote('That file did not open.');
+    }
+  };
+
+  // Listening always wins: it is the state she needs a way out of.
+  const action = dictation.listening ? 'stop' : onSend && value.trim() ? 'send' : 'mic';
+
+  return (
+    <View>
+      <View style={s.wrap}>
+        <TextInput
+          value={value}
+          onChangeText={onChange}
+          placeholder={placeholder}
+          placeholderTextColor={L.meta}
+          multiline
+          textAlignVertical="top"
+          style={[font('body'), s.field, { minHeight }]}
+          accessibilityLabel={label}
+        />
+
+        <View style={s.foot}>
+          {/*
+            The two quiet ways in, on the left, away from the control that
+            commits. Hidden entirely once the list is full rather than shown
+            dead, because a button that cannot act is a button she taps.
+          */}
+          <View style={s.ways}>
+            {canAdd ? (
+              <>
+                <Pressable
+                  onPress={takePhoto}
+                  accessibilityRole="button"
+                  accessibilityLabel="Take a photo"
+                  hitSlop={6}
+                  style={({ pressed }) => [s.way, pressed && s.pressed]}
+                >
+                  <Icon name="camera" size={18} color={L.body} />
+                </Pressable>
+                <Pressable
+                  onPress={pickDocument}
+                  accessibilityRole="button"
+                  accessibilityLabel="Attach a PDF or an image"
+                  hitSlop={6}
+                  style={({ pressed }) => [s.way, pressed && s.pressed]}
+                >
+                  <Icon name="doc" size={18} color={L.body} />
+                </Pressable>
+              </>
+            ) : null}
+          </View>
+
+          <Pressable
+            onPress={action === 'stop' ? dictation.stop : action === 'send' ? onSend : dictation.start}
+            accessibilityRole="button"
+            accessibilityLabel={action === 'stop' ? 'Stop recording' : action === 'send' ? 'Send' : 'Dictate'}
+            hitSlop={6}
+            style={({ pressed }) => [s.action, action !== 'mic' && s.actionOn, pressed && s.pressed]}
+          >
+            <Icon
+              name={action === 'stop' ? 'stopSquare' : action === 'send' ? 'send' : 'mic'}
+              size={19}
+              color={action === 'mic' ? L.ink : L.canvas}
+              filled={action === 'stop'}
+            />
+          </Pressable>
+        </View>
+      </View>
+
+      {/*
+        The recogniser's running guess, greyed, so she can see it is not
+        committed yet. "Listening" holds the line before the first word, so
+        the box does not look broken while it warms up.
+      */}
+      {dictation.listening ? (
+        <Text style={[font('body'), s.partial]}>{dictation.partial || 'Listening'}</Text>
+      ) : null}
+
+      {dictation.error || note ? (
+        <Text style={[font('caption1'), s.note]} accessibilityLiveRegion="polite">
+          {displayCopy(dictation.error || note)}
+        </Text>
+      ) : null}
+
+      {files.length ? (
+        <View style={s.files}>
+          {files.map((file) => (
+            <View key={file.id} style={s.file}>
+              {/* A photo shows itself; a PDF has nothing to show but its kind. */}
+              {file.kind === 'photo' ? (
+                <Image source={{ uri: file.uri }} style={s.thumb} accessibilityIgnoresInvertColors />
+              ) : (
+                <View style={[s.thumb, s.thumbDoc]}>
+                  <Icon name="doc" size={16} color={L.body} />
+                </View>
+              )}
+              {/*
+                The name is an identifier, not copy: a filename run through
+                displayCopy's hyphen rule is a file she can no longer find.
+              */}
+              <Text style={[font('footnote'), s.fileName]} numberOfLines={1}>
+                {file.name}
+              </Text>
+              <Pressable
+                onPress={() => onAttachments?.(removeAttachment(files, file.id))}
+                accessibilityRole="button"
+                accessibilityLabel={`Remove ${file.name}`}
+                hitSlop={8}
+                style={({ pressed }) => [s.remove, pressed && s.pressed]}
+              >
+                <Icon name="xmark" size={13} color={L.meta} />
+              </Pressable>
+            </View>
+          ))}
+          <Text style={[font('caption1'), s.note]}>
+            Kept with this entry and stored on this phone. Ciatta does not read what is inside them.
+          </Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+const s = StyleSheet.create({
+  wrap: { position: 'relative' },
+  field: {
+    color: L.ink,
+    backgroundColor: L.recessed,
+    borderRadius: TILE_RADIUS,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: L.rule,
+    padding: 16,
+    // Room at the foot for the controls, so a long answer scrolls behind
+    // them rather than under them.
+    paddingBottom: 56,
+  },
+  foot: {
+    position: 'absolute',
+    left: 10,
+    right: 10,
+    bottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  ways: { flexDirection: 'row', gap: 4 },
+  way: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  action: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: L.statement,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: L.rule,
+  },
+  actionOn: { backgroundColor: L.ink, borderColor: L.ink },
+  pressed: { opacity: 0.55 },
+  partial: { color: L.meta, marginTop: 12, fontStyle: 'italic' },
+  note: { color: L.meta, marginTop: 10, lineHeight: 18 },
+  files: { marginTop: 12, gap: 8 },
+  file: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: L.recessed,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: L.rule,
+    paddingRight: 10,
+  },
+  thumb: { width: 40, height: 40, borderTopLeftRadius: 12, borderBottomLeftRadius: 12, backgroundColor: L.statement },
+  thumbDoc: { alignItems: 'center', justifyContent: 'center' },
+  fileName: { color: L.body, flex: 1 },
+  remove: { width: 26, height: 26, alignItems: 'center', justifyContent: 'center' },
+});

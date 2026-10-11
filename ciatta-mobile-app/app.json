@@ -104,7 +104,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Photos of lab results and health documents can be added to your picture."
+          "photosPermission": "Photos of lab results and health documents can be added to your picture.",
+          "cameraPermission": "Ciatta uses the camera only when you take a photo of a document to keep with an entry."
         }
       ],
       "expo-document-picker",

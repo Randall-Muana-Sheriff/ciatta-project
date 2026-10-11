@@ -1,3 +1,4 @@
+import { type Attachment, normalizeAttachments } from '../lib/attachments';
 import { readNote } from '../lib/readNote';
 import { cycle } from './sample';
 
@@ -122,6 +123,10 @@ export type EpisodeForm = {
   stool: number | null;
   bowelPain: string | null;
   bowelFlags: string[];
+  // Photos and PDFs she chose to keep with the entry. References only: see
+  // lib/attachments.ts for what Ciatta is and is not allowed to say about
+  // them, which is nothing about their contents.
+  attachments: Attachment[];
 };
 
 // A saved episode. `flareUpUserReported` is the person's own designation and
@@ -144,7 +149,7 @@ export function emptyForm(): EpisodeForm {
     kinds: [], periodStart: 0, periodEnd: null, flow: null, day: 0, allDay: false, start: null, end: null,
     states: [], pattern: null, locations: [], sensations: [], severity: null, affect: [], trajectory: [],
     changes: [], dayImpact: [], symptoms: [], context: [], triggers: [], flare: null, helped: [],
-    helpedAmount: null, note: '', stool: null, bowelPain: null, bowelFlags: [],
+    helpedAmount: null, note: '', stool: null, bowelPain: null, bowelFlags: [], attachments: [],
   };
 }
 
@@ -154,6 +159,7 @@ export const normalizeEpisode = (e: Episode): Episode => ({
   stool: e.stool ?? null,
   bowelPain: e.bowelPain ?? null,
   bowelFlags: e.bowelFlags ?? [],
+  attachments: normalizeAttachments(e.attachments),
 });
 
 // ── Dates ──────────────────────────────────────────────────────

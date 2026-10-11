@@ -24,14 +24,17 @@ import {
   TIMING_STATES,
   TRAJECTORY,
 } from '../data/cycleLog';
+import { attachmentLine } from '../lib/attachments';
 import { safetyNotes } from '../lib/cycleLens';
 import { displayCopy } from '../lib/displayCopy';
+import { readNote } from '../lib/readNote';
 import { useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { C, font } from '../theme';
 import { BodyMap } from '../ui/BodyMap';
 import { Panel } from '../ui/chrome';
-import { ChoiceChips, FieldLabel, NoteField, SeverityScale, StepHeader, Stepper, StepProgress } from '../ui/cycleInputs';
+import { ChoiceChips, FieldLabel, SeverityScale, StepHeader, Stepper } from '../ui/cycleInputs';
+import { Composer } from '../ui/composer';
 import { Icon } from '../ui/icons';
 import { DetailScreen, LinkButton, PrimaryButton, SecondaryButton } from '../ui/kit';
 import { StoolScale } from '../ui/stoolScale';
@@ -89,12 +92,12 @@ export function CycleLogScreen() {
   const [mode, setMode] = useState<Mode>(draft.mode);
   const [form, setForm] = useState<EpisodeForm>(() => ({ ...emptyForm(), ...draft.form }));
   const [index, setIndex] = useState(0);
-  const [noteOpen, setNoteOpen] = useState(!!draft.focusNote);
 
   const steps = stepsFor(mode, form.kinds);
   const at = Math.min(index, steps.length - 1);
   const step = steps[at];
   const episode = useMemo(() => formToEpisode(form, mode === 'similar'), [form, mode]);
+  const noted = useMemo(() => readNote(form.note), [form.note]);
 
   const set = <K extends keyof EpisodeForm>(key: K, value: EpisodeForm[K]) => setForm((f) => ({ ...f, [key]: value }));
   const toggle = (key: ListKey, value: string, none?: string) =>
@@ -399,6 +402,19 @@ export function CycleLogScreen() {
             </View>
           ))}
         </Panel>
+        {/*
+          Counted, never described. attachmentLine says how many and where
+          they live; it cannot say what is in them, because Ciatta has not
+          looked.
+        */}
+        {attachmentLine(form.attachments) ? (
+          <Panel style={l.gap}>
+            <Text style={[font('footnote'), { color: C.secondary }]}>Attached</Text>
+            <Text style={[font('body'), { color: C.text, marginTop: 2 }]}>
+              {displayCopy(attachmentLine(form.attachments) as string)}
+            </Text>
+          </Panel>
+        ) : null}
         {safetyNotes(form, profile).map((note) => (
           <Panel key={note} style={[l.gap, l.care]}>
             <Icon name="info" size={20} color={C.secondary} weight={1.8} />
@@ -431,10 +447,37 @@ export function CycleLogScreen() {
 
   return (
     <DetailScreen title="Log Cycle Experience" onBack={back} footer={footer}>
-      <StepProgress index={at} total={steps.length} />
       {body[step]()}
+      {/*
+        Her own words, on every step but the review. The same box as
+        onboarding's: type it, speak it, photograph it, or attach the PDF
+        the clinic sent. The chips she picked above are Ciatta's vocabulary;
+        this is hers, and it is the only field here that can hold the thing
+        no list anticipated.
+      */}
       {step !== 'summary' ? (
-        <NoteField open={noteOpen} onOpen={() => setNoteOpen(true)} value={form.note} onChange={(v) => set('note', v)} />
+        <View style={l.note}>
+          <FieldLabel>Anything else</FieldLabel>
+          <Composer
+            value={form.note}
+            onChange={(v) => set('note', v)}
+            placeholder="It started the morning after a long flight."
+            label="Anything else about this"
+            attachments={form.attachments}
+            onAttachments={(next) => set('attachments', next)}
+            minHeight={120}
+          />
+          {/*
+            Which of her words Ciatta recognised. It came with the old note
+            field and is the only feedback she gets that the sentence was
+            read at all, so it stays.
+          */}
+          {noted.length ? (
+            <Text style={[font('footnote'), { color: C.secondary, marginTop: 10 }]}>
+              Noted: {displayCopy(noted.join(', '))}
+            </Text>
+          ) : null}
+        </View>
       ) : null}
     </DetailScreen>
   );
@@ -444,6 +487,7 @@ const l = StyleSheet.create({
   gap: { marginTop: 24 },
   care: { flexDirection: 'row', gap: 12 },
   panelLabel: { color: C.secondary, marginBottom: 12 },
+  note: { marginTop: 28 },
   summaryRow: { paddingVertical: 10, gap: 2 },
   summarySep: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.separator },
   footer: {

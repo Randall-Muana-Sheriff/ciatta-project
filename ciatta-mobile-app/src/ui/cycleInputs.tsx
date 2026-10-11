@@ -1,12 +1,10 @@
-import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import type { Observation } from '../lib/cyclePatterns';
-import { readNote } from '../lib/readNote';
 import { useCycle } from '../state/cycleStore';
 import { C, font, RADIUS } from '../theme';
 import { Panel } from './chrome';
 import { Icon } from './icons';
-import { LinkButton } from './kit';
 
 // Inputs and read outs for the Cycle experience, built on the app's chips,
 // cards and controls.
@@ -27,19 +25,6 @@ export function FieldLabel({ children, hint }: { children: string; hint?: string
     <View style={s.fieldLabel}>
       <Text style={[font('headline'), { color: C.text }]}>{children}</Text>
       {hint ? <Text style={[font('footnote'), { color: C.secondary, marginTop: 2 }]}>{hint}</Text> : null}
-    </View>
-  );
-}
-
-export function StepProgress({ index, total }: { index: number; total: number }) {
-  return (
-    <View style={s.progress} accessible accessibilityLabel={`Step ${index + 1} of ${total}`}>
-      <Text style={[font('footnote'), { color: C.secondary }]}>
-        Step {index + 1} of {total}
-      </Text>
-      <View style={s.track}>
-        <View style={[s.trackFill, { width: `${((index + 1) / total) * 100}%` }]} />
-      </View>
     </View>
   );
 }
@@ -165,45 +150,6 @@ export function Stepper({
   );
 }
 
-// Free text at any step. The keyboard's microphone covers voice.
-export function NoteField({
-  open,
-  onOpen,
-  value,
-  onChange,
-}: {
-  open: boolean;
-  onOpen: () => void;
-  value: string;
-  onChange: (text: string) => void;
-}) {
-  const noted = readNote(value);
-  if (!open) {
-    return (
-      <View style={s.note}>
-        <LinkButton label="Add more detail" onPress={onOpen} />
-      </View>
-    );
-  }
-  return (
-    <View style={s.note}>
-      <FieldLabel hint="Type, or tap the microphone on your keyboard to speak.">Add more detail</FieldLabel>
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        multiline
-        placeholder="It started the morning after a long flight."
-        placeholderTextColor={C.muted}
-        accessibilityLabel="Add more detail"
-        style={[font('body'), s.input]}
-      />
-      {noted.length ? (
-        <Text style={[font('footnote'), { color: C.secondary, marginTop: 6 }]}>Noted: {noted.join(', ')}</Text>
-      ) : null}
-    </View>
-  );
-}
-
 export function BarRow({ label, count, max, color, unit = '' }: { label: string; count: number; max: number; color: string; unit?: string }) {
   return (
     <View style={s.bar} accessible accessibilityLabel={`${label}, ${count}${unit}`}>
@@ -254,7 +200,6 @@ const s = StyleSheet.create({
   header: { marginTop: 4, marginBottom: 16 },
   fieldLabel: { marginTop: 24, marginBottom: 10 },
 
-  progress: { gap: 6, marginBottom: 20 },
   track: { height: 6, borderRadius: 3, backgroundColor: C.fill, overflow: 'hidden' },
   trackFill: { height: '100%', borderRadius: 3, backgroundColor: C.tint },
 
@@ -298,15 +243,6 @@ const s = StyleSheet.create({
   stepButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   stepValue: { color: C.text, minWidth: 116, textAlign: 'center' },
 
-  note: { marginTop: 24 },
-  input: {
-    color: C.text,
-    backgroundColor: C.card,
-    borderRadius: RADIUS,
-    padding: 12,
-    minHeight: 88,
-    textAlignVertical: 'top',
-  },
 
   bar: { gap: 6, paddingVertical: 8 },
   barHead: { flexDirection: 'row', justifyContent: 'space-between' },

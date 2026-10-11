@@ -80,7 +80,9 @@ export function episodeToRow(e: Episode, extra: Record<string, unknown> = {}): E
     bowel_pain: e.bowelPain,
     bowel_flags: e.bowelFlags,
     similar: e.similar,
-    metadata: { ...extra, time_known: timeKnown },
+    // Attachments live in metadata rather than a column of their own: they
+    // are references she can remove, not data anything queries on.
+    metadata: { ...extra, time_known: timeKnown, attachments: e.attachments },
   };
 }
 
@@ -117,6 +119,9 @@ export function rowToEpisode(r: EpisodeRow): Episode {
     bowelPain: r.bowel_pain,
     bowelFlags: r.bowel_flags,
     similar: r.similar,
+    // normalizeEpisode runs this through normalizeAttachments, which drops
+    // anything the jsonb column holds that is not a whole attachment.
+    attachments: (r.metadata?.attachments ?? []) as Episode['attachments'],
   });
 }
 
