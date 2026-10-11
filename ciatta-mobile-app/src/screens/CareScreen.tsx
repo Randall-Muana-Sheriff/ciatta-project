@@ -47,7 +47,6 @@ import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { Composer } from '../ui/composer';
 import { Icon } from '../ui/icons';
-import { Wordmark } from '../ui/Wordmark';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 
 const DOT: Record<Fact['from'], string> = {
@@ -168,10 +167,6 @@ export function CareScreen() {
   return (
     <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView ref={scroller} style={s.fill} contentContainerStyle={s.body} keyboardDismissMode="interactive">
-        <View style={s.head}>
-          <Wordmark />
-        </View>
-
         <View style={s.intro}>
           <Text style={[font('title2'), s.title]} accessibilityRole="header">
             Care
@@ -325,9 +320,9 @@ const st = StyleSheet.hairlineWidth;
 const s = StyleSheet.create({
   fill: { flex: 1 },
   body: { paddingBottom: SPACE.block },
-  head: { alignItems: 'center' },
-
-  intro: { paddingHorizontal: GUTTER },
+  // The wordmark used to open this screen and its clear space was doing
+  // the work of a top margin. Taken out, the title needs its own.
+  intro: { paddingHorizontal: GUTTER, paddingTop: SPACE.near },
   title: { color: L.ink, letterSpacing: -0.4 },
   lede: { color: L.body, lineHeight: 24, marginTop: 10 },
   limit: { color: L.meta, lineHeight: 19, marginTop: 12 },
