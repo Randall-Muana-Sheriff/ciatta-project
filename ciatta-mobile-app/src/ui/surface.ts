@@ -30,7 +30,7 @@
 export const L = {
   // The default ground. Near black rather than black: pure black against an
   // OLED makes every edge a hard line, and Oura's ground sits just off it.
-  canvas: '#0B0C0E',
+  canvas: '#0C0E11',
   // Grouping and secondary panels, one step up and only one. Depth is a
   // change of ground rather than a stack, which is why there is no
   // elevation scale anywhere in this system.

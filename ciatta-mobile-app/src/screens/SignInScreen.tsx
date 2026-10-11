@@ -323,7 +323,13 @@ export function SignInScreen() {
 
   return (
     <Ground>
-      <View style={s.fill}>
+      {/*
+        The film pane paints its own ground, exactly as it did before the
+        shared one existed: the video is what covers this screen, and the
+        colour behind it is only what shows for the instant before the
+        first frame. The two auth panes let the shared ground through.
+      */}
+      <View style={[s.fill, onFilm && s.fillFilm]}>
       {/*
         The film is the welcome pane's alone now. Rendering it behind white and
         covering it would keep a video decoding for a screen nobody can see it
@@ -490,6 +496,7 @@ export function SignInScreen() {
 
 const s = StyleSheet.create({
   fill: { flex: 1 },
+  fillFilm: { backgroundColor: C.bg },
   // The sign up and log in panes stand on white rather than on the film.
   // Behind everything and outside the ScrollView, so the footage stays put
   // while the content over it scrolls. Inside, it would slide away with the

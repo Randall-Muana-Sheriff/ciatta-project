@@ -20,7 +20,7 @@ import type { TextStyle } from 'react-native';
 // Dark step, which is the only step legible on this surface.
 export const C = {
   // Four grounds. Depth is a change of ground, never a stack.
-  bg: '#0B0C0E',
+  bg: '#0C0E11',
   card: '#15171A',
   cardHi: '#1C1F23',
   surface: '#15171A',

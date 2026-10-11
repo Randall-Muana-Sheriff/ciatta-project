@@ -13,14 +13,16 @@
 //   the grounds are cut from. A tinted gradient would put a colour behind
 //   content on a surface where colour means something.
 //
-//   It is small. Fourteen points of lightness across a whole screen, which
-//   is felt rather than seen. A gradient you can name is a gradient that
-//   will fight a chart.
+//   It stays under the content. The first version was fourteen points of
+//   lightness across a whole screen, which turned out to be invisible on a
+//   phone: an effect nobody can see is an effect that is not there. It is
+//   about twice that now, plus a soft lift at the top, which is enough to
+//   read as depth and still not enough to compete with a chart.
 //
 //   It is behind everything and touches nothing. No card, no text and no
 //   mark reads it, so it cannot change what anything means.
 
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { StyleSheet, View } from 'react-native';
 
 import { L } from './surface';
@@ -28,9 +30,9 @@ import { L } from './surface';
 // The three tones, lightest to deepest. The top is where the eye enters a
 // screen and the foot is where the floating nav sits, so the bar has
 // something fractionally darker to lift off.
-const TOP = '#15181D';
-const MID = L.canvas;
-const FOOT = '#08090B';
+const TOP = '#1C2129';
+const MID = '#0C0E11';
+const FOOT = '#070809';
 
 export function Ground({ children }: { children?: React.ReactNode }) {
   return (
@@ -48,8 +50,19 @@ export function Ground({ children }: { children?: React.ReactNode }) {
             <Stop offset="0.86" stopColor={MID} />
             <Stop offset="1" stopColor={FOOT} />
           </LinearGradient>
+          {/*
+            A soft lift behind the top of the screen, which is what gives
+            the ramp a shape rather than a direction. White at four
+            percent: monochrome, because a tinted glow would put colour
+            behind content on a surface where colour carries meaning.
+          */}
+          <RadialGradient id="lift" cx="50%" cy="0%" rx="90%" ry="42%">
+            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.055} />
+            <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+          </RadialGradient>
         </Defs>
         <Rect x="0" y="0" width="100%" height="100%" fill="url(#ground)" />
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#lift)" />
       </Svg>
       {children}
     </View>
@@ -59,5 +72,5 @@ export function Ground({ children }: { children?: React.ReactNode }) {
 const s = StyleSheet.create({
   // The flat colour underneath is what shows for the instant before the
   // gradient paints, and on any surface the Svg cannot cover.
-  fill: { flex: 1, backgroundColor: L.canvas },
+  fill: { flex: 1, backgroundColor: MID },
 });

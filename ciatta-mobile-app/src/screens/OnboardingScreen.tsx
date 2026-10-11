@@ -437,7 +437,9 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   // where nothing sits on top of it.
   if (step === 'welcome') {
     return (
-      <View style={s.fill}>
+      // Its own ground, as before: the photograph covers this screen and
+      // the colour behind it is only what shows while the image loads.
+      <View style={[s.fill, s.fillPhoto]}>
         <Image source={images.welcomeBg} style={s.bg} resizeMode="cover" accessible={false} />
         <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" pointerEvents="none">
           <Defs>
@@ -1095,6 +1097,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
 const s = StyleSheet.create({
   fill: { flex: 1 },
+  fillPhoto: { backgroundColor: L.canvas },
   body: { paddingHorizontal: GUTTER, flexGrow: 1, paddingTop: 16 },
   bg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
   welcomeTop: { alignItems: 'center', paddingHorizontal: GUTTER },
