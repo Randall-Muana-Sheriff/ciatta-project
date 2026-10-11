@@ -1095,7 +1095,6 @@ const s = StyleSheet.create({
   bg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
   welcomeTop: { alignItems: 'center', paddingHorizontal: GUTTER },
   welcomeMid: { flex: 1, justifyContent: 'center', paddingHorizontal: GUTTER },
-  logo: { width: 74, height: 22 },
   // Centred on the mark rather than sitting on its top edge: the control is
   // 44pt tall against a 22pt mark, so it is lifted by half the difference.
   // The offset is applied inline because this container holds its own top
