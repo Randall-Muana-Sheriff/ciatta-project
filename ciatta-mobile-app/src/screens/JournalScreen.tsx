@@ -116,6 +116,14 @@ export function JournalScreen() {
 
 const j = StyleSheet.create({
   between: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
-  card: { backgroundColor: C.card, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 8 },
+  card: {
+    backgroundColor: C.card,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.borderSub,
+  },
   cardFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 });

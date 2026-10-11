@@ -251,9 +251,20 @@ const s = StyleSheet.create({
   iconSquare: { width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   groupHeader: { color: C.text, marginBottom: 8 },
   groupHeaderLight: { color: L.ink },
-  groupLight: { backgroundColor: L.recessed, borderRadius: TILE_RADIUS },
+  groupLight: {
+    backgroundColor: L.recessed,
+    borderRadius: TILE_RADIUS,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: L.rule,
+  },
   rowSepLight: { borderTopColor: L.rule },
-  group: { backgroundColor: C.card, borderRadius: RADIUS, overflow: 'hidden' },
+  group: {
+    backgroundColor: C.card,
+    borderRadius: RADIUS,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.borderSub,
+  },
   groupFooter: { color: C.secondary, marginTop: 6, paddingHorizontal: 16 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 16, minHeight: 44 },
   checkBlank: { width: 20 },
@@ -266,9 +277,11 @@ const s = StyleSheet.create({
   nav: {
     flexDirection: 'row',
     padding: 5,
-    // A step above the page, not level with it. On dark a bar the colour
-    // of its own ground is not a floating bar, it is a gap.
-    backgroundColor: C.card,
+    // Nearly opaque, unlike every other surface. The bar floats over the
+    // screen, so a translucent one would have her own text scrolling
+    // through it. Dark enough to stop that, with a trace of the ground
+    // still coming through at the edges.
+    backgroundColor: 'rgba(20, 23, 28, 0.94)',
     // Fully rounded against a 60pt bar, so the ends are true half circles
     // rather than a rectangle with soft corners.
     borderRadius: 30,
@@ -287,6 +300,6 @@ const s = StyleSheet.create({
   tab: { flex: 1, height: 54, alignItems: 'center', justifyContent: 'center', gap: 3, borderRadius: 25 },
   // The selected tab stands one step above the bar, the way the bar
   // stands one step above the page.
-  tabOn: { backgroundColor: C.fillSelected },
+  tabOn: { backgroundColor: 'rgba(255, 255, 255, 0.13)' },
   tabLabel: { fontFamily: fonts.medium, fontSize: 11, lineHeight: 13 },
 });

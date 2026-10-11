@@ -218,7 +218,15 @@ export function CycleScreen() {
 
 const cy = StyleSheet.create({
   tiles: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  tile: { flex: 1, backgroundColor: C.card, borderRadius: RADIUS, padding: 14, gap: 2 },
+  tile: {
+    flex: 1,
+    backgroundColor: C.card,
+    borderRadius: RADIUS,
+    padding: 14,
+    gap: 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.borderSub,
+  },
   gap: { marginTop: 16 },
   section: { marginTop: 28 },
   told: { minHeight: 44, gap: 6, marginBottom: 16 },

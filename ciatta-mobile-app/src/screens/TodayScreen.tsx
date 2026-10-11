@@ -437,6 +437,8 @@ const t = StyleSheet.create({
   hello: { color: L.ink, letterSpacing: -0.4 },
 
   dayCard: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: L.rule,
     marginTop: SPACE.near,
     backgroundColor: L.recessed,
     borderRadius: TILE_RADIUS,
@@ -454,7 +456,16 @@ const t = StyleSheet.create({
   axisText: { color: L.meta },
 
   pills: { flexDirection: 'row', gap: SPACE.grid, marginTop: SPACE.grid },
-  pill: { flex: 1, backgroundColor: L.recessed, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 12, gap: 2 },
+  pill: {
+    flex: 1,
+    backgroundColor: L.recessed,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    gap: 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: L.rule,
+  },
   pillLabel: { color: L.meta, letterSpacing: 0.9 },
   pillValue: { color: L.ink },
   // A figure she has not produced today reads as absent, not as zero.
@@ -463,7 +474,14 @@ const t = StyleSheet.create({
   leadEyebrow: { color: L.meta, letterSpacing: 1.1 },
   leadText: { color: L.ink, lineHeight: 25, marginTop: 6 },
 
-  card: { marginTop: SPACE.block, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, padding: 18 },
+  card: {
+    marginTop: SPACE.block,
+    backgroundColor: L.recessed,
+    borderRadius: TILE_RADIUS,
+    padding: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: L.rule,
+  },
   trend: { flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: -8 },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: L.rule, marginVertical: 16 },
   trendLeft: { width: 136 },

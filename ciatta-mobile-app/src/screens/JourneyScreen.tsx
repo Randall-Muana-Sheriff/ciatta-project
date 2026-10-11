@@ -667,8 +667,17 @@ const j = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: RADIUS,
     backgroundColor: C.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.borderSub,
   },
-  pickerMenu: { marginTop: 6, borderRadius: RADIUS, backgroundColor: C.card, overflow: 'hidden' },
+  pickerMenu: {
+    marginTop: 6,
+    borderRadius: RADIUS,
+    backgroundColor: C.card,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.borderSub,
+  },
   pickerItem: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -19,27 +19,41 @@ import type { TextStyle } from 'react-native';
 // the paired grounds are the hue at low alpha and the text on them is the
 // Dark step, which is the only step legible on this surface.
 export const C = {
-  // Four grounds. Depth is a change of ground, never a stack.
+  // Four grounds, and three of them are translucent.
+  //
+  // An opaque card punches a flat hole in the wash behind it, which is the
+  // whole of what the ground was for. White at low alpha instead: the card
+  // lifts off the page and takes the colour of whatever it is sitting
+  // over, so a card on the Sky end of a screen is faintly Sky and the same
+  // card lower down is faintly Lavender, with nothing deciding that but
+  // where it sits.
+  //
+  // White rather than a tint, because white at six percent over any of the
+  // eight reads as that hue lifted. A tinted card would pick a hue and
+  // then fight the one behind it.
   bg: '#0C0E11',
-  card: '#15171A',
-  cardHi: '#1C1F23',
-  surface: '#15171A',
-  fill: '#1C1F23',
-  fillSelected: '#2A2E34',
-  border: '#24272C',
-  borderSub: '#24272C',
-  separator: '#24272C',
+  card: 'rgba(255, 255, 255, 0.055)',
+  cardHi: 'rgba(255, 255, 255, 0.09)',
+  surface: 'rgba(255, 255, 255, 0.055)',
+  fill: 'rgba(255, 255, 255, 0.09)',
+  fillSelected: 'rgba(255, 255, 255, 0.15)',
+  // Edges carry what translucency gives up. A card with no border and no
+  // fill of its own has no shape on a ground that varies underneath it.
+  border: 'rgba(255, 255, 255, 0.10)',
+  borderSub: 'rgba(255, 255, 255, 0.07)',
+  separator: 'rgba(255, 255, 255, 0.08)',
 
-  // Three inks.
-  text: '#F2F3F4',
-  secondary: '#A8ACB2',
-  muted: '#868B92',
-  tertiary: '#5A5F66',
-  chevron: '#4A4F56',
+  // Three inks, all raised: the ground is a wash now rather than a flat
+  // dark, and type set for a flat dark reads soft on it.
+  text: '#FFFFFF',
+  secondary: '#D7DADF',
+  muted: '#B2B7BE',
+  tertiary: '#878C94',
+  chevron: '#6E737A',
 
   // The accent is the ink. On this ground the eight hues carry meaning, so
   // spending one on "this is tappable" would make the legend lie.
-  tint: '#F2F3F4',
+  tint: '#FFFFFF',
   blueLink: '#789AF3',
 
   // The eight meanings at their Dark step.
@@ -55,7 +69,7 @@ export const C = {
   orange: '#EC9658', // Ember, where something turned
   orangeText: '#EC9658',
   amber: '#F2B863', // Amber, ranges and research, never about her
-  gray: '#868B92',
+  gray: '#B2B7BE',
 
   // Flare is the anchor and is gated, never casual.
   red: '#EC5D4A',
@@ -78,8 +92,8 @@ export const C = {
 
   // In range is not one of the eight meanings, so it carries no hue.
   inBg: '#15171A',
-  inText: '#A8ACB2',
-  green: '#A8ACB2',
+  inText: '#D7DADF',
+  green: '#D7DADF',
 
   white: '#FFFFFF',
 } as const;
@@ -134,7 +148,7 @@ export const M = {
   evidence: '#F2B863', // Amber: ranges and research, never about her
   uncertainty: '#E4C058', // Mustard: a gap, always drawn dashed
   attention: '#CECB47', // Citron: worth raising, marks only
-  historical: '#868B92',
+  historical: '#B2B7BE',
   unlit: '#24272C',
 } as const;
 

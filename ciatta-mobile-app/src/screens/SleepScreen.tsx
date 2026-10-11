@@ -75,5 +75,13 @@ const sl = StyleSheet.create({
   num: { color: C.text, letterSpacing: -2, fontVariant: ['tabular-nums'], lineHeight: 56 },
   unit: { color: C.text, marginRight: 4, marginLeft: 2 },
   tiles: { flexDirection: 'row', gap: 10, marginBottom: 24 },
-  tile: { flex: 1, backgroundColor: C.card, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16 },
+  tile: {
+    flex: 1,
+    backgroundColor: C.card,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.borderSub,
+  },
 });

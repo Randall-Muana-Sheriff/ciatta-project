@@ -90,7 +90,15 @@ export function MedicationsScreen() {
 }
 
 const m = StyleSheet.create({
-  card: { backgroundColor: C.card, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 8 },
+  card: {
+    backgroundColor: C.card,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.borderSub,
+  },
   nameRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 2 },
   between: { flexDirection: 'row', justifyContent: 'space-between' },
 });

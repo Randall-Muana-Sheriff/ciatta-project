@@ -31,28 +31,33 @@ export const L = {
   // The default ground. Near black rather than black: pure black against an
   // OLED makes every edge a hard line, and Oura's ground sits just off it.
   canvas: '#0C0E11',
-  // Grouping and secondary panels, one step up and only one. Depth is a
-  // change of ground rather than a stack, which is why there is no
-  // elevation scale anywhere in this system.
-  recessed: '#15171A',
+  // Grouping and secondary panels, one step up and only one. Translucent,
+  // so the wash behind the screen comes through the card and tints it.
+  // An opaque panel would be a hole in the ground it sits on.
+  recessed: 'rgba(255, 255, 255, 0.055)',
   // Dividers, borders, inactive states. Never a text colour.
-  rule: '#24272C',
-  // Full bleed behind one sentence. Sparingly, never a card fill. On dark
-  // it is a lift rather than a wash, since a pale fill here reads as a hole.
-  statement: '#1A1D21',
+  rule: 'rgba(255, 255, 255, 0.08)',
+  // Full bleed behind one sentence. Sparingly, never a card fill. A
+  // further lift rather than a wash of its own.
+  statement: 'rgba(255, 255, 255, 0.10)',
 
-  // Headings and anything carrying the sentence. Paper, not white: white on
-  // near black glares at paragraph length.
-  ink: '#F2F3F4',
-  // Supporting and long form copy.
-  body: '#A8ACB2',
+  // Headings and anything carrying the sentence. White, because the ground
+  // underneath is no longer flat: a wash at a fifth of a semantic hue lifts
+  // the floor the type has to clear, and Paper on it reads soft rather than
+  // gentle. The old worry was glare, which is a worry about white on pure
+  // black and not about white on a washed Graphite.
+  ink: '#FFFFFF',
+  // Supporting and long form copy. Still a step down from ink, so hierarchy
+  // survives, but well clear of the ground: around 13:1 rather than 8:1.
+  body: '#D7DADF',
   // Sources, timestamps, labels.
   //
   // Lifted from the brand's Quiet for the same reason the light surface
   // amends it: metadata in Ciatta is a source, a date, a provenance label,
   // which is the evidence first promise in its smallest form and never
-  // decoration, so it has to clear 4.5:1.
-  meta: '#868B92',
+  // decoration, so it has to clear 4.5:1. It clears about 9:1 here, because
+  // the smallest type is the type that needs the contrast most.
+  meta: '#B2B7BE',
 } as const;
 
 export type Meaning =

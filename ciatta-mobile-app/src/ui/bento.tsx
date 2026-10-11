@@ -141,11 +141,20 @@ const s = StyleSheet.create({
   sub: { color: L.meta, marginTop: 8, lineHeight: 24 },
 
   row: { flexDirection: 'row', gap: BENTO_GAP, marginTop: BENTO_GAP },
-  tile: { borderRadius: TILE_RADIUS, backgroundColor: L.recessed, overflow: 'hidden' },
+  tile: {
+    borderRadius: TILE_RADIUS,
+    backgroundColor: L.recessed,
+    overflow: 'hidden',
+    // Translucency gives up the edge a solid fill had, so the edge is
+    // drawn. Without it a tile has no shape on a ground that varies
+    // underneath it.
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: L.rule,
+  },
   // Half of a row, accounting for the gap between the two.
   span1: { flex: 1, minHeight: 112 },
   span2: { width: '100%' },
-  tileOn: { backgroundColor: L.statement },
+  tileOn: { backgroundColor: L.statement, borderColor: 'rgba(255, 255, 255, 0.16)' },
   tileInner: { padding: 16, gap: 6 },
   tileInnerOn: {},
   pressed: { opacity: 0.6 },

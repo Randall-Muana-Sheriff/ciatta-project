@@ -148,6 +148,14 @@ export function MovementScreen() {
 
 const m = StyleSheet.create({
   tiles: { flexDirection: 'row', gap: 8 },
-  tile: { flex: 1, backgroundColor: C.card, borderRadius: RADIUS, padding: 12, gap: 2 },
+  tile: {
+    flex: 1,
+    backgroundColor: C.card,
+    borderRadius: RADIUS,
+    padding: 12,
+    gap: 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.borderSub,
+  },
   section: { marginTop: 28 },
 });
