@@ -311,7 +311,30 @@ export function TodayScreen() {
         </View>
 
         {/* The chart, then the daily brief written from whatever ranks highest. */}
-        <Eyebrow>Metrics</Eyebrow>
+        {/*
+          The heading belongs to the card under it, not the card over it.
+          Sitting a block below the day chart and a hair above the metrics,
+          it read as a footer on the chart. So the gap moved: a section's
+          worth above, so it separates from what came before, and almost
+          none below, so it binds to what it names.
+
+          All opens the rest of them. Today carries three because three is
+          what a glance holds, and the other sixteen have to be reachable
+          without that being a reason to crowd this card.
+        */}
+        <View style={t.sectionHead}>
+          <Eyebrow>Metrics</Eyebrow>
+          <Pressable
+            onPress={go('metrics')}
+            accessibilityRole="button"
+            accessibilityLabel="All of today's metrics"
+            hitSlop={8}
+            style={({ pressed }) => [t.all, pressed && t.pressed]}
+          >
+            <Text style={[font('footnote', 'semibold'), t.allText]}>All</Text>
+            <Icon name="chevronRight" size={14} color={L.body} />
+          </Pressable>
+        </View>
         <View style={t.card}>
         {/*
           Where she is in her cycle, above the three figures, because it is
@@ -535,8 +558,19 @@ const t = StyleSheet.create({
   leadEyebrow: { color: L.meta, letterSpacing: 1.1 },
   leadText: { color: L.ink, lineHeight: 25, marginTop: 6 },
 
+  // The heading row: a section's worth of air above it, almost none below,
+  // so it reads down onto the card it names rather than up at the chart.
+  sectionHead: {
+    marginTop: SPACE.section,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  all: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  allText: { color: L.body },
+
   card: {
-    marginTop: SPACE.block,
+    marginTop: SPACE.tight,
     backgroundColor: L.recessed,
     borderRadius: TILE_RADIUS,
     padding: 18,

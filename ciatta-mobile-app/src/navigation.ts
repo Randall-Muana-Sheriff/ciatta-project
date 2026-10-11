@@ -23,7 +23,8 @@ export type Screen =
   | 'evidence'
   | 'movement'
   | 'cycleProfile'
-  | 'appointment';
+  | 'appointment'
+  | 'metrics';
 
 export type Nav = {
   tab: Tab;
