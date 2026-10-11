@@ -22,17 +22,17 @@ import { SymptomsScreen } from './screens/SymptomsScreen';
 import { TodayScreen } from './screens/TodayScreen';
 import { C } from './theme';
 import { BottomNav } from './ui/chrome';
-import { Ground, type TintName } from './ui/Ground';
+import { Ground, type GroundHue } from './ui/Ground';
 
 // The ground each tab washes in. A pair per tab, so moving between them is
 // a change of place rather than four screens that look alike. The hues
 // carry no meaning here: this is a ground, and nothing on top of it reads
 // what colour it is.
-const TAB_GROUND: Record<Tab, [TintName, TintName]> = {
-  today: ['sky', 'lavender'],
-  myhealth: ['rose', 'ember'],
-  journey: ['lavender', 'sky'],
-  profile: ['amber', 'ember'],
+const TAB_GROUND: Record<Tab, [GroundHue, GroundHue]> = {
+  today: ['measured', 'timeDepth'],
+  myhealth: ['reported', 'change'],
+  journey: ['timeDepth', 'measured'],
+  profile: ['evidence', 'change'],
 };
 
 const TAB_SCREENS: Record<Tab, ComponentType> = {

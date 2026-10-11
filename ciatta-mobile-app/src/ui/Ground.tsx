@@ -7,12 +7,12 @@
 // violet behind the content, and that wash is most of why the screen reads
 // as a place rather than as a background.
 //
-// The hues are the design system's own tints, the eight it marks grounds
-// only. On light they are used as printed, pale fills at roughly 1.2:1.
-// This is not light, and the system says what happens then: "Tints become
-// transparency. A pale fill on dark reads as a hole." So the same hue
-// arrives here as a wash over Graphite rather than as a pale block, which
-// is the system's own resolution rather than a liberty taken with it.
+// The hues are the semantic eight, one meaning each, at their Base step.
+// The system says exactly how a ground in one of them resolves here: "A
+// band resolves to its tint on light, and to its base at 12 to 20 percent
+// alpha on dark. A pale fill on dark reads as a hole." So these are Base
+// at sixteen and twenty percent, which is that band, and not the pale
+// tints, which are the same eight hues printed for a white page.
 //
 // Two rules hold it:
 //
@@ -27,20 +27,11 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
-// The pale tints, grounds only. Straight out of
-// 05.ciatta-design-system-foundations-tokens, at L 92 and chroma x 0.55.
-export const TINT = {
-  sky: '#DBE5FC',
-  lavender: '#E8DFFC',
-  rose: '#FCDAE8',
-  flare: '#FCDCD7',
-  ember: '#FCDECB',
-  amber: '#FCE0BB',
-  mustard: '#F8E3AC',
-  citron: '#EAEAA6',
-} as const;
+import { BASE, type Meaning } from './surface';
 
-export type TintName = keyof typeof TINT;
+// The ground is named by meaning now, because the hue is the semantic
+// colour rather than its pale print.
+export type GroundHue = Meaning;
 
 // Graphite, which every wash sits over.
 const TOP = '#14171C';
@@ -51,12 +42,12 @@ export function Ground({
   children,
   // The pair the screen washes between. Sky into Lavender by default,
   // which is the pairing Oura's own cycle ground uses.
-  from = 'sky',
-  to = 'lavender',
+  from = 'measured',
+  to = 'timeDepth',
 }: {
   children?: ReactNode;
-  from?: TintName;
-  to?: TintName;
+  from?: GroundHue;
+  to?: GroundHue;
 }) {
   return (
     <View style={s.fill}>
@@ -74,17 +65,17 @@ export function Ground({
           {/* The first hue, pooled behind the top of the screen where the
               eye enters it. */}
           <RadialGradient id="g-from" cx="18%" cy="2%" rx="105%" ry="58%">
-            <Stop offset="0" stopColor={TINT[from]} stopOpacity={0.2} />
-            <Stop offset="0.55" stopColor={TINT[from]} stopOpacity={0.07} />
-            <Stop offset="1" stopColor={TINT[from]} stopOpacity={0} />
+            <Stop offset="0" stopColor={BASE[from]} stopOpacity={0.2} />
+            <Stop offset="0.55" stopColor={BASE[from]} stopOpacity={0.07} />
+            <Stop offset="1" stopColor={BASE[from]} stopOpacity={0} />
           </RadialGradient>
 
           {/* The second, pooled low and to the other side, so the two meet
               across the middle of the screen rather than stacking. */}
           <RadialGradient id="g-to" cx="88%" cy="76%" rx="95%" ry="55%">
-            <Stop offset="0" stopColor={TINT[to]} stopOpacity={0.16} />
-            <Stop offset="0.6" stopColor={TINT[to]} stopOpacity={0.05} />
-            <Stop offset="1" stopColor={TINT[to]} stopOpacity={0} />
+            <Stop offset="0" stopColor={BASE[to]} stopOpacity={0.16} />
+            <Stop offset="0.6" stopColor={BASE[to]} stopOpacity={0.05} />
+            <Stop offset="1" stopColor={BASE[to]} stopOpacity={0} />
           </RadialGradient>
         </Defs>
 

@@ -65,6 +65,24 @@ export type Meaning =
   | 'uncertainty'
   | 'attention';
 
+// The semantic eight, one meaning each, at their Base step. These are the
+// values the system prints in its colour table: the hue itself, before it
+// is re lit for a ground.
+//
+// Base is what a mark takes on light and what a ground takes on dark, at
+// 12 to 20 percent alpha. It is never text on this surface: that is what
+// the Dark step below is for.
+export const BASE: Record<Meaning, string> = {
+  measured: '#486FE9', // Sky
+  timeDepth: '#915ADB', // Lavender
+  reported: '#CD4290', // Rose
+  escalation: '#C52D1E', // Flare, the anchor
+  change: '#C7702A', // Ember
+  evidence: '#CD9132', // Amber
+  uncertainty: '#D2AC3A', // Mustard
+  attention: '#D5D244', // Citron
+};
+
 // The Dark step for each meaning: the base re lit for this ground, at
 // L +12 and chroma x 0.95. All eight clear 5.2:1 on Graphite, which is
 // why coloured text on dark uses this step and never the Base.
