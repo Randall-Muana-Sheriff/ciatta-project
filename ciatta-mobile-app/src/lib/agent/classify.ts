@@ -51,10 +51,6 @@ const MATCHERS: { id: CapabilityId; any: string[] }[] = [
     any: ['book', 'booking', 'find a doctor', 'find a clinician', 'referral', 'insurance', 'covered', 'coverage', 'who should i see'],
   },
   {
-    id: 'context',
-    any: ['what is ', 'what are ', 'explain', 'research', 'evidence on', 'studies', 'generally'],
-  },
-  {
     id: 'pattern',
     any: ['pattern', 'changed', 'changing', 'trend', 'connection', 'related', 'noticed anything', 'what have you found'],
   },
@@ -62,8 +58,18 @@ const MATCHERS: { id: CapabilityId; any: string[] }[] = [
     id: 'record',
     any: [
       'how did i', 'how many', 'how much', 'how long', 'when was', 'when did', 'last period', 'my sleep',
-      'my steps', 'my hrv', 'heart rate', 'show me', 'what did i', 'my cycle', 'my data',
+      'my steps', 'my hrv', 'heart rate', 'show me', 'what did i', 'my cycle', 'my data', 'my record',
+      'in my record', 'what is in my',
     ],
+  },
+  // Last, and narrowly. An earlier version matched a bare "what is ",
+  // which swallowed "What is in my record today" and answered a question
+  // about her own data with general literature. Everything here now names
+  // the literature explicitly, and anything about her record is matched
+  // above this point.
+  {
+    id: 'context',
+    any: ['the research say', 'research on', 'evidence on', 'studies', 'study on', 'literature', 'generally known', 'in general'],
   },
 ];
 

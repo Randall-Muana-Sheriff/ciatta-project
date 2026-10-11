@@ -1,9 +1,21 @@
 // Care: the agent, as a surface.
 //
-// Everything that decides what is said lives in lib/agent and is pure.
-// This file renders turns, assembles the Record a capability is allowed to
-// read, and nothing else. If a sentence appears here that lib/agent did not
-// write, that is a bug.
+// The first version of this screen was a greeting, four suggestion chips
+// and a text box, which is the chatbot pattern exactly. That was wrong,
+// and wrong in a way that misrepresented the thing underneath: a blank box
+// says "ask me anything", a promise no health intelligence can keep and
+// this one is built specifically not to make.
+//
+// What makes this not a chatbot is a fixed set of capabilities, a record
+// that either supports one or does not, and a source shown under every
+// sentence. All three were hidden behind the box. So the capabilities are
+// the interface now: each is named, each says whether it can answer from
+// her record right now, and tapping one runs it. The box stays, beneath
+// them, for the question the list did not anticipate.
+//
+// Everything that decides what is said still lives in lib/agent and is
+// pure. This file renders, and assembles the Record a capability may read.
+// A sentence appearing here that lib/agent did not write is a bug.
 //
 // Two things the interface owes her that the logic cannot:
 //
@@ -21,6 +33,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { respond, type Record as AgentRecord } from '../lib/agent/capabilities';
 import { classify } from '../lib/agent/classify';
 import { wordOrFallback } from '../lib/agent/check';
+import { capabilityCards, type CapabilityCard, readinessLine } from '../lib/agent/readiness';
 import { buildRecord } from '../lib/agent/record';
 import type { Fact, Turn } from '../lib/agent/types';
 import { countedWindows, cycleToday, medianLength } from '../lib/cycleModel';
@@ -33,18 +46,9 @@ import type { Reported } from '../data/repo';
 import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { Composer } from '../ui/composer';
+import { Icon } from '../ui/icons';
 import { Wordmark } from '../ui/Wordmark';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
-
-// What she can ask, shown rather than described. A chat box with no
-// suggestions is a test she has to pass before the thing is useful, and the
-// honest set is also the clearest statement of what this does.
-const OPENERS = [
-  'What is in my record today?',
-  'Has anything changed?',
-  'What should I ask my doctor?',
-  'Who should I see about this?',
-];
 
 const DOT: Record<Fact['from'], string> = {
   measured: HUE.measured,
@@ -122,6 +126,10 @@ export function CareScreen() {
     });
   }, [person, todayRow, days, episodes, reported, ranked, windows, lens, profile]);
 
+  // Recomputed whenever her record changes, by running the capabilities.
+  // Readiness held separately from the answer is readiness that can lie.
+  const cards = useMemo(() => capabilityCards(record), [record]);
+
   const send = useCallback(
     (text: string) => {
       const message = text.trim();
@@ -153,56 +161,100 @@ export function CareScreen() {
           <Wordmark />
         </View>
 
-        {turns.length === 0 ? <Opening onPick={send} name={person?.firstName ?? null} /> : null}
+        <View style={s.intro}>
+          <Text style={[font('title2'), s.title]} accessibilityRole="header">
+            Care
+          </Text>
+          {/*
+            What it is, stated. The shape of a screen with a text box on it
+            will read as a chat to anyone who has used one, so the three
+            clauses that distinguish this are said out loud, in the order
+            that matters: it works only from her record, it has a known and
+            finite set of things it does, and it tells her when it cannot.
+          */}
+          <Text style={[font('body'), s.lede]}>
+            A health intelligence that works only from your record. It has {cards.length} things it can do, it shows
+            where every answer came from, and it tells you when your record cannot support one.
+          </Text>
+          <Text style={[font('caption1'), s.limit]}>
+            It does not practise medicine, and it will not tell you what is wrong with you. If you describe something
+            urgent, it will say so and stop.
+          </Text>
+        </View>
 
-        {turns.map((turn) =>
-          turn.role === 'her' ? (
-            <View key={turn.id} style={s.hers}>
-              <Text style={[font('body'), s.hersText]}>{turn.text}</Text>
-            </View>
-          ) : (
-            <AnswerBlock key={turn.id} turn={turn} onOpen={(screen) => nav.push(screen as Screen)} />
-          ),
-        )}
+        {/*
+          The capability list, which is the interface rather than a menu
+          beside it. Ready first: the ones she can use now are the point,
+          and a list led by what is unavailable reads as a broken product.
+        */}
+        <View style={s.section}>
+          <View style={s.sectionHead}>
+            <Eyebrow>What it can do</Eyebrow>
+            <Text style={[font('caption1'), s.count]}>{displayCopy(readinessLine(cards))}</Text>
+          </View>
+          {[...cards]
+            .sort((a, b) => Number(b.ready) - Number(a.ready))
+            .map((c) => (
+              <CapabilityRow key={c.id} card={c} onRun={() => send(c.ask)} />
+            ))}
+        </View>
+
+        {turns.length ? (
+          <View style={s.section}>
+            <Eyebrow>This session</Eyebrow>
+            {turns.map((turn) =>
+              turn.role === 'her' ? (
+                <View key={turn.id} style={s.hers}>
+                  <Text style={[font('subhead'), s.hersText]}>{turn.text}</Text>
+                </View>
+              ) : (
+                <AnswerBlock key={turn.id} turn={turn} onOpen={(screen) => nav.push(screen as Screen)} />
+              ),
+            )}
+          </View>
+        ) : null}
       </ScrollView>
 
       <View style={s.composer}>
         <Composer
           value={draft}
           onChange={setDraft}
-          placeholder="Ask about your record"
-          label="Ask Ciatta"
+          placeholder="Or ask in your own words"
+          label="Ask Ciatta about your record"
           onSend={() => send(draft)}
-          minHeight={92}
+          minHeight={86}
         />
       </View>
     </KeyboardAvoidingView>
   );
 }
 
-function Opening({ name, onPick }: { name: string | null; onPick: (text: string) => void }) {
+// One capability, with whether it can answer from her record right now.
+//
+// A blocked row is still tappable. Tapping it answers by saying exactly
+// what is missing, which is more use than a disabled row that says nothing
+// and cannot be asked why.
+function CapabilityRow({ card, onRun }: { card: CapabilityCard; onRun: () => void }) {
   return (
-    <View style={s.opening}>
-      <Text style={[font('title2'), s.greet]} accessibilityRole="header">
-        {displayCopy(name ? `${name}, what would you like to know?` : 'What would you like to know?')}
-      </Text>
-      <Text style={[font('body'), s.lede]}>
-        Ciatta answers from your own record and says so when there is not enough in it yet. It does not practise
-        medicine, and it will not tell you what is wrong with you.
-      </Text>
-      <View style={s.openers}>
-        {OPENERS.map((o) => (
-          <Pressable
-            key={o}
-            onPress={() => onPick(o)}
-            accessibilityRole="button"
-            style={({ pressed }) => [s.opener, pressed && s.pressed]}
-          >
-            <Text style={[font('subhead'), s.openerText]}>{o}</Text>
-          </Pressable>
-        ))}
+    <Pressable
+      onPress={onRun}
+      accessibilityRole="button"
+      accessibilityLabel={`${card.title}. ${card.ready ? 'Ready' : card.blocked}`}
+      style={({ pressed }) => [s.cap, !card.ready && s.capBlocked, pressed && s.pressed]}
+    >
+      <View style={s.capLeft}>
+        <Text style={[font('subhead', 'semibold'), s.capTitle]}>{card.title}</Text>
+        <Text style={[font('caption1'), s.capWhat]}>
+          {displayCopy(card.ready ? card.what : (card.blocked as string))}
+        </Text>
       </View>
-    </View>
+      {/*
+        A filled pip when ready, a hollow ring when not, so the state
+        survives being read without colour.
+      */}
+      <View style={[s.pip, card.ready ? s.pipOn : s.pipOff]} />
+      <Icon name="chevronRight" size={15} color={L.meta} />
+    </Pressable>
   );
 }
 
@@ -268,37 +320,56 @@ const s = StyleSheet.create({
   body: { paddingBottom: SPACE.block },
   head: { alignItems: 'center' },
 
-  opening: { paddingHorizontal: GUTTER, marginTop: SPACE.near },
-  greet: { color: L.ink, letterSpacing: -0.4 },
-  lede: { color: L.body, lineHeight: 24, marginTop: 12 },
-  openers: { marginTop: SPACE.block, gap: 8 },
-  opener: {
+  intro: { paddingHorizontal: GUTTER },
+  title: { color: L.ink, letterSpacing: -0.4 },
+  lede: { color: L.body, lineHeight: 24, marginTop: 10 },
+  limit: { color: L.meta, lineHeight: 19, marginTop: 12 },
+
+  section: { marginTop: SPACE.section, paddingHorizontal: GUTTER },
+  sectionHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACE.tight,
+  },
+  count: { color: L.meta },
+
+  cap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     backgroundColor: L.recessed,
     borderRadius: TILE_RADIUS,
     borderWidth: st,
     borderColor: L.rule,
     paddingVertical: 14,
     paddingHorizontal: 16,
+    marginBottom: SPACE.grid,
   },
-  openerText: { color: L.ink },
+  // Not disabled, only quieter. It still answers, by saying what is
+  // missing, so it keeps its edge and loses its fill.
+  capBlocked: { backgroundColor: 'transparent' },
+  capLeft: { flex: 1 },
+  capTitle: { color: L.ink },
+  capWhat: { color: L.meta, marginTop: 3, lineHeight: 18 },
+  pip: { width: 9, height: 9, borderRadius: 5 },
+  pipOn: { backgroundColor: HUE.measured },
+  pipOff: { borderWidth: 1.5, borderColor: L.meta },
 
-  // Hers sits right and tighter; Ciatta's runs full width, because one is
-  // a question and the other is a document.
   hers: {
     alignSelf: 'flex-end',
     maxWidth: '82%',
-    marginTop: SPACE.block,
-    marginRight: GUTTER,
+    marginTop: SPACE.near,
     backgroundColor: L.statement,
     borderRadius: TILE_RADIUS,
     borderWidth: st,
     borderColor: L.rule,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
   },
   hersText: { color: L.ink },
 
-  answer: { marginTop: SPACE.near, marginHorizontal: GUTTER },
+  answer: { marginTop: SPACE.near },
   // Escalation is the one case that takes a hue, and it takes Flare, which
   // the system gates and never spends casually.
   answerUrgent: {
@@ -315,7 +386,7 @@ const s = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3 },
   factText: { color: L.meta, flex: 1 },
 
-  abstained: { color: L.meta, marginTop: 10, fontStyle: 'italic' },
+  abstained: { color: L.meta, marginTop: 10, lineHeight: 18 },
 
   suggestions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
   suggestion: {
