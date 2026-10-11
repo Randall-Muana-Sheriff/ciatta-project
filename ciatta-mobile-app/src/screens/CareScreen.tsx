@@ -15,18 +15,21 @@
 //   and not as a reply, because "there is not enough yet" reads very
 //   differently from a confident sentence of the same length.
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { respond, type Record as AgentRecord } from '../lib/agent/capabilities';
 import { classify } from '../lib/agent/classify';
 import { wordOrFallback } from '../lib/agent/check';
+import { buildRecord } from '../lib/agent/record';
 import type { Fact, Turn } from '../lib/agent/types';
 import { countedWindows, cycleToday, medianLength } from '../lib/cycleModel';
 import { displayCopy } from '../lib/displayCopy';
 import { type Screen, useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
-import { useData } from '../state/session';
+import { useInsights } from '../state/insights';
+import { useData, useRepo } from '../state/session';
+import type { Reported } from '../data/repo';
 import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { Composer } from '../ui/composer';
@@ -62,6 +65,30 @@ export function CareScreen() {
   const { person, days } = useData();
   const { episodes } = useCycle();
   const { windows, lens, profile } = useCycleInsights();
+  // Already ranked and already gated. The agent speaks about these; it
+  // never finds one of its own.
+  const { ranked } = useInsights();
+  const repo = useRepo();
+
+  // What she told Ciatta at onboarding. Null until the read lands, which
+  // buildRecord treats as unknown rather than as an empty history.
+  const [reported, setReported] = useState<Reported | null>(null);
+  useEffect(() => {
+    let ignore = false;
+    repo
+      .loadReported()
+      .then((r) => {
+        if (!ignore) setReported(r);
+      })
+      .catch(() => {
+        // Left null. The capabilities abstain, which is the honest state
+        // when the read failed: Ciatta does not know, rather than knows
+        // there is nothing.
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [repo]);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState('');
   const scroller = useRef<ScrollView | null>(null);
@@ -81,21 +108,19 @@ export function CareScreen() {
     const open = windows[windows.length - 1] ?? null;
     const predicted = lens.predicts ? medianLength(countedWindows(windows, profile)) : null;
     const now = cycleToday(open && !open.end ? open : null, predicted, new Date());
-    return {
+    return buildRecord({
       name: person?.firstName ?? null,
       today: todayRow,
       days,
       episodes,
-      conditions: profile?.situations ?? [],
-      medications: [],
-      // Only what the gate has already earned. This screen never finds one.
-      insights: [],
+      reported,
+      insights: ranked,
       // Empty until research_refs holds reviewed rows. Context abstains.
       references: [],
       cycleDay: now?.day ?? null,
       cyclePhase: now?.phase ?? null,
-    };
-  }, [person, todayRow, days, episodes, windows, lens, profile]);
+    });
+  }, [person, todayRow, days, episodes, reported, ranked, windows, lens, profile]);
 
   const send = useCallback(
     (text: string) => {
