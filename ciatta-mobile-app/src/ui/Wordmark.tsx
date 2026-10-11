@@ -33,8 +33,13 @@ export type WordmarkSize = 'sm' | 'md';
 // Sizes and tracking from the landing page's own stylesheet, converted from
 // rem at the browser's 16px root. Tracking is in points here rather than em,
 // which is what React Native takes, so it is computed from the size.
+// sm is a fifth smaller than the landing page's own, because at the top of
+// a screen the mark is a signature rather than a headline: it says whose
+// record this is and then gets out of the way of the record. Tracking opens
+// a touch as it shrinks, which is the rule above, never the reverse. Clear
+// space is still the cap height, so the mark's whole block shrinks with it.
 const SIZES: Record<WordmarkSize, { fontSize: number; trackEm: number }> = {
-  sm: { fontSize: 20.5, trackEm: 0.07 },
+  sm: { fontSize: 16.4, trackEm: 0.075 },
   md: { fontSize: 26.2, trackEm: 0.06 },
 };
 

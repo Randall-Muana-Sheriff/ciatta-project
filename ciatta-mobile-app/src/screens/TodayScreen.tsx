@@ -14,7 +14,7 @@ import { Eyebrow, Tile } from '../ui/bento';
 import { Wordmark } from '../ui/Wordmark';
 import { AXIS, buildDay, type DayChart, VIEW } from '../lib/todayChart';
 import type { IntradayPoint } from '../data/repo';
-import { ground, L, mark, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
+import { ground, HUE, L, mark, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow } from '../ui/chrome';
 import type { IconName } from '../ui/icons';
 import { Icon } from '../ui/icons';
@@ -173,11 +173,16 @@ export function TodayScreen() {
   // Where today sits in her cycle. Null when there is no open cycle or
   // when it has been left open too long to mean anything, and the header
   // then says nothing rather than guessing.
-  const cycleLabel = useMemo(() => {
+  //
+  // Kept as the object rather than only its line, because Metrics shows the
+  // two halves apart: the day is a number she can read like a step count,
+  // and the phase is the part that means something.
+  const cycleNow = useMemo(() => {
     const open = windows[windows.length - 1] ?? null;
     const predicted = lens.predicts ? medianLength(countedWindows(windows, profile)) : null;
-    return cycleTodayLabel(cycleToday(open && !open.end ? open : null, predicted, new Date()));
+    return cycleToday(open && !open.end ? open : null, predicted, new Date());
   }, [windows, lens, profile]);
+  const cycleLabel = useMemo(() => cycleTodayLabel(cycleNow), [cycleNow]);
 
   // Today's own row, when there is one. days arrives oldest first.
   const todayDay = useMemo(() => {
@@ -306,7 +311,31 @@ export function TodayScreen() {
         </View>
 
         {/* The chart, then the daily brief written from whatever ranks highest. */}
+        <Eyebrow>Metrics</Eyebrow>
         <View style={t.card}>
+        {/*
+          Where she is in her cycle, above the three figures, because it is
+          the one of the four she carries in her head all day and the one
+          that gives the other three their context.
+
+          It is her own logging rather than a device reading, so it is the
+          only row here in a semantic colour, and both halves have to be
+          earned: cycleToday returns null when there is no open cycle or
+          when one has been left open past the point its day count means
+          anything, and then the row says that instead of a number.
+        */}
+        <View style={t.cycleRow}>
+          <View>
+            <Text style={[font('caption1'), t.pillLabel]}>CYCLE</Text>
+            <Text style={[font('headline'), cycleNow ? t.pillValue : t.pillNone]}>
+              {cycleNow ? `Day ${cycleNow.day}` : 'No open cycle'}
+            </Text>
+          </View>
+          {cycleNow?.phase ? (
+            <Text style={[font('footnote', 'semibold'), t.phase]}>{cycleNow.phase}</Text>
+          ) : null}
+        </View>
+
         {/*
           Three figures from today, as the concept has them. Each is the
           value actually recorded; a figure with nothing behind it says so
@@ -454,6 +483,27 @@ const t = StyleSheet.create({
   dayEmpty: { color: L.body, lineHeight: 21, paddingVertical: 10 },
   axis: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 },
   axisText: { color: L.meta },
+
+  // The cycle sits on its own full width row above the three pills, and
+  // divides from them, so it reads as the context rather than as a fourth
+  // figure of the same kind.
+  cycleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: L.rule,
+  },
+  // Reported, which is the meaning this one carries: she logged it.
+  phase: {
+    color: HUE.reported,
+    backgroundColor: ground('reported'),
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
 
   pills: { flexDirection: 'row', gap: SPACE.grid, marginTop: SPACE.grid },
   pill: {
