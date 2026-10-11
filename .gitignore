@@ -40,3 +40,13 @@ my_chat_backup.txt
 
 # Design source files kept beside the repo, not shipped with it
 /ciatta-core-mvp.png
+
+# Reference material and credentials that stay out of the repo by instruction.
+# These are listed here rather than relied on being remembered, because a
+# single `git add -A` is all it takes to commit several hundred megabytes of
+# video and a credentials file at once.
+ciatta-visual-assets/
+endometriosis-non-diagnosis-quiz/
+*.apps.googleusercontent.com.plist
+google-services.json
+Ciatta MVP *.md
