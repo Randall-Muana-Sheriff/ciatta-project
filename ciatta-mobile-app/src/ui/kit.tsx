@@ -5,7 +5,7 @@ import Svg, { Path } from 'react-native-svg';
 import type { SourceKind } from '../data/sample';
 import { displayCopy } from '../lib/displayCopy';
 import { C, font, GUTTER, RADIUS } from '../theme';
-import { L } from './light';
+import { L } from './surface';
 
 // ── Icons ──────────────────────────────────────────────────────
 

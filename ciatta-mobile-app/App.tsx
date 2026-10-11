@@ -68,13 +68,12 @@ function Gate() {
 }
 
 export default function App() {
-  // Info.plist forces dark so the record's system UI matched it. The app is
-  // on the light surface now, and this is what makes iOS draw its own
-  // pieces to match: keyboards, menus, and Apple's HealthKit sheet, which
-  // is drawn by iOS in the app's interface style and cannot be styled any
-  // other way.
+  // Back on Graphite, so iOS draws its own pieces to match: keyboards,
+  // menus, and Apple's HealthKit sheet, which is drawn by iOS in the app's
+  // interface style and cannot be styled any other way. Info.plist already
+  // declares dark, so this agrees with it rather than overriding it.
   useEffect(() => {
-    Appearance.setColorScheme('light');
+    Appearance.setColorScheme('dark');
   }, []);
 
   const [loaded, error] = useFonts({
@@ -96,9 +95,8 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      {/* The whole app is on the light surface now. The welcome
-          screen overrides this back to light for its photograph. */}
-      <StatusBar style="dark" />
+      {/* Light content on a dark ground, everywhere. */}
+      <StatusBar style="light" />
       <SessionProvider>
         <Gate />
       </SessionProvider>

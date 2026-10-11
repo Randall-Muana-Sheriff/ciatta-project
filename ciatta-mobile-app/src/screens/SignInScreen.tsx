@@ -13,7 +13,7 @@ import { userFacingError } from '../lib/userFacingError';
 import { useSession } from '../state/session';
 import { C, font, GUTTER, RADIUS } from '../theme';
 import { images } from '../ui/images';
-import { L } from '../ui/light';
+import { L } from '../ui/surface';
 import { Wordmark } from '../ui/Wordmark';
 
 // The hero loops silently behind all three panes. It is decorative: nothing

@@ -14,7 +14,7 @@ import { Eyebrow, Tile } from '../ui/bento';
 import { Wordmark } from '../ui/Wordmark';
 import { AXIS, buildDay, type DayChart, VIEW } from '../lib/todayChart';
 import type { IntradayPoint } from '../data/repo';
-import { ground, L, mark, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/light';
+import { ground, L, mark, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow } from '../ui/chrome';
 import type { IconName } from '../ui/icons';
 import { Icon } from '../ui/icons';

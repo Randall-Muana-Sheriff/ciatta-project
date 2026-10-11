@@ -16,7 +16,7 @@ import { type Screen, useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
 import { useData, useRepo, useSession } from '../state/session';
 import { C, font, GUTTER, numeral, RADIUS } from '../theme';
-import { L, NAV_CLEARANCE, TILE_RADIUS } from '../ui/light';
+import { L, NAV_CLEARANCE, TILE_RADIUS } from '../ui/surface';
 import { LargeTitle, ListGroup, ListRow, Panel, TextButton } from '../ui/chrome';
 import { Icon } from '../ui/icons';
 import { images } from '../ui/images';

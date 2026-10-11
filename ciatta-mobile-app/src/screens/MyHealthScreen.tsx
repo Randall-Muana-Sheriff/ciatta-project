@@ -7,7 +7,7 @@ import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
 import { useData } from '../state/session';
 import { C, font, GUTTER } from '../theme';
-import { NAV_CLEARANCE } from '../ui/light';
+import { NAV_CLEARANCE } from '../ui/surface';
 import { BodySystemView } from '../ui/BodySystemView';
 import { LargeTitle, ToolbarButton } from '../ui/chrome';
 import { HealthDashboard } from '../ui/HealthDashboard';

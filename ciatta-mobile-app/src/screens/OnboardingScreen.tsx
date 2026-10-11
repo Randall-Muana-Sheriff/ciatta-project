@@ -1,4 +1,3 @@
-import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,7 +27,7 @@ import { useRepo, useSession } from '../state/session';
 import { font, GUTTER, RADIUS } from '../theme';
 import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
-import { L } from '../ui/light';
+import { L } from '../ui/surface';
 import { Wordmark } from '../ui/Wordmark';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
@@ -70,10 +69,13 @@ const AUTO: StepId[] = ['age', 'lifeStage', 'cycle'];
 const NO_CONTINUE: StepId[] = [...AUTO, 'connect', 'compiling'];
 
 
-const INK = '#111113';
-const MUTED = '#6B6B70';
-const LINE = '#E4E4E7';
-const FIELD = '#F5F5F7';
+// Onboarding kept four local values while it was the one white surface in
+// a dark app. They point at the shared surface now, so the first session
+// moves with everything else rather than being the screen somebody forgets.
+const INK = L.ink;
+const MUTED = L.meta;
+const LINE = L.rule;
+const FIELD = L.recessed;
 
 // Dots, not "Step 8 of 9". A counter invites her to work out how much is
 // left and feel it as a cost. Dots say the same thing with no number to
@@ -139,7 +141,7 @@ function Chips({
             accessibilityState={{ checked: on }}
             style={({ pressed }) => [s.chip, on && s.chipOn, pressed && s.pressed]}
           >
-            <Text style={[font('subhead'), { color: on ? '#FFFFFF' : INK }]}>{o}</Text>
+            <Text style={[font('subhead'), { color: on ? L.canvas : INK }]}>{o}</Text>
           </Pressable>
         );
       })}
@@ -195,7 +197,7 @@ function AddList({
               accessibilityLabel={`Remove ${x}`}
               style={({ pressed }) => [s.chip, s.chipOn, pressed && s.pressed]}
             >
-              <Text style={[font('subhead'), { color: '#FFFFFF' }]}>{x}</Text>
+              <Text style={[font('subhead'), { color: L.canvas }]}>{x}</Text>
             </Pressable>
           ))}
         </View>
@@ -435,7 +437,6 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   if (step === 'welcome') {
     return (
       <View style={s.fill}>
-        <StatusBar style="light" />
         <Image source={images.welcomeBg} style={s.bg} resizeMode="cover" accessible={false} />
         <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" pointerEvents="none">
           <Defs>
@@ -591,7 +592,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
                   accessibilityRole="button"
                   style={({ pressed }) => [s.primary, s.connect, pressed && s.pressed]}
                 >
-                  <Text style={[font('headline'), { color: '#FFFFFF' }]}>Try again</Text>
+                  <Text style={[font('headline'), { color: L.canvas }]}>Try again</Text>
                 </Pressable>
               </View>
             ) : null}
@@ -716,7 +717,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
                 <Icon
                   name={dictation.listening ? 'stopSquare' : a.opening.trim() ? 'send' : 'mic'}
                   size={19}
-                  color={a.opening.trim() || dictation.listening ? '#FFFFFF' : INK}
+                  color={a.opening.trim() || dictation.listening ? L.canvas : INK}
                   filled={dictation.listening}
                 />
               </Pressable>
@@ -996,7 +997,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               accessibilityState={{ disabled: connecting }}
               style={({ pressed }) => [s.primary, s.connect, pressed && s.pressed]}
             >
-              <Text style={[font('headline'), { color: '#FFFFFF' }]}>
+              <Text style={[font('headline'), { color: L.canvas }]}>
                 {connecting ? 'Connecting' : 'Connect to Apple Health'}
               </Text>
             </Pressable>
@@ -1074,13 +1075,13 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         {step === 'reflect' ? (
           <View style={s.actions}>
             <Pressable onPress={finish} accessibilityRole="button" style={({ pressed }) => [s.primary, pressed && s.pressed]}>
-              <Text style={[font('headline'), { color: '#FFFFFF' }]}>{saving ? 'Saving' : 'Done'}</Text>
+              <Text style={[font('headline'), { color: L.canvas }]}>{saving ? 'Saving' : 'Done'}</Text>
             </Pressable>
           </View>
         ) : NO_CONTINUE.includes(step) ? null : (
           <View style={s.actions}>
             <Pressable onPress={next} accessibilityRole="button" style={({ pressed }) => [s.primary, pressed && s.pressed]}>
-              <Text style={[font('headline'), { color: '#FFFFFF' }]}>Continue</Text>
+              <Text style={[font('headline'), { color: L.canvas }]}>Continue</Text>
             </Pressable>
           </View>
         )}
@@ -1090,7 +1091,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 }
 
 const s = StyleSheet.create({
-  fill: { flex: 1, backgroundColor: '#FFFFFF' },
+  fill: { flex: 1, backgroundColor: L.canvas },
   body: { paddingHorizontal: GUTTER, flexGrow: 1, paddingTop: 16 },
   bg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
   welcomeTop: { alignItems: 'center', paddingHorizontal: GUTTER },
@@ -1146,7 +1147,7 @@ const s = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 9,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: L.recessed,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
@@ -1180,7 +1181,7 @@ const s = StyleSheet.create({
   appLabel: { color: MUTED, maxWidth: 66, textAlign: 'center' },
   // The selected tile is outlined rather than filled: a filled tile would
   // fight the brand mark sitting inside it.
-  appTileOn: { borderWidth: 1.5, borderColor: INK, backgroundColor: '#FFFFFF' },
+  appTileOn: { borderWidth: 1.5, borderColor: INK, backgroundColor: L.statement },
   guideCard: { marginTop: 14, backgroundColor: FIELD, borderRadius: RADIUS, padding: 16 },
   guideTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   guideTitle: { flex: 1, color: INK },
@@ -1210,7 +1211,7 @@ const s = StyleSheet.create({
     borderRadius: 11,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: LINE,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: L.statement,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1221,7 +1222,7 @@ const s = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 7,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: L.recessed,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
@@ -1261,7 +1262,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  choiceOn: { backgroundColor: '#FFFFFF', borderColor: INK },
+  choiceOn: { backgroundColor: L.statement, borderColor: INK },
   boxWrap: { position: 'relative' },
   // Room at the foot of the box for the control, so a long answer scrolls
   // behind it rather than under it.
@@ -1275,7 +1276,7 @@ const s = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: L.statement,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: LINE,
   },
@@ -1307,7 +1308,7 @@ const s = StyleSheet.create({
     borderRadius: 22,
     borderWidth: 1,
     borderColor: LINE,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: L.statement,
   },
   chipOn: { backgroundColor: INK, borderColor: INK },
 

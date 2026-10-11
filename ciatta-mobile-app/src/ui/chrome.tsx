@@ -6,7 +6,7 @@ import { displayCopy } from '../lib/displayCopy';
 import type { Tab } from '../navigation';
 import { C, font, fonts, GUTTER, RADIUS } from '../theme';
 import { Icon, type IconName } from './icons';
-import { L, TILE_RADIUS } from './light';
+import { L, TILE_RADIUS } from './surface';
 import { ChevronRight } from './kit';
 
 // ── Navigation bar items ───────────────────────────────────────
@@ -266,7 +266,9 @@ const s = StyleSheet.create({
   nav: {
     flexDirection: 'row',
     padding: 5,
-    backgroundColor: C.bg,
+    // A step above the page, not level with it. On dark a bar the colour
+    // of its own ground is not a floating bar, it is a gap.
+    backgroundColor: C.card,
     // Fully rounded against a 60pt bar, so the ends are true half circles
     // rather than a rectangle with soft corners.
     borderRadius: 30,
@@ -283,8 +285,8 @@ const s = StyleSheet.create({
     elevation: 8,
   },
   tab: { flex: 1, height: 54, alignItems: 'center', justifyContent: 'center', gap: 3, borderRadius: 25 },
-  // The nude ground the Worth Doing Next tiles use. The selected tab is
-  // the one standing on it.
-  tabOn: { backgroundColor: C.card },
+  // The selected tab stands one step above the bar, the way the bar
+  // stands one step above the page.
+  tabOn: { backgroundColor: C.fillSelected },
   tabLabel: { fontFamily: fonts.medium, fontSize: 11, lineHeight: 13 },
 });

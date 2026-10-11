@@ -22,7 +22,7 @@ import { useData, useRepo } from '../state/session';
 import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen, SecondaryButton } from '../ui/kit';
-import { L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/light';
+import { L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 
 const WINDOWS: { label: string; days: number }[] = [
   { label: '1 month', days: 30 },

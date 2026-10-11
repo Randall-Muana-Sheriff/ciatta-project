@@ -26,7 +26,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { fonts } from '../theme';
-import { L } from './light';
+import { L } from './surface';
 
 export type WordmarkSize = 'sm' | 'md';
 

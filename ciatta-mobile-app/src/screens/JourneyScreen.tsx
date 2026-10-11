@@ -12,7 +12,7 @@ import { useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useData } from '../state/session';
 import { C, font, fonts, GUTTER, RADIUS } from '../theme';
-import { NAV_CLEARANCE } from '../ui/light';
+import { NAV_CLEARANCE } from '../ui/surface';
 import { type Axis, axisFor, emptyFor, posIn, type Scale, SCALES } from '../lib/timeAxis';
 import { LargeTitle, Panel } from '../ui/chrome';
 import { Icon, type IconName } from '../ui/icons';

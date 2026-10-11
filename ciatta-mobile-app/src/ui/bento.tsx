@@ -18,7 +18,7 @@ import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native'
 
 import { font, GUTTER } from '../theme';
 import { Icon, type IconName } from './icons';
-import { L, TILE_RADIUS } from './light';
+import { L, TILE_RADIUS } from './surface';
 
 export const BENTO_GAP = 10;
 
