@@ -27,6 +27,7 @@ import { useRepo, useSession } from '../state/session';
 import { font, GUTTER, RADIUS } from '../theme';
 import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
+import { Ground } from '../ui/Ground';
 import { L } from '../ui/surface';
 import { Wordmark } from '../ui/Wordmark';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
@@ -511,7 +512,8 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <Ground>
+      <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/*
         Back, progress, and Skip, in one row that holds still while a long
         screen moves under it. Back is an arrow in the corner because that is
@@ -1085,13 +1087,14 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             </Pressable>
           </View>
         )}
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Ground>
   );
 }
 
 const s = StyleSheet.create({
-  fill: { flex: 1, backgroundColor: L.canvas },
+  fill: { flex: 1 },
   body: { paddingHorizontal: GUTTER, flexGrow: 1, paddingTop: 16 },
   bg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
   welcomeTop: { alignItems: 'center', paddingHorizontal: GUTTER },

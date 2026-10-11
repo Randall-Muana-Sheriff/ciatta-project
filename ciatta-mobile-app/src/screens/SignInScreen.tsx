@@ -13,6 +13,7 @@ import { userFacingError } from '../lib/userFacingError';
 import { useSession } from '../state/session';
 import { C, font, GUTTER, RADIUS } from '../theme';
 import { images } from '../ui/images';
+import { Ground } from '../ui/Ground';
 import { L } from '../ui/surface';
 import { Wordmark } from '../ui/Wordmark';
 
@@ -229,7 +230,11 @@ export function SignInScreen() {
   };
 
   // The sign up and log in panes stand on white; only welcome keeps the film.
-  const light = pane !== 'welcome';
+  // Whether the film is behind this pane. It was called `light` when the
+  // two auth panes were white; they are on the ground with everything else
+  // now, so the only thing it still decides is the film and the Apple
+  // button that sits over it.
+  const onFilm = pane === 'welcome';
 
   // The two auth cards, shared by the sign up and log in panes. Two things
   // differ between them: the Apple button's type, because Apple's guidelines
@@ -250,11 +255,9 @@ export function SignInScreen() {
               ? AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP
               : AppleAuthentication.AppleAuthenticationButtonType.CONTINUE
           }
-          buttonStyle={
-            light
-              ? AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
-              : AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-          }
+          // White on every pane: the ground is dark everywhere now, and
+          // Apple's black button would disappear into it.
+          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
           cornerRadius={RADIUS}
           style={s.apple}
           onPress={run(signInWithApple)}
@@ -264,7 +267,7 @@ export function SignInScreen() {
         onPress={run(signInWithGoogle)}
         accessibilityRole="button"
         accessibilityLabel={signUp ? 'Sign up with Google' : 'Continue with Google'}
-        style={({ pressed }) => [s.google, light && s.googleSolid, pressed && s.pressed]}
+        style={({ pressed }) => [s.google, pressed && s.pressed]}
       >
         <GoogleMark />
         <Text style={[font('headline'), { color: C.text }]}>
@@ -276,10 +279,10 @@ export function SignInScreen() {
 
   const errorLine = error ? (
     // The peach reads at 2.2:1 on white, which is not legible at footnote
-    // size, so the light panes carry a darkened red instead. A failure she
+    // size, so the error carries a lifted red instead. A failure she
     // cannot read is a failure she will repeat.
     <Text
-      style={[font('footnote'), s.error, light && s.errorLight]}
+      style={[font('footnote'), s.error]}
       accessibilityLiveRegion="polite"
     >
       {displayCopy(error)}
@@ -293,7 +296,7 @@ export function SignInScreen() {
       accessibilityLabel="Back"
       style={({ pressed }) => [s.back, pressed && s.pressed]}
     >
-      <Text style={[font('body'), { color: light ? C.bg : C.text }]}>Back</Text>
+      <Text style={[font('body'), { color: C.text }]}>Back</Text>
     </Pressable>
   );
 
@@ -312,19 +315,21 @@ export function SignInScreen() {
           mark takes Graphite on the white panes and Paper on the film,
           which are the only two grounds the Constitution allows it.
         */}
-        <Wordmark color={light ? L.ink : L.recessed} />
+        {/* Paper on every pane now that all three are on the ground. */}
+        <Wordmark color={L.recessed} />
       </View>
     </View>
   );
 
   return (
-    <View style={[s.fill, light && s.fillLight]}>
+    <Ground>
+      <View style={s.fill}>
       {/*
         The film is the welcome pane's alone now. Rendering it behind white and
         covering it would keep a video decoding for a screen nobody can see it
         on, which costs battery for nothing.
       */}
-      {light ? null : (
+      {onFilm ? (
         <View style={s.hero} pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants">
           {reduceMotion ? (
             <Image source={images.horizon} style={s.heroMedia} resizeMode="cover" />
@@ -332,7 +337,7 @@ export function SignInScreen() {
             <VideoView player={player} style={s.heroMedia} contentFit="cover" nativeControls={false} />
           )}
         </View>
-      )}
+      ) : null}
 
       <ScrollView style={s.scroll} contentContainerStyle={[s.body, { paddingTop: insets.top + 24 }]}>
         {pane === 'welcome' ? header : null}
@@ -478,14 +483,14 @@ export function SignInScreen() {
           </View>
         ) : null}
       </ScrollView>
-    </View>
+      </View>
+    </Ground>
   );
 }
 
 const s = StyleSheet.create({
-  fill: { flex: 1, backgroundColor: C.bg },
+  fill: { flex: 1 },
   // The sign up and log in panes stand on white rather than on the film.
-  fillLight: { backgroundColor: C.text },
   // Behind everything and outside the ScrollView, so the footage stays put
   // while the content over it scrolls. Inside, it would slide away with the
   // buttons on a short screen and leave bare black at the bottom.
@@ -555,13 +560,11 @@ const s = StyleSheet.create({
   },
   // Solid on the white panes. The glass above is a wash of white at low alpha,
   // which over a white page is a pale grey rectangle rather than glass.
-  googleSolid: { backgroundColor: C.fill, borderColor: 'transparent' },
   pressed: { opacity: 0.55 },
-  // Black on white, centred, on both light panes.
+  // Centred, on both auth panes.
   heading: { color: C.bg, textAlign: 'center' },
   error: { color: C.tint, marginTop: 12 },
   // 5.9:1 on white, where the peach manages 2.2:1.
-  errorLight: { color: '#B3261E', textAlign: 'center' },
   // Sentence then link on one line. flexWrap is the guard for the largest text
   // sizes, where the two would otherwise run past the gutter.
   // Centred under the card above them. flexWrap still guards the largest text

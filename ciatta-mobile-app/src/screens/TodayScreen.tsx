@@ -425,7 +425,9 @@ export function TodayScreen() {
 }
 
 const t = StyleSheet.create({
-  fill: { flex: 1, backgroundColor: L.canvas },
+  // Transparent: the ground behind Root is what paints this screen, and
+  // a flat fill here would cover the shift.
+  fill: { flex: 1 },
   body: { paddingBottom: NAV_CLEARANCE, paddingTop: 8 },
   pad: { paddingHorizontal: GUTTER },
   pressed: { opacity: 0.6 },

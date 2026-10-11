@@ -22,6 +22,7 @@ import { SymptomsScreen } from './screens/SymptomsScreen';
 import { TodayScreen } from './screens/TodayScreen';
 import { C } from './theme';
 import { BottomNav } from './ui/chrome';
+import { Ground } from './ui/Ground';
 
 const TAB_SCREENS: Record<Tab, ComponentType> = {
   today: TodayScreen,
@@ -86,7 +87,8 @@ export function Root() {
 
   return (
     <NavContext.Provider value={nav}>
-      <View style={[r.root, { paddingTop: insets.top }]}>
+      <Ground>
+        <View style={[r.root, { paddingTop: insets.top }]}>
         <View style={r.fill} key={top ? `${tab}:${stack.length}:${top}` : tab}>
           <Current />
         </View>
@@ -100,14 +102,15 @@ export function Root() {
         */}
         <View style={r.navOver} pointerEvents="box-none">
           <BottomNav active={tab} onTab={(next) => nav.goTab(next)} />
+          </View>
         </View>
-      </View>
+      </Ground>
     </NavContext.Provider>
   );
 }
 
 const r = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bg },
+  root: { flex: 1 },
   fill: { flex: 1 },
   navOver: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });
