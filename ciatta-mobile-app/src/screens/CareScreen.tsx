@@ -177,19 +177,15 @@ export function CareScreen() {
             Care
           </Text>
           {/*
-            What it is, stated. The shape of a screen with a text box on it
-            will read as a chat to anyone who has used one, so the three
-            clauses that distinguish this are said out loud, in the order
-            that matters: it works only from her record, it has a known and
-            finite set of things it does, and it tells her when it cannot.
+            One sentence, and the boundary is the whole of it. The earlier
+            version also counted the capabilities and promised it would say
+            when it could not answer, but the list below counts itself and
+            every row states its own readiness, so saying it here was the
+            screen explaining what it was about to show.
           */}
-          <Text style={[font('body'), s.lede]}>
-            A health intelligence that works only from your record. It has {cards.length} things it can do, it shows
-            where every answer came from, and it tells you when your record cannot support one.
-          </Text>
+          <Text style={[font('body'), s.lede]}>It answers from your record and nowhere else.</Text>
           <Text style={[font('caption1'), s.limit]}>
-            It does not practise medicine, and it will not tell you what is wrong with you. If you describe something
-            urgent, it will say so and stop.
+            It does not practise medicine. Anything urgent, it says so and stops.
           </Text>
         </View>
 
