@@ -22,7 +22,18 @@ import { SymptomsScreen } from './screens/SymptomsScreen';
 import { TodayScreen } from './screens/TodayScreen';
 import { C } from './theme';
 import { BottomNav } from './ui/chrome';
-import { Ground } from './ui/Ground';
+import { Ground, type TintName } from './ui/Ground';
+
+// The ground each tab washes in. A pair per tab, so moving between them is
+// a change of place rather than four screens that look alike. The hues
+// carry no meaning here: this is a ground, and nothing on top of it reads
+// what colour it is.
+const TAB_GROUND: Record<Tab, [TintName, TintName]> = {
+  today: ['sky', 'lavender'],
+  myhealth: ['rose', 'ember'],
+  journey: ['lavender', 'sky'],
+  profile: ['amber', 'ember'],
+};
 
 const TAB_SCREENS: Record<Tab, ComponentType> = {
   today: TodayScreen,
@@ -87,7 +98,7 @@ export function Root() {
 
   return (
     <NavContext.Provider value={nav}>
-      <Ground>
+      <Ground from={TAB_GROUND[tab][0]} to={TAB_GROUND[tab][1]}>
         <View style={[r.root, { paddingTop: insets.top }]}>
         <View style={r.fill} key={top ? `${tab}:${stack.length}:${top}` : tab}>
           <Current />
