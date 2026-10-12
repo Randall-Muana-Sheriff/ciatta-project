@@ -359,17 +359,26 @@ const s = StyleSheet.create({
   navGroup: { flex: 1 },
   // The tracking button. White, filled, and the same 60 the bar is tall,
   // so it sits as a peer of the group rather than inside it.
+  // The same object as the card beside it, in a different colour.
+  //
+  // It was 60 square with a heavier shadow, so it sat 4 points shorter
+  // than the group and lit differently, and read as a button dropped next
+  // to the bar rather than as its pair. Height, radius, hairline and
+  // shadow all come from the card now; only the fill differs, which is
+  // the one difference that is saying something.
   track: {
-    width: 60,
-    height: 60,
+    width: 64,
+    height: 64,
     borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: L.ink,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: L.rule,
+    shadowColor: '#18191B',
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
   card: {
