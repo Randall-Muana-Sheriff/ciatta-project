@@ -515,7 +515,9 @@ export function ProfileScreen() {
         </View>
       </View>
 
-      <SegmentedControl segments={SEGMENTS} active={seg} onChange={setSeg} scroll style={p.segs} />
+      <View style={p.segs}>
+        <SegmentedControl segments={SEGMENTS} active={seg} onChange={setSeg} />
+      </View>
 
       <View style={[p.pad, p.stack]}>
         {!profile && seg !== 'Settings' ? (
@@ -569,7 +571,9 @@ const p = StyleSheet.create({
   identity: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 12 },
   avatar: { width: 72, height: 72, borderRadius: 36 },
   initial: { backgroundColor: C.fill, alignItems: 'center', justifyContent: 'center' },
-  segs: { marginTop: 20, marginBottom: 20 },
+  // Profile's scroll body has no gutter of its own, so each section pads
+  // itself. The bottom margin comes from the control's own wrapper.
+  segs: { marginTop: 20, paddingHorizontal: GUTTER },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
   tile: { backgroundColor: C.card, borderRadius: RADIUS, padding: 14 },

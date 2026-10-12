@@ -179,7 +179,10 @@ export function SegmentedControl<T extends string>({
             hitSlop={{ top: 6, bottom: 6 }}
             style={[s.seg, !scroll && s.segFlex, on && s.segOn]}
           >
-            <Text style={[font('footnote', on ? 'semibold' : 'medium'), { color: C.text }]} numberOfLines={1}>
+            <Text
+              style={[font('footnote', on ? 'semibold' : 'medium'), { color: on ? C.text : C.secondary }]}
+              numberOfLines={1}
+            >
               {seg}
             </Text>
           </Pressable>
@@ -375,10 +378,24 @@ export const s = StyleSheet.create({
 
   segWrap: { marginBottom: 20 },
   segScroll: { flexGrow: 0 },
-  segBar: { flexDirection: 'row', backgroundColor: C.fill, borderRadius: 9, padding: 2, minHeight: 32 },
-  seg: { minHeight: 28, paddingHorizontal: 14, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
+  // A track with the same hairline every other surface carries, and tall
+  // enough that a segment is a real tap target: 28 high was under the 44
+  // minimum, which on a control with three choices side by side is where
+  // the wrong one gets picked.
+  segBar: {
+    flexDirection: 'row',
+    backgroundColor: C.fill,
+    borderRadius: 12,
+    padding: 3,
+    minHeight: 44,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.borderSub,
+  },
+  seg: { minHeight: 38, paddingHorizontal: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   segFlex: { flex: 1 },
-  segOn: { backgroundColor: C.fillSelected },
+  // Selected the way a tile and a tab are selected: the shared tokens, so
+  // the same gesture looks the same wherever it happens.
+  segOn: { backgroundColor: C.fillSelected, borderWidth: StyleSheet.hairlineWidth, borderColor: L.edgeOn },
 
   button: { minHeight: 50, borderRadius: 25, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
   primary: { backgroundColor: C.tint },
