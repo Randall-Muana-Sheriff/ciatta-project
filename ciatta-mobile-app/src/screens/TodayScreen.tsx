@@ -268,8 +268,23 @@ export function TodayScreen() {
         The concept's shape: the mark sits alone at the top of the screen
         and the day introduces itself underneath.
       */}
+      {/*
+        The mark centred, the hamburger on the right. Both sides of the row
+        reserve the same width, because a wordmark pushed off centre by one
+        button is a wordmark set incorrectly.
+      */}
       <View style={t.wordmarkRow}>
+        <View style={t.menu} />
         <Wordmark />
+        <Pressable
+          onPress={go('profile')}
+          accessibilityRole="button"
+          accessibilityLabel="Your profile"
+          hitSlop={10}
+          style={({ pressed }) => [t.menu, pressed && t.pressed]}
+        >
+          <Icon name="menu" size={22} color={L.body} />
+        </Pressable>
       </View>
 
       <View style={t.pad}>
