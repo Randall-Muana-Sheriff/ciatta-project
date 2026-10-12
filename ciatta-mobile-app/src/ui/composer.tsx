@@ -69,9 +69,9 @@ type Way = { key: string; label: string; icon: IconName };
 
 const WAYS: Way[] = [
   { key: 'camera', label: 'Take a photo', icon: 'camera' },
-  { key: 'video', label: 'Record a video', icon: 'video' },
-  { key: 'library', label: 'Photo or video', icon: 'image' },
-  { key: 'file', label: 'PDF or file', icon: 'doc' },
+  { key: 'image', label: 'Add an image', icon: 'image' },
+  { key: 'video', label: 'Add a video', icon: 'video' },
+  { key: 'file', label: 'Add a PDF', icon: 'doc' },
 ];
 
 export function Composer({
@@ -104,48 +104,36 @@ export function Composer({
     onAttachments?.(addAttachment(files, next));
   };
 
-  // From the camera, either still or moving.
-  const capture = async (kind: 'photo' | 'video') => {
+  // Taking, which is the camera, and the only one of the four that makes
+  // something new. The other three add what already exists, which is what
+  // their labels say and the reason none of them says record.
+  const takePhoto = async () => {
     try {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
         setNote('Ciatta needs camera permission for this. You can turn it on in Settings.');
         return;
       }
-      const shot = await ImagePicker.launchCameraAsync(
-        kind === 'photo'
-          ? { mediaTypes: ['images'], quality: 0.7 }
-          : // Capped, because a health record does not need ten minutes of
-            // footage and the file stays on her phone either way.
-            { mediaTypes: ['videos'], videoMaxDuration: 180 },
-      );
+      const shot = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7 });
       if (shot.canceled || !shot.assets?.length) return;
       const now = new Date();
-      keep({
-        id: id(),
-        kind,
-        name: kind === 'photo' ? photoName(now) : videoName(now),
-        uri: shot.assets[0].uri,
-        addedAt: now.toISOString(),
-      });
+      keep({ id: id(), kind: 'photo', name: photoName(now), uri: shot.assets[0].uri, addedAt: now.toISOString() });
     } catch {
-      setNote('The camera did not open. You can add it from your library instead.');
+      setNote('The camera did not open. You can add an image from your library instead.');
     }
   };
 
-  // From what she already has.
-  const pickFromLibrary = async () => {
+  // Adding one she already has. Images and videos come from the same
+  // picker, narrowed to one kind each, so each menu row opens on what its
+  // label promised rather than on everything.
+  const addFromLibrary = async (kind: 'photo' | 'video') => {
     try {
-      const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images', 'videos'], quality: 0.7 });
+      const picked = await ImagePicker.launchImageLibraryAsync(
+        kind === 'photo' ? { mediaTypes: ['images'], quality: 0.7 } : { mediaTypes: ['videos'] },
+      );
       if (picked.canceled || !picked.assets?.length) return;
       const asset = picked.assets[0];
       const now = new Date();
-      // The picker says which it gave back, so the kind is read rather than
-      // assumed: a video filed as a photo would render as a broken image.
-      // The picker reports livePhoto and pairedVideo as well as image and
-      // video. Anything that moves is filed as a video, because that is
-      // what will and will not render as a still.
-      const kind: AttachmentKind = asset.type === 'video' || asset.type === 'pairedVideo' ? 'video' : 'photo';
       keep({
         id: id(),
         kind,
@@ -161,6 +149,9 @@ export function Composer({
   // From a file, which is how a clinic sends anything.
   const pickDocument = async () => {
     try {
+      // PDFs first, since that is what the row says. Images and videos stay
+      // accepted so a file she picked from Files still lands rather than
+      // being refused for arriving the wrong way.
       const picked = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'image/*', 'video/*'],
         copyToCacheDirectory: true,
@@ -182,9 +173,9 @@ export function Composer({
   const choose = async (key: string) => {
     setOpen(false);
     if (!canAdd) return;
-    if (key === 'camera') return capture('photo');
-    if (key === 'video') return capture('video');
-    if (key === 'library') return pickFromLibrary();
+    if (key === 'camera') return takePhoto();
+    if (key === 'image') return addFromLibrary('photo');
+    if (key === 'video') return addFromLibrary('video');
     return pickDocument();
   };
 
