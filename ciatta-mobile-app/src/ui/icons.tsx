@@ -26,7 +26,10 @@ const ICONS = {
   // A square rather than the usual stop circle: it sits in the same 24pt box
   // as the mic, and the mic it replaces is already round.
   stopSquare: [p('M8 8h8v8H8z')],
-  send: [p('M4 12l16-8-6 8 6 8z')],
+  // The tip is at x 20, on the right. It used to sit at x 4, so the mark
+  // flared rightward from a leftward point and the whole glyph read as
+  // pointing back at her rather than away.
+  send: [p('M20 12L4 4l6 8-6 8z')],
   camera: [p('M3 8.5A1.5 1.5 0 0 1 4.5 7h2L8 5h8l1.5 2h2A1.5 1.5 0 0 1 21 8.5v9A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z'), o(12, 13, 3.4)],
   // A picture, as its frame with a horizon and a sun in it. Distinct from
   // camera at a glance, which matters when the two sit in one menu.
