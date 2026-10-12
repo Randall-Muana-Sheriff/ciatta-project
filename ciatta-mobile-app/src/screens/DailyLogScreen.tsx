@@ -214,13 +214,20 @@ export function DailyLogScreen() {
       {/* ── Anything else ────────────────────────────────────── */}
       <View style={s.section}>
         <Eyebrow>Anything else</Eyebrow>
+        {/*
+          The same box as everywhere else, and a working one. It was
+          wired to an empty string and an ignored onChange, so typing in
+          it did nothing at all.
+        */}
         <Composer
-          value={''}
-          onChange={() => {}}
+          value={log.note}
+          onChange={(v) => set('note', v)}
           placeholder="However you would say it"
           label="Anything else about today"
+          attachments={log.attachments}
+          onAttachments={(next) => set('attachments', next)}
           onSend={() => {}}
-          minHeight={100}
+          minHeight={120}
         />
       </View>
     </DetailScreen>

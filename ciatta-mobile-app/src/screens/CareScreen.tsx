@@ -45,6 +45,7 @@ import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
 import { useData, useRepo } from '../state/session';
 import type { ReferenceRow, Reported } from '../data/repo';
+import type { Attachment } from '../lib/attachments';
 import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { Composer } from '../ui/composer';
@@ -119,6 +120,9 @@ export function CareScreen() {
   }, [repo]);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState('');
+  // The same box as Log Cycle Experience, which means the same plus and
+  // the same four ways in.
+  const [files, setFiles] = useState<Attachment[]>([]);
   const scroller = useRef<ScrollView | null>(null);
 
   // Everything a capability may read, and nothing more. Assembled here so
@@ -169,13 +173,14 @@ export function CareScreen() {
 
       setTurns((prev) => [
         ...prev,
-        { id: `${at}-her`, role: 'her', text: message, at },
+        { id: `${at}-her`, role: 'her', text: message, at, attachments: files },
         { id: `${at}-ciatta`, role: 'ciatta', text: said, at, answer, worded },
       ]);
       setDraft('');
+      setFiles([]);
       requestAnimationFrame(() => scroller.current?.scrollToEnd({ animated: true }));
     },
-    [record],
+    [record, files],
   );
 
   return (
@@ -223,6 +228,17 @@ export function CareScreen() {
               turn.role === 'her' ? (
                 <View key={turn.id} style={s.hers}>
                   <Text style={[font('subhead'), s.hersText]}>{turn.text}</Text>
+                  {/*
+                    Named, not opened. Ciatta does not read what is inside
+                    a file, and the composer says so under the box.
+                  */}
+                  {turn.attachments?.length
+                    ? turn.attachments.map((f) => (
+                        <Text key={f.id} style={[font('caption1'), s.hersFile]} numberOfLines={1}>
+                          {f.name}
+                        </Text>
+                      ))
+                    : null}
                 </View>
               ) : (
                 <AnswerBlock key={turn.id} turn={turn} onOpen={(screen) => nav.push(screen as Screen)} />
@@ -238,8 +254,10 @@ export function CareScreen() {
           onChange={setDraft}
           placeholder="Or ask in your own words"
           label="Ask Ciatta about your record"
+          attachments={files}
+          onAttachments={setFiles}
           onSend={() => send(draft)}
-          minHeight={86}
+          minHeight={120}
         />
       </View>
     </KeyboardAvoidingView>
@@ -385,6 +403,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
   },
   hersText: { color: L.ink },
+  hersFile: { color: L.meta, marginTop: 4 },
 
   answer: { marginTop: SPACE.near },
   // Escalation is the one case that takes a hue, and it takes Flare, which

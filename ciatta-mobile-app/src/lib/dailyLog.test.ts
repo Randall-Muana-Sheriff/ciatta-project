@@ -140,3 +140,23 @@ test('nothing rendered carries a dash or a forbidden word', () => {
     }
   }
 });
+
+// ── Her words and her files belong to the day too ────────────────────
+
+test('a day carries a note and attachments, like the cycle log does', () => {
+  const log = emptyLog('2026-10-12');
+  assert.equal(log.note, '');
+  assert.deepEqual(log.attachments, []);
+});
+
+test('a day holding only a note is worth saving', () => {
+  // The box was wired to an empty string and an ignored onChange, so
+  // typing in it did nothing and nothing it produced could be saved.
+  assert.equal(hasAnything({ ...emptyLog('2026-10-12'), note: 'Felt heavy all afternoon' }), true);
+  assert.equal(hasAnything({ ...emptyLog('2026-10-12'), note: '   ' }), false);
+});
+
+test('a day holding only an attachment is worth saving', () => {
+  const file = { id: 'a', kind: 'photo' as const, name: 'lunch.jpg', uri: 'file:///a', addedAt: '' };
+  assert.equal(hasAnything({ ...emptyLog('2026-10-12'), attachments: [file] }), true);
+});

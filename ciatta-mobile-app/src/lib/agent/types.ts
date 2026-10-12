@@ -94,4 +94,9 @@ export type Turn = {
   // True when the model's rewrite passed the check and was used, so the
   // interface can be honest about which sentence she is reading.
   worded?: boolean;
+  // What she attached to this message. Carried so the conversation shows
+  // what she sent, not so anything reads them: lib/attachments is
+  // explicit that Ciatta does not open a file, and the composer says so
+  // under the box.
+  attachments?: readonly { id: string; kind: string; name: string }[];
 };

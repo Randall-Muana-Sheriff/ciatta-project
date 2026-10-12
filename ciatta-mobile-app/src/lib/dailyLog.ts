@@ -24,6 +24,8 @@
 //   computed from this without inventing most of it. What there is, is
 //   what she recorded.
 
+import type { Attachment } from './attachments';
+
 export type Provenance = 'measured' | 'reported' | 'estimated';
 
 // One thing she ate. The name is hers; nothing renames or categorises it,
@@ -73,6 +75,10 @@ export type CheckInKey = (typeof CHECK_INS)[number]['key'];
 
 export type DailyLog = {
   date: string;
+  // Her own words about the day, and anything she attached to them. The
+  // same pair the cycle log carries, so the box behaves the same here.
+  note: string;
+  attachments: Attachment[];
   foods: FoodEntry[];
   stool: number | null;
   digestion: string[];
@@ -86,6 +92,8 @@ export type DailyLog = {
 export function emptyLog(date: string): DailyLog {
   return {
     date,
+    note: '',
+    attachments: [],
     foods: [],
     stool: null,
     digestion: [],
@@ -178,7 +186,9 @@ export function hasAnything(log: DailyLog): boolean {
     log.alcohol != null ||
     log.energy != null ||
     log.mood != null ||
-    log.stress != null
+    log.stress != null ||
+    log.note.trim().length > 0 ||
+    log.attachments.length > 0
   );
 }
 
