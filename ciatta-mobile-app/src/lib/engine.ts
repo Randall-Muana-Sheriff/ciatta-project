@@ -156,7 +156,16 @@ function bandOrNull(xs: number[]): Band | null {
 
 // The baseline is days 35 to 90 back, so a recent change can't hide itself
 // by becoming part of what's usual.
-const baselineDays = (days: Day[]) => days.slice(Math.max(0, days.length - 91), days.length - 35);
+//
+// Both ends are clamped at zero, and the second one matters. A negative
+// end index counts back from the end of the array rather than clamping,
+// so a history shorter than 35 days produced a baseline made almost
+// entirely of the days being tested: 34 days gave a 33 day baseline
+// containing the very run the band was meant to judge, which is the exact
+// contamination the window exists to prevent. Short histories now
+// correctly produce no baseline and therefore no finding.
+const baselineDays = (days: Day[]) =>
+  days.slice(Math.max(0, days.length - 91), Math.max(0, days.length - 35));
 
 // Exported (like median/band above) only so baselines.test.ts can cross
 // check this against compute.ts's detectRun() on the same series.
@@ -259,6 +268,70 @@ function restingHeartRate(c: Change | null): Candidate | null {
     },
     recurrence: c.streak,
     magnitude: clamp(((c.recent - c.usual.usual) / c.usual.usual) * 8),
+    ongoing: true,
+    sustained: true,
+  };
+}
+
+// Heart rate variability, which is the fastest honest signal she has.
+//
+// The reason this exists is a timescale problem. A cycle is one data
+// point a month, so anything compared against it needs most of a year
+// before it can say anything at all, and in the meantime the engine has
+// nothing to show a woman who has been logging for three weeks. HRV
+// arrives nightly from the same wearable that reports sleep, so a
+// sustained change in it is visible within days of the baseline forming.
+//
+// Both directions are reported. Lower HRV is the one people watch, but
+// saying so would be interpreting it, and a run above her usual range is
+// equally a change she did not have before.
+function hrvChange(c: Change | null): Candidate | null {
+  if (!c || c.streak < 3) return null;
+  const below = c.direction === 'lower';
+  return {
+    id: below ? 'hrvLow' : 'hrvHigh',
+    title: `Heart rate variability ${below ? 'below' : 'above'} usual`,
+    brief: `Your heart rate variability has stayed ${below ? 'below' : 'above'} your usual range for ${word(c.streak)} days, around ${Math.round(c.recent)} ms against your usual ${Math.round(c.usual.usual)}.`,
+    domains: ['Recovery'],
+    evidence: {
+      supports: [
+        `${c.streak} days ${below ? 'below' : 'above'} your usual range`,
+        `Around ${Math.round(c.recent)} ms; your usual is ${Math.round(c.usual.usual)} ms`,
+      ],
+      // What it does not show has to be said, because this is the number
+      // every wearable turns into a readiness score and she will have
+      // seen it presented as a verdict elsewhere.
+      notEstablished: ['A run outside your usual range doesn’t point to any one cause, and it is not a score.'],
+      alternatives: ['Sleep, alcohol, illness, stress and hard training all move heart rate variability.'],
+    },
+    recurrence: c.streak,
+    magnitude: clamp((Math.abs(c.recent - c.usual.usual) / Math.max(1, c.usual.usual)) * 6),
+    ongoing: true,
+    sustained: true,
+  };
+}
+
+// Skin temperature, reported as the deviation it is.
+//
+// The sensor gives a difference from her own baseline, never a body
+// temperature, so the wording keeps it a difference. A figure that read
+// like a thermometer would invite her to compare it to 37 degrees.
+function temperatureChange(c: Change | null): Candidate | null {
+  if (!c || c.streak < 3) return null;
+  const up = c.direction === 'higher';
+  const by = Math.abs(c.recent - c.usual.usual);
+  return {
+    id: up ? 'tempUp' : 'tempDown',
+    title: `Skin temperature ${up ? 'above' : 'below'} usual`,
+    brief: `Your nightly skin temperature has run ${up ? 'above' : 'below'} your own usual for ${word(c.streak)} days, by about ${by.toFixed(1)} degrees.`,
+    domains: ['Recovery'],
+    evidence: {
+      supports: [`${c.streak} nights outside your usual range`, `About ${by.toFixed(1)} degrees from your own baseline`],
+      notEstablished: ['This is a difference from your own usual, not a temperature reading.'],
+      alternatives: ['Where you are in your cycle, a warm room, illness and alcohol all move skin temperature.'],
+    },
+    recurrence: c.streak,
+    magnitude: clamp(by * 4),
     ongoing: true,
     sustained: true,
   };
@@ -773,12 +846,18 @@ export function buildInsights(input: EngineInput): Insights {
   const sleep = sustained(days, (d) => d.sleepHours);
   const steps = sustained(days, (d) => d.steps);
   const rhr = sustained(days, (d) => d.restingHR);
+  const hrv = sustained(days, (d) => d.hrv);
+  const temp = sustained(days, (d) => d.tempDeviation);
 
   const candidates = [
     combined(input, sleep, steps, now),
     sleepChange(sleep),
     activityChange(steps),
     restingHeartRate(rhr),
+    // Daily measured signals, which can fire within days of a baseline
+    // rather than waiting on cycles.
+    hrvChange(hrv),
+    temperatureChange(temp),
     stressChange(days),
     fatigueAfterShortSleep(days),
     ...activityAndWeeks(days),
