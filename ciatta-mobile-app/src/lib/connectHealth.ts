@@ -98,6 +98,25 @@ export async function connectAppleHealth(deps: ConnectHealthDeps): Promise<Conne
   await saveStatus('apple_health', 'connected');
   onNote('Connected. Reading your Apple Health data now.');
 
+  // The status is promoted the moment the first reading lands, not at the
+  // end of the run.
+  //
+  // The read walks every metric HealthKit offers and takes a while, and
+  // 'connected' means "mid read". If she backgrounds the app partway, the
+  // final write below never happens and the source is left saying
+  // mid read forever, which every screen reads as not connected. That is
+  // what happened to this account: thousands of observations had arrived
+  // and Apple Health still showed as unconnected.
+  //
+  // Once one metric has posted, 'active' is true and stays true, so an
+  // interrupted run now leaves behind a status that matches the rows.
+  let promoted = false;
+  const promote = async () => {
+    if (promoted) return;
+    promoted = true;
+    await saveStatus('apple_health', 'active', new Date().toISOString());
+  };
+
   const result = await runHealthSync(userId, {
     port: healthKitPort,
     anchors: healthKitAnchors,
@@ -105,7 +124,10 @@ export async function connectAppleHealth(deps: ConnectHealthDeps): Promise<Conne
     // progress.metric is an internal key (resting_heart_rate, sleep_analysis),
     // not copy fit for her screen, so this only ever says how far along the
     // read is, never which internal field it is on.
-    onProgress: (progress) => onNote(`Reading your Apple Health data, ${progress.index} of ${progress.total}.`),
+    onProgress: (progress) => {
+      onNote(`Reading your Apple Health data, ${progress.index} of ${progress.total}.`);
+      if (progress.posted > 0) void promote();
+    },
   });
 
   const outcome = outcomeForConnectAttempt({ kind: 'synced', result });

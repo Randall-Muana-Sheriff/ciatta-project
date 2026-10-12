@@ -34,3 +34,37 @@ test('the request is not made conditional on willAsk', () => {
     `the request is wrapped in something: ${line.trim()}`,
   );
 });
+
+// ── An interrupted read must not leave a status that lies ───────────
+//
+// The sequence writes 'connected' before the read and the real status
+// after it. 'connected' means "mid read", and every screen treats anything
+// but 'active' as not connected. So backgrounding the app during a read of
+// every metric HealthKit offers left the source saying mid read forever.
+//
+// This account spent the session that way: 5017 observations had landed and
+// Apple Health still showed as unconnected, which is the same class of bug
+// the tests above guard, and invisible to a unit test for the same reason.
+// Nothing held a wrong value. The sequence simply stopped early.
+
+test('the status is promoted as soon as a reading lands, not only at the end', () => {
+  assert.ok(
+    /promoted|promote/.test(SOURCE),
+    'nothing promotes the status mid read, so an interrupted read leaves it saying mid read',
+  );
+  const line = SOURCE.split('\n').find((l) => l.includes('progress.posted'));
+  assert.ok(line, 'the promotion is not gated on anything actually having posted');
+  assert.ok(/posted > 0/.test(line as string), `gate should be posted > 0, found: ${line?.trim()}`);
+});
+
+test('the promotion happens once, so a long read does not write on every metric', () => {
+  assert.ok(/if \(promoted\) return;/.test(SOURCE), 'the promotion is not guarded against repeating');
+});
+
+test('the promotion claims active only, never a status it has not earned', () => {
+  const promo = SOURCE.slice(SOURCE.indexOf('const promote'), SOURCE.indexOf('const result = await runHealthSync'));
+  assert.ok(promo.includes("'active'"), 'promote should write active');
+  for (const wrong of ["'error'", "'refused'", "'unsupported'"]) {
+    assert.ok(!promo.includes(wrong), `promote must not write ${wrong}`);
+  }
+});
