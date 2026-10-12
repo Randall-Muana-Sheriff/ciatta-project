@@ -123,13 +123,18 @@ export function recordedLine(counts: { recorded: number; total: number }): strin
 }
 
 
-// The six on Today, in the order she reads them.
+// The nine on Today, three across and three down.
 //
-// Chosen because each is one number from one day, which is what a card
-// can hold. Sleep and steps are the two she already knows; heart rate
-// variability and resting heart rate are the two that arrive nightly and
-// move fastest, which is what makes a pattern visible in weeks rather
-// than in cycles.
+// Each is one number from one day, which is what a small card can hold.
+// Labels are short for the same reason: "Resting HR" fits a third of a
+// row and "Resting heart rate" does not, and a label that wraps or
+// truncates is worse than one abbreviated on purpose. The All screen
+// keeps the full names, where there is room for them.
+//
+// Heart rate variability and resting heart rate sit in the first row
+// deliberately. They arrive nightly from the wearable already connected,
+// so they are the two most likely to hold a number today, and the two
+// that make a pattern visible in weeks rather than in cycles.
 export type HeadlineMetric = {
   key: string;
   label: string;
@@ -156,7 +161,7 @@ export function headlineMetrics(day: Day | null): HeadlineMetric[] {
     },
     {
       key: 'restingHR',
-      label: 'Resting heart rate',
+      label: 'Resting HR',
       value: day?.restingHR != null ? `${Math.round(day.restingHR)} bpm` : null,
       from: 'measured',
     },
@@ -168,18 +173,38 @@ export function headlineMetrics(day: Day | null): HeadlineMetric[] {
     },
     {
       key: 'active',
-      label: 'Active minutes',
+      label: 'Active',
       value: day?.activeMinutes != null ? `${Math.round(day.activeMinutes)} min` : null,
       from: 'measured',
     },
     {
       key: 'temp',
-      label: 'Skin temperature',
+      label: 'Skin temp',
       value:
         day?.tempDeviation != null ? `${day.tempDeviation > 0 ? '+' : ''}${one(day.tempDeviation)} °C` : null,
       // Named as a difference, because that is what the sensor reports. A
       // bare figure would read as a body temperature.
-      note: day?.tempDeviation != null ? 'From your usual' : undefined,
+      note: day?.tempDeviation != null ? 'From usual' : undefined,
+      from: 'measured',
+    },
+    {
+      key: 'inBed',
+      label: 'In bed',
+      value: day?.timeInBed != null ? fmtHours(day.timeInBed) : null,
+      from: 'measured',
+    },
+    {
+      key: 'deep',
+      label: 'Deep',
+      value: day?.stages?.deep != null ? `${Math.round(day.stages.deep)} min` : null,
+      from: 'measured',
+    },
+    {
+      key: 'workouts',
+      label: 'Workouts',
+      // An empty list on a day that exists is a real zero. No day at all
+      // is unknown, which is the null above it.
+      value: day ? `${day.workouts.length}` : null,
       from: 'measured',
     },
   ];

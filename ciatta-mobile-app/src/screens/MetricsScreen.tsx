@@ -74,6 +74,6 @@ const s = StyleSheet.create({
   note: { color: L.meta, lineHeight: 18, marginTop: 6, paddingHorizontal: GUTTER },
   group: { marginTop: SPACE.block, paddingHorizontal: GUTTER },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: METRIC_CARD_GAP, marginTop: SPACE.tight },
-  cell: { width: `48%`, flexGrow: 1 },
+  cell: { width: '30%', flexGrow: 1 },
 
 });

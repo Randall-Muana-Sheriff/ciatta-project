@@ -594,7 +594,7 @@ const t = StyleSheet.create({
   // Two across, three down. A grid reads as a set of peers, which is what
   // these are: six readings from one day, none ranked above another.
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: METRIC_CARD_GAP },
-  gridCell: { width: `48%`, flexGrow: 1 },
+  gridCell: { width: '30%', flexGrow: 1 },
 
   cycleKey: { color: L.meta, letterSpacing: 0.9 },
   cycleValue: { color: L.ink },

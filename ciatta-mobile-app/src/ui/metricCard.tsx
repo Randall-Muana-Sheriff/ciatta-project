@@ -14,7 +14,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { displayCopy } from '../lib/displayCopy';
 import { font } from '../theme';
-import { HUE, L, TILE_RADIUS } from './surface';
+import { HUE, L } from './surface';
 
 export type MetricCardProps = {
   label: string;
@@ -48,7 +48,7 @@ export function MetricCard({ label, value, note, from }: MetricCardProps) {
           {displayCopy(label)}
         </Text>
       </View>
-      <Text style={[font('title3', 'semibold'), missing ? s.absent : s.value]} numberOfLines={1} adjustsFontSizeToFit>
+      <Text style={[font('headline'), missing ? s.absent : s.value]} numberOfLines={1} adjustsFontSizeToFit>
         {value ?? 'Not yet'}
       </Text>
       {/* A note qualifies a figure, so with no figure there is nothing to
@@ -67,23 +67,25 @@ const st = StyleSheet.hairlineWidth;
 export const METRIC_CARD_GAP = 10;
 
 const s = StyleSheet.create({
+  // The proportions of the three across row this replaced: compact
+  // enough that three sit in a row without the value shrinking to fit.
   card: {
     flex: 1,
-    minHeight: 92,
+    minHeight: 74,
     justifyContent: 'center',
-    gap: 4,
+    gap: 3,
     backgroundColor: L.recessed,
-    borderRadius: TILE_RADIUS,
+    borderRadius: 14,
     borderWidth: st,
     borderColor: L.rule,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 11,
   },
   // An absent reading keeps its edge and loses its fill, so the card is
   // still a card and still legible as the place that figure will appear.
   cardMissing: { backgroundColor: 'transparent' },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dot: { width: 5, height: 5, borderRadius: 2.5 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  dot: { width: 4, height: 4, borderRadius: 2 },
   dotMissing: { backgroundColor: L.rule },
   label: { color: L.meta, flex: 1 },
   value: { color: L.ink },

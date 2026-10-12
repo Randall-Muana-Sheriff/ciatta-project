@@ -120,9 +120,17 @@ test('no label or value carries a dash, which display copy forbids', () => {
 
 // ── The six on Today ─────────────────────────────────────────────────
 
-test('six headline metrics, in a stable order', () => {
+test('nine headline metrics, three by three, in a stable order', () => {
   const keys = headlineMetrics(null).map((m) => m.key);
-  assert.deepEqual(keys, ['sleep', 'hrv', 'restingHR', 'steps', 'active', 'temp']);
+  assert.deepEqual(keys, ['sleep', 'hrv', 'restingHR', 'steps', 'active', 'temp', 'inBed', 'deep', 'workouts']);
+});
+
+test('headline labels are short enough for a third of a row', () => {
+  // A label that wraps or truncates is worse than one abbreviated on
+  // purpose. The All screen keeps the full names.
+  for (const m of headlineMetrics(null)) {
+    assert.ok(m.label.length <= 11, `${m.label} is ${m.label.length} characters`);
+  }
 });
 
 test('with no day at all, every card is absent rather than zero', () => {
@@ -145,7 +153,7 @@ test('a measured zero still shows, unlike a missing figure', () => {
 test('skin temperature is signed and says it is a difference', () => {
   const m = headlineMetrics({ ...empty, tempDeviation: 0.42 }).find((x) => x.key === 'temp')!;
   assert.equal(m.value, '+0.4 °C');
-  assert.equal(m.note, 'From your usual');
+  assert.equal(m.note, 'From usual');
 });
 
 test('an absent skin temperature carries no note either', () => {
