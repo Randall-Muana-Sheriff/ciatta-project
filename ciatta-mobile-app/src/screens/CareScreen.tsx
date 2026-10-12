@@ -180,7 +180,8 @@ export function CareScreen() {
           */}
           <Text style={[font('body'), s.lede]}>It answers from your record and nowhere else.</Text>
           <Text style={[font('caption1'), s.limit]}>
-            It does not practise medicine. Anything urgent, it says so and stops.
+            Ciatta can make mistakes and responses are not meant for medical advice. Always consult a healthcare
+            professional.
           </Text>
         </View>
 

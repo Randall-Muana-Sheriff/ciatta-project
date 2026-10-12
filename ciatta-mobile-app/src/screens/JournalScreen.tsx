@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { JournalView } from '../data/rows';
 import { displayCopy } from '../lib/displayCopy';
@@ -7,7 +7,8 @@ import { userFacingError } from '../lib/userFacingError';
 import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
 import { C, font } from '../theme';
-import { DetailScreen, EmptyNote, PrimaryButton, SegmentedControl, SecondaryButton, SourceFooter, Tag } from '../ui/kit';
+import { Composer } from '../ui/composer';
+import { DetailScreen, EmptyNote, SegmentedControl, SecondaryButton, SourceFooter, Tag } from '../ui/kit';
 
 const FILTERS = ['All', 'Notes', 'Symptoms', 'Context'] as const;
 
@@ -92,18 +93,27 @@ export function JournalScreen() {
 
       {composing ? (
         <View style={{ paddingTop: 12 }}>
-          <TextInput
-            style={[j.card, font('subhead'), { color: C.text }]}
-            multiline
+          {/*
+            The same box as everywhere else. Send saves the entry, which is
+            what the Save Entry button did, so the button is gone: one
+            gesture for committing what she wrote, in the same corner, on
+            every screen that takes her words.
+
+            No attachments here. The journal row has text, kind, tag and a
+            date and nowhere to put a file, and offering a plus that
+            quietly dropped her photo would be worse than not offering one.
+          */}
+          <Composer
             value={text}
-            onChangeText={setText}
+            onChange={setText}
             placeholder="What are you noticing?"
-            placeholderTextColor={C.muted}
-            accessibilityLabel="What are you noticing"
-            autoFocus
+            label="What are you noticing"
+            onSend={() => {
+              if (text.trim() && !saving) void save();
+            }}
+            minHeight={120}
           />
-          {error ? <Text style={[font('footnote'), { color: C.tint, marginBottom: 8 }]}>{error}</Text> : null}
-          <PrimaryButton label="Save Entry" onPress={save} disabled={!text.trim() || saving} />
+          {error ? <Text style={[font('footnote'), { color: C.tint, marginTop: 10 }]}>{error}</Text> : null}
         </View>
       ) : (
         <View style={{ paddingTop: 12 }}>

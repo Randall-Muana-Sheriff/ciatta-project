@@ -465,6 +465,11 @@ export function CycleLogScreen() {
             label="Anything else about this"
             attachments={form.attachments}
             onAttachments={(next) => set('attachments', next)}
+            // Send is Next here. The note is already bound to the form as
+            // she types, so nothing is saved by pressing it; what it does
+            // is finish the thought and move her on, which is what the
+            // gesture means everywhere else.
+            onSend={next}
             minHeight={120}
           />
           {/*

@@ -3,7 +3,7 @@ import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleShee
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { connectAppleHealth } from '../lib/connectHealth';
-import { useDictation } from '../lib/dictation';
+import { Composer } from '../ui/composer';
 import { displayCopy } from '../lib/displayCopy';
 import { encryptionNote, healthDisclosureParagraph, importSummaryLine, monogram, SYNC_APPS } from '../lib/healthDisclosure';
 import { latestReadings, type Reading, workoutCount } from '../lib/healthReadings';
@@ -305,14 +305,6 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
     }
   }, [repo]);
 
-
-  const dictation = useDictation((text) => {
-    setA((prev) => ({
-      ...prev,
-      opening: prev.opening.trim() ? `${prev.opening.trim()} ${text}` : text,
-      openingMode: 'spoken',
-    }));
-  });
 
   const steps = useMemo(() => stepsFor(a), [a]);
   const step: StepId = steps[Math.min(i, steps.length - 1)];
@@ -681,59 +673,23 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               What has been changing?
             </Text>
             {/*
-              One control in the corner of the box, not a row of buttons under
-              it. Empty box: a mic. Text in the box: send, which is Continue
-              under a name that matches the gesture. Listening: stop, and it
-              stays stop even once words have arrived, because a send button
-              that replaces the only way to stop the microphone would leave
-              her holding a live mic and no way to end it.
+              The shared box. This screen invented the one control in the
+              corner idea and carried its own copy of it for a while, which
+              meant the mic, the send, the stop and the listening line
+              existed twice and could drift. ui/composer.tsx owns it now,
+              so she gets the plus and its four ways in here too.
             */}
-            <View style={s.boxWrap}>
-              <TextInput
-                value={a.opening}
-                onChangeText={(t) => set({ opening: t, openingMode: 'typed' })}
-                placeholder="However you would say it to a friend"
-                placeholderTextColor={MUTED}
-                multiline
-                textAlignVertical="top"
-                style={[font('body'), s.textarea, s.textareaInset]}
-                accessibilityLabel="What has been changing"
-              />
-              <Pressable
-                onPress={
-                  dictation.listening
-                    ? dictation.stop
-                    : a.opening.trim()
-                      ? next
-                      : dictation.start
-                }
-                accessibilityRole="button"
-                accessibilityLabel={
-                  dictation.listening ? 'Stop recording' : a.opening.trim() ? 'Send' : 'Dictate'
-                }
-                hitSlop={6}
-                style={({ pressed }) => [
-                  s.boxAction,
-                  (a.opening.trim() || dictation.listening) && s.boxActionOn,
-                  pressed && s.pressed,
-                ]}
-              >
-                <Icon
-                  name={dictation.listening ? 'stopSquare' : a.opening.trim() ? 'send' : 'mic'}
-                  size={19}
-                  color={a.opening.trim() || dictation.listening ? L.canvas : INK}
-                  filled={dictation.listening}
-                />
-              </Pressable>
-            </View>
-            {dictation.listening ? (
-              <Text style={[font('body'), s.partial]}>{dictation.partial || 'Listening'}</Text>
-            ) : null}
-            {dictation.error ? (
-              <Text style={[font('caption1'), s.quiet]} accessibilityLiveRegion="polite">
-                {displayCopy(dictation.error)}
-              </Text>
-            ) : null}
+            <Composer
+              value={a.opening}
+              onChange={(t: string, how: 'typed' | 'spoken') => set({ opening: t, openingMode: how })}
+              placeholder="However you would say it to a friend"
+              label="What has been changing"
+              // No attachments at this point. Answers has nowhere to put a
+              // file and onboarding has not created her record yet, so the
+              // plus stays hidden rather than taking a photo that would
+              // have nowhere to land. Everything else is the shared box.
+              onSend={next}
+            />
           </View>
         ) : null}
 
@@ -1269,24 +1225,6 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
   },
   choiceOn: { backgroundColor: L.statement, borderColor: INK },
-  boxWrap: { position: 'relative' },
-  // Room at the foot of the box for the control, so a long answer scrolls
-  // behind it rather than under it.
-  textareaInset: { paddingBottom: 52 },
-  boxAction: {
-    position: 'absolute',
-    right: 10,
-    bottom: 10,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: L.statement,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: LINE,
-  },
-  boxActionOn: { backgroundColor: INK, borderColor: INK },
   title: { color: INK, letterSpacing: -0.4 },
   lede: { color: MUTED, marginTop: 16, lineHeight: 26 },
   quiet: { color: MUTED, marginTop: 14 },
@@ -1322,8 +1260,6 @@ const s = StyleSheet.create({
   addRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
   input: { flex: 1, color: INK, backgroundColor: FIELD, borderRadius: RADIUS, paddingHorizontal: 14, height: 48 },
   add: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 14 },
-  textarea: { color: INK, backgroundColor: FIELD, borderRadius: RADIUS, padding: 16, minHeight: 148 },
-  partial: { color: MUTED, marginTop: 12, fontStyle: 'italic' },
   ghost: {
     minHeight: 48,
     marginTop: 14,

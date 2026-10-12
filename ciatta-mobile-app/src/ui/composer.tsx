@@ -44,17 +44,27 @@ import { L, TILE_RADIUS } from './surface';
 
 export type ComposerProps = {
   value: string;
-  onChange: (text: string) => void;
+  // The second argument is how the words arrived. Onboarding persists it
+  // as input_mode, because "she typed this" and "she said this out loud"
+  // are different provenance, and this app does not blur provenance
+  // anywhere else either. Callers that do not care may ignore it.
+  onChange: (text: string, how: 'typed' | 'spoken') => void;
   placeholder?: string;
   // What the field is, for a screen reader. Not drawn: the question above
   // the box is the visible label.
   label: string;
   attachments?: readonly Attachment[];
   onAttachments?: (next: Attachment[]) => void;
-  // Given only where sending is a real action. Without it the corner control
-  // is the mic alone, because a send button that duplicates Continue is a
-  // second button for the same thing.
-  onSend?: () => void;
+  // What send does here. Required, not optional.
+  //
+  // It was optional, on the reasoning that a send next to a Continue
+  // button is two buttons for one thing. That reasoning was wrong in
+  // practice: it meant the Log Cycle box never turned its mic into a send
+  // at all, so the same box behaved differently on two screens for a
+  // reason only its author knew. Every textbox owes her the same gesture,
+  // and a required prop makes the next one decide rather than inherit
+  // silence.
+  onSend: () => void;
   minHeight?: number;
 };
 
@@ -99,7 +109,7 @@ export function Composer({
   // Dictation appends. She may type a sentence, speak the next and correct
   // both; a recogniser that replaced the field would destroy what she wrote.
   const dictation = useDictation((text) => {
-    onChange(value.trim() ? `${value.trim()} ${text}` : text);
+    onChange(value.trim() ? `${value.trim()} ${text}` : text, 'spoken');
   });
 
   const files = attachments;
@@ -185,8 +195,10 @@ export function Composer({
     return pickDocument();
   };
 
-  // Listening always wins: it is the state she needs a way out of.
-  const action = dictation.listening ? 'stop' : onSend && value.trim() ? 'send' : 'mic';
+  // Listening always wins: it is the state she needs a way out of, and a
+  // send that replaced the only stop would leave a live microphone with no
+  // way to end it. Otherwise text in the box means send.
+  const action = dictation.listening ? 'stop' : value.trim() ? 'send' : 'mic';
 
   return (
     <View>
@@ -216,7 +228,7 @@ export function Composer({
       <View style={s.wrap}>
         <TextInput
           value={value}
-          onChangeText={onChange}
+          onChangeText={(t) => onChange(t, 'typed')}
           placeholder={placeholder}
           placeholderTextColor={L.meta}
           multiline
