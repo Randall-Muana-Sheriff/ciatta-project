@@ -13,6 +13,7 @@
 
 import type { Day } from '../data/daily';
 import { fmtHours } from './engine';
+import type { VitalCard } from './vitals';
 
 export type MetricRow = {
   label: string;
@@ -35,7 +36,7 @@ const one = (n: number) => (Math.round(n * 10) / 10).toFixed(1);
 // she chose a number, and naming it for her is an interpretation.
 const scale = (n: number | null) => (n == null ? null : `${n} of 5`);
 
-export function buildMetrics(day: Day | null): MetricGroup[] {
+export function buildMetrics(day: Day | null, vitals: readonly VitalCard[] = []): MetricGroup[] {
   const d = day;
   const mins = (n: number | null) => (n == null ? null : `${Math.round(n)} min`);
 
@@ -91,9 +92,20 @@ export function buildMetrics(day: Day | null): MetricGroup[] {
     { label: 'Digestion', value: d?.digestion?.length ? d.digestion.join(', ') : null, from: 'reported' },
   ];
 
+  // Blood pressure, blood oxygen and weight, which live in observations
+  // rather than on the day row. Shown here with the same rule they carry
+  // everywhere: the figure and when it was taken, or nothing.
+  const vitalRows: MetricRow[] = vitals.map((v) => ({
+    label: v.label,
+    value: v.value,
+    from: 'measured' as const,
+    note: v.note,
+  }));
+
   return [
     { title: 'Sleep', rows: sleep },
     { title: 'Heart', rows: heart },
+    ...(vitalRows.length ? [{ title: 'Vitals', rows: vitalRows }] : []),
     { title: 'Movement', rows: movement },
     { title: 'How you felt', rows: checkIns },
     { title: 'Intake', rows: intake },
@@ -123,29 +135,36 @@ export function recordedLine(counts: { recorded: number; total: number }): strin
 }
 
 
-// The nine on Today, three across and three down.
+// The six on Today, three across and two down.
 //
-// Each is one number from one day, which is what a small card can hold.
-// Labels are short for the same reason: "Resting HR" fits a third of a
-// row and "Resting heart rate" does not, and a label that wraps or
-// truncates is worse than one abbreviated on purpose. The All screen
-// keeps the full names, where there is room for them.
+// Chosen by what her devices actually report rather than by what the
+// schema happens to hold. Sleep, heart rate variability and steps come
+// from the wearable; blood pressure, skin temperature and blood oxygen
+// come from the cuff, the ring and the watch. Everything else moved
+// behind All, which is what All is for.
 //
-// Heart rate variability and resting heart rate sit in the first row
-// deliberately. They arrive nightly from the wearable already connected,
-// so they are the two most likely to hold a number today, and the two
-// that make a pattern visible in weeks rather than in cycles.
+// Three of these six do not exist on the Day object at all. Blood
+// pressure, blood oxygen and weight sync into observations and were never
+// folded into a daily row, so they arrive separately and lib/vitals says
+// what may be shown of them and when.
+//
+// Labels stay short: "Resting HR" fits a third of a row and "Resting
+// heart rate" does not. The All screen keeps the full names.
 export type HeadlineMetric = {
   key: string;
   label: string;
+  // Null means not recorded. Never zero, and never a dash.
   value: string | null;
-  // Shown under the value when there is one. Never a verdict.
+  // Shown under the value when there is one. Carries when a reading was
+  // taken, for the vitals that do not arrive daily.
   note?: string;
   from: 'measured' | 'reported' | 'derived';
 };
 
-export function headlineMetrics(day: Day | null): HeadlineMetric[] {
+export function headlineMetrics(day: Day | null, vitals: readonly VitalCard[] = []): HeadlineMetric[] {
   const one = (n: number) => (Math.round(n * 10) / 10).toFixed(1);
+  const vital = (key: string): HeadlineMetric =>
+    vitals.find((v) => v.key === key) ?? { key, label: key, value: null, from: 'measured' };
   return [
     {
       key: 'sleep',
@@ -160,23 +179,12 @@ export function headlineMetrics(day: Day | null): HeadlineMetric[] {
       from: 'measured',
     },
     {
-      key: 'restingHR',
-      label: 'Resting HR',
-      value: day?.restingHR != null ? `${Math.round(day.restingHR)} bpm` : null,
-      from: 'measured',
-    },
-    {
       key: 'steps',
       label: 'Steps',
       value: day?.steps != null ? Math.round(day.steps).toLocaleString('en-US') : null,
       from: 'measured',
     },
-    {
-      key: 'active',
-      label: 'Active',
-      value: day?.activeMinutes != null ? `${Math.round(day.activeMinutes)} min` : null,
-      from: 'measured',
-    },
+    vital('bp'),
     {
       key: 'temp',
       label: 'Skin temp',
@@ -187,25 +195,6 @@ export function headlineMetrics(day: Day | null): HeadlineMetric[] {
       note: day?.tempDeviation != null ? 'From usual' : undefined,
       from: 'measured',
     },
-    {
-      key: 'inBed',
-      label: 'In bed',
-      value: day?.timeInBed != null ? fmtHours(day.timeInBed) : null,
-      from: 'measured',
-    },
-    {
-      key: 'deep',
-      label: 'Deep',
-      value: day?.stages?.deep != null ? `${Math.round(day.stages.deep)} min` : null,
-      from: 'measured',
-    },
-    {
-      key: 'workouts',
-      label: 'Workouts',
-      // An empty list on a day that exists is a real zero. No day at all
-      // is unknown, which is the null above it.
-      value: day ? `${day.workouts.length}` : null,
-      from: 'measured',
-    },
+    vital('spo2'),
   ];
 }

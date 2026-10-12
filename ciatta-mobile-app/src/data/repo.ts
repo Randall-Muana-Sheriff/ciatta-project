@@ -23,6 +23,7 @@ import {
   type SourceView,
 } from './rows';
 import { type EntryKind, insight as sampleInsight, journal, person, sources } from './sample';
+import { VITAL_METRICS } from '../lib/vitals';
 
 // Every daily_metrics column daysFromRows/rowToDay actually reads. Named
 // explicitly, like every other realRepo method, rather than select('*'),
@@ -110,10 +111,15 @@ export type Repo = {
   // allowed to cite. Reference data with no owner, so every signed in
   // person reads the same rows.
   loadReferences(): Promise<ReferenceRow[]>;
+  // The newest reading of each vital that never folded into a daily row:
+  // blood pressure, blood oxygen, weight.
+  loadVitals(): Promise<VitalReading[]>;
 };
 
 // A published finding, quoted. summary is verbatim from the source, which
 // is why the agent may show it without summarising it further.
+export type VitalReading = { metric: string; value: number; unit: string | null; at: string };
+
 export type ReferenceRow = {
   id: string;
   title: string;
@@ -188,6 +194,12 @@ export function demoRepo(): Repo {
       medications: ['Levothyroxine'],
       supplements: ['Magnesium'],
     }),
+    loadVitals: async () => [
+      { metric: 'blood_pressure_systolic', value: 118, unit: 'mmHg', at: new Date().toISOString() },
+      { metric: 'blood_pressure_diastolic', value: 76, unit: 'mmHg', at: new Date().toISOString() },
+      { metric: 'oxygen_saturation', value: 0.98, unit: '%', at: new Date().toISOString() },
+      { metric: 'body_mass', value: 64.2, unit: 'kg', at: new Date().toISOString() },
+    ],
     loadReferences: async () => [
       {
         id: 'sample-endo-delay',
@@ -477,6 +489,27 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
           .order('year', { ascending: false }),
       ) as ReferenceRow[] | null;
       return rows ?? [];
+    },
+    async loadVitals() {
+      // Ordered newest first and deduped in code to the first of each
+      // metric, which is one round trip rather than one per metric.
+      const rows = must(
+        await db
+          .from('observations')
+          .select('metric, value, unit, occurred_at')
+          .in('metric', [...VITAL_METRICS])
+          .not('value', 'is', null)
+          .order('occurred_at', { ascending: false })
+          .limit(200),
+      ) as { metric: string; value: number; unit: string | null; occurred_at: string }[] | null;
+      const seen = new Set<string>();
+      const out: VitalReading[] = [];
+      for (const r of rows ?? []) {
+        if (seen.has(r.metric)) continue;
+        seen.add(r.metric);
+        out.push({ metric: r.metric, value: Number(r.value), unit: r.unit, at: r.occurred_at });
+      }
+      return out;
     },
     async loadIntraday(sinceIso) {
       // Only the two metrics the day chart draws, and only today's. Reading

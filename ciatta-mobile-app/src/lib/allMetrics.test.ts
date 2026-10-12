@@ -120,9 +120,25 @@ test('no label or value carries a dash, which display copy forbids', () => {
 
 // ── The six on Today ─────────────────────────────────────────────────
 
-test('nine headline metrics, three by three, in a stable order', () => {
+test('six headline metrics, chosen by what her devices report', () => {
+  // Not by what the schema happens to hold. Three come from the wearable
+  // and three from the cuff, the ring and the watch.
   const keys = headlineMetrics(null).map((m) => m.key);
-  assert.deepEqual(keys, ['sleep', 'hrv', 'restingHR', 'steps', 'active', 'temp', 'inBed', 'deep', 'workouts']);
+  assert.deepEqual(keys, ['sleep', 'hrv', 'steps', 'bp', 'temp', 'spo2']);
+});
+
+test('a vital with no reading is still a card, absent rather than missing', () => {
+  // Its place on the grid is where that figure will appear, so the card
+  // exists and says nothing.
+  const bp = headlineMetrics(null).find((m) => m.key === 'bp')!;
+  assert.equal(bp.value, null);
+});
+
+test('vitals passed in are used rather than recomputed', () => {
+  const given = [{ key: 'bp', label: 'Blood pressure', value: '118/76', from: 'measured' as const }];
+  const bp = headlineMetrics(null, given).find((m) => m.key === 'bp')!;
+  assert.equal(bp.value, '118/76');
+  assert.equal(bp.label, 'Blood pressure');
 });
 
 test('headline labels are short enough for a third of a row', () => {
@@ -137,11 +153,14 @@ test('with no day at all, every card is absent rather than zero', () => {
   for (const m of headlineMetrics(null)) assert.equal(m.value, null, m.key);
 });
 
-test('heart rate variability and resting heart rate carry their units', () => {
-  const day = { ...empty, hrv: 42.4, restingHR: 58.6 };
-  const by = Object.fromEntries(headlineMetrics(day).map((m) => [m.key, m.value]));
+test('heart rate variability carries its unit', () => {
+  const by = Object.fromEntries(headlineMetrics({ ...empty, hrv: 42.4 }).map((m) => [m.key, m.value]));
   assert.equal(by.hrv, '42 ms');
-  assert.equal(by.restingHR, '59 bpm');
+});
+
+test('resting heart rate moved to All, where there is room for every reading', () => {
+  assert.ok(!headlineMetrics(null).some((m) => m.key === 'restingHR'));
+  assert.ok(find({ ...empty, restingHR: 58.6 }, 'Resting heart rate')?.value === '59 bpm');
 });
 
 test('a measured zero still shows, unlike a missing figure', () => {

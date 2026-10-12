@@ -14,13 +14,14 @@
 // she typed are not the same kind of fact and a list that blurred them
 // would be the exact error the rest of the app refuses.
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { buildMetrics, recordedCount, recordedLine } from '../lib/allMetrics';
+import { bloodOxygen, bloodPressure, type VitalCard, weight } from '../lib/vitals';
 import { displayCopy } from '../lib/displayCopy';
 import { useNav } from '../navigation';
-import { useData } from '../state/session';
+import { useData, useRepo } from '../state/session';
 import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen } from '../ui/kit';
@@ -30,6 +31,28 @@ import { L, SPACE } from '../ui/surface';
 export function MetricsScreen() {
   const nav = useNav();
   const { days } = useData();
+  const repo = useRepo();
+
+  // Weight joins blood pressure and blood oxygen here. All three live in
+  // observations, so none of them reaches the Day object the rest of the
+  // app reads.
+  const [vitals, setVitals] = useState<VitalCard[]>([]);
+  useEffect(() => {
+    let ignore = false;
+    repo
+      .loadVitals()
+      .then((rows) => {
+        if (ignore) return;
+        const now = new Date();
+        setVitals([bloodPressure(rows, now), bloodOxygen(rows, now), weight(rows, now)]);
+      })
+      .catch(() => {
+        // The section is simply absent, rather than showing empty rows.
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [repo]);
 
   // Today's own row, when there is one. days arrives oldest first.
   const today = useMemo(() => {
@@ -38,7 +61,7 @@ export function MetricsScreen() {
     return days.find((x) => x.date === key) ?? null;
   }, [days]);
 
-  const groups = useMemo(() => buildMetrics(today), [today]);
+  const groups = useMemo(() => buildMetrics(today, vitals), [today, vitals]);
   const counts = useMemo(() => recordedCount(groups), [groups]);
 
   return (

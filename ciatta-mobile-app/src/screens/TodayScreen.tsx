@@ -3,6 +3,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
 import { headlineMetrics } from '../lib/allMetrics';
+import { bloodOxygen, bloodPressure, type VitalCard } from '../lib/vitals';
 import { displayCopy } from '../lib/displayCopy';
 import { type CyclePoint, cycleTrend, fmtHours } from '../lib/engine';
 import { clinicalPhase, countedWindows, cycleToday, cycleTodayLabel, medianLength, phaseLine } from '../lib/cycleModel';
@@ -157,6 +158,26 @@ export function TodayScreen() {
 
   // Today's measured readings, by the hour they happened. daily_metrics is
   // one row per day, which cannot draw a day.
+  // Blood pressure, blood oxygen and weight live in observations rather
+  // than on the day row, so they are read separately.
+  const [vitals, setVitals] = useState<VitalCard[]>([]);
+  useEffect(() => {
+    let ignore = false;
+    repo
+      .loadVitals()
+      .then((rows) => {
+        if (ignore) return;
+        const now = new Date();
+        setVitals([bloodPressure(rows, now), bloodOxygen(rows, now)]);
+      })
+      .catch(() => {
+        // The cards say not yet, which is true when the read failed too.
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [repo]);
+
   const [intraday, setIntraday] = useState<IntradayPoint[]>([]);
   useEffect(() => {
     const midnight = new Date();
@@ -406,7 +427,7 @@ export function TodayScreen() {
           read in.
         */}
         <View style={t.grid}>
-          {headlineMetrics(todayDay).map((m) => (
+          {headlineMetrics(todayDay, vitals).map((m) => (
             <View key={m.key} style={t.gridCell}>
               <MetricCard label={m.label} value={m.value} note={m.note} from={m.from} />
             </View>
