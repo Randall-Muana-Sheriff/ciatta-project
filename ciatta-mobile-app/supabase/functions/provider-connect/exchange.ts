@@ -1,0 +1,134 @@
+// The token exchange and the sync, as pure decisions.
+//
+// index.ts does the network and the database; everything that can be
+// decided without either lives here, so src/lib can exercise it under
+// node. Same arrangement as wording.ts and summary.ts.
+//
+// Why the exchange happens on a server at all, when the client is public
+// and holds no secret: the refresh token. It is six to twelve months of
+// access to her chart, and a phone is lost, backed up, and jailbroken. So
+// the code and the verifier go up, the tokens stay up, and the device
+// gets a connection id and a status.
+
+export type TokenResponse = {
+  access_token?: unknown;
+  refresh_token?: unknown;
+  expires_in?: unknown;
+  patient?: unknown;
+  scope?: unknown;
+  error?: unknown;
+  error_description?: unknown;
+};
+
+export type Tokens = {
+  accessToken: string;
+  refreshToken: string | null;
+  expiresAt: string;
+  patientId: string | null;
+  // What the provider actually granted, which is often less than was
+  // asked for. Recorded so a later fetch that comes back empty can be
+  // explained by the scope she was given rather than reported as an
+  // empty chart.
+  grantedScopes: string[];
+};
+
+export type ExchangeFailure = { reason: 'provider_error' | 'malformed' | 'no_access_token'; detail: string };
+
+// A provider's response, believed only as far as it can be checked.
+export function readTokens(body: unknown, now: Date): Tokens | ExchangeFailure {
+  if (!body || typeof body !== 'object') return { reason: 'malformed', detail: 'the provider sent something unreadable' };
+  const r = body as TokenResponse;
+
+  if (typeof r.error === 'string' && r.error) {
+    const detail = typeof r.error_description === 'string' && r.error_description ? r.error_description : r.error;
+    return { reason: 'provider_error', detail };
+  }
+
+  const accessToken = typeof r.access_token === 'string' ? r.access_token.trim() : '';
+  if (!accessToken) return { reason: 'no_access_token', detail: 'no access token came back' };
+
+  // Default to an hour when the provider does not say, which is the SMART
+  // default, and never trust a negative or absurd value.
+  const seconds = typeof r.expires_in === 'number' && r.expires_in > 0 && r.expires_in < 60 * 60 * 24 * 400
+    ? r.expires_in
+    : 3600;
+
+  return {
+    accessToken,
+    refreshToken: typeof r.refresh_token === 'string' && r.refresh_token.trim() ? r.refresh_token.trim() : null,
+    expiresAt: new Date(now.getTime() + seconds * 1000).toISOString(),
+    patientId: typeof r.patient === 'string' && r.patient.trim() ? r.patient.trim() : null,
+    grantedScopes: typeof r.scope === 'string' ? r.scope.split(/\s+/).filter(Boolean) : [],
+  };
+}
+
+export const isFailure = (x: Tokens | ExchangeFailure): x is ExchangeFailure => 'reason' in x;
+
+// The form body for the exchange. The verifier goes here and only here,
+// which is the whole of PKCE: it was never in the authorize request.
+export function exchangeBody(code: string, redirectUri: string, clientId: string, verifier: string): string {
+  return new URLSearchParams({
+    grant_type: 'authorization_code',
+    code,
+    redirect_uri: redirectUri,
+    client_id: clientId,
+    code_verifier: verifier,
+  }).toString();
+}
+
+export function refreshBody(refreshToken: string, clientId: string): string {
+  return new URLSearchParams({
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken,
+    client_id: clientId,
+  }).toString();
+}
+
+// Which resources to pull, and in what order. Conditions and medications
+// first, because they are the ones the brief and the agent already have
+// somewhere to put.
+export const FETCH_ORDER = [
+  'Condition',
+  'MedicationRequest',
+  'AllergyIntolerance',
+  'Observation',
+  'Immunization',
+  'Procedure',
+] as const;
+
+// The query for one resource type, scoped to her patient id and nothing
+// else. The id is required: a query without it asks the server for every
+// patient it has, and a server that honoured that would be a breach.
+export function resourceQuery(base: string, type: string, patientId: string, count = 100): string {
+  const clean = base.replace(/\/+$/, '');
+  const params = new URLSearchParams({ patient: patientId, _count: String(count) });
+  if (type === 'Observation') {
+    // Observation without a category returns every reading the hospital
+    // holds, which on a long record is tens of thousands of rows. Labs
+    // and vitals are what Ciatta shows.
+    params.set('category', 'laboratory,vital-signs');
+  }
+  return `${clean}/${type}?${params.toString()}`;
+}
+
+// Whether a stored token still has useful life. A minute of slack, so a
+// token that expires mid request is refreshed before it is used rather
+// than after it fails.
+export function needsRefresh(expiresAt: string | null, now: Date): boolean {
+  if (!expiresAt) return true;
+  const at = Date.parse(expiresAt);
+  if (Number.isNaN(at)) return true;
+  return at - now.getTime() < 60_000;
+}
+
+// What she is told. Never the protocol's words.
+export function failureLine(failure: ExchangeFailure): string {
+  switch (failure.reason) {
+    case 'provider_error':
+      return 'Your provider did not complete the connection. Nothing was shared.';
+    case 'no_access_token':
+      return 'Your provider finished without granting access. Nothing was shared.';
+    default:
+      return 'Your provider sent back something Ciatta could not read. Nothing was shared.';
+  }
+}
