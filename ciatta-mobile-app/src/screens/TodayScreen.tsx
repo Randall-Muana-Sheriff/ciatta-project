@@ -305,7 +305,7 @@ export function TodayScreen() {
             />
           ) : (
             <Text style={[font('subhead'), t.dayEmpty]}>
-              Not enough readings today to draw your day yet. Ciatta will fill this in as your devices record.
+              Not enough readings today to draw your day yet.
             </Text>
           )}
         </View>
