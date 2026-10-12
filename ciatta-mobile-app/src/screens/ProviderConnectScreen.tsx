@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { connectProvider, loadConnections, loadDirectory } from '../data/providers';
+import { clientId as readClientId, setClientId } from '../data/providerAccess';
 import type { Endpoint } from '../lib/providers/directory';
 import { groupLine, hasMore, noResults, PREVIEW, type ResultGroup, search } from '../lib/providers/directory';
 import { isSandbox } from '../lib/providers/epicDirectory';
@@ -22,13 +23,8 @@ import { useNav } from '../navigation';
 import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { Icon } from '../ui/icons';
-import { DetailScreen, PrimaryButton } from '../ui/kit';
+import { DetailScreen, PrimaryButton, SecondaryButton } from '../ui/kit';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
-
-// Registered with the vendor, and public by design: PKCE is what proves
-// the exchange, not a secret. Empty until a registration exists, and the
-// screen says so rather than opening a login that cannot work.
-const CLIENT_ID = process.env.EXPO_PUBLIC_SMART_CLIENT_ID ?? '';
 
 export function ProviderConnectScreen() {
   const nav = useNav();
@@ -38,6 +34,14 @@ export function ProviderConnectScreen() {
   const [picked, setPicked] = useState<Endpoint | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [message, setMessage] = useState('');
+  // Read rather than compiled in, so a registration approved today works
+  // today. Null while the read is in flight, which is not the same as
+  // absent and must not render as it.
+  const [registration, setRegistration] = useState<string | null>(null);
+
+  useEffect(() => {
+    void readClientId().then(setRegistration);
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -55,7 +59,7 @@ export function ProviderConnectScreen() {
     if (!picked || connecting) return;
     setConnecting(true);
     setMessage('');
-    const out = await connectProvider(picked, CLIENT_ID);
+    const out = await connectProvider(picked, registration ?? '');
     setConnecting(false);
     if (!out.ok) {
       setMessage(out.message);
@@ -69,7 +73,7 @@ export function ProviderConnectScreen() {
         ? `Connected. ${out.written} records arrived from ${picked.name}.`
         : `Connected to ${picked.name}. Nothing has arrived yet, which can take a few minutes.`,
     );
-  }, [picked, connecting]);
+  }, [picked, connecting, registration]);
 
   const dismiss = () => {
     setPicked(null);
@@ -157,6 +161,11 @@ export function ProviderConnectScreen() {
               endpoint={picked}
               connecting={connecting}
               message={message}
+              registration={registration}
+              onRegister={async (value) => {
+                await setClientId(value);
+                setRegistration(await readClientId());
+              }}
               onBack={dismiss}
               onConnect={connect}
             />
@@ -236,17 +245,23 @@ function ProviderSheet({
   endpoint,
   connecting,
   message,
+  registration,
+  onRegister,
   onBack,
   onConnect,
 }: {
   endpoint: Endpoint;
   connecting: boolean;
   message: string;
+  registration: string | null;
+  onRegister: (value: string) => Promise<void>;
   onBack: () => void;
   onConnect: () => void;
 }) {
   const portal = endpoint.portalName ?? 'their patient portal';
-  const unregistered = !CLIENT_ID;
+  const unregistered = registration !== null && registration.length === 0;
+  const [showSetup, setShowSetup] = useState(false);
+  const [draftId, setDraftId] = useState('');
 
   return (
     <View style={s.sheetWrap}>
@@ -287,31 +302,62 @@ function ProviderSheet({
         {message ? <Text style={[font('subhead'), s.message]}>{displayCopy(message)}</Text> : null}
 
         <View style={s.action}>
-          {unregistered ? (
-            // Said rather than hidden behind a button that opens a login
-            // which cannot succeed. A missing registration is Ciatta's
-            // problem and the screen says whose it is.
-            // Said before she taps, not after. Sending her to a login
-            // that cannot complete would waste her time and teach her the
-            // connection is broken rather than not yet built.
-            <View>
-              <Text style={[font('subhead'), s.blocked]}>
-                Ciatta is early, and is not yet registered with the provider networks that hospitals require. So this
-                connection cannot be made today.
-              </Text>
-              <Text style={[font('subhead'), s.blockedNote]}>
-                Everything else is ready for it. Nothing about your record has changed, and nothing was sent to
-                {' '}
-                {displayCopy(endpoint.name)}.
-              </Text>
-            </View>
-          ) : connecting ? (
+          {connecting ? (
             <View style={s.centre}>
               <ActivityIndicator color={L.ink} />
               <Text style={[font('subhead'), s.note]}>Waiting for your provider.</Text>
             </View>
           ) : (
-            <PrimaryButton label={`Continue to ${portal}`} onPress={onConnect} />
+            <>
+              {/*
+                The button is always here and it is always the real one:
+                it opens the provider's own login page in the system
+                browser. What changes is whether it can be pressed. An
+                unregistered build says why underneath rather than
+                opening a page that will fail.
+              */}
+              <PrimaryButton
+                label={`Continue to ${portal}`}
+                onPress={onConnect}
+                disabled={registration === null || unregistered}
+              />
+
+              {unregistered ? (
+                <>
+                  <Text style={[font('subhead'), s.blocked]}>
+                    Ciatta is early, and is not yet registered with the provider networks that hospitals require, so
+                    this cannot open yet. Nothing about your record has changed.
+                  </Text>
+                  {showSetup ? (
+                    <View style={s.setup}>
+                      <Text style={[font('caption1'), s.note]}>
+                        Paste the client ID from your provider registration. It is public rather than a secret, and it
+                        stays on this phone.
+                      </Text>
+                      <TextInput
+                        value={draftId}
+                        onChangeText={setDraftId}
+                        placeholder="Client ID"
+                        placeholderTextColor={L.meta}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        style={[font('body'), s.idInput]}
+                        accessibilityLabel="Client ID"
+                      />
+                      <SecondaryButton label="Save and enable" onPress={() => void onRegister(draftId)} />
+                    </View>
+                  ) : (
+                    <Pressable
+                      onPress={() => setShowSetup(true)}
+                      accessibilityRole="button"
+                      style={({ pressed }) => [s.close, pressed && s.pressed]}
+                    >
+                      <Text style={[font('subhead'), s.closeText]}>I have a client ID</Text>
+                    </Pressable>
+                  )}
+                </>
+              ) : null}
+            </>
           )}
         </View>
 
@@ -393,7 +439,16 @@ const s = StyleSheet.create({
   sheet: { paddingHorizontal: GUTTER, paddingBottom: SPACE.section },
   close: { alignSelf: 'center', marginTop: SPACE.block, paddingVertical: 12, paddingHorizontal: 20 },
   closeText: { color: L.meta },
-  blockedNote: { color: L.meta, lineHeight: 22, marginTop: 10 },
+  setup: { marginTop: SPACE.near, gap: 12 },
+  idInput: {
+    color: L.ink,
+    backgroundColor: L.recessed,
+    borderRadius: 12,
+    borderWidth: st,
+    borderColor: L.rule,
+    paddingHorizontal: 14,
+    height: 48,
+  },
   sheetTitle: { color: L.ink, letterSpacing: -0.4 },
   sheetLede: { color: L.body, lineHeight: 24, marginTop: 12, marginBottom: SPACE.block },
   bullets: { marginTop: SPACE.tight, gap: SPACE.near },
@@ -406,7 +461,7 @@ const s = StyleSheet.create({
   },
   bulletTitle: { color: L.ink },
   bulletBody: { color: L.body, marginTop: 4, lineHeight: 21 },
-  blocked: { color: L.body, lineHeight: 22 },
+  blocked: { color: L.body, lineHeight: 22, marginTop: SPACE.near },
   action: { marginTop: SPACE.section },
   pressed: { opacity: 0.55 },
 });
