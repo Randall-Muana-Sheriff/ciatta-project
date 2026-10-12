@@ -3,7 +3,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, BackHandler, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import { displayCopy } from '../lib/displayCopy';
 import { isAppleSignInAvailable, signInWithApple, signInWithGoogle, SocialAuthCancelled } from '../lib/socialAuth';
@@ -123,6 +123,10 @@ async function keepFirstName(fullName: string | null) {
   if (!first || !data.user) return;
   await supabase.from('profiles').update({ first_name: first }).eq('id', data.user.id).is('first_name', null);
 }
+
+// The mark over film and photographs. The Constitution allows Graphite or
+// Paper and nothing else; the scrim is dark, so Paper it is.
+const PAPER = '#F2F3F4';
 
 export function SignInScreen() {
   const { enterDemo } = useSession();
@@ -316,7 +320,7 @@ export function SignInScreen() {
           which are the only two grounds the Constitution allows it.
         */}
         {/* Paper on every pane now that all three are on the ground. */}
-        <Wordmark color={L.recessed} />
+        <Wordmark color={PAPER} />
       </View>
     </View>
   );
@@ -342,6 +346,26 @@ export function SignInScreen() {
           ) : (
             <VideoView player={player} style={s.heroMedia} contentFit="cover" nativeControls={false} />
           )}
+          {/*
+            A scrim over the film, not a change to it. The film plays
+            untouched underneath; this is the layer that gives the type
+            something to sit on, because legibility over moving footage
+            cannot depend on which frame happens to be playing.
+
+            Weighted to the foot, where the wordmark, the buttons and the
+            small print are. The top stays light so the footage is still
+            the first thing she sees.
+          */}
+          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" pointerEvents="none">
+            <Defs>
+              <LinearGradient id="filmScrim" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor="#000000" stopOpacity={0.3} />
+                <Stop offset="0.4" stopColor="#000000" stopOpacity={0.42} />
+                <Stop offset="1" stopColor="#000000" stopOpacity={0.78} />
+              </LinearGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#filmScrim)" />
+          </Svg>
         </View>
       ) : null}
 
@@ -495,7 +519,10 @@ export function SignInScreen() {
 }
 
 const s = StyleSheet.create({
-  fill: { flex: 1 },
+  // Every pane paints its ground. Only the welcome pane used to, so the
+  // sign up and login panes fell through to whatever the native root
+  // happened to be, which is not a colour this file chose.
+  fill: { flex: 1, backgroundColor: C.bg },
   fillFilm: { backgroundColor: C.bg },
   // The sign up and log in panes stand on white rather than on the film.
   // Behind everything and outside the ScrollView, so the footage stays put
@@ -569,7 +596,10 @@ const s = StyleSheet.create({
   // which over a white page is a pale grey rectangle rather than glass.
   pressed: { opacity: 0.55 },
   // Centred, on both auth panes.
-  heading: { color: C.bg, textAlign: 'center' },
+  // Ink, not ground. This was C.bg, which was correct while the sign up
+  // pane was white and became a near black heading on a near black screen
+  // the day the app went dark.
+  heading: { color: C.text, textAlign: 'center' },
   error: { color: C.tint, marginTop: 12 },
   // 5.9:1 on white, where the peach manages 2.2:1.
   // Sentence then link on one line. flexWrap is the guard for the largest text
@@ -588,13 +618,13 @@ const s = StyleSheet.create({
   inlineHit: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
   // The two policy labels, centred, with a middle dot between them.
   legal: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 10, marginTop: 10 },
-  // This paragraph only ever renders on the sign up pane, which is always
-  // white now, so it is written for white outright rather than switched.
-  // C.secondary was built for a dark card and manages 2.6:1 here; C.tertiary
-  // reaches 8.4:1, and the links go to black so they sit above the sentence
-  // they interrupt rather than disappearing into the page.
+  // The sign up pane is dark now, so this is written for dark. The
+  // sentence sits at tertiary, which clears 5:1 on this ground, and the
+  // links go to ink so they sit above the sentence they interrupt rather
+  // than disappearing into it. They were C.bg, which on a dark pane is
+  // black on black.
   terms: { color: C.tertiary, marginTop: 24, lineHeight: 17, textAlign: 'center' },
-  termsLink: { color: C.bg, textDecorationLine: 'underline' },
+  termsLink: { color: C.text, textDecorationLine: 'underline' },
   consentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 14 },
   consentLabel: { color: C.tertiary, flex: 1, lineHeight: 17 },
   checkbox: {

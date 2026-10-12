@@ -73,6 +73,9 @@ const NO_CONTINUE: StepId[] = [...AUTO, 'connect', 'compiling'];
 // Onboarding kept four local values while it was the one white surface in
 // a dark app. They point at the shared surface now, so the first session
 // moves with everything else rather than being the screen somebody forgets.
+// Paper, for the mark over the photograph.
+const PAPER = '#F2F3F4';
+
 const INK = L.ink;
 const MUTED = L.meta;
 const LINE = L.rule;
@@ -472,8 +475,11 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             </Svg>
           </Pressable>
           {/* Paper on the photograph. The Constitution allows Graphite
-              or Paper and nothing else, and the scrim is dark here. */}
-          <Wordmark color={L.recessed} />
+              or Paper and nothing else, and the scrim is dark here.
+              This said Paper and passed L.recessed, which is five and a
+              half percent white: a watermark token for a translucent
+              panel, invisible over a photograph. */}
+          <Wordmark color={PAPER} />
         </View>
 
         {/* Heading, paragraph and the button sit together in the vertical
