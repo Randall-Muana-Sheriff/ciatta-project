@@ -9,6 +9,7 @@ import type { SourceKind, Tone } from '../data/sample';
 import type { SourceView } from '../data/rows';
 import type { Reported } from '../data/repo';
 import { type Connection, loadConnections } from '../data/providers';
+import { smooth } from '../lib/curve';
 import { profileOverview } from '../lib/profileOverview';
 import { connectAppleHealth } from '../lib/connectHealth';
 import { displayCopy } from '../lib/displayCopy';
@@ -193,9 +194,12 @@ function Sparkline({ points, color }: { points: number[]; color: string }) {
   const H = 20;
   const lo = Math.min(...points);
   const hi = Math.max(...points);
-  const d = points
-    .map((v, i) => `${i ? 'L' : 'M'}${(i / (points.length - 1)) * W},${H - 2 - ((v - lo) / (hi - lo || 1)) * (H - 4)}`)
-    .join(' ');
+  const d = smooth(
+    points.map((v, i) => ({
+      x: (i / (points.length - 1)) * W,
+      y: H - 2 - ((v - lo) / (hi - lo || 1)) * (H - 4),
+    })),
+  );
   return (
     <Svg width={W} height={H}>
       <Path d={d} stroke={color} strokeWidth={1.8} fill="none" strokeLinejoin="round" strokeLinecap="round" />

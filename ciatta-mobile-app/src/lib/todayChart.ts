@@ -11,6 +11,11 @@
 // concept's own choice and worth keeping: it passes through every reading
 // rather than near it, so no drawn point is in a place no reading was.
 
+import { smooth } from './curve';
+
+// Re exported, so this module's own callers are unchanged by the move.
+export { smooth };
+
 export type Reading = { at: Date; value: number };
 export type Asleep = { from: Date; to: Date };
 export type Mark = { at: Date; weight: number };
@@ -45,26 +50,6 @@ function hoursInto(d: Date): number {
 
 function px(hour: number): number {
   return (hour / 24) * VIEW.w;
-}
-
-// A Catmull Rom spline as cubic beziers. The curve passes through every
-// reading, which is the point: a smoothing that merely approaches the
-// readings would draw values she never recorded.
-export function smooth(points: readonly { x: number; y: number }[], tension = 0.9): string {
-  if (points.length < 2) return '';
-  let d = `M${points[0].x.toFixed(2)},${points[0].y.toFixed(2)}`;
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[i - 1] ?? points[i];
-    const p1 = points[i];
-    const p2 = points[i + 1];
-    const p3 = points[i + 2] ?? p2;
-    const c1x = p1.x + ((p2.x - p0.x) / 6) * tension;
-    const c1y = p1.y + ((p2.y - p0.y) / 6) * tension;
-    const c2x = p2.x - ((p3.x - p1.x) / 6) * tension;
-    const c2y = p2.y - ((p3.y - p1.y) / 6) * tension;
-    d += `C${c1x.toFixed(2)},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(2)} ${p2.x.toFixed(2)},${p2.y.toFixed(2)}`;
-  }
-  return d;
 }
 
 export function buildDay(input: {

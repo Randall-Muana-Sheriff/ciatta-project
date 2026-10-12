@@ -12,6 +12,7 @@ import { useData, useRepo } from '../state/session';
 import { font, fonts, GUTTER, numeral } from '../theme';
 import { Eyebrow, Tile } from '../ui/bento';
 import { Wordmark } from '../ui/Wordmark';
+import { smooth } from '../lib/curve';
 import { AXIS, buildDay, type DayChart, VIEW } from '../lib/todayChart';
 import type { IntradayPoint } from '../data/repo';
 import { ground, HUE, L, mark, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
@@ -50,7 +51,9 @@ function TrendChart({ points }: { points: CyclePoint[] }) {
   const knownHours = hours.filter((h): h is number => h != null);
   const cy = scale(days, 24, 64);
   const sy = knownHours.length ? scale(knownHours, 76, 104) : () => 90;
-  const line = (ys: number[]) => ys.map((y, i) => `${i ? 'L' : 'M'}${xs[i]},${y}`).join(' ');
+  // The same curve the day chart draws, so a line does not change
+  // character between two cards on one screen.
+  const line = (ys: number[]) => smooth(ys.map((y, i) => ({ x: xs[i], y })));
   const cys = days.map(cy);
   const sys = hours.map((h) => (h != null ? sy(h) : 90));
   const last = xs.length - 1;

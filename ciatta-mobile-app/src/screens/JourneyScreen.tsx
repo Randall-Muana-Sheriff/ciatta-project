@@ -6,6 +6,7 @@ import { type Data, journeyAxis } from '../data/adapter';
 import type { Day } from '../data/daily';
 import { addDays, shortDate } from '../data/cycleLog';
 import { countedWindows, type CycleWindow, medianLength } from '../lib/cycleModel';
+import { smooth } from '../lib/curve';
 import { displayCopy } from '../lib/displayCopy';
 import { monthSummary, type Signal } from '../lib/cyclePatterns';
 import type { Ovulation } from '../lib/fertility';
@@ -161,7 +162,7 @@ function LaneMarks({
       return (
         <G>
           <Path
-            d={past.map((c, i) => `${i ? 'L' : 'M'}${px(c)},${y(c.days)}`).join(' ')}
+            d={smooth(past.map((c) => ({ x: px(c) as number, y: y(c.days) })))}
             stroke={C.coral}
             strokeWidth={2}
             fill="none"

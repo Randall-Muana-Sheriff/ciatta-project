@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
 import { C, font, fonts } from '../theme';
+import { smooth } from '../lib/curve';
 
 // Charts are drawn on the Figma frame's 333pt grid and scaled to the width
 // they are given, so they keep the reference proportions on any phone.
@@ -25,7 +26,7 @@ export function InsightLineChart() {
   const mx = [18, 64, 110, 156, 202, 248, 294];
   const cycleY = [30, 28, 26, 65, 28, 66, 28];
   const sleepY = [68, 66, 88, 72, 90, 74, 68];
-  const path = (ys: number[]) => ys.map((y, i) => `${i === 0 ? 'M' : 'L'}${mx[i]},${y}`).join(' ');
+  const path = (ys: number[]) => smooth(ys.map((y, i) => ({ x: mx[i], y })));
   const windows = [
     [mx[1] + 14, mx[3] + 12],
     [mx[3] + 28, mx[5] + 14],

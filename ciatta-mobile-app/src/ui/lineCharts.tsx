@@ -4,6 +4,7 @@ import Svg, { Circle, Ellipse, Line, Path, Rect, Text as SvgText } from 'react-n
 import { daysBetween } from '../data/cycleLog';
 import { fmtHours } from '../lib/engine';
 import { C, font, fonts, M } from '../theme';
+import { smoothSegments } from '../lib/curve';
 
 // Minimal charts for the Health dashboard: single weight hairlines, open end
 // points, a dashed line for her usual level, and no fills. A gap in the data
@@ -40,17 +41,10 @@ export function HairlineChart({
   const x = (i: number) => pad + (values.length > 1 ? i / (values.length - 1) : 0.5) * (W - pad * 2);
   const y = (v: number) => pad + (1 - (v - lo) / span) * (H - pad * 2);
 
-  const segments: string[] = [];
-  let current = '';
-  values.forEach((v, i) => {
-    if (v == null) {
-      if (current) segments.push(current);
-      current = '';
-      return;
-    }
-    current += `${current ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)} `;
-  });
-  if (current) segments.push(current);
+  // Each run of real values is curved on its own. A single curve across a
+  // missing stretch would draw a confident line through days with no
+  // reading, which is the thing the gap exists to say.
+  const segments = smoothSegments(values.map((v, i) => (v == null ? null : { x: x(i), y: y(v) })));
   let lastIdx = values.length - 1;
   while (lastIdx >= 0 && values[lastIdx] == null) lastIdx--;
 
