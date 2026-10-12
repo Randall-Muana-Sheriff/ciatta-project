@@ -161,13 +161,75 @@ export type HeadlineMetric = {
   from: 'measured' | 'reported' | 'derived';
 };
 
-export function headlineMetrics(day: Day | null, vitals: readonly VitalCard[] = []): HeadlineMetric[] {
+// The latest value for a field, with the day it came from.
+//
+// Today's cards used to read today's row and nothing else, so every one
+// of them went blank on any day the sync had not run. Ciatta syncs when
+// she asks it to and at no other time, by design, which means "today's
+// row" is often simply absent while last night's reading sits one row
+// back. Blood pressure already worked this way and was the only card
+// showing anything, which is how the asymmetry surfaced.
+//
+// So: the newest reading there is, and the card says how old it is.
+// Absence still reads as absence; what changes is that a reading from
+// yesterday is shown as yesterday's rather than thrown away.
+function latest(
+  days: readonly Day[],
+  get: (d: Day) => number | null,
+  now: Date,
+): { value: number; note?: string } | null {
+  for (let i = days.length - 1; i >= 0; i -= 1) {
+    const v = get(days[i]);
+    if (v == null) continue;
+    const note = dayNote(days[i].date, now);
+    return note ? { value: v, note } : { value: v };
+  }
+  return null;
+}
+
+// How old a reading is, in her words. Today says nothing, because a card
+// is assumed to hold today.
+export function dayNote(iso: string, now: Date): string | null {
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  const then = new Date(y, m - 1, d).getTime();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const days = Math.round((today - then) / 86400000);
+  if (days <= 0) return null;
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  if (days < 14) return 'Last week';
+  return `${Math.round(days / 7)} weeks ago`;
+}
+
+export function headlineMetrics(
+  days: readonly Day[],
+  vitals: readonly VitalCard[] = [],
+  now: Date = new Date(),
+): HeadlineMetric[] {
   const one = (n: number) => (Math.round(n * 10) / 10).toFixed(1);
+  const read = (get: (d: Day) => number | null) => latest(days, get, now);
   // The grid abbreviates. A third of a row does not hold "Blood
   // pressure", and BP and SpO2 are what she reads on the cuff and the
   // watch anyway. The All screen keeps the full names, where there is a
   // line to spell them on.
   const SHORT: Record<string, string> = { bp: 'BP', spo2: 'SpO2' };
+  // A card from a reading, or the same card empty. The note carries the
+  // age when there is one, and the qualifier only when there is a value
+  // to qualify.
+  const card = (
+    key: string,
+    label: string,
+    found: { value: number; note?: string } | null,
+    say: (v: number) => string,
+    qualifier?: string,
+  ): HeadlineMetric => ({
+    key,
+    label,
+    value: found ? say(found.value) : null,
+    note: found ? (found.note ?? qualifier) : undefined,
+    from: 'measured',
+  });
   const vital = (key: string): HeadlineMetric => {
     const found = vitals.find((v) => v.key === key);
     return {
@@ -179,35 +241,18 @@ export function headlineMetrics(day: Day | null, vitals: readonly VitalCard[] = 
     };
   };
   return [
-    {
-      key: 'sleep',
-      label: 'Sleep',
-      value: day?.sleepHours != null ? fmtHours(day.sleepHours) : null,
-      from: 'measured',
-    },
-    {
-      key: 'hrv',
-      label: 'HRV',
-      value: day?.hrv != null ? `${Math.round(day.hrv)} ms` : null,
-      from: 'measured',
-    },
-    {
-      key: 'steps',
-      label: 'Steps',
-      value: day?.steps != null ? Math.round(day.steps).toLocaleString('en-US') : null,
-      from: 'measured',
-    },
+    card('sleep', 'Sleep', read((d) => d.sleepHours), (v) => fmtHours(v)),
+    card('hrv', 'HRV', read((d) => d.hrv), (v) => `${Math.round(v)} ms`),
+    card('steps', 'Steps', read((d) => d.steps), (v) => Math.round(v).toLocaleString('en-US')),
     vital('bp'),
-    {
-      key: 'temp',
-      label: 'Skin temp',
-      value:
-        day?.tempDeviation != null ? `${day.tempDeviation > 0 ? '+' : ''}${one(day.tempDeviation)} °C` : null,
-      // Named as a difference, because that is what the sensor reports. A
-      // bare figure would read as a body temperature.
-      note: day?.tempDeviation != null ? 'From usual' : undefined,
-      from: 'measured',
-    },
+    card(
+      'temp',
+      'Skin temp',
+      read((d) => d.tempDeviation),
+      (v) => `${v > 0 ? '+' : ''}${one(v)} °C`,
+      // Named as a difference, because that is what the sensor reports.
+      'From usual',
+    ),
     vital('spo2'),
   ];
 }

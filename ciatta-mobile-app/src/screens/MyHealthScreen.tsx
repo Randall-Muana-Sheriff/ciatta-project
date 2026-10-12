@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ActionSheetIOS, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { type BodyPoint, readBody, REGION_LOCATION, type RegionId } from '../lib/bodyMap';
 import { useNav } from '../navigation';
@@ -9,7 +9,7 @@ import { useData } from '../state/session';
 import { C, font, GUTTER } from '../theme';
 import { NAV_CLEARANCE } from '../ui/surface';
 import { BodySystemView } from '../ui/BodySystemView';
-import { LargeTitle, ToolbarButton } from '../ui/chrome';
+import { LargeTitle } from '../ui/chrome';
 import { HealthDashboard } from '../ui/HealthDashboard';
 import { SegmentedControl } from '../ui/kit';
 
@@ -24,22 +24,6 @@ export function MyHealthScreen() {
   const { days, records } = useData();
   const [view, setView] = useState<(typeof VIEWS)[number]>('Dashboard');
   const body = useMemo(() => readBody({ signals, days, ranked, draws: records?.draws ?? [] }), [signals, days, ranked, records]);
-
-  const logCycle = () => {
-    startDraft();
-    nav.push('cycleLog');
-  };
-  // Add to the record: a cycle experience or a note.
-  const teach = () => {
-    if (Platform.OS !== 'ios') return logCycle();
-    ActionSheetIOS.showActionSheetWithOptions(
-      { title: 'Add to Your Record', options: ['Log Cycle Experience', 'Add a Note', 'Cancel'], cancelButtonIndex: 2 },
-      (i) => {
-        if (i === 0) logCycle();
-        if (i === 1) nav.push('journal');
-      },
-    );
-  };
 
   const openInsight = (id: string) => {
     setFocus(id);
@@ -58,7 +42,10 @@ export function MyHealthScreen() {
 
   return (
     <ScrollView style={h.fill} contentContainerStyle={h.body}>
-      <LargeTitle title="Health" trailing={<ToolbarButton icon="plus" label="Add to Your Record" onPress={teach} />} />
+      {/* No logging control here. Logging lives behind the white plus in the
+          bottom navigation, which is reachable from every screen, and two
+          doors to the same room only made the room harder to find. */}
+      <LargeTitle title="Health" />
 
       <View style={h.pad}>
         <Text style={[font('subhead'), { color: C.secondary, marginBottom: 16 }]}>Everything about your health, in one place.</Text>

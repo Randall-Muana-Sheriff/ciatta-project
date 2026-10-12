@@ -427,7 +427,7 @@ export function TodayScreen() {
           read in.
         */}
         <View style={t.grid}>
-          {headlineMetrics(todayDay, vitals).map((m) => (
+          {headlineMetrics(days, vitals).map((m) => (
             <View key={m.key} style={t.gridCell}>
               <MetricCard label={m.label} value={m.value} note={m.note} from={m.from} />
             </View>

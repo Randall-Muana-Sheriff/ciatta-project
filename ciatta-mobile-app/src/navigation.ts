@@ -29,7 +29,8 @@ export type Screen =
   | 'chart'
   | 'dailyLog'
   | 'profile'
-  | 'calendar';
+  | 'calendar'
+  | 'quickLog';
 
 export type Nav = {
   tab: Tab;

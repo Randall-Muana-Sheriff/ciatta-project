@@ -2,9 +2,11 @@ import { StyleSheet, Switch, Text, View } from 'react-native';
 
 import { displayCopy } from '../lib/displayCopy';
 import type { Triage } from '../lib/engine';
+import { metricLine, patternReadiness, readinessLine } from '../lib/patternReadiness';
 import { useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
+import { useData } from '../state/session';
 import { C, font } from '../theme';
 import { ListGroup, ListRow } from '../ui/chrome';
 import { DetailScreen, SecondaryButton, SourceFooter, Tag } from '../ui/kit';
@@ -22,14 +24,27 @@ export function EvidenceScreen() {
   const nav = useNav();
   const { focus, setFocus, watching, setWatching } = useCycle();
   const { ranked, today } = useInsights();
+  const { days } = useData();
   const shown = ranked.filter((i) => i.triage !== 'Ignore');
   // Without a chosen pattern, open on the story Today leads with.
   const item = shown.find((i) => i.id === (focus ?? today.lead?.id)) ?? shown[0];
 
   if (!item) {
+    // Why there is nothing yet, per measure, from her own rows. "Not
+    // enough data" is true and tells her nothing about when it stops being
+    // true; the engine's requirements are arithmetic, so this can say.
+    const ready = patternReadiness(days);
     return (
       <DetailScreen title="Evidence" onBack={nav.back}>
         <Text style={[font('body'), { color: C.secondary }]}>No patterns have appeared yet.</Text>
+        <Text style={[font('subhead'), e.brief]}>{displayCopy(readinessLine(days, ready))}</Text>
+        {days.length ? (
+          <ListGroup header="What Each Measure Has" style={e.section}>
+            {ready.map((r, n) => (
+              <ListRow key={r.key} first={n === 0} title={r.label} sub={displayCopy(metricLine(r))} />
+            ))}
+          </ListGroup>
+        ) : null}
       </DetailScreen>
     );
   }

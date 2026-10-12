@@ -124,26 +124,26 @@ test('no label or value carries a dash, which display copy forbids', () => {
 test('six headline metrics, chosen by what her devices report', () => {
   // Not by what the schema happens to hold. Three come from the wearable
   // and three from the cuff, the ring and the watch.
-  const keys = headlineMetrics(null).map((m) => m.key);
+  const keys = headlineMetrics([]).map((m) => m.key);
   assert.deepEqual(keys, ['sleep', 'hrv', 'steps', 'bp', 'temp', 'spo2']);
 });
 
 test('a vital with no reading is still a card, absent rather than missing', () => {
   // Its place on the grid is where that figure will appear, so the card
   // exists and says nothing.
-  const bp = headlineMetrics(null).find((m) => m.key === 'bp')!;
+  const bp = headlineMetrics([]).find((m) => m.key === 'bp')!;
   assert.equal(bp.value, null);
 });
 
 test('vitals passed in are used rather than recomputed', () => {
   const given = [{ key: 'bp', label: 'Blood pressure', value: '118/76', from: 'measured' as const }];
-  const bp = headlineMetrics(null, given).find((m) => m.key === 'bp')!;
+  const bp = headlineMetrics([], given).find((m) => m.key === 'bp')!;
   assert.equal(bp.value, '118/76');
 });
 
 test('the grid abbreviates where a third of a row cannot hold the name', () => {
   // BP and SpO2 are what she reads on the cuff and the watch anyway.
-  const by = Object.fromEntries(headlineMetrics(null).map((m) => [m.key, m.label]));
+  const by = Object.fromEntries(headlineMetrics([]).map((m) => [m.key, m.label]));
   assert.equal(by.bp, 'BP');
   assert.equal(by.spo2, 'SpO2');
 });
@@ -157,41 +157,74 @@ test('the full names survive for the screen that has room for them', () => {
 test('headline labels are short enough for a third of a row', () => {
   // A label that wraps or truncates is worse than one abbreviated on
   // purpose. The All screen keeps the full names.
-  for (const m of headlineMetrics(null)) {
+  for (const m of headlineMetrics([])) {
     assert.ok(m.label.length <= 11, `${m.label} is ${m.label.length} characters`);
   }
 });
 
 test('with no day at all, every card is absent rather than zero', () => {
-  for (const m of headlineMetrics(null)) assert.equal(m.value, null, m.key);
+  for (const m of headlineMetrics([])) assert.equal(m.value, null, m.key);
 });
 
 test('heart rate variability carries its unit', () => {
-  const by = Object.fromEntries(headlineMetrics({ ...empty, hrv: 42.4 }).map((m) => [m.key, m.value]));
+  const by = Object.fromEntries(headlineMetrics([{ ...empty, hrv: 42.4 }]).map((m) => [m.key, m.value]));
   assert.equal(by.hrv, '42 ms');
 });
 
 test('resting heart rate moved to All, where there is room for every reading', () => {
-  assert.ok(!headlineMetrics(null).some((m) => m.key === 'restingHR'));
+  assert.ok(!headlineMetrics([]).some((m) => m.key === 'restingHR'));
   assert.ok(find({ ...empty, restingHR: 58.6 }, 'Resting heart rate')?.value === '59 bpm');
 });
 
 test('a measured zero still shows, unlike a missing figure', () => {
-  const by = Object.fromEntries(headlineMetrics({ ...empty, steps: 0 }).map((m) => [m.key, m.value]));
+  const by = Object.fromEntries(headlineMetrics([{ ...empty, steps: 0 }]).map((m) => [m.key, m.value]));
   assert.equal(by.steps, '0');
-  assert.equal(Object.fromEntries(headlineMetrics(empty).map((m) => [m.key, m.value])).steps, null);
+  assert.equal(Object.fromEntries(headlineMetrics([empty]).map((m) => [m.key, m.value])).steps, null);
 });
 
-test('skin temperature is signed and says it is a difference', () => {
-  const m = headlineMetrics({ ...empty, tempDeviation: 0.42 }).find((x) => x.key === 'temp')!;
+// The fixture day, so these do not depend on what day the suite runs.
+const ON = new Date(2026, 9, 11, 12);
+
+test('skin temperature is signed, and a reading from today says it is a difference', () => {
+  const m = headlineMetrics([{ ...empty, tempDeviation: 0.42 }], [], ON).find((x) => x.key === 'temp')!;
   assert.equal(m.value, '+0.4 °C');
   assert.equal(m.note, 'From usual');
 });
 
+test('an older reading says how old instead, since the sign already marks it a difference', () => {
+  // Staleness is the thing she cannot infer from the figure. The plus
+  // sign carries the rest.
+  const later = new Date(2026, 9, 13, 12);
+  const m = headlineMetrics([{ ...empty, tempDeviation: 0.42 }], [], later).find((x) => x.key === 'temp')!;
+  assert.equal(m.note, '2 days ago');
+});
+
+test('the latest reading is shown, not only today, with its age', () => {
+  // Ciatta syncs when she asks and at no other time, so today's row is
+  // often simply absent while last night's reading sits one row back.
+  const days = [
+    { ...empty, date: '2026-10-09', hrv: 44 },
+    { ...empty, date: '2026-10-10', hrv: 51 },
+  ];
+  const m = headlineMetrics(days, [], new Date(2026, 9, 11, 12)).find((x) => x.key === 'hrv')!;
+  assert.equal(m.value, '51 ms', 'the newest reading, not the oldest');
+  assert.equal(m.note, 'Yesterday');
+});
+
+test('a reading from today carries no age note', () => {
+  const m = headlineMetrics([{ ...empty, hrv: 51 }], [], ON).find((x) => x.key === 'hrv')!;
+  assert.equal(m.note, undefined);
+});
+
+test('nothing anywhere in the series is still absent', () => {
+  const m = headlineMetrics([empty, empty], [], ON).find((x) => x.key === 'hrv')!;
+  assert.equal(m.value, null);
+});
+
 test('an absent skin temperature carries no note either', () => {
-  assert.equal(headlineMetrics(empty).find((x) => x.key === 'temp')!.note, undefined);
+  assert.equal(headlineMetrics([empty]).find((x) => x.key === 'temp')!.note, undefined);
 });
 
 test('every headline is measured, so none is confused with what she reported', () => {
-  for (const m of headlineMetrics(empty)) assert.equal(m.from, 'measured', m.key);
+  for (const m of headlineMetrics([empty])) assert.equal(m.from, 'measured', m.key);
 });
