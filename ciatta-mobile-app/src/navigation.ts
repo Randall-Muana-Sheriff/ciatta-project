@@ -26,7 +26,8 @@ export type Screen =
   | 'appointment'
   | 'metrics'
   | 'providerConnect'
-  | 'chart';
+  | 'chart'
+  | 'dailyLog';
 
 export type Nav = {
   tab: Tab;

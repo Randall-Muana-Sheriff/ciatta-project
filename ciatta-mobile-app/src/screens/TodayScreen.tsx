@@ -464,6 +464,13 @@ export function TodayScreen() {
             />
             <ListRow
               light
+              icon="leaf"
+              title="Log Your Day"
+              sub="Food, gut, caffeine, and how the day felt."
+              onPress={go('dailyLog')}
+            />
+            <ListRow
+              light
               icon="calendarPlus"
               title="Prepare for an Appointment"
               sub="Build a brief from your record to take with you."
