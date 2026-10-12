@@ -367,7 +367,12 @@ const s = StyleSheet.create({
   // shadow all come from the card now; only the fill differs, which is
   // the one difference that is saying something.
   track: {
-    width: 64,
+    // Wider than it is tall, which is what makes it the same shape rather
+    // than merely the same radius. At 64 square a radius of 30 is a
+    // circle; the bar is a stadium, its ends semicircular with straight
+    // edges between them. 84 gives the plus 24 points of straight edge
+    // top and bottom, so the two read as one shape at two widths.
+    width: 84,
     height: 64,
     borderRadius: 30,
     alignItems: 'center',
