@@ -15,7 +15,7 @@
 // local and the copy in the interface says so rather than implying an
 // upload that has not happened.
 
-export type AttachmentKind = 'photo' | 'document';
+export type AttachmentKind = 'photo' | 'document' | 'video';
 
 export type Attachment = {
   // Stable for the life of the attachment, so removing one does not depend
@@ -39,6 +39,14 @@ const MAX = 6;
 export function photoName(at: Date): string {
   const time = at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   return `Photo at ${time}`;
+}
+
+// A video taken in the moment has no filename either. Named the same way,
+// by when it was taken, because that is the only thing true about it that
+// she will recognise later.
+export function videoName(at: Date): string {
+  const time = at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return `Video at ${time}`;
 }
 
 // A filename from the picker, trimmed to something that fits a chip without
@@ -76,12 +84,16 @@ export function removeAttachment(list: readonly Attachment[], id: string): Attac
 // looked inside either one.
 export function attachmentLine(list: readonly Attachment[]): string | null {
   if (!list.length) return null;
-  const photos = list.filter((x) => x.kind === 'photo').length;
-  const docs = list.length - photos;
-  const parts: string[] = [];
-  if (photos) parts.push(`${photos} ${photos === 1 ? 'photo' : 'photos'}`);
-  if (docs) parts.push(`${docs} ${docs === 1 ? 'document' : 'documents'}`);
-  return `${parts.join(' and ')}, kept on this phone`;
+  const count = (k: AttachmentKind) => list.filter((x) => x.kind === k).length;
+  const say = (n: number, one: string, many: string) => (n ? `${n} ${n === 1 ? one : many}` : null);
+  const parts = [
+    say(count('photo'), 'photo', 'photos'),
+    say(count('video'), 'video', 'videos'),
+    say(count('document'), 'document', 'documents'),
+  ].filter((x): x is string => x != null);
+  const joined =
+    parts.length <= 1 ? (parts[0] ?? '') : parts.length === 2 ? parts.join(' and ') : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+  return `${joined}, kept on this phone`;
 }
 
 // Back from the episode's metadata column, which is jsonb and so can hold
@@ -93,12 +105,19 @@ export function normalizeAttachments(value: unknown): Attachment[] {
   for (const raw of value) {
     if (!raw || typeof raw !== 'object') continue;
     const x = raw as Record<string, unknown>;
-    const kind = x.kind === 'photo' || x.kind === 'document' ? x.kind : null;
+    const kind = x.kind === 'photo' || x.kind === 'document' || x.kind === 'video' ? x.kind : null;
     if (!kind || typeof x.uri !== 'string' || !x.uri) continue;
     out.push({
       id: typeof x.id === 'string' && x.id ? x.id : `${kind}-${out.length}`,
       kind,
-      name: typeof x.name === 'string' && x.name.trim() ? x.name : kind === 'photo' ? 'Photo' : 'Document',
+      name:
+        typeof x.name === 'string' && x.name.trim()
+          ? x.name
+          : kind === 'photo'
+            ? 'Photo'
+            : kind === 'video'
+              ? 'Video'
+              : 'Document',
       uri: x.uri,
       addedAt: typeof x.addedAt === 'string' ? x.addedAt : '',
     });

@@ -28,6 +28,11 @@ const ICONS = {
   stopSquare: [p('M8 8h8v8H8z')],
   send: [p('M4 12l16-8-6 8 6 8z')],
   camera: [p('M3 8.5A1.5 1.5 0 0 1 4.5 7h2L8 5h8l1.5 2h2A1.5 1.5 0 0 1 21 8.5v9A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z'), o(12, 13, 3.4)],
+  // A picture, as its frame with a horizon and a sun in it. Distinct from
+  // camera at a glance, which matters when the two sit in one menu.
+  image: [p('M3 5h18v14H3z'), p('M3 16l5.5 -5 4 3.5 3.5 -3 5 4.5'), o(8.5, 9, 1.6)],
+  // Play, in a frame, for the same reason.
+  video: [p('M3 6h18v12H3z'), p('M10 9.5l5 2.5 -5 2.5z')],
   chevronLeft: [p('M15 5l-7 7 7 7')],
   chevronRight: [p('M9 5l7 7-7 7')],
   chevronDown: [p('M5 9l7 7 7-7')],

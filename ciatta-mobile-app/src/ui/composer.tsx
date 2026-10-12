@@ -7,10 +7,13 @@
 // replaced the only way to end the recording would leave her holding a live
 // microphone with no way to stop it.
 //
-// This is that box, extracted, with the two ways a document reaches a health
-// record added beside the mic: the camera, for the lab report on the kitchen
-// table, and the file picker, for the PDF a clinic emailed. Three ways in,
-// because the thing she has to hand is not always the thing she can type.
+// This is that box, extracted, with the ways a document reaches a health
+// record behind a plus on the left: the camera for the lab report on the
+// kitchen table, a video for the thing that is easier shown than written,
+// the library for what she already has, and the file picker for the PDF a
+// clinic emailed. Behind a plus rather than in the box, because four
+// buttons sitting in a textbox make it a toolbar instead of a place to
+// write.
 //
 // What Ciatta does with an attachment is nothing, deliberately. See
 // lib/attachments.ts: no OCR, no parsing, no values read off a page. It is
@@ -26,15 +29,17 @@ import * as ImagePicker from 'expo-image-picker';
 import {
   addAttachment,
   type Attachment,
+  type AttachmentKind,
   canAttach,
   photoName,
   removeAttachment,
   shortName,
+  videoName,
 } from '../lib/attachments';
 import { useDictation } from '../lib/dictation';
 import { displayCopy } from '../lib/displayCopy';
 import { font } from '../theme';
-import { Icon } from './icons';
+import { Icon, type IconName } from './icons';
 import { L, TILE_RADIUS } from './surface';
 
 export type ComposerProps = {
@@ -55,6 +60,20 @@ export type ComposerProps = {
 
 const id = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
+// The four ways something gets into a health record, behind one plus.
+//
+// They were two buttons sitting in the box. Four will not fit there, and
+// four buttons in a textbox is a toolbar rather than a place to write. So
+// the plus holds them and the box stays a box.
+type Way = { key: string; label: string; icon: IconName };
+
+const WAYS: Way[] = [
+  { key: 'camera', label: 'Take a photo', icon: 'camera' },
+  { key: 'video', label: 'Record a video', icon: 'video' },
+  { key: 'library', label: 'Photo or video', icon: 'image' },
+  { key: 'file', label: 'PDF or file', icon: 'doc' },
+];
+
 export function Composer({
   value,
   onChange,
@@ -69,6 +88,7 @@ export function Composer({
   // not an error she did anything wrong, so it reads as a fact and says
   // where to change it.
   const [note, setNote] = useState('');
+  const [open, setOpen] = useState(false);
 
   // Dictation appends. She may type a sentence, speak the next and correct
   // both; a recogniser that replaced the field would destroy what she wrote.
@@ -84,45 +104,88 @@ export function Composer({
     onAttachments?.(addAttachment(files, next));
   };
 
-  const takePhoto = async () => {
-    if (!canAdd) return;
+  // From the camera, either still or moving.
+  const capture = async (kind: 'photo' | 'video') => {
     try {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
-        setNote('Ciatta needs camera permission to take a photo. You can turn it on in Settings.');
+        setNote('Ciatta needs camera permission for this. You can turn it on in Settings.');
         return;
       }
-      const shot = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7 });
+      const shot = await ImagePicker.launchCameraAsync(
+        kind === 'photo'
+          ? { mediaTypes: ['images'], quality: 0.7 }
+          : // Capped, because a health record does not need ten minutes of
+            // footage and the file stays on her phone either way.
+            { mediaTypes: ['videos'], videoMaxDuration: 180 },
+      );
       if (shot.canceled || !shot.assets?.length) return;
       const now = new Date();
-      keep({ id: id(), kind: 'photo', name: photoName(now), uri: shot.assets[0].uri, addedAt: now.toISOString() });
+      keep({
+        id: id(),
+        kind,
+        name: kind === 'photo' ? photoName(now) : videoName(now),
+        uri: shot.assets[0].uri,
+        addedAt: now.toISOString(),
+      });
     } catch {
-      setNote('The camera did not open. You can add the photo from your library instead.');
+      setNote('The camera did not open. You can add it from your library instead.');
     }
   };
 
-  const pickDocument = async () => {
-    if (!canAdd) return;
+  // From what she already has.
+  const pickFromLibrary = async () => {
     try {
-      // PDFs and images, which between them are every document a clinic
-      // sends and every photo she already has of one.
+      const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images', 'videos'], quality: 0.7 });
+      if (picked.canceled || !picked.assets?.length) return;
+      const asset = picked.assets[0];
+      const now = new Date();
+      // The picker says which it gave back, so the kind is read rather than
+      // assumed: a video filed as a photo would render as a broken image.
+      // The picker reports livePhoto and pairedVideo as well as image and
+      // video. Anything that moves is filed as a video, because that is
+      // what will and will not render as a still.
+      const kind: AttachmentKind = asset.type === 'video' || asset.type === 'pairedVideo' ? 'video' : 'photo';
+      keep({
+        id: id(),
+        kind,
+        name: asset.fileName ? shortName(asset.fileName) : kind === 'photo' ? photoName(now) : videoName(now),
+        uri: asset.uri,
+        addedAt: now.toISOString(),
+      });
+    } catch {
+      setNote('That did not open.');
+    }
+  };
+
+  // From a file, which is how a clinic sends anything.
+  const pickDocument = async () => {
+    try {
       const picked = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'image/*'],
+        type: ['application/pdf', 'image/*', 'video/*'],
         copyToCacheDirectory: true,
       });
       if (picked.canceled || !picked.assets?.length) return;
       const file = picked.assets[0];
       const now = new Date();
-      keep({
-        id: id(),
-        kind: file.mimeType?.startsWith('image/') ? 'photo' : 'document',
-        name: shortName(file.name),
-        uri: file.uri,
-        addedAt: now.toISOString(),
-      });
+      const kind: AttachmentKind = file.mimeType?.startsWith('image/')
+        ? 'photo'
+        : file.mimeType?.startsWith('video/')
+          ? 'video'
+          : 'document';
+      keep({ id: id(), kind, name: shortName(file.name), uri: file.uri, addedAt: now.toISOString() });
     } catch {
       setNote('That file did not open.');
     }
+  };
+
+  const choose = async (key: string) => {
+    setOpen(false);
+    if (!canAdd) return;
+    if (key === 'camera') return capture('photo');
+    if (key === 'video') return capture('video');
+    if (key === 'library') return pickFromLibrary();
+    return pickDocument();
   };
 
   // Listening always wins: it is the state she needs a way out of.
@@ -130,6 +193,27 @@ export function Composer({
 
   return (
     <View>
+      {/*
+        Above the box, not over it. A sheet covering what she has written
+        while she decides what to attach to it is a sheet in the way.
+      */}
+      {open && canAdd ? (
+        <View style={s.menu}>
+          {WAYS.map((way, n) => (
+            <Pressable
+              key={way.key}
+              onPress={() => void choose(way.key)}
+              accessibilityRole="button"
+              accessibilityLabel={way.label}
+              style={({ pressed }) => [s.wayRow, n > 0 && s.wayDivided, pressed && s.pressed]}
+            >
+              <Icon name={way.icon} size={19} color={L.body} />
+              <Text style={[font('subhead'), s.wayLabel]}>{way.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+
       <View style={s.wrap}>
         <TextInput
           value={value}
@@ -144,34 +228,29 @@ export function Composer({
 
         <View style={s.foot}>
           {/*
-            The two quiet ways in, on the left, away from the control that
-            commits. Hidden entirely once the list is full rather than shown
-            dead, because a button that cannot act is a button she taps.
+            One plus on the left, away from the control that commits. Gone
+            entirely once the list is full rather than shown dead, because a
+            button that cannot act is a button she taps.
+
+            It rotates into a cross while the menu is open, so the thing
+            that opened it is also the thing that closes it.
           */}
-          <View style={s.ways}>
-            {canAdd ? (
-              <>
-                <Pressable
-                  onPress={takePhoto}
-                  accessibilityRole="button"
-                  accessibilityLabel="Take a photo"
-                  hitSlop={6}
-                  style={({ pressed }) => [s.way, pressed && s.pressed]}
-                >
-                  <Icon name="camera" size={18} color={L.body} />
-                </Pressable>
-                <Pressable
-                  onPress={pickDocument}
-                  accessibilityRole="button"
-                  accessibilityLabel="Attach a PDF or an image"
-                  hitSlop={6}
-                  style={({ pressed }) => [s.way, pressed && s.pressed]}
-                >
-                  <Icon name="doc" size={18} color={L.body} />
-                </Pressable>
-              </>
-            ) : null}
-          </View>
+          {canAdd ? (
+            <Pressable
+              onPress={() => setOpen((v) => !v)}
+              accessibilityRole="button"
+              accessibilityLabel={open ? 'Close attachment options' : 'Add a photo, video or file'}
+              accessibilityState={{ expanded: open }}
+              hitSlop={8}
+              style={({ pressed }) => [s.plus, open && s.plusOn, pressed && s.pressed]}
+            >
+              <View style={open ? s.turned : undefined}>
+                <Icon name="plus" size={20} color={open ? L.canvas : L.body} />
+              </View>
+            </Pressable>
+          ) : (
+            <View />
+          )}
 
           <Pressable
             onPress={action === 'stop' ? dictation.stop : action === 'send' ? onSend : dictation.start}
@@ -209,12 +288,16 @@ export function Composer({
         <View style={s.files}>
           {files.map((file) => (
             <View key={file.id} style={s.file}>
-              {/* A photo shows itself; a PDF has nothing to show but its kind. */}
+              {/*
+                A photo shows itself. A video and a PDF have nothing an
+                Image can render, so they show what they are: pointing
+                Image at a .mov renders a blank box, not a frame.
+              */}
               {file.kind === 'photo' ? (
                 <Image source={{ uri: file.uri }} style={s.thumb} accessibilityIgnoresInvertColors />
               ) : (
                 <View style={[s.thumb, s.thumbDoc]}>
-                  <Icon name="doc" size={16} color={L.body} />
+                  <Icon name={file.kind === 'video' ? 'video' : 'doc'} size={16} color={L.body} />
                 </View>
               )}
               {/*
@@ -266,8 +349,34 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  ways: { flexDirection: 'row', gap: 4 },
-  way: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  // The plus. Same 38pt circle the mic uses, so the two ends of the foot
+  // row are the same object at different weights.
+  plus: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: L.recessed,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: L.rule,
+  },
+  plusOn: { backgroundColor: L.ink, borderColor: L.ink },
+  // A cross is a plus turned, so the open state is the same glyph rotated
+  // rather than a second icon that has to be kept looking like the first.
+  turned: { transform: [{ rotate: '45deg' }] },
+
+  menu: {
+    marginBottom: 8,
+    backgroundColor: L.recessed,
+    borderRadius: TILE_RADIUS,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: L.rule,
+    overflow: 'hidden',
+  },
+  wayRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 16 },
+  wayDivided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },
+  wayLabel: { color: L.ink },
   action: {
     width: 38,
     height: 38,

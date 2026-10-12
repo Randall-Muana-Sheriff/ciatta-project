@@ -10,6 +10,7 @@ import {
   photoName,
   removeAttachment,
   shortName,
+  videoName,
 } from './attachments';
 
 const made = (id: string, kind: Attachment['kind'] = 'photo'): Attachment => ({
@@ -110,4 +111,33 @@ test('a good entry round trips, and a missing name gets one', () => {
 test('a column holding more than the cap is trimmed to it', () => {
   const many = Array.from({ length: 20 }, (_, i) => ({ kind: 'photo', uri: `file:///${i}` }));
   assert.equal(normalizeAttachments(many).length, 6);
+});
+
+// ── Video, the fourth way in ─────────────────────────────────────────
+
+test('a video is named by the time it was taken, like a photo', () => {
+  assert.equal(videoName(new Date(2026, 9, 11, 14, 30)), 'Video at 2:30 PM');
+});
+
+test('three kinds are counted separately and read as a sentence', () => {
+  const list: Attachment[] = [made('a'), made('b'), made('c', 'video'), made('d', 'document')];
+  assert.equal(attachmentLine(list), '2 photos, 1 video and 1 document, kept on this phone');
+});
+
+test('two kinds join with and, not a comma', () => {
+  assert.equal(attachmentLine([made('a'), made('c', 'video')]), '1 photo and 1 video, kept on this phone');
+});
+
+test('a video round trips from the metadata column', () => {
+  const out = normalizeAttachments([{ kind: 'video', uri: 'file:///v' }]);
+  assert.equal(out.length, 1);
+  assert.equal(out[0].kind, 'video');
+  assert.equal(out[0].name, 'Video');
+});
+
+test('the line still never claims Ciatta watched the video', () => {
+  const line = attachmentLine([made('a', 'video')]) as string;
+  for (const word of ['shows', 'says', 'watched', 'contains', 'read']) {
+    assert.ok(!line.toLowerCase().includes(word), `${line} must not say ${word}`);
+  }
 });
