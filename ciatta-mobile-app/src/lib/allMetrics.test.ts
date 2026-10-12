@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { Day } from '../data/daily';
-import { buildMetrics, recordedCount, recordedLine } from './allMetrics';
+import { buildMetrics, headlineMetrics, recordedCount, recordedLine } from './allMetrics';
 
 const empty: Day = {
   date: '2026-10-11',
@@ -116,4 +116,42 @@ test('no label or value carries a dash, which display copy forbids', () => {
       assert.ok(!/[—–]/.test(r.value ?? ''), r.value ?? '');
     }
   }
+});
+
+// ── The six on Today ─────────────────────────────────────────────────
+
+test('six headline metrics, in a stable order', () => {
+  const keys = headlineMetrics(null).map((m) => m.key);
+  assert.deepEqual(keys, ['sleep', 'hrv', 'restingHR', 'steps', 'active', 'temp']);
+});
+
+test('with no day at all, every card is absent rather than zero', () => {
+  for (const m of headlineMetrics(null)) assert.equal(m.value, null, m.key);
+});
+
+test('heart rate variability and resting heart rate carry their units', () => {
+  const day = { ...empty, hrv: 42.4, restingHR: 58.6 };
+  const by = Object.fromEntries(headlineMetrics(day).map((m) => [m.key, m.value]));
+  assert.equal(by.hrv, '42 ms');
+  assert.equal(by.restingHR, '59 bpm');
+});
+
+test('a measured zero still shows, unlike a missing figure', () => {
+  const by = Object.fromEntries(headlineMetrics({ ...empty, steps: 0 }).map((m) => [m.key, m.value]));
+  assert.equal(by.steps, '0');
+  assert.equal(Object.fromEntries(headlineMetrics(empty).map((m) => [m.key, m.value])).steps, null);
+});
+
+test('skin temperature is signed and says it is a difference', () => {
+  const m = headlineMetrics({ ...empty, tempDeviation: 0.42 }).find((x) => x.key === 'temp')!;
+  assert.equal(m.value, '+0.4 °C');
+  assert.equal(m.note, 'From your usual');
+});
+
+test('an absent skin temperature carries no note either', () => {
+  assert.equal(headlineMetrics(empty).find((x) => x.key === 'temp')!.note, undefined);
+});
+
+test('every headline is measured, so none is confused with what she reported', () => {
+  for (const m of headlineMetrics(empty)) assert.equal(m.from, 'measured', m.key);
 });

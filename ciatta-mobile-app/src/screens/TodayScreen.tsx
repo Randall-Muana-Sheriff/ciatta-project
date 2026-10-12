@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
+import { headlineMetrics } from '../lib/allMetrics';
 import { displayCopy } from '../lib/displayCopy';
 import { type CyclePoint, cycleTrend, fmtHours } from '../lib/engine';
 import { countedWindows, cycleToday, cycleTodayLabel, medianLength } from '../lib/cycleModel';
@@ -17,6 +18,7 @@ import { AXIS, buildDay, type DayChart, VIEW } from '../lib/todayChart';
 import type { IntradayPoint } from '../data/repo';
 import { ground, HUE, L, mark, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow } from '../ui/chrome';
+import { MetricCard, METRIC_CARD_GAP } from '../ui/metricCard';
 import type { IconName } from '../ui/icons';
 import { Icon } from '../ui/icons';
 
@@ -334,6 +336,25 @@ export function TodayScreen() {
               Not enough readings today to draw your day yet.
             </Text>
           )}
+
+          {/*
+            Where she is in her cycle, under the day it belongs to. It
+            lives here rather than among the metrics because it is not a
+            metric: it is the context the day is read in, and it is the
+            one thing on this card she reported rather than a device
+            measured.
+          */}
+          <View style={t.cycleRow}>
+            <View>
+              <Text style={[font('caption1'), t.cycleKey]}>CYCLE</Text>
+              <Text style={[font('headline'), cycleNow ? t.cycleValue : t.cycleNone]}>
+                {cycleNow ? `Day ${cycleNow.day}` : 'No open cycle'}
+              </Text>
+            </View>
+            {cycleNow?.phase ? (
+              <Text style={[font('footnote', 'semibold'), t.phase]}>{cycleNow.phase}</Text>
+            ) : null}
+          </View>
         </View>
 
         {/* The chart, then the daily brief written from whatever ranks highest. */}
@@ -363,42 +384,15 @@ export function TodayScreen() {
         </View>
         <View style={t.card}>
         {/*
-          Where she is in her cycle, above the three figures, because it is
-          the one of the four she carries in her head all day and the one
-          that gives the other three their context.
-
-          It is her own logging rather than a device reading, so it is the
-          only row here in a semantic colour, and both halves have to be
-          earned: cycleToday returns null when there is no open cycle or
-          when one has been left open past the point its day count means
-          anything, and then the row says that instead of a number.
+          Six cards and nothing else. The card holds only metrics now:
+          the chart and the cycle moved up into Today's Patterns, where
+          the one is the day drawn and the other is the context it is
+          read in.
         */}
-        <View style={t.cycleRow}>
-          <View>
-            <Text style={[font('caption1'), t.pillLabel]}>CYCLE</Text>
-            <Text style={[font('headline'), cycleNow ? t.pillValue : t.pillNone]}>
-              {cycleNow ? `Day ${cycleNow.day}` : 'No open cycle'}
-            </Text>
-          </View>
-          {cycleNow?.phase ? (
-            <Text style={[font('footnote', 'semibold'), t.phase]}>{cycleNow.phase}</Text>
-          ) : null}
-        </View>
-
-        {/*
-          Three figures from today, as the concept has them. Each is the
-          value actually recorded; a figure with nothing behind it says so
-          rather than showing a dash that reads as zero.
-        */}
-        <View style={t.pills}>
-          {[
-            ['Sleep', todayDay?.sleepHours != null ? fmtHours(todayDay.sleepHours) : null],
-            ['HRV', todayDay?.hrv != null ? `${Math.round(todayDay.hrv)} ms` : null],
-            ['Steps', todayDay?.steps != null ? Math.round(todayDay.steps).toLocaleString('en-US') : null],
-          ].map(([label, value]) => (
-            <View key={label as string} style={t.pill}>
-              <Text style={[font('caption1'), t.pillLabel]}>{(label as string).toUpperCase()}</Text>
-              <Text style={[font('headline'), value ? t.pillValue : t.pillNone]}>{value ?? 'Not yet'}</Text>
+        <View style={t.grid}>
+          {headlineMetrics(todayDay).map((m) => (
+            <View key={m.key} style={t.gridCell}>
+              <MetricCard label={m.label} value={m.value} note={m.note} from={m.from} />
             </View>
           ))}
         </View>
@@ -581,21 +575,15 @@ const t = StyleSheet.create({
     overflow: 'hidden',
   },
 
-  pills: { flexDirection: 'row', gap: SPACE.grid, marginTop: SPACE.grid },
-  pill: {
-    flex: 1,
-    backgroundColor: L.recessed,
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    gap: 2,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
-  },
-  pillLabel: { color: L.meta, letterSpacing: 0.9 },
-  pillValue: { color: L.ink },
+  // Two across, three down. A grid reads as a set of peers, which is what
+  // these are: six readings from one day, none ranked above another.
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: METRIC_CARD_GAP },
+  gridCell: { width: `48%`, flexGrow: 1 },
+
+  cycleKey: { color: L.meta, letterSpacing: 0.9 },
+  cycleValue: { color: L.ink },
   // A figure she has not produced today reads as absent, not as zero.
-  pillNone: { color: L.meta },
+  cycleNone: { color: L.meta },
   lead: { marginTop: SPACE.block },
   leadEyebrow: { color: L.meta, letterSpacing: 1.1 },
   leadText: { color: L.ink, lineHeight: 25, marginTop: 6 },

@@ -121,3 +121,66 @@ export function recordedLine(counts: { recorded: number; total: number }): strin
   if (counts.recorded === 0) return 'Nothing recorded today yet.';
   return `${counts.recorded} of ${counts.total} recorded today.`;
 }
+
+
+// The six on Today, in the order she reads them.
+//
+// Chosen because each is one number from one day, which is what a card
+// can hold. Sleep and steps are the two she already knows; heart rate
+// variability and resting heart rate are the two that arrive nightly and
+// move fastest, which is what makes a pattern visible in weeks rather
+// than in cycles.
+export type HeadlineMetric = {
+  key: string;
+  label: string;
+  value: string | null;
+  // Shown under the value when there is one. Never a verdict.
+  note?: string;
+  from: 'measured' | 'reported' | 'derived';
+};
+
+export function headlineMetrics(day: Day | null): HeadlineMetric[] {
+  const one = (n: number) => (Math.round(n * 10) / 10).toFixed(1);
+  return [
+    {
+      key: 'sleep',
+      label: 'Sleep',
+      value: day?.sleepHours != null ? fmtHours(day.sleepHours) : null,
+      from: 'measured',
+    },
+    {
+      key: 'hrv',
+      label: 'HRV',
+      value: day?.hrv != null ? `${Math.round(day.hrv)} ms` : null,
+      from: 'measured',
+    },
+    {
+      key: 'restingHR',
+      label: 'Resting heart rate',
+      value: day?.restingHR != null ? `${Math.round(day.restingHR)} bpm` : null,
+      from: 'measured',
+    },
+    {
+      key: 'steps',
+      label: 'Steps',
+      value: day?.steps != null ? Math.round(day.steps).toLocaleString('en-US') : null,
+      from: 'measured',
+    },
+    {
+      key: 'active',
+      label: 'Active minutes',
+      value: day?.activeMinutes != null ? `${Math.round(day.activeMinutes)} min` : null,
+      from: 'measured',
+    },
+    {
+      key: 'temp',
+      label: 'Skin temperature',
+      value:
+        day?.tempDeviation != null ? `${day.tempDeviation > 0 ? '+' : ''}${one(day.tempDeviation)} °C` : null,
+      // Named as a difference, because that is what the sensor reports. A
+      // bare figure would read as a body temperature.
+      note: day?.tempDeviation != null ? 'From your usual' : undefined,
+      from: 'measured',
+    },
+  ];
+}

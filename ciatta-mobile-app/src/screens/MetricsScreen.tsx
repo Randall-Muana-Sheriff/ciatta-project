@@ -17,14 +17,15 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { buildMetrics, type MetricRow, recordedCount, recordedLine } from '../lib/allMetrics';
+import { buildMetrics, recordedCount, recordedLine } from '../lib/allMetrics';
 import { displayCopy } from '../lib/displayCopy';
 import { useNav } from '../navigation';
 import { useData } from '../state/session';
 import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen } from '../ui/kit';
-import { HUE, L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { MetricCard, METRIC_CARD_GAP } from '../ui/metricCard';
+import { L, SPACE } from '../ui/surface';
 
 export function MetricsScreen() {
   const nav = useNav();
@@ -47,12 +48,19 @@ export function MetricsScreen() {
         A figure that is not here was not recorded. Ciatta leaves it blank rather than filling it with a zero.
       </Text>
 
+      {/*
+        The same card Today uses, in the same grid. These were list rows,
+        so one figure looked like two different kinds of thing depending
+        on which screen she was on.
+      */}
       {groups.map((group) => (
         <View key={group.title} style={s.group}>
           <Eyebrow>{group.title}</Eyebrow>
-          <View style={s.card}>
-            {group.rows.map((row, n) => (
-              <Row key={row.label} row={row} first={n === 0} />
+          <View style={s.grid}>
+            {group.rows.map((row) => (
+              <View key={row.label} style={s.cell}>
+                <MetricCard label={row.label} value={row.value} note={row.note} from={row.from} />
+              </View>
             ))}
           </View>
         </View>
@@ -61,52 +69,11 @@ export function MetricsScreen() {
   );
 }
 
-function Row({ row, first }: { row: MetricRow; first: boolean }) {
-  const missing = row.value == null;
-  return (
-    <View
-      style={[s.row, !first && s.divided]}
-      accessible
-      accessibilityLabel={`${row.label}, ${row.value ?? 'not recorded'}${
-        row.from === 'reported' ? ', you reported this' : ''
-      }`}
-    >
-      <View style={s.left}>
-        <Text style={[font('subhead'), s.label]}>{displayCopy(row.label)}</Text>
-        {row.note ? <Text style={[font('caption2'), s.rowNote]}>{displayCopy(row.note)}</Text> : null}
-      </View>
-      {/*
-        Reported rows carry Rose, which is the meaning: she said it. A
-        measured row carries nothing, because measured is the default
-        everywhere else in the app and marking it would make the quiet
-        case look like the exception.
-      */}
-      {row.from === 'reported' && !missing ? <View style={s.dot} /> : null}
-      <Text style={[font('subhead', missing ? 'regular' : 'semibold'), missing ? s.missing : s.value]}>
-        {row.value ?? 'Not yet'}
-      </Text>
-    </View>
-  );
-}
-
 const s = StyleSheet.create({
   lede: { color: L.ink, lineHeight: 24, paddingHorizontal: GUTTER },
   note: { color: L.meta, lineHeight: 18, marginTop: 6, paddingHorizontal: GUTTER },
   group: { marginTop: SPACE.block, paddingHorizontal: GUTTER },
-  card: {
-    marginTop: SPACE.tight,
-    backgroundColor: L.recessed,
-    borderRadius: TILE_RADIUS,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
-    paddingHorizontal: 14,
-  },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 },
-  divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },
-  left: { flex: 1 },
-  label: { color: L.body },
-  rowNote: { color: L.meta, marginTop: 2 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: HUE.reported },
-  value: { color: L.ink },
-  missing: { color: L.meta },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: METRIC_CARD_GAP, marginTop: SPACE.tight },
+  cell: { width: `48%`, flexGrow: 1 },
+
 });
