@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } fr
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
 import { type Data, journeyAxis } from '../data/adapter';
+import type { Day } from '../data/daily';
 import { addDays, shortDate } from '../data/cycleLog';
 import { countedWindows, type CycleWindow, medianLength } from '../lib/cycleModel';
 import { displayCopy } from '../lib/displayCopy';
@@ -13,6 +14,7 @@ import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useData } from '../state/session';
 import { C, font, fonts, GUTTER, RADIUS } from '../theme';
 import { NAV_CLEARANCE } from '../ui/surface';
+import { sleepPoints, sleepScale, symptomPlacement, symptomPoints } from '../lib/journeyLanes';
 import { type Axis, axisFor, emptyFor, posIn, type Scale, SCALES } from '../lib/timeAxis';
 import { LargeTitle, Panel } from '../ui/chrome';
 import { Icon, type IconName } from '../ui/icons';
@@ -103,6 +105,7 @@ function LaneMarks({
   axisTo,
   signals,
   cycle,
+  days,
   journey,
   plotW,
 }: {
@@ -112,6 +115,7 @@ function LaneMarks({
   axisTo: Date;
   signals: Signal[];
   cycle: CyclePoint[];
+  days: readonly Day[];
   journey: Data['journey'];
   plotW: number;
 }) {
@@ -229,31 +233,30 @@ function LaneMarks({
             })}
         </G>
       );
-    case 'sleep':
-      if (!journey) return null;
+    case 'sleep': {
+      // Her own nights, placed by date. This lane used to come from
+      // sample.journey, which positions points by month index on a seven
+      // month strip, so in real mode it drew nothing at all.
+      const pts = sleepPoints(days);
+      if (!pts.length) return null;
+      const y = sleepScale(pts, 96);
+      // One label per point is unreadable at a month or a year. The last
+      // night in view gets the number; the rest carry the shape.
+      const lastIn = [...pts].reverse().find((pt) => x(pt.at) != null);
       return (
         <G>
-          {journey.sleep.map((s, i) => {
-            const cx = at(s.m);
+          {pts.map((pt, i) => {
+            const cx = x(pt.at);
             if (cx == null) return null;
-            const bar = 12 + (s.hours - 6) * 14;
+            const top = y(pt.hours);
             return (
               <G key={i}>
                 {/* The bar is 6 wide, so it is offset by half to sit on
-                    its point. The offset used to be eaten by a fallback
-                    that bound tighter than the subtraction. */}
-                <Rect
-                  x={cx - 3}
-                  y={56 - bar}
-                  width={6}
-                  height={bar}
-                  rx={3}
-                  fill={s.expected ? C.gray : C.lavender}
-                  opacity={s.expected ? 0.5 : 1}
-                />
-                {s.label ? (
-                  <Label x={cx} y={78} color={C.text}>
-                    {s.label.replace(' ', '')}
+                    its point. */}
+                <Rect x={cx - 3} y={top} width={6} height={Math.max(2, 96 - top)} rx={3} fill={C.lavender} />
+                {pt === lastIn ? (
+                  <Label x={cx} y={112} color={C.text}>
+                    {pt.label.replace(' ', '')}
                   </Label>
                 ) : null}
               </G>
@@ -261,18 +264,23 @@ function LaneMarks({
           })}
         </G>
       );
-    case 'symptoms':
-      if (!journey) return null;
+    }
+    case 'symptoms': {
+      // Every log she made, at the severity she gave it. Not averaged per
+      // day: a mean would flatten a nine and a four into two sixes.
+      const pts = symptomPoints(signals);
+      if (!pts.length) return null;
       return (
         <G>
-          {journey.symptoms.map((s, i) => {
-            const cx = at(s.m);
-            return cx == null ? null : (
-              <Circle key={i} cx={cx} cy={s.y} r={3.5} fill={s.expected ? C.gray : C.violet} />
-            );
+          {pts.map((pt, i) => {
+            const cx = x(pt.at);
+            if (cx == null) return null;
+            const place = symptomPlacement(pt, 88);
+            return <Circle key={i} cx={cx} cy={place.y} r={place.r} fill={C.violet} />;
           })}
         </G>
       );
+    }
     case 'medications':
       if (!journey) return null;
       return (
@@ -411,7 +419,7 @@ export function JourneyScreen() {
   const nav = useNav();
   const { startDraft } = useCycle();
   const { signals, fertility, windows, lens, profile } = useCycleInsights();
-  const { journey } = useData();
+  const { journey, days } = useData();
   const { width } = useWindowDimensions();
   const current = windows[windows.length - 1] ?? null;
   const cycle = cycleLane(windows, current, lens.predicts ? medianLength(countedWindows(windows, profile)) : null);
@@ -587,6 +595,7 @@ export function JourneyScreen() {
                       axisTo={axis.to}
                       signals={signals}
                       cycle={cycle}
+                      days={days}
                       journey={journey}
                       plotW={plotW}
                     />
