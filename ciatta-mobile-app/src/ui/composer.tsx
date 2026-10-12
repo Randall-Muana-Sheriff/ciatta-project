@@ -65,13 +65,19 @@ const id = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(
 // They were two buttons sitting in the box. Four will not fit there, and
 // four buttons in a textbox is a toolbar rather than a place to write. So
 // the plus holds them and the box stays a box.
-type Way = { key: string; label: string; icon: IconName };
+// `label` is always the spoken name, so a screen reader hears a sentence
+// at every row. `shown` is the one row that also prints it.
+//
+// A camera, a picture frame and a document are read on sight. A play
+// triangle is not: alone it says play, not add a video, and the one row
+// whose icon cannot carry its own meaning is the one that keeps its words.
+type Way = { key: string; label: string; icon: IconName; shown?: boolean };
 
 const WAYS: Way[] = [
   { key: 'camera', label: 'Take a photo', icon: 'camera' },
   { key: 'image', label: 'Add an image', icon: 'image' },
-  { key: 'video', label: 'Add a video', icon: 'video' },
   { key: 'file', label: 'Add a PDF', icon: 'doc' },
+  { key: 'video', label: 'Add a video', icon: 'video', shown: true },
 ];
 
 export function Composer({
@@ -190,16 +196,18 @@ export function Composer({
       */}
       {open && canAdd ? (
         <View style={s.menu}>
-          {WAYS.map((way, n) => (
+          {WAYS.map((way) => (
             <Pressable
               key={way.key}
               onPress={() => void choose(way.key)}
               accessibilityRole="button"
+              // Spoken even where it is not printed, so an icon that says
+              // nothing on screen still says something out loud.
               accessibilityLabel={way.label}
-              style={({ pressed }) => [s.wayRow, n > 0 && s.wayDivided, pressed && s.pressed]}
+              style={({ pressed }) => [s.wayButton, way.shown && s.wayWide, pressed && s.pressed]}
             >
               <Icon name={way.icon} size={19} color={L.body} />
-              <Text style={[font('subhead'), s.wayLabel]}>{way.label}</Text>
+              {way.shown ? <Text style={[font('footnote'), s.wayLabel]}>{way.label}</Text> : null}
             </Pressable>
           ))}
         </View>
@@ -357,16 +365,26 @@ const s = StyleSheet.create({
   // rather than a second icon that has to be kept looking like the first.
   turned: { transform: [{ rotate: '45deg' }] },
 
-  menu: {
-    marginBottom: 8,
+  // A strip rather than a list, now that three of the four are a glyph
+  // each. Four stacked rows of mostly whitespace was a menu pretending to
+  // be longer than it is.
+  menu: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' },
+  // Each way is its own pill, so the tap target stays 44 high even where
+  // the glyph inside it is 19.
+  wayButton: {
+    minWidth: 48,
+    height: 44,
+    paddingHorizontal: 14,
+    borderRadius: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     backgroundColor: L.recessed,
-    borderRadius: TILE_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,
-    overflow: 'hidden',
   },
-  wayRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 16 },
-  wayDivided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },
+  wayWide: { paddingHorizontal: 16 },
   wayLabel: { color: L.ink },
   action: {
     width: 38,
