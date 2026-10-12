@@ -11,7 +11,7 @@
 // This renders, and calls it.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { connectProvider, loadConnections, loadDirectory } from '../data/providers';
 import type { Endpoint } from '../lib/providers/directory';
@@ -71,23 +71,30 @@ export function ProviderConnectScreen() {
     );
   }, [picked, connecting]);
 
-  if (picked) {
-    return (
-      <ProviderSheet
-        endpoint={picked}
-        connecting={connecting}
-        message={message}
-        onBack={() => {
-          setPicked(null);
-          setMessage('');
-        }}
-        onConnect={connect}
-      />
-    );
-  }
+  const dismiss = () => {
+    setPicked(null);
+    setMessage('');
+  };
 
   return (
     <DetailScreen title="Find your health institution" onBack={nav.back}>
+      {/*
+        A sheet over the search, not a screen replacing it. She is one tap
+        from the wrong hospital at this point, and a sheet keeps the list
+        she chose from visible behind it so backing out costs nothing.
+      */}
+      <Modal visible={!!picked} transparent animationType="slide" onRequestClose={dismiss}>
+        <Pressable style={s.scrim} onPress={dismiss} accessibilityRole="button" accessibilityLabel="Close" />
+        {picked ? (
+          <ProviderSheet
+            endpoint={picked}
+            connecting={connecting}
+            message={message}
+            onBack={dismiss}
+            onConnect={connect}
+          />
+        ) : null}
+      </Modal>
       <View style={s.searchWrap}>
         <Icon name="search" size={18} color={L.meta} />
         <TextInput
@@ -226,7 +233,9 @@ function ProviderSheet({
   const unregistered = !CLIENT_ID;
 
   return (
-    <DetailScreen title="Connect" onBack={onBack}>
+    <View style={s.sheetWrap}>
+      {/* The grabber, which is what says this can be pulled away. */}
+      <View style={s.grabber} />
       <ScrollView style={s.fill} contentContainerStyle={s.sheet}>
         <Text style={[font('title2'), s.sheetTitle]} accessibilityRole="header">
           {displayCopy(endpoint.name)}
@@ -259,10 +268,20 @@ function ProviderSheet({
             // Said rather than hidden behind a button that opens a login
             // which cannot succeed. A missing registration is Ciatta's
             // problem and the screen says whose it is.
-            <Text style={[font('subhead'), s.blocked]}>
-              Ciatta is not registered with a provider network yet, so this connection cannot be made. Nothing about
-              your record has changed.
-            </Text>
+            // Said before she taps, not after. Sending her to a login
+            // that cannot complete would waste her time and teach her the
+            // connection is broken rather than not yet built.
+            <View>
+              <Text style={[font('subhead'), s.blocked]}>
+                Ciatta is early, and is not yet registered with the provider networks that hospitals require. So this
+                connection cannot be made today.
+              </Text>
+              <Text style={[font('subhead'), s.blockedNote]}>
+                Everything else is ready for it. Nothing about your record has changed, and nothing was sent to
+                {' '}
+                {displayCopy(endpoint.name)}.
+              </Text>
+            </View>
           ) : connecting ? (
             <View style={s.centre}>
               <ActivityIndicator color={L.ink} />
@@ -272,8 +291,12 @@ function ProviderSheet({
             <PrimaryButton label={`Continue to ${portal}`} onPress={onConnect} />
           )}
         </View>
+
+        <Pressable onPress={onBack} accessibilityRole="button" style={({ pressed }) => [s.close, pressed && s.pressed]}>
+          <Text style={[font('subhead'), s.closeText]}>Not this one</Text>
+        </Pressable>
       </ScrollView>
-    </DetailScreen>
+    </View>
   );
 }
 
@@ -331,7 +354,21 @@ const s = StyleSheet.create({
   rowName: { color: L.ink },
   sandbox: { color: HUE.uncertainty, marginTop: 2 },
 
-  sheet: { paddingHorizontal: GUTTER, paddingBottom: NAV_CLEARANCE },
+  scrim: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)' },
+  sheetWrap: {
+    maxHeight: '88%',
+    backgroundColor: L.canvas,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderTopWidth: st,
+    borderColor: L.rule,
+    paddingTop: 10,
+  },
+  grabber: { alignSelf: 'center', width: 38, height: 4, borderRadius: 2, backgroundColor: L.rule, marginBottom: 12 },
+  sheet: { paddingHorizontal: GUTTER, paddingBottom: SPACE.section },
+  close: { alignSelf: 'center', marginTop: SPACE.block, paddingVertical: 12, paddingHorizontal: 20 },
+  closeText: { color: L.meta },
+  blockedNote: { color: L.meta, lineHeight: 22, marginTop: 10 },
   sheetTitle: { color: L.ink, letterSpacing: -0.4 },
   sheetLede: { color: L.body, lineHeight: 24, marginTop: 12, marginBottom: SPACE.block },
   bullets: { marginTop: SPACE.tight, gap: SPACE.near },

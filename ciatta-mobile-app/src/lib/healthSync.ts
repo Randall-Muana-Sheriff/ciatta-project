@@ -1,3 +1,15 @@
+// Reading Apple Health, when she asks.
+//
+// Deliberately foreground and deliberately explicit. Ciatta's integration
+// model is that a connection is something she authorises and can see
+// happening, not something that runs while her phone is in a drawer. So
+// there is no observer query here, no enableBackgroundDelivery, and the
+// background delivery entitlement has been turned off in app.json rather
+// than left claiming a capability nothing uses.
+//
+// That is a product decision and not an omission. Anyone adding a
+// background path here should know they are reversing it.
+
 // The sync loop that carries what Apple Health reports into observations
 // and daily rows, then posts them to the ingest-health edge function.
 //
