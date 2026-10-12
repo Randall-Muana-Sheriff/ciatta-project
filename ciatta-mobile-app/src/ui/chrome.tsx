@@ -180,23 +180,22 @@ export function ListRow({
 
 // ── Tab bar ────────────────────────────────────────────────────
 
-// The four places in her record.
+// The four she moves between. Profile left this row and lives behind the
+// hamburger at the top of Today: it is where she goes to read about
+// herself, not somewhere she switches to twenty times a day, and holding
+// a seat here it rarely earned pushed Care out of the group.
 const TABS: { key: Tab; label: string; icon: IconName }[] = [
   { key: 'today', label: 'Today', icon: 'home' },
   { key: 'myhealth', label: 'Health', icon: 'heart' },
   { key: 'journey', label: 'Journey', icon: 'journey' },
-  { key: 'profile', label: 'Profile', icon: 'person' },
+  { key: 'care', label: 'Care', icon: 'molecule' },
 ];
 
-// And the one thing that acts on it, which is why it sits in a card of its
-// own rather than as a fifth seat in theirs. The four are destinations and
-// answer "where am I looking"; Care answers "what should I do", which is a
-// different question and gets a different object.
-//
-// Labelled Care and not Ciatta: the Constitution's section 06 says the
-// wordmark set once, correctly, is the entire identity, and spending it on
-// an eleven point tab label is not setting it correctly.
-const AGENT: { key: Tab; label: string; icon: IconName } = { key: 'care', label: 'Care', icon: 'molecule' };
+// The card beside them is no longer a destination at all. It is the one
+// thing on the bar that does something rather than going somewhere, which
+// is why it is a different object and why it is the only white surface in
+// a dark app: nothing else competes with it, so it reads as the action
+// before it is read as a button.
 
 // A floating rounded bar rather than a full width strip, the way Oura's
 // sits. Labels and glyphs are untouched: this is where the bar is and what
@@ -213,7 +212,15 @@ const AGENT: { key: Tab; label: string; icon: IconName } = { key: 'care', label:
 // through it. Glass diffuses instead. Where there is no glass to be had, it
 // falls back to the near opaque fill it has always used, which solves the
 // same problem with less grace.
-export function BottomNav({ active, onTab }: { active: Tab; onTab: (tab: Tab) => void }) {
+export function BottomNav({
+  active,
+  onTab,
+  onTrack,
+}: {
+  active: Tab;
+  onTab: (tab: Tab) => void;
+  onTrack: () => void;
+}) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[s.navWrap, { paddingBottom: Math.max(insets.bottom, 10) }]} pointerEvents="box-none">
@@ -227,9 +234,14 @@ export function BottomNav({ active, onTab }: { active: Tab; onTab: (tab: Tab) =>
           <TabButton key={t.key} tab={t} on={t.key === active} onPress={() => onTab(t.key)} />
         ))}
       </Card>
-      <Card style={s.navAgent}>
-        <TabButton tab={AGENT} on={active === AGENT.key} onPress={() => onTab(AGENT.key)} wide />
-      </Card>
+      <Pressable
+        onPress={onTrack}
+        accessibilityRole="button"
+        accessibilityLabel="Track something"
+        style={({ pressed }) => [s.track, pressed && s.pressed]}
+      >
+        <Icon name="plus" size={26} color={L.canvas} weight={2} />
+      </Pressable>
     </View>
   );
 }
@@ -345,8 +357,21 @@ const s = StyleSheet.create({
   navWrap: { paddingHorizontal: 14, paddingTop: 8, flexDirection: 'row', alignItems: 'center', gap: 8 },
   // The four, which share one card and divide its width between them.
   navGroup: { flex: 1 },
-  // Care, which sizes to itself. It is not a fifth of anything.
-  navAgent: {},
+  // The tracking button. White, filled, and the same 60 the bar is tall,
+  // so it sits as a peer of the group rather than inside it.
+  track: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: L.ink,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
   card: {
     flexDirection: 'row',
     padding: 5,

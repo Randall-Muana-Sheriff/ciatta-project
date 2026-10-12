@@ -19,7 +19,8 @@ import { useCycle } from '../state/cycleStore';
 import { useData, useRepo, useSession } from '../state/session';
 import { C, font, GUTTER, numeral, RADIUS } from '../theme';
 import { L, NAV_CLEARANCE, TILE_RADIUS } from '../ui/surface';
-import { LargeTitle, ListGroup, ListRow, Panel, TextButton } from '../ui/chrome';
+import { ListGroup, ListRow, Panel, TextButton } from '../ui/chrome';
+import { ScreenHeader } from '../ui/kit';
 import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
 import { avatarInitial } from '../ui/initial';
@@ -600,7 +601,12 @@ export function ProfileScreen() {
 
   return (
     <ScrollView style={p.fill} contentContainerStyle={p.body}>
-      <LargeTitle title="Profile" trailing={<TextButton label="Edit" onPress={() => setSeg('Settings')} />} />
+      {/*
+        Profile is opened from Today's hamburger rather than switched to,
+        so it owes her a way back. The tab bar used to be that and is not
+        any more.
+      */}
+      <ScreenHeader title="Profile" onBack={nav.back} />
 
       <View style={p.pad}>
         <View style={p.identity}>

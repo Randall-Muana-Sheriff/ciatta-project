@@ -506,7 +506,16 @@ const t = StyleSheet.create({
   // Constitution sets clear space on all four sides at the cap height, so
   // that gap is the floor: further up would be the mark touching the camera
   // cutout, which is the one thing the clear space rule exists to prevent.
-  wordmarkRow: { alignItems: 'center', paddingTop: 0, paddingBottom: 2 },
+  wordmarkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: GUTTER,
+    paddingTop: 0,
+    paddingBottom: 2,
+  },
+  // Both sides reserve the same width so the mark stays centred.
+  menu: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   hello: { color: L.ink, letterSpacing: -0.4 },
 
   dayCard: {

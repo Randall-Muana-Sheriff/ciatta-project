@@ -73,7 +73,7 @@ export function MyHealthScreen() {
             lens={lens}
             open={nav.push}
             openInsight={openInsight}
-            openProfile={() => nav.goTab('profile')}
+            openProfile={() => nav.push('profile')}
           />
         ) : (
           <BodySystemView reading={body} onOpen={openPoint} onLog={logAt} />

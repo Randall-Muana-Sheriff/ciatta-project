@@ -47,6 +47,10 @@ const ICONS = {
   chat: [p('M4 5h16v11H10l-4 4v-4H4z'), dot(9, 10.5, 0.9), dot(12, 10.5, 0.9), dot(15, 10.5, 0.9)],
   layers: [p('M12 3l9 4.5-9 4.5-9-4.5z'), p('M3 12l9 4.5 9-4.5'), p('M3 16.5L12 21l9-4.5')],
   plus: [p('M12 5v14M5 12h14')],
+  // Three rules, evenly spaced. The middle one is full width like the
+  // others: a short middle bar is a stylisation that reads as a different
+  // mark at 22pt.
+  menu: [p('M4 7h16M4 12h16M4 17h16')],
   search: [o(11, 11, 6.5), p('M15.8 15.8L21 21')],
   calendar: [p('M4 6h16v15H4z'), p('M4 10h16M8 3v5M16 3v5')],
   calendarPlus: [p('M4 6h16v15H4z'), p('M4 10h16M8 3v5M16 3v5'), p('M12 13v5M9.5 15.5h5')],
