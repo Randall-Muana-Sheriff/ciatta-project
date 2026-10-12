@@ -51,6 +51,16 @@ export type Record = {
   }[];
   cycleDay: number | null;
   cyclePhase: string | null;
+  // What her hospitals sent. Measured by somebody else and recorded in
+  // her chart, which is a third kind of fact alongside what a device
+  // measured and what she reported, and is labelled as such.
+  clinical: readonly {
+    kind: string;
+    name: string;
+    value: string | null;
+    flag: string | null;
+    effectiveOn: string | null;
+  }[];
 };
 
 const PREPARE: Suggestion = { label: 'Prepare for an appointment', screen: 'appointment' };
@@ -58,6 +68,52 @@ const METRICS: Suggestion = { label: "Today's metrics", screen: 'metrics' };
 const LOG: Suggestion = { label: 'Log cycle experience', screen: 'cycleLog' };
 
 // ── Record ───────────────────────────────────────────────────────────
+
+// What her provider sent, said without reading it.
+//
+// The agent may count these and name them. It may not say what a value
+// means, whether it is good, or what to do about it, and the shape of
+// this function is what prevents that: it reports the lab's own flag
+// where there is one and is silent where there is not.
+export function answerClinical(r: Record): Answer {
+  if (!r.clinical.length) {
+    return {
+      capability: 'clinical',
+      text: 'Nothing has arrived from a provider yet. Connecting your hospital or clinic brings your results here.',
+      facts: [],
+      suggestions: [{ label: 'Connect a Provider', screen: 'providerConnect' }],
+      abstained: 'no_data',
+    };
+  }
+
+  const results = r.clinical.filter((c) => c.kind === 'lab' || c.kind === 'vital');
+  const flagged = results.filter((c) => c.flag);
+  const facts: Fact[] = [
+    { label: 'Records from your providers', value: `${r.clinical.length}`, from: 'derived' },
+    ...results.slice(0, 4).map((c) => ({
+      label: c.name,
+      value: c.value ?? 'no value given',
+      // Measured, and by an instrument in a lab rather than by her
+      // phone, but measured all the same. Not reported: she did not say
+      // this, her hospital did.
+      from: 'measured' as const,
+      on: c.effectiveOn ?? undefined,
+    })),
+  ];
+
+  // The flagged count is the lab's own count. Nothing here decides what
+  // is worth flagging, and the sentence says whose judgement it was.
+  const flagLine = flagged.length
+    ? ` Your lab marked ${flagged.length} of them, which is their flag and not Ciatta's reading.`
+    : '';
+
+  return {
+    capability: 'clinical',
+    text: `${name(r)}your providers have sent ${r.clinical.length} records, including ${results.length} results.${flagLine} They are in your record exactly as your provider wrote them.`,
+    facts,
+    suggestions: [{ label: 'From your providers', screen: 'chart' }, PREPARE],
+  };
+}
 
 export function answerRecord(r: Record): Answer {
   const facts: Fact[] = [];
@@ -353,6 +409,8 @@ export function respond(message: string, r: Record, capability: import('./types'
       return answerEscalate(message, r);
     case 'context':
       return answerContext(r);
+    case 'clinical':
+      return answerClinical(r);
     default:
       return answerDecline();
   }

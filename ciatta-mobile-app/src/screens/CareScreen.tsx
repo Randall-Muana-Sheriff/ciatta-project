@@ -35,6 +35,8 @@ import { classify } from '../lib/agent/classify';
 import { wordOrFallback } from '../lib/agent/check';
 import { capabilityCards, type CapabilityCard, readinessLine } from '../lib/agent/readiness';
 import { buildRecord } from '../lib/agent/record';
+import { loadClinicalRecords } from '../data/providers';
+import type { ClinicalRecord } from '../lib/providers/fhirMap';
 import type { Fact, Turn } from '../lib/agent/types';
 import { countedWindows, cycleToday, medianLength } from '../lib/cycleModel';
 import { displayCopy } from '../lib/displayCopy';
@@ -79,6 +81,10 @@ export function CareScreen() {
   // Reviewed references, which are the only thing context may quote. An
   // empty list is the honest state until the seed migration is applied.
   const [references, setReferences] = useState<ReferenceRow[]>([]);
+  // What her providers sent. Empty until a hospital is connected, and the
+  // clinical capability abstains until then rather than implying she has
+  // no results anywhere.
+  const [clinical, setClinical] = useState<ClinicalRecord[]>([]);
   useEffect(() => {
     let ignore = false;
     repo
@@ -99,6 +105,13 @@ export function CareScreen() {
       .catch(() => {
         // Left empty, so context abstains. Better than quoting from a
         // read that did not land.
+      });
+    loadClinicalRecords()
+      .then((rows) => {
+        if (!ignore) setClinical(rows);
+      })
+      .catch(() => {
+        // Left empty, so the clinical capability abstains.
       });
     return () => {
       ignore = true;
@@ -133,8 +146,9 @@ export function CareScreen() {
       references,
       cycleDay: now?.day ?? null,
       cyclePhase: now?.phase ?? null,
+      clinical,
     });
-  }, [person, todayRow, days, episodes, reported, references, ranked, windows, lens, profile]);
+  }, [person, todayRow, days, episodes, reported, references, clinical, ranked, windows, lens, profile]);
 
   // Recomputed whenever her record changes, by running the capabilities.
   // Readiness held separately from the answer is readiness that can lie.

@@ -15,6 +15,7 @@ const bare: Sources = {
   references: [],
   cycleDay: null,
   cyclePhase: null,
+  clinical: [],
 };
 
 const dayRow = { date: '2026-10-11', sleepHours: 7, stages: { awake: null, rem: null, light: null, deep: null }, timeInBed: null, steps: 8432, activeMinutes: null, workouts: [], restingHR: null, hrv: 42, tempDeviation: null, energy: null, mood: null, stress: null, caffeine: null, alcohol: null, foods: [], digestion: [] };

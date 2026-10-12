@@ -15,6 +15,7 @@ import * as Crypto from 'expo-crypto';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../lib/supabase';
 import type { Endpoint } from '../lib/providers/directory';
+import type { ClinicalRecord } from '../lib/providers/fhirMap';
 import { parseEndpointBundle, SANDBOX } from '../lib/providers/epicDirectory';
 import { authorizeUrl, failureLine, readCallback, type SmartConfig, smartConfigUrl } from '../lib/providers/smart';
 
@@ -127,6 +128,26 @@ export type Connection = {
   lastSyncedAt: string | null;
   lastError: string | null;
 };
+
+// Everything her connected hospitals have sent. Read as her, so RLS is
+// what scopes it: there is no user filter here to get wrong.
+export async function loadClinicalRecords(): Promise<ClinicalRecord[]> {
+  const { data, error } = await supabase
+    .from('clinical_records')
+    .select('source_id, kind, name, value, flag, effective_on, status')
+    .order('effective_on', { ascending: false })
+    .limit(2000);
+  if (error || !data) return [];
+  return data.map((r) => ({
+    sourceId: r.source_id as string,
+    kind: r.kind as ClinicalRecord['kind'],
+    name: r.name as string,
+    value: (r.value as string | null) ?? null,
+    flag: (r.flag as ClinicalRecord['flag']) ?? null,
+    effectiveOn: (r.effective_on as string | null) ?? null,
+    status: (r.status as string | null) ?? null,
+  }));
+}
 
 export async function loadConnections(): Promise<Connection[]> {
   const { data, error } = await supabase

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 import type { Insight } from '../engine';
-import { answerAsk, answerContext, answerPattern } from './capabilities';
+import { answerAsk, answerClinical, answerContext, answerPattern, type Record as AgentRecord } from './capabilities';
 import { buildRecord, type Sources } from './record';
 
 const bare: Sources = {
@@ -16,6 +16,7 @@ const bare: Sources = {
   references: [],
   cycleDay: null,
   cyclePhase: null,
+  clinical: [],
 };
 
 const insight = (over: Partial<Insight>) =>
@@ -155,5 +156,55 @@ test('the seeded summaries carry no dash and no forbidden word', () => {
       assert.ok(!line.toLowerCase().includes(w), `${w} in ${line}`);
     }
     assert.ok(!/\byou\b/i.test(line), `second person in a general finding: ${line}`);
+  }
+});
+
+// ── What her providers sent ──────────────────────────────────────────
+
+const lab = (over: Partial<AgentRecord['clinical'][number]> = {}) => ({
+  kind: 'lab',
+  name: 'TSH',
+  value: '4.2 mIU/L',
+  flag: null as string | null,
+  effectiveOn: '2026-03-14',
+  ...over,
+});
+
+test('with no provider connected the clinical capability abstains', () => {
+  const a = answerClinical(buildRecord(bare));
+  assert.equal(a.abstained, 'no_data');
+  assert.ok(a.text.includes('Nothing has arrived from a provider'));
+});
+
+test('provider records are counted and named, never interpreted', () => {
+  const a = answerClinical(buildRecord({ ...bare, clinical: [lab(), lab({ name: 'Ferritin', value: '18 ng/mL' })] }));
+  assert.equal(a.abstained, undefined);
+  assert.ok(a.text.includes('2 records'));
+  for (const claim of ['low', 'high', 'normal', 'concerning', 'should', 'means']) {
+    assert.ok(!a.text.toLowerCase().includes(claim), `${a.text} says ${claim}`);
+  }
+});
+
+test('a flag is attributed to the lab, not to Ciatta', () => {
+  const a = answerClinical(buildRecord({ ...bare, clinical: [lab({ flag: 'high' })] }));
+  assert.ok(a.text.includes("their flag and not Ciatta's reading"), a.text);
+});
+
+test('an unflagged result produces no flag sentence at all', () => {
+  const a = answerClinical(buildRecord({ ...bare, clinical: [lab()] }));
+  assert.ok(!a.text.includes('marked'), a.text);
+});
+
+test('a provider result is measured, and never confused with what she reported', () => {
+  const a = answerClinical(buildRecord({ ...bare, clinical: [lab()] }));
+  const tsh = a.facts.find((f) => f.label === 'TSH');
+  assert.equal(tsh?.from, 'measured');
+  assert.equal(tsh?.value, '4.2 mIU/L');
+});
+
+test('the clinical answer never produces a forbidden word', () => {
+  const a = answerClinical(buildRecord({ ...bare, clinical: [lab({ flag: 'high' })] }));
+  for (const w of ['you have', 'diagnos', 'because', 'risk of', 'condition']) {
+    assert.ok(!a.text.toLowerCase().includes(w), `${a.text} says ${w}`);
   }
 });

@@ -31,6 +31,8 @@ export type Sources = {
   references: AgentRecord['references'];
   cycleDay: number | null;
   cyclePhase: string | null;
+  // What her hospitals sent, already read from clinical_records.
+  clinical: AgentRecord['clinical'];
 };
 
 // How many insights the agent will speak about at once. The ranked list can
@@ -67,5 +69,6 @@ export function buildRecord(src: Sources): AgentRecord {
     references: src.references,
     cycleDay: src.cycleDay,
     cyclePhase: src.cyclePhase,
+    clinical: src.clinical,
   };
 }

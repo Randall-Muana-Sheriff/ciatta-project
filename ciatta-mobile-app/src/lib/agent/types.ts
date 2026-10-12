@@ -41,6 +41,8 @@ export type CapabilityId =
   | 'escalate'
   // General medical context, cited, from reviewed rows only.
   | 'context'
+  // What her hospitals sent: results, conditions, medications.
+  | 'clinical'
   // None of the above.
   | 'decline';
 

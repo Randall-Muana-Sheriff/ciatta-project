@@ -301,6 +301,10 @@ function Providers({ onOpen }: { onOpen: (screen: Screen) => void }) {
                       ? 'Something went wrong'
                       : 'Connected, nothing yet'
               }
+              // A connection she can open is one she can verify. A row
+              // that counted records and could not show them would be
+              // asking her to take the number on trust.
+              onPress={() => onOpen('chart')}
             />
           ))}
         </ListGroup>

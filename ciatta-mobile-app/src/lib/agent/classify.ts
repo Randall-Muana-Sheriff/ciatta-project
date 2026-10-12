@@ -55,6 +55,10 @@ const MATCHERS: { id: CapabilityId; any: string[] }[] = [
     any: ['pattern', 'changed', 'changing', 'trend', 'connection', 'related', 'noticed anything', 'what have you found'],
   },
   {
+    id: 'clinical',
+    any: ['lab', 'labs', 'blood work', 'bloodwork', 'blood test', 'test result', 'results from', 'my doctor sent', 'my chart', 'provider sent'],
+  },
+  {
     id: 'record',
     any: [
       'how did i', 'how many', 'how much', 'how long', 'when was', 'when did', 'last period', 'my sleep',

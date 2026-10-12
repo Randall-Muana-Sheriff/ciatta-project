@@ -28,6 +28,7 @@ const bare: AgentRecord = {
   references: [],
   cycleDay: null,
   cyclePhase: null,
+  clinical: [],
 };
 
 const episode = (over: Partial<import('../../data/cycleLog').Episode>) =>
