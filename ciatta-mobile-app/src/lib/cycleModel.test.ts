@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { addDays, emptyForm, type Episode, formToEpisode, isoDay } from '../data/cycleLog';
-import { bandOf, countedWindows, cycleToday, cycleTodayLabel, cycleWindows, medianLength, periodStarts, phaseOf, regularity, type CycleWindow } from './cycleModel';
+import { bandOf, clinicalPhase, clinicalPhaseLabel, countedWindows, cycleToday, cycleTodayLabel, cycleWindows, medianLength, periodStarts, phaseLine, phaseOf, regularity, type CycleWindow } from './cycleModel';
 import type { CycleProfile } from './cycleProfile';
 
 const NOW = new Date(2026, 8, 15);
@@ -148,4 +148,54 @@ test('a cycle left open far too long is not a day count worth showing', () => {
 
 test('a cycle starting in the future is refused', () => {
   assert.equal(cycleToday(openAt(new Date(2027, 0, 1)), 28, TODAY), null);
+});
+
+// ── Clinical phase names, and when they may be used ──────────────────
+
+const d = (iso: string) => { const [y, m, day] = iso.split('-').map(Number); return new Date(y, m - 1, day); };
+
+test('without a known ovulation there is no follicular or luteal', () => {
+  // Naming them from a day count assumes a 28 day cycle ovulating on day
+  // 14. For a woman with PCOS or an irregular cycle that is wrong often
+  // enough to be worthless and confident enough to be believed.
+  assert.equal(clinicalPhase({ date: d('2026-03-10'), bleeding: false, ovulation: null }), null);
+  assert.equal(clinicalPhase({ date: d('2026-03-25'), bleeding: false, ovulation: null }), null);
+});
+
+test('bleeding is observed, so it is named with or without ovulation', () => {
+  assert.equal(clinicalPhase({ date: d('2026-03-02'), bleeding: true, ovulation: null }), 'Menstrual');
+  assert.equal(clinicalPhase({ date: d('2026-03-02'), bleeding: true, ovulation: d('2026-03-14') }), 'Menstrual');
+});
+
+test('with ovulation known, before it is follicular and after it is luteal', () => {
+  const ovulation = d('2026-03-14');
+  assert.equal(clinicalPhase({ date: d('2026-03-08'), bleeding: false, ovulation }), 'Follicular');
+  assert.equal(clinicalPhase({ date: d('2026-03-22'), bleeding: false, ovulation }), 'Luteal');
+});
+
+test('the day of ovulation and either side of it is ovulatory', () => {
+  const ovulation = d('2026-03-14');
+  for (const day of ['2026-03-13', '2026-03-14', '2026-03-15']) {
+    assert.equal(clinicalPhase({ date: d(day), bleeding: false, ovulation }), 'Ovulatory', day);
+  }
+  assert.equal(clinicalPhase({ date: d('2026-03-16'), bleeding: false, ovulation }), 'Luteal');
+});
+
+test('the label reads naturally and never says menstrual phase', () => {
+  assert.equal(clinicalPhaseLabel('Follicular'), 'Follicular phase');
+  assert.equal(clinicalPhaseLabel('Luteal'), 'Luteal phase');
+  assert.equal(clinicalPhaseLabel('Ovulatory'), 'Ovulatory phase');
+  assert.equal(clinicalPhaseLabel('Menstrual'), 'Menstrual');
+});
+
+test('the line prefers the clinical name and falls back to the observed one', () => {
+  assert.equal(phaseLine('Luteal', 'Between periods'), 'Luteal phase');
+  assert.equal(phaseLine(null, 'Between periods'), 'Between periods');
+  assert.equal(phaseLine(null, null), null);
+});
+
+test('a clinical name never appears beside the observational one', () => {
+  // Two names for where she is, shown together, is the screen hedging.
+  const line = phaseLine('Follicular', 'After period') as string;
+  assert.ok(!line.includes('After period'), line);
 });

@@ -5,7 +5,7 @@ import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-
 import { headlineMetrics } from '../lib/allMetrics';
 import { displayCopy } from '../lib/displayCopy';
 import { type CyclePoint, cycleTrend, fmtHours } from '../lib/engine';
-import { countedWindows, cycleToday, cycleTodayLabel, medianLength } from '../lib/cycleModel';
+import { clinicalPhase, countedWindows, cycleToday, cycleTodayLabel, medianLength, phaseLine } from '../lib/cycleModel';
 import { type Screen, useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
@@ -151,7 +151,7 @@ export function TodayScreen() {
   const nav = useNav();
   const { startDraft, accept, watching, setWatching } = useCycle();
   const { today: brief } = useInsights();
-  const { windows, signals, lens, profile } = useCycleInsights();
+  const { windows, signals, lens, profile, fertility } = useCycleInsights();
   const { person, today, days, todayIsPlaceholder } = useData();
   const repo = useRepo();
 
@@ -188,6 +188,24 @@ export function TodayScreen() {
     return cycleToday(open && !open.end ? open : null, predicted, new Date());
   }, [windows, lens, profile]);
   const cycleLabel = useMemo(() => cycleTodayLabel(cycleNow), [cycleNow]);
+
+  // The clinical name, when it has been earned.
+  //
+  // Only a confirmed ovulation counts: a logged test or a temperature
+  // shift. The predicted window is a prediction, and naming her phase
+  // from one would be presenting an estimate as a position.
+  const phaseText = useMemo(() => {
+    const open = windows[windows.length - 1] ?? null;
+    const confirmed =
+      fertility?.confirmedThisCycle && open
+        ? ([...(fertility.past ?? [])]
+            .reverse()
+            .find((o) => o.date >= open.start)?.date ?? null)
+        : null;
+    const today = new Date();
+    const bleeding = !!open && !open.end && cycleNow != null && cycleNow.day <= 5 && cycleNow.phase === 'During period';
+    return phaseLine(clinicalPhase({ date: today, bleeding, ovulation: confirmed }), cycleNow?.phase ?? null);
+  }, [windows, fertility, cycleNow]);
 
   // Today's own row, when there is one. days arrives oldest first.
   const todayDay = useMemo(() => {
@@ -351,9 +369,7 @@ export function TodayScreen() {
                 {cycleNow ? `Day ${cycleNow.day}` : 'No open cycle'}
               </Text>
             </View>
-            {cycleNow?.phase ? (
-              <Text style={[font('footnote', 'semibold'), t.phase]}>{cycleNow.phase}</Text>
-            ) : null}
+            {phaseText ? <Text style={[font('footnote', 'semibold'), t.phase]}>{phaseText}</Text> : null}
           </View>
         </View>
 

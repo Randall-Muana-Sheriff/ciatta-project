@@ -117,3 +117,60 @@ export function cycleTodayLabel(t: CycleToday | null): string | null {
   if (!t) return null;
   return t.phase ? `${t.phase} · day ${t.day}` : `Day ${t.day}`;
 }
+
+// ── The clinical phase names ─────────────────────────────────────────
+//
+// Follicular and luteal are not positions on a calendar. They are defined
+// by ovulation: follicular runs from bleeding to ovulation, luteal from
+// ovulation to the next bleed. Which means they can only be named once
+// ovulation is known.
+//
+// Most apps name them anyway, by assuming a 28 day cycle ovulating on day
+// 14. For a woman with PCOS, an irregular cycle or in perimenopause, who
+// is who Ciatta is for, that assumption is wrong often enough to be
+// worthless and confident enough to be believed. A woman told she is in
+// her luteal phase on day 15 of a 45 day cycle has been told something
+// nobody knows.
+//
+// So these names are returned only when ovulation has actually been
+// established, from a logged test or a temperature shift. Without one the
+// caller keeps the observational label, which describes where she is
+// relative to bleeding Ciatta watched her log.
+
+export type ClinicalPhase = 'Menstrual' | 'Follicular' | 'Ovulatory' | 'Luteal';
+
+// Either side of ovulation day counts as ovulatory, which is the window
+// the egg is actually viable in rather than a single day.
+const OVULATORY_DAYS = 1;
+
+export function clinicalPhase(input: {
+  date: Date;
+  // True when she logged bleeding on this day.
+  bleeding: boolean;
+  // Established for this cycle, from a test or a temperature shift. Null
+  // when nothing established it, which is the common case.
+  ovulation: Date | null;
+}): ClinicalPhase | null {
+  // Bleeding is observed rather than inferred, so it can be named whether
+  // or not ovulation is known.
+  if (input.bleeding) return 'Menstrual';
+  if (!input.ovulation) return null;
+
+  const days = daysBetween(input.ovulation, input.date);
+  if (Math.abs(days) <= OVULATORY_DAYS) return 'Ovulatory';
+  return days < 0 ? 'Follicular' : 'Luteal';
+}
+
+// What the phase is called on screen, with the word "phase" attached
+// where it reads naturally.
+export function clinicalPhaseLabel(phase: ClinicalPhase): string {
+  return phase === 'Menstrual' ? 'Menstrual' : `${phase} phase`;
+}
+
+// The line Today shows: the clinical name when it is earned, and the
+// observational one when it is not. Never both, and never a clinical name
+// hedged into meaninglessness.
+export function phaseLine(clinical: ClinicalPhase | null, observed: Phase | null): string | null {
+  if (clinical) return clinicalPhaseLabel(clinical);
+  return observed;
+}
