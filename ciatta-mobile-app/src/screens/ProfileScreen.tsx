@@ -8,6 +8,7 @@ import type { Data } from '../data/adapter';
 import type { SourceKind, Tone } from '../data/sample';
 import type { SourceView } from '../data/rows';
 import type { Reported } from '../data/repo';
+import { type Connection, loadConnections } from '../data/providers';
 import { profileOverview } from '../lib/profileOverview';
 import { connectAppleHealth } from '../lib/connectHealth';
 import { displayCopy } from '../lib/displayCopy';
@@ -251,6 +252,69 @@ function BodySystems({ profile }: { profile: Profile }) {
   );
 }
 
+// A hospital or clinic she linked, and what has come from it.
+function Providers({ onOpen }: { onOpen: (screen: Screen) => void }) {
+  const [list, setList] = useState<Connection[] | null>(null);
+
+  useEffect(() => {
+    let ignore = false;
+    loadConnections()
+      .then((rows) => {
+        if (!ignore) setList(rows);
+      })
+      .catch(() => {
+        // Left null, so the section says nothing rather than claiming
+        // she has no providers when the read simply failed.
+      });
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  return (
+    <View>
+      <Text style={[font('title3', 'semibold'), { color: C.text, marginBottom: 4 }]} accessibilityRole="header">
+        Providers
+      </Text>
+      <Text style={[font('footnote'), { color: C.secondary, marginBottom: 10 }]}>
+        Your hospital or clinic, connected through their own patient portal.
+      </Text>
+
+      {list?.length ? (
+        <ListGroup>
+          {list.map((c, n) => (
+            <ListRow
+              key={c.id}
+              first={n === 0}
+              icon="stethoscope"
+              tint={TONE.lavender}
+              title={c.endpointName}
+              // Counted, never characterised. "412 records" is a fact;
+              // "your records are up to date" would be a claim about a
+              // chart Ciatta cannot see the whole of.
+              sub={
+                c.status === 'active'
+                  ? `${c.recordCount} records`
+                  : c.status === 'expired'
+                    ? 'Needs connecting again'
+                    : c.lastError
+                      ? 'Something went wrong'
+                      : 'Connected, nothing yet'
+              }
+            />
+          ))}
+        </ListGroup>
+      ) : list ? (
+        <Text style={[font('footnote'), { color: C.secondary }]}>No provider connected yet.</Text>
+      ) : null}
+
+      <View style={{ marginTop: 12 }}>
+        <SecondaryButton label="Connect a Provider" onPress={() => onOpen('providerConnect')} />
+      </View>
+    </View>
+  );
+}
+
 // ── Settings: sources, notifications, privacy, account ────────
 
 const KIND_LABEL: Record<SourceKind, string> = { measured: 'Measured', lab: 'Lab', logged: 'You logged' };
@@ -389,6 +453,15 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
         </View>
         {sourceNote ? <Text style={[font('footnote'), { color: C.secondary, marginTop: 8 }]}>{displayCopy(sourceNote)}</Text> : null}
       </View>
+
+      {/*
+        Providers sit apart from devices on purpose. A ring and a hospital
+        are not the same kind of source: one streams readings she
+        produces, the other holds the record somebody else wrote about
+        her, and listing them together would blur exactly the line this
+        app keeps everywhere else.
+      */}
+      <Providers onOpen={onOpen} />
 
       <ListGroup header="Notifications" footer="No nudges to log, and no reminders to take anything.">
         <ListRow

@@ -109,9 +109,9 @@ export function authorizeUrl(
   };
 }
 
-export type Callback =
-  | { ok: true; code: string }
-  | { ok: false; reason: 'denied' | 'state_mismatch' | 'no_code'; detail: string };
+export type FailureReason = 'denied' | 'state_mismatch' | 'no_code';
+
+export type Callback = { ok: true; code: string } | { ok: false; reason: FailureReason; detail: string };
 
 // Reading what the provider sent back.
 //
@@ -146,7 +146,7 @@ export function readCallback(url: string, expectedState: string): Callback {
 
 // What she reads when it did not connect. Her words, not the protocol's:
 // "state_mismatch" is not a sentence anyone should be shown.
-export function failureLine(reason: Callback extends { ok: false; reason: infer R } ? R : never): string {
+export function failureLine(reason: FailureReason): string {
   switch (reason) {
     case 'denied':
       return 'The connection was not approved, so nothing was shared. You can try again whenever you want.';

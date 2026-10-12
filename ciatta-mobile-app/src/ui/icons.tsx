@@ -44,6 +44,7 @@ const ICONS = {
   chat: [p('M4 5h16v11H10l-4 4v-4H4z'), dot(9, 10.5, 0.9), dot(12, 10.5, 0.9), dot(15, 10.5, 0.9)],
   layers: [p('M12 3l9 4.5-9 4.5-9-4.5z'), p('M3 12l9 4.5 9-4.5'), p('M3 16.5L12 21l9-4.5')],
   plus: [p('M12 5v14M5 12h14')],
+  search: [o(11, 11, 6.5), p('M15.8 15.8L21 21')],
   calendar: [p('M4 6h16v15H4z'), p('M4 10h16M8 3v5M16 3v5')],
   calendarPlus: [p('M4 6h16v15H4z'), p('M4 10h16M8 3v5M16 3v5'), p('M12 13v5M9.5 15.5h5')],
   notebook: [p('M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6z'), p('M3.5 7h4M3.5 12h4M3.5 17h4'), p('M10 8h6M10 12h6M10 16h4')],

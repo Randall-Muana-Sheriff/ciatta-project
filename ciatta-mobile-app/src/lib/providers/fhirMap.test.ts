@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 import { codeableName, effectiveDay, interpretation, isRetracted, mapBundle, mapResource, quantity } from './fhirMap';
@@ -133,4 +134,19 @@ test('junk in place of a bundle gives nothing rather than throwing', () => {
   for (const junk of [null, undefined, 'bundle', 42, []]) {
     assert.deepEqual(mapBundle(junk), { records: [], skipped: 0 });
   }
+});
+
+// ── The deployed copy may not drift ──────────────────────────────────
+
+test('the edge function copy of the mapper is identical to this one', () => {
+  // An edge function deploys only its own directory, so the mapper exists
+  // twice. Two copies of the file that decides what a lab value means is
+  // exactly the kind of duplication that goes wrong quietly.
+  const here = readFileSync(new URL('./fhirMap.ts', import.meta.url), 'utf8');
+  const deployed = readFileSync(
+    new URL('../../../supabase/functions/provider-connect/fhirMap.ts', import.meta.url),
+    'utf8',
+  );
+  const body = (text: string) => text.slice(text.indexOf('export type ClinicalKind'));
+  assert.equal(body(deployed), body(here), 'the deployed mapper has drifted from the tested one');
 });

@@ -24,7 +24,8 @@ export type Screen =
   | 'movement'
   | 'cycleProfile'
   | 'appointment'
-  | 'metrics';
+  | 'metrics'
+  | 'providerConnect';
 
 export type Nav = {
   tab: Tab;

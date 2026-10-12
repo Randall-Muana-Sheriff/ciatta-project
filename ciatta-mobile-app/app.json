@@ -2,6 +2,7 @@
   "expo": {
     "name": "ciatta-mobile-app",
     "slug": "ciatta-mobile-app",
+    "scheme": "ciatta",
     "version": "1.3.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -116,7 +117,8 @@
           "speechRecognitionPermission": "Ciatta turns what you say into text so you can describe your health out loud instead of typing.",
           "microphonePermission": "Ciatta uses the microphone only while you are dictating, and stops as soon as you do."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {

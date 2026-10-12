@@ -8,6 +8,7 @@ import { CycleLogScreen } from './screens/CycleLogScreen';
 import { AppointmentScreen } from './screens/AppointmentScreen';
 import { CareScreen } from './screens/CareScreen';
 import { MetricsScreen } from './screens/MetricsScreen';
+import { ProviderConnectScreen } from './screens/ProviderConnectScreen';
 import { CycleProfileScreen } from './screens/CycleProfileScreen';
 import { CycleScreen } from './screens/CycleScreen';
 import { EvidenceScreen } from './screens/EvidenceScreen';
@@ -63,6 +64,7 @@ const DETAIL_SCREENS: Record<Screen, ComponentType> = {
   cycleProfile: CycleProfileScreen,
   appointment: AppointmentScreen,
   metrics: MetricsScreen,
+  providerConnect: ProviderConnectScreen,
 };
 
 // Four tabs, each with its own stack of detail screens. The tab bar stays
