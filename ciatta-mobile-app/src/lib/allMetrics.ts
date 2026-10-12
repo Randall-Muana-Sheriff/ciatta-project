@@ -163,8 +163,21 @@ export type HeadlineMetric = {
 
 export function headlineMetrics(day: Day | null, vitals: readonly VitalCard[] = []): HeadlineMetric[] {
   const one = (n: number) => (Math.round(n * 10) / 10).toFixed(1);
-  const vital = (key: string): HeadlineMetric =>
-    vitals.find((v) => v.key === key) ?? { key, label: key, value: null, from: 'measured' };
+  // The grid abbreviates. A third of a row does not hold "Blood
+  // pressure", and BP and SpO2 are what she reads on the cuff and the
+  // watch anyway. The All screen keeps the full names, where there is a
+  // line to spell them on.
+  const SHORT: Record<string, string> = { bp: 'BP', spo2: 'SpO2' };
+  const vital = (key: string): HeadlineMetric => {
+    const found = vitals.find((v) => v.key === key);
+    return {
+      key,
+      label: SHORT[key] ?? found?.label ?? key,
+      value: found?.value ?? null,
+      note: found?.note,
+      from: 'measured',
+    };
+  };
   return [
     {
       key: 'sleep',

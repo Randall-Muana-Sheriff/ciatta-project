@@ -1,9 +1,10 @@
-// One metric, one card, everywhere it appears.
+// One metric, as a card on Today's grid.
 //
-// Today showed three metrics as pills and the All screen showed nineteen
-// as list rows, so the same figure looked like two different kinds of
-// thing depending on which screen she was on. One component now, so a
-// metric is a metric.
+// The All screen is a list rather than a grid, deliberately. Today is a
+// glance at six figures and abbreviates to fit three across; All is a
+// reference list with a whole line per metric, where every name is
+// spelled out. Two shapes because they answer two questions, not because
+// nobody chose.
 //
 // The rule it carries is the app's: a figure that is not there reads as
 // absent rather than as zero. There is no state in here that prints a 0

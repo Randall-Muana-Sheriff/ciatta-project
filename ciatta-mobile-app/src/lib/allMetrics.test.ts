@@ -3,6 +3,7 @@ import { test } from 'node:test';
 
 import type { Day } from '../data/daily';
 import { buildMetrics, headlineMetrics, recordedCount, recordedLine } from './allMetrics';
+import { bloodOxygen, bloodPressure } from './vitals';
 
 const empty: Day = {
   date: '2026-10-11',
@@ -138,7 +139,19 @@ test('vitals passed in are used rather than recomputed', () => {
   const given = [{ key: 'bp', label: 'Blood pressure', value: '118/76', from: 'measured' as const }];
   const bp = headlineMetrics(null, given).find((m) => m.key === 'bp')!;
   assert.equal(bp.value, '118/76');
-  assert.equal(bp.label, 'Blood pressure');
+});
+
+test('the grid abbreviates where a third of a row cannot hold the name', () => {
+  // BP and SpO2 are what she reads on the cuff and the watch anyway.
+  const by = Object.fromEntries(headlineMetrics(null).map((m) => [m.key, m.label]));
+  assert.equal(by.bp, 'BP');
+  assert.equal(by.spo2, 'SpO2');
+});
+
+test('the full names survive for the screen that has room for them', () => {
+  const now = new Date();
+  assert.equal(bloodPressure([], now).label, 'Blood pressure');
+  assert.equal(bloodOxygen([], now).label, 'Blood oxygen');
 });
 
 test('headline labels are short enough for a third of a row', () => {
