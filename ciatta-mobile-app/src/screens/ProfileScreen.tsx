@@ -319,6 +319,36 @@ function Providers({ onOpen }: { onOpen: (screen: Screen) => void }) {
   );
 }
 
+// What she told Ciatta, in her own words, grouped as she gave it.
+//
+// Null while the read is in flight is not the same as nothing reported,
+// so the section waits rather than claiming an empty history.
+function Reported({ reported }: { reported: Reported | null }) {
+  if (!reported) return null;
+  const groups: { header: string; items: string[] }[] = [
+    { header: 'Conditions', items: reported.conditions },
+    { header: 'Surgeries', items: reported.surgeries },
+    { header: 'Medications', items: reported.medications },
+    { header: 'Supplements', items: reported.supplements },
+  ].filter((g) => g.items.length > 0);
+
+  if (!groups.length) {
+    return <EmptyNote text="Ciatta has not been told about any conditions or medications yet." />;
+  }
+
+  return (
+    <>
+      {groups.map((g) => (
+        <ListGroup key={g.header} header={g.header}>
+          {g.items.map((item, n) => (
+            <ListRow key={item} first={n === 0} title={item} sub="You told Ciatta" />
+          ))}
+        </ListGroup>
+      ))}
+    </>
+  );
+}
+
 // ── Settings: sources, notifications, privacy, account ────────
 
 const KIND_LABEL: Record<SourceKind, string> = { measured: 'Measured', lab: 'Lab', logged: 'You logged' };
@@ -597,10 +627,42 @@ export function ProfileScreen() {
       </View>
 
       <View style={[p.pad, p.stack]}>
-        {!profile && seg !== 'Settings' ? (
+        {/*
+          Real mode. The paragraph was being computed and then thrown
+          away: it only rendered inside the profile branch, which is
+          sample only, so a signed in woman saw an empty note on a
+          record that was not empty.
+
+          What is not here is deliberate. No score ring and no stat
+          tiles: a health score out of 100 is a number nobody can
+          compute from her rows without inventing most of it, and this
+          app does not invent numbers. The paragraph says what is in
+          her record, which is the question someone opens their own
+          profile to answer.
+        */}
+        {!profile && seg === 'Overview' ? (
           <>
+            <View style={p.overviewCard}>
+              <Text style={[font('body'), p.overviewText]}>{displayCopy(overview)}</Text>
+            </View>
             <CycleGroup onOpen={nav.push} />
-            <EmptyNote text="Nothing here yet. This fills in as you log and connect sources." />
+          </>
+        ) : null}
+
+        {!profile && seg === 'Health' ? (
+          <>
+            <Reported reported={reported} />
+            <CycleGroup onOpen={nav.push} />
+            <ListGroup header="From your providers" footer="Results and notes your hospital sent, in their words.">
+              <ListRow
+                first
+                icon="doc"
+                tint={TONE.lavender}
+                title="Provider records"
+                sub="Results, conditions and medications"
+                onPress={() => nav.push('chart')}
+              />
+            </ListGroup>
           </>
         ) : null}
         {profile && seg === 'Overview' ? (
