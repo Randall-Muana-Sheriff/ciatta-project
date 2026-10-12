@@ -77,24 +77,8 @@ export function ProviderConnectScreen() {
   };
 
   return (
-    <DetailScreen title="Find your health institution" onBack={nav.back}>
-      {/*
-        A sheet over the search, not a screen replacing it. She is one tap
-        from the wrong hospital at this point, and a sheet keeps the list
-        she chose from visible behind it so backing out costs nothing.
-      */}
-      <Modal visible={!!picked} transparent animationType="slide" onRequestClose={dismiss}>
-        <Pressable style={s.scrim} onPress={dismiss} accessibilityRole="button" accessibilityLabel="Close" />
-        {picked ? (
-          <ProviderSheet
-            endpoint={picked}
-            connecting={connecting}
-            message={message}
-            onBack={dismiss}
-            onConnect={connect}
-          />
-        ) : null}
-      </Modal>
+    <>
+      <DetailScreen title="Find your health institution" onBack={nav.back}>
       <View style={s.searchWrap}>
         <Icon name="search" size={18} color={L.meta} />
         <TextInput
@@ -147,7 +131,39 @@ export function ProviderConnectScreen() {
           onPick={setPicked}
         />
       ))}
-    </DetailScreen>
+      </DetailScreen>
+
+      {/*
+        A sheet over the search, not a screen replacing it. She is one tap
+        from the wrong hospital at this point, and keeping the list she
+        chose from visible behind it means backing out costs nothing.
+
+        Outside DetailScreen, because DetailScreen puts its children in a
+        scroll view and a modal does not belong in scrolling content. The
+        column below ends at the bottom and the scrim fills absolutely:
+        a scrim with flex 1 competes with the sheet for height and pushes
+        it off the screen, which is exactly what it did.
+      */}
+      <Modal visible={!!picked} transparent animationType="slide" onRequestClose={dismiss}>
+        <View style={s.sheetRoot}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={dismiss}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          />
+          {picked ? (
+            <ProviderSheet
+              endpoint={picked}
+              connecting={connecting}
+              message={message}
+              onBack={dismiss}
+              onConnect={connect}
+            />
+          ) : null}
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -236,7 +252,14 @@ function ProviderSheet({
     <View style={s.sheetWrap}>
       {/* The grabber, which is what says this can be pulled away. */}
       <View style={s.grabber} />
-      <ScrollView style={s.fill} contentContainerStyle={s.sheet}>
+      {/*
+        No flex on this scroll view. Its parent's height comes from its
+        content, capped at 88 percent, and a scroll view asking for flex 1
+        of an undefined height resolves to zero: the sheet rendered as its
+        grabber and nothing else, which looked like tapping a hospital did
+        nothing at all.
+      */}
+      <ScrollView contentContainerStyle={s.sheet} bounces={false}>
         <Text style={[font('title2'), s.sheetTitle]} accessibilityRole="header">
           {displayCopy(endpoint.name)}
         </Text>
@@ -354,7 +377,9 @@ const s = StyleSheet.create({
   rowName: { color: L.ink },
   sandbox: { color: HUE.uncertainty, marginTop: 2 },
 
-  scrim: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)' },
+  // The sheet sits at the foot of the screen; the scrim is painted on
+  // this container rather than on a sibling that would take up height.
+  sheetRoot: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0, 0, 0, 0.55)' },
   sheetWrap: {
     maxHeight: '88%',
     backgroundColor: L.canvas,
