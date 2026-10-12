@@ -274,8 +274,6 @@ export function TodayScreen() {
         button is a wordmark set incorrectly.
       */}
       <View style={t.wordmarkRow}>
-        <View style={t.menu} />
-        <Wordmark />
         <Pressable
           onPress={go('profile')}
           accessibilityRole="button"
@@ -284,6 +282,16 @@ export function TodayScreen() {
           style={({ pressed }) => [t.menu, pressed && t.pressed]}
         >
           <Icon name="menu" size={22} color={L.body} />
+        </Pressable>
+        <Wordmark />
+        <Pressable
+          onPress={go('calendar')}
+          accessibilityRole="button"
+          accessibilityLabel="Your calendar"
+          hitSlop={10}
+          style={({ pressed }) => [t.menu, pressed && t.pressed]}
+        >
+          <Icon name="calendar" size={21} color={L.body} />
         </Pressable>
       </View>
 

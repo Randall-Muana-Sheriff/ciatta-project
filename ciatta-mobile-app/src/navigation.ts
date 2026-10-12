@@ -28,7 +28,8 @@ export type Screen =
   | 'providerConnect'
   | 'chart'
   | 'dailyLog'
-  | 'profile';
+  | 'profile'
+  | 'calendar';
 
 export type Nav = {
   tab: Tab;
