@@ -415,7 +415,10 @@ export function JourneyScreen() {
   const { width } = useWindowDimensions();
   const current = windows[windows.length - 1] ?? null;
   const cycle = cycleLane(windows, current, lens.predicts ? medianLength(countedWindows(windows, profile)) : null);
-  const [scale, setScale] = useState<Scale>('year');
+  // Opens on the day. A year is the view she arrives at last, not first:
+  // the question on opening Journey is what today has looked like, and the
+  // dropdown is right there for the longer windows.
+  const [scale, setScale] = useState<Scale>('day');
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState<Lane[]>([]);
 
@@ -428,6 +431,18 @@ export function JourneyScreen() {
   const SLOT_MIN: Record<Scale, number> = { day: 46, week: 62, month: 40, year: 74 };
   const visibleW = width - SIDE * 2 - LABEL_W;
   const plotW = Math.max(visibleW, axis.slots * SLOT_MIN[scale]);
+
+  // Where the plot opens. Now at the right hand edge, with one slot of air
+  // after it so the current hour is not flush against the frame.
+  const openAt = useMemo(() => {
+    const furthest = Math.max(0, plotW - visibleW);
+    if (scale !== 'day') return furthest;
+    const nowAt = posIn(axis, new Date());
+    if (nowAt == null) return furthest;
+    return Math.min(furthest, Math.max(0, nowAt * plotW - visibleW + SLOT_MIN.day));
+    // SLOT_MIN is a literal in this component and never changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [axis, scale, plotW, visibleW]);
 
   // Every lane places its marks through this, so a mark outside the window
   // is not drawn rather than being pinned to an edge it did not happen at.
@@ -523,9 +538,14 @@ export function JourneyScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            // A day and a month are both wider than the phone, so the
-            // right hand edge, which is now, is what she should land on.
-            contentOffset={{ x: Math.max(0, plotW - visibleW), y: 0 }}
+            // Wider than the phone at most scales, so she lands on now.
+            //
+            // Week, month and year end today, so their right hand edge is
+            // now and landing there is landing on it. A day does not: it
+            // runs midnight to midnight, so its right hand edge is tonight,
+            // and opening there showed her the empty hours she has not
+            // lived yet. The day scrolls to the current hour instead.
+            contentOffset={{ x: openAt, y: 0 }}
           >
             <View style={{ width: plotW }}>
               <View style={[j.axisSpacer, j.axisRow]}>

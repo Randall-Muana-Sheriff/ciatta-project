@@ -103,8 +103,29 @@ test('every tick sits inside the chart', () => {
   }
 });
 
-test('day labels read as hours and week labels as weekdays', () => {
-  assert.deepEqual(axisFor('day', NOW).ticks.map((t) => t.label), ['12a', '6a', '12p', '6p', '12a']);
+test('a day is labelled every hour, so a mark can be placed to the hour', () => {
+  const labels = axisFor('day', NOW).ticks.map((t) => t.label);
+  assert.equal(labels.length, 24);
+  assert.deepEqual(labels.slice(0, 4), ['12a', '1a', '2a', '3a']);
+  assert.equal(labels[12], '12p');
+  assert.equal(labels[23], '11p');
+});
+
+test('every hour label sits in the middle of its own hour', () => {
+  // Centred, as week and month are, so a reading at 2pm sits over the
+  // label 2p rather than over the line beside it.
+  const ticks = axisFor('day', NOW).ticks;
+  ticks.forEach((t, h) => assert.equal(t.at, (h + 0.5) / 24, `hour ${h}`));
+});
+
+test('an hour tick and the same hour from slotLabel agree', () => {
+  // They are written by one function for this reason: a mark under a label
+  // that disagreed with its own tooltip is the kind of wrong nobody checks.
+  const axis = axisFor('day', NOW);
+  axis.ticks.forEach((t, h) => assert.equal(t.label, slotLabel(axis, h), `hour ${h}`));
+});
+
+test('week labels read as weekdays', () => {
   assert.deepEqual(axisFor('week', NOW).ticks.map((t) => t.label), ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
 });
 

@@ -32,6 +32,12 @@ export type Axis = {
 };
 
 const MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// How an hour is written, in one place. The day axis labels every hour and
+// slotLabel names one, and the two drifting apart would put a mark under a
+// label that disagreed with its tooltip.
+export const hourLabel = (h: number) =>
+  h === 0 || h === 24 ? '12a' : h === 12 ? '12p' : h < 12 ? `${h}a` : `${h - 12}p`;
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function startOfDay(d: Date): Date {
@@ -63,10 +69,14 @@ export function axisFor(scale: Scale, now: Date): Axis {
       from,
       to,
       slots: 24,
-      ticks: [0, 6, 12, 18, 24].map((h) => ({
-        label: h === 0 || h === 24 ? '12a' : h === 12 ? '12p' : h < 12 ? `${h}a` : `${h - 12}p`,
-        at: h / 24,
-      })),
+      // Every hour, not every sixth. A day read six hours at a time cannot
+      // answer "when", which is the only question a day view is for: a mark
+      // sat between 12p and 6p told her almost nothing. The plot already
+      // scrolls, so the width this needs is width it can have.
+      //
+      // Centred in the slot, as week and month do, so a reading at 2pm sits
+      // over the label 2p rather than over the line beside it.
+      ticks: Array.from({ length: 24 }, (_, h) => ({ label: hourLabel(h), at: (h + 0.5) / 24 })),
     };
   }
 
@@ -132,10 +142,7 @@ export function slotIn(axis: Axis, at: Date): number | null {
 
 // How the axis says a slot, for a label on a mark or in a tooltip.
 export function slotLabel(axis: Axis, slot: number): string {
-  if (axis.scale === 'day') {
-    const h = slot;
-    return h === 0 ? '12a' : h === 12 ? '12p' : h < 12 ? `${h}a` : `${h - 12}p`;
-  }
+  if (axis.scale === 'day') return hourLabel(slot);
   if (axis.scale === 'year') {
     const m = new Date(axis.from.getFullYear(), axis.from.getMonth() + slot, 1);
     return `${MONTH[m.getMonth()]} ${m.getFullYear()}`;
