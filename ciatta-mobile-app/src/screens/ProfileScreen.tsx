@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { expo } from '../../app.json';
@@ -12,6 +12,8 @@ import { type Connection, loadConnections } from '../data/providers';
 import { intelligenceLine, metricLine, patternReadiness } from '../lib/patternReadiness';
 import { overviewFacts } from '../lib/overviewFacts';
 import { weight } from '../lib/vitals';
+import { healthStats } from '../lib/healthFacts';
+import { askForCharacteristics, readCharacteristics } from '../lib/healthKit';
 import { useCycleInsights } from '../state/cycleStore';
 import { profileOverview } from '../lib/profileOverview';
 import { connectAppleHealth } from '../lib/connectHealth';
@@ -122,22 +124,48 @@ function HealthOverview({ stats = [] }: { stats?: readonly { label: string; valu
   const repo = useRepo();
   const { windows } = useCycleInsights();
   // Her latest weight, and the day her last period started, for the facts
-  // at the top of the card.
+  // at the top of the card. Without the example person's stats, age, height
+  // and blood type come from Apple Health: height from her latest synced
+  // reading, date of birth and blood type read from Apple Health itself.
   const [weightCard, setWeightCard] = useState<{ value: string | null; note?: string } | null>(null);
+  const [heightRead, setHeightRead] = useState<{ value: number; unit: string | null } | null>(null);
+  const [traits, setTraits] = useState<{ dateOfBirth: Date | null; bloodType: number | null }>({ dateOfBirth: null, bloodType: null });
+  const fromHealth = stats.length === 0;
   useEffect(() => {
     let ignore = false;
     repo
       .loadVitals()
-      .then((rows) => !ignore && setWeightCard(weight(rows, new Date())))
+      .then((rows) => {
+        if (ignore) return;
+        setWeightCard(weight(rows, new Date()));
+        const h = rows.find((r) => r.metric === 'height');
+        setHeightRead(h ? { value: h.value, unit: h.unit } : null);
+      })
       .catch(() => {});
+    if (fromHealth) {
+      readCharacteristics()
+        .then((t) => !ignore && setTraits(t))
+        .catch(() => {});
+    }
     return () => {
       ignore = true;
     };
-  }, [repo]);
-  const facts = useMemo(
-    () => overviewFacts({ stats, weight: weightCard, lastPeriod: windows[windows.length - 1]?.start ?? null, now: new Date() }),
-    [stats, weightCard, windows],
+  }, [repo, fromHealth]);
+  const shown = useMemo(
+    () => (fromHealth ? healthStats({ ...traits, height: heightRead }, new Date()) : stats),
+    [fromHealth, traits, heightRead, stats],
   );
+  const facts = useMemo(
+    () => overviewFacts({ stats: shown, weight: weightCard, lastPeriod: windows[windows.length - 1]?.start ?? null, now: new Date() }),
+    [shown, weightCard, windows],
+  );
+  // A fact Apple Health holds but Ciatta has not been allowed to read: one
+  // tap asks, once.
+  const askHealth = () => {
+    askForCharacteristics()
+      .then(setTraits)
+      .catch(() => {});
+  };
   const { ranked } = useInsights();
   const ready = useMemo(() => patternReadiness(days), [days]);
   const found = ranked.filter((i) => i.triage === 'Surface' || i.triage === 'Investigate').length;
@@ -157,14 +185,25 @@ function HealthOverview({ stats = [] }: { stats?: readonly { label: string; valu
       {/* The facts about her a clinician asks first, inside the card. */}
       <View style={p.facts}>
         {facts.map((f) => (
-          <View key={f.key} style={p.fact} accessible accessibilityLabel={`${f.label}, ${f.value ?? 'not added'}${f.sub ? `, ${f.sub}` : ''}`}>
+          <Pressable
+            key={f.key}
+            style={p.fact}
+            disabled={!(fromHealth && !f.value && (f.key === 'age' || f.key === 'blood'))}
+            onPress={askHealth}
+            accessibilityRole={fromHealth && !f.value && (f.key === 'age' || f.key === 'blood') ? 'button' : undefined}
+            accessibilityLabel={`${f.label}, ${f.value ?? 'not added'}${f.sub ? `, ${f.sub}` : ''}`}
+            accessibilityHint={fromHealth && !f.value && (f.key === 'age' || f.key === 'blood') ? 'Adds it from Apple Health' : undefined}
+          >
             <Icon name={f.icon} size={16} color={f.key === 'insurance' ? C.lavender : C.coral} weight={1.8} />
             <Text style={[font('caption1'), { color: C.secondary, marginTop: 6 }]} numberOfLines={1}>{f.label}</Text>
             <Text style={[font('subhead', 'semibold'), { color: f.value ? C.text : C.tertiary }]} numberOfLines={1} adjustsFontSizeToFit>
               {f.value ? displayCopy(f.value) : 'Not added'}
             </Text>
             {f.sub ? <Text style={[font('caption2'), { color: C.secondary }]} numberOfLines={1}>{displayCopy(f.sub)}</Text> : null}
-          </View>
+            {!f.sub && !f.value && fromHealth && (f.key === 'age' || f.key === 'blood') ? (
+              <Text style={[font('caption2'), { color: C.blueLink }]} numberOfLines={1}>From Apple Health</Text>
+            ) : null}
+          </Pressable>
         ))}
       </View>
       {/*

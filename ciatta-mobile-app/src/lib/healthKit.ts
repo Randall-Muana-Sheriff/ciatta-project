@@ -9,6 +9,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import {
+  getBloodTypeAsync,
+  getDateOfBirthAsync,
   isHealthDataAvailableAsync,
   queryCategorySamplesWithAnchor,
   queryQuantitySamplesWithAnchor,
@@ -26,7 +28,11 @@ import type { CategorySample, QuantitySample, WorkoutSample } from './healthSamp
 import type { AnchorStore, SyncPort } from './healthSync';
 import { supabase } from './supabase';
 
+// Her date of birth and blood type, for the facts on her Profile overview.
+const CHARACTERISTIC_TYPES: ObjectTypeIdentifier[] = ['HKCharacteristicTypeIdentifierDateOfBirth', 'HKCharacteristicTypeIdentifierBloodType'];
+
 const READ_TYPES: ObjectTypeIdentifier[] = [
+  ...CHARACTERISTIC_TYPES,
   ...QUANTITY_SPECS.map((spec) => spec.identifier as QuantityTypeIdentifier),
   SLEEP_SPEC.identifier as CategoryTypeIdentifier,
   WorkoutTypeIdentifier,
@@ -73,6 +79,27 @@ export async function requestHealthPermission(): Promise<{ granted: boolean; rea
   } catch {
     return { granted: false, reason: 'Permission was not granted.' };
   }
+}
+
+// Her date of birth and blood type as Apple Health holds them. Read without
+// asking: HealthKit never says whether reading was refused, it just has
+// nothing to give, so a refusal and an empty field both come back as null.
+export async function readCharacteristics(): Promise<{ dateOfBirth: Date | null; bloodType: number | null }> {
+  if (!(await isHealthAvailable())) return { dateOfBirth: null, bloodType: null };
+  const [dob, blood] = await Promise.all([getDateOfBirthAsync().catch(() => undefined), getBloodTypeAsync().catch(() => 0)]);
+  return { dateOfBirth: dob ?? null, bloodType: blood ? Number(blood) : null };
+}
+
+// Asks for just those two, then reads them. Apple's sheet appears only the
+// first time; after that this reads what she allowed.
+export async function askForCharacteristics(): Promise<{ dateOfBirth: Date | null; bloodType: number | null }> {
+  if (!(await isHealthAvailable())) return { dateOfBirth: null, bloodType: null };
+  try {
+    await requestAuthorization({ toRead: CHARACTERISTIC_TYPES });
+  } catch {
+    // Not granted; whatever can be read is still read below.
+  }
+  return readCharacteristics();
 }
 
 // A HealthKit workout's activity type comes back as a number whose reverse

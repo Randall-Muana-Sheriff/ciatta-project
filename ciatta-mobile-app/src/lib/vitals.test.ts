@@ -87,7 +87,7 @@ test('nothing recorded is absent, never zero', () => {
 
 test('the query asks for exactly the metrics this module reads', () => {
   assert.deepEqual([...VITAL_METRICS].sort(), [
-    'blood_pressure_diastolic', 'blood_pressure_systolic', 'body_mass', 'oxygen_saturation',
+    'blood_pressure_diastolic', 'blood_pressure_systolic', 'body_mass', 'height', 'oxygen_saturation',
   ]);
 });
 

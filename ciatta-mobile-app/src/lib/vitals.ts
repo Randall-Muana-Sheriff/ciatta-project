@@ -125,4 +125,6 @@ export const VITAL_METRICS = [
   'blood_pressure_diastolic',
   'oxygen_saturation',
   'body_mass',
+  // Height, for her Profile overview. Read as the latest, with its unit.
+  'height',
 ] as const;
