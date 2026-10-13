@@ -322,7 +322,7 @@ export function TodayScreen() {
 
       <View style={t.pad}>
         <Text style={[font('title2'), t.hello]} accessibilityRole="header">
-          {displayCopy(person ? `${greeting(now)}, ${person.firstName}.` : `${greeting(now)}.`)}
+          {displayCopy(person ? `${greeting(now)}, ${person.firstName}` : greeting(now))}
         </Text>
 
         {/*
