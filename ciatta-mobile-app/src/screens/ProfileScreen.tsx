@@ -427,7 +427,7 @@ function WeatherRow() {
           ? 'Adding the weather around you'
           : 'Off. Adds the weather and daylight around you as background.';
   return (
-    <ListGroup header="Around You" footer="Only a rough area, about 10 km, leaves your phone, and it is never stored.">
+    <ListGroup header="Weather" footer="Only a rough area, about 10 km, leaves your phone, and it is never stored.">
       <ListRow
         first
         icon="sun"
