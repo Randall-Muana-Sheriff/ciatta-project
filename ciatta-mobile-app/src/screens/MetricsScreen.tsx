@@ -20,6 +20,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { buildMetrics, type MetricRow, recordedCount, recordedLine } from '../lib/allMetrics';
 import { bloodOxygen, bloodPressure, type VitalCard, weight } from '../lib/vitals';
 import { displayCopy } from '../lib/displayCopy';
+import { defaultUnits } from '../lib/units';
 import { metricForRow } from '../lib/metricDetail';
 import { chooseMetric } from '../lib/metricHandoff';
 import { useNav } from '../navigation';
@@ -41,12 +42,12 @@ export function MetricsScreen() {
   const [vitals, setVitals] = useState<VitalCard[]>([]);
   useEffect(() => {
     let ignore = false;
-    repo
-      .loadVitals()
-      .then((rows) => {
+    Promise.all([repo.loadVitals(), repo.loadBody().catch(() => null)])
+      .then(([rows, body]) => {
         if (ignore) return;
         const now = new Date();
-        setVitals([bloodPressure(rows, now), bloodOxygen(rows, now), weight(rows, now)]);
+        const units = body?.units ?? defaultUnits(Intl.DateTimeFormat().resolvedOptions().locale);
+        setVitals([bloodPressure(rows, now), bloodOxygen(rows, now), weight(rows, now, units)]);
       })
       .catch(() => {
         // The section is simply absent, rather than showing empty rows.

@@ -300,3 +300,9 @@ test('a referral she tracks saves, updates its steps, and can be removed', async
   await repo.deleteReferral('r1');
   assert.equal((await repo.loadReferrals()).length, 0);
 });
+
+test('her body measurements and units save and read back', async () => {
+  const repo = demoRepo();
+  await repo.saveBody({ blood_type: 7, height_cm: 165, weight_kg: 58.1, weight_on: '2026-10-20', units: 'uk' });
+  assert.deepEqual(await repo.loadBody(), { blood_type: 7, height_cm: 165, weight_kg: 58.1, weight_on: '2026-10-20', units: 'uk' });
+});

@@ -13,6 +13,7 @@
 // the same failure as inventing it.
 
 import { type Trend, trendOf } from './trend';
+import { formatWeight, toKg, type Units } from './units';
 
 export type Reading = {
   metric: string;
@@ -106,8 +107,13 @@ export function bloodOxygen(readings: readonly Reading[], now: Date, usual?: num
   }, series(readings, 'oxygen_saturation', (v) => (v <= 1 ? v * 100 : v)), usual);
 }
 
-export function weight(readings: readonly Reading[], now: Date): VitalCard {
+export function weight(readings: readonly Reading[], now: Date, units?: Units): VitalCard {
   const r = fresh(find(readings, 'body_mass'), now);
+  // In her units, when she has chosen them; otherwise as it arrived.
+  const kg = r && units ? toKg(r.value, r.unit) : null;
+  if (r && kg != null) {
+    return { key: 'weight', label: 'Weight', value: formatWeight(kg, units!).value, note: whenNote(r.at, now) ?? undefined, from: 'measured' };
+  }
   return {
     key: 'weight',
     label: 'Weight',

@@ -36,6 +36,7 @@ import { VisitPrepScreen } from './screens/VisitPrepScreen';
 import { LabBriefScreen } from './screens/LabBriefScreen';
 import { ReferralsScreen } from './screens/ReferralsScreen';
 import { ReferralScreen } from './screens/ReferralScreen';
+import { BodyMeasurementsScreen } from './screens/BodyMeasurementsScreen';
 import { ShareClinicianScreen } from './screens/ShareClinicianScreen';
 import { AddProcedureScreen } from './screens/AddProcedureScreen';
 import { FoodScanScreen } from './screens/FoodScanScreen';
@@ -104,6 +105,7 @@ const DETAIL_SCREENS: Record<Screen, ComponentType> = {
   labBrief: LabBriefScreen,
   referrals: ReferralsScreen,
   referral: ReferralScreen,
+  bodyMeasurements: BodyMeasurementsScreen,
   shareClinician: ShareClinicianScreen,
   productSafety: ProductSafetyScreen,
 };

@@ -38,6 +38,7 @@ import { band, median } from '../lib/engine';
 import type { BaselineRow, VitalDay } from '../lib/metricDetail';
 import { type Insurance, insuranceFromRow } from '../lib/insurance';
 import type { Referral } from '../lib/referrals';
+import type { BodyManual } from '../lib/overviewFacts';
 import { type LabFlag, type LabResult, type LabScan, parseRange, readLabScan, type ScannedTest } from '../lib/labs';
 import { records as sampleRecords } from './sample';
 
@@ -174,6 +175,9 @@ export type Repo = {
   scanLab(base64: string, kind: 'image' | 'pdf'): Promise<LabScan>;
   // The lines she checked, saved as one visit read from a report.
   saveLabs(tests: ScannedTest[], on: string, lab: string | null): Promise<void>;
+  // Her body measurements as she entered them, and her units.
+  loadBody(): Promise<BodyManual | null>;
+  saveBody(body: BodyManual): Promise<void>;
   // Referrals she is tracking.
   loadReferrals(): Promise<Referral[]>;
   saveReferral(r: Referral): Promise<void>;
@@ -245,6 +249,8 @@ export function demoRepo(): Repo {
     items,
     at: recent(ago),
   }));
+  // The example person's measurements, as the sample shows them.
+  let body: BodyManual | null = { blood_type: 1, height_cm: 173, weight_kg: 64.2 };
   // Referrals the example person tracks in this session.
   let referrals: Referral[] = [];
   // The example person's labs, from the sample's draws.
@@ -446,6 +452,10 @@ export function demoRepo(): Repo {
         ...labs,
         ...tests.map((t, n) => ({ id: `scan-${Date.now()}-${n}`, ...t, status: 'final', source: 'report' as const, lab, on })),
       ];
+    },
+    loadBody: async () => body,
+    saveBody: async (next) => {
+      body = next;
     },
     loadReferrals: async () => referrals,
     saveReferral: async (r) => {
@@ -997,6 +1007,14 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
           })),
         ),
       );
+    },
+    async loadBody() {
+      const row = must(await db.from('profiles').select('body').eq('id', userId).maybeSingle()) as { body: BodyManual | null } | null;
+      const b = row?.body;
+      return b && typeof b === 'object' && !Array.isArray(b) ? b : null;
+    },
+    async saveBody(next) {
+      must(await db.from('profiles').update({ body: next }).eq('id', userId));
     },
     async loadReferrals() {
       const rows = must(

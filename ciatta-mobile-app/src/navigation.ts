@@ -44,6 +44,7 @@ export type Screen =
   | 'labBrief'
   | 'referrals'
   | 'referral'
+  | 'bodyMeasurements'
   | 'shareClinician'
   | 'productSafety';
 

@@ -12,9 +12,10 @@ import type { Reported } from '../data/repo';
 import { type Connection, loadConnections } from '../data/providers';
 import { intelligenceLine, metricLine, patternReadiness } from '../lib/patternReadiness';
 import { bodySystems } from '../data/adapter';
-import { overviewFacts } from '../lib/overviewFacts';
+import { type BodyManual, overviewFacts, resolveBody } from '../lib/overviewFacts';
 import { weight } from '../lib/vitals';
-import { healthStats } from '../lib/healthFacts';
+import { ageFact } from '../lib/healthFacts';
+import { defaultUnits } from '../lib/units';
 import { type Insurance, insuranceFact } from '../lib/insurance';
 import { askForCharacteristics, readCharacteristics } from '../lib/healthKit';
 import { openAppleHealth } from '../lib/openHealth';
@@ -136,13 +137,13 @@ function HealthOverview({
   // view, so what she just saved shows.
   const [insurance, setInsurance] = useState<Insurance | null>(null);
   const repo = useRepo();
-  const { windows } = useCycleInsights();
-  // Her latest weight, and the day her last period started, for the facts
-  // at the top of the card. Without the example person's stats, age, height
-  // and blood type come from Apple Health: height from her latest synced
-  // reading, date of birth and blood type read from Apple Health itself.
-  const [weightCard, setWeightCard] = useState<{ value: string | null; note?: string } | null>(null);
+  const { profile: cycleProfile } = useCycleInsights();
+  // Height, weight and blood type: what she entered on Body Measurements,
+  // and what Apple Health holds. Age comes from Apple Health's date of
+  // birth, or for the example person from the sample.
+  const [body, setBody] = useState<BodyManual | null>(null);
   const [heightRead, setHeightRead] = useState<{ value: number; unit: string | null } | null>(null);
+  const [weightRead, setWeightRead] = useState<{ value: number; unit: string | null; at: string } | null>(null);
   const [traits, setTraits] = useState<{ dateOfBirth: Date | null; bloodType: number | null }>({ dateOfBirth: null, bloodType: null });
   const fromHealth = stats.length === 0;
   useEffect(() => {
@@ -151,15 +152,14 @@ function HealthOverview({
       .loadVitals()
       .then((rows) => {
         if (ignore) return;
-        setWeightCard(weight(rows, new Date()));
         const h = rows.find((r) => r.metric === 'height');
+        const w = rows.find((r) => r.metric === 'body_mass');
         setHeightRead(h ? { value: h.value, unit: h.unit } : null);
+        setWeightRead(w ? { value: w.value, unit: w.unit, at: w.at } : null);
       })
       .catch(() => {});
-    repo
-      .loadInsurance()
-      .then((ins) => !ignore && setInsurance(ins))
-      .catch(() => {});
+    repo.loadInsurance().then((ins) => !ignore && setInsurance(ins)).catch(() => {});
+    repo.loadBody().then((b) => !ignore && setBody(b)).catch(() => {});
     if (fromHealth) {
       readCharacteristics()
         .then((t) => !ignore && setTraits(t))
@@ -169,25 +169,27 @@ function HealthOverview({
       ignore = true;
     };
   }, [repo, fromHealth, nav.depth]);
-  const shown = useMemo(
-    () => {
-      const base = (fromHealth ? healthStats({ ...traits, height: heightRead }, new Date()) : stats).filter((x) => x.label !== 'Insurance');
-      const ins = insuranceFact(insurance);
-      return ins ? [...base, ins] : base;
-    },
-    [fromHealth, traits, heightRead, stats, insurance],
-  );
-  const facts = useMemo(
-    () => overviewFacts({ stats: shown, weight: weightCard, lastPeriod: windows[windows.length - 1]?.start ?? null, now: new Date() }),
-    [shown, weightCard, windows],
-  );
-  // A fact Apple Health holds but Ciatta has not been allowed to read: one
-  // tap asks, once.
+  const facts = useMemo(() => {
+    const now = new Date();
+    const sampleAge = stats.find((x) => x.label === 'Age');
+    return overviewFacts({
+      age: fromHealth ? ageFact(traits.dateOfBirth, now) : (sampleAge ?? null),
+      body: resolveBody({ manual: body, health: { bloodType: fromHealth ? traits.bloodType : null, height: heightRead, weight: weightRead } }),
+      insurance: insuranceFact(insurance),
+      situations: cycleProfile.situations,
+      units: body?.units ?? defaultUnits(Intl.DateTimeFormat().resolvedOptions().locale),
+      now,
+    });
+  }, [stats, fromHealth, traits, body, heightRead, weightRead, insurance, cycleProfile]);
+  // Age Apple Health holds but Ciatta has not been allowed to read: one tap
+  // asks, once.
   const askHealth = () => {
     askForCharacteristics()
       .then(setTraits)
       .catch(() => {});
   };
+  // Where a tap on each fact goes.
+  const OPENS: Partial<Record<string, Screen>> = { height: 'bodyMeasurements', weight: 'bodyMeasurements', blood: 'bodyMeasurements', insurance: 'insurance', situation: 'cycleProfile' };
   const { ranked } = useInsights();
   const ready = useMemo(() => patternReadiness(days), [days]);
   const found = ranked.filter((i) => i.triage === 'Surface' || i.triage === 'Investigate').length;
@@ -210,11 +212,11 @@ function HealthOverview({
           <Pressable
             key={f.key}
             style={p.fact}
-            disabled={!(f.key === 'insurance' || (fromHealth && !f.value && (f.key === 'age' || f.key === 'blood')))}
-            onPress={f.key === 'insurance' ? () => onOpen('insurance') : askHealth}
-            accessibilityRole={f.key === 'insurance' || (fromHealth && !f.value && (f.key === 'age' || f.key === 'blood')) ? 'button' : undefined}
+            disabled={!(OPENS[f.key] || (fromHealth && !f.value && f.key === 'age'))}
+            onPress={OPENS[f.key] ? () => onOpen(OPENS[f.key]!) : askHealth}
+            accessibilityRole={OPENS[f.key] || (fromHealth && !f.value && f.key === 'age') ? 'button' : undefined}
             accessibilityLabel={`${f.label}, ${f.value ?? 'not added'}${f.sub ? `, ${f.sub}` : ''}`}
-            accessibilityHint={f.key === 'insurance' ? 'Opens your insurance' : fromHealth && !f.value && (f.key === 'age' || f.key === 'blood') ? 'Adds it from Apple Health' : undefined}
+            accessibilityHint={OPENS[f.key] ? `Opens ${f.label.toLowerCase()}` : fromHealth && !f.value && f.key === 'age' ? 'Adds it from Apple Health' : undefined}
           >
             <Icon name={f.icon} size={16} color={f.key === 'insurance' ? C.lavender : C.coral} weight={1.8} />
             <Text style={[font('caption1'), { color: C.secondary, marginTop: 6 }]} numberOfLines={1}>{f.label}</Text>
@@ -222,10 +224,10 @@ function HealthOverview({
               {f.value ? displayCopy(f.value) : 'Not added'}
             </Text>
             {f.sub ? <Text style={[font('caption2'), { color: C.secondary }]} numberOfLines={1}>{displayCopy(f.sub)}</Text> : null}
-            {!f.sub && !f.value && fromHealth && (f.key === 'age' || f.key === 'blood') ? (
+            {!f.sub && !f.value && fromHealth && f.key === 'age' ? (
               <Text style={[font('caption2'), { color: C.blueLink }]} numberOfLines={1}>From Apple Health</Text>
             ) : null}
-            {!f.value && f.key === 'insurance' ? (
+            {!f.value && OPENS[f.key] ? (
               <Text style={[font('caption2'), { color: C.blueLink }]} numberOfLines={1}>Add</Text>
             ) : null}
           </Pressable>
@@ -557,6 +559,7 @@ function Connections({ onOpen }: { onOpen: (screen: Screen) => void }) {
 
       <ListGroup header="Your Goals" footer="Optional. Ciatta never sets these for you.">
         <ListRow first icon="leaf" tint={TONE.mint} title="Nutrition Targets" sub="Calories, protein, carbs, fat" onPress={() => onOpen('nutritionTargets')} />
+        <ListRow icon="ruler" tint={TONE.coral} title="Body Measurements" sub="Blood type, height, weight and units" onPress={() => onOpen('bodyMeasurements')} />
       </ListGroup>
 
     </View>
