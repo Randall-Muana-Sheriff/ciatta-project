@@ -30,7 +30,8 @@ export type Screen =
   | 'profile'
   | 'calendar'
   | 'quickLog'
-  | 'nutritionTargets';
+  | 'nutritionTargets'
+  | 'foodScan';
 
 export type Nav = {
   tab: Tab;

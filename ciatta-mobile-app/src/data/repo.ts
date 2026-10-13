@@ -5,6 +5,7 @@ import type { DailyPatch } from '../lib/dailyLog';
 import { endUse, type Fullness, type Product, type ProductUse, startUse } from '../lib/periodProducts';
 import type { EnvironmentDay } from '../lib/weather';
 import { normalizeTargets, type NutritionTargets } from '../lib/nutritionTargets';
+import { type Meal, mealFromRow, mealProvenance, mealTotals, readScan, type Scan } from '../lib/foodScan';
 import type { CategoryKey } from '../lib/logCategories';
 import type { Found } from '../lib/quickLog';
 import { type CycleProfile, normalizeProfile } from '../lib/cycleProfile';
@@ -95,6 +96,10 @@ export type Repo = {
   loadEnvironment(): Promise<EnvironmentDay[]>;
   // Her optional daily nutrition targets. Empty when she set none.
   loadNutritionTargets(): Promise<NutritionTargets>;
+  // A meal photo read by the food scan, already checked (lib/foodScan).
+  scanFood(imageBase64: string): Promise<Scan>;
+  saveMeal(meal: Meal): Promise<void>;
+  loadMeals(sinceIso: string): Promise<Meal[]>;
   saveNutritionTargets(t: NutritionTargets): Promise<void>;
   startProduct(next: { id: string; product: Product; size: string; at: string }): Promise<void>;
   endProduct(out: { at: string; fullness: Fullness | null }): Promise<void>;
@@ -207,6 +212,7 @@ export function demoRepo(): Repo {
   };
   let productUses: ProductUse[] = [];
   let targets: NutritionTargets = {};
+  let meals: Meal[] = [];
   return {
     mode: 'demo',
     loadEpisodes: async () => own,
@@ -225,6 +231,22 @@ export function demoRepo(): Repo {
     // could be misled by.
     saveDailyLog: async () => {},
     // Kept in memory for the session, so the example person can try it.
+    // The example person's scan is always the same sample plate, laid out
+    // as the design shows it, so the flow can be tried without a key.
+    scanFood: async () =>
+      readScan({
+        not_food: false,
+        items: [
+          { name: 'Grilled Chicken', portion: '150 g', kcal: 248, protein_g: 46.5, carbs_g: 0, fat_g: 5.4, x: 0.47, y: 0.3, r: 0.16 },
+          { name: 'Lettuce', portion: '1 cup', kcal: 8, protein_g: 0.6, carbs_g: 1.5, fat_g: 0.1, x: 0.81, y: 0.5, r: 0.11 },
+          { name: 'Tomatoes', portion: '6 cherry', kcal: 18, protein_g: 0.9, carbs_g: 3.9, fat_g: 0.2, x: 0.29, y: 0.58, r: 0.1 },
+          { name: 'Lamb’s Lettuce', portion: '1 handful', kcal: 6, protein_g: 0.6, carbs_g: 1, fat_g: 0.1, x: 0.58, y: 0.5, r: 0.08 },
+        ],
+      }),
+    saveMeal: async (meal) => {
+      meals = [...meals.filter((m) => m.id !== meal.id), meal];
+    },
+    loadMeals: async (since) => meals.filter((m) => m.eatenAt >= since),
     loadNutritionTargets: async () => targets,
     saveNutritionTargets: async (t) => {
       targets = normalizeTargets(t);
@@ -504,6 +526,37 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       } catch {
         return [];
       }
+    },
+    async scanFood(imageBase64) {
+      const { data, error } = await db.functions.invoke('food-scan', { body: { image: imageBase64 } });
+      if (error) throw error;
+      return readScan(data);
+    },
+    async saveMeal(meal) {
+      const t = mealTotals(meal.items);
+      must(
+        await db.from('meals').upsert(
+          {
+            user_id: userId,
+            client_id: meal.id,
+            eaten_at: meal.eatenAt,
+            items: meal.items,
+            kcal: t.kcal,
+            protein_g: t.protein_g,
+            carbs_g: t.carbs_g,
+            fat_g: t.fat_g,
+            photo: meal.photoUri ? { uri: meal.photoUri } : null,
+            provenance: mealProvenance(meal.items),
+          },
+          { onConflict: 'user_id,client_id' },
+        ),
+      );
+    },
+    async loadMeals(since) {
+      const rows = must(
+        await db.from('meals').select('client_id, eaten_at, items, photo').gte('eaten_at', since).order('eaten_at'),
+      ) as { client_id: string; eaten_at: string; items: unknown; photo: unknown }[] | null;
+      return (rows ?? []).map(mealFromRow);
     },
     async loadNutritionTargets() {
       const row = must(await db.from('profiles').select('nutrition_targets').eq('id', userId).maybeSingle()) as

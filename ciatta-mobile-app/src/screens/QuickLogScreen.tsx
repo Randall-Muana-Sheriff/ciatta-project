@@ -27,12 +27,14 @@ import { displayCopy } from '../lib/displayCopy';
 import { bowelDetail, CATEGORIES, category, type CategoryKey } from '../lib/logCategories';
 import { mergeFound, planSave, readingLine, readQuick, runSave } from '../lib/quickLog';
 import { userFacingError } from '../lib/userFacingError';
+import { handPhoto } from '../lib/scanHandoff';
+import * as ImagePicker from 'expo-image-picker';
 import { type Screen, useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
 import { useRepo } from '../state/session';
 import { font, GUTTER } from '../theme';
 import { Composer } from '../ui/composer';
-import { DetailScreen } from '../ui/kit';
+import { DetailScreen, PrimaryButton } from '../ui/kit';
 import { ProductLogger } from '../ui/ProductLogger';
 import { L, SPACE } from '../ui/surface';
 
@@ -50,6 +52,28 @@ export function QuickLogScreen() {
   // What has already landed for this entry, so a retry after a failure
   // does not save any part of it twice. An edit makes it a new entry.
   const done = useRef(new Set<string>());
+  const [pickNote, setPickNote] = useState<string | null>(null);
+  const pickMeal = async (from: 'camera' | 'library') => {
+    setPickNote(null);
+    try {
+      if (from === 'camera') {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        if (!permission.granted) {
+          setPickNote('Ciatta needs camera permission for this. You can turn it on in Settings, or choose a photo instead.');
+          return;
+        }
+      }
+      const picked =
+        from === 'camera'
+          ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 })
+          : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+      if (picked.canceled || !picked.assets?.length) return;
+      handPhoto(picked.assets[0].uri);
+      nav.push('foodScan');
+    } catch {
+      setPickNote('That did not open.');
+    }
+  };
   useEffect(() => {
     done.current = new Set();
   }, [text, tapped, files, key]);
@@ -172,6 +196,18 @@ export function QuickLogScreen() {
         {/* Products are logged by tap and saved at once, under Cycle only. */}
         {key === 'cycle' ? <ProductLogger /> : null}
 
+        {/* A meal photo is read for its foods and figures, here and only
+            here. Camera first; her library one tap away. */}
+        {key === 'nutrition' ? (
+          <View style={q.scan}>
+            <PrimaryButton label="Scan a Meal" onPress={() => void pickMeal('camera')} />
+            <Pressable onPress={() => void pickMeal('library')} accessibilityRole="button" style={({ pressed }) => [q.detail, pressed && q.pressed]}>
+              <Text style={[font('subhead'), q.detailText]}>Choose a meal photo instead</Text>
+            </Pressable>
+            {pickNote ? <Text style={[font('footnote'), q.noted]}>{displayCopy(pickNote)}</Text> : null}
+          </View>
+        ) : null}
+
         <Text style={[font('caption1'), q.hint]}>Or type it or say it, in a sentence. For example:</Text>
         <Text style={[font('subhead'), q.example]}>{displayCopy(cat.example)}</Text>
 
@@ -184,7 +220,17 @@ export function QuickLogScreen() {
           placeholder={cat.example}
           label={`Log ${cat.label.toLowerCase()} in your own words`}
           attachments={files}
-          onAttachments={setFiles}
+          onAttachments={(next) => {
+            // Under Nutrition, a photo added with the plus is a meal to
+            // read, so it goes to the scan rather than sitting as a file.
+            const added = next.find((f) => f.kind === 'photo' && !files.some((x) => x.id === f.id));
+            if (key === 'nutrition' && added) {
+              handPhoto(added.uri);
+              nav.push('foodScan');
+              return;
+            }
+            setFiles(next);
+          }}
           onSend={send}
         />
 
@@ -264,4 +310,5 @@ const q = StyleSheet.create({
   detail: { marginTop: SPACE.block, paddingVertical: 14, alignItems: 'center' },
   detailText: { color: L.body },
   pressed: { opacity: 0.55 },
+  scan: { marginTop: SPACE.block, gap: 4 },
 });
