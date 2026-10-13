@@ -9,6 +9,8 @@ import {
   CYCLE_NORMAL,
   drawMarkers,
   flareSpans,
+  lanesWithData,
+  levelBins,
   painCells,
   periodBlocks,
   severityOpacity,
@@ -131,4 +133,25 @@ test('severity is one colour, darker as it rises', () => {
   assert.ok(severityOpacity(1) < severityOpacity(5) && severityOpacity(5) < severityOpacity(10));
   assert.equal(severityOpacity(10), 1);
   assert.ok(severityOpacity(null) > 0, 'logged without a number still shows, lightly');
+});
+
+test('only the lanes she has given Ciatta are shown, in a fixed order', () => {
+  const none = { periods: 0, pain: 0, flares: 0, symptoms: 0, sleep: 0, hrv: 0, heart: 0, temp: 0, steps: 0, medications: 0, records: 0, notes: 0 };
+  assert.deepEqual(lanesWithData(none), []);
+  // Hers: a cycle, HRV and heart rate, nothing else.
+  assert.deepEqual(lanesWithData({ ...none, periods: 3, hrv: 40, heart: 40 }), ['cycle', 'hrv', 'heart']);
+  assert.deepEqual(
+    lanesWithData({ ...none, notes: 1, steps: 9, pain: 2, sleep: 5 }),
+    ['pain', 'sleep', 'steps', 'notes'],
+  );
+});
+
+test('a measured level is a daily average, or weekly over a year, and absent when not measured', () => {
+  const days = [
+    { ...day('2026-10-12', null), hrv: 40 },
+    { ...day('2026-10-13', null), hrv: 50 },
+    { ...day('2026-10-14', null), hrv: null },
+  ];
+  assert.deepEqual(levelBins(days, (d) => d.hrv, 'day').map((b) => [b.start.getDate(), b.value]), [[12, 40], [13, 50]]);
+  assert.deepEqual(levelBins(days, (d) => d.hrv, 'week').map((b) => b.value), [45]);
 });

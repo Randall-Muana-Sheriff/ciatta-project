@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
@@ -10,7 +10,7 @@ import { displayCopy } from '../lib/displayCopy';
 import { monthSummary, type Signal } from '../lib/cyclePatterns';
 import type { Ovulation } from '../lib/fertility';
 import { useCycleInsights } from '../state/cycleStore';
-import { useData } from '../state/session';
+import { useData, useRepo } from '../state/session';
 import { C, font, fonts, GUTTER, RADIUS } from '../theme';
 import { NAV_CLEARANCE } from '../ui/surface';
 import { fmtHours } from '../lib/engine';
@@ -20,6 +20,9 @@ import {
   cycleGaps,
   drawMarkers,
   flareSpans,
+  type LaneKey,
+  lanesWithData,
+  levelBins,
   painCells,
   periodBlocks,
   severityOpacity,
@@ -28,6 +31,8 @@ import {
   symptomGrid,
 } from '../lib/journeyVisuals';
 import { useNav } from '../navigation';
+import { METRIC_HUE } from '../ui/metricHue';
+import type { BaselineRow } from '../lib/metricDetail';
 import { type Axis, axisFor, emptyFor, posIn, type Scale, SCALES } from '../lib/timeAxis';
 import { LargeTitle, Panel } from '../ui/chrome';
 import { Icon, type IconName } from '../ui/icons';
@@ -37,7 +42,7 @@ import { Row } from '../ui/kit';
 // months, and every lane positions against whichever is picked rather than
 // against a fixed run of months.
 
-type Lane = 'cycle' | 'pain' | 'flare' | 'sleep' | 'symptoms' | 'medications' | 'records' | 'notes';
+type Lane = LaneKey;
 
 const SYMPTOM_ROWS = 4;
 const ROW_H = 26;
@@ -45,10 +50,14 @@ const ROW_TOP = 48;
 
 const LANES: { key: Lane; title: string; sub: string; icon: IconName; color: string; height: number }[] = [
   { key: 'cycle', title: 'Cycle', sub: 'Periods, days between', icon: 'target', color: C.coral, height: 96 },
-  { key: 'pain', title: 'Pain', sub: 'Worst each day, 0 to 10', icon: 'wave', color: C.coral, height: 68 },
+  { key: 'pain', title: 'Pain', sub: 'Worst each day, 0 to 10', icon: 'bandage', color: C.coral, height: 68 },
   { key: 'flare', title: 'Flare ups', sub: 'Start to end', icon: 'flame', color: C.coral, height: 64 },
   { key: 'sleep', title: 'Sleep', sub: 'Against 7 hours', icon: 'moon', color: C.lavender, height: 150 },
   { key: 'symptoms', title: 'Symptoms', sub: 'Most logged', icon: 'triangle', color: C.violet, height: ROW_TOP + SYMPTOM_ROWS * ROW_H + 12 },
+  { key: 'hrv', title: 'HRV', sub: 'Daily, against your usual', icon: 'wave', color: METRIC_HUE.hrv, height: 110 },
+  { key: 'heart', title: 'Resting heart rate', sub: 'Daily, against your usual', icon: 'heart', color: METRIC_HUE.bp, height: 110 },
+  { key: 'temp', title: 'Skin temperature', sub: 'Above or below usual', icon: 'sun', color: METRIC_HUE.temp, height: 110 },
+  { key: 'steps', title: 'Steps', sub: 'Each day', icon: 'bars', color: METRIC_HUE.steps, height: 100 },
   { key: 'medications', title: 'Medications', sub: 'While taken', icon: 'pill', color: C.mint, height: 124 },
   { key: 'records', title: 'Records', sub: 'Lab draws, by range', icon: 'doc', color: C.green, height: 88 },
   { key: 'notes', title: 'Notes', sub: 'In your words', icon: 'chat', color: C.indigo, height: 124 },
@@ -81,6 +90,9 @@ function cycleLane(windows: CycleWindow[], current: CycleWindow | null, usual: n
   if (current && usual != null) points.push({ at: addDays(current.start, usual), days: usual, expected: true });
   return points;
 }
+
+// "cycle, HRV and heart rate": a list as she would say it.
+const listWords = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
 const sameMonth = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 
@@ -121,6 +133,7 @@ function LaneMarks({
   plotW,
   height,
   onNote,
+  baselines,
 }: {
   lane: Lane;
   x: (at: Date) => number | null;
@@ -136,6 +149,7 @@ function LaneMarks({
   plotW: number;
   height: number;
   onNote: () => void;
+  baselines: readonly BaselineRow[];
 }) {
   // Where a month position lands, or null when it is outside the window.
   const at = (m: number) => x(dateAtMonthPos(m));
@@ -286,6 +300,111 @@ function LaneMarks({
         </G>
       );
     }
+    case 'hrv':
+    case 'heart': {
+      // A level read against her own usual range, which is shaded when the
+      // server has enough history to know it. HRV as a dot per day, since
+      // each night is its own reading; resting heart rate as a line, which
+      // is how a steady level is followed. Gaps stay gaps.
+      const get = lane === 'hrv' ? (d: Day) => d.hrv : (d: Day) => d.restingHR;
+      const bins = levelBins(days, get, bin);
+      const usual = baselines.find((b) => b.metric === (lane === 'hrv' ? 'hrv' : 'resting_hr') && b.sufficient && b.low != null && b.high != null);
+      const color = lane === 'hrv' ? METRIC_HUE.hrv : METRIC_HUE.bp;
+      const values = [...bins.map((b) => b.value), ...(usual ? [usual.low!, usual.high!] : [])];
+      if (!values.length) return null;
+      const lo = Math.min(...values);
+      const hi = Math.max(...values);
+      const pad = Math.max(1, (hi - lo) * 0.15);
+      const y = (v: number) => 14 + (1 - (v - (lo - pad)) / (hi - lo + pad * 2)) * (height - 32);
+      const pts = bins
+        .map((b) => ({ b, p: stretch(b.start, b.end) }))
+        .filter((e): e is { b: (typeof bins)[number]; p: [number, number] } => e.p != null)
+        .map(({ b, p }) => ({ x: (p[0] + p[1]) / 2, y: y(b.value), b }));
+      const unit = lane === 'hrv' ? 'ms' : 'bpm';
+      const last = pts[pts.length - 1];
+      // Consecutive bins only, so a line never bridges a gap.
+      const step = bin === 'week' ? 7 * 86400000 : 86400000;
+      const runs: (typeof pts)[] = [];
+      pts.forEach((pt, i) => {
+        const prev = pts[i - 1];
+        if (!prev || pt.b.start.getTime() - prev.b.start.getTime() > step * 1.5) runs.push([pt]);
+        else runs[runs.length - 1].push(pt);
+      });
+      return (
+        <G>
+          {usual ? (
+            <Rect x={0} y={y(usual.high!)} width={plotW} height={Math.max(2, y(usual.low!) - y(usual.high!))} fill={color} opacity={0.1} />
+          ) : null}
+          {lane === 'heart'
+            ? runs.filter((r) => r.length > 1).map((r, i) => (
+                <Path key={i} d={r.map((pt, k) => `${k ? 'L' : 'M'}${pt.x},${pt.y}`).join(' ')} stroke={color} strokeWidth={2.5} fill="none" />
+              ))
+            : null}
+          {pts.map((pt, i) => (
+            <Circle key={i} cx={pt.x} cy={pt.y} r={lane === 'hrv' ? 4.5 : 3} fill={color} />
+          ))}
+          {last ? (
+            <Label x={last.x} y={last.y - 10} color={C.text}>
+              {`${Math.round(last.b.value)} ${unit}`}
+            </Label>
+          ) : null}
+        </G>
+      );
+    }
+    case 'temp': {
+      // Already a difference from her usual, so bars go up or down from a
+      // usual line, as a temperature chart across a cycle is read.
+      const bins = levelBins(days, (d) => d.tempDeviation, bin);
+      const mid = height / 2;
+      const reach = Math.max(0.5, ...bins.map((b) => Math.abs(b.value)));
+      return (
+        <G>
+          <Line x1={0} x2={plotW} y1={mid} y2={mid} stroke={C.text} opacity={0.22} strokeDasharray="3 4" />
+          <SvgText x={4} y={mid - 4} fill={C.tertiary} fontSize={10} fontFamily={fonts.regular}>
+            Usual
+          </SvgText>
+          {bins.map((b, i) => {
+            const p = stretch(b.start, b.end);
+            if (!p) return null;
+            const w = Math.min(18, Math.max(4, (p[1] - p[0]) * 0.6));
+            const cx = (p[0] + p[1]) / 2;
+            const tip = mid - (b.value / reach) * (mid - 12);
+            return (
+              <Rect key={i} x={cx - w / 2} y={Math.min(mid, tip)} width={w} height={Math.max(2, Math.abs(tip - mid))} rx={w / 2} fill={METRIC_HUE.temp} opacity={b.value >= 0 ? 1 : 0.55} />
+            );
+          })}
+        </G>
+      );
+    }
+    case 'steps': {
+      // An amount, so bars stand on zero.
+      const bins = levelBins(days, (d) => d.steps, bin);
+      const top = Math.max(1, ...bins.map((b) => b.value));
+      const floor = height - 16;
+      const lastIn = [...bins].reverse().find((b) => stretch(b.start, b.end));
+      return (
+        <G>
+          <Line x1={0} x2={plotW} y1={floor} y2={floor} stroke={C.text} opacity={0.1} />
+          {bins.map((b, i) => {
+            const p = stretch(b.start, b.end);
+            if (!p) return null;
+            const w = Math.min(18, Math.max(4, (p[1] - p[0]) * 0.6));
+            const cx = (p[0] + p[1]) / 2;
+            const h = (b.value / top) * (floor - 20);
+            return (
+              <G key={i}>
+                <Rect x={cx - w / 2} y={floor - h} width={w} height={Math.max(2, h)} rx={w / 3} fill={METRIC_HUE.steps} />
+                {b === lastIn ? (
+                  <Label x={cx} y={floor - h - 6} color={C.text}>
+                    {Math.round(b.value).toLocaleString('en-US')}
+                  </Label>
+                ) : null}
+              </G>
+            );
+          })}
+        </G>
+      );
+    }
     case 'medications':
       if (!journey) return null;
       return (
@@ -421,6 +540,20 @@ export function JourneyScreen() {
   const { signals, fertility, windows, lens, profile } = useCycleInsights();
   const { journey, days, records } = useData();
   const nav = useNav();
+  const repo = useRepo();
+  const [baselines, setBaselines] = useState<BaselineRow[]>([]);
+  useEffect(() => {
+    let ignore = false;
+    repo
+      .loadBaselines()
+      .then((rows) => !ignore && setBaselines(rows))
+      .catch(() => {
+        // Without her usual, the levels are drawn without a shaded range.
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [repo]);
   const { width } = useWindowDimensions();
   const current = windows[windows.length - 1] ?? null;
   const cycle = cycleLane(windows, current, lens.predicts ? medianLength(countedWindows(windows, profile)) : null);
@@ -460,14 +593,39 @@ export function JourneyScreen() {
     return p == null ? null : p * plotW;
   };
 
-  const shownLanes = LANES.filter((l) => !hidden.includes(l.key));
+  // Only the lanes she has given Ciatta something for. A woman who tracks
+  // her cycle and wears a ring sees a cycle, HRV and heart rate, not a
+  // column of empty lanes for things she has never logged.
+  const draws = records?.draws ?? [];
+  const available = useMemo(
+    () =>
+      lanesWithData({
+        periods: periodBlocks(signals).length + windows.length,
+        pain: signals.filter((sg) => sg.pain && sg.episode.severity != null).length,
+        flares: flareSpans(signals).length,
+        symptoms: signals.filter((sg) => sg.episode.symptoms?.length).length,
+        sleep: days.filter((d) => d.sleepHours != null).length,
+        hrv: days.filter((d) => d.hrv != null).length,
+        heart: days.filter((d) => d.restingHR != null).length,
+        temp: days.filter((d) => d.tempDeviation != null).length,
+        steps: days.filter((d) => d.steps != null).length,
+        medications: journey?.medications.length ?? 0,
+        records: drawMarkers(draws).length,
+        notes: journey?.notes.length ?? 0,
+      }),
+    [signals, windows, days, journey, draws],
+  );
+  const lanesHere = LANES.filter((l) => available.includes(l.key));
+  const shownLanes = lanesHere.filter((l) => !hidden.includes(l.key));
   const symptomNames = useMemo(() => symptomGrid(signals, binFor(scale), SYMPTOM_ROWS).map((r) => r.symptom), [signals, scale]);
 
   // Whether anything at all falls in the window, so the chart can say it
   // is empty instead of showing a grid with nothing on it.
   const nothingInView =
+    lanesHere.length > 0 &&
     cycle.every((c) => posIn(axis, c.at) == null) &&
     signals.every((sg) => posIn(axis, sg.date) == null) &&
+    days.every((d) => posIn(axis, new Date(`${d.date}T12:00:00`)) == null) &&
     !journey;
 
   const toggle = (lane: Lane) =>
@@ -479,7 +637,11 @@ export function JourneyScreen() {
 
       <View style={j.pad}>
         <Text style={[font('subhead'), { color: C.secondary, marginBottom: 16 }]}>
-          Your cycle, pain, sleep, symptoms, medications, results, and notes on one timeline.
+          {displayCopy(
+            lanesHere.length
+              ? `Your ${listWords(lanesHere.map((l) => (l.key === 'hrv' ? 'HRV' : l.title.toLowerCase())))} on one timeline.`
+              : 'Nothing here yet. Log a period or a symptom, or connect a device, and it appears on this timeline.',
+          )}
         </Text>
         {/*
           The window, as a dropdown rather than four fixed spans. Day reads
@@ -519,6 +681,7 @@ export function JourneyScreen() {
         ) : null}
       </View>
 
+      {lanesHere.length ? (
       <View style={j.grid}>
         {/* The axis, built from the chosen window rather than a fixed run
             of months. Labels sit where the axis puts them. */}
@@ -614,6 +777,7 @@ export function JourneyScreen() {
                       plotW={plotW}
                       height={lane.height}
                       onNote={() => nav.push('journal')}
+                      baselines={baselines}
                     />
                   </Svg>
                 </View>
@@ -629,9 +793,10 @@ export function JourneyScreen() {
         */}
         {nothingInView ? <Text style={[font('subhead'), j.empty]}>{emptyFor(scale)}</Text> : null}
       </View>
+      ) : null}
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={j.legend}>
-        {LANES.map((lane) => {
+        {lanesHere.map((lane) => {
           const on = !hidden.includes(lane.key);
           return (
             <Pressable

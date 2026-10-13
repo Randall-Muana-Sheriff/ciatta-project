@@ -131,6 +131,68 @@ export function flareSpans(signals: readonly SignalLike[]): FlareSpan[] {
     .sort((a, b) => a.at.getTime() - b.at.getTime());
 }
 
+// ── Measured levels ────────────────────────────────────────────
+
+export type LevelBin = { start: Date; end: Date; value: number };
+
+// One measured figure per day (HRV, resting heart rate, skin temperature,
+// steps), or each week's average over a year. A day it was not measured
+// is absent.
+export function levelBins(days: readonly Day[], get: (d: Day) => number | null, bin: Bin): LevelBin[] {
+  const unit: Bin = bin === 'hour' ? 'day' : bin;
+  const sums = new Map<number, { sum: number; n: number }>();
+  for (const d of days) {
+    const v = get(d);
+    const at = dayOf(d.date);
+    if (v == null || !at) continue;
+    const key = binStart(at, unit).getTime();
+    const s = sums.get(key) ?? { sum: 0, n: 0 };
+    sums.set(key, { sum: s.sum + v, n: s.n + 1 });
+  }
+  return [...sums.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([t, { sum, n }]) => ({ start: new Date(t), end: binEnd(new Date(t), unit), value: Math.round((sum / n) * 100) / 100 }));
+}
+
+// ── Which lanes ────────────────────────────────────────────────
+
+export type LaneKey = 'cycle' | 'pain' | 'flare' | 'symptoms' | 'sleep' | 'hrv' | 'heart' | 'temp' | 'steps' | 'medications' | 'records' | 'notes';
+
+export type LaneCounts = {
+  periods: number;
+  pain: number;
+  flares: number;
+  symptoms: number;
+  sleep: number;
+  hrv: number;
+  heart: number;
+  temp: number;
+  steps: number;
+  medications: number;
+  records: number;
+  notes: number;
+};
+
+const LANE_ORDER: [LaneKey, keyof LaneCounts][] = [
+  ['cycle', 'periods'],
+  ['pain', 'pain'],
+  ['flare', 'flares'],
+  ['symptoms', 'symptoms'],
+  ['sleep', 'sleep'],
+  ['hrv', 'hrv'],
+  ['heart', 'heart'],
+  ['temp', 'temp'],
+  ['steps', 'steps'],
+  ['medications', 'medications'],
+  ['records', 'records'],
+  ['notes', 'notes'],
+];
+
+// Only what she has given Ciatta, whether logged or synced from a device.
+// Counted over her whole record rather than the window in view, so a lane
+// does not appear and vanish as she changes from a week to a month.
+export const lanesWithData = (counts: LaneCounts): LaneKey[] => LANE_ORDER.filter(([, k]) => counts[k] > 0).map(([lane]) => lane);
+
 // ── Sleep ──────────────────────────────────────────────────────
 
 export type SleepBin = { start: Date; end: Date; hours: number };
