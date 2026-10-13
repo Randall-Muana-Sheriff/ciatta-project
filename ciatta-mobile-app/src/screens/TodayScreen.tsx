@@ -17,6 +17,8 @@ import {
 import { type Screen, useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
+import { intelligenceLine, patternReadiness } from '../lib/patternReadiness';
+import { todayInsight } from '../lib/todayInsight';
 import { useData, useRepo } from '../state/session';
 import { font, fonts, GUTTER } from '../theme';
 import { Eyebrow, Tile } from '../ui/bento';
@@ -131,9 +133,16 @@ type Action = { key: string; icon: IconName; title: string; sub?: string; onPres
 export function TodayScreen() {
   const nav = useNav();
   const { startDraft, accept, watching, setWatching } = useCycle();
-  const { today: brief } = useInsights();
+  const { today: brief, ranked } = useInsights();
   const { windows, signals, lens, profile, fertility } = useCycleInsights();
   const { person, today, days, todayIsPlaceholder } = useData();
+  const { setFocus } = useCycle();
+  const insightCard = useMemo(() => {
+    const ready = patternReadiness(days);
+    const found = ranked.filter((i) => i.triage === 'Surface' || i.triage === 'Investigate').length;
+    const watching = ranked.filter((i) => i.triage === 'Watch').length;
+    return todayInsight({ leadId: brief.lead?.id ?? null, leadText: brief.text, fallback: intelligenceLine(days, ready, found, watching) });
+  }, [brief, ranked, days]);
   const repo = useRepo();
 
   // Today's measured readings, by the hour they happened. daily_metrics is
@@ -384,7 +393,7 @@ export function TodayScreen() {
             <View>
               <Text style={[font('caption1'), t.cycleKey]}>CYCLE</Text>
               <Text style={[font('headline'), cycleNow ? t.cycleValue : t.cycleNone]}>
-                {cycleNow ? `Day ${cycleNow.day}` : 'No open cycle'}
+                {cycleNow ? `Day ${cycleNow.day}` : 'No logged cycle'}
               </Text>
             </View>
             {phaseText ? <Text style={[font('footnote', 'semibold'), t.phase]}>{phaseText}</Text> : null}
@@ -472,22 +481,30 @@ export function TodayScreen() {
           had already said so, which is two ways of saying nothing where one
           is plenty.
         */}
-        {todayIsPlaceholder ? null : (
-          <>
-          {/*
-            Named once, like Metrics above it. "Insights" rather than
-            "Today's insights": the screen is Today and the chart card
-            above is Today's Patterns, so a third "Today's" would be noise.
-            The card itself carries no second label.
-          */}
-          <View style={t.sectionHead}>
-            <Eyebrow>Insights</Eyebrow>
-          </View>
+        {/*
+          Named once, like Metrics above it. Her lead insight, from the
+          engine reading her own record, opening its evidence; until there
+          is one, what Ciatta is doing with her record. Shown for a live
+          record as well as the example one.
+        */}
+        <View style={t.sectionHead}>
+          <Eyebrow>Insights</Eyebrow>
+        </View>
+        <Pressable
+          disabled={!insightCard.evidence}
+          onPress={() => {
+            if (!insightCard.evidence) return;
+            setFocus(insightCard.evidence);
+            nav.push('evidence');
+          }}
+          accessibilityRole={insightCard.evidence ? 'button' : undefined}
+          accessibilityHint={insightCard.evidence ? 'Opens the evidence behind it' : undefined}
+          style={({ pressed }) => [pressed && insightCard.evidence ? t.pressed : null]}
+        >
           <Tile span={2} emphasis style={t.lead}>
-            <Text style={[font('body'), t.leadText]}>{displayCopy(brief.text)}</Text>
+            <Text style={[font('body'), t.leadText]}>{displayCopy(insightCard.text)}</Text>
           </Tile>
-          </>
-        )}
+        </Pressable>
 
         {/*
           What today's pattern suggests trying, which only exists when the
