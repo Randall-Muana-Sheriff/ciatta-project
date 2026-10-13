@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import * as WebBrowser from 'expo-web-browser';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
@@ -656,6 +657,8 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
         <ListRow first title="Who Can See This" sub="Only you. Nothing is sold or shared." onPress={() => onOpen('privacy')} />
         <ListRow title="Share with a Clinician" sub="A PDF summary, made on this phone" onPress={() => onOpen('shareClinician')} />
         <ListRow title="Download Your Data" sub="Everything Ciatta holds, as one file" onPress={onDownload} />
+        <ListRow title="Privacy Policy" onPress={() => void WebBrowser.openBrowserAsync('https://ciatta.io/privacy/')} />
+        <ListRow title="Terms of Use" onPress={() => void WebBrowser.openBrowserAsync('https://ciatta.io/terms/')} />
       </ListGroup>
 
       <ListGroup footer={accountNote ?? undefined}>
