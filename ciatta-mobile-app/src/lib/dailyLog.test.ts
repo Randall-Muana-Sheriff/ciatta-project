@@ -4,6 +4,7 @@ import { test } from 'node:test';
 
 import {
   CHECK_INS,
+  dailyLogPatch,
   DIGESTION_FLAGS,
   emptyLog,
   type FoodEntry,
@@ -159,4 +160,21 @@ test('a day holding only a note is worth saving', () => {
 test('a day holding only an attachment is worth saving', () => {
   const file = { id: 'a', kind: 'photo' as const, name: 'lunch.jpg', uri: 'file:///a', addedAt: '' };
   assert.equal(hasAnything({ ...emptyLog('2026-10-12'), attachments: [file] }), true);
+});
+
+test('the patch carries only what she filled in, so a save never blanks a column', () => {
+  const log = { ...emptyLog('2026-10-12'), digestion: ['Bloating'], caffeine: 2, note: '  ' };
+  assert.deepEqual(dailyLogPatch(log), { day: '2026-10-12', digestion: ['Bloating'], caffeine: 2 });
+});
+
+test('a full day maps every field she owns', () => {
+  const log = {
+    ...emptyLog('2026-10-12'),
+    foods: [{ id: 'a', name: 'Porridge', kcal: null, kcalFrom: null }],
+    digestion: ['Gas'], caffeine: 1, alcohol: 0, energy: 3, mood: 4, stress: 2, note: 'Fine',
+  };
+  const p = dailyLogPatch(log as never);
+  assert.deepEqual(p.foods, ['Porridge']);
+  assert.equal(p.alcohol, 0, 'a logged zero is a fact, unlike a missing figure');
+  assert.equal(p.note, 'Fine');
 });

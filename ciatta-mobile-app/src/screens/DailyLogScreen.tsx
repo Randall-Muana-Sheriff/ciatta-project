@@ -17,6 +17,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 
 import {
   CHECK_INS,
+  dailyLogPatch,
   type CheckInKey,
   DIGESTION_FLAGS,
   emptyLog,
@@ -25,10 +26,11 @@ import {
   kcalLine,
   kcalTotalLine,
   logLine,
-  STOOL_TYPES,
 } from '../lib/dailyLog';
 import { displayCopy } from '../lib/displayCopy';
+import { userFacingError } from '../lib/userFacingError';
 import { useNav } from '../navigation';
+import { useRepo } from '../state/session';
 import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { Composer } from '../ui/composer';
@@ -45,6 +47,9 @@ const id = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(
 
 export function DailyLogScreen() {
   const nav = useNav();
+  const repo = useRepo();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [log, setLog] = useState(() => emptyLog(today()));
   const [draft, setDraft] = useState('');
   const [kcalDraft, setKcalDraft] = useState('');
@@ -88,7 +93,23 @@ export function DailyLogScreen() {
       onBack={nav.back}
       footer={
         <View style={s.footer}>
-          <PrimaryButton label="Save today" onPress={() => nav.back()} disabled={!hasAnything(log)} />
+          <PrimaryButton
+            label={saving ? 'Saving' : 'Save today'}
+            disabled={!hasAnything(log) || saving}
+            onPress={async () => {
+              setSaving(true);
+              setError(null);
+              try {
+                await repo.saveDailyLog(dailyLogPatch(log));
+                nav.back();
+              } catch (e) {
+                setError(userFacingError(e, 'That did not save. Try again.'));
+              } finally {
+                setSaving(false);
+              }
+            }}
+          />
+          {error ? <Text style={[font('footnote'), { color: L.ink, marginTop: 10 }]}>{displayCopy(error)}</Text> : null}
         </View>
       }
     >
@@ -160,30 +181,8 @@ export function DailyLogScreen() {
       {/* ── Gut ──────────────────────────────────────────────── */}
       <View style={s.section}>
         <Eyebrow>Your gut</Eyebrow>
-        <Text style={[font('caption1'), s.note]}>
-          The scale is the one a clinician uses. Pick the line closest to what you saw.
-        </Text>
-        <View style={s.card}>
-          {STOOL_TYPES.map((t, n) => {
-            const on = log.stool === t.type;
-            return (
-              <Pressable
-                key={t.type}
-                onPress={() => set('stool', on ? null : t.type)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: on }}
-                accessibilityLabel={`Type ${t.type}, ${t.text}`}
-                style={({ pressed }) => [s.row, n > 0 && s.divided, pressed && s.pressed]}
-              >
-                <Text style={[font('caption1'), s.typeNo]}>{t.type}</Text>
-                <Text style={[font('subhead'), on ? s.nameOn : s.name]}>{t.text}</Text>
-                {on ? <Icon name="check" size={16} color={HUE.reported} /> : null}
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <Text style={[font('footnote'), s.sub]}>Also true</Text>
+        {/* Stool is logged once, under Nutrition and gut on the Log screen,
+            as the bowel movement entry the body map reads. */}
         <Chips
           options={DIGESTION_FLAGS}
           selected={log.digestion}
@@ -387,7 +386,6 @@ const s = StyleSheet.create({
   divided: { borderTopWidth: st, borderTopColor: L.rule },
   name: { color: L.body, flex: 1 },
   nameOn: { color: L.ink, flex: 1 },
-  typeNo: { color: L.meta, width: 16 },
   // An estimate is drawn in Uncertainty, which is the system's hue for a
   // gap, so it never looks like a measured figure even at a glance.
   estimate: { color: HUE.uncertainty },

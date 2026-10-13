@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Attachment } from '../lib/attachments';
+import type { DailyPatch } from '../lib/dailyLog';
 import type { CategoryKey } from '../lib/logCategories';
 import type { Found } from '../lib/quickLog';
 import { type CycleProfile, normalizeProfile } from '../lib/cycleProfile';
@@ -79,6 +80,8 @@ export type Repo = {
   // Files ride along in metadata, as they do on an episode. Optional, so a
   // caller with nothing attached passes nothing.
   addJournal(text: string, kind: EntryKind, attachments?: Attachment[], tags?: { category: CategoryKey; items: Found }): Promise<void>;
+  // Her own columns of one day, merged into whatever the day already holds.
+  saveDailyLog(patch: DailyPatch): Promise<void>;
   loadSources(): Promise<SourceView[]>;
   loadDays(): Promise<Day[]>;
   // Her newest live insight, or null when the server has not written one:
@@ -170,6 +173,9 @@ export function demoRepo(): Repo {
     loadOnboardedAt: async () => new Date().toISOString(),
     completeOnboarding: async () => {},
     loadJournal: async () => view,
+    // The example person's record is fixed; a demo save changes nothing she
+    // could be misled by.
+    saveDailyLog: async () => {},
     addJournal: async (text, kind, attachments = [], tags) => {
       const d = new Date();
       const month = `${d.toLocaleString('en-US', { month: 'long' })} ${d.getFullYear()}`;
@@ -385,6 +391,22 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
             .range(from, to) as unknown as Page<JournalRow>,
       );
       return journalView(rows);
+    },
+    async saveDailyLog(patch) {
+      must(
+        await db.rpc('save_daily_log', {
+          p_day: patch.day,
+          p_digestion: patch.digestion ?? null,
+          p_foods: patch.foods ?? null,
+          p_caffeine: patch.caffeine ?? null,
+          p_alcohol: patch.alcohol ?? null,
+          p_energy: patch.energy ?? null,
+          p_mood: patch.mood ?? null,
+          p_stress: patch.stress ?? null,
+          p_note: patch.note ?? null,
+          p_attachments: patch.attachments ?? null,
+        }),
+      );
     },
     async addJournal(text, kind, attachments = [], tags) {
       must(

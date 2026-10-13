@@ -206,3 +206,32 @@ export function toDayFields(log: DailyLog) {
     stress: log.stress,
   };
 }
+
+// What a save sends: only the fields she filled in. The RPC leaves every
+// field it is not given as it was, so a quick "bloated" never blanks the
+// foods she logged this morning, and a device's columns are never touched.
+export type DailyPatch = {
+  day: string;
+  digestion?: string[];
+  foods?: string[];
+  caffeine?: number;
+  alcohol?: number;
+  energy?: number;
+  mood?: number;
+  stress?: number;
+  note?: string;
+  attachments?: Attachment[];
+};
+
+export function dailyLogPatch(log: DailyLog): DailyPatch {
+  const p: DailyPatch = { day: log.date };
+  if (log.digestion.length) p.digestion = [...log.digestion];
+  if (log.foods.length) p.foods = log.foods.map((f) => f.name);
+  for (const k of ['caffeine', 'alcohol', 'energy', 'mood', 'stress'] as const) {
+    const v = log[k];
+    if (v != null) p[k] = v;
+  }
+  if (log.note.trim()) p.note = log.note.trim();
+  if (log.attachments.length) p.attachments = [...log.attachments];
+  return p;
+}
