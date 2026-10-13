@@ -171,28 +171,19 @@ export type HeadlineMetric = {
   trend?: Trend;
 };
 
-// The latest value for a field, with the day it came from.
-//
-// Today's cards used to read today's row and nothing else, so every one
-// of them went blank on any day the sync had not run. Ciatta syncs when
-// she asks it to and at no other time, by design, which means "today's
-// row" is often simply absent while last night's reading sits one row
-// back. Blood pressure already worked this way and was the only card
-// showing anything, which is how the asymmetry surfaced.
-//
-// So: the newest reading there is, and the card says how old it is.
-// Absence still reads as absence; what changes is that a reading from
-// yesterday is shown as yesterday's rather than thrown away.
+// Today's value for a field, or none.
 function latest(
   days: readonly Day[],
   get: (d: Day) => number | null,
   now: Date,
 ): { value: number; note?: string } | null {
+  // Today's cards are daily: today's reading or none. An older figure
+  // labelled with its age read as a status, and the card's own chart
+  // already shows the week it came from.
   for (let i = days.length - 1; i >= 0; i -= 1) {
+    if (dayNote(days[i].date, now) != null) continue;
     const v = get(days[i]);
-    if (v == null) continue;
-    const note = dayNote(days[i].date, now);
-    return note ? { value: v, note } : { value: v };
+    if (v != null) return { value: v };
   }
   return null;
 }
@@ -247,12 +238,14 @@ export function headlineMetrics(
     from: 'measured',
   });
   const vital = (key: string): HeadlineMetric => {
-    const found = vitals.find((v) => v.key === key);
+    // A vital's note is its age, so one with a note was not taken today,
+    // and a daily card does not show it.
+    const any = vitals.find((v) => v.key === key);
+    const found = any && !any.note ? any : undefined;
     return {
       key,
       label: SHORT[key] ?? found?.label ?? key,
       value: found?.value ?? null,
-      note: found?.note,
       from: 'measured',
       ...(found?.trend ? { trend: found.trend } : {}),
     };

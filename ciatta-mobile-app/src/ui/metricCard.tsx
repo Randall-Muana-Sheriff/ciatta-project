@@ -79,9 +79,11 @@ export function MetricCard({ label, value, note, from, trend, color, chart }: Me
           {displayCopy(note)}
         </Text>
       ) : null}
-      {chart && !missing ? (
+      {/* The week stays on the card when today has no reading yet, so a
+          daily card is never blank where she has history. */}
+      {chart ? (
         <View>
-          {trend?.change ? (
+          {trend?.change && !missing ? (
             <Text style={[font('caption2', 'semibold'), s.change]} numberOfLines={1}>
               {trend.change}
             </Text>

@@ -19,7 +19,12 @@ import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
 import { intelligenceLine, patternReadiness } from '../lib/patternReadiness';
 import { todayInsight } from '../lib/todayInsight';
-import { useData, useRepo } from '../state/session';
+import { useData, useRepo, useSession } from '../state/session';
+import { connectAppleHealth } from '../lib/connectHealth';
+import { chooseLogCategory } from '../lib/logHandoff';
+import { todayState } from '../lib/todayState';
+import { userFacingError } from '../lib/userFacingError';
+import { TodayStart } from '../ui/TodayStart';
 import { font, fonts, GUTTER } from '../theme';
 import { Eyebrow, Tile } from '../ui/bento';
 import { Wordmark } from '../ui/Wordmark';
@@ -144,6 +149,47 @@ export function TodayScreen() {
     return todayInsight({ leadId: brief.lead?.id ?? null, leadText: brief.text, fallback: intelligenceLine(days, ready, found, watching) });
   }, [brief, ranked, days]);
   const repo = useRepo();
+  const { mode, userId, reloadDays } = useSession();
+
+  // Which Today she meets: the empty state with the way in, or her day.
+  const state = useMemo(() => todayState({ days, windows: windows.length, logs: signals.length }), [days, windows, signals]);
+
+  // The two kinds of logging, apart and named the same everywhere: the
+  // daily symptoms log, and the cycle experience.
+  const logSymptoms = () => {
+    chooseLogCategory('body');
+    nav.push('quickLog');
+  };
+  const logCycle = () => {
+    startDraft();
+    nav.push('cycleLog');
+  };
+
+  // Connecting Apple Health from Today, the same sequence Profile and
+  // onboarding run, then her days read again so Today fills in place.
+  const [connecting, setConnecting] = useState(false);
+  const [connectNote, setConnectNote] = useState<string | null>(null);
+  const connect = async () => {
+    if (mode === 'demo') {
+      setConnectNote('This is an example person. Sign in to connect your own sources.');
+      return;
+    }
+    if (!userId || connecting) return;
+    setConnecting(true);
+    try {
+      const result = await connectAppleHealth({
+        userId,
+        saveStatus: (kind, status, lastSyncedAt) => repo.saveSourceStatus(kind, status, lastSyncedAt),
+        onNote: setConnectNote,
+      });
+      setConnectNote(result.connected ? null : result.message);
+      await reloadDays();
+    } catch (e) {
+      setConnectNote(userFacingError(e, 'Apple Health did not connect. Try again.'));
+    } finally {
+      setConnecting(false);
+    }
+  };
 
   // Today's measured readings, by the hour they happened. daily_metrics is
   // one row per day, which cannot draw a day.
@@ -345,6 +391,16 @@ export function TodayScreen() {
           {displayCopy(person ? `${greeting(now)}, ${person.firstName}` : greeting(now))}
         </Text>
 
+        {state.state === 'empty' ? (
+          <TodayStart
+            onConnect={() => void connect()}
+            connecting={connecting}
+            note={connectNote}
+            onLogSymptoms={logSymptoms}
+            onLogCycle={logCycle}
+          />
+        ) : (
+          <>
         {/*
           Today's patterns: the day itself, or a plain line saying there is
           not enough of it yet. A chart drawn from one reading would be a
@@ -389,15 +445,25 @@ export function TodayScreen() {
             one thing on this card she reported rather than a device
             measured.
           */}
-          <View style={t.cycleRow}>
+          <Pressable
+            disabled={!!cycleNow}
+            onPress={logCycle}
+            accessibilityRole={cycleNow ? undefined : 'button'}
+            accessibilityHint={cycleNow ? undefined : 'Opens Log Cycle Experience'}
+            style={({ pressed }) => [t.cycleRow, pressed && !cycleNow ? t.pressed : null]}
+          >
             <View>
               <Text style={[font('caption1'), t.cycleKey]}>CYCLE</Text>
               <Text style={[font('headline'), cycleNow ? t.cycleValue : t.cycleNone]}>
                 {cycleNow ? `Day ${cycleNow.day}` : 'No logged cycle'}
               </Text>
             </View>
-            {phaseText ? <Text style={[font('footnote', 'semibold'), t.phase]}>{phaseText}</Text> : null}
-          </View>
+            {phaseText ? (
+              <Text style={[font('footnote', 'semibold'), t.phase]}>{phaseText}</Text>
+            ) : !cycleNow ? (
+              <Text style={[font('footnote', 'semibold'), t.phase]}>Log a period</Text>
+            ) : null}
+          </Pressable>
         </View>
 
         {/* The chart, then the daily brief written from whatever ranks highest. */}
@@ -428,48 +494,61 @@ export function TodayScreen() {
             <Icon name="chevronRight" size={14} color={L.body} />
           </Pressable>
         </View>
+        {state.measured ? (
         <View style={t.card}>
-        {/*
-          Six cards and nothing else. The card holds only metrics now:
-          the chart and the cycle moved up into Today's Patterns, where
-          the one is the day drawn and the other is the context it is
-          read in.
-        */}
-        <View style={t.grid}>
-          {headlineMetrics(days, vitals, new Date(), baselines).map((m) => (
-            <Pressable
-              key={m.key}
-              style={({ pressed }) => [t.gridCell, pressed && t.pressed]}
-              onPress={() => {
-                chooseMetric(m.key as MetricKey);
-                nav.push('metric');
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`${m.label}, ${m.value ?? 'not recorded today'}${m.note && m.value ? `, ${m.note}` : ''}`}
-              accessibilityHint="Opens this metric over time"
-            >
-              <MetricCard
-                label={m.label}
-                value={m.value}
-                note={m.note}
-                from={m.from}
-                trend={m.trend}
-                color={METRIC_HUE[m.key]}
-                chart={
-                  <MetricChart
-                    metric={m.key as MetricKey}
-                    points={seriesForDays(m.key as MetricKey, days, vitalDays, 7, new Date())}
-                    usual={usualFor(m.key as MetricKey, baselines)}
-                    color={METRIC_HUE[m.key]}
-                    size="mini"
-                  />
-                }
-              />
-            </Pressable>
-          ))}
-        </View>
-
-        </View>
+          {/*
+            Six cards and nothing else. The card holds only metrics now:
+            the chart and the cycle moved up into Today's Patterns, where
+            the one is the day drawn and the other is the context it is
+            read in.
+          */}
+          <View style={t.grid}>
+            {headlineMetrics(days, vitals, new Date(), baselines).map((m) => (
+              <Pressable
+                key={m.key}
+                style={({ pressed }) => [t.gridCell, pressed && t.pressed]}
+                onPress={() => {
+                  chooseMetric(m.key as MetricKey);
+                  nav.push('metric');
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`${m.label}, ${m.value ?? 'not recorded today'}${m.note && m.value ? `, ${m.note}` : ''}`}
+                accessibilityHint="Opens this metric over time"
+              >
+                <MetricCard
+                  label={m.label}
+                  value={m.value}
+                  note={m.note}
+                  from={m.from}
+                  trend={m.trend}
+                  color={METRIC_HUE[m.key]}
+                  chart={(() => {
+                    // The week, drawn only when it holds a reading.
+                    const points = seriesForDays(m.key as MetricKey, days, vitalDays, 7, new Date());
+                    return points.some((p) => p.value != null) ? (
+                      <MetricChart metric={m.key as MetricKey} points={points} usual={usualFor(m.key as MetricKey, baselines)} color={METRIC_HUE[m.key]} size="mini" />
+                    ) : undefined;
+                  })()}
+                />
+              </Pressable>
+            ))}
+          </View>
+  
+          </View>
+        ) : (
+          // Nothing measured yet: one row that says how to fill this,
+          // rather than six cards reading Not yet.
+          <ListGroup light style={{ marginTop: SPACE.tight }}>
+            <ListRow
+              light
+              first
+              icon="heart"
+              title={connecting ? 'Connecting' : 'Connect a Source'}
+              sub={connectNote ?? 'Connect Apple Health to see your sleep, HRV, steps and more each day.'}
+              onPress={connecting ? undefined : () => void connect()}
+            />
+          </ListGroup>
+        )}
 
         {/*
           The one tile that is the point of the screen: the sentence written
@@ -522,6 +601,9 @@ export function TodayScreen() {
           </View>
         ) : null}
 
+          </>
+        )}
+
         {/*
           Two ways in, and only two. One adds to the record, the other
           takes the record somewhere, and everything else she might do is
@@ -540,18 +622,22 @@ export function TodayScreen() {
               light
               first
               icon="plus"
-              title="Log Cycle Experience and Symptoms"
-              sub="Bleeding, pain, symptoms, and what was going on."
-              onPress={() => {
-                startDraft();
-                nav.push('cycleLog');
-              }}
+              title="Log Today's Symptoms"
+              sub="Body, mind, gut, skin, and anything else you notice today."
+              onPress={logSymptoms}
+            />
+            <ListRow
+              light
+              icon="drop"
+              title="Log Cycle Experience"
+              sub="Bleeding, period pain, and flare ups."
+              onPress={logCycle}
             />
             <ListRow
               light
               icon="leaf"
-              title="Log Your Day"
-              sub="Food, gut, caffeine, and how the day felt."
+              title="Log Food and Drinks"
+              sub="Meals, caffeine, alcohol, and how the day felt."
               onPress={go('dailyLog')}
             />
             <ListRow

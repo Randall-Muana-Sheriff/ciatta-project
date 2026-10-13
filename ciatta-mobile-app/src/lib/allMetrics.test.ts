@@ -32,6 +32,9 @@ const find = (day: Day | null, label: string) =>
 
 // ── Missing is unknown, never zero ───────────────────────────────────
 
+// The fixture day, so these do not depend on what day the suite runs.
+const ON = new Date(2026, 9, 11, 12);
+
 test('no row at all leaves every metric unrecorded', () => {
   const groups = buildMetrics(null);
   assert.ok(groups.length > 0);
@@ -169,7 +172,7 @@ test('with no day at all, every card is absent rather than zero', () => {
 });
 
 test('heart rate variability carries its unit', () => {
-  const by = Object.fromEntries(headlineMetrics([{ ...empty, hrv: 42.4 }]).map((m) => [m.key, m.value]));
+  const by = Object.fromEntries(headlineMetrics([{ ...empty, hrv: 42.4 }], [], ON).map((m) => [m.key, m.value]));
   assert.equal(by.hrv, '42 ms');
 });
 
@@ -179,13 +182,10 @@ test('resting heart rate moved to All, where there is room for every reading', (
 });
 
 test('a measured zero still shows, unlike a missing figure', () => {
-  const by = Object.fromEntries(headlineMetrics([{ ...empty, steps: 0 }]).map((m) => [m.key, m.value]));
+  const by = Object.fromEntries(headlineMetrics([{ ...empty, steps: 0 }], [], ON).map((m) => [m.key, m.value]));
   assert.equal(by.steps, '0');
   assert.equal(Object.fromEntries(headlineMetrics([empty]).map((m) => [m.key, m.value])).steps, null);
 });
-
-// The fixture day, so these do not depend on what day the suite runs.
-const ON = new Date(2026, 9, 11, 12);
 
 test('the skin temperature card gives the size, and says above or below usual in words', () => {
   const m = headlineMetrics([{ ...empty, tempDeviation: 0.42 }], [], ON).find((x) => x.key === 'temp')!;
@@ -197,23 +197,28 @@ test('the skin temperature card gives the size, and says above or below usual in
   for (const v of [m.value!, cool.value!]) assert.ok(!/[-–—−]/.test(v), v);
 });
 
-test('an older reading keeps its direction and says how old', () => {
-  // With no sign on the figure, the note carries both: which way, and when.
-  const later = new Date(2026, 9, 13, 12);
-  const m = headlineMetrics([{ ...empty, tempDeviation: -0.42 }], [], later).find((x) => x.key === 'temp')!;
-  assert.equal(m.note, 'Below usual, 2 days ago');
+test('Today is daily: an older reading is not shown, and no card says how old', () => {
+  // A card on Today holds today. Last week's figure labelled "3 weeks ago"
+  // read as a status; the week is on the card's chart instead.
+  const days = [
+    { ...empty, date: '2026-10-09', hrv: 44, tempDeviation: -0.42 },
+    { ...empty, date: '2026-10-10', hrv: 51, steps: 3000 },
+  ];
+  for (const m of headlineMetrics(days, [], new Date(2026, 9, 11, 12))) {
+    assert.equal(m.value, null, m.key);
+    assert.equal(m.note, undefined, m.key);
+  }
 });
 
-test('the latest reading is shown, not only today, with its age', () => {
-  // Ciatta syncs when she asks and at no other time, so today's row is
-  // often simply absent while last night's reading sits one row back.
-  const days = [
-    { ...empty, date: '2026-10-09', hrv: 44 },
-    { ...empty, date: '2026-10-10', hrv: 51 },
+test('a vital taken on an earlier day is not shown as today\'s', () => {
+  const given = [
+    { key: 'bp', label: 'Blood pressure', value: '118/76', note: '3 weeks ago', from: 'measured' as const },
+    { key: 'spo2', label: 'Blood oxygen', value: '98%', from: 'measured' as const },
   ];
-  const m = headlineMetrics(days, [], new Date(2026, 9, 11, 12)).find((x) => x.key === 'hrv')!;
-  assert.equal(m.value, '51 ms', 'the newest reading, not the oldest');
-  assert.equal(m.note, 'Yesterday');
+  const by = Object.fromEntries(headlineMetrics([], given).map((m) => [m.key, m]));
+  assert.equal(by.bp.value, null);
+  assert.equal(by.bp.note, undefined);
+  assert.equal(by.spo2.value, '98%');
 });
 
 test('a reading from today carries no age note', () => {

@@ -45,7 +45,7 @@ export function QuickLogScreen() {
   const nav = useNav();
   const repo = useRepo();
   const { add, startDraft } = useCycle();
-  const [key, setKey] = useState<CategoryKey>(() => takeLogCategory() ?? 'cycle');
+  const [key, setKey] = useState<CategoryKey>(() => takeLogCategory() ?? 'body');
   const [tapped, setTapped] = useState<string[]>([]);
   const [text, setText] = useState('');
   const [files, setFiles] = useState<Attachment[]>([]);

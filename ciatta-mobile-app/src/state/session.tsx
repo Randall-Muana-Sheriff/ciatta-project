@@ -26,6 +26,9 @@ type SessionValue = {
   // Read the loop again after she changed it (watched, tried); the since
   // she saw at the start of the session is kept.
   reloadLoop: () => Promise<void>;
+  // Read her days again, after a source connects and its first sync lands,
+  // so Today moves from its empty state without a relaunch.
+  reloadDays: () => Promise<void>;
   enterDemo: () => void;
   signOut: () => Promise<void>;
 };
@@ -147,6 +150,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     );
   }, [mode, repo]);
 
+  const reloadDays = useCallback(async () => {
+    if (mode !== 'real' || !repo) return;
+    const next = await repo.loadDays().catch(() => null);
+    if (next) setDays(next);
+  }, [mode, repo]);
+
   const value = useMemo<SessionValue>(
     () => ({
       mode,
@@ -158,13 +167,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       insight,
       loop,
       reloadLoop,
+      reloadDays,
       enterDemo: () => setDemo(true),
       signOut: async () => {
         if (demo) setDemo(false);
         else await supabase.auth.signOut();
       },
     }),
-    [mode, userId, repo, firstName, reloadFirstName, days, insight, loop, reloadLoop, demo],
+    [mode, userId, repo, firstName, reloadFirstName, days, insight, loop, reloadLoop, reloadDays, demo],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
