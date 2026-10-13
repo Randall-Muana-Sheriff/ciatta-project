@@ -202,7 +202,7 @@ export function BodySystemView({
                   const dot = SYSTEM_DOTS[s.label];
                   if (!dot) return null;
                   const on = s.label === system.label;
-                  const size = on ? 16 : 10;
+                  const size = on ? 9 : 6;
                   return (
                     <Pressable
                       key={s.label}
@@ -277,7 +277,7 @@ const b = StyleSheet.create({
 
   silhouette: { ...StyleSheet.absoluteFill, opacity: 0.24 },
   dot: { position: 'absolute' },
-  dotOn: { shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
+  dotOn: { shadowOpacity: 0.8, shadowRadius: 5, shadowOffset: { width: 0, height: 0 } },
   viewLabel: { color: C.secondary, textAlign: 'center', marginTop: 8 },
 
   detail: { marginTop: 16 },
