@@ -5,7 +5,11 @@
 // reminders are off. Everything is scheduled on the phone; nothing is sent
 // through a server.
 
+import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
+
+import type { Repo } from '../data/repo';
 
 import type { ProductUse } from '../lib/periodProducts';
 import { type Scheduler, syncProductReminders } from '../lib/reminders';
@@ -43,4 +47,18 @@ export async function keepRemindersInStep(current: ProductUse | null, ask = fals
   const allowed = await remindersAllowed(ask);
   if (allowed) await syncProductReminders(phoneScheduler, current).catch(() => {});
   return allowed;
+}
+
+// This phone's push address, saved so a finding made on the server can
+// reach her. Only once notifications are allowed; never asks by itself.
+export async function registerForFindings(repo: Repo, ask = false): Promise<boolean> {
+  if (!(await remindersAllowed(ask))) return false;
+  try {
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
+    const { data } = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
+    await repo.savePushToken(data, Platform.OS === 'android' ? 'android' : 'ios');
+    return true;
+  } catch {
+    return false;
+  }
 }

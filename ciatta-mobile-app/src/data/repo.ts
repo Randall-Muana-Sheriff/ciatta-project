@@ -99,6 +99,10 @@ export type Repo = {
   fetchEnvironment(req: { lat: number; lon: number; from: string; to: string }): Promise<void>;
   // Her own minutes outside in daylight per day (Apple Health, Apple Watch).
   loadDaylight(sinceIso: string): Promise<{ day: string; minutes: number }[]>;
+  // Push: this phone's address, and whether she wants new findings sent.
+  savePushToken(token: string, platform: 'ios' | 'android'): Promise<void>;
+  loadNotifyFindings(): Promise<boolean>;
+  saveNotifyFindings(on: boolean): Promise<void>;
   // Her optional daily nutrition targets. Empty when she set none.
   loadNutritionTargets(): Promise<NutritionTargets>;
   // A meal photo read by the food scan, already checked (lib/foodScan).
@@ -234,6 +238,7 @@ export function demoRepo(): Repo {
   // The example person's last eight days of meals, so her Nutrition card
   // has a usual day to fill toward. Figures are sample estimates, marked as
   // estimates like any scan.
+  let notifyFindings = true;
   let meals: Meal[] = [1820, 2050, 1760, 1990, 2120, 1880, 1940, 0].map((kcal, n) => {
     const daysAgo = 7 - n;
     const at = new Date(Date.now() - daysAgo * 86400000);
@@ -293,6 +298,12 @@ export function demoRepo(): Repo {
     loadMeals: async (since) => meals.filter((m) => m.eatenAt >= since),
     // The example person's weather is a fixed sample; nothing is fetched.
     fetchEnvironment: async () => {},
+    // The example person gets no pushes; her setting lives for the session.
+    savePushToken: async () => {},
+    loadNotifyFindings: async () => notifyFindings,
+    saveNotifyFindings: async (on) => {
+      notifyFindings = on;
+    },
     loadDaylight: async () =>
       [35, 52, 18, 41, 60, 27, 44].map((minutes, n) => ({
         day: new Date(Date.now() - (7 - n) * 86400000).toISOString().slice(0, 10),
@@ -556,6 +567,22 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
             .range(from, to) as unknown as Page<JournalRow>,
       );
       return journalView(rows);
+    },
+    async savePushToken(token, platform) {
+      must(
+        await db
+          .from('push_tokens')
+          .upsert({ user_id: userId, token, platform, updated_at: new Date().toISOString() }, { onConflict: 'user_id,token' }),
+      );
+    },
+    async loadNotifyFindings() {
+      const row = must(await db.from('profiles').select('notify_findings').eq('id', userId).maybeSingle()) as
+        | { notify_findings: boolean | null }
+        | null;
+      return row?.notify_findings !== false;
+    },
+    async saveNotifyFindings(on) {
+      must(await db.from('profiles').update({ notify_findings: on }).eq('id', userId));
     },
     async loadDaylight(since) {
       // Each Apple Health sample is a stretch of time outside; a day's

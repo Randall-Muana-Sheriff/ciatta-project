@@ -2,7 +2,11 @@ import { type ComponentType, useEffect, useMemo, useState } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import * as Notifications from 'expo-notifications';
+
 import { type Nav, NavContext, type Screen, type Tab } from './navigation';
+import { useRepo, useSession } from './state/session';
+import { registerForFindings } from './state/notifications';
 import { CycleHistoryScreen } from './screens/CycleHistoryScreen';
 import { CycleLogScreen } from './screens/CycleLogScreen';
 import { AppointmentScreen } from './screens/AppointmentScreen';
@@ -102,6 +106,20 @@ export function Root() {
     }),
     [tab, stack.length],
   );
+
+  // Push: a real account's phone registers for findings once notifications
+  // are allowed, and tapping a finding opens what it found.
+  const repo = useRepo();
+  const { mode } = useSession();
+  useEffect(() => {
+    if (mode === 'real') void registerForFindings(repo);
+  }, [mode, repo]);
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      if (response.notification.request.content.data?.screen === 'evidence') nav.push('evidence');
+    });
+    return () => sub.remove();
+  }, [nav]);
 
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {

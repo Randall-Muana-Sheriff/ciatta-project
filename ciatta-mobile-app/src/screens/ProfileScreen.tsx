@@ -19,6 +19,7 @@ import { useCycle } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
 import { useData, useRepo, useSession } from '../state/session';
 import { askForWeather, weatherIsOn } from '../state/environmentRun';
+import { registerForFindings } from '../state/notifications';
 import { C, font, GUTTER, numeral, RADIUS } from '../theme';
 import { L, NAV_CLEARANCE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow, Panel, TextButton } from '../ui/chrome';
@@ -382,7 +383,18 @@ const SOURCE_LINK: Partial<Record<SourceKind, { label: string; screen: Screen }>
 
 function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
   const [open, setOpen] = useState<string | null>(null);
-  const [newFindings, setNewFindings] = useState(true);
+  const [newFindings, setNewFindingsState] = useState(true);
+  const settingsRepo = useRepo();
+  useEffect(() => {
+    settingsRepo.loadNotifyFindings().then(setNewFindingsState).catch(() => {});
+  }, [settingsRepo]);
+  // Saved to her profile, which the server reads before sending a push.
+  // Turning it on asks for notifications if she has not been asked yet.
+  const setNewFindings = (on: boolean) => {
+    setNewFindingsState(on);
+    void settingsRepo.saveNotifyFindings(on).catch(() => setNewFindingsState(!on));
+    if (on) void registerForFindings(settingsRepo, true);
+  };
   const [appointments, setAppointments] = useState(false);
   const [list, setList] = useState<SourceView[]>([]);
   const [sourceNote, setSourceNote] = useState<string | null>(null);

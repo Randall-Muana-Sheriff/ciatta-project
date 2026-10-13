@@ -36,6 +36,7 @@ import {
   type ThreadCandidate,
 } from './threads.ts';
 import { contextEntry, offending, wordInsight, type ContextEntry, type OutcomeValue } from './wording.ts';
+import { findingPush } from './push.ts';
 
 const url = Deno.env.get('SUPABASE_URL')!;
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -360,6 +361,33 @@ async function runJob(admin: Admin, job: JobRow): Promise<RunCounts> {
   console.log('intelligence threads upserted', candidates.length);
   console.log('intelligence insights written', written);
   console.log('intelligence insights withheld', JSON.stringify(withheld));
+
+  // Tell her something changed, if it did and she wants to know. A push
+  // that fails is logged and never fails the run: the finding is in her
+  // record either way.
+  try {
+    const statuses = insightsWritten.map((w) => w.status);
+    if (statuses.some((s) => s === 'new' || s === 'updated')) {
+      const { data: prefs } = await admin.from('profiles').select('notify_findings').eq('id', job.user_id).maybeSingle();
+      const { data: phones } = await admin.from('push_tokens').select('token').eq('user_id', job.user_id);
+      const messages = findingPush(
+        (phones ?? []).map((p: { token: string }) => p.token),
+        statuses,
+        prefs?.notify_findings !== false,
+        new Date(),
+      );
+      if (messages.length) {
+        const res = await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', accept: 'application/json' },
+          body: JSON.stringify(messages),
+        });
+        console.log('intelligence push', res.status, messages.length);
+      }
+    }
+  } catch (e) {
+    console.log('intelligence push failed', e instanceof Error ? e.name : 'unknown');
+  }
 
   // ── The loop's second half: measure, learn, offer ───────────────
   // Order matters and is the spec's (section 6): outcomes are measured
