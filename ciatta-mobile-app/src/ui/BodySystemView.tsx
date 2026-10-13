@@ -11,6 +11,7 @@ import {
   REGION_LOCATION,
   type RegionId,
   stateWords,
+  SYSTEM_DOTS,
 } from '../lib/bodyMap';
 import { displayCopy } from '../lib/displayCopy';
 import { C, font, GUTTER, M, RADIUS } from '../theme';
@@ -148,6 +149,7 @@ export function BodySystemView({
                 accessibilityLabel={`${displayCopy(s.label)}. ${stateWords(s.lead ?? undefined)}${s.lead ? `. ${s.lead.title}` : ''}`}
                 style={[b.row, on && b.rowOn]}
               >
+                {SYSTEM_DOTS[s.label] ? <View style={[b.key, { backgroundColor: SYSTEM_DOTS[s.label].color }]} /> : <View style={b.key} />}
                 <Icon name={icons.get(s.label) ?? 'body'} size={18} color={on ? C.text : C.secondary} weight={1.8} />
                 <Text
                   style={[font('footnote', on ? 'medium' : 'regular'), { color: on ? C.text : C.secondary, flex: 1 }]}
@@ -189,6 +191,41 @@ export function BodySystemView({
               accessibilityIgnoresInvertColors
               accessible={false}
             />
+
+            {/* One dot per system, where it sits, in its own colour. Only
+                on the front: the back is the front mirrored, so a dot there
+                would mark the wrong side. Tapping one chooses that system. */}
+            {quarter === 0
+              ? systems.map((s) => {
+                  const dot = SYSTEM_DOTS[s.label];
+                  if (!dot) return null;
+                  const on = s.label === system.label;
+                  const size = on ? 16 : 10;
+                  return (
+                    <Pressable
+                      key={s.label}
+                      onPress={() => setSelected(s.label)}
+                      hitSlop={10}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: on }}
+                      accessibilityLabel={`${displayCopy(s.label)} on the figure`}
+                      style={[
+                        b.dot,
+                        {
+                          left: (dot.x / 100) * WIDTH - size / 2,
+                          top: (dot.y / 100) * HEIGHT - size / 2,
+                          width: size,
+                          height: size,
+                          borderRadius: size / 2,
+                          backgroundColor: dot.color,
+                        },
+                        on && { borderWidth: 3, borderColor: C.bg, shadowColor: dot.color },
+                        on && b.dotOn,
+                      ]}
+                    />
+                  );
+                })
+              : null}
           </Animated.View>
           {/* Which way she is looking, and that it turns. */}
           <Text style={[font('caption1'), b.viewLabel]}>{VIEWS[quarter]} · drag to turn</Text>
@@ -235,6 +272,9 @@ const b = StyleSheet.create({
   rowOn: { backgroundColor: C.card },
 
   silhouette: { ...StyleSheet.absoluteFill, opacity: 0.24 },
+  dot: { position: 'absolute' },
+  dotOn: { shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
+  key: { width: 8, height: 8, borderRadius: 4 },
   viewLabel: { color: C.secondary, textAlign: 'center', marginTop: 8 },
 
   detail: { marginTop: 16 },

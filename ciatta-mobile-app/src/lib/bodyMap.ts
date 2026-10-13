@@ -376,3 +376,22 @@ export function readSystems(reading: BodyReading, labels: string[]): SystemReadi
     return { label, short: whole ? WHOLE_BODY : place.short, regions, points, lead };
   });
 }
+
+// One dot per system on the front of the figure, as a percentage of the
+// image (850 by 1850), where that system sits: the brain, the thyroid, the
+// lungs on her right, the heart on her left, the spleen, a kidney, the gut,
+// the pelvis, a knee, and the skin of a forearm. She faces the viewer, so
+// her left is the viewer's right. Each system has a colour of its own; the
+// colour is on the dot only.
+export const SYSTEM_DOTS: Record<string, { x: number; y: number; color: string }> = {
+  Circulatory: { x: 56, y: 24.5, color: '#EF7A7A' },
+  Respiratory: { x: 43, y: 23, color: '#6FB6F5' },
+  Digestive: { x: 50, y: 34.5, color: '#E8C46A' },
+  Metabolic: { x: 50, y: 14.5, color: '#9BD36A' },
+  Reproductive: { x: 50, y: 41.5, color: '#F46EB4' },
+  Urinary: { x: 42, y: 32, color: '#5ED3C4' },
+  Immune: { x: 58, y: 30.5, color: '#B188F3' },
+  Musculoskeletal: { x: 57.5, y: 69, color: '#C9A27E' },
+  Nervous: { x: 50, y: 6.5, color: '#8E9BFF' },
+  Skin: { x: 27, y: 40.5, color: '#F09A5B' },
+};
