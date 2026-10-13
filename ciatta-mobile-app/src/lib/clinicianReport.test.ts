@@ -66,7 +66,7 @@ test('symptoms counted across her logs, with the worst rating she gave', () => {
 
 test('measurements are averages over the days recorded, labelled measured', () => {
   const m = rows('measurements');
-  assert.equal(m.source, 'Measured by her devices');
+  assert.equal(m.source, 'Synced from her devices');
   assert.deepEqual(m.rows.slice(0, 3), [
     { label: 'Sleep', value: '6h 30m average', note: '2 days recorded' },
     { label: 'Resting heart rate', value: '61 bpm average', note: '2 days recorded' },
@@ -96,7 +96,7 @@ test('the page escapes her words and carries the period, the source of each sect
   assert.ok(html.includes('&lt;b&gt;pain&lt;/b&gt; &amp; cramps'));
   assert.ok(!html.includes('<b>pain</b>'));
   assert.ok(html.includes('16 Jul 2026 to 14 Oct 2026'));
-  assert.ok(html.includes('Measured by her devices'));
+  assert.ok(html.includes('Synced from her devices'));
   assert.ok(html.includes('not a diagnosis'));
   assert.ok(!/[–—]/.test(html.replace(/<style>[\s\S]*<\/style>/, '')));
 });

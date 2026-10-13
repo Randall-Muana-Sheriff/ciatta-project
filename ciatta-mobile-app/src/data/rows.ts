@@ -226,7 +226,9 @@ export function sourceView(r: SourceRow): SourceView {
   return {
     name: r.name,
     kind: KIND_VIEW[r.kind],
-    status: STATUS_LABEL[r.status],
+    // A device that is sending says Synced. Her own logs stay Active:
+    // nothing syncs there.
+    status: r.status === 'active' && KIND_VIEW[r.kind] === 'measured' ? 'Synced' : STATUS_LABEL[r.status],
     facts: [
       { label: 'Since', value: shortDate(new Date(r.created_at)) },
       { label: 'Last updated', value: r.last_synced_at ? shortDate(new Date(r.last_synced_at)) : 'Not yet' },

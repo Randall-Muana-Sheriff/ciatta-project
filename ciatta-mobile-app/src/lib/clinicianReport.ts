@@ -120,7 +120,7 @@ export function reportSections(input: ReportInput, include: readonly SectionId[]
   measure('Heart rate variability', (d) => d.hrv, (v) => `${Math.round(v)} ms`);
   measure('Steps', (d) => d.steps, (v) => Math.round(v).toLocaleString('en-US'));
   measure('Skin temperature from usual', (d) => d.tempDeviation, (v) => `${Math.abs(v).toFixed(1)} °C ${v >= 0 ? 'above' : 'below'}`);
-  add('measurements', 'Measured by her devices', measured, 'No device readings in this period.');
+  add('measurements', 'Synced from her devices', measured, 'No device readings in this period.');
 
   const r = input.reported;
   add(

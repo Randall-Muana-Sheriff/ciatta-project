@@ -105,7 +105,7 @@ export type BodyPoint = {
   halo: boolean;
   title: string;
   detail: string;
-  source: 'Measured' | 'You reported' | 'Lab' | 'Pattern';
+  source: 'Synced' | 'You reported' | 'Lab' | 'Pattern';
   screen?: Screen;
   insightId?: string;
   // For whole body points: the body system they belong to, if any.
@@ -120,7 +120,7 @@ export type BodyReading = {
 };
 
 const MEANING_WORDS: Record<Meaning, string> = {
-  measured: 'Measured',
+  measured: 'Synced',
   reported: 'You reported',
   change: 'Something changed',
   evidence: 'Evidence',
@@ -239,14 +239,14 @@ export function readBody({
   const rhr = found('rhrHigh');
   put(
     rhr
-      ? { region: 'chest', meaning: 'measured', state: 'lit', halo: true, title: 'Resting heart rate above usual', detail: rhr.brief, source: 'Measured', insightId: rhr.id }
-      : { region: 'chest', meaning: 'measured', state: 'historical', halo: false, title: 'Heart rate within your usual range', detail: 'Your resting heart rate has stayed within your usual range.', source: 'Measured', screen: 'movement' },
+      ? { region: 'chest', meaning: 'measured', state: 'lit', halo: true, title: 'Resting heart rate above usual', detail: rhr.brief, source: 'Synced', insightId: rhr.id }
+      : { region: 'chest', meaning: 'measured', state: 'historical', halo: false, title: 'Heart rate within your usual range', detail: 'Your resting heart rate has stayed within your usual range.', source: 'Synced', screen: 'movement' },
   );
 
   // Head: sleep, which the design system places with head and neurological.
   const sleep = found('sleepLow');
   if (sleep) {
-    put({ region: 'head', meaning: 'measured', state: 'lit', halo: true, title: 'Sleep lower than usual', detail: sleep.brief, source: 'Measured', screen: 'sleep' });
+    put({ region: 'head', meaning: 'measured', state: 'lit', halo: true, title: 'Sleep lower than usual', detail: sleep.brief, source: 'Synced', screen: 'sleep' });
   }
 
   // Neck and thyroid: the latest TSH result.

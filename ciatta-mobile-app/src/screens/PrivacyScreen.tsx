@@ -33,7 +33,7 @@ export function PrivacyScreen() {
         privacyFacts({
           // Only what is actually sending: a source she never finished
           // connecting is not one that can see anything.
-          sources: sources.filter((s) => s.kind === 'measured' && /active|connected/i.test(s.status)).map((s) => s.name),
+          sources: sources.filter((s) => s.kind === 'measured' && /active|connected|synced/i.test(s.status)).map((s) => s.name),
           providers: providers.filter((p) => p.status !== 'revoked').map((p) => p.organization ?? p.endpointName),
           weatherOn,
           findingsOn,

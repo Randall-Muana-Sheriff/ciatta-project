@@ -123,3 +123,9 @@ test('an entry filed to records says so, and nothing else does', () => {
   assert.equal(view.months[0].items[0].filed, 'records');
   assert.equal(view.months[0].items[1].filed, undefined);
 });
+
+test('a device that is sending says Synced, never Measured', () => {
+  const v = sourceView({ kind: 'apple_health', name: 'Apple Health', status: 'active', last_synced_at: null, created_at: '2026-09-15T08:00:00Z' });
+  assert.equal(v.status, 'Synced');
+  assert.equal(sourceView({ kind: 'apple_health', name: 'Apple Health', status: 'connected', last_synced_at: null, created_at: '2026-09-15T08:00:00Z' }).status, 'Connected');
+});

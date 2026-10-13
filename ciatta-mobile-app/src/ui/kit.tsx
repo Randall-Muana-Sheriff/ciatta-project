@@ -137,7 +137,7 @@ export function Tag({
   );
 }
 
-const SOURCE_LABEL: Record<SourceKind, string> = { logged: 'You logged', measured: 'Measured', lab: 'Lab' };
+const SOURCE_LABEL: Record<SourceKind, string> = { logged: 'You logged', measured: 'Synced', lab: 'Lab' };
 
 // Where the data on a screen came from, pinned above the tab bar.
 export function SourceFooter({ kind, text }: { kind: SourceKind; text: string }) {

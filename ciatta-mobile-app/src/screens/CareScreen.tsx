@@ -79,7 +79,7 @@ const DOT: Record<Fact['from'], string> = {
 };
 
 const FROM_LABEL: Record<Fact['from'], string> = {
-  measured: 'Measured',
+  measured: 'Synced',
   reported: 'You said',
   derived: 'Counted',
   reference: 'Source',

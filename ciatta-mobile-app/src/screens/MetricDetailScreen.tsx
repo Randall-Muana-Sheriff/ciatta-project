@@ -88,7 +88,7 @@ export function MetricDetailScreen({ metric: given }: { metric?: MetricKey } = {
       footer={
         <SourceFooter
           kind="measured"
-          text="Measured by your connected devices. Your usual range is worked out from your own readings from 5 to 13 weeks ago."
+          text="Synced from your connected devices. Your usual range is worked out from your own readings from 5 to 13 weeks ago."
         />
       }
     >

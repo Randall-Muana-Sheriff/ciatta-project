@@ -41,7 +41,7 @@ const EASE_BODY = Easing.bezier(0.4, 0, 0.2, 1);
 // The four views a turn settles on, by quarter.
 const VIEWS = ['Front', 'Side', 'Back', 'Side'] as const;
 
-const SOURCE_TONE = { Measured: 'measured', 'You reported': 'logged', Lab: 'lab', Pattern: 'orange' } as const;
+const SOURCE_TONE = { Synced: 'measured', 'You reported': 'logged', Lab: 'lab', Pattern: 'orange' } as const;
 
 function useReduceMotion(): boolean {
   const [reduce, setReduce] = useState(false);

@@ -455,12 +455,12 @@ function Connections({ onOpen }: { onOpen: (screen: Screen) => void }) {
               key={src.name}
               first={n === 0}
               title={src.name}
-              sub={`${KIND_LABEL[src.kind]} · ${src.status}`}
+              sub={src.kind === 'measured' ? src.status : `${KIND_LABEL[src.kind]} · ${src.status}`}
               open={open === src.name}
               onToggle={() => setOpen(open === src.name ? null : src.name)}
             >
               <View style={{ marginBottom: 8 }}>
-                <Tag label={KIND_LABEL[src.kind]} tone={src.kind} />
+                {src.kind === 'measured' ? null : <Tag label={KIND_LABEL[src.kind]} tone={src.kind} />}
               </View>
               <Facts rows={src.facts} />
               {link ? (
@@ -498,7 +498,9 @@ function Connections({ onOpen }: { onOpen: (screen: Screen) => void }) {
 
 // ── Settings: sources, notifications, privacy, account ────────
 
-const KIND_LABEL: Record<SourceKind, string> = { measured: 'Measured', lab: 'Lab', logged: 'You logged' };
+// A device source says only its status, Connected or Synced; the kind is
+// shown for labs and her own logs, where it is not obvious.
+const KIND_LABEL: Record<SourceKind, string> = { measured: 'Synced', lab: 'Lab', logged: 'You logged' };
 
 // Where each source's link goes. Devices have no screen of their own yet.
 const SOURCE_LINK: Partial<Record<SourceKind, { label: string; screen: Screen }>> = {
