@@ -15,6 +15,10 @@ import { category as categoryOf, type CategoryKey } from '../lib/logCategories';
 import { productsLine, type ProductUse } from '../lib/periodProducts';
 import { airLines, daylightLine, type EnvironmentDay, weatherLines } from '../lib/weather';
 import { latestMeal } from '../lib/mealPhoto';
+import { labDay, labDraws, type LabResult } from '../lib/labs';
+import { medsView } from '../lib/medsView';
+import type { Reported } from '../data/repo';
+import { LabRangeBar, LabStatusTag } from './labs';
 import { caloriesBlock } from '../lib/calories';
 import type { Meal } from '../lib/foodScan';
 import type { NutritionTargets } from '../lib/nutritionTargets';
@@ -123,7 +127,6 @@ export function HealthDashboard({
   openInsight: (id: string) => void;
 }) {
   const [stage, setStage] = useState<Stage>('Deep');
-  const { records, medications } = useData();
   const { mode } = useSession();
   const repo = useRepo();
   const { episodes } = useCycle();
@@ -134,6 +137,9 @@ export function HealthDashboard({
   // her period products, and the weather around her. Each starts empty, and
   // an empty source means its card is simply not drawn.
   const [journal, setJournal] = useState<JournalView | null>(null);
+  // Her labs and what she named, for the Labs and Medications cards.
+  const [labs, setLabs] = useState<LabResult[]>([]);
+  const [reported, setReported] = useState<Reported | null>(null);
   const [productUses, setProductUses] = useState<ProductUse[]>([]);
   const [environment, setEnvironment] = useState<EnvironmentDay[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
@@ -143,6 +149,8 @@ export function HealthDashboard({
   useEffect(() => {
     let ignore = false;
     repo.loadJournal().then((j) => !ignore && setJournal(j)).catch(() => {});
+    repo.loadLabs().then((l) => !ignore && setLabs(l)).catch(() => {});
+    repo.loadReported().then((r) => !ignore && setReported(r)).catch(() => {});
     repo.loadProductUses().then((u) => !ignore && setProductUses(u)).catch(() => {});
     // Fetch any weather days still missing (at most once a day, and only
     // if she allowed it), then read what is stored.
@@ -241,7 +249,12 @@ export function HealthDashboard({
   symptomTally.sort((a, b) => b.count - a.count);
   const symptomMax = Math.max(1, ...symptomTally.map((t) => t.count));
 
-  const latestDraw = records?.draws[0];
+  const latestDraw = useMemo(() => labDraws(labs)[0] ?? null, [labs]);
+  const meds = useMemo(
+    () => medsView({ reported, logs: (journal?.months ?? []).flatMap((m) => m.items), now: new Date() }),
+    [reported, journal],
+  );
+  const named = [...meds.medications.map((x) => ({ ...x, kind: 'Medication' })), ...meds.supplements.map((x) => ({ ...x, kind: 'Supplement' }))];
 
   return (
     <View style={d.stack}>
@@ -545,52 +558,40 @@ export function HealthDashboard({
         );
       })}
 
-      {/* Medications */}
-      {medications ? (
-      <Card title="Medications" meta={`${medications.current.length} current`} onPress={() => open('medications')}>
-        {medications.current.map((m, n) => (
-          <View key={m.name} style={[d.medRow, n > 0 && d.sep]}>
-            <View style={[d.medLine, { backgroundColor: M.measured }]} />
-            <View style={{ flex: 1 }}>
-              <Text style={[font('subhead'), { color: C.text }]}>
-                {m.name} {m.dose}
-              </Text>
-              <Text style={[font('caption1'), { color: C.secondary }]}>
-                {m.timing} · {m.since}
-              </Text>
+      {/* Medications and supplements she named, kept apart, with when
+          each was last logged. */}
+      {named.length ? (
+        <Card title="Medications" meta={`${meds.medications.length} medications, ${meds.supplements.length} supplements`} onPress={() => open('medications')}>
+          {named.map((m, n) => (
+            <View key={`${m.kind}-${m.name}`} style={[d.medRow, n > 0 && d.sep]}>
+              <View style={[d.medLine, { backgroundColor: m.kind === 'Medication' ? M.measured : M.reported }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={[font('subhead'), { color: C.text }]}>{displayCopy(m.name)}</Text>
+                <Text style={[font('caption1'), { color: C.secondary }]}>
+                  {`${m.kind} · ${m.last ? `last logged ${m.last}` : 'not logged yet'}`}
+                </Text>
+              </View>
             </View>
-          </View>
-        ))}
-      </Card>
+          ))}
+        </Card>
       ) : null}
 
-      {/* Lab results */}
+      {/* Labs: her latest visit, each result with its status and range. */}
       {latestDraw ? (
-      <Card title="Lab Results" meta={latestDraw.date} onPress={() => open('healthrecords')}>
-        {latestDraw.results.map((r, n) => {
-          const value = parseFloat(r.value);
-          const [low, high] = r.range.split(' to ').map(Number);
-          const out = value < low || value > high;
-          return (
-            <View
-              key={r.name}
-              style={[d.labRow, n > 0 && d.sep]}
-              accessible
-              accessibilityLabel={`${r.name} ${r.value}, range ${r.range}, ${out ? 'outside range' : 'within range'}`}
-            >
+        <Card title="Labs" meta={labDay(latestDraw.on)} onPress={() => open('healthrecords')}>
+          {latestDraw.results.map((r, n) => (
+            <View key={r.id} style={[d.labRow, n > 0 && d.sep]}>
               <View style={d.labHead}>
                 <Text style={[font('subhead'), { color: C.text, flex: 1 }]}>{r.name}</Text>
-                <Text style={[font('subhead', 'semibold'), { color: out ? M.attention : C.text }]}>{r.value}</Text>
+                <Text style={[font('subhead', 'semibold'), { color: C.text }]}>
+                  {r.value != null ? `${r.value}${r.unit ? ` ${r.unit}` : ''}` : (r.valueText ?? '')}
+                </Text>
               </View>
-              <RangeBar value={value} low={low} high={high} rangeColor={M.evidence} pointColor={out ? M.attention : C.text} />
-              <Text style={[font('caption1'), { color: C.secondary }]}>
-                Range {r.range}
-                {out ? ' · below range' : ''}
-              </Text>
+              <LabRangeBar result={r} height={5} />
+              <LabStatusTag result={r} small />
             </View>
-          );
-        })}
-      </Card>
+          ))}
+        </Card>
       ) : null}
 
       {/*

@@ -120,7 +120,7 @@ export function EvidenceScreen() {
       </ListGroup>
 
       <View style={e.section}>
-        <SecondaryButton label="Prepare for an Appointment" onPress={() => nav.push('healthrecords')} />
+        <SecondaryButton label="Prepare for an Appointment" onPress={() => nav.push('appointment')} />
       </View>
 
       {others.length ? (

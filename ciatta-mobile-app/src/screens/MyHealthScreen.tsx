@@ -3,6 +3,8 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { type BodyPoint, readBody, WHOLE_BODY } from '../lib/bodyMap';
 import { chooseLogCategory } from '../lib/logHandoff';
+import { drawsFromLabs } from '../lib/labs';
+import { useLabs } from '../state/labs';
 import { loggedPoints, SYSTEM_CATEGORY } from '../lib/systemLogs';
 import { useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
@@ -24,7 +26,8 @@ export function MyHealthScreen() {
   const { setFocus } = useCycle();
   const { movement, ranked } = useInsights();
   const { signals, summaries, lens } = useCycleInsights();
-  const { days, records } = useData();
+  const { days } = useData();
+  const labs = useLabs();
   const [view, setView] = useState<(typeof VIEWS)[number]>('Dashboard');
   const repo = useRepo();
   // What she logged on the Log screen, placed under the systems it is
@@ -43,9 +46,9 @@ export function MyHealthScreen() {
     };
   }, [repo, view, nav.depth]);
   const body = useMemo(() => {
-    const read = readBody({ signals, days, ranked, draws: records?.draws ?? [] });
+    const read = readBody({ signals, days, ranked, draws: drawsFromLabs(labs) });
     return { ...read, systemic: [...read.systemic, ...logged] };
-  }, [signals, days, ranked, records, logged]);
+  }, [signals, days, ranked, labs, logged]);
 
   const openInsight = (id: string) => {
     setFocus(id);

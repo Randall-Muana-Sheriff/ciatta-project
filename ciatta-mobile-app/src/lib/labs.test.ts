@@ -3,6 +3,7 @@ import { test } from 'node:test';
 
 import {
   type LabResult,
+  drawsFromLabs,
   labDraws,
   labHistory,
   labStatus,
@@ -123,4 +124,17 @@ test('a line she edited is read back as a result, a number when it is one', () =
   });
   assert.equal(testFromFields({ name: '', value: '3', unit: '', range: '', flag: null }), null);
   assert.equal(testFromFields({ name: 'TSH', value: ' ', unit: '', range: '', flag: null }), null);
+});
+
+test('her labs as the visits insights and the body read, newest first, numbers with both ends of a range only', () => {
+  const draws = drawsFromLabs([
+    lab({ id: '1', on: '2026-02-03', value: 34 }),
+    lab({ id: '2', on: '2026-06-12', value: 12 }),
+    lab({ id: '3', on: '2026-06-12', name: 'HBsAg', value: null, valueText: 'Negative', low: null, high: null }),
+    lab({ id: '4', on: '2026-06-12', name: 'LDL', value: 90, low: null, high: 100 }),
+  ]);
+  assert.deepEqual(draws, [
+    { date: '12 Jun 2026', lab: 'Quest Diagnostics', results: [{ name: 'Ferritin', value: '12 ng/mL', range: '15 to 150', status: 'Low' }] },
+    { date: '3 Feb 2026', lab: 'Quest Diagnostics', results: [{ name: 'Ferritin', value: '34 ng/mL', range: '15 to 150', status: 'In' }] },
+  ]);
 });

@@ -191,3 +191,25 @@ export function testFromFields(f: { name: string; value: string; unit: string; r
     flag: f.flag,
   };
 }
+
+// Her labs as the visits the insight engine and the body view read, in the
+// shape the example person's draws always had: "12 Jun 2026", "12 ng/mL",
+// "15 to 150". Only numbers with both ends of a range, since that is all
+// those two compare; the status is the one Labs shows.
+export type DrawLike = { date: string; lab: string | null; results: { name: string; value: string; range: string; status: 'In' | 'Low' | 'High' }[] };
+
+export function drawsFromLabs(labs: readonly LabResult[]): DrawLike[] {
+  return labDraws(labs)
+    .map((d) => ({
+      date: labDay(d.on),
+      lab: d.lab,
+      results: d.results
+        .filter((r) => r.value != null && r.low != null && r.high != null)
+        .map((r) => {
+          const k = labStatus(r).key;
+          const status: 'In' | 'Low' | 'High' = k === 'low' || k === 'criticalLow' ? 'Low' : k === 'high' || k === 'criticalHigh' ? 'High' : 'In';
+          return { name: r.name, value: `${r.value}${r.unit ? ` ${r.unit}` : ''}`, range: `${r.low} to ${r.high}`, status };
+        }),
+    }))
+    .filter((d) => d.results.length);
+}

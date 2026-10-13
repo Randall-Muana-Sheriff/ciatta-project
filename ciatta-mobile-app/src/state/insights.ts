@@ -2,13 +2,18 @@ import { useMemo } from 'react';
 
 import { buildInsights } from '../lib/engine';
 import { useCycle, useCycleInsights } from './cycleStore';
+import { drawsFromLabs } from '../lib/labs';
+import { useLabs } from './labs';
 import { useData } from './session';
 
 // The shared insight layer, as every screen sees it.
 export function useInsights() {
   const { episodes, watching, interventions } = useCycle();
   const cycle = useCycleInsights();
-  const { days, records, today } = useData();
+  const { days, today } = useData();
+  // Her own labs, from her providers and the reports she had read.
+  const labs = useLabs();
+  const draws = useMemo(() => drawsFromLabs(labs), [labs]);
   return useMemo(
     () =>
       buildInsights({
@@ -18,11 +23,11 @@ export function useInsights() {
         summaries: cycle.summaries,
         signals: cycle.signals,
         cycleObservations: cycle.observations,
-        draws: records?.draws ?? [],
+        draws,
         interventions,
         watching,
         opening: today.brief,
       }),
-    [days, records, today, episodes, watching, interventions, cycle],
+    [days, draws, today, episodes, watching, interventions, cycle],
   );
 }

@@ -7,12 +7,11 @@ import { RecordsView } from '../ui/RecordsView';
 // own for the places that link here (Evidence, Medications).
 export function HealthRecordsScreen() {
   const nav = useNav();
-  const { records } = useData();
   return (
     <DetailScreen
       title="Health Records"
       onBack={nav.back}
-      footer={records ? <SourceFooter kind="lab" text={records.source} /> : undefined}
+      footer={<SourceFooter kind="lab" text="From your providers, and the lab reports and records you added." />}
     >
       <RecordsView onOpen={nav.push} />
     </DetailScreen>
