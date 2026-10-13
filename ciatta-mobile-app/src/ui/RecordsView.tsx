@@ -15,11 +15,13 @@ import type { Data } from '../data/adapter';
 import { loadClinicalRecords } from '../data/providers';
 import { type ProcedureEntry, procedureList } from '../lib/procedureEffect';
 import { chooseProcedure, prefillProcedure } from '../lib/procedureHandoff';
+import { type RecordEntry, recordEntries } from '../lib/recordEntries';
 import { type Screen, useNav } from '../navigation';
+import { displayCopy } from '../lib/displayCopy';
 import { useData, useRepo } from '../state/session';
 import { C, font, numeral } from '../theme';
 import { ListGroup, ListRow } from './chrome';
-import { EmptyNote, Row, SecondaryButton, Tag } from './kit';
+import { EmptyNote, PrimaryButton, Row, SecondaryButton, Tag } from './kit';
 import { Eyebrow } from './bento';
 
 type Draw = NonNullable<Data['records']>['draws'][number];
@@ -58,6 +60,7 @@ export function RecordsView({ onOpen }: { onOpen: (screen: Screen) => void }) {
   const repo = useRepo();
   const nav = useNav();
   const [procedures, setProcedures] = useState<{ dated: ProcedureEntry[]; undated: string[] }>({ dated: [], undated: [] });
+  const [added, setAdded] = useState<RecordEntry[]>([]);
 
   // Her procedures: the ones she added, the dated ones her providers sent,
   // and surgeries she named at onboarding that still need a date. Read
@@ -65,6 +68,12 @@ export function RecordsView({ onOpen }: { onOpen: (screen: Screen) => void }) {
   useEffect(() => {
     if (nav.depth > 1) return;
     let ignore = false;
+    repo
+      .loadJournal()
+      .then((view) => {
+        if (!ignore) setAdded(recordEntries(view));
+      })
+      .catch(() => {});
     Promise.all([
       repo.loadAddedProcedures().catch(() => []),
       loadClinicalRecords().catch(() => []),
@@ -84,6 +93,21 @@ export function RecordsView({ onOpen }: { onOpen: (screen: Screen) => void }) {
   };
   return (
     <View>
+      {/* Every way a record reaches her, in one place: voice, camera, an
+          image, a PDF or a video, through the same box every log uses. */}
+      <View style={{ marginTop: 8 }}>
+        <PrimaryButton label="Add to Your Records" onPress={() => onOpen('addRecord')} />
+        <Text style={[font('caption1'), hr.addHint]}>Voice, camera, image or PDF</Text>
+      </View>
+
+      {added.length ? (
+        <ListGroup header="Added by you" style={hr.section}>
+          {added.map((r, n) => (
+            <ListRow key={r.key} first={n === 0} icon="doc" title={displayCopy(r.title)} sub={displayCopy(r.sub)} />
+          ))}
+        </ListGroup>
+      ) : null}
+
       {records ? (
         <>
           <View style={hr.section}>
@@ -128,7 +152,7 @@ export function RecordsView({ onOpen }: { onOpen: (screen: Screen) => void }) {
             <Row key={d.sub} first={n === 0} title={d.title} sub={`${d.sub} · ${d.kind}`} onPress={() => {}} />
           ))}
           <View style={{ paddingTop: 16 }}>
-            <SecondaryButton label="Add a Document" />
+            <SecondaryButton label="Add a Document" onPress={() => onOpen('addRecord')} />
           </View>
         </>
       ) : (
@@ -205,4 +229,5 @@ const hr = StyleSheet.create({
   },
   gap: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 10, paddingBottom: 14 },
   section: { marginTop: 24, marginBottom: 10 },
+  addHint: { color: C.muted, textAlign: 'center', marginTop: 6 },
 });

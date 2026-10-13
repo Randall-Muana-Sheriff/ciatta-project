@@ -34,6 +34,7 @@ export type Screen =
   | 'foodScan'
   | 'procedure'
   | 'addProcedure'
+  | 'addRecord'
   | 'productSafety';
 
 export type Nav = {

@@ -139,7 +139,7 @@ export type JournalRow = {
   occurred_at: string;
   // Files kept with the entry, in metadata like an episode's. Absent on
   // rows written before entries could carry any.
-  metadata?: { attachments?: unknown; category?: unknown; items?: unknown } | null;
+  metadata?: { attachments?: unknown; category?: unknown; items?: unknown; filed?: unknown } | null;
 };
 
 export type JournalView = {
@@ -158,6 +158,8 @@ export type JournalView = {
       items?: Found;
       // When it happened, as stored. Absent on sample entries.
       at?: string;
+      // Set when she added it from Records, so it is listed there too.
+      filed?: 'records';
     }[];
   }[];
 };
@@ -186,6 +188,7 @@ export function journalView(rows: JournalRow[]): JournalView {
       category: CATEGORY_KEYS.includes(r.metadata?.category as CategoryKey) ? (r.metadata!.category as CategoryKey) : undefined,
       items: foundFrom(r.metadata?.items),
       at: r.occurred_at,
+      ...(r.metadata?.filed === 'records' ? { filed: 'records' as const } : {}),
     });
   }
   const oldest = new Date(sorted[sorted.length - 1].occurred_at);

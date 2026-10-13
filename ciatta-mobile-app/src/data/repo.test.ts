@@ -240,3 +240,12 @@ test('a note can be dated to the day she said, not only now', async () => {
   const items = (await repo.loadJournal()).months.flatMap((m) => m.items);
   assert.equal(items.find((i) => i.text === 'Bloated')?.at, yesterday);
 });
+
+test('a record she adds is kept as a note filed to her records', async () => {
+  const repo = demoRepo();
+  const file = { id: 'f1', kind: 'document' as const, name: 'labs.pdf', uri: 'file:///labs.pdf', addedAt: '2026-10-12T09:00:00Z' };
+  await repo.addRecord('Iron results', [file]);
+  const item = (await repo.loadJournal()).months.flatMap((m) => m.items).find((i) => i.text === 'Iron results');
+  assert.equal(item?.filed, 'records');
+  assert.deepEqual(item?.attachments, [file]);
+});

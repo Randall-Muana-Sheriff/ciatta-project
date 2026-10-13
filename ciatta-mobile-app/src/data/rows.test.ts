@@ -114,3 +114,12 @@ test('stored category items are checked before they are counted', () => {
   // A category the app does not have is not one.
   assert.equal(read({}, 'stars').category, undefined);
 });
+
+test('an entry filed to records says so, and nothing else does', () => {
+  const view = journalView([
+    { client_id: 'j1', text: 'Iron results', kind: 'Notes', tag: null, occurred_at: '2026-10-12T09:00:00Z', metadata: { filed: 'records' } },
+    { client_id: 'j2', text: 'Odd', kind: 'Notes', tag: null, occurred_at: '2026-10-11T09:00:00Z', metadata: { filed: 'elsewhere' } },
+  ]);
+  assert.equal(view.months[0].items[0].filed, 'records');
+  assert.equal(view.months[0].items[1].filed, undefined);
+});

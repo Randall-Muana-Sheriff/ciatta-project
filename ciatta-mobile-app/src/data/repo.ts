@@ -88,6 +88,8 @@ export type Repo = {
   // `at` dates the entry to when it happened, when she said so (yesterday,
   // three days ago); otherwise now.
   addJournal(text: string, kind: EntryKind, attachments?: Attachment[], tags?: { category: CategoryKey; items: Found }, at?: string): Promise<void>;
+  // Something she adds from Records: kept as a note, filed to records.
+  addRecord(text: string, attachments: Attachment[]): Promise<void>;
   // Her own columns of one day, merged into whatever the day already holds.
   saveDailyLog(patch: DailyPatch): Promise<void>;
   // Period products: her uses, newest last; putting one in (which closes
@@ -352,6 +354,14 @@ export function demoRepo(): Repo {
       const d = at ? new Date(at) : new Date();
       const month = `${d.toLocaleString('en-US', { month: 'long' })} ${d.getFullYear()}`;
       const item = { text, date: `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`, tag: kind, kind, usedInInsight: false, attachments, category: tags?.category, items: tags?.items, at: d.toISOString() };
+      const rest = view.months.filter((m) => m.month !== month);
+      const current = view.months.find((m) => m.month === month);
+      view = { ...view, count: view.count + 1, months: [{ month, items: [item, ...(current?.items ?? [])] }, ...rest] };
+    },
+    addRecord: async (text, attachments) => {
+      const d = new Date();
+      const month = `${d.toLocaleString('en-US', { month: 'long' })} ${d.getFullYear()}`;
+      const item = { text, date: `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`, tag: 'Notes', kind: 'Notes' as const, usedInInsight: false, attachments, category: 'note' as const, at: d.toISOString(), filed: 'records' as const };
       const rest = view.months.filter((m) => m.month !== month);
       const current = view.months.find((m) => m.month === month);
       view = { ...view, count: view.count + 1, months: [{ month, items: [item, ...(current?.items ?? [])] }, ...rest] };
@@ -754,6 +764,18 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
             ...(attachments.length ? { attachments } : {}),
             ...(tags ? { category: tags.category, items: tags.items } : {}),
           },
+        }),
+      );
+    },
+    async addRecord(text, attachments) {
+      must(
+        await db.from('journal_entries').insert({
+          user_id: userId,
+          client_id: `r-${Date.now()}`,
+          text,
+          kind: 'Notes',
+          occurred_at: new Date().toISOString(),
+          metadata: { ...(attachments.length ? { attachments } : {}), category: 'note', filed: 'records' },
         }),
       );
     },
