@@ -25,6 +25,8 @@ import { chooseLogCategory } from '../lib/logHandoff';
 import { todayState } from '../lib/todayState';
 import { userFacingError } from '../lib/userFacingError';
 import { TodayStart } from '../ui/TodayStart';
+import { upcomingVisits, visitWhen } from '../lib/calendarEvents';
+import { useDeviceCalendar } from '../state/deviceCalendar';
 import { font, fonts, GUTTER } from '../theme';
 import { Eyebrow, Tile } from '../ui/bento';
 import { Wordmark } from '../ui/Wordmark';
@@ -150,6 +152,12 @@ export function TodayScreen() {
   }, [brief, ranked, days]);
   const repo = useRepo();
   const { mode, userId, reloadDays } = useSession();
+  const week = useMemo(() => {
+    const from = new Date();
+    return { from, to: new Date(from.getTime() + 8 * 86400000) };
+  }, []);
+  const calendar = useDeviceCalendar(week.from, week.to);
+  const nextVisit = useMemo(() => upcomingVisits(calendar.events, new Date(), 7)[0] ?? null, [calendar.events]);
 
   // Which Today she meets: the empty state with the way in, or her day.
   const state = useMemo(() => todayState({ days, windows: windows.length, logs: signals.length }), [days, windows, signals]);
@@ -328,6 +336,17 @@ export function TodayScreen() {
 
   // Actions that fit the pattern being told today.
   const actions: Action[] = [];
+  // A care visit in her calendar this week, to get ready for. Read from
+  // this phone only once she connected it on the Calendar screen.
+  if (nextVisit) {
+    actions.push({
+      key: 'visit',
+      icon: 'calendarPlus',
+      title: displayCopy(`Prepare for ${nextVisit.title}`),
+      sub: displayCopy(`${visitWhen(nextVisit, now)}. Build a brief from your record to take with you.`),
+      onPress: go('appointment'),
+    });
+  }
   if (brief.lead?.id === 'combined') {
     const on = watching.nextCycle === true;
     actions.push({

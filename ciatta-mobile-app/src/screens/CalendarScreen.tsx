@@ -10,7 +10,7 @@
 // knowing and a single dot would blur them.
 
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import {
   canGoForward,
@@ -23,13 +23,16 @@ import {
   stepMonth,
   WEEKDAYS,
 } from '../lib/calendarMonth';
+import { eventsOnDay, isCareVisit, timeOf, upcomingVisits, visitWhen } from '../lib/calendarEvents';
 import { displayCopy } from '../lib/displayCopy';
 import { useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useData } from '../state/session';
 import { font, GUTTER } from '../theme';
 import { Icon } from '../ui/icons';
-import { DetailScreen } from '../ui/kit';
+import { ListGroup, ListRow } from '../ui/chrome';
+import { DetailScreen, SecondaryButton } from '../ui/kit';
+import { addAppointmentWithForm, useDeviceCalendar } from '../state/deviceCalendar';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 
 export function CalendarScreen() {
@@ -68,6 +71,24 @@ export function CalendarScreen() {
       ),
     [days],
   );
+
+  // Her calendar, from this phone: the month on screen, and the next two
+  // months for what is coming up. Read only, and only once she allowed it.
+  const range = useMemo(() => {
+    const from = new Date(at.year, at.month, 1 - 7);
+    const monthEnd = new Date(at.year, at.month + 1, 7);
+    const ahead = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 61);
+    return { from, to: monthEnd > ahead ? monthEnd : ahead };
+  }, [at, now]);
+  const cal = useDeviceCalendar(range.from, range.to);
+  const visitDays = useMemo(() => new Set(cal.events.filter(isCareVisit).map((e) => iso(e.start))), [cal.events]);
+  const coming = useMemo(() => upcomingVisits(cal.events, now, 60), [cal.events, now]);
+  const [addNote, setAddNote] = useState<string | null>(null);
+  const add = async () => {
+    const r = await addAppointmentWithForm();
+    setAddNote(r === 'unavailable' ? 'Your calendar could not be opened on this device.' : null);
+    if (r === 'saved') await cal.reload();
+  };
 
   const grid = useMemo(
     () => monthGrid({ year: at.year, month: at.month, periodDays, loggedDays, measuredDays, now }),
@@ -130,7 +151,7 @@ export function CalendarScreen() {
         {grid.weeks.map((week, w) => (
           <View key={w} style={s.week}>
             {week.map((d) => (
-              <Cell key={d.date} mark={d} size={cell} selected={picked?.date === d.date} onPress={() => setPicked(d)} />
+              <Cell key={d.date} mark={d} visit={visitDays.has(d.date)} size={cell} selected={picked?.date === d.date} onPress={() => setPicked(d)} />
             ))}
           </View>
         ))}
@@ -141,14 +162,75 @@ export function CalendarScreen() {
         <Key colour={HUE.reported} label="You logged bleeding" />
         <Key colour={HUE.change} label="You logged an experience" />
         <Key colour={HUE.measured} label="Something was measured" />
+        {cal.access === 'granted' ? <Key colour={HUE.timeDepth} label="A care visit in your calendar" /> : null}
       </View>
 
       {picked ? (
         <View style={s.detail}>
           <Text style={[font('footnote', 'semibold'), s.detailDay]}>{displayCopy(longDay(picked.date))}</Text>
           <Text style={[font('body'), s.detailLine]}>{displayCopy(dayLine(picked))}</Text>
+          {eventsOnDay(cal.events, picked.date).map((e) => (
+            <View key={e.id} style={s.event}>
+              <View style={[s.dot, { backgroundColor: isCareVisit(e) ? HUE.timeDepth : L.meta }]} />
+              <Text style={[font('subhead'), s.eventText]} numberOfLines={2}>
+                {displayCopy(`${e.allDay ? 'All day' : timeOf(e.start)}  ${e.title}`)}
+              </Text>
+            </View>
+          ))}
         </View>
       ) : null}
+
+      {/*
+        Her calendar. One permission covers every calendar on this phone,
+        Google and Outlook accounts included, and nothing read here leaves
+        the device.
+      */}
+      <View style={s.section}>
+        <Text style={[font('headline'), s.sectionTitle]} accessibilityRole="header">
+          Your Calendar
+        </Text>
+        {cal.access === 'granted' ? (
+          <>
+            <Text style={[font('footnote'), s.sectionSub]}>Care visits coming up in the next two months, from the calendars on this iPhone.</Text>
+            {coming.length ? (
+              <ListGroup light style={{ marginTop: 10 }}>
+                {coming.map((e, n) => (
+                  <ListRow
+                    light
+                    key={e.id}
+                    first={n === 0}
+                    icon="calendarPlus"
+                    title={displayCopy(e.title)}
+                    sub={displayCopy([visitWhen(e, now), e.location].filter(Boolean).join(' · ') + '. Tap to prepare.')}
+                    onPress={() => nav.push('appointment')}
+                  />
+                ))}
+              </ListGroup>
+            ) : (
+              <Text style={[font('subhead'), s.none]}>No care visits found in the next two months.</Text>
+            )}
+            <View style={{ marginTop: 12 }}>
+              <SecondaryButton label="Add an Appointment" onPress={() => void add()} />
+            </View>
+            {addNote ? <Text style={[font('footnote'), s.sectionSub]}>{addNote}</Text> : null}
+          </>
+        ) : cal.access === 'unavailable' ? (
+          <Text style={[font('footnote'), s.sectionSub]}>Your calendar is available on iPhone.</Text>
+        ) : (
+          <>
+            <Text style={[font('footnote'), s.sectionSub]}>
+              See your events beside your days, and get ready for care visits coming up. Works with iCloud, Google and Outlook calendars on this iPhone. Your events stay on this device.
+            </Text>
+            <View style={{ marginTop: 12 }}>
+              {cal.access === 'denied' ? (
+                <SecondaryButton label="Allow in Settings" onPress={() => void Linking.openSettings()} />
+              ) : (
+                <SecondaryButton label="Connect Your Calendar" onPress={() => void cal.connect()} />
+              )}
+            </View>
+          </>
+        )}
+      </View>
 
       <View style={{ height: NAV_CLEARANCE }} />
     </DetailScreen>
@@ -157,11 +239,13 @@ export function CalendarScreen() {
 
 function Cell({
   mark,
+  visit,
   size,
   selected,
   onPress,
 }: {
   mark: DayMark;
+  visit: boolean;
   size: number;
   selected: boolean;
   onPress: () => void;
@@ -174,7 +258,7 @@ function Cell({
       onPress={onPress}
       disabled={mark.outside}
       accessibilityRole="button"
-      accessibilityLabel={`${mark.day}, ${dayLine(mark)}`}
+      accessibilityLabel={`${mark.day}, ${dayLine(mark)}${visit ? ', a care visit in your calendar' : ''}`}
       style={[s.cell, { width: size, height: size }, selected && s.cellOn]}
     >
       <Text style={[font('subhead'), dim ? s.dim : mark.today ? s.todayText : s.dayText]}>{mark.day}</Text>
@@ -182,8 +266,9 @@ function Cell({
         {mark.period ? <View style={[s.dot, { backgroundColor: HUE.reported }]} /> : null}
         {mark.logged ? <View style={[s.dot, { backgroundColor: HUE.change }]} /> : null}
         {mark.measured ? <View style={[s.dot, { backgroundColor: HUE.measured }]} /> : null}
+        {visit ? <View style={[s.dot, { backgroundColor: HUE.timeDepth }]} /> : null}
         {/* Nothing recorded draws nothing. Not a grey dot meaning fine. */}
-        {!hasMarks(mark) ? <View style={s.dotNone} /> : null}
+        {!hasMarks(mark) && !visit ? <View style={s.dotNone} /> : null}
       </View>
       {mark.today ? <View style={s.todayRing} /> : null}
     </Pressable>
@@ -262,5 +347,11 @@ const s = StyleSheet.create({
   },
   detailDay: { color: L.meta },
   detailLine: { color: L.ink, lineHeight: 24, marginTop: 4 },
+  event: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
+  eventText: { color: L.body, flex: 1 },
+  section: { marginTop: SPACE.section, paddingHorizontal: GUTTER },
+  sectionTitle: { color: L.ink },
+  sectionSub: { color: L.meta, marginTop: 4, lineHeight: 18 },
+  none: { color: L.body, marginTop: 10 },
   pressed: { opacity: 0.55 },
 });
