@@ -7,7 +7,7 @@
 // product going in is a moment, not a sentence to compose and send.
 
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { displayCopy } from '../lib/displayCopy';
 import {
@@ -25,6 +25,10 @@ import {
 } from '../lib/periodProducts';
 import { userFacingError } from '../lib/userFacingError';
 import { useRepo } from '../state/session';
+import { useCycle } from '../state/cycleStore';
+import { keepRemindersInStep } from '../state/notifications';
+import { absorbencyHint, cupIudNote, heavyBleedingFlag, overnightNote } from '../lib/productSafety';
+import { useNav } from '../navigation';
 import { font } from '../theme';
 import { Eyebrow } from './bento';
 import { ChoiceChips } from './cycleInputs';
@@ -35,6 +39,8 @@ const id = () => `p-${Date.now().toString(36)}-${Math.random().toString(36).slic
 
 export function ProductLogger() {
   const repo = useRepo();
+  const nav = useNav();
+  const { profile } = useCycle();
   const [uses, setUses] = useState<ProductUse[]>([]);
   const [product, setProduct] = useState<Product | null>(null);
   const [size, setSize] = useState<string | null>(null);
@@ -70,7 +76,11 @@ export function ProductLogger() {
     setError(null);
     try {
       await write();
-      setUses(local);
+      const next = local(uses);
+      setUses(next);
+      // Reminders follow what is in. Asked for the first time she puts one
+      // in; declined, nothing is scheduled and Today says so.
+      void keepRemindersInStep(openUse(next), true);
       setNow(new Date());
       setTakingOut(false);
       setProduct(null);
@@ -103,9 +113,11 @@ export function ProductLogger() {
       <Eyebrow>Period products</Eyebrow>
 
       {current ? (
-        <View style={p.current} accessible accessibilityLabel={`${productName(current)} in. ${inForLine(current, now)}`}>
-          <Text style={[font('headline'), p.currentName]}>{displayCopy(productName(current))}</Text>
-          <Text style={[font('subhead'), p.meta]}>{inForLine(current, now)}</Text>
+        <View style={p.current}>
+          <View accessible accessibilityLabel={`${productName(current)} in. ${inForLine(current, now)}`}>
+            <Text style={[font('headline'), p.currentName]}>{displayCopy(productName(current))}</Text>
+            <Text style={[font('subhead'), p.meta]}>{inForLine(current, now)}</Text>
+          </View>
           {takingOut ? (
             <>
               <Text style={[font('footnote'), p.meta, { marginTop: SPACE.near }]}>How full was it? You can skip this.</Text>
@@ -150,6 +162,18 @@ export function ProductLogger() {
         </>
       ) : null}
 
+      {/* Safety, only where it applies, each from its source. */}
+      {[heavyBleedingFlag(uses, now), absorbencyHint(uses), overnightNote(current), product ? cupIudNote(product, profile.contraception) : null]
+        .filter((l): l is string => !!l)
+        .map((line) => (
+          <Text key={line} style={[font('footnote'), p.safety]}>
+            {displayCopy(line)}
+          </Text>
+        ))}
+      <Pressable onPress={() => nav.push('productSafety')} accessibilityRole="button" hitSlop={8}>
+        <Text style={[font('footnote', 'semibold'), p.meta]}>Product safety and warning signs</Text>
+      </Pressable>
+
       {error ? <Text style={[font('footnote'), p.error]}>{displayCopy(error)}</Text> : null}
     </View>
   );
@@ -169,4 +193,5 @@ const p = StyleSheet.create({
   meta: { color: L.meta },
   actions: { gap: SPACE.tight, marginTop: SPACE.tight },
   error: { color: L.ink },
+  safety: { color: L.body, lineHeight: 19 },
 });

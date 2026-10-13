@@ -28,6 +28,8 @@ import { bowelDetail, CATEGORIES, category, type CategoryKey } from '../lib/logC
 import { mergeFound, planSave, readingLine, readQuick, runSave } from '../lib/quickLog';
 import { userFacingError } from '../lib/userFacingError';
 import { handPhoto } from '../lib/scanHandoff';
+import { openUse, type ProductUse } from '../lib/periodProducts';
+import { tssWarning } from '../lib/productSafety';
 import * as ImagePicker from 'expo-image-picker';
 import { type Screen, useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
@@ -53,6 +55,13 @@ export function QuickLogScreen() {
   // does not save any part of it twice. An edit makes it a new entry.
   const done = useRef(new Set<string>());
   const [pickNote, setPickNote] = useState<string | null>(null);
+  // What she has in, so warning signs written in any category are checked
+  // against it as she types.
+  const [inNow, setInNow] = useState<ProductUse | null>(null);
+  useEffect(() => {
+    repo.loadProductUses().then((u) => setInNow(openUse(u))).catch(() => {});
+  }, [repo]);
+  const urgent = tssWarning(`${text} ${tapped.join(' ')}`, inNow);
   const pickMeal = async (from: 'camera' | 'library') => {
     setPickNote(null);
     try {
@@ -234,6 +243,15 @@ export function QuickLogScreen() {
           onSend={send}
         />
 
+        {/* Toxic shock warning signs with a tampon, cup or disc in: said at
+            once, before anything else, whatever category she is in. */}
+        {urgent ? (
+          <Pressable onPress={() => nav.push('productSafety')} accessibilityRole="button" style={q.urgent}>
+            <Text style={[font('subhead', 'semibold'), q.urgentText]}>{displayCopy(urgent)}</Text>
+            <Text style={[font('footnote'), q.urgentText]}>Warning signs and what to do</Text>
+          </Pressable>
+        ) : null}
+
         {recognised ? (
           <Text style={[font('footnote'), q.noted]}>
             Will be saved as: {displayCopy(recognised)}
@@ -311,4 +329,14 @@ const q = StyleSheet.create({
   detailText: { color: L.body },
   pressed: { opacity: 0.55 },
   scan: { marginTop: SPACE.block, gap: 4 },
+  urgent: {
+    marginTop: 12,
+    gap: 4,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#EC5D4A',
+    backgroundColor: 'rgba(236, 93, 74, 0.12)',
+  },
+  urgentText: { color: L.ink, lineHeight: 20 },
 });

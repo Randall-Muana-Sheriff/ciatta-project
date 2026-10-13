@@ -25,6 +25,7 @@ import { ProfileScreen } from './screens/ProfileScreen';
 import { AddProcedureScreen } from './screens/AddProcedureScreen';
 import { FoodScanScreen } from './screens/FoodScanScreen';
 import { ProcedureScreen } from './screens/ProcedureScreen';
+import { ProductSafetyScreen } from './screens/ProductSafetyScreen';
 import { NutritionTargetsScreen } from './screens/NutritionTargetsScreen';
 import { QuickLogScreen } from './screens/QuickLogScreen';
 import { SleepScreen } from './screens/SleepScreen';
@@ -78,6 +79,7 @@ const DETAIL_SCREENS: Record<Screen, ComponentType> = {
   foodScan: FoodScanScreen,
   procedure: ProcedureScreen,
   addProcedure: AddProcedureScreen,
+  productSafety: ProductSafetyScreen,
 };
 
 // Four tabs, each with its own stack of detail screens. The tab bar stays

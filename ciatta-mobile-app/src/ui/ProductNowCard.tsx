@@ -7,13 +7,15 @@
 // view, so it never shows a product she has already logged out.
 
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { displayCopy } from '../lib/displayCopy';
 import { changeBy, changeLine, endUse, inForLine, openUse, productName, type ProductUse, startUse } from '../lib/periodProducts';
 import { userFacingError } from '../lib/userFacingError';
 import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
+import { keepRemindersInStep } from '../state/notifications';
+import { heavyBleedingFlag, overnightNote } from '../lib/productSafety';
 import { font } from '../theme';
 import { PrimaryButton, SecondaryButton } from './kit';
 import { L, SPACE, TILE_RADIUS } from './surface';
@@ -28,8 +30,18 @@ export function ProductNowCard() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [remindersOn, setRemindersOn] = useState(true);
+  // Read what she has in, and bring the phone's reminders into step with
+  // it: this is the repair after a reinstall or a missed cancel.
   const load = useCallback(() => {
-    repo.loadProductUses().then(setUses).catch(() => {});
+    repo
+      .loadProductUses()
+      .then((u) => {
+        setUses(u);
+        return keepRemindersInStep(openUse(u));
+      })
+      .then(setRemindersOn)
+      .catch(() => {});
     setNow(new Date());
   }, [repo]);
 
@@ -51,7 +63,9 @@ export function ProductNowCard() {
     setError(null);
     try {
       await write();
-      setUses(local);
+      const next = local(uses);
+      setUses(next);
+      void keepRemindersInStep(openUse(next)).then(setRemindersOn);
       setNow(new Date());
     } catch (e) {
       setError(userFacingError(e, 'That did not save. Try again.'));
@@ -70,15 +84,31 @@ export function ProductNowCard() {
   };
 
   return (
-    <View style={[c.card, over && c.over]} accessible accessibilityLabel={`${productName(current)} in. ${inForLine(current, now)}. ${changeLine(current, now)}`}>
-      <Text style={[font('caption1'), c.eyebrow]}>IN NOW</Text>
-      <Text style={[font('headline'), c.name]}>{displayCopy(productName(current))}</Text>
-      <Text style={[font('subhead'), c.meta]}>{inForLine(current, now)}</Text>
-      <Text style={[font('subhead', 'semibold'), over ? c.overText : c.by]}>{changeLine(current, now)}</Text>
+    <View style={[c.card, over && c.over]}>
+      {/* The facts read as one line; the buttons below stay their own. */}
+      <View accessible accessibilityLabel={`${productName(current)} in. ${inForLine(current, now)}. ${changeLine(current, now)}`}>
+        <Text style={[font('caption1'), c.eyebrow]}>IN NOW</Text>
+        <Text style={[font('headline'), c.name]}>{displayCopy(productName(current))}</Text>
+        <Text style={[font('subhead'), c.meta]}>{inForLine(current, now)}</Text>
+        <Text style={[font('subhead', 'semibold'), over ? c.overText : c.by]}>{changeLine(current, now)}</Text>
+      </View>
+      {!remindersOn ? (
+        <Text style={[font('footnote'), c.meta]}>Reminders are off. You can turn on notifications for Ciatta in Settings.</Text>
+      ) : null}
+      {[overnightNote(current), heavyBleedingFlag(uses, now)]
+        .filter((l): l is string => !!l)
+        .map((l) => (
+          <Text key={l} style={[font('footnote'), c.by]}>
+            {displayCopy(l)}
+          </Text>
+        ))}
       <View style={c.actions}>
         <PrimaryButton label="Changed It" disabled={busy} onPress={changed} />
         <SecondaryButton label="Took It Out" onPress={out} />
       </View>
+      <Pressable onPress={() => nav.push('productSafety')} accessibilityRole="button" hitSlop={8}>
+        <Text style={[font('footnote', 'semibold'), c.meta]}>Safety and warning signs</Text>
+      </Pressable>
       {error ? <Text style={[font('footnote'), c.meta]}>{displayCopy(error)}</Text> : null}
     </View>
   );

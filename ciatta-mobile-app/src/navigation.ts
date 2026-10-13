@@ -33,7 +33,8 @@ export type Screen =
   | 'nutritionTargets'
   | 'foodScan'
   | 'procedure'
-  | 'addProcedure';
+  | 'addProcedure'
+  | 'productSafety';
 
 export type Nav = {
   tab: Tab;
