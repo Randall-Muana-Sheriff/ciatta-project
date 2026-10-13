@@ -12,7 +12,7 @@
 import type { Day } from '../data/daily';
 import { fmtCount, fmtHours } from './engine';
 
-export type PlanKey = 'visit' | 'flow' | 'period' | 'recover' | 'sleep' | 'walk' | 'watch' | 'log';
+export type PlanKey = 'visit' | 'prepare' | 'flow' | 'period' | 'recover' | 'sleep' | 'walk' | 'watch' | 'log';
 export type PlanItem = { key: PlanKey; title: string; why: string };
 
 type Band = { low: number; high: number };
@@ -27,6 +27,11 @@ export type PlanInput = {
   // and a walk it recommended. Passed through so the example and a live
   // record share one plan.
   watchSuggested: boolean;
+  // What the intelligence found worth raising with a clinician (several
+  // areas changing together, or a result outside its range again), by its
+  // title. Preparing for an appointment is offered only then, or when a
+  // visit is on her calendar; it is not a fixture of every day.
+  raise?: string | null;
   walkSuggested: boolean;
   now: Date;
 };
@@ -45,6 +50,14 @@ export function actionPlan(input: PlanInput): PlanItem[] {
 
   if (input.visit) {
     items.push({ key: 'visit', title: `Prepare for ${input.visit.title}`, why: `${input.visit.when}. A brief from your record helps the time go further.` });
+  }
+
+  else if (input.raise) {
+    items.push({
+      key: 'prepare',
+      title: 'Prepare for your next appointment',
+      why: `${input.raise} is worth raising. A brief gathers what your record shows.`,
+    });
   }
 
   const c = input.cycle;

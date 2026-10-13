@@ -70,3 +70,14 @@ test('nothing in the plan tells her to take, start or stop anything', () => {
   });
   for (const i of plan) assert.ok(!/\b(take|start|stop|supplement|medication|diagnos)/i.test(`${i.title} ${i.why}`), i.title);
 });
+
+test('preparing for an appointment only when the intelligence finds something worth raising', () => {
+  assert.equal(actionPlan(base).find((i) => i.key === 'prepare'), undefined, 'not a fixture of every day');
+  const plan = actionPlan({ ...base, raise: 'Pain lasting longer with shorter cycles' });
+  const item = plan.find((i) => i.key === 'prepare')!;
+  assert.equal(item.title, 'Prepare for your next appointment');
+  assert.equal(item.why, 'Pain lasting longer with shorter cycles is worth raising. A brief gathers what your record shows.');
+  // A visit already on her calendar is the better prompt; one, not two.
+  const both = actionPlan({ ...base, raise: 'Pain lasting longer', visit: { title: 'Dr Patel', when: 'Tomorrow, 9 am' } });
+  assert.deepEqual(both.filter((i) => i.key === 'visit' || i.key === 'prepare').map((i) => i.key), ['visit']);
+});

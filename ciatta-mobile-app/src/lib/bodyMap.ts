@@ -54,7 +54,7 @@ export const REGIONS: Region[] = [
 export const REGION_BY_ID = Object.fromEntries(REGIONS.map((r) => [r.id, r])) as Record<RegionId, Region>;
 
 // Where each logged pain location belongs.
-const LOCATION_REGION: Record<string, RegionId> = {
+export const LOCATION_REGION: Record<string, RegionId> = {
   Pelvis: 'pelvis',
   'Lower pelvis': 'pelvis',
   'Left pelvis': 'pelvis',

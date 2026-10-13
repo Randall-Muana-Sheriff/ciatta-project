@@ -19,7 +19,8 @@ import { C, font, GUTTER, M, RADIUS } from '../theme';
 import { Panel } from './chrome';
 import { Icon } from './icons';
 import { images } from './images';
-import { LinkButton, SecondaryButton, Tag } from './kit';
+import { SecondaryButton } from './kit';
+import { systemInsight } from '../lib/systemInsight';
 
 // The body view: the body systems from Profile on the left, a neutral
 // silhouette on the right, and what is recorded for the chosen system in
@@ -41,7 +42,6 @@ const EASE_BODY = Easing.bezier(0.4, 0, 0.2, 1);
 // The four views a turn settles on, by quarter.
 const VIEWS = ['Front', 'Side', 'Back', 'Side'] as const;
 
-const SOURCE_TONE = { Synced: 'measured', 'You reported': 'logged', Lab: 'lab', Pattern: 'orange' } as const;
 
 function useReduceMotion(): boolean {
   const [reduce, setReduce] = useState(false);
@@ -55,10 +55,12 @@ function useReduceMotion(): boolean {
 
 export function BodySystemView({
   reading,
+  signals,
   onOpen,
   onLog,
 }: {
   reading: BodyReading;
+  signals: Parameters<typeof systemInsight>[0]['signals'];
   onOpen: (point: BodyPoint) => void;
   onLog: (system: string) => void;
 }) {
@@ -78,6 +80,10 @@ export function BodySystemView({
       systems[0].label,
   );
   const system = systems.find((s) => s.label === selected) ?? systems[0];
+  const insight = useMemo(
+    () => systemInsight({ regions: system.regions, whole: system.label === WHOLE_BODY, points: system.points, signals, now: new Date() }),
+    [system, signals],
+  );
 
   const breath = useRef(new Animated.Value(0)).current;
   // A breath under the turn: about one percent over five and a half
@@ -236,27 +242,35 @@ export function BodySystemView({
 
       <Panel style={b.detail}>
         <Text style={[font('title3', 'semibold'), { color: C.text }]}>{displayCopy(system.label)}</Text>
+        {/*
+          One sentence of its own, counted from her logs: how often this
+          month, against the last, and when in her cycle. It never repeats
+          Today's insight; the evidence is a tap away on each row below.
+        */}
+        {insight ? <Text style={[font('body'), b.insight]}>{displayCopy(insight)}</Text> : null}
         {system.points.length ? (
-          system.points.map((p, n) => (
-            <View key={`${p.region}-${p.title}`} style={[b.item, n > 0 && b.itemSep]}>
-              <Text style={[font('headline'), { color: C.text }]}>{p.title}</Text>
-              <Text style={[font('footnote'), { color: C.secondary }]}>
-                {p.region === 'systemic' ? 'Whole body' : REGION_BY_ID[p.region].label}
-              </Text>
-              <Text style={[font('body'), { color: C.text, marginTop: 4, lineHeight: 24 }]}>{p.detail}</Text>
-              {/* Synced readings carry no tag: the screen is about her body,
-                  and the device is not news. What she reported, a lab and a
-                  pattern still say so. */}
-              {p.source !== 'Synced' ? (
-                <View style={b.tagRow}>
-                  <Tag label={p.source} tone={SOURCE_TONE[p.source]} />
+          system.points.map((p, n) => {
+            const opens = !!(p.insightId || p.screen);
+            const where = p.region === 'systemic' ? 'Whole body' : REGION_BY_ID[p.region].label;
+            return (
+              <Pressable
+                key={`${p.region}-${p.title}`}
+                disabled={!opens}
+                onPress={() => onOpen(p)}
+                accessibilityRole={opens ? 'button' : undefined}
+                accessibilityLabel={`${p.title}, ${where}${p.source !== 'Synced' ? `, ${p.source}` : ''}`}
+                style={({ pressed }) => [b.item, n > 0 && b.itemSep, pressed && opens && { opacity: 0.6 }]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[font('subhead', 'semibold'), { color: C.text }]}>{displayCopy(p.title)}</Text>
+                  <Text style={[font('footnote'), { color: C.secondary }]}>
+                    {displayCopy(p.source !== 'Synced' ? `${where} · ${p.source}` : where)}
+                  </Text>
                 </View>
-              ) : null}
-              {p.insightId || p.screen ? (
-                <LinkButton label={p.insightId ? 'See the Evidence' : 'Open Details'} onPress={() => onOpen(p)} />
-              ) : null}
-            </View>
-          ))
+                {opens ? <Icon name="chevronRight" size={16} color={C.secondary} /> : null}
+              </Pressable>
+            );
+          })
         ) : (
           <Text style={[font('body'), { color: C.secondary, marginTop: 6 }]}>Nothing recorded for this system yet.</Text>
         )}
@@ -283,7 +297,7 @@ const b = StyleSheet.create({
   viewLabel: { color: C.secondary, textAlign: 'center', marginTop: 8 },
 
   detail: { marginTop: 16 },
-  item: { paddingVertical: 10 },
+  item: { paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  insight: { color: C.text, lineHeight: 24, marginTop: 6, marginBottom: 6 },
   itemSep: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.separator },
-  tagRow: { flexDirection: 'row', marginTop: 10 },
 });

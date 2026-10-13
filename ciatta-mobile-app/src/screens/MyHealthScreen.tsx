@@ -78,7 +78,7 @@ export function MyHealthScreen() {
         <SegmentedControl segments={VIEWS} active={view} onChange={setView} />
 
         {view === 'Body' ? (
-          <BodySystemView reading={body} onOpen={openPoint} onLog={logFor} />
+          <BodySystemView reading={body} signals={signals} onOpen={openPoint} onLog={logFor} />
         ) : (
           <RecordsView onOpen={nav.push} />
         )}

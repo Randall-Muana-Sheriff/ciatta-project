@@ -221,12 +221,13 @@ export function TodayScreen() {
     loggedToday,
     visit: nextVisit ? { title: nextVisit.title, when: visitWhen(nextVisit, now) } : null,
     watchSuggested: brief.lead?.id === 'combined' && watching.nextCycle !== true,
+    raise: ranked.find((i) => i.triage === 'Investigate')?.title ?? null,
     walkSuggested: !!brief.recommendation && !brief.walkPlanned,
     now,
   });
   const { done, toggle } = usePlanDone(now);
   const PLAN_ICON: Record<PlanKey, IconName> = {
-    visit: 'calendarPlus', flow: 'drop', period: 'drop', recover: 'heartPulse', sleep: 'sleep', walk: 'steps', watch: 'target', log: 'plus',
+    visit: 'calendarPlus', prepare: 'stethoscope', flow: 'drop', period: 'drop', recover: 'heartPulse', sleep: 'sleep', walk: 'steps', watch: 'target', log: 'plus',
   };
   const openMetric = (key: MetricKey) => {
     chooseMetric(key);
@@ -235,6 +236,7 @@ export function TodayScreen() {
   const doItem = (item: PlanItem) => {
     switch (item.key) {
       case 'visit':
+      case 'prepare':
         return nav.push('appointment');
       case 'flow':
         return logCycle();
@@ -584,13 +586,6 @@ export function TodayScreen() {
                 chooseLogMode(how);
                 nav.push('quickLog');
               }}
-            />
-            <ListRow
-              light
-              icon="calendarPlus"
-              title="Prepare for an Appointment"
-              sub="Build a brief from your record to take with you."
-              onPress={go('appointment')}
             />
           </View>
         </View>
