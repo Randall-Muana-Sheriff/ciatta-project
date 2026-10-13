@@ -7,10 +7,11 @@
 // a period was: plus, pick a screen, pick chips, next, next, next, review,
 // save. For a thing she wants to log in four seconds, standing up.
 //
-// This inverts it. The box leads. A tab says which part of her record the
-// sentence belongs to, the placeholder shows what a sentence looks like,
-// and send saves it. The questionnaire is still there, behind one link,
-// for the episode worth describing properly.
+// This inverts it. The box leads. A category says what the log is mostly
+// about, the placeholder shows what a sentence looks like, and send saves
+// it. One sentence may name several categories, and planSave below files
+// each part where the record already keeps it. The questionnaire is still
+// there, behind one link, for the episode worth describing properly.
 //
 // What this module does is read that sentence for the vocabulary the rest
 // of the app already uses, so a quick log is a real entry rather than a
@@ -24,45 +25,10 @@
 //   prints what was recognised, so nothing is stored that she did not see
 //   stored. That is why these are reported, never measured.
 
+import type { EntryKind } from '../data/sample';
+import type { Attachment } from './attachments';
+import { BOWEL, category, type CategoryKey } from './logCategories';
 import { readNote } from './readNote';
-
-export type QuickTab = 'cycle' | 'day' | 'note';
-
-// Which part of her record a sentence lands in, the example that shows her
-// what to write, and the full screen for the entry worth more than a line.
-export const QUICK_TABS: {
-  key: QuickTab;
-  label: string;
-  // The placeholder. A real sentence, because "describe your symptoms"
-  // teaches nothing and an example teaches the whole grammar at once.
-  example: string;
-  detail: string;
-  detailLabel: string;
-}[] = [
-  {
-    key: 'cycle',
-    label: 'Cycle',
-    example: 'Period started yesterday, heavy, cramping since the morning',
-    detail: 'cycleLog',
-    detailLabel: 'Describe it step by step',
-  },
-  {
-    key: 'day',
-    label: 'Day',
-    example: 'Porridge and two coffees, bloated after lunch',
-    detail: 'dailyLog',
-    detailLabel: 'Log food, gut, and how it felt',
-  },
-  {
-    key: 'note',
-    label: 'Note',
-    example: 'Foggy all afternoon, slept badly again',
-    detail: 'journal',
-    detailLabel: 'Open your notes',
-  },
-];
-
-export const quickTab = (key: QuickTab) => QUICK_TABS.find((t) => t.key === key) ?? QUICK_TABS[0];
 
 // Cues for the kinds in WHAT_HAPPENED. Every one of these is a word she
 // wrote, mapped to the label the record already uses for it, so a sentence
@@ -74,7 +40,6 @@ const KIND_CUES: [RegExp, string][] = [
   [/\b(period|menstruat\w*|bleeding|bled)\b/i, 'Period'],
   [/\bspott?ing\b/i, 'Spotting'],
   [/\b(pain|painful|cramp\w*|ache|aching|aches|sore|hurts?|hurting)\b/i, 'Pain'],
-  [/\b(nausea|nauseous|headache|migraine|bloat\w*|dizzy|dizziness|fatigue|exhausted|tender|discharge|spotty|moody|irritable|foggy)\b/i, 'Symptoms'],
   [/\b(stool|poop|pooped|bowel|diarrh\w*|constipat\w*)\b/i, 'Bowel movement'],
 ];
 
@@ -120,24 +85,178 @@ export function readDaysAgo(text: string): number {
   return 0;
 }
 
-export type QuickReading = {
-  kinds: string[];
-  context: string[];
-  flow: string | null;
-  daysAgo: number;
-};
+// What a sentence names, by category. Each cue maps a word she wrote to a
+// chip that already exists in that category, so a sentence and a tap make
+// the same entry. Order inside a category is the chip order.
+export type Found = Partial<Record<CategoryKey, string[]>>;
 
-export function readQuick(text: string): QuickReading {
-  return { kinds: readKinds(text), context: readNote(text), flow: readFlow(text), daysAgo: readDaysAgo(text) };
+const CUES: [RegExp, CategoryKey, string][] = [
+  [/\b(period|menstruat\w*|bleeding|bled)\b/i, 'cycle', 'Period'],
+  [/\bspott?ing\b/i, 'cycle', 'Spotting'],
+  [/\bbloat\w*/i, 'nutrition', 'Bloating'],
+  [/\bcramp\w*/i, 'nutrition', 'Cramping'],
+  [/\b(nausea|nauseous|queasy)\b/i, 'nutrition', 'Nausea'],
+  [/\b(reflux|heartburn)\b/i, 'nutrition', 'Reflux'],
+  [/\b(gas|gassy|wind)\b/i, 'nutrition', 'Gas'],
+  [/\bconstipat\w*/i, 'nutrition', 'Constipation'],
+  [/\b(loose|diarrh\w*|runny)\b/i, 'nutrition', 'Loose'],
+  [/\b(stool|poop|pooped|bowel)\b/i, 'nutrition', BOWEL],
+  [/\b(pain|painful|ache|aching|aches|sore|hurts?|hurting)\b/i, 'body', 'Pain'],
+  [/\b(tender breasts?|breast tenderness|sore breasts?)\b/i, 'body', 'Breast tenderness'],
+  [/\bhot flash(es)?\b/i, 'body', 'Hot flashes'],
+  [/\bnight sweats?\b/i, 'body', 'Night sweats'],
+  [/\b(fatigue|fatigued|exhausted|tired)\b/i, 'body', 'Fatigue'],
+  [/\bchills?\b/i, 'body', 'Chills'],
+  [/\b(swollen|swelling|puffy)\b/i, 'body', 'Swelling'],
+  [/\bjoint pain\b/i, 'body', 'Joint pain'],
+  [/\b(fog|foggy|brain fog)\b/i, 'mind', 'Brain fog'],
+  [/\b(forgetful|forgot|memory)\b/i, 'mind', 'Memory lapses'],
+  [/\b(focus|concentrat\w*)\b/i, 'mind', 'Hard to focus'],
+  [/\bheadache\b/i, 'mind', 'Headache'],
+  [/\bmigraine\b/i, 'mind', 'Migraine'],
+  [/\b(dizzy|dizziness|lightheaded)\b/i, 'mind', 'Dizziness'],
+  [/\b(tingl\w*|numb\w*|pins and needles)\b/i, 'mind', 'Tingling or numbness'],
+  [/\b(low mood|sad|down|teary)\b/i, 'mind', 'Low mood'],
+  [/\b(anxious|anxiety|panick?y)\b/i, 'mind', 'Anxiety'],
+  [/\b(irritable|irritated|snappy)\b/i, 'mind', 'Irritability'],
+  [/\bmood swings?\b/i, 'mind', 'Mood swings'],
+  [/\b(acne|breakout|broke out|spots|pimples?)\b/i, 'skin', 'Acne'],
+  [/\boily\b/i, 'skin', 'Oily skin'],
+  [/\bdry skin\b/i, 'skin', 'Dry skin'],
+  [/\b(hair (shedding|loss|falling)|more hair in)\b/i, 'skin', 'Hair shedding'],
+  [/\b(chin hair|facial hair|unwanted hair)\b/i, 'skin', 'Unwanted hair growth'],
+  [/\b(dark patch\w*|pigment\w*)\b/i, 'skin', 'Dark patches'],
+  [/\b(itch\w*)\b/i, 'skin', 'Itching'],
+  [/\bpain with sex\b|\bpainful sex\b/i, 'sexual', 'Pain with sex'],
+  [/\b(low libido|no sex drive|low sex drive)\b/i, 'sexual', 'Low libido'],
+  [/\b(vaginal dryness|dryness down there)\b/i, 'sexual', 'Vaginal dryness'],
+  [/\bdischarge\b/i, 'sexual', 'Discharge change'],
+  [/\b(urgency|pee more|peeing more|need to pee)\b/i, 'sexual', 'Urinary urgency'],
+  [/\b(leak|leaking|leaked)\b/i, 'sexual', 'Leaking'],
+  [/\bburn\w* when (i )?pee\w*/i, 'sexual', 'Burning when peeing'],
+  [/\bbleeding after sex\b/i, 'sexual', 'Bleeding after sex'],
+  [/\b(slept badly|bad sleep|poor sleep|could not sleep|couldn.t sleep)\b/i, 'context', 'Slept badly'],
+  [/\b(slept well|good sleep)\b/i, 'context', 'Slept well'],
+  [/\b(exercised|workout|ran|run|gym|yoga|walked)\b/i, 'context', 'Exercised'],
+  [/\b(stressful|stressed)\b/i, 'context', 'Stressful event'],
+  [/\b(flight|flew|travel\w*|trip)\b/i, 'context', 'Travel'],
+  [/\b(ibuprofen|paracetamol|tylenol|advil|medication|meds|pill)\b/i, 'context', 'Took medication'],
+  [/\b(supplement|vitamin|magnesium|iron)\b/i, 'context', 'Took supplement'],
+  [/\b(sick|ill|a cold|flu|fever)\b/i, 'context', 'Illness'],
+];
+
+export function readCategories(text: string): Found {
+  const found: Found = {};
+  if (!text.trim()) return found;
+  for (const [cue, key, item] of CUES) {
+    if (!cue.test(text)) continue;
+    const list = (found[key] ??= []);
+    if (!list.includes(item)) list.push(item);
+  }
+  // "Pain with sex" is sexual health, not general pain, when that is all
+  // the pain she named.
+  if (found.sexual?.includes('Pain with sex') && found.body?.includes('Pain') && !/\bpain\b(?! with sex)/i.test(text.replace(/pain with sex/gi, ''))) {
+    found.body = found.body.filter((x) => x !== 'Pain');
+    if (!found.body.length) delete found.body;
+  }
+  return found;
 }
 
-// What was recognised, for the line printed under the box. Null when there
-// is nothing to show, so no empty label is drawn, and the sentence still
-// saves: words Ciatta did not recognise are kept verbatim, not dropped.
-export function readingLine(r: QuickReading): string | null {
-  const parts = [...r.kinds, ...r.context.filter((c) => !r.kinds.includes(c))];
-  if (r.flow) parts.push(`${r.flow} flow`);
-  if (r.daysAgo === 1) parts.push('yesterday');
-  else if (r.daysAgo > 1) parts.push(`${r.daysAgo} days ago`);
-  return parts.length ? parts.join(', ') : null;
+export function mergeFound(a: Found, b: Found): Found {
+  const out: Found = {};
+  for (const src of [a, b]) {
+    for (const [key, items] of Object.entries(src) as [CategoryKey, string[]][]) {
+      const list = (out[key] ??= []);
+      for (const item of items) if (!list.includes(item)) list.push(item);
+    }
+  }
+  return out;
+}
+
+export type QuickReading = { kinds: string[]; context: string[]; flow: string | null; daysAgo: number; found: Found };
+
+export function readQuick(text: string): QuickReading {
+  return {
+    kinds: readKinds(text),
+    context: readNote(text),
+    flow: readFlow(text),
+    daysAgo: readDaysAgo(text),
+    found: readCategories(text),
+  };
+}
+
+const ORDER: CategoryKey[] = ['cycle', 'nutrition', 'body', 'mind', 'skin', 'sexual', 'context'];
+
+// What was recognised, grouped as it will be filed. Null when nothing was,
+// so no empty label is drawn; the words still save.
+export function readingLine(found: Found, flow: string | null, daysAgo: number): string | null {
+  const groups: string[] = [];
+  for (const key of ORDER) {
+    const items = [...(found[key] ?? [])];
+    if (key === 'cycle') {
+      if (flow) items.push(`${flow} flow`);
+      if (items.length && daysAgo === 1) items.push('yesterday');
+      else if (items.length && daysAgo > 1) items.push(`${daysAgo} days ago`);
+    }
+    if (items.length) groups.push(`${category(key).label}: ${items.join(', ')}`);
+  }
+  return groups.length ? groups.join(' · ') : null;
+}
+
+// Where each part of one log goes. Storage is what already exists:
+//
+//   Cycle items, Pain and Bowel movement are episodes, because the body
+//   map, cycle patterns and the cycle lens read them there.
+//   Gut flags are the day's digestion list in daily_metrics, which the
+//   engine's food and bloating check already reads.
+//   Everything else is one journal entry carrying its category and items.
+//
+// Her words and files are saved once: on the journal entry when there is
+// one, else on the episode, else on the day.
+export type SavePlan = {
+  episode: { kinds: string[]; flow: string | null; daysAgo: number; context: string[] } | null;
+  daily: { digestion: string[] } | null;
+  journal: { kind: EntryKind; category: CategoryKey; items: Found } | null;
+  wordsGoTo: 'journal' | 'episode' | 'daily';
+};
+
+const JOURNAL_KEYS: CategoryKey[] = ['body', 'mind', 'skin', 'sexual', 'context'];
+
+export function planSave(input: { text: string; selected: CategoryKey; tapped: string[]; files: Attachment[] }): SavePlan | null {
+  const text = input.text.trim();
+  const found = mergeFound(readCategories(text), input.tapped.length ? { [input.selected]: input.tapped } : {});
+  if (!text && !input.files.length && !Object.keys(found).length) return null;
+
+  const kinds = [
+    ...(found.cycle ?? []),
+    ...(found.body?.includes('Pain') ? ['Pain'] : []),
+    ...(found.nutrition?.includes(BOWEL) ? [BOWEL] : []),
+  ];
+  const digestion = (found.nutrition ?? []).filter((x) => x !== BOWEL);
+
+  const items: Found = {};
+  for (const key of JOURNAL_KEYS) {
+    const list = (found[key] ?? []).filter((x) => !(key === 'body' && x === 'Pain'));
+    if (list.length) items[key] = list;
+  }
+  const hasWords = !!text || input.files.length > 0;
+  const wantsJournal =
+    Object.keys(items).length > 0 ||
+    input.selected === 'note' ||
+    (hasWords && !kinds.length && !digestion.length && input.selected !== 'cycle');
+  const wantsEpisode = kinds.length > 0 || (hasWords && input.selected === 'cycle' && !wantsJournal);
+
+  const journalCategory: CategoryKey =
+    (JOURNAL_KEYS as CategoryKey[]).includes(input.selected) || input.selected === 'note'
+      ? input.selected
+      : ((Object.keys(items)[0] as CategoryKey | undefined) ?? input.selected);
+
+  return {
+    episode: wantsEpisode
+      ? { kinds, flow: readFlow(text), daysAgo: readDaysAgo(text), context: readNote(text) }
+      : null,
+    daily: digestion.length ? { digestion } : null,
+    journal: wantsJournal ? { kind: category(journalCategory).journalKind, category: journalCategory, items } : null,
+    wordsGoTo: wantsJournal ? 'journal' : wantsEpisode ? 'episode' : 'daily',
+  };
 }
