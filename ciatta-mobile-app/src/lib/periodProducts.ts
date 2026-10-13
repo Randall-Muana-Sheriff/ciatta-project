@@ -79,3 +79,22 @@ export function productsLine(uses: readonly ProductUse[], periodStart: string, n
   const most = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
   return `This period: ${these.length} ${these.length === 1 ? 'change' : 'changes'}, mostly ${most}`;
 }
+
+// The longest each product should be worn, with where that number comes
+// from. Shown as given by the source, never stretched or softened.
+export const WEAR_LIMIT: Record<Product, { hours: number; source: string }> = {
+  Tampon: { hours: 8, source: 'FDA tampon labeling, 21 CFR 801.430: do not wear a tampon for more than 8 hours' },
+  Cup: { hours: 12, source: 'Manufacturer labeling of FDA cleared menstrual cups: up to 12 hours' },
+  Disc: { hours: 12, source: 'Manufacturer labeling: up to 12 hours' },
+  Pad: { hours: 8, source: 'ACOG patient guidance: change a pad every 4 to 8 hours' },
+  'Period underwear': { hours: 12, source: 'Manufacturer labeling: up to 12 hours' },
+};
+
+export const changeBy = (use: ProductUse): Date =>
+  new Date(new Date(use.startedAt).getTime() + WEAR_LIMIT[use.product].hours * 3600000);
+
+export function changeLine(use: ProductUse, now: Date): string {
+  const by = changeBy(use);
+  if (now >= by) return `Past ${WEAR_LIMIT[use.product].hours} hours. Change it now.`;
+  return `Change by ${by.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+}

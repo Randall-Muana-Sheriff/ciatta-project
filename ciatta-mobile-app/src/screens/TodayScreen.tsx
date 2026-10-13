@@ -27,6 +27,7 @@ import type { IntradayPoint } from '../data/repo';
 import { ground, HUE, L, mark, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow } from '../ui/chrome';
 import { MetricCard, METRIC_CARD_GAP } from '../ui/metricCard';
+import { ProductNowCard } from '../ui/ProductNowCard';
 import type { IconName } from '../ui/icons';
 import { Icon } from '../ui/icons';
 
@@ -391,6 +392,9 @@ export function TodayScreen() {
           what a glance holds, and the other sixteen have to be reachable
           without that being a reason to crowd this card.
         */}
+        {/* The period product she has in, only while one is in. */}
+        <ProductNowCard />
+
         <View style={t.sectionHead}>
           <Eyebrow>Metrics</Eyebrow>
           <Pressable

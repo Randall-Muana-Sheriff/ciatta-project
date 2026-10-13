@@ -73,3 +73,22 @@ test('no products logged means no line at all', async () => {
   const { productsLine } = await import('./periodProducts');
   assert.equal(productsLine([], at(0), new Date(2026, 9, 12, 12)), null);
 });
+
+test('change by: the longest each product should be worn, from its source', async () => {
+  const { changeBy, WEAR_LIMIT } = await import('./periodProducts');
+  assert.equal(WEAR_LIMIT.Tampon.hours, 8);
+  assert.match(WEAR_LIMIT.Tampon.source, /FDA/);
+  assert.equal(WEAR_LIMIT.Cup.hours, 12);
+  const u = openUse(startUse([], { id: 'a', product: 'Tampon', size: 'Super', at: at(8, 40) }))!;
+  const by = changeBy(u);
+  assert.equal(by.getHours(), 16);
+  assert.equal(by.getMinutes(), 40);
+});
+
+test('the change by line, and that it says so plainly once passed', async () => {
+  const { changeLine } = await import('./periodProducts');
+  const u = openUse(startUse([], { id: 'a', product: 'Tampon', size: 'Super', at: at(8, 40) }))!;
+  assert.equal(changeLine(u, new Date(2026, 9, 12, 12)), 'Change by 4:40 PM');
+  assert.equal(changeLine(u, new Date(2026, 9, 12, 17)), 'Past 8 hours. Change it now.');
+  for (const l of [changeLine(u, new Date(2026, 9, 12, 12)), changeLine(u, new Date(2026, 9, 12, 17))]) assert.ok(!/[-–—]/.test(l), l);
+});

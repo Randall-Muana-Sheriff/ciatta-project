@@ -86,6 +86,7 @@ export function Root() {
   const nav = useMemo<Nav>(
     () => ({
       tab,
+      depth: stack.length,
       push: (screen) => setStack((st) => [...st, screen]),
       back: () => setStack((st) => st.slice(0, -1)),
       goTab: (next, then) => {
@@ -93,7 +94,7 @@ export function Root() {
         setStack(then ? [then] : []);
       },
     }),
-    [tab],
+    [tab, stack.length],
   );
 
   useEffect(() => {

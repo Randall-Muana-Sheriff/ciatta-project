@@ -35,6 +35,9 @@ export type Screen =
 
 export type Nav = {
   tab: Tab;
+  // How many detail screens are open over the tab. A tab screen stays
+  // mounted under them, so it reads this to know it is in view again.
+  depth: number;
   push: (screen: Screen) => void;
   back: () => void;
   // Switch tabs, optionally landing on a detail screen inside the new tab.
