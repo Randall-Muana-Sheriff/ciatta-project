@@ -223,7 +223,9 @@ export function BottomNav({
 }) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[s.navWrap, { paddingBottom: Math.max(insets.bottom, 10) }]} pointerEvents="box-none">
+    // Lower, as iOS floats its own tab bar: into the home indicator's
+    // area rather than on top of it, with the indicator still clear below.
+    <View style={[s.navWrap, { paddingBottom: Math.max(insets.bottom - 16, 8) }]} pointerEvents="box-none">
       {/*
         Two cards, not one bar with a fifth seat. Same material, same
         radius, same hairline, so they read as two objects of one kind with

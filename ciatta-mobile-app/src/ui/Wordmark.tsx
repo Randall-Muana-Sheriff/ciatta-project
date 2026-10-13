@@ -30,6 +30,12 @@ import { L } from './surface';
 
 export type WordmarkSize = 'sm' | 'md';
 
+// Where the mark sits, everywhere it shows: its block starts this far below
+// the safe area's top, which is straight under the status bar, as Today
+// sets it. The welcome, sign in and onboarding screens use the same value,
+// so the mark does not jump between screens or sit low on the first one.
+export const MARK_TOP = 0;
+
 // Sizes and tracking from the landing page's own stylesheet, converted from
 // rem at the browser's 16px root. Tracking is in points here rather than em,
 // which is what React Native takes, so it is computed from the size.

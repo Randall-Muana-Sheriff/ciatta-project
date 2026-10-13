@@ -16,7 +16,7 @@ import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
 import { Ground } from '../ui/Ground';
 import { L } from '../ui/surface';
-import { Wordmark } from '../ui/Wordmark';
+import { MARK_TOP, Wordmark } from '../ui/Wordmark';
 
 // The hero loops silently behind all three panes. It is decorative: nothing
 // here is said by the video alone, so a reader that never sees it loses
@@ -301,7 +301,10 @@ export function SignInScreen() {
       accessibilityLabel="Back"
       style={({ pressed }) => [s.back, pressed && s.pressed]}
     >
-      <Text style={[font('body'), { color: C.text }]}>Back</Text>
+      {/* The chevron alone, as on every screen. */}
+      <Svg width={11} height={19} viewBox="0 0 11 19">
+        <Path d="M9.5 1.5 2 9.5l7.5 8" stroke={C.text} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      </Svg>
     </Pressable>
   );
 
@@ -370,7 +373,7 @@ export function SignInScreen() {
         </View>
       ) : null}
 
-      <ScrollView style={s.scroll} contentContainerStyle={[s.body, { paddingTop: insets.top + 24 }]}>
+      <ScrollView style={s.scroll} contentContainerStyle={[s.body, { paddingTop: insets.top + MARK_TOP }]}>
         {pane === 'welcome' ? header : null}
 
         {pane === 'welcome' ? (
@@ -547,8 +550,8 @@ const s = StyleSheet.create({
   top: {},
   // Centred on the mark rather than sitting on its top edge: the control is
   // 44pt tall against a 22pt mark, so it is lifted by half the difference.
-  backAbs: { position: 'absolute', left: 0, top: -11, zIndex: 1 },
-  back: { minHeight: 44, justifyContent: 'center', paddingHorizontal: GUTTER, alignSelf: 'flex-start' },
+  backAbs: { position: 'absolute', left: 0, top: 0, zIndex: 1 },
+  back: { width: 44 + GUTTER, height: 44, justifyContent: 'center', paddingLeft: GUTTER, alignSelf: 'flex-start' },
   logoWrap: { alignItems: 'center', paddingHorizontal: GUTTER },
   pad: { paddingHorizontal: GUTTER },
   // The one white card on the welcome pane. Same height and corner as the

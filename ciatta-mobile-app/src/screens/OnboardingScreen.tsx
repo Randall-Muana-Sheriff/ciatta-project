@@ -29,7 +29,7 @@ import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
 import { Ground } from '../ui/Ground';
 import { L } from '../ui/surface';
-import { Wordmark } from '../ui/Wordmark';
+import { MARK_TOP, Wordmark } from '../ui/Wordmark';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 // The first session: six screens in three phases.
@@ -447,7 +447,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
           <Rect x="0" y="0" width="100%" height="100%" fill="url(#welcomeScrim)" />
         </Svg>
 
-        <View style={[s.welcomeTop, { paddingTop: insets.top + 24 }]}>
+        <View style={[s.welcomeTop, { paddingTop: insets.top + MARK_TOP }]}>
           {/*
             It reads as back and it signs her out, because on this screen
             those are the same move: the screen behind it is the sign in
@@ -461,7 +461,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             accessibilityLabel="Back"
             accessibilityHint="Signs you out and returns to the sign in screen"
             hitSlop={8}
-            style={({ pressed }) => [s.backAbs, { top: insets.top + 24 - 11 }, pressed && s.pressed]}
+            style={({ pressed }) => [s.backAbs, { top: insets.top + MARK_TOP }, pressed && s.pressed]}
           >
             <Svg width={11} height={19} viewBox="0 0 11 19">
               <Path
@@ -527,7 +527,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         Continue left for it to stand beside, and a lone Skip at the foot of
         the page is a button she has to read before she can ignore it.
       */}
-      <View style={[s.header, { paddingTop: insets.top + 24 }]}>
+      <View style={[s.header, { paddingTop: insets.top + MARK_TOP }]}>
         {/*
           Neither control renders while the profile is building. Back would
           walk her out of a save in progress and Skip would abandon it, and

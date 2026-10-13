@@ -40,8 +40,10 @@ export function ChevronToggle({ open }: { open: boolean }) {
 
 // ── Chrome ─────────────────────────────────────────────────────
 
-// Standard navigation bar: a Back button in the accent color and a
-// centred Headline title.
+// Standard navigation bar: a back chevron alone, in the accent color, with
+// a full 44 point target, and a centred Headline title. The chevron says
+// back on its own everywhere in the app; the word beside it was noise. The
+// spoken label still says Back.
 export function ScreenHeader({ title, onBack }: { title: string; onBack: () => void }) {
   return (
     <View style={s.header}>
@@ -55,7 +57,6 @@ export function ScreenHeader({ title, onBack }: { title: string; onBack: () => v
         <Svg width={12} height={20} viewBox="0 0 12 20" fill="none">
           <Path d="M10 2L2 10l8 8" stroke={C.tint} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
-        <Text style={[font('body'), { color: C.tint }]}>Back</Text>
       </Pressable>
       <View style={s.headerTitle} pointerEvents="none">
         <Text style={[font('headline'), { color: C.text }]} numberOfLines={1} accessibilityRole="header">
@@ -355,7 +356,7 @@ export const s = StyleSheet.create({
   pressed: { opacity: 0.55 },
 
   header: { flexDirection: 'row', alignItems: 'center', height: 44, paddingHorizontal: 8 },
-  back: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, paddingHorizontal: 4, zIndex: 1 },
+  back: { width: 44, height: 44, alignItems: 'flex-start', justifyContent: 'center', paddingLeft: 4, zIndex: 1 },
   headerTitle: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
