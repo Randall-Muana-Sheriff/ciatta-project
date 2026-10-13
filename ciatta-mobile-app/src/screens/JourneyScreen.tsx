@@ -40,18 +40,18 @@ import { Row } from '../ui/kit';
 type Lane = 'cycle' | 'pain' | 'flare' | 'sleep' | 'symptoms' | 'medications' | 'records' | 'notes';
 
 const SYMPTOM_ROWS = 4;
-const ROW_H = 18;
+const ROW_H = 26;
 const ROW_TOP = 48;
 
 const LANES: { key: Lane; title: string; sub: string; icon: IconName; color: string; height: number }[] = [
-  { key: 'cycle', title: 'Cycle', sub: 'Periods, days between', icon: 'target', color: C.coral, height: 76 },
-  { key: 'pain', title: 'Pain', sub: 'Worst each day, 0 to 10', icon: 'wave', color: C.coral, height: 48 },
-  { key: 'flare', title: 'Flare ups', sub: 'Start to end', icon: 'flame', color: C.coral, height: 48 },
-  { key: 'sleep', title: 'Sleep', sub: 'Against 7 hours', icon: 'moon', color: C.lavender, height: 104 },
-  { key: 'symptoms', title: 'Symptoms', sub: 'Most logged', icon: 'triangle', color: C.violet, height: ROW_TOP + SYMPTOM_ROWS * ROW_H + 8 },
-  { key: 'medications', title: 'Medications', sub: 'While taken', icon: 'pill', color: C.mint, height: 104 },
-  { key: 'records', title: 'Records', sub: 'Lab draws, by range', icon: 'doc', color: C.green, height: 72 },
-  { key: 'notes', title: 'Notes', sub: 'In your words', icon: 'chat', color: C.indigo, height: 104 },
+  { key: 'cycle', title: 'Cycle', sub: 'Periods, days between', icon: 'target', color: C.coral, height: 96 },
+  { key: 'pain', title: 'Pain', sub: 'Worst each day, 0 to 10', icon: 'wave', color: C.coral, height: 68 },
+  { key: 'flare', title: 'Flare ups', sub: 'Start to end', icon: 'flame', color: C.coral, height: 64 },
+  { key: 'sleep', title: 'Sleep', sub: 'Against 7 hours', icon: 'moon', color: C.lavender, height: 150 },
+  { key: 'symptoms', title: 'Symptoms', sub: 'Most logged', icon: 'triangle', color: C.violet, height: ROW_TOP + SYMPTOM_ROWS * ROW_H + 12 },
+  { key: 'medications', title: 'Medications', sub: 'While taken', icon: 'pill', color: C.mint, height: 124 },
+  { key: 'records', title: 'Records', sub: 'Lab draws, by range', icon: 'doc', color: C.green, height: 88 },
+  { key: 'notes', title: 'Notes', sub: 'In your words', icon: 'chat', color: C.indigo, height: 124 },
 ];
 
 const SIDE = 8;
@@ -98,7 +98,7 @@ function Label({
   children: string | number;
 }) {
   return (
-    <SvgText x={x} y={y} fill={color} opacity={opacity} fontSize={11} fontFamily={fonts.regular} textAnchor="middle">
+    <SvgText x={x} y={y} fill={color} opacity={opacity} fontSize={12} fontFamily={fonts.regular} textAnchor="middle">
       {children}
     </SvgText>
   );
@@ -163,10 +163,10 @@ function LaneMarks({
       const gaps = cycleGaps(windows);
       const next = cycle.find((c) => c.expected);
       const nextAt = next ? stretch(next.at, addDays(next.at, 5)) : null;
-      const top = 34;
+      const top = 44;
       return (
         <G>
-          <Line x1={0} x2={plotW} y1={top + 18} y2={top + 18} stroke={C.text} opacity={0.08} />
+          <Line x1={0} x2={plotW} y1={top + 28} y2={top + 28} stroke={C.text} opacity={0.08} />
           {blocks.map((b, i) => {
             const p = stretch(b.start, b.end);
             if (!p) return null;
@@ -176,20 +176,20 @@ function LaneMarks({
                 x={p[0]}
                 y={top}
                 width={Math.max(3, p[1] - p[0] - 1)}
-                height={18}
-                rx={4}
+                height={28}
+                rx={6}
                 fill={C.coral}
                 opacity={b.flow == null ? 0.5 : 0.35 + b.flow * 0.16}
               />
             );
           })}
           {nextAt ? (
-            <Rect x={nextAt[0]} y={top} width={Math.max(3, nextAt[1] - nextAt[0])} height={18} rx={4} fill="none" stroke={C.gray} strokeDasharray="3 3" />
+            <Rect x={nextAt[0]} y={top} width={Math.max(3, nextAt[1] - nextAt[0])} height={28} rx={6} fill="none" stroke={C.gray} strokeDasharray="3 3" />
           ) : null}
           {gaps.map((g, i) => {
             const cx = x(g.mid);
             return cx == null ? null : (
-              <Label key={`g${i}`} x={cx} y={22} color={g.outside ? C.amber : C.secondary}>
+              <Label key={`g${i}`} x={cx} y={30} color={g.outside ? C.amber : C.secondary}>
                 {`${g.days}d`}
               </Label>
             );
@@ -203,11 +203,11 @@ function LaneMarks({
       const cells = painCells(signals, bin);
       return (
         <G>
-          <Rect x={0} y={12} width={plotW} height={24} rx={4} fill={C.text} opacity={0.04} />
+          <Rect x={0} y={14} width={plotW} height={38} rx={6} fill={C.text} opacity={0.04} />
           {cells.map((c, i) => {
             const p = stretch(c.start, c.end);
             return p ? (
-              <Rect key={i} x={p[0]} y={12} width={Math.max(2, p[1] - p[0] - 1)} height={24} rx={2} fill={C.coral} opacity={severityOpacity(c.severity)} />
+              <Rect key={i} x={p[0]} y={14} width={Math.max(3, p[1] - p[0] - 2)} height={38} rx={4} fill={C.coral} opacity={severityOpacity(c.severity)} />
             ) : null;
           })}
         </G>
@@ -221,11 +221,11 @@ function LaneMarks({
           {flareSpans(signals).map((f, i) => {
             if (f.until) {
               const p = stretch(f.at, f.until);
-              return p ? <Rect key={i} x={p[0]} y={18} width={Math.max(4, p[1] - p[0])} height={12} rx={6} fill={C.coral} /> : null;
+              return p ? <Rect key={i} x={p[0]} y={22} width={Math.max(6, p[1] - p[0])} height={20} rx={10} fill={C.coral} /> : null;
             }
             const cx = x(f.at);
             return cx == null ? null : (
-              <Rect key={i} x={cx - 5} y={19} width={10} height={10} rx={2} fill={C.coral} transform={`rotate(45 ${cx} 24)`} />
+              <Rect key={i} x={cx - 8} y={24} width={16} height={16} rx={3} fill={C.coral} transform={`rotate(45 ${cx} 32)`} />
             );
           })}
         </G>
@@ -248,7 +248,7 @@ function LaneMarks({
           {nights.map((n, i) => {
             const p = stretch(n.start, n.end);
             if (!p) return null;
-            const w = Math.min(10, Math.max(2, (p[1] - p[0]) * 0.6));
+            const w = Math.min(18, Math.max(4, (p[1] - p[0]) * 0.6));
             const cx = (p[0] + p[1]) / 2;
             const a = Math.min(guide, y(n.hours));
             const b = Math.max(guide, y(n.hours));
@@ -274,11 +274,11 @@ function LaneMarks({
         <G>
           {grid.map((row, r) => (
             <G key={row.symptom}>
-              <Rect x={0} y={ROW_TOP + r * ROW_H} width={plotW} height={ROW_H - 4} rx={3} fill={C.text} opacity={0.04} />
+              <Rect x={0} y={ROW_TOP + r * ROW_H} width={plotW} height={ROW_H - 6} rx={4} fill={C.text} opacity={0.04} />
               {row.cells.map((c, i) => {
                 const p = stretch(c.start, c.end);
                 return p ? (
-                  <Rect key={i} x={p[0]} y={ROW_TOP + r * ROW_H} width={Math.max(2, p[1] - p[0] - 1)} height={ROW_H - 4} rx={2} fill={C.violet} opacity={severityOpacity(c.severity)} />
+                  <Rect key={i} x={p[0]} y={ROW_TOP + r * ROW_H} width={Math.max(3, p[1] - p[0] - 2)} height={ROW_H - 6} rx={4} fill={C.violet} opacity={severityOpacity(c.severity)} />
                 ) : null;
               })}
             </G>
@@ -301,12 +301,12 @@ function LaneMarks({
             if (!line && !ongoing) return null;
             return (
               <G key={med.name}>
-                {line ? <Rect x={line[0]} y={med.y - 5} width={Math.max(4, line[1] - line[0])} height={10} rx={5} fill={color} /> : null}
+                {line ? <Rect x={line[0]} y={med.y + 8} width={Math.max(6, line[1] - line[0])} height={16} rx={8} fill={color} /> : null}
                 {ongoing ? (
-                  <Rect x={ongoing[0]} y={med.y - 5} width={Math.max(4, ongoing[1] - ongoing[0])} height={10} rx={5} fill="none" stroke={color} strokeDasharray="3 3" />
+                  <Rect x={ongoing[0]} y={med.y + 8} width={Math.max(6, ongoing[1] - ongoing[0])} height={16} rx={8} fill="none" stroke={color} strokeDasharray="3 3" />
                 ) : null}
                 {labelX != null ? (
-                  <Label x={labelX} y={med.y - 12} color={C.text}>
+                  <Label x={labelX} y={med.y} color={C.text}>
                     {med.name}
                   </Label>
                 ) : null}
@@ -326,11 +326,11 @@ function LaneMarks({
             return (
               <G key={d.at.toISOString()}>
                 {d.outside ? (
-                  <Rect x={cx - 6} y={22} width={12} height={12} rx={2} fill={C.amber} transform={`rotate(45 ${cx} 28)`} />
+                  <Rect x={cx - 9} y={25} width={18} height={18} rx={3} fill={C.amber} transform={`rotate(45 ${cx} 34)`} />
                 ) : (
-                  <Circle cx={cx} cy={28} r={6} fill="none" stroke={C.green} strokeWidth={2} />
+                  <Circle cx={cx} cy={34} r={9} fill="none" stroke={C.green} strokeWidth={2.5} />
                 )}
-                <Label x={cx} y={54} color={d.outside ? C.amber : C.secondary}>
+                <Label x={cx} y={66} color={d.outside ? C.amber : C.secondary}>
                   {d.outside ? `${d.outsideCount} of ${d.count} outside` : 'All in range'}
                 </Label>
               </G>
@@ -349,10 +349,10 @@ function LaneMarks({
             if (cx == null) return null;
             return (
               <G key={n.m} onPress={onNote}>
-                <Line x1={cx} x2={cx} y1={20} y2={40} stroke={C.indigo} strokeWidth={1.5} opacity={0.6} />
-                <Circle cx={cx} cy={16} r={5} fill={C.indigo} />
+                <Line x1={cx} x2={cx} y1={24} y2={50} stroke={C.indigo} strokeWidth={2} opacity={0.6} />
+                <Circle cx={cx} cy={18} r={8} fill={C.indigo} />
                 {n.lines.map((line, k) => (
-                  <Label key={line} x={cx} y={56 + k * 15} color={C.secondary}>
+                  <Label key={line} x={cx} y={68 + k * 16} color={C.secondary}>
                     {`${k === 0 ? '\u201C' : ''}${line}${k === n.lines.length - 1 ? '\u201D' : ''}`}
                   </Label>
                 ))}
@@ -437,7 +437,7 @@ export function JourneyScreen() {
   // screen happens to have. Twenty four hours squeezed into 230 points is
   // a chart nobody can read, so a slot has a floor and the whole thing
   // scrolls sideways when the sum is wider than the phone.
-  const SLOT_MIN: Record<Scale, number> = { day: 46, week: 62, month: 40, year: 74 };
+  const SLOT_MIN: Record<Scale, number> = { day: 64, week: 92, month: 56, year: 110 };
   const visibleW = width - SIDE * 2 - LABEL_W;
   const plotW = Math.max(visibleW, axis.slots * SLOT_MIN[scale]);
 
