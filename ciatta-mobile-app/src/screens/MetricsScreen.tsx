@@ -28,11 +28,20 @@ import { useData, useRepo } from '../state/session';
 import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { Icon } from '../ui/icons';
-import { DetailScreen } from '../ui/kit';
+import { DetailScreen, SegmentedControl } from '../ui/kit';
+import { HealthDashboard } from '../ui/HealthDashboard';
+import { useCycle, useCycleInsights } from '../state/cycleStore';
+import { useInsights } from '../state/insights';
 import { HUE, L, SPACE, TILE_RADIUS } from '../ui/surface';
+
+const VIEWS = ['Dashboard', 'List'] as const;
 
 export function MetricsScreen() {
   const nav = useNav();
+  const [view, setView] = useState<(typeof VIEWS)[number]>('Dashboard');
+  const { setFocus } = useCycle();
+  const { movement } = useInsights();
+  const { signals, summaries, lens } = useCycleInsights();
   const { days } = useData();
   const repo = useRepo();
 
@@ -68,7 +77,29 @@ export function MetricsScreen() {
   const counts = useMemo(() => recordedCount(groups), [groups]);
 
   return (
-    <DetailScreen title="Today's metrics" onBack={nav.back}>
+    <DetailScreen title="All" onBack={nav.back}>
+      {/* Two ways to read everything: the dashboard of charts, by default,
+          or today's figures as a list. */}
+      <View style={s.switch}>
+        <SegmentedControl segments={VIEWS} active={view} onChange={setView} />
+      </View>
+      {view === 'Dashboard' ? (
+        <View style={s.dashboard}>
+          <HealthDashboard
+            days={days}
+            movement={movement}
+            summaries={summaries}
+            signals={signals}
+            lens={lens}
+            open={nav.push}
+            openInsight={(id) => {
+              setFocus(id);
+              nav.push('evidence');
+            }}
+          />
+        </View>
+      ) : (
+      <>
       <Text style={[font('body'), s.lede]}>{displayCopy(recordedLine(counts))}</Text>
       <Text style={[font('caption1'), s.note]}>
         A figure that is not here was not recorded. Ciatta leaves it blank rather than filling it with a zero.
@@ -102,6 +133,8 @@ export function MetricsScreen() {
           </View>
         </View>
       ))}
+      </>
+      )}
     </DetailScreen>
   );
 }
@@ -143,6 +176,8 @@ const st = StyleSheet.hairlineWidth;
 
 const s = StyleSheet.create({
   lede: { color: L.ink, lineHeight: 24, paddingHorizontal: GUTTER },
+  switch: { marginBottom: SPACE.near },
+  dashboard: {},
   note: { color: L.meta, lineHeight: 18, marginTop: 6, paddingHorizontal: GUTTER },
   group: { marginTop: SPACE.block, paddingHorizontal: GUTTER },
   card: {

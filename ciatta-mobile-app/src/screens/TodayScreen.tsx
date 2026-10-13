@@ -411,7 +411,7 @@ export function TodayScreen() {
           <Pressable
             onPress={go('metrics')}
             accessibilityRole="button"
-            accessibilityLabel="All of today's metrics"
+            accessibilityLabel="All your metrics, as a dashboard or a list"
             hitSlop={8}
             style={({ pressed }) => [t.all, pressed && t.pressed]}
           >

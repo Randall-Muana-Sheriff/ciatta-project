@@ -14,13 +14,14 @@ import { C, font, GUTTER } from '../theme';
 import { NAV_CLEARANCE } from '../ui/surface';
 import { BodySystemView } from '../ui/BodySystemView';
 import { LargeTitle } from '../ui/chrome';
-import { HealthDashboard } from '../ui/HealthDashboard';
 import { RecordsView } from '../ui/RecordsView';
 import { SegmentedControl } from '../ui/kit';
 
-const VIEWS = ['Dashboard', 'Body', 'Records'] as const;
+// The dashboard of every chart lives behind All on Today now; Health is
+// her body and her records.
+const VIEWS = ['Body', 'Records'] as const;
 
-// Health: every metric as a dashboard, or located on the body.
+// Health: her body, system by system, and her records.
 export function MyHealthScreen() {
   const nav = useNav();
   const { setFocus } = useCycle();
@@ -28,7 +29,7 @@ export function MyHealthScreen() {
   const { signals, summaries, lens } = useCycleInsights();
   const { days } = useData();
   const labs = useLabs();
-  const [view, setView] = useState<(typeof VIEWS)[number]>('Dashboard');
+  const [view, setView] = useState<(typeof VIEWS)[number]>('Body');
   const repo = useRepo();
   // What she logged on the Log screen, placed under the systems it is
   // about. Read again whenever Body is back in view, so a log she just
@@ -76,17 +77,7 @@ export function MyHealthScreen() {
         <Text style={[font('subhead'), { color: C.secondary, marginBottom: 16 }]}>Everything about your health, in one place.</Text>
         <SegmentedControl segments={VIEWS} active={view} onChange={setView} />
 
-        {view === 'Dashboard' ? (
-          <HealthDashboard
-            days={days}
-            movement={movement}
-            summaries={summaries}
-            signals={signals}
-            lens={lens}
-            open={nav.push}
-            openInsight={openInsight}
-          />
-        ) : view === 'Body' ? (
+        {view === 'Body' ? (
           <BodySystemView reading={body} onOpen={openPoint} onLog={logFor} />
         ) : (
           <RecordsView onOpen={nav.push} />
