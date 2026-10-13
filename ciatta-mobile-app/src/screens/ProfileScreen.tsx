@@ -372,37 +372,17 @@ function WeatherRow() {
   );
 }
 
-// ── Settings: sources, notifications, privacy, account ────────
+// ── Overview: what feeds her record ──────────────────────────────
 
-const KIND_LABEL: Record<SourceKind, string> = { measured: 'Measured', lab: 'Lab', logged: 'You logged' };
-
-// Where each source's link goes. Devices have no screen of their own yet.
-const SOURCE_LINK: Partial<Record<SourceKind, { label: string; screen: Screen }>> = {
-  lab: { label: 'See health records', screen: 'healthrecords' },
-  logged: { label: 'See your notes', screen: 'journal' },
-};
-
-function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
+// Where her record comes from and what she has set for it: her devices,
+// her providers, the weather around her and her goals. On the Overview,
+// because these are what make the rest of Profile fill in.
+function Connections({ onOpen }: { onOpen: (screen: Screen) => void }) {
   const [open, setOpen] = useState<string | null>(null);
-  const [newFindings, setNewFindingsState] = useState(true);
-  const settingsRepo = useRepo();
-  useEffect(() => {
-    settingsRepo.loadNotifyFindings().then(setNewFindingsState).catch(() => {});
-  }, [settingsRepo]);
-  // Saved to her profile, which the server reads before sending a push.
-  // Turning it on asks for notifications if she has not been asked yet.
-  const setNewFindings = (on: boolean) => {
-    setNewFindingsState(on);
-    void settingsRepo.saveNotifyFindings(on).catch(() => setNewFindingsState(!on));
-    if (on) void registerForFindings(settingsRepo, true);
-  };
-  const [appointments, setAppointments] = useState(false);
   const [list, setList] = useState<SourceView[]>([]);
   const [sourceNote, setSourceNote] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
-  const [dataFooter, setDataFooter] = useState<string | null>(null);
-  const [accountNote, setAccountNote] = useState<string | null>(null);
-  const { mode, userId, signOut } = useSession();
+  const { mode, userId } = useSession();
   const repo = useRepo();
 
   useEffect(() => {
@@ -418,16 +398,6 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
   const refreshSources = () => {
     repo.loadSources().then(setList).catch(() => {});
   };
-
-  const toggle = (value: boolean, onChange: (v: boolean) => void, label: string) => (
-    <Switch
-      value={value}
-      onValueChange={onChange}
-      trackColor={{ false: C.fill, true: C.green }}
-      ios_backgroundColor={C.fill}
-      accessibilityLabel={label}
-    />
-  );
 
   // Real mode walks availability, then permission, then a recovery sync,
   // writing the Apple Health source's status at each step so it always
@@ -455,36 +425,6 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
     } finally {
       setConnecting(false);
     }
-  };
-
-  const onDownload = () => {
-    if (mode === 'demo') {
-      setDataFooter('The example person has no data to download.');
-      return;
-    }
-    if (!userId) return;
-    exportAndShare(userId).catch((e) => setDataFooter(userFacingError(e, 'Your data did not download. Try again.')));
-  };
-
-  const onDelete = () => {
-    if (!userId) return;
-    Alert.alert('Delete your account?', 'Your record, notes, sources and files are deleted for good. This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () =>
-          deleteAccount(userId)
-            .then((keptOnThisPhone) => {
-              // Her account is gone either way; only say the phone is clean
-              // when it is.
-              if (keptOnThisPhone.length) {
-                setAccountNote(displayCopy('Your account is deleted. Some of what was saved on this phone could not be removed.'));
-              }
-            })
-            .catch((e) => setAccountNote(userFacingError(e, 'Your account was not deleted. Try again.'))),
-      },
-    ]);
   };
 
   return (
@@ -537,6 +477,80 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
         <ListRow first icon="leaf" tint={TONE.mint} title="Nutrition Targets" sub="Calories, protein, carbs, fat" onPress={() => onOpen('nutritionTargets')} />
       </ListGroup>
 
+    </View>
+  );
+}
+
+// ── Settings: sources, notifications, privacy, account ────────
+
+const KIND_LABEL: Record<SourceKind, string> = { measured: 'Measured', lab: 'Lab', logged: 'You logged' };
+
+// Where each source's link goes. Devices have no screen of their own yet.
+const SOURCE_LINK: Partial<Record<SourceKind, { label: string; screen: Screen }>> = {
+  lab: { label: 'See health records', screen: 'healthrecords' },
+  logged: { label: 'See your notes', screen: 'journal' },
+};
+
+function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
+  const [newFindings, setNewFindingsState] = useState(true);
+  const settingsRepo = useRepo();
+  useEffect(() => {
+    settingsRepo.loadNotifyFindings().then(setNewFindingsState).catch(() => {});
+  }, [settingsRepo]);
+  // Saved to her profile, which the server reads before sending a push.
+  // Turning it on asks for notifications if she has not been asked yet.
+  const setNewFindings = (on: boolean) => {
+    setNewFindingsState(on);
+    void settingsRepo.saveNotifyFindings(on).catch(() => setNewFindingsState(!on));
+    if (on) void registerForFindings(settingsRepo, true);
+  };
+  const [appointments, setAppointments] = useState(false);
+  const [dataFooter, setDataFooter] = useState<string | null>(null);
+  const [accountNote, setAccountNote] = useState<string | null>(null);
+  const { mode, userId, signOut } = useSession();
+
+  const toggle = (value: boolean, onChange: (v: boolean) => void, label: string) => (
+    <Switch
+      value={value}
+      onValueChange={onChange}
+      trackColor={{ false: C.fill, true: C.green }}
+      ios_backgroundColor={C.fill}
+      accessibilityLabel={label}
+    />
+  );
+
+  const onDownload = () => {
+    if (mode === 'demo') {
+      setDataFooter('The example person has no data to download.');
+      return;
+    }
+    if (!userId) return;
+    exportAndShare(userId).catch((e) => setDataFooter(userFacingError(e, 'Your data did not download. Try again.')));
+  };
+
+  const onDelete = () => {
+    if (!userId) return;
+    Alert.alert('Delete your account?', 'Your record, notes, sources and files are deleted for good. This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () =>
+          deleteAccount(userId)
+            .then((keptOnThisPhone) => {
+              // Her account is gone either way; only say the phone is clean
+              // when it is.
+              if (keptOnThisPhone.length) {
+                setAccountNote(displayCopy('Your account is deleted. Some of what was saved on this phone could not be removed.'));
+              }
+            })
+            .catch((e) => setAccountNote(userFacingError(e, 'Your account was not deleted. Try again.'))),
+      },
+    ]);
+  };
+
+  return (
+    <View style={p.stack}>
       <ListGroup header="Notifications" footer="No nudges to log, and no reminders to take anything.">
         <ListRow
           first
@@ -688,6 +702,7 @@ export function ProfileScreen() {
           <>
             <HealthOverview />
             <CycleGroup onOpen={nav.push} />
+            <Connections onOpen={nav.push} />
             <View style={p.overviewCard}>
               <Text style={[font('body'), p.overviewText]}>{displayCopy(overview)}</Text>
             </View>
@@ -719,6 +734,7 @@ export function ProfileScreen() {
             */}
             <HealthOverview />
             <StatTiles cols={cols} profile={profile} />
+            <Connections onOpen={nav.push} />
             <View style={p.overviewCard}>
               <Text style={[font('body'), p.overviewText]}>{displayCopy(overview)}</Text>
             </View>
