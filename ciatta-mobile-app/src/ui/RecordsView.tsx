@@ -99,7 +99,7 @@ export function RecordsView({ onOpen }: { onOpen: (screen: Screen) => void }) {
           image, a PDF or a video, through the same box every log uses. */}
       <View style={{ marginTop: 8 }}>
         <PrimaryButton label="Add to Your Records" onPress={() => onOpen('addRecord')} />
-        <Text style={[font('caption1'), hr.addHint]}>Voice, camera, image or PDF</Text>
+        <Text style={[font('caption1'), hr.addHint]}>Voice, camera, image, PDF or a procedure</Text>
       </View>
 
       {added.length ? (
@@ -169,44 +169,42 @@ export function RecordsView({ onOpen }: { onOpen: (screen: Screen) => void }) {
         </View>
       )}
 
-      {/* Procedures, each opening what her record did either side of it. */}
-      <ListGroup header="Procedures" footer="Tap one to see six weeks before and after, from your own record." style={hr.section}>
-        {procedures.dated.map((p, n) => (
-          <ListRow
-            key={p.id}
-            first={n === 0}
-            icon="doc"
-            title={p.name}
-            sub={`${shown(p.date)} · ${p.source}`}
-            onPress={() => {
-              chooseProcedure(p);
-              onOpen('procedure');
-            }}
-          />
-        ))}
-        {procedures.undated.map((name, n) => (
-          <ListRow
-            key={`u-${name}`}
-            first={procedures.dated.length === 0 && n === 0}
-            title={name}
-            sub="Add the date to see before and after"
-            onPress={() => {
-              prefillProcedure(name);
-              onOpen('addProcedure');
-            }}
-          />
-        ))}
-        <ListRow
-          first={!procedures.dated.length && !procedures.undated.length}
-          icon="plus"
-          title="Add a Procedure"
-          onPress={() => onOpen('addProcedure')}
-        />
-      </ListGroup>
+      {/* Procedures, each opening what her record did either side of it.
+          Adding one lives behind Add to Your Records. */}
+      {procedures.dated.length || procedures.undated.length ? (
+        <ListGroup header="Procedures" footer="Tap one to see six weeks before and after, from your own record." style={hr.section}>
+          {procedures.dated.map((p, n) => (
+            <ListRow
+              key={p.id}
+              first={n === 0}
+              icon="doc"
+              title={p.name}
+              sub={`${shown(p.date)} · ${p.source}`}
+              onPress={() => {
+                chooseProcedure(p);
+                onOpen('procedure');
+              }}
+            />
+          ))}
+          {procedures.undated.map((name, n) => (
+            <ListRow
+              key={`u-${name}`}
+              first={procedures.dated.length === 0 && n === 0}
+              title={name}
+              sub="Add the date to see before and after"
+              onPress={() => {
+                prefillProcedure(name);
+                onOpen('addProcedure');
+              }}
+            />
+          ))}
+        </ListGroup>
+      ) : null}
 
-      <ListGroup header="From your providers" footer="Results and notes your hospital sent, in their words." style={hr.section}>
-        <ListRow first icon="doc" title="Provider records" sub="Results, conditions and medications" onPress={() => onOpen('chart')} />
-      </ListGroup>
+      {/* What her hospital sends arrives once she connects it. */}
+      <View style={hr.section}>
+        <SecondaryButton label="Connect a Provider" onPress={() => onOpen('providerConnect')} />
+      </View>
     </View>
   );
 }

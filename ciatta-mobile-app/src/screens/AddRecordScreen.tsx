@@ -16,6 +16,7 @@ import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
 import { font } from '../theme';
 import { Composer } from '../ui/composer';
+import { ListGroup, ListRow } from '../ui/chrome';
 import { DetailScreen, PrimaryButton } from '../ui/kit';
 import { L, SPACE } from '../ui/surface';
 
@@ -59,6 +60,11 @@ export function AddRecordScreen() {
         <PrimaryButton label={saving ? 'Saving' : 'Save'} disabled={!ready || saving} onPress={() => void save()} />
       </View>
       <Text style={[font('footnote'), a.note]}>Files stay on this phone. Ciatta does not read inside them.</Text>
+
+      {/* A procedure needs its date, so it has its own short form. */}
+      <ListGroup header="Or" style={{ marginTop: SPACE.block }}>
+        <ListRow first icon="plus" title="Add a Procedure" sub="A surgery or procedure, with its date" onPress={() => nav.push('addProcedure')} />
+      </ListGroup>
       {error ? <Text style={[font('footnote'), a.note]}>{displayCopy(error)}</Text> : null}
     </DetailScreen>
   );
