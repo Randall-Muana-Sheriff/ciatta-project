@@ -102,11 +102,9 @@ const DAY_FIELDS = [
   // energy, mood, stress, caffeine, alcohol, foods, digestion and note are
   // deliberately absent for the same reason: they are the columns she fills
   // in herself (20260916100100_daily_metrics_read_only.sql names exactly
-  // this set). A device sync has no measurement of any of them, and a row
-  // written here takes the table's default MEASURED provenance, so
+  // this set). A device sync has no measurement of any of them, so
   // accepting them would store something she said as something a sensor
-  // read. When self reported check ins are built they get their own write
-  // path, stamping REPORTED, rather than arriving on this endpoint.
+  // read. She writes them through save_daily_log instead.
 ] as const;
 
 // Builds the row to upsert for one day: `day` plus only the keys the

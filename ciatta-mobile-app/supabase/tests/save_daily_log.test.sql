@@ -29,7 +29,7 @@ select public.save_daily_log('2026-10-12', p_note => 'second');
 select is((select note from public.daily_metrics where day = '2026-10-12'), E'first\nsecond', 'notes append');
 
 select lives_ok($$ select public.save_daily_log('2026-10-13', p_mood => 4::smallint) $$, 'a day with no device row is created');
-select is((select provenance::text from public.daily_metrics where day = '2026-10-13'), 'REPORTED', 'and is marked as hers');
+select is((select mood from public.daily_metrics where day = '2026-10-13'), 4::smallint, 'and holds what she logged');
 
 -- Order is kept: her earlier flags first, then the new ones in the order
 -- she gave them, each once.

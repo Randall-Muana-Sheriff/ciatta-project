@@ -195,8 +195,7 @@ async function runJob(admin: any, job: JobRow): Promise<{ metrics: string[] }> {
     // the recomputed value is identical to what is already stored, which
     // this table's insert-or-update trigger would then see as a change.
     // The RPC's ON CONFLICT ... WHERE clause makes an unchanged value a
-    // true no op (no row version written), and only stamps DERIVED
-    // provenance on a row it creates fresh, leaving a day that already
+    // true no op (no row version written), leaving a day that already
     // has real measurements exactly as it found it.
     const { error: tempWriteError } = await admin.rpc('write_temp_deviations', {
       p_user_id: job.user_id,

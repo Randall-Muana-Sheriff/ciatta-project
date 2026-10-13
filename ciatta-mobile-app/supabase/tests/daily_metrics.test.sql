@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(32);
+select plan(33);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -115,15 +115,16 @@ select lives_ok($$
   delete from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-18'
 $$, 'service_role can delete a daily metrics row');
 
--- Review fix 4: write_temp_deviations() is what the baselines function
--- calls to write this column. A row created solely to hold a derived
--- deviation should not claim MEASURED provenance; a row that already has
--- real measurements keeps whatever provenance it already has.
+-- write_temp_deviations() is what the baselines function calls to write
+-- this column. A day's row mixes device readings, her own answers and
+-- derived figures, so it carries no single provenance label: each reading's
+-- label lives on its observation (20261013180000).
+select hasnt_column('public', 'daily_metrics', 'provenance', 'a day row carries no single provenance label');
 select lives_ok($$
   select public.write_temp_deviations('00000000-0000-0000-0000-00000000000a', '[{"day":"2026-09-20","value":0.4}]'::jsonb)
 $$, 'write_temp_deviations creates a brand new row for a day with no other data');
-select is((select provenance::text from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-20'),
-  'DERIVED', 'a row created solely to hold a deviation is stamped DERIVED');
+select is((select temp_deviation from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-20'), 0.4,
+  'a row created solely to hold a deviation holds it');
 
 select lives_ok($$
   insert into public.daily_metrics (user_id, day, sleep_hours) values ('00000000-0000-0000-0000-00000000000a', '2026-09-21', 7)
@@ -131,8 +132,8 @@ $$, 'service_role logs a measured day for A');
 select lives_ok($$
   select public.write_temp_deviations('00000000-0000-0000-0000-00000000000a', '[{"day":"2026-09-21","value":0.2}]'::jsonb)
 $$, 'write_temp_deviations writes onto the same row a measured day already has');
-select is((select provenance::text from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-21'),
-  'MEASURED', 'a row with real measurements keeps its own provenance, not DERIVED');
+select is((select sleep_hours from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-21'), 7::numeric,
+  'a row with real measurements keeps them');
 select is((select temp_deviation from public.daily_metrics where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-09-21'), 0.2,
   'the deviation is written onto the existing row');
 

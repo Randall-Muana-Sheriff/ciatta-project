@@ -37,7 +37,7 @@ import { VITAL_METRICS } from '../lib/vitals';
 
 // Every daily_metrics column daysFromRows/rowToDay actually reads. Named
 // explicitly, like every other realRepo method, rather than select('*'),
-// which would also pull id, user_id, source_id, provenance, metadata,
+// which would also pull id, user_id, source_id, metadata,
 // occurred_at, created_at and updated_at: real columns, just not ones this
 // projection has any use for.
 const DAILY_COLUMNS =
