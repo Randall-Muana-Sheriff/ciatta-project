@@ -10,15 +10,18 @@
 import type { Day } from '../data/daily';
 import { dayNote } from './allMetrics';
 import { fmtCount, fmtHours } from './engine';
+import { hourLabel } from './timeAxis';
 
 export type MetricKey = 'sleep' | 'hrv' | 'rhr' | 'steps' | 'bp' | 'temp' | 'spo2';
-export type Range = 'week' | 'month' | '3m' | '6m';
+// The same four scales Journey reads by, day first: a day hour by hour,
+// a week and a month a day at a time, a year a month at a time.
+export type Range = 'day' | 'week' | 'month' | 'year';
 
 export const RANGES: { key: Range; label: string; days: number }[] = [
+  { key: 'day', label: 'Day', days: 1 },
   { key: 'week', label: 'Week', days: 7 },
   { key: 'month', label: 'Month', days: 30 },
-  { key: '3m', label: '3 Months', days: 91 },
-  { key: '6m', label: '6 Months', days: 182 },
+  { key: 'year', label: 'Year', days: 365 },
 ];
 
 export const METRIC_TITLE: Record<MetricKey, string> = {
@@ -44,10 +47,14 @@ export type Usual = { median: number; low: number; high: number; low2?: number; 
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+// A point's label: an hour ('2026-10-14T15'), a day, or a month ('2026-10').
 export const shortDay = (day: string) => {
+  if (day.includes('T')) return hourLabel(Number(day.slice(11, 13)));
   const [, m, d] = day.split('-').map(Number);
-  return m && d ? `${d} ${MONTHS[m - 1]}` : day;
+  if (m && d) return `${d} ${MONTHS[m - 1]}`;
+  return m ? MONTHS[m - 1] : day;
 };
+const pointUnit = (day: string) => (day.includes('T') ? 'hour' : day.length === 7 ? 'month' : 'day');
 const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 const has = (p: Point): p is Point & { value: number } => p.value != null;
 
@@ -90,20 +97,59 @@ export function seriesForDays(key: MetricKey, days: readonly Day[], vitals: read
   return keys.map((day) => ({ day, value: o2.get(day)?.avg ?? null, low: o2.get(day)?.min ?? null }));
 }
 
-// A week or a month a day at a time; three or six months as weekly
-// averages from the oldest day, so a bar is wide enough to read.
+// A week or a month a day at a time; a year as monthly averages, oldest
+// first, as Journey's year is twelve months.
 export function bucketize(points: readonly Point[], range: Range): Point[] {
-  if (range === 'week' || range === 'month') return points.map((p) => ({ ...p }));
-  const out: Point[] = [];
-  for (let i = 0; i < points.length; i += 7) {
-    const week = points.slice(i, i + 7);
-    const values = week.filter(has).map((p) => p.value);
-    const lows = week.map((p) => p.low).filter((v): v is number => v != null);
-    const bucket: Point = { day: week[0].day, value: values.length ? avg(values) : null };
-    if (week.some((p) => 'low' in p)) bucket.low = lows.length ? avg(lows) : null;
-    out.push(bucket);
+  if (range !== 'year') return points.map((p) => ({ ...p }));
+  const months = new Map<string, Point[]>();
+  for (const p of points) months.set(p.day.slice(0, 7), [...(months.get(p.day.slice(0, 7)) ?? []), p]);
+  return [...months].map(([month, group]) => {
+    const values = group.filter(has).map((p) => p.value);
+    const lows = group.map((p) => p.low).filter((v): v is number => v != null);
+    const bucket: Point = { day: month, value: values.length ? avg(values) : null };
+    if (group.some((p) => 'low' in p)) bucket.low = lows.length ? avg(lows) : null;
+    return bucket;
+  });
+}
+
+// The observations each metric's day is drawn from.
+export const INTRADAY: Record<MetricKey, string[]> = {
+  sleep: [],
+  temp: [],
+  hrv: ['hrv'],
+  rhr: ['resting_heart_rate'],
+  steps: ['steps'],
+  spo2: ['oxygen_saturation'],
+  bp: ['blood_pressure_systolic', 'blood_pressure_diastolic'],
+};
+
+export type Reading = { metric: string; value: number | null; at: string };
+
+// Today, hour by hour, from the readings that arrived today. Steps add up
+// within an hour; the rest average. Sleep is a night and skin temperature
+// one reading a night, so neither has hours: the screen says so instead.
+export function hourly(key: MetricKey, readings: readonly Reading[], now: Date): Point[] {
+  const names = INTRADAY[key];
+  if (!names.length) return [];
+  const today = iso(now);
+  const hours = Array.from({ length: 24 }, () => new Map<string, number[]>());
+  for (const r of readings) {
+    if (r.value == null || !names.includes(r.metric)) continue;
+    const at = new Date(r.at);
+    if (iso(at) !== today) continue;
+    const slot = hours[at.getHours()];
+    slot.set(r.metric, [...(slot.get(r.metric) ?? []), r.value]);
   }
-  return out;
+  return hours.map((slot, h) => {
+    const day = `${today}T${String(h).padStart(2, '0')}`;
+    const vals = slot.get(names[0]) ?? [];
+    const value = !vals.length ? null : key === 'steps' ? vals.reduce((a, b) => a + b, 0) : avg(vals);
+    if (key === 'bp') {
+      const dia = slot.get(names[1]) ?? [];
+      return { day, value, low: dia.length ? avg(dia) : null };
+    }
+    return { day, value: value != null && key === 'spo2' && value <= 1 ? value * 100 : value };
+  });
 }
 
 // A figure in the metric's own words.
@@ -130,8 +176,20 @@ export function fmt(key: MetricKey, v: number, low?: number | null): string {
 
 export function summary(key: MetricKey, points: readonly Point[]): Row[] {
   const got = points.filter(has);
-  const recorded = { label: 'Days recorded', value: `${got.length} of ${points.length}` };
+  const unit = points.length ? pointUnit(points[0].day) : 'day';
+  const recorded = {
+    label: unit === 'hour' ? 'Hours with a reading' : unit === 'month' ? 'Months recorded' : 'Days recorded',
+    value: `${got.length} of ${points.length}`,
+  };
   if (!got.length) return [recorded];
+  if (unit === 'hour' && key === 'steps') {
+    const busiest = got.reduce((a, b) => (b.value > a.value ? b : a));
+    return [
+      { label: 'Total so far', value: fmt(key, got.reduce((a, p) => a + p.value, 0)) },
+      { label: 'Busiest hour', value: fmt(key, busiest.value), note: shortDay(busiest.day) },
+      recorded,
+    ];
+  }
   const top = got.reduce((a, b) => (b.value > a.value ? b : a));
   const bottom = got.reduce((a, b) => (b.value < a.value ? b : a));
   const lows = got.map((p) => p.low).filter((v): v is number => v != null);

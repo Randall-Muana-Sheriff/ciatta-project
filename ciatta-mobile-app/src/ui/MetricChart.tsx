@@ -65,7 +65,7 @@ export function MetricChart({
         style={{ height: HEIGHT }}
         onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
         accessible
-        accessibilityLabel={`Chart of ${recorded} of ${points.length} ${points.length > 31 ? 'weeks' : 'days'} with a reading${usual ? ', with your usual range shaded' : ''}`}
+        accessibilityLabel={`Chart of ${recorded} of ${points.length} ${points[0]?.day.includes('T') ? 'hours' : points[0]?.day.length === 7 ? 'months' : 'days'} with a reading${usual ? ', with your usual range shaded' : ''}`}
       >
         {width > 0 ? (
           <Svg width={width} height={HEIGHT}>

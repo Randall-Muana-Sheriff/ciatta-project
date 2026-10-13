@@ -156,7 +156,9 @@ export type Repo = {
   // daily_metrics holds one row per day, which is the wrong shape for a
   // chart of a day. These come from observations, which carry the time each
   // sample was taken, so the line is drawn where readings actually are.
-  loadIntraday(sinceIso: string): Promise<IntradayPoint[]>;
+  // Today's readings, by the moment they happened. Heart rate and sleep by
+  // default, for the day chart; a metric's own screen names its own.
+  loadIntraday(sinceIso: string, metrics?: string[]): Promise<IntradayPoint[]>;
   // What she reported about herself: conditions, surgeries, medications and
   // supplements, as she named them. Written at onboarding and never
   // inferred, which is why the brief can print them as hers.
@@ -418,7 +420,8 @@ export function demoRepo(): Repo {
     firstName: async () => person.firstName,
     // The example person's day. Demo is explicitly not her record, so a
     // drawn day here is an illustration rather than a claim.
-    loadIntraday: async () => sampleIntraday(),
+    loadIntraday: async (_since, metrics) =>
+      metrics ? demoIntraday(metrics) : sampleIntraday(),
     loadReported: async () => ({
       conditions: ['Endometriosis'],
       surgeries: [],
@@ -1111,7 +1114,7 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
         | null;
       return (rows ?? []).map((r) => ({ metric: r.metric, day: r.day, avg: Number(r.avg_value), min: Number(r.min_value), max: Number(r.max_value), n: r.n }));
     },
-    async loadIntraday(sinceIso) {
+    async loadIntraday(sinceIso, metrics = ['heart_rate', 'sleep_analysis']) {
       // Only the two metrics the day chart draws, and only today's. Reading
       // every observation since midnight would pull the whole of Apple
       // Health's firehose for a chart that plots one line.
@@ -1119,7 +1122,7 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
         await db
           .from('observations')
           .select('metric, value, value_text, occurred_at')
-          .in('metric', ['heart_rate', 'sleep_analysis'])
+          .in('metric', metrics)
           .gte('occurred_at', sinceIso)
           .order('occurred_at'),
       ) as { metric: string; value: number | null; value_text: string | null; occurred_at: string }[];
@@ -1130,15 +1133,39 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
 
 // ── Example person's metric history ───────────────────────────
 
+// The example person's readings so far today, for a metric's Day view:
+// a few an hour where a watch would take them, steady with a wobble.
+function demoIntraday(metrics: string[]): IntradayPoint[] {
+  const now = new Date();
+  const out: IntradayPoint[] = [];
+  const base: Record<string, { from: number; every: number; value: (h: number) => number }> = {
+    hrv: { from: 0, every: 2, value: (h) => 44 + ((h * 7) % 9) },
+    resting_heart_rate: { from: 6, every: 3, value: (h) => 60 + (h % 4) },
+    steps: { from: 7, every: 1, value: (h) => (h >= 22 ? 40 : 250 + ((h * 137) % 600)) },
+    oxygen_saturation: { from: 0, every: 2, value: (h) => 0.96 + (h % 3) / 100 },
+    blood_pressure_systolic: { from: 8, every: 10, value: () => 119 },
+    blood_pressure_diastolic: { from: 8, every: 10, value: () => 77 },
+  };
+  for (const metric of metrics) {
+    const b = base[metric];
+    if (!b) continue;
+    for (let h = b.from; h <= now.getHours(); h += b.every) {
+      const at = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, 20);
+      out.push({ metric, value: b.value(h), valueText: null, at: at.toISOString() });
+    }
+  }
+  return out;
+}
+
 const localIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-// Six months of cuff and watch readings for the example person, one row per
+// A year of cuff and watch readings for the example person, one row per
 // metric per day, steady with a small daily wobble. Every few days has no
 // cuff reading, as a real record would.
 function demoVitalDays(): VitalDay[] {
   const out: VitalDay[] = [];
   const now = new Date();
-  for (let n = 181; n >= 0; n--) {
+  for (let n = 364; n >= 0; n--) {
     const day = localIso(new Date(now.getFullYear(), now.getMonth(), now.getDate() - n));
     const wobble = Math.sin(n * 1.7) * 3;
     if (n % 4 !== 1) {

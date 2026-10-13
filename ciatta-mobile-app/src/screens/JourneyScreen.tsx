@@ -38,7 +38,8 @@ import { useNav } from '../navigation';
 import { METRIC_HUE } from '../ui/metricHue';
 import type { BaselineRow } from '../lib/metricDetail';
 import type { LabResult } from '../lib/labs';
-import { type Axis, axisFor, emptyFor, posIn, type Scale, SCALES } from '../lib/timeAxis';
+import { type Axis, axisFor, emptyFor, posIn, type Scale } from '../lib/timeAxis';
+import { ViewByPicker } from '../ui/ViewByPicker';
 import { LargeTitle, Panel } from '../ui/chrome';
 import { Icon, type IconName } from '../ui/icons';
 import { Row } from '../ui/kit';
@@ -640,7 +641,6 @@ export function JourneyScreen() {
   // the question on opening Journey is what today has looked like, and the
   // dropdown is right there for the longer windows.
   const [scale, setScale] = useState<Scale>('day');
-  const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState<Lane[]>([]);
 
   const axis = useMemo(() => axisFor(scale, new Date()), [scale]);
@@ -728,37 +728,7 @@ export function JourneyScreen() {
           in hours and year in months, and the axis under the lanes is built
           from whichever is chosen.
         */}
-        <Pressable
-          onPress={() => setOpen((v) => !v)}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: open }}
-          accessibilityLabel={`View by ${SCALES.find((v) => v.key === scale)?.label}`}
-          style={j.picker}
-        >
-          <Text style={[font('subhead', 'semibold'), { color: C.text }]}>
-            View by {SCALES.find((v) => v.key === scale)?.label}
-          </Text>
-          <Icon name={open ? 'chevronDown' : 'chevronRight'} size={16} color={C.secondary} />
-        </Pressable>
-        {open ? (
-          <View style={j.pickerMenu}>
-            {SCALES.map((v) => (
-              <Pressable
-                key={v.key}
-                onPress={() => {
-                  setScale(v.key);
-                  setOpen(false);
-                }}
-                accessibilityRole="button"
-                accessibilityState={{ selected: v.key === scale }}
-                style={j.pickerItem}
-              >
-                <Text style={[font('subhead', v.key === scale ? 'semibold' : 'regular'), { color: C.text }]}>{v.label}</Text>
-                {v.key === scale ? <Icon name="check" size={16} color={C.text} /> : null}
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
+        <ViewByPicker scale={scale} onChange={setScale} />
       </View>
 
       {lanesHere.length ? (
@@ -932,32 +902,6 @@ const j = StyleSheet.create({
   grid: { marginTop: 12, paddingHorizontal: SIDE },
   now: { position: 'absolute', top: 0, bottom: 0, backgroundColor: C.coral, opacity: 0.1, borderRadius: 8 },
   monthRow: { flexDirection: 'row', paddingBottom: 8 },
-  picker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: RADIUS,
-    backgroundColor: C.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.borderSub,
-  },
-  pickerMenu: {
-    marginTop: 6,
-    borderRadius: RADIUS,
-    backgroundColor: C.card,
-    overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.borderSub,
-  },
-  pickerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 44,
-    paddingHorizontal: 14,
-  },
   pickedRule: { height: 2, width: 18, borderRadius: 1, marginTop: 3, backgroundColor: 'transparent' },
   chartRow: { flexDirection: 'row' },
   rowName: { color: C.tertiary, height: ROW_H, lineHeight: ROW_H },

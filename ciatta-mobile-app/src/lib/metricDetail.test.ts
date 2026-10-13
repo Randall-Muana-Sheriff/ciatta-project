@@ -13,6 +13,9 @@ import {
   scaleFor,
   seriesFor,
   seriesForDays,
+  hourly,
+  RANGES,
+  shortDay,
   summary,
   usualFor,
   type VitalDay,
@@ -33,7 +36,7 @@ test('a range is that many of her calendar days, ending today, oldest first', ()
   assert.equal(week.length, 7);
   assert.equal(week[0], '2026-10-08');
   assert.equal(week[6], '2026-10-14');
-  assert.equal(dayKeys('6m', NOW).length, 182);
+  assert.equal(dayKeys('year', NOW).length, 365);
 });
 
 test('a night with no reading is a gap, never a zero', () => {
@@ -55,14 +58,64 @@ test('blood pressure carries both numbers; blood oxygen comes from the day avera
   assert.deepEqual(spo2[6], { day: '2026-10-14', value: 97, low: 94 });
 });
 
-test('a week and a month are drawn a day at a time; longer ranges as weekly averages', () => {
-  const pts: Point[] = dayKeys('3m', NOW).map((d, n) => ({ day: d, value: n < 7 ? null : n % 7 === 0 ? 6 : 8 }));
-  const weeks = bucketize(pts, '3m');
-  assert.equal(weeks.length, 13);
-  assert.equal(weeks[0].value, null, 'a week with no readings stays empty');
-  assert.equal(weeks[1].day, pts[7].day);
-  assert.equal(Math.round(weeks[1].value! * 100) / 100, Math.round(((6 + 8 * 6) / 7) * 100) / 100);
+test('the ranges are Journey\'s, day first: Day, Week, Month, Year', () => {
+  assert.deepEqual(RANGES.map((r) => r.label), ['Day', 'Week', 'Month', 'Year']);
+  assert.equal(RANGES[0].key, 'day');
+});
+
+test('a week and a month are drawn a day at a time; a year as monthly averages', () => {
+  const pts: Point[] = dayKeys('year', NOW).map((d) => ({ day: d, value: d.startsWith('2026-10') ? 6 : d.startsWith('2026-09') ? 8 : null }));
+  const months = bucketize(pts, 'year');
+  assert.equal(months.length, 13, 'the part months at each end count');
+  assert.equal(months[0].day, '2025-10');
+  assert.equal(months[months.length - 1].day, '2026-10');
+  assert.equal(months[months.length - 1].value, 6);
+  assert.equal(months[months.length - 2].value, 8);
+  assert.equal(months[0].value, null, 'a month with no readings stays empty');
   assert.equal(bucketize(pts.slice(-7), 'week').length, 7);
+});
+
+test('a day is drawn hour by hour from today\'s readings', () => {
+  const at = (h: number, m = 0) => new Date(2026, 9, 14, h, m).toISOString();
+  const readings = [
+    { metric: 'resting_heart_rate', value: 60, at: at(7) },
+    { metric: 'resting_heart_rate', value: 64, at: at(7, 30) },
+    { metric: 'resting_heart_rate', value: 58, at: at(8) },
+    { metric: 'resting_heart_rate', value: 99, at: new Date(2026, 9, 13, 8).toISOString() }, // yesterday
+    { metric: 'steps', value: 300, at: at(8) },
+    { metric: 'steps', value: 200, at: at(8, 40) },
+    { metric: 'oxygen_saturation', value: 0.97, at: at(3) },
+    { metric: 'blood_pressure_systolic', value: 120, at: at(9) },
+    { metric: 'blood_pressure_diastolic', value: 78, at: at(9) },
+  ];
+  const rhr = hourly('rhr', readings, NOW);
+  assert.equal(rhr.length, 24);
+  assert.equal(rhr[0].day, '2026-10-14T00');
+  assert.equal(rhr[7].value, 62);
+  assert.equal(rhr[8].value, 58);
+  assert.equal(rhr.filter((p) => p.value != null).length, 2, 'yesterday is not today');
+  assert.equal(hourly('steps', readings, NOW)[8].value, 500, 'steps add up within the hour');
+  assert.equal(hourly('spo2', readings, NOW)[3].value, 97, 'a fraction is read as a percent');
+  assert.deepEqual(hourly('bp', readings, NOW)[9], { day: '2026-10-14T09', value: 120, low: 78 });
+  // Sleep is a night and skin temperature one reading a night: no hours.
+  assert.deepEqual(hourly('sleep', readings, NOW), []);
+  assert.deepEqual(hourly('temp', readings, NOW), []);
+});
+
+test('labels for an hour, a day and a month', () => {
+  assert.equal(shortDay('2026-10-14T00'), '12a');
+  assert.equal(shortDay('2026-10-14T15'), '3p');
+  assert.equal(shortDay('2026-10-14'), '14 Oct');
+  assert.equal(shortDay('2026-10'), 'Oct');
+});
+
+test('a day\'s summary counts hours; steps say the total so far', () => {
+  const pts: Point[] = [{ day: '2026-10-14T07', value: 300 }, { day: '2026-10-14T08', value: 500 }, { day: '2026-10-14T09', value: null }];
+  const steps = summary('steps', pts);
+  assert.deepEqual(steps[0], { label: 'Total so far', value: '800' });
+  assert.deepEqual(steps[steps.length - 1], { label: 'Hours with a reading', value: '2 of 3' });
+  const months = summary('hrv', [{ day: '2026-09', value: 40 }, { day: '2026-10', value: null }]);
+  assert.deepEqual(months[months.length - 1], { label: 'Months recorded', value: '1 of 2' });
 });
 
 test('the summary counts only days that have a reading', () => {
