@@ -265,3 +265,11 @@ test('the example person\'s usual blood oxygen never reaches past 100%', async (
   const o2 = (await demoRepo().loadBaselines()).find((b) => b.metric === 'oxygen_saturation')!;
   assert.ok(o2.sufficient && o2.high! <= 100 && o2.low! > 90);
 });
+
+test('her insurance saves and reads back, and can be removed', async () => {
+  const repo = demoRepo();
+  await repo.saveInsurance({ provider: 'Aetna', plan: 'HMO' });
+  assert.deepEqual(await repo.loadInsurance(), { provider: 'Aetna', plan: 'HMO' });
+  await repo.saveInsurance(null);
+  assert.equal(await repo.loadInsurance(), null);
+});

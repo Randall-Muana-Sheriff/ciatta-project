@@ -13,6 +13,7 @@ import { intelligenceLine, metricLine, patternReadiness } from '../lib/patternRe
 import { overviewFacts } from '../lib/overviewFacts';
 import { weight } from '../lib/vitals';
 import { healthStats } from '../lib/healthFacts';
+import { type Insurance, insuranceFact } from '../lib/insurance';
 import { askForCharacteristics, readCharacteristics } from '../lib/healthKit';
 import { useCycleInsights } from '../state/cycleStore';
 import { profileOverview } from '../lib/profileOverview';
@@ -59,7 +60,7 @@ const notYet = () => {};
 
 // ── Overview pieces ────────────────────────────────────────────
 
-function CareGroup({ profile }: { profile: Profile }) {
+function CareGroup({ profile, onOpen }: { profile: Profile; onOpen: (screen: Screen) => void }) {
   return (
     <ListGroup header="Care and Coverage">
       {profile.care.map((c, n) => (
@@ -73,7 +74,7 @@ function CareGroup({ profile }: { profile: Profile }) {
           onPress={notYet}
         />
       ))}
-      <ListRow icon="shield" tint={TONE.lavender} title="Insurance" sub="Anthem · PPO" onPress={notYet} />
+      <ListRow icon="shield" tint={TONE.lavender} title="Insurance" sub="Your insurer and plan" onPress={() => onOpen('insurance')} />
     </ListGroup>
   );
 }
@@ -119,8 +120,18 @@ function ReadyRing({ ready, total }: { ready: number; total: number }) {
 // learns what is usual for her, measure by measure, and says when
 // something moves away from that, so the overview shows exactly that: what
 // it has found, and how far each measure is from being comparable.
-function HealthOverview({ stats = [] }: { stats?: readonly { label: string; value: string; sub?: string }[] }) {
+function HealthOverview({
+  stats = [],
+  onOpen,
+}: {
+  stats?: readonly { label: string; value: string; sub?: string }[];
+  onOpen: (screen: Screen) => void;
+}) {
   const { days } = useData();
+  const nav = useNav();
+  // Her insurance, as she entered it. Read again when Profile is back in
+  // view, so what she just saved shows.
+  const [insurance, setInsurance] = useState<Insurance | null>(null);
   const repo = useRepo();
   const { windows } = useCycleInsights();
   // Her latest weight, and the day her last period started, for the facts
@@ -142,6 +153,10 @@ function HealthOverview({ stats = [] }: { stats?: readonly { label: string; valu
         setHeightRead(h ? { value: h.value, unit: h.unit } : null);
       })
       .catch(() => {});
+    repo
+      .loadInsurance()
+      .then((ins) => !ignore && setInsurance(ins))
+      .catch(() => {});
     if (fromHealth) {
       readCharacteristics()
         .then((t) => !ignore && setTraits(t))
@@ -150,10 +165,14 @@ function HealthOverview({ stats = [] }: { stats?: readonly { label: string; valu
     return () => {
       ignore = true;
     };
-  }, [repo, fromHealth]);
+  }, [repo, fromHealth, nav.depth]);
   const shown = useMemo(
-    () => (fromHealth ? healthStats({ ...traits, height: heightRead }, new Date()) : stats),
-    [fromHealth, traits, heightRead, stats],
+    () => {
+      const base = (fromHealth ? healthStats({ ...traits, height: heightRead }, new Date()) : stats).filter((x) => x.label !== 'Insurance');
+      const ins = insuranceFact(insurance);
+      return ins ? [...base, ins] : base;
+    },
+    [fromHealth, traits, heightRead, stats, insurance],
   );
   const facts = useMemo(
     () => overviewFacts({ stats: shown, weight: weightCard, lastPeriod: windows[windows.length - 1]?.start ?? null, now: new Date() }),
@@ -188,11 +207,11 @@ function HealthOverview({ stats = [] }: { stats?: readonly { label: string; valu
           <Pressable
             key={f.key}
             style={p.fact}
-            disabled={!(fromHealth && !f.value && (f.key === 'age' || f.key === 'blood'))}
-            onPress={askHealth}
-            accessibilityRole={fromHealth && !f.value && (f.key === 'age' || f.key === 'blood') ? 'button' : undefined}
+            disabled={!(f.key === 'insurance' || (fromHealth && !f.value && (f.key === 'age' || f.key === 'blood')))}
+            onPress={f.key === 'insurance' ? () => onOpen('insurance') : askHealth}
+            accessibilityRole={f.key === 'insurance' || (fromHealth && !f.value && (f.key === 'age' || f.key === 'blood')) ? 'button' : undefined}
             accessibilityLabel={`${f.label}, ${f.value ?? 'not added'}${f.sub ? `, ${f.sub}` : ''}`}
-            accessibilityHint={fromHealth && !f.value && (f.key === 'age' || f.key === 'blood') ? 'Adds it from Apple Health' : undefined}
+            accessibilityHint={f.key === 'insurance' ? 'Opens your insurance' : fromHealth && !f.value && (f.key === 'age' || f.key === 'blood') ? 'Adds it from Apple Health' : undefined}
           >
             <Icon name={f.icon} size={16} color={f.key === 'insurance' ? C.lavender : C.coral} weight={1.8} />
             <Text style={[font('caption1'), { color: C.secondary, marginTop: 6 }]} numberOfLines={1}>{f.label}</Text>
@@ -202,6 +221,9 @@ function HealthOverview({ stats = [] }: { stats?: readonly { label: string; valu
             {f.sub ? <Text style={[font('caption2'), { color: C.secondary }]} numberOfLines={1}>{displayCopy(f.sub)}</Text> : null}
             {!f.sub && !f.value && fromHealth && (f.key === 'age' || f.key === 'blood') ? (
               <Text style={[font('caption2'), { color: C.blueLink }]} numberOfLines={1}>From Apple Health</Text>
+            ) : null}
+            {!f.value && f.key === 'insurance' ? (
+              <Text style={[font('caption2'), { color: C.blueLink }]} numberOfLines={1}>Add</Text>
             ) : null}
           </Pressable>
         ))}
@@ -758,7 +780,7 @@ export function ProfileScreen() {
         */}
         {!profile && seg === 'Overview' ? (
           <>
-            <HealthOverview />
+            <HealthOverview onOpen={nav.push} />
             <CycleGroup onOpen={nav.push} />
             <Connections onOpen={nav.push} />
             <View style={p.overviewCard}>
@@ -790,7 +812,7 @@ export function ProfileScreen() {
               about her, then her record in a paragraph to close: the
               summary reads best after the parts it summarises.
             */}
-            <HealthOverview stats={profile.stats} />
+            <HealthOverview stats={profile.stats} onOpen={nav.push} />
             <Connections onOpen={nav.push} />
             <View style={p.overviewCard}>
               <Text style={[font('body'), p.overviewText]}>{displayCopy(overview)}</Text>
@@ -808,7 +830,7 @@ export function ProfileScreen() {
             <DetailsGroup onOpen={nav.push} profile={profile} />
             <CycleGroup onOpen={nav.push} />
             <BodySystems profile={profile} />
-            <CareGroup profile={profile} />
+            <CareGroup profile={profile} onOpen={nav.push} />
           </>
         ) : null}
         {seg === 'Settings' ? <Settings onOpen={nav.push} /> : null}

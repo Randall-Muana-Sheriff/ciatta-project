@@ -36,6 +36,7 @@ import { type EntryKind, insight as sampleInsight, journal, person, sources } fr
 import { VITAL_METRICS } from '../lib/vitals';
 import { band, median } from '../lib/engine';
 import type { BaselineRow, VitalDay } from '../lib/metricDetail';
+import { type Insurance, insuranceFromRow } from '../lib/insurance';
 
 // Every daily_metrics column daysFromRows/rowToDay actually reads. Named
 // explicitly, like every other realRepo method, rather than select('*'),
@@ -164,6 +165,9 @@ export type Repo = {
   loadVitals(): Promise<VitalReading[]>;
   // Her usual range per metric, as the baselines function last worked it out.
   loadBaselines(): Promise<BaselineRow[]>;
+  // Her health insurance, as she entered it. Null when she has not.
+  loadInsurance(): Promise<Insurance | null>;
+  saveInsurance(ins: Insurance | null): Promise<void>;
   // Blood pressure and blood oxygen, one row per metric per day since a day.
   loadVitalDays(since: string, tz: string): Promise<VitalDay[]>;
 };
@@ -228,6 +232,8 @@ export function demoRepo(): Repo {
     items,
     at: recent(ago),
   }));
+  // The example person's insurance, as the sample shows it.
+  let insurance: Insurance | null = { provider: 'Anthem', plan: 'PPO' };
   let view: JournalView = {
     ...journal,
     count: journal.count + sampleRecent.length,
@@ -406,6 +412,10 @@ export function demoRepo(): Repo {
       ].sort((a, b) => b.at.localeCompare(a.at));
     },
     loadBaselines: async () => demoBaselines(loadSampleDays(), demoVitalDays()),
+    loadInsurance: async () => insurance,
+    saveInsurance: async (next) => {
+      insurance = next;
+    },
     loadVitalDays: async (since) => demoVitalDays().filter((v) => v.day >= since),
     loadReferences: async () => [
       {
@@ -907,6 +917,13 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
           .limit(200),
       ) as { metric: string; value: number; unit: string | null; occurred_at: string }[] | null;
       return (rows ?? []).map((r) => ({ metric: r.metric, value: Number(r.value), unit: r.unit, at: r.occurred_at }));
+    },
+    async loadInsurance() {
+      const row = must(await db.from('profiles').select('insurance').eq('id', userId).maybeSingle()) as { insurance: unknown } | null;
+      return insuranceFromRow(row?.insurance);
+    },
+    async saveInsurance(ins) {
+      must(await db.from('profiles').update({ insurance: ins }).eq('id', userId));
     },
     async loadBaselines() {
       const rows = must(

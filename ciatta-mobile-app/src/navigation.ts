@@ -37,6 +37,7 @@ export type Screen =
   | 'addRecord'
   | 'metric'
   | 'privacy'
+  | 'insurance'
   | 'shareClinician'
   | 'productSafety';
 
