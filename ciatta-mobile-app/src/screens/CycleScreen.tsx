@@ -10,6 +10,7 @@ import { ListGroup, ListRow, Panel } from '../ui/chrome';
 import { ObservationCard } from '../ui/cycleInputs';
 import { DetailScreen, PrimaryButton, SecLabel, SecondaryButton, SourceFooter, Tag } from '../ui/kit';
 import { FertilityStrip, LengthDots, MonthsSince, PostpartumTimeline } from '../ui/lineCharts';
+import { experienceRows } from '../lib/experienceRows';
 
 // Cycle home: timing, then what the cycle felt like, then how it's changing.
 export function CycleScreen() {
@@ -20,14 +21,11 @@ export function CycleScreen() {
   const current = summaries[summaries.length - 1] ?? null;
   const last4 = summaries.slice(-4);
   const mine = current ? signals.filter((s) => s.cycle === current.window) : [];
-  const pain = mine.filter((s) => s.pain);
   const top = (lists: string[][], n: number) => tally(lists).slice(0, n).map((x) => x.label);
 
-  const locations = top(pain.map((s) => s.episode.locations), 2);
-  const sensations = top(pain.map((s) => s.episode.sensations), 2);
-  const symptoms = top(mine.map((s) => s.episode.symptoms), 3);
+  // Each row of Your Experience: one total, with what makes it up counted.
+  const exp = experienceRows(current ? current.painDays : null, mine);
   const overallLocations = top(signals.filter((s) => s.pain).map((s) => s.episode.locations), 3);
-  const flares = mine.filter((s) => s.episode.flareUpUserReported).length;
   const split = lens.painSplit ? painSplit(signals) : null;
 
   const log = () => {
@@ -182,11 +180,11 @@ export function CycleScreen() {
       <View style={cy.section}>
         <SecLabel>Your Experience</SecLabel>
         <ListGroup>
-          <ListRow first icon="wave" tint={C.coral} title="Pain" sub={current ? `${current.painDays} days this cycle` : 'No period logged yet'} onPress={history} />
-          <ListRow icon="body" tint={C.coral} title="Most reported" sub={locations.join(' · ') || 'Nothing logged yet'} onPress={history} />
-          <ListRow icon="target" tint={C.indigo} title="Common sensations" sub={sensations.join(' · ') || 'Nothing logged yet'} onPress={history} />
-          <ListRow icon="triangle" tint={C.violet} title="Symptoms" sub={symptoms.join(' · ') || 'Nothing logged yet'} onPress={history} />
-          <ListRow icon="flame" tint={C.coral} title="Flare ups" sub={flares ? `${flares} reported by you` : 'None reported'} onPress={history} />
+          <ListRow first icon="wave" tint={C.coral} title="Pain" sub={exp.pain.sub} value={exp.pain.value ?? undefined} onPress={history} />
+          <ListRow icon="body" tint={C.coral} title="Where it hurts" sub={exp.places.sub} value={exp.places.value ?? undefined} onPress={history} />
+          <ListRow icon="target" tint={C.indigo} title="Common sensations" sub={exp.sensations.sub} value={exp.sensations.value ?? undefined} onPress={history} />
+          <ListRow icon="triangle" tint={C.violet} title="Symptoms" sub={exp.symptoms.sub} value={exp.symptoms.value ?? undefined} onPress={history} />
+          <ListRow icon="flame" tint={C.coral} title="Flare ups" sub={exp.flares.sub} value={exp.flares.value ?? undefined} onPress={history} />
         </ListGroup>
       </View>
 
