@@ -478,6 +478,10 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
       */}
       <Providers onOpen={onOpen} />
 
+      <ListGroup header="Your Goals" footer="Optional. Ciatta never sets these for you.">
+        <ListRow first icon="leaf" tint={TONE.mint} title="Nutrition Targets" sub="Calories, protein, carbs, fat" onPress={() => onOpen('nutritionTargets')} />
+      </ListGroup>
+
       <ListGroup header="Notifications" footer="No nudges to log, and no reminders to take anything.">
         <ListRow
           first

@@ -4,6 +4,7 @@ import type { Attachment } from '../lib/attachments';
 import type { DailyPatch } from '../lib/dailyLog';
 import { endUse, type Fullness, type Product, type ProductUse, startUse } from '../lib/periodProducts';
 import type { EnvironmentDay } from '../lib/weather';
+import { normalizeTargets, type NutritionTargets } from '../lib/nutritionTargets';
 import type { CategoryKey } from '../lib/logCategories';
 import type { Found } from '../lib/quickLog';
 import { type CycleProfile, normalizeProfile } from '../lib/cycleProfile';
@@ -92,6 +93,9 @@ export type Repo = {
   // The weather and daylight around her, by day. Empty until the
   // environment fetch exists for her account.
   loadEnvironment(): Promise<EnvironmentDay[]>;
+  // Her optional daily nutrition targets. Empty when she set none.
+  loadNutritionTargets(): Promise<NutritionTargets>;
+  saveNutritionTargets(t: NutritionTargets): Promise<void>;
   startProduct(next: { id: string; product: Product; size: string; at: string }): Promise<void>;
   endProduct(out: { at: string; fullness: Fullness | null }): Promise<void>;
   loadSources(): Promise<SourceView[]>;
@@ -202,6 +206,7 @@ export function demoRepo(): Repo {
     months: [{ month: 'This month', items: sampleRecent }, ...journal.months],
   };
   let productUses: ProductUse[] = [];
+  let targets: NutritionTargets = {};
   return {
     mode: 'demo',
     loadEpisodes: async () => own,
@@ -220,6 +225,10 @@ export function demoRepo(): Repo {
     // could be misled by.
     saveDailyLog: async () => {},
     // Kept in memory for the session, so the example person can try it.
+    loadNutritionTargets: async () => targets,
+    saveNutritionTargets: async (t) => {
+      targets = normalizeTargets(t);
+    },
     loadProductUses: async () => productUses,
     // A sample autumn week for the example person, so the card can be seen.
     loadEnvironment: async () =>
@@ -495,6 +504,16 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       } catch {
         return [];
       }
+    },
+    async loadNutritionTargets() {
+      const row = must(await db.from('profiles').select('nutrition_targets').eq('id', userId).maybeSingle()) as
+        | { nutrition_targets: unknown }
+        | null;
+      return normalizeTargets(row?.nutrition_targets);
+    },
+    async saveNutritionTargets(t) {
+      const clean = normalizeTargets(t);
+      must(await db.from('profiles').update({ nutrition_targets: Object.keys(clean).length ? clean : null }).eq('id', userId));
     },
     async loadProductUses() {
       const rows = must(

@@ -29,7 +29,8 @@ export type Screen =
   | 'dailyLog'
   | 'profile'
   | 'calendar'
-  | 'quickLog';
+  | 'quickLog'
+  | 'nutritionTargets';
 
 export type Nav = {
   tab: Tab;
