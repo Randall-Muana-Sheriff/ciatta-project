@@ -6,11 +6,13 @@ import {
   bucketize,
   dayKeys,
   extras,
+  fmt,
   headline,
   metricForRow,
   type Point,
   scaleFor,
   seriesFor,
+  seriesForDays,
   summary,
   usualFor,
   type VitalDay,
@@ -168,8 +170,25 @@ test('amounts are drawn from zero; levels around what was seen; temperature eith
 
 test('rows on the All screen open the metric they belong to', () => {
   assert.equal(metricForRow('Deep'), 'sleep');
-  assert.equal(metricForRow('Resting heart rate'), 'hrv');
+  assert.equal(metricForRow('Resting heart rate'), 'rhr');
   assert.equal(metricForRow('Active minutes'), 'steps');
   assert.equal(metricForRow('Blood oxygen'), 'spo2');
   assert.equal(metricForRow('Mood'), null, 'a check in has no metric screen');
+});
+
+test('any number of days can be drawn, for a card of 7, 14 or 28', () => {
+  const days = [day('2026-10-14', { sleepHours: 7 }), day('2026-10-01', { sleepHours: 6 })];
+  const two = seriesForDays('sleep', days, [], 14, NOW);
+  assert.equal(two.length, 14);
+  assert.equal(two[0].day, '2026-10-01');
+  assert.deepEqual([two[0].value, two[13].value], [6, 7]);
+});
+
+test('resting heart rate is a level, drawn and compared like HRV', () => {
+  const days = [day('2026-10-14', { restingHR: 61.4 })];
+  assert.deepEqual(seriesForDays('rhr', days, [], 7, NOW)[6], { day: '2026-10-14', value: 61.4 });
+  assert.equal(fmt('rhr', 61.4), '61 bpm');
+  const u = usualFor('rhr', [{ metric: 'resting_hr', median: 60, low: 55, high: 66, n: 40, sufficient: true }]);
+  assert.deepEqual(u, { median: 60, low: 55, high: 66 });
+  assert.ok(scaleFor('rhr', [{ day: 'a', value: 61 }], u).min > 0, 'a level is not drawn from zero');
 });

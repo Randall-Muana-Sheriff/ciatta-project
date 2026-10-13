@@ -11,7 +11,7 @@
 // or a dash for a missing value, and the absent case is styled quietly
 // rather than in the ink a real reading gets.
 
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { displayCopy } from '../lib/displayCopy';
@@ -34,6 +34,10 @@ export type MetricCardProps = {
   // drew it: the change with its arrow, and a small line. Absent when
   // there are too few readings to draw one honestly.
   trend?: Trend;
+  // The metric's own chart, in its mini size: the same chart the Health
+  // dashboard and the metric's screen draw, so it reads the same everywhere.
+  // When given, it stands in for the small line.
+  chart?: ReactNode;
   // A colour of its own for the dot and the line, where a screen wants
   // each metric told apart at a glance. Without it the dot says where the
   // figure came from, in the app's meaning colours.
@@ -46,7 +50,7 @@ const DOT: Record<MetricCardProps['from'], string> = {
   derived: HUE.timeDepth,
 };
 
-export function MetricCard({ label, value, note, from, trend, color }: MetricCardProps) {
+export function MetricCard({ label, value, note, from, trend, color, chart }: MetricCardProps) {
   const missing = value == null;
   const spokenTrend = trend?.spoken && !missing ? `, ${trend.spoken}` : '';
   // The width the line actually has, after the change figure has taken
@@ -75,7 +79,16 @@ export function MetricCard({ label, value, note, from, trend, color }: MetricCar
           {displayCopy(note)}
         </Text>
       ) : null}
-      {trend && !missing ? (
+      {chart && !missing ? (
+        <View>
+          {trend?.change ? (
+            <Text style={[font('caption2', 'semibold'), s.change]} numberOfLines={1}>
+              {trend.change}
+            </Text>
+          ) : null}
+          <View style={{ marginTop: 4 }}>{chart}</View>
+        </View>
+      ) : trend && !missing ? (
         <View style={s.trend}>
           {trend.change ? (
             <Text style={[font('caption2', 'semibold'), s.change]} numberOfLines={1}>

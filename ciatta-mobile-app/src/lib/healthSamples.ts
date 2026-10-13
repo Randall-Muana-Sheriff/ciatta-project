@@ -138,7 +138,8 @@ export function sampleToObservation(
       occurred_at: toIso(segment.endDate),
       provenance: 'MEASURED',
       dedupe_key: dedupeKey(spec.metric, segment),
-      metadata: {},
+      // When the stage began, so a night can be drawn stage by stage.
+      metadata: { start_at: toIso(segment.startDate) },
     };
   }
 

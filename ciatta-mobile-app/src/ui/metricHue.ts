@@ -5,6 +5,7 @@
 export const METRIC_HUE: Record<string, string> = {
   sleep: '#8E9BFF',
   hrv: '#5ED3C4',
+  rhr: '#F2A4B8',
   steps: '#E8C46A',
   bp: '#F27D9B',
   temp: '#F09A5B',

@@ -30,6 +30,8 @@ import { font, numeral } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen, SegmentedControl, SourceFooter } from '../ui/kit';
 import { MetricChart } from '../ui/MetricChart';
+import { Hypnogram } from '../ui/Hypnogram';
+import { lastNight, type Night } from '../lib/hypnogram';
 import { METRIC_HUE } from '../ui/metricHue';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 
@@ -44,6 +46,7 @@ export function MetricDetailScreen({ metric: given }: { metric?: MetricKey } = {
   const [range, setRange] = useState<Range>('month');
   const [baselines, setBaselines] = useState<BaselineRow[]>([]);
   const [vitals, setVitals] = useState<VitalDay[]>([]);
+  const [night, setNight] = useState<Night | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -53,6 +56,12 @@ export function MetricDetailScreen({ metric: given }: { metric?: MetricKey } = {
       .catch(() => {
         // Without her usual, the screen says it is not known yet.
       });
+    if (metric === 'sleep') {
+      repo
+        .loadSleepSamples(new Date(Date.now() - 36 * 3600000).toISOString())
+        .then((x) => !ignore && setNight(lastNight(x)))
+        .catch(() => {});
+    }
     if (NEEDS_VITALS.includes(metric)) {
       const since = dayKeys('6m', new Date())[0];
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
@@ -98,6 +107,15 @@ export function MetricDetailScreen({ metric: given }: { metric?: MetricKey } = {
         {latest.compare ? <Text style={[font('subhead', 'semibold'), { color }]}>{displayCopy(latest.compare)}</Text> : null}
         {!latest.value ? <Text style={[font('subhead'), d.when]}>Nothing recorded in the last six months.</Text> : null}
       </View>
+
+      {/* Sleep opens on last night, stage by stage: the same hypnogram the
+          Health dashboard draws. */}
+      {metric === 'sleep' && night ? (
+        <View style={[d.card, { marginBottom: SPACE.near }]}>
+          <Text style={[font('footnote', 'semibold'), { color: L.ink, marginBottom: 10 }]}>Last night</Text>
+          <Hypnogram night={night} size="full" />
+        </View>
+      ) : null}
 
       <SegmentedControl segments={LABELS} active={label} onChange={(l) => setRange(RANGES.find((r) => r.label === l)!.key)} />
 

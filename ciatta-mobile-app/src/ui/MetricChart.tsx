@@ -16,18 +16,35 @@ import { fmt, type MetricKey, type Point, scaleFor, shortDay, type Usual } from 
 import { font } from '../theme';
 import { L } from './surface';
 
-const HEIGHT = 170;
-const PAD_TOP = 8;
-const PAD_BOTTOM = 8;
+const HEIGHTS = { mini: 34, card: 112, full: 170 } as const;
+export type ChartSize = keyof typeof HEIGHTS;
+const PAD_TOP = 6;
+const PAD_BOTTOM = 6;
 
-export function MetricChart({ metric, points, usual, color }: { metric: MetricKey; points: Point[]; usual: Usual | null; color: string }) {
+// One chart per metric, the same wherever that metric is drawn: mini on a
+// Today card, card size on the Health dashboard, full on its own screen.
+export function MetricChart({
+  metric,
+  points,
+  usual,
+  color,
+  size = 'full',
+}: {
+  metric: MetricKey;
+  points: Point[];
+  usual: Usual | null;
+  color: string;
+  size?: ChartSize;
+}) {
   const [width, setWidth] = useState(0);
+  const HEIGHT = HEIGHTS[size];
+  const labelled = size !== 'mini';
   const { min, max } = scaleFor(metric, points, usual);
   const y = (v: number) => PAD_TOP + (1 - (v - min) / (max - min)) * (HEIGHT - PAD_TOP - PAD_BOTTOM);
   const slot = points.length ? width / points.length : 0;
   const x = (i: number) => slot * i + slot / 2;
-  const barW = Math.max(2, Math.min(18, slot * 0.6));
-  const dots = metric === 'hrv' || metric === 'spo2';
+  const barW = Math.max(2, Math.min(size === 'mini' ? 6 : 18, slot * 0.6));
+  const dots = metric === 'hrv' || metric === 'rhr' || metric === 'spo2';
 
   // Runs of consecutive days with a reading, so a line never bridges a gap.
   const runs: { i: number; v: number }[][] = [];
@@ -79,15 +96,15 @@ export function MetricChart({ metric, points, usual, color }: { metric: MetricKe
                   ))
               : null}
             {dots
-              ? points.map((p, i) => (p.value == null ? null : <Circle key={p.day} cx={x(i)} cy={y(p.value)} r={Math.min(3.5, Math.max(2, slot / 4))} fill={color} />))
+              ? points.map((p, i) => (p.value == null ? null : <Circle key={p.day} cx={x(i)} cy={y(p.value)} r={size === 'mini' ? 1.8 : Math.min(3.5, Math.max(2, slot / 4))} fill={color} />))
               : null}
           </Svg>
         ) : null}
-        {top ? <Text style={[font('caption2'), c.axis, { top: 0 }]}>{displayCopy(top)}</Text> : null}
-        {bottom ? <Text style={[font('caption2'), c.axis, { bottom: 0 }]}>{displayCopy(bottom)}</Text> : null}
-        {metric === 'temp' ? <Text style={[font('caption2'), c.axis, { top: y(0) - 16 }]}>Usual</Text> : null}
+        {labelled && top ? <Text style={[font('caption2'), c.axis, { top: 0 }]}>{displayCopy(top)}</Text> : null}
+        {labelled && bottom ? <Text style={[font('caption2'), c.axis, { bottom: 0 }]}>{displayCopy(bottom)}</Text> : null}
+        {labelled && metric === 'temp' ? <Text style={[font('caption2'), c.axis, { top: y(0) - 16 }]}>Usual</Text> : null}
       </View>
-      {points.length ? (
+      {labelled && points.length ? (
         <View style={c.days}>
           <Text style={[font('caption2'), c.day]}>{shortDay(points[0].day)}</Text>
           <Text style={[font('caption2'), c.day]}>{shortDay(points[points.length - 1].day)}</Text>

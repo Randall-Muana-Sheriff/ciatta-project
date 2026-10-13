@@ -28,7 +28,12 @@ import { images } from './images';
 import type { JournalView } from '../data/rows';
 import { C, font, M, numeral, RADIUS } from '../theme';
 import { BarRow } from './cycleInputs';
-import { BedArc, type CompleteStages, DotScale, HairlineChart, RangeBar, type Stage, StageLegend, StageRings } from './lineCharts';
+import { HairlineChart, LengthDots } from './lineCharts';
+import { Hypnogram } from './Hypnogram';
+import { lastNight, type Night } from '../lib/hypnogram';
+import { type BaselineRow, seriesForDays, usualFor } from '../lib/metricDetail';
+import { MetricChart } from './MetricChart';
+import { METRIC_HUE } from './metricHue';
 import { ChevronRight } from './kit';
 
 // Every metric on one organised page, drawn in hairlines. Colours follow the
@@ -56,16 +61,6 @@ const medianOrNull = (xs: (number | null)[]): number | null => {
   return known.length ? median(known) : null;
 };
 
-const dateOf = (d: Day) => shortDate(parseDay(d.date));
-
-// A night only draws its stage rings once all four are known; a wearable
-// that measured total sleep but not stage breakdown leaves this null rather
-// than drawing three empty rings and one full one.
-function completeStages(s: Day['stages']): CompleteStages | null {
-  return s.awake != null && s.rem != null && s.light != null && s.deep != null
-    ? { awake: s.awake, rem: s.rem, light: s.light, deep: s.deep }
-    : null;
-}
 
 function Card({
   title,
@@ -126,7 +121,10 @@ export function HealthDashboard({
   open: (screen: Screen) => void;
   openInsight: (id: string) => void;
 }) {
-  const [stage, setStage] = useState<Stage>('Deep');
+  // Last night's stages, for the hypnogram; and her usual ranges, for the
+  // shaded band every chart draws.
+  const [night, setNight] = useState<Night | null>(null);
+  const [baselines, setBaselines] = useState<BaselineRow[]>([]);
   const { mode } = useSession();
   const repo = useRepo();
   const { episodes } = useCycle();
@@ -150,6 +148,11 @@ export function HealthDashboard({
     let ignore = false;
     repo.loadJournal().then((j) => !ignore && setJournal(j)).catch(() => {});
     repo.loadLabs().then((l) => !ignore && setLabs(l)).catch(() => {});
+    repo.loadBaselines().then((b) => !ignore && setBaselines(b)).catch(() => {});
+    repo
+      .loadSleepSamples(new Date(Date.now() - 36 * 3600000).toISOString())
+      .then((x) => !ignore && setNight(lastNight(x)))
+      .catch(() => {});
     repo.loadReported().then((r) => !ignore && setReported(r)).catch(() => {});
     repo.loadProductUses().then((u) => !ignore && setProductUses(u)).catch(() => {});
     // Fetch any weather days still missing (at most once a day, and only
@@ -198,7 +201,6 @@ export function HealthDashboard({
   // turns out to be.
   const last: Day | undefined = days[days.length - 1];
   const last14 = days.slice(-14);
-  const last28 = days.slice(-28);
   const base = days.slice(Math.max(0, days.length - 91), days.length - 35);
   const usual = {
     sleep: medianOrNull(base.map((x) => x.sleepHours)),
@@ -211,14 +213,12 @@ export function HealthDashboard({
   // being searched independently, since mixing two different nights under
   // one "Last night" label would say something false about both.
   const sleepEntry = mostRecentValue(days, (x) => x.sleepHours);
-  const stages = sleepEntry ? completeStages(sleepEntry.day.stages) : null;
   const timeInBed = sleepEntry?.day.timeInBed ?? null;
   // The 14 night chart's own rightmost drawn point, which can differ from
   // sleepEntry when the most recent real night falls outside this window
   // (sleepEntry searches the whole record); the edge label must name that
   // point, the same one HairlineChart itself finds as lastIdx, not
   // wherever the headline figure happens to come from.
-  const last14SleepDay = [...last14].reverse().find((x) => x.sleepHours != null);
   // Resting heart rate and HRV are genuinely on their own cadences in real
   // data, so each looks back independently.
   const rhrEntry = mostRecentValue(days, (x) => x.restingHR);
@@ -264,53 +264,26 @@ export function HealthDashboard({
           nothing measured, rather than a fabricated "0h 00m". */}
       {sleepEntry ? (
       <Card title="Sleep" meta={dayLabel(sleepEntry.day.date, now)} onPress={() => open('sleep')}>
-        {stages ? (
-        <View style={d.sleepTop}>
-          <StageRings stages={stages} active={stage} />
-          <StageLegend stages={stages} active={stage} onPick={setStage} />
-        </View>
-        ) : null}
+        {/* Last night, stage by stage: the same hypnogram the Sleep screen
+            draws. Absent when her device recorded no stages for it. */}
+        {night ? <Hypnogram night={night} /> : null}
         <View style={d.tiles}>
-          <View
-            style={d.tile}
-            accessible
-            accessibilityLabel={`Total sleep ${fmtHours(sleepEntry.value)}${usual.sleep != null ? `, usual ${fmtHours(usual.sleep)}` : ''}`}
-          >
+          <View style={d.tile} accessible accessibilityLabel={`Total sleep ${fmtHours(sleepEntry.value)}${usual.sleep != null ? `, usual ${fmtHours(usual.sleep)}` : ''}`}>
             <Text style={[font('footnote'), { color: C.secondary }]}>Total Sleep</Text>
-            <DotScale value={sleepEntry.value} usual={usual.sleep} />
             <Text style={[numeral(20, 'medium'), { color: C.text }]}>{fmtHours(sleepEntry.value)}</Text>
             {usual.sleep != null ? <Text style={[font('caption1'), { color: C.secondary }]}>Usual {fmtHours(usual.sleep)}</Text> : null}
           </View>
           {timeInBed != null ? (
-          <View
-            style={d.tile}
-            accessible
-            accessibilityLabel={`Time in bed ${fmtHours(timeInBed)}, asleep ${Math.round((sleepEntry.value / timeInBed) * 100)} percent of it`}
-          >
-            <Text style={[font('footnote'), { color: C.secondary }]}>Time in Bed</Text>
-            <BedArc inBed={timeInBed} asleep={sleepEntry.value} />
-            <Text style={[numeral(20, 'medium'), { color: C.text }]}>{fmtHours(timeInBed)}</Text>
-            <Text style={[font('caption1'), { color: C.secondary }]}>
-              Asleep {Math.round((sleepEntry.value / timeInBed) * 100)}% of it
-            </Text>
-          </View>
+            <View style={d.tile} accessible accessibilityLabel={`Time in bed ${fmtHours(timeInBed)}, asleep ${Math.round((sleepEntry.value / timeInBed) * 100)} percent of it`}>
+              <Text style={[font('footnote'), { color: C.secondary }]}>Time in Bed</Text>
+              <Text style={[numeral(20, 'medium'), { color: C.text }]}>{fmtHours(timeInBed)}</Text>
+              <Text style={[font('caption1'), { color: C.secondary }]}>Asleep {Math.round((sleepEntry.value / timeInBed) * 100)}% of it</Text>
+            </View>
           ) : null}
         </View>
         <Text style={[font('footnote'), d.chartLabel]}>Total sleep, last 14 nights</Text>
-        <HairlineChart
-          values={last14.map((x) => x.sleepHours)}
-          usual={usual.sleep ?? undefined}
-          color={M.measured}
-          first={dateOf(last14[0])}
-          last={last14SleepDay ? dayLabel(last14SleepDay.date, now) : undefined}
-        />
-        {usual.sleep != null || (stages && mode === 'demo') ? (
-        <Text style={[font('caption1'), d.note]}>
-          {[usual.sleep != null ? 'Dashed line: your usual.' : null, stages && mode === 'demo' ? 'Sleep stages are sample data for now.' : null]
-            .filter(Boolean)
-            .join(' ')}
-        </Text>
-        ) : null}
+        <MetricChart metric="sleep" points={seriesForDays('sleep', days, [], 14, now)} usual={usualFor('sleep', baselines)} color={METRIC_HUE.sleep} size="card" />
+        {usualFor('sleep', baselines) ? <Text style={[font('caption1'), d.note]}>Shaded: your usual range.</Text> : null}
       </Card>
       ) : null}
 
@@ -339,13 +312,7 @@ export function HealthDashboard({
           />
         </View>
         <Text style={[font('footnote'), d.chartLabel]}>Daily steps, last 28 days</Text>
-        <HairlineChart
-          values={movement.series.map((x) => x.steps)}
-          usual={movement.steps.usual ?? undefined}
-          color={M.measured}
-          first={shortDate(parseDay(movement.series[0].date))}
-          last={dayLabel(movement.series[movement.series.length - 1].date, now)}
-        />
+        <MetricChart metric="steps" points={seriesForDays('steps', days, [], 28, now)} usual={usualFor('steps', baselines)} color={METRIC_HUE.steps} size="card" />
       </Card>
       ) : null}
 
@@ -368,7 +335,7 @@ export function HealthDashboard({
               value={`${Math.round(rhrEntry.value)} bpm`}
               sub={[usual.rhr != null ? `Usual ${Math.round(usual.rhr)}` : null, dayLabel(rhrEntry.day.date, now)].filter(Boolean).join(' · ')}
             />
-            <HairlineChart values={last28.map((x) => x.restingHR)} usual={usual.rhr ?? undefined} color={M.measured} height={44} />
+            <MetricChart metric="rhr" points={seriesForDays('rhr', days, [], 28, now)} usual={usualFor('rhr', baselines)} color={METRIC_HUE.rhr} size="card" />
           </View>
           ) : null}
           {hrvEntry ? (
@@ -378,7 +345,7 @@ export function HealthDashboard({
               value={`${Math.round(hrvEntry.value)} ms`}
               sub={[usual.hrv != null ? `Usual ${Math.round(usual.hrv)}` : null, dayLabel(hrvEntry.day.date, now)].filter(Boolean).join(' · ')}
             />
-            <HairlineChart values={last28.map((x) => x.hrv)} usual={usual.hrv ?? undefined} color={M.measured} height={44} />
+            <MetricChart metric="hrv" points={seriesForDays('hrv', days, [], 28, now)} usual={usualFor('hrv', baselines)} color={METRIC_HUE.hrv} size="card" />
           </View>
           ) : null}
         </View>
@@ -411,14 +378,7 @@ export function HealthDashboard({
         {done.length ? (
           <>
             <Text style={[font('footnote'), d.chartLabel]}>Cycle length, last {done.length} cycles</Text>
-            <HairlineChart
-              values={done.map((c) => c.window.length)}
-              color={M.timeDepth}
-              dots
-              height={52}
-              first={shortDate(done[0].window.start)}
-              last={shortDate(done[done.length - 1].window.start)}
-            />
+            <LengthDots lengths={done.map((c) => c.window.length as number)} />
           </>
         ) : null}
         {/* Period products, only once she has logged some this period. */}

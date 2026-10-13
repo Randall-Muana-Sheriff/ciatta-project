@@ -393,3 +393,10 @@ test('a workout with neither recorded says neither, rather than zero', () => {
   assert.equal('distance' in obs.metadata, false, 'an unrecorded distance became a value');
   assert.equal('energy_burned' in obs.metadata, false, 'unrecorded energy became a value');
 });
+
+test('a sleep stage keeps when it started, so a night can be drawn stage by stage', () => {
+  const obs = sampleToObservation(SLEEP_SPEC, { uuid: 'u1', startDate: new Date('2026-10-12T02:00:00Z'), endDate: new Date('2026-10-12T02:40:00Z'), value: 4 });
+  assert.equal(obs.value_text, 'asleep_deep');
+  assert.equal(obs.occurred_at, '2026-10-12T02:40:00.000Z');
+  assert.deepEqual(obs.metadata, { start_at: '2026-10-12T02:00:00.000Z' });
+});

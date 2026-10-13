@@ -306,3 +306,10 @@ test('her body measurements and units save and read back', async () => {
   await repo.saveBody({ blood_type: 7, height_cm: 165, weight_kg: 58.1, weight_on: '2026-10-20', units: 'uk' });
   assert.deepEqual(await repo.loadBody(), { blood_type: 7, height_cm: 165, weight_kg: 58.1, weight_on: '2026-10-20', units: 'uk' });
 });
+
+test('the example person has a night of sleep stages to draw', async () => {
+  const { lastNight } = await import('../lib/hypnogram');
+  const night = lastNight(await demoRepo().loadSleepSamples(new Date(Date.now() - 2 * 86400000).toISOString()));
+  assert.ok(night && night.staged);
+  assert.deepEqual(night!.totals.map((t) => t.stage), ['awake', 'rem', 'light', 'deep']);
+});

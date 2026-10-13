@@ -30,7 +30,8 @@ import { images } from '../ui/images';
 import { MetricCard, METRIC_CARD_GAP } from '../ui/metricCard';
 import { METRIC_HUE } from '../ui/metricHue';
 import { chooseMetric } from '../lib/metricHandoff';
-import type { BaselineRow, MetricKey } from '../lib/metricDetail';
+import { type BaselineRow, type MetricKey, seriesForDays, usualFor, type VitalDay } from '../lib/metricDetail';
+import { MetricChart } from '../ui/MetricChart';
 import { ProductNowCard } from '../ui/ProductNowCard';
 import type { IconName } from '../ui/icons';
 import { Icon } from '../ui/icons';
@@ -142,6 +143,18 @@ export function TodayScreen() {
   const [vitals, setVitals] = useState<VitalCard[]>([]);
   // Her usual for each metric, so each card's arrow measures against it.
   const [baselines, setBaselines] = useState<BaselineRow[]>([]);
+  // A week of blood pressure and blood oxygen, a day at a time, for their
+  // cards' charts.
+  const [vitalDays, setVitalDays] = useState<VitalDay[]>([]);
+  useEffect(() => {
+    const d = new Date();
+    const from = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 7);
+    const iso = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-${String(from.getDate()).padStart(2, '0')}`;
+    repo
+      .loadVitalDays(iso, Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')
+      .then(setVitalDays)
+      .catch(() => {});
+  }, [repo]);
   useEffect(() => {
     let ignore = false;
     Promise.all([repo.loadVitals(), repo.loadBaselines().catch(() => [] as BaselineRow[])])
@@ -426,7 +439,23 @@ export function TodayScreen() {
               accessibilityLabel={`${m.label}, ${m.value ?? 'not recorded today'}${m.note && m.value ? `, ${m.note}` : ''}`}
               accessibilityHint="Opens this metric over time"
             >
-              <MetricCard label={m.label} value={m.value} note={m.note} from={m.from} trend={m.trend} color={METRIC_HUE[m.key]} />
+              <MetricCard
+                label={m.label}
+                value={m.value}
+                note={m.note}
+                from={m.from}
+                trend={m.trend}
+                color={METRIC_HUE[m.key]}
+                chart={
+                  <MetricChart
+                    metric={m.key as MetricKey}
+                    points={seriesForDays(m.key as MetricKey, days, vitalDays, 7, new Date())}
+                    usual={usualFor(m.key as MetricKey, baselines)}
+                    color={METRIC_HUE[m.key]}
+                    size="mini"
+                  />
+                }
+              />
             </Pressable>
           ))}
         </View>

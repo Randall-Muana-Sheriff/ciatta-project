@@ -39,6 +39,7 @@ import type { BaselineRow, VitalDay } from '../lib/metricDetail';
 import { type Insurance, insuranceFromRow } from '../lib/insurance';
 import type { Referral } from '../lib/referrals';
 import type { BodyManual } from '../lib/overviewFacts';
+import type { SleepSample } from '../lib/hypnogram';
 import { type LabFlag, type LabResult, type LabScan, parseRange, readLabScan, type ScannedTest } from '../lib/labs';
 import { records as sampleRecords } from './sample';
 
@@ -175,6 +176,8 @@ export type Repo = {
   scanLab(base64: string, kind: 'image' | 'pdf'): Promise<LabScan>;
   // The lines she checked, saved as one visit read from a report.
   saveLabs(tests: ScannedTest[], on: string, lab: string | null): Promise<void>;
+  // Her sleep stages since a moment, each with when it began and ended.
+  loadSleepSamples(sinceIso: string): Promise<SleepSample[]>;
   // Her body measurements as she entered them, and her units.
   loadBody(): Promise<BodyManual | null>;
   saveBody(body: BodyManual): Promise<void>;
@@ -453,6 +456,7 @@ export function demoRepo(): Repo {
         ...tests.map((t, n) => ({ id: `scan-${Date.now()}-${n}`, ...t, status: 'final', source: 'report' as const, lab, on })),
       ];
     },
+    loadSleepSamples: async () => demoNight(),
     loadBody: async () => body,
     saveBody: async (next) => {
       body = next;
@@ -1008,6 +1012,24 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
         ),
       );
     },
+    async loadSleepSamples(sinceIso) {
+      const rows = must(
+        await db
+          .from('observations')
+          .select('occurred_at, value_text, metadata')
+          .eq('metric', 'sleep_analysis')
+          .gte('occurred_at', sinceIso)
+          .order('occurred_at')
+          .limit(2000),
+      ) as { occurred_at: string; value_text: string | null; metadata: { start_at?: unknown } | null }[] | null;
+      return (rows ?? [])
+        .filter((r) => r.value_text)
+        .map((r) => ({
+          stage: r.value_text!,
+          end: r.occurred_at,
+          ...(typeof r.metadata?.start_at === 'string' ? { start: r.metadata.start_at } : {}),
+        }));
+    },
     async loadBody() {
       const row = must(await db.from('profiles').select('body').eq('id', userId).maybeSingle()) as { body: BodyManual | null } | null;
       const b = row?.body;
@@ -1225,5 +1247,23 @@ function sampleLabs(): LabResult[] {
         on,
       };
     });
+  });
+}
+
+// The example person's last night, stage by stage: in bed at 23:10, up at
+// 06:45, with the stages a typical night moves through.
+function demoNight(): SleepSample[] {
+  const d = new Date();
+  const start = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1, 23, 10).getTime();
+  const plan: [string, number][] = [
+    ['awake', 12], ['asleep_core', 25], ['asleep_deep', 45], ['asleep_core', 30], ['asleep_rem', 22],
+    ['asleep_core', 40], ['asleep_deep', 28], ['awake', 4], ['asleep_core', 35], ['asleep_rem', 30],
+    ['asleep_core', 45], ['asleep_rem', 38], ['awake', 6], ['asleep_core', 30], ['asleep_rem', 25], ['awake', 10],
+  ];
+  let at = start;
+  return plan.map(([stage, minutes]) => {
+    const from = at;
+    at += minutes * 60000;
+    return { stage, start: new Date(from).toISOString(), end: new Date(at).toISOString() };
   });
 }

@@ -11,7 +11,7 @@ import type { Day } from '../data/daily';
 import { dayNote } from './allMetrics';
 import { fmtCount, fmtHours } from './engine';
 
-export type MetricKey = 'sleep' | 'hrv' | 'steps' | 'bp' | 'temp' | 'spo2';
+export type MetricKey = 'sleep' | 'hrv' | 'rhr' | 'steps' | 'bp' | 'temp' | 'spo2';
 export type Range = 'week' | 'month' | '3m' | '6m';
 
 export const RANGES: { key: Range; label: string; days: number }[] = [
@@ -24,6 +24,7 @@ export const RANGES: { key: Range; label: string; days: number }[] = [
 export const METRIC_TITLE: Record<MetricKey, string> = {
   sleep: 'Sleep',
   hrv: 'Heart Rate Variability',
+  rhr: 'Resting Heart Rate',
   steps: 'Steps',
   bp: 'Blood Pressure',
   temp: 'Skin Temperature',
@@ -51,19 +52,29 @@ const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 const has = (p: Point): p is Point & { value: number } => p.value != null;
 
 export function dayKeys(range: Range, now: Date): string[] {
-  const size = RANGES.find((r) => r.key === range)!.days;
+  return lastDays(RANGES.find((r) => r.key === range)!.days, now);
+}
+
+function lastDays(size: number, now: Date): string[] {
   return Array.from({ length: size }, (_, n) => iso(new Date(now.getFullYear(), now.getMonth(), now.getDate() - (size - 1 - n))));
 }
 
 const DAY_FIELD: Partial<Record<MetricKey, (d: Day) => number | null>> = {
   sleep: (d) => d.sleepHours,
   hrv: (d) => d.hrv,
+  rhr: (d) => d.restingHR,
   steps: (d) => d.steps,
   temp: (d) => d.tempDeviation,
 };
 
 export function seriesFor(key: MetricKey, days: readonly Day[], vitals: readonly VitalDay[], range: Range, now: Date): Point[] {
-  const keys = dayKeys(range, now);
+  return seriesForDays(key, days, vitals, RANGES.find((r) => r.key === range)!.days, now);
+}
+
+// The same, for any number of days ending today: 7 on a Today card, 14 or
+// 28 on the Health dashboard.
+export function seriesForDays(key: MetricKey, days: readonly Day[], vitals: readonly VitalDay[], count: number, now: Date): Point[] {
+  const keys = lastDays(count, now);
   const field = DAY_FIELD[key];
   if (field) {
     const byDay = new Map(days.map((d) => [d.date, field(d)]));
@@ -102,6 +113,8 @@ export function fmt(key: MetricKey, v: number, low?: number | null): string {
       return fmtHours(v);
     case 'hrv':
       return `${Math.round(v)} ms`;
+    case 'rhr':
+      return `${Math.round(v)} bpm`;
     case 'steps':
       return fmtCount(v);
     case 'spo2':
@@ -134,6 +147,7 @@ export function summary(key: MetricKey, points: readonly Point[]): Row[] {
 const BASELINE_METRIC: Partial<Record<MetricKey, string>> = {
   sleep: 'sleep_hours',
   hrv: 'hrv',
+  rhr: 'resting_hr',
   steps: 'steps',
   bp: 'blood_pressure_systolic',
   spo2: 'oxygen_saturation',
@@ -235,6 +249,8 @@ export function extras(key: MetricKey, days: readonly Day[], points: readonly Po
       const active = shown.map((d) => d.activeMinutes).filter((v): v is number => v != null);
       return active.length ? [{ title: 'Activity', rows: [{ label: 'Active minutes, daily average', value: `${Math.round(avg(active))} min` }] }] : [];
     }
+    case 'rhr':
+      return [];
     case 'hrv': {
       const rhr = shown.map((d) => d.restingHR).filter((v): v is number => v != null);
       const rows: Row[] = [];
@@ -304,7 +320,7 @@ const ROW_METRIC: Record<string, MetricKey> = {
   Light: 'sleep',
   Awake: 'sleep',
   'Heart rate variability': 'hrv',
-  'Resting heart rate': 'hrv',
+  'Resting heart rate': 'rhr',
   'Skin temperature': 'temp',
   Steps: 'steps',
   'Active minutes': 'steps',
