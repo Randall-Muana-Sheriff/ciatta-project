@@ -17,6 +17,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { displayCopy } from '../lib/displayCopy';
 import type { Trend } from '../lib/trend';
 import { font } from '../theme';
+import { Icon, type IconName } from './icons';
 import { Sparkline } from './sparkline';
 import { HUE, L, mark } from './surface';
 
@@ -38,6 +39,10 @@ export type MetricCardProps = {
   // dashboard and the metric's screen draw, so it reads the same everywhere.
   // When given, it stands in for the small line.
   chart?: ReactNode;
+  // The metric's mark. Given, the card is a glance: the icon in place of
+  // the dot, and no chart or line, which belong to All and the metric's
+  // own screen.
+  icon?: IconName;
   // A colour of its own for the dot and the line, where a screen wants
   // each metric told apart at a glance. Without it the dot says where the
   // figure came from, in the app's meaning colours.
@@ -50,7 +55,7 @@ const DOT: Record<MetricCardProps['from'], string> = {
   derived: HUE.timeDepth,
 };
 
-export function MetricCard({ label, value, note, from, trend, color, chart }: MetricCardProps) {
+export function MetricCard({ label, value, note, from, trend, color, chart, icon }: MetricCardProps) {
   const missing = value == null;
   const spokenTrend = trend?.spoken && !missing ? `, ${trend.spoken}` : '';
   // The width the line actually has, after the change figure has taken
@@ -64,7 +69,13 @@ export function MetricCard({ label, value, note, from, trend, color, chart }: Me
       accessibilityLabel={`${label}, ${value ?? 'not recorded today'}${note && !missing ? `, ${note}` : ''}${spokenTrend}`}
     >
       <View style={s.head}>
-        <View style={[s.dot, { backgroundColor: color ?? DOT[from] }, missing && s.dotMissing]} />
+        {icon ? (
+          <View style={missing && s.iconMissing}>
+            <Icon name={icon} size={18} color={color ?? DOT[from]} weight={1.6} />
+          </View>
+        ) : (
+          <View style={[s.dot, { backgroundColor: color ?? DOT[from] }, missing && s.dotMissing]} />
+        )}
         <Text style={[font('caption1'), s.label]} numberOfLines={1}>
           {displayCopy(label)}
         </Text>
@@ -81,7 +92,13 @@ export function MetricCard({ label, value, note, from, trend, color, chart }: Me
       ) : null}
       {/* The week stays on the card when today has no reading yet, so a
           daily card is never blank where she has history. */}
-      {chart ? (
+      {icon ? (
+        trend?.change && !missing ? (
+          <Text style={[font('caption2', 'semibold'), s.change]} numberOfLines={1}>
+            {trend.change}
+          </Text>
+        ) : null
+      ) : chart ? (
         <View>
           {trend?.change && !missing ? (
             <Text style={[font('caption2', 'semibold'), s.change]} numberOfLines={1}>
@@ -142,6 +159,7 @@ const s = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   dot: { width: 4, height: 4, borderRadius: 2 },
   dotMissing: { backgroundColor: L.rule },
+  iconMissing: { opacity: 0.35 },
   label: { color: L.meta, flex: 1 },
   value: { color: L.ink },
   absent: { color: L.meta },
