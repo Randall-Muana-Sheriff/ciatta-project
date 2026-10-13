@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Attachment } from '../lib/attachments';
+import type { CategoryKey } from '../lib/logCategories';
+import type { Found } from '../lib/quickLog';
 import { type CycleProfile, normalizeProfile } from '../lib/cycleProfile';
 import type { Answers as OnboardingAnswers } from '../lib/onboarding';
 import type { DailyRow } from '../lib/healthMetrics';
@@ -76,7 +78,7 @@ export type Repo = {
   loadJournal(): Promise<JournalView>;
   // Files ride along in metadata, as they do on an episode. Optional, so a
   // caller with nothing attached passes nothing.
-  addJournal(text: string, kind: EntryKind, attachments?: Attachment[]): Promise<void>;
+  addJournal(text: string, kind: EntryKind, attachments?: Attachment[], tags?: { category: CategoryKey; items: Found }): Promise<void>;
   loadSources(): Promise<SourceView[]>;
   loadDays(): Promise<Day[]>;
   // Her newest live insight, or null when the server has not written one:
@@ -168,10 +170,10 @@ export function demoRepo(): Repo {
     loadOnboardedAt: async () => new Date().toISOString(),
     completeOnboarding: async () => {},
     loadJournal: async () => view,
-    addJournal: async (text, kind, attachments = []) => {
+    addJournal: async (text, kind, attachments = [], tags) => {
       const d = new Date();
       const month = `${d.toLocaleString('en-US', { month: 'long' })} ${d.getFullYear()}`;
-      const item = { text, date: `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`, tag: kind, kind, usedInInsight: false, attachments };
+      const item = { text, date: `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`, tag: kind, kind, usedInInsight: false, attachments, category: tags?.category, items: tags?.items };
       const rest = view.months.filter((m) => m.month !== month);
       const current = view.months.find((m) => m.month === month);
       view = { ...view, count: view.count + 1, months: [{ month, items: [item, ...(current?.items ?? [])] }, ...rest] };
@@ -384,7 +386,7 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       );
       return journalView(rows);
     },
-    async addJournal(text, kind, attachments = []) {
+    async addJournal(text, kind, attachments = [], tags) {
       must(
         await db.from('journal_entries').insert({
           user_id: userId,
@@ -392,7 +394,10 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
           text,
           kind,
           occurred_at: new Date().toISOString(),
-          metadata: attachments.length ? { attachments } : {},
+          metadata: {
+            ...(attachments.length ? { attachments } : {}),
+            ...(tags ? { category: tags.category, items: tags.items } : {}),
+          },
         }),
       );
     },

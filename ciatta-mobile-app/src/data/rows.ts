@@ -1,6 +1,8 @@
 import { type Episode, normalizeEpisode, parseDay, shortDate } from './cycleLog';
 import type { EntryKind, SourceKind } from './sample';
 import { type Attachment, normalizeAttachments } from '../lib/attachments';
+import type { CategoryKey } from '../lib/logCategories';
+import type { Found } from '../lib/quickLog';
 
 // The shapes the database stores, and the app types they come from. Pure, so
 // both modes and the tests share one mapping.
@@ -136,7 +138,7 @@ export type JournalRow = {
   occurred_at: string;
   // Files kept with the entry, in metadata like an episode's. Absent on
   // rows written before entries could carry any.
-  metadata?: { attachments?: unknown } | null;
+  metadata?: { attachments?: unknown; category?: unknown; items?: unknown } | null;
 };
 
 export type JournalView = {
@@ -144,7 +146,16 @@ export type JournalView = {
   since: string;
   months: {
     month: string;
-    items: { text: string; date: string; tag: string; kind: EntryKind; usedInInsight: boolean; attachments?: Attachment[] }[];
+    items: {
+      text: string;
+      date: string;
+      tag: string;
+      kind: EntryKind;
+      usedInInsight: boolean;
+      attachments?: Attachment[];
+      category?: CategoryKey;
+      items?: Found;
+    }[];
   }[];
 };
 
@@ -169,6 +180,8 @@ export function journalView(rows: JournalRow[]): JournalView {
       kind: r.kind,
       usedInInsight: false,
       attachments: normalizeAttachments(r.metadata?.attachments),
+      category: typeof r.metadata?.category === 'string' ? (r.metadata.category as CategoryKey) : undefined,
+      items: r.metadata?.items && typeof r.metadata.items === 'object' ? (r.metadata.items as Found) : undefined,
     });
   }
   const oldest = new Date(sorted[sorted.length - 1].occurred_at);

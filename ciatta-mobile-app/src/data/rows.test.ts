@@ -42,6 +42,7 @@ test('notes group by month, newest first', () => {
   assert.deepEqual(view.months.map((m) => m.month), ['July 2026', 'March 2026']);
   assert.deepEqual(view.months[0].items[0], {
     text: 'Slept through four nights.', date: '3 Jul', tag: 'Sleep', kind: 'Notes', usedInInsight: false, attachments: [],
+    category: undefined, items: undefined,
   });
   assert.equal(view.months[1].items[0].tag, 'Context');
 });
@@ -65,4 +66,21 @@ test('a source row reads the way Profile shows sources', () => {
     facts: [{ label: 'Since', value: '15 Sep' }, { label: 'Last updated', value: 'Not yet' }],
   });
   assert.equal(sourceView({ kind: 'apple_health', name: 'Apple Health', status: 'unsupported', last_synced_at: null, created_at: '2026-09-15T08:00:00Z' }).status, 'Not available yet');
+});
+
+test('a journal entry keeps the category and chips it was logged with', () => {
+  const view = journalView([
+    {
+      client_id: 'j1', text: 'Foggy', kind: 'Symptoms', tag: null, occurred_at: '2026-10-12T09:00:00Z',
+      metadata: { category: 'mind', items: { mind: ['Brain fog'] } },
+    },
+  ]);
+  const item = view.months[0].items[0];
+  assert.equal(item.category, 'mind');
+  assert.deepEqual(item.items, { mind: ['Brain fog'] });
+});
+
+test('an old entry with no category reads as none, not as a guess', () => {
+  const view = journalView([{ client_id: 'j1', text: 'x', kind: 'Notes', tag: null, occurred_at: '2026-10-12T09:00:00Z' }]);
+  assert.equal(view.months[0].items[0].category, undefined);
 });
