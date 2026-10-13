@@ -12,6 +12,7 @@ import {
   type RegionId,
   stateWords,
   SYSTEM_DOTS,
+  WHOLE_BODY,
 } from '../lib/bodyMap';
 import { displayCopy } from '../lib/displayCopy';
 import { C, font, GUTTER, M, RADIUS } from '../theme';
@@ -193,11 +194,14 @@ export function BodySystemView({
               accessible={false}
             />
 
-            {/* One dot per system, where it sits, in its own colour. Only
-                on the front: the back is the front mirrored, so a dot there
-                would mark the wrong side. Tapping one chooses that system. */}
+            {/* A system shows its own dot, where it sits, in its colour.
+                Whole Body shows every system's dot, and tapping one there
+                chooses that system. Only on the front: the back is the
+                front mirrored, so a dot there would mark the wrong side. */}
             {quarter === 0
-              ? systems.map((s) => {
+              ? systems
+                  .filter((s) => system.label === WHOLE_BODY || s.label === system.label)
+                  .map((s) => {
                   const dot = SYSTEM_DOTS[s.label];
                   if (!dot) return null;
                   const on = s.label === system.label;
