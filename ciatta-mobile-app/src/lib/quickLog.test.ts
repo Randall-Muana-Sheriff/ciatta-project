@@ -131,3 +131,89 @@ test('every item it reads is a chip of the category it lands in', async () => {
     for (const item of items ?? []) assert.ok(category(key as never).quick.includes(item), `${item} not a ${key} chip`);
   }
 });
+
+// Final review: words that read as one thing but mean another must not
+// become a period, a gut flag, or a pain episode on her record.
+test('bleeding that is not a period is not a period', () => {
+  assert.equal(readCategories('bleeding after sex').cycle, undefined);
+  assert.deepEqual(readCategories('bleeding after sex').sexual, ['Bleeding after sex']);
+  assert.equal(readCategories('nose bleeding this morning').cycle, undefined);
+  assert.equal(readCategories('bleeding gums').cycle, undefined);
+  assert.deepEqual(readCategories('started bleeding today').cycle, ['Period']);
+});
+
+test('period cramps are pain, not a gut flag', () => {
+  const plan = planSave({ text: 'Period started yesterday, heavy, cramping since the morning', selected: 'cycle', tapped: [], files: [] })!;
+  assert.deepEqual(plan.episode?.kinds, ['Period', 'Pain']);
+  assert.equal(plan.daily, null);
+  // Cramping with nothing about a period is still read as gut.
+  assert.deepEqual(readCategories('cramping after lunch, bloated').nutrition, ['Bloating', 'Cramping']);
+});
+
+test('everyday phrases do not become symptoms', () => {
+  for (const s of ['run down', 'wind down after work', 'gas station coffee', 'loose jeans', 'on the pill', 'period leaked']) {
+    const f = readCategories(s);
+    assert.equal(f.mind?.includes('Low mood') ?? false, false, s);
+    assert.equal(f.nutrition?.includes('Gas') ?? false, false, s);
+    assert.equal(f.nutrition?.includes('Loose') ?? false, false, s);
+    assert.equal(f.context?.includes('Took medication') ?? false, false, s);
+    assert.equal(f.sexual?.includes('Leaking') ?? false, false, s);
+    assert.equal(f.context?.includes('Exercised') ?? false, false, s);
+  }
+  assert.deepEqual(readCategories('feeling down today').mind, ['Low mood']);
+  assert.deepEqual(readCategories('went for a run').context, ['Exercised']);
+  assert.deepEqual(readCategories('very gassy').nutrition, ['Gas']);
+  // A loose stool is a bowel movement too, which is true.
+  assert.deepEqual(readCategories('loose stool').nutrition, ['Loose', 'Bowel movement']);
+  assert.deepEqual(readCategories('leaking when I sneeze').sexual, ['Leaking']);
+});
+
+test('a specific pain chip does not also become a generic pain episode', () => {
+  assert.equal(readCategories('sore throat').body, undefined);
+  assert.deepEqual(readCategories('sore breasts').body, ['Breast tenderness']);
+  assert.deepEqual(readCategories('joint pain in my knees').body, ['Joint pain']);
+  assert.deepEqual(readCategories('joint pain and a sore lower back').body, ['Pain', 'Joint pain']);
+});
+
+test('something she says she does not have is not recorded', () => {
+  assert.deepEqual(readCategories('no pain today'), {});
+  assert.deepEqual(readCategories('not bloated at all'), {});
+  assert.deepEqual(readCategories('no bloating but very foggy'), { mind: ['Brain fog'] });
+});
+
+test('a file is kept where she can see it again, even beside gut flags', () => {
+  const file = { id: 'f', kind: 'photo' as const, name: 'Photo at 9:00 AM', uri: 'file:///p.jpg', addedAt: '2026-10-12T09:00:00Z' };
+  const plan = planSave({ text: '', selected: 'nutrition', tapped: ['Bloating'], files: [file] })!;
+  assert.deepEqual(plan.daily?.digestion, ['Bloating']);
+  assert.equal(plan.journal?.category, 'nutrition');
+  assert.equal(plan.wordsGoTo, 'journal');
+});
+
+test('cramps logged under Cycle or Body are pain, even without the word period', () => {
+  for (const selected of ['cycle', 'body'] as const) {
+    const plan = planSave({ text: 'bad cramps all day', selected, tapped: [], files: [] })!;
+    assert.deepEqual(plan.episode?.kinds, ['Pain'], selected);
+    assert.equal(plan.daily, null, selected);
+  }
+});
+
+test('a retry after a failed save never repeats a step that already landed', async () => {
+  const { runSave } = await import('./quickLog');
+  const calls: string[] = [];
+  let journalFails = true;
+  const steps = {
+    daily: async () => void calls.push('daily'),
+    journal: async () => {
+      calls.push('journal');
+      if (journalFails) throw new Error('offline');
+    },
+    episode: () => void calls.push('episode'),
+  };
+  const done = new Set<string>();
+  await assert.rejects(runSave(steps, done));
+  // The episode waits for the server writes, so a failure adds nothing local.
+  assert.deepEqual(calls, ['daily', 'journal']);
+  journalFails = false;
+  await runSave(steps, done);
+  assert.deepEqual(calls, ['daily', 'journal', 'journal', 'episode']);
+});

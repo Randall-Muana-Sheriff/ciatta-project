@@ -178,3 +178,9 @@ test('a full day maps every field she owns', () => {
   assert.equal(p.alcohol, 0, 'a logged zero is a fact, unlike a missing figure');
   assert.equal(p.note, 'Fine');
 });
+
+test('files are not sent to the day, where nothing shows them again', () => {
+  const file = { id: 'f', kind: 'photo' as const, name: 'Photo at 9:00 AM', uri: 'file:///p.jpg', addedAt: '2026-10-12T09:00:00Z' };
+  const p = dailyLogPatch({ ...emptyLog('2026-10-12'), digestion: ['Gas'], attachments: [file] });
+  assert.equal('attachments' in p, false);
+});

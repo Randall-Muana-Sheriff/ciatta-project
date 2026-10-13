@@ -114,3 +114,12 @@ export const CATEGORIES: readonly LogCategory[] = [
 ];
 
 export const category = (key: CategoryKey): LogCategory => CATEGORIES.find((c) => c.key === key) ?? CATEGORIES[0];
+
+// Where a bowel movement is described in full: the cycle questionnaire's
+// bowel step (stool type, pain, blood and the rest), opened on a draft that
+// already says what this is. The chip alone records that it happened; the
+// scale is what a clinician reads, so it is one tap further, never lost.
+export function bowelDetail(items: readonly string[]): { label: string; draft: { form: { kinds: string[] } } } | null {
+  if (!items.includes(BOWEL)) return null;
+  return { label: 'Describe the bowel movement', draft: { form: { kinds: [BOWEL] } } };
+}

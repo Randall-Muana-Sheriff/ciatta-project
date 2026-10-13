@@ -18,14 +18,14 @@
 // before she sends, so nothing is stored that she has not seen. Words it
 // did not recognise are kept verbatim rather than dropped.
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { emptyForm, formToEpisode } from '../data/cycleLog';
 import type { Attachment } from '../lib/attachments';
 import { displayCopy } from '../lib/displayCopy';
-import { CATEGORIES, category, type CategoryKey } from '../lib/logCategories';
-import { mergeFound, planSave, readingLine, readQuick } from '../lib/quickLog';
+import { bowelDetail, CATEGORIES, category, type CategoryKey } from '../lib/logCategories';
+import { mergeFound, planSave, readingLine, readQuick, runSave } from '../lib/quickLog';
 import { userFacingError } from '../lib/userFacingError';
 import { type Screen, useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
@@ -38,7 +38,7 @@ import { L, SPACE } from '../ui/surface';
 export function QuickLogScreen() {
   const nav = useNav();
   const repo = useRepo();
-  const { add } = useCycle();
+  const { add, startDraft } = useCycle();
   const [key, setKey] = useState<CategoryKey>('cycle');
   const [tapped, setTapped] = useState<string[]>([]);
   const [text, setText] = useState('');
@@ -46,9 +46,17 @@ export function QuickLogScreen() {
   const [spoken, setSpoken] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // What has already landed for this entry, so a retry after a failure
+  // does not save any part of it twice. An edit makes it a new entry.
+  const done = useRef(new Set<string>());
+  useEffect(() => {
+    done.current = new Set();
+  }, [text, tapped, files, key]);
 
   const cat = category(key);
   const reading = useMemo(() => readQuick(text), [text]);
+  // A bowel movement she tapped or wrote, with the way into its full detail.
+  const bowel = bowelDetail([...(key === 'nutrition' ? tapped : []), ...(reading.found.nutrition ?? [])]);
   const recognised = readingLine(
     tapped.length ? mergeFound(reading.found, { [key]: tapped }) : reading.found,
     reading.flow,
@@ -75,34 +83,43 @@ export function QuickLogScreen() {
     try {
       const day = new Date();
       const iso = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
-      if (plan.episode) {
-        add(
-          formToEpisode(
-            {
-              ...emptyForm(),
-              kinds: plan.episode.kinds,
-              flow: plan.episode.flow,
-              day: plan.episode.daysAgo,
-              periodStart: plan.episode.daysAgo,
-              context: plan.episode.context,
-              note: plan.wordsGoTo === 'episode' ? said : '',
-              attachments: plan.wordsGoTo === 'episode' ? files : [],
-            },
-            false,
-          ),
-        );
-      }
-      if (plan.daily) {
-        await repo.saveDailyLog({
-          day: iso,
-          digestion: plan.daily.digestion,
-          ...(plan.wordsGoTo === 'daily' && said ? { note: said } : {}),
-          ...(plan.wordsGoTo === 'daily' && files.length ? { attachments: files } : {}),
-        });
-      }
-      if (plan.journal) {
-        await repo.addJournal(said, plan.journal.kind, files, { category: plan.journal.category, items: plan.journal.items });
-      }
+      const episode = plan.episode;
+      const daily = plan.daily;
+      const journal = plan.journal;
+      await runSave(
+        {
+          daily: daily
+            ? () =>
+                repo.saveDailyLog({
+                  day: iso,
+                  digestion: daily.digestion,
+                  ...(plan.wordsGoTo === 'daily' && said ? { note: said } : {}),
+                })
+            : undefined,
+          journal: journal
+            ? () => repo.addJournal(said, journal.kind, files, { category: journal.category, items: journal.items })
+            : undefined,
+          episode: episode
+            ? () =>
+                add(
+                  formToEpisode(
+                    {
+                      ...emptyForm(),
+                      kinds: episode.kinds,
+                      flow: episode.flow,
+                      day: episode.daysAgo,
+                      periodStart: episode.daysAgo,
+                      context: episode.context,
+                      note: plan.wordsGoTo === 'episode' ? said : '',
+                      attachments: plan.wordsGoTo === 'episode' ? files : [],
+                    },
+                    false,
+                  ),
+                )
+            : undefined,
+        },
+        done.current,
+      );
       nav.back();
     } catch (e) {
       setError(userFacingError(e, 'That did not save. Try again.'));
@@ -177,6 +194,24 @@ export function QuickLogScreen() {
         ) : null}
 
         {error ? <Text style={[font('footnote'), q.error]}>{displayCopy(error)}</Text> : null}
+
+        {/*
+          The stool scale, pain and flags live in the bowel step of the full
+          form. Her words and files go with her, so nothing typed here is lost.
+        */}
+        {bowel ? (
+          <Pressable
+            onPress={() => {
+              startDraft({ form: { ...bowel.draft.form, note: text.trim(), attachments: files } });
+              nav.push('cycleLog');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={bowel.label}
+            style={({ pressed }) => [q.detail, pressed && q.pressed]}
+          >
+            <Text style={[font('subhead', 'semibold'), q.detailText]}>{displayCopy(bowel.label)}</Text>
+          </Pressable>
+        ) : null}
 
         {cat.detail && cat.detailLabel ? (
           <Pressable

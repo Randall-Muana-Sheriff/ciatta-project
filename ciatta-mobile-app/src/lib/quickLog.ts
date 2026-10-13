@@ -90,6 +90,34 @@ export function readDaysAgo(text: string): number {
 // the same entry. Order inside a category is the chip order.
 export type Found = Partial<Record<CategoryKey, string[]>>;
 
+// Phrases read before any single word, and removed once read, so a word
+// inside them cannot be read again on its own. "Bleeding after sex" is
+// sexual health and must never start a period; "joint pain" is the joint
+// chip, not a second, generic pain. A null item means the phrase is
+// recognised only to be set aside: "sore throat" is not pelvic pain and
+// "period leaked" is not urinary leaking.
+const PHRASES: [RegExp, CategoryKey | null, string | null][] = [
+  [/\bbleeding after sex\b/gi, 'sexual', 'Bleeding after sex'],
+  [/\bpain(ful)? (with|during) sex\b|\bpainful sex\b/gi, 'sexual', 'Pain with sex'],
+  [/\b(vaginal dryness|dryness down there)\b/gi, 'sexual', 'Vaginal dryness'],
+  [/\bburn\w* when (i )?pee\w*/gi, 'sexual', 'Burning when peeing'],
+  [/\b(tender|sore) breasts?\b|\bbreast (tenderness|pain)\b/gi, 'body', 'Breast tenderness'],
+  [/\bjoint (pain|aches?)\b/gi, 'body', 'Joint pain'],
+  [/\bhot flash(es)?\b/gi, 'body', 'Hot flashes'],
+  [/\bnight sweats?\b/gi, 'body', 'Night sweats'],
+  [/\bmood swings?\b/gi, 'mind', 'Mood swings'],
+  [/\bdry skin\b/gi, 'skin', 'Dry skin'],
+  [/\b(nose ?bleed\w*|bleeding gums|gums bleed\w*)\b/gi, null, null],
+  [/\bsore (throat|eyes?|feet|muscles from the gym)\b/gi, null, null],
+  [/\b(period|pad|tampon|cup|disc) leak\w*/gi, null, null],
+  [/\b(run|wind|calm|slow) down\b|\brun ?down\b/gi, null, null],
+  [/\bgas station\b|\bon the pill\b/gi, null, null],
+];
+
+// Single cues, read from what the phrases left. Each maps a word she wrote
+// to a chip that already exists in that category, so a sentence and a tap
+// make the same entry. Words with an everyday second meaning need context:
+// "gassy", not "gas"; "feeling down", not "down".
 const CUES: [RegExp, CategoryKey, string][] = [
   [/\b(period|menstruat\w*|bleeding|bled)\b/i, 'cycle', 'Period'],
   [/\bspott?ing\b/i, 'cycle', 'Spotting'],
@@ -97,18 +125,14 @@ const CUES: [RegExp, CategoryKey, string][] = [
   [/\bcramp\w*/i, 'nutrition', 'Cramping'],
   [/\b(nausea|nauseous|queasy)\b/i, 'nutrition', 'Nausea'],
   [/\b(reflux|heartburn)\b/i, 'nutrition', 'Reflux'],
-  [/\b(gas|gassy|wind)\b/i, 'nutrition', 'Gas'],
+  [/\b(gassy|gas pain|trapped gas|(lots of|so much|bad) gas|flatulen\w*)\b/i, 'nutrition', 'Gas'],
   [/\bconstipat\w*/i, 'nutrition', 'Constipation'],
-  [/\b(loose|diarrh\w*|runny)\b/i, 'nutrition', 'Loose'],
+  [/\b(loose (stools?|bowels?|poo|poop)|diarrh\w*)\b/i, 'nutrition', 'Loose'],
   [/\b(stool|poop|pooped|bowel)\b/i, 'nutrition', BOWEL],
   [/\b(pain|painful|ache|aching|aches|sore|hurts?|hurting)\b/i, 'body', 'Pain'],
-  [/\b(tender breasts?|breast tenderness|sore breasts?)\b/i, 'body', 'Breast tenderness'],
-  [/\bhot flash(es)?\b/i, 'body', 'Hot flashes'],
-  [/\bnight sweats?\b/i, 'body', 'Night sweats'],
   [/\b(fatigue|fatigued|exhausted|tired)\b/i, 'body', 'Fatigue'],
   [/\bchills?\b/i, 'body', 'Chills'],
   [/\b(swollen|swelling|puffy)\b/i, 'body', 'Swelling'],
-  [/\bjoint pain\b/i, 'body', 'Joint pain'],
   [/\b(fog|foggy|brain fog)\b/i, 'mind', 'Brain fog'],
   [/\b(forgetful|forgot|memory)\b/i, 'mind', 'Memory lapses'],
   [/\b(focus|concentrat\w*)\b/i, 'mind', 'Hard to focus'],
@@ -116,48 +140,63 @@ const CUES: [RegExp, CategoryKey, string][] = [
   [/\bmigraine\b/i, 'mind', 'Migraine'],
   [/\b(dizzy|dizziness|lightheaded)\b/i, 'mind', 'Dizziness'],
   [/\b(tingl\w*|numb\w*|pins and needles)\b/i, 'mind', 'Tingling or numbness'],
-  [/\b(low mood|sad|down|teary)\b/i, 'mind', 'Low mood'],
+  [/\b(low mood|sad|teary|(feeling|feel|felt) (low|down))\b/i, 'mind', 'Low mood'],
   [/\b(anxious|anxiety|panick?y)\b/i, 'mind', 'Anxiety'],
   [/\b(irritable|irritated|snappy)\b/i, 'mind', 'Irritability'],
-  [/\bmood swings?\b/i, 'mind', 'Mood swings'],
   [/\b(acne|breakout|broke out|spots|pimples?)\b/i, 'skin', 'Acne'],
-  [/\boily\b/i, 'skin', 'Oily skin'],
-  [/\bdry skin\b/i, 'skin', 'Dry skin'],
+  [/\boily (skin|face)\b|\bskin (is|was) oily\b/i, 'skin', 'Oily skin'],
   [/\b(hair (shedding|loss|falling)|more hair in)\b/i, 'skin', 'Hair shedding'],
   [/\b(chin hair|facial hair|unwanted hair)\b/i, 'skin', 'Unwanted hair growth'],
   [/\b(dark patch\w*|pigment\w*)\b/i, 'skin', 'Dark patches'],
   [/\b(itch\w*)\b/i, 'skin', 'Itching'],
-  [/\bpain with sex\b|\bpainful sex\b/i, 'sexual', 'Pain with sex'],
   [/\b(low libido|no sex drive|low sex drive)\b/i, 'sexual', 'Low libido'],
-  [/\b(vaginal dryness|dryness down there)\b/i, 'sexual', 'Vaginal dryness'],
   [/\bdischarge\b/i, 'sexual', 'Discharge change'],
   [/\b(urgency|pee more|peeing more|need to pee)\b/i, 'sexual', 'Urinary urgency'],
   [/\b(leak|leaking|leaked)\b/i, 'sexual', 'Leaking'],
-  [/\bburn\w* when (i )?pee\w*/i, 'sexual', 'Burning when peeing'],
-  [/\bbleeding after sex\b/i, 'sexual', 'Bleeding after sex'],
   [/\b(slept badly|bad sleep|poor sleep|could not sleep|couldn.t sleep)\b/i, 'context', 'Slept badly'],
   [/\b(slept well|good sleep)\b/i, 'context', 'Slept well'],
-  [/\b(exercised|workout|ran|run|gym|yoga|walked)\b/i, 'context', 'Exercised'],
+  [/\b(exercised|workout|worked out|gym|yoga|walked|jog\w*|went for a run|ran \d)\b/i, 'context', 'Exercised'],
   [/\b(stressful|stressed)\b/i, 'context', 'Stressful event'],
   [/\b(flight|flew|travel\w*|trip)\b/i, 'context', 'Travel'],
-  [/\b(ibuprofen|paracetamol|tylenol|advil|medication|meds|pill)\b/i, 'context', 'Took medication'],
-  [/\b(supplement|vitamin|magnesium|iron)\b/i, 'context', 'Took supplement'],
+  [/\b(ibuprofen|paracetamol|tylenol|advil|painkillers?|medication|meds|took (a|my) pill)\b/i, 'context', 'Took medication'],
+  [/\b(supplement|vitamin|magnesium|iron tablets?)\b/i, 'context', 'Took supplement'],
   [/\b(sick|ill|a cold|flu|fever)\b/i, 'context', 'Illness'],
 ];
+
+// "No pain today", "not bloated": what she says she does not have is set
+// aside before anything is read, one word after the negation at most.
+const NEGATED = /\b(no|not|without|never|zero)\s+(?:\w+\s+)?\w+/gi;
+
+const add = (found: Found, key: CategoryKey, item: string) => {
+  const list = (found[key] ??= []);
+  if (!list.includes(item)) list.push(item);
+};
 
 export function readCategories(text: string): Found {
   const found: Found = {};
   if (!text.trim()) return found;
-  for (const [cue, key, item] of CUES) {
-    if (!cue.test(text)) continue;
-    const list = (found[key] ??= []);
-    if (!list.includes(item)) list.push(item);
+  let rest = text.replace(NEGATED, ' ');
+  for (const [phrase, key, item] of PHRASES) {
+    if (!phrase.test(rest)) continue;
+    phrase.lastIndex = 0;
+    if (key && item) add(found, key, item);
+    rest = rest.replace(phrase, ' ');
   }
-  // "Pain with sex" is sexual health, not general pain, when that is all
-  // the pain she named.
-  if (found.sexual?.includes('Pain with sex') && found.body?.includes('Pain') && !/\bpain\b(?! with sex)/i.test(text.replace(/pain with sex/gi, ''))) {
-    found.body = found.body.filter((x) => x !== 'Pain');
-    if (!found.body.length) delete found.body;
+  for (const [cue, key, item] of CUES) {
+    if (cue.test(rest)) add(found, key, item);
+  }
+  // Cramps alongside a period are period pain, not a gut flag: the engine
+  // reads digestion for food and bloating, and filing her cramps there
+  // would put her period in her gut.
+  if (found.cycle?.length && found.nutrition?.includes('Cramping')) {
+    found.nutrition = found.nutrition.filter((x) => x !== 'Cramping');
+    if (!found.nutrition.length) delete found.nutrition;
+    add(found, 'body', 'Pain');
+  }
+  // Keep each category in its chip order, whatever order the reads ran in.
+  for (const key of Object.keys(found) as CategoryKey[]) {
+    const order = category(key).quick;
+    found[key]!.sort((x, y) => order.indexOf(x) - order.indexOf(y));
   }
   return found;
 }
@@ -226,6 +265,13 @@ export function planSave(input: { text: string; selected: CategoryKey; tapped: s
   const text = input.text.trim();
   const found = mergeFound(readCategories(text), input.tapped.length ? { [input.selected]: input.tapped } : {});
   if (!text && !input.files.length && !Object.keys(found).length) return null;
+  // Cramps she logs from Cycle or Body are pain where she feels it, not a
+  // gut flag, whatever else the sentence says.
+  if ((input.selected === 'cycle' || input.selected === 'body') && found.nutrition?.includes('Cramping')) {
+    found.nutrition = found.nutrition.filter((x) => x !== 'Cramping');
+    if (!found.nutrition.length) delete found.nutrition;
+    found.body = [...new Set(['Pain', ...(found.body ?? [])])];
+  }
 
   const kinds = [
     ...(found.cycle ?? []),
@@ -240,10 +286,13 @@ export function planSave(input: { text: string; selected: CategoryKey; tapped: s
     if (list.length) items[key] = list;
   }
   const hasWords = !!text || input.files.length > 0;
+  // A file needs a home she can open again. The day's row keeps no files
+  // she can see, so files beside gut flags alone become a journal entry.
   const wantsJournal =
     Object.keys(items).length > 0 ||
     input.selected === 'note' ||
-    (hasWords && !kinds.length && !digestion.length && input.selected !== 'cycle');
+    (hasWords && !kinds.length && !digestion.length && input.selected !== 'cycle') ||
+    (input.files.length > 0 && !kinds.length);
   const wantsEpisode = kinds.length > 0 || (hasWords && input.selected === 'cycle' && !wantsJournal);
 
   const journalCategory: CategoryKey =
@@ -259,4 +308,23 @@ export function planSave(input: { text: string; selected: CategoryKey; tapped: s
     journal: wantsJournal ? { kind: category(journalCategory).journalKind, category: journalCategory, items } : null,
     wordsGoTo: wantsJournal ? 'journal' : wantsEpisode ? 'episode' : 'daily',
   };
+}
+
+// Carrying out a plan, safely retried. The server writes go first and the
+// local episode last, so a failure partway adds nothing she would see
+// twice; and a step that already landed is never run again on retry,
+// because `done` lives as long as the compose does, not the attempt.
+export type SaveSteps = {
+  daily?: () => Promise<void>;
+  journal?: () => Promise<void>;
+  episode?: () => void;
+};
+
+export async function runSave(steps: SaveSteps, done: Set<string>): Promise<void> {
+  for (const key of ['daily', 'journal', 'episode'] as const) {
+    const step = steps[key];
+    if (!step || done.has(key)) continue;
+    await step();
+    done.add(key);
+  }
 }

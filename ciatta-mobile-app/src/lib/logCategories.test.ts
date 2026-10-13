@@ -47,3 +47,11 @@ test('no chip appears in two categories, so a tap has one meaning', () => {
     }
   }
 });
+
+test('a bowel movement opens its own detail: the stool scale, pain and flags', async () => {
+  const { bowelDetail } = await import('./logCategories');
+  const d = bowelDetail(['Gas', 'Bowel movement'])!;
+  assert.deepEqual(d.draft, { form: { kinds: ['Bowel movement'] } });
+  assert.ok(!/[-–—]/.test(d.label));
+  assert.equal(bowelDetail(['Gas']), null);
+});

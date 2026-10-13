@@ -232,6 +232,7 @@ export function dailyLogPatch(log: DailyLog): DailyPatch {
     if (v != null) p[k] = v;
   }
   if (log.note.trim()) p.note = log.note.trim();
-  if (log.attachments.length) p.attachments = [...log.attachments];
+  // Files are not sent: the day's row keeps nothing she can open again.
+  // The screen files them as a journal entry instead.
   return p;
 }

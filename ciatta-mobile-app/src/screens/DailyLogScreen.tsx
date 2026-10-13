@@ -101,6 +101,14 @@ export function DailyLogScreen() {
               setError(null);
               try {
                 await repo.saveDailyLog(dailyLogPatch(log));
+                // Files go where she can see them again: a journal entry
+                // filed under Nutrition and gut.
+                if (log.attachments.length) {
+                  await repo.addJournal('', 'Context', log.attachments, {
+                    category: 'nutrition',
+                    items: log.digestion.length ? { nutrition: [...log.digestion] } : {},
+                  });
+                }
                 nav.back();
               } catch (e) {
                 setError(userFacingError(e, 'That did not save. Try again.'));
