@@ -13,7 +13,7 @@ import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { categorySummary } from '../lib/categorySummary';
 import { category as categoryOf, type CategoryKey } from '../lib/logCategories';
 import { productsLine, type ProductUse } from '../lib/periodProducts';
-import { type EnvironmentDay, weatherLines } from '../lib/weather';
+import { airLines, daylightLine, type EnvironmentDay, weatherLines } from '../lib/weather';
 import { latestMeal } from '../lib/mealPhoto';
 import { caloriesBlock } from '../lib/calories';
 import type { Meal } from '../lib/foodScan';
@@ -137,6 +137,7 @@ export function HealthDashboard({
   const [productUses, setProductUses] = useState<ProductUse[]>([]);
   const [environment, setEnvironment] = useState<EnvironmentDay[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
+  const [daylight, setDaylight] = useState<{ day: string; minutes: number }[]>([]);
   const [targets, setTargets] = useState<NutritionTargets>({});
   const [dialWidth, setDialWidth] = useState(0);
   useEffect(() => {
@@ -152,6 +153,7 @@ export function HealthDashboard({
       .catch(() => {});
     repo.loadMeals(new Date(Date.now() - 30 * 86400000).toISOString()).then((m) => !ignore && setMeals(m)).catch(() => {});
     repo.loadNutritionTargets().then((t) => !ignore && setTargets(t)).catch(() => {});
+    repo.loadDaylight(new Date(Date.now() - 8 * 86400000).toISOString()).then((d) => !ignore && setDaylight(d)).catch(() => {});
     return () => {
       ignore = true;
     };
@@ -176,7 +178,9 @@ export function HealthDashboard({
   const meal = useMemo(() => mealFrom((journal?.months ?? []).flatMap((m) => m.items)), [journal, mode]);
   const periodStart = windows[windows.length - 1]?.start;
   const products = periodStart ? productsLine(productUses, periodStart.toISOString(), now) : null;
-  const weather = weatherLines(environment);
+  // Weather, air, smoke, pollen, and her own daylight: the card appears
+  // once any of them exists.
+  const weather = [...weatherLines(environment), ...airLines(environment), ...(daylightLine(daylight) ? [daylightLine(daylight)!] : [])];
 
   // Undefined until her record holds a day; the "any record at all" cards
   // below wait for one. This is deliberately not "today's data": days
@@ -371,7 +375,7 @@ export function HealthDashboard({
       {/* Weather: the background, never about her body. Drawn only once
           there is weather to show. */}
       {weather.length ? (
-      <Card title="Weather" meta="Last 7 days">
+      <Card title="Around You" meta="Last 7 days">
         {weather.map((line) => (
           <Text key={line} style={[font('subhead'), { color: C.text }]}>
             {displayCopy(line)}

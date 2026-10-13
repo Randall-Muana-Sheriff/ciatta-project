@@ -97,7 +97,7 @@ export function EvidenceScreen() {
         ))}
         {/* The weather, only when it was unusual for her, and never as a
             cause: background a stretch happened against. */}
-        {weather ? <ListRow title={displayCopy(weather)} sub="From Apple Weather" /> : null}
+        {weather ? <ListRow title={displayCopy(weather)} sub="Weather from Apple Weather, air from Open-Meteo" /> : null}
       </ListGroup>
 
       <ListGroup

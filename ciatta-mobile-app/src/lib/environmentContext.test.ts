@@ -13,7 +13,10 @@ const iso = (daysAgo: number) => {
 const series = (recent: Partial<EnvironmentDay>, usual: Partial<EnvironmentDay> = {}): EnvironmentDay[] =>
   Array.from({ length: 111 }, (_, i) => {
     const daysAgo = 110 - i;
-    const base = { tempMaxC: 20 + (i % 3), tempMinC: 12, humidityMean: 0.6 + (i % 3) * 0.01, daylightMinutes: 700 + (i % 3) * 5, condition: null };
+    const base = {
+      tempMaxC: 20 + (i % 3), tempMinC: 12, humidityMean: 0.6 + (i % 3) * 0.01, daylightMinutes: 700 + (i % 3) * 5, condition: null,
+      pm25: 6 + (i % 3), usAqi: 30 + (i % 3) * 2, pollenGrass: null, pollenTree: null, pollenWeed: null,
+    };
     return { day: iso(daysAgo), ...base, ...(daysAgo < 21 ? recent : usual) };
   });
 
@@ -42,4 +45,8 @@ test('it never says the weather caused anything, and carries no dash', () => {
   const line = environmentLine(series({ tempMaxC: 31, humidityMean: 0.8, daylightMinutes: 540 }), NOW)!;
   assert.ok(!/\b(cause|caused|because|due to|led to|triggered)\b/i.test(line), line);
   assert.ok(!/[-–—]/.test(line), line);
+});
+
+test('poorer air than her usual is named, with the AQI', () => {
+  assert.equal(environmentLine(series({ usAqi: 120 }), NOW), 'These last three weeks had poorer air than your usual (AQI 120).');
 });

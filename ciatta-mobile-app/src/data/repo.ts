@@ -97,6 +97,8 @@ export type Repo = {
   // Asks the server to fetch the weather for a rough area and a range of
   // days. The coordinates are already rounded and are not stored.
   fetchEnvironment(req: { lat: number; lon: number; from: string; to: string }): Promise<void>;
+  // Her own minutes outside in daylight per day (Apple Health, Apple Watch).
+  loadDaylight(sinceIso: string): Promise<{ day: string; minutes: number }[]>;
   // Her optional daily nutrition targets. Empty when she set none.
   loadNutritionTargets(): Promise<NutritionTargets>;
   // A meal photo read by the food scan, already checked (lib/foodScan).
@@ -291,6 +293,11 @@ export function demoRepo(): Repo {
     loadMeals: async (since) => meals.filter((m) => m.eatenAt >= since),
     // The example person's weather is a fixed sample; nothing is fetched.
     fetchEnvironment: async () => {},
+    loadDaylight: async () =>
+      [35, 52, 18, 41, 60, 27, 44].map((minutes, n) => ({
+        day: new Date(Date.now() - (7 - n) * 86400000).toISOString().slice(0, 10),
+        minutes,
+      })),
     loadNutritionTargets: async () => targets,
     saveNutritionTargets: async (t) => {
       targets = normalizeTargets(t);
@@ -315,6 +322,11 @@ export function demoRepo(): Repo {
           humidityMean: humidity,
           daylightMinutes: daylight,
           condition: null,
+          pm25: [6, 8, 11, 9, 7, 6, 5][n],
+          usAqi: [28, 34, 46, 38, 31, 27, 24][n],
+          pollenGrass: null,
+          pollenTree: null,
+          pollenWeed: null,
         };
       }),
     startProduct: async (next) => {
@@ -545,6 +557,26 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       );
       return journalView(rows);
     },
+    async loadDaylight(since) {
+      // Each Apple Health sample is a stretch of time outside; a day's
+      // total is their sum.
+      const rows = must(
+        await db
+          .from('observations')
+          .select('value, occurred_at')
+          .eq('metric', 'time_in_daylight')
+          .gte('occurred_at', since)
+          .not('value', 'is', null)
+          .limit(5000),
+      ) as { value: number; occurred_at: string }[] | null;
+      const byDay = new Map<string, number>();
+      for (const r of rows ?? []) {
+        const d = new Date(r.occurred_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        byDay.set(key, (byDay.get(key) ?? 0) + Number(r.value));
+      }
+      return [...byDay.entries()].map(([day, minutes]) => ({ day, minutes }));
+    },
     async fetchEnvironment(req) {
       const { error } = await db.functions.invoke('environment', { body: req });
       if (error) throw error;
@@ -559,19 +591,25 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
         const rows = must(
           await db
             .from('environment_days')
-            .select('day, temp_max_c, temp_min_c, humidity_mean, daylight_minutes, condition')
+            .select('day, temp_max_c, temp_min_c, humidity_mean, daylight_minutes, condition, pm2_5, us_aqi, pollen_grass, pollen_tree, pollen_weed')
             .gte('day', since)
             .order('day'),
         ) as
-          | { day: string; temp_max_c: number | null; temp_min_c: number | null; humidity_mean: number | null; daylight_minutes: number | null; condition: string | null }[]
+          | Record<string, number | string | null>[]
           | null;
+        const n = (v: number | string | null | undefined) => (v == null ? null : Number(v));
         return (rows ?? []).map((r) => ({
-          day: r.day,
-          tempMaxC: r.temp_max_c == null ? null : Number(r.temp_max_c),
-          tempMinC: r.temp_min_c == null ? null : Number(r.temp_min_c),
-          humidityMean: r.humidity_mean == null ? null : Number(r.humidity_mean),
-          daylightMinutes: r.daylight_minutes == null ? null : Number(r.daylight_minutes),
-          condition: r.condition,
+          day: String(r.day),
+          tempMaxC: n(r.temp_max_c),
+          tempMinC: n(r.temp_min_c),
+          humidityMean: n(r.humidity_mean),
+          daylightMinutes: n(r.daylight_minutes),
+          condition: r.condition == null ? null : String(r.condition),
+          pm25: n(r.pm2_5),
+          usAqi: n(r.us_aqi),
+          pollenGrass: n(r.pollen_grass),
+          pollenTree: n(r.pollen_tree),
+          pollenWeed: n(r.pollen_weed),
         }));
       } catch {
         return [];

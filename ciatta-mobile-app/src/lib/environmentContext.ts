@@ -53,11 +53,17 @@ export function environmentLine(days: readonly EnvironmentDay[], now: Date): str
   }
   const daylight = light ? `${light.dir === 'down' ? 'less' : 'more'} daylight` : null;
   const hours = light ? `${Math.round(light.m / 60)}h a day` : null;
+  // Air is named only when it was worse than her usual; cleaner air is not
+  // background anyone needs explained.
+  const air = side((d) => d.usAqi);
+  const poorAir = air?.dir === 'up' ? `poorer air than your usual (AQI ${Math.round(air.m)})` : null;
 
+  const airTail = poorAir ? `, and ${poorAir}` : '';
   if (words.length && daylight) {
-    return `These last three weeks were ${words.join(' and ')} than your usual (${figures.join(', ')}), with ${daylight} (${hours}).`;
+    return `These last three weeks were ${words.join(' and ')} than your usual (${figures.join(', ')}), with ${daylight} (${hours})${airTail}.`;
   }
-  if (words.length) return `These last three weeks were ${words.join(' and ')} than your usual (${figures.join(', ')}).`;
-  if (daylight) return `These last three weeks had ${daylight} than your usual (${hours}).`;
+  if (words.length) return `These last three weeks were ${words.join(' and ')} than your usual (${figures.join(', ')})${airTail}.`;
+  if (daylight) return `These last three weeks had ${daylight} than your usual (${hours})${airTail}.`;
+  if (poorAir) return `These last three weeks had ${poorAir}.`;
   return null;
 }
