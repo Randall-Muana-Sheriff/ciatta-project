@@ -23,7 +23,10 @@ import { displayCopy } from '../lib/displayCopy';
 import { defaultUnits } from '../lib/units';
 import { metricForRow } from '../lib/metricDetail';
 import { chooseMetric } from '../lib/metricHandoff';
-import { useNav } from '../navigation';
+import { type Screen, useNav } from '../navigation';
+import { cycleToday } from '../lib/cycleModel';
+import { BOWEL } from '../lib/logCategories';
+import { NAME } from '../lib/metricNames';
 import { useData, useRepo } from '../state/session';
 import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
@@ -41,7 +44,8 @@ export function MetricsScreen() {
   const [view, setView] = useState<(typeof VIEWS)[number]>('Dashboard');
   const { setFocus } = useCycle();
   const { movement } = useInsights();
-  const { signals, summaries, lens } = useCycleInsights();
+  const { signals, summaries, lens, windows } = useCycleInsights();
+  const { episodes } = useCycle();
   const { days } = useData();
   const repo = useRepo();
 
@@ -73,7 +77,18 @@ export function MetricsScreen() {
     return days.find((x) => x.date === key) ?? null;
   }, [days]);
 
-  const groups = useMemo(() => buildMetrics(today, vitals), [today, vitals]);
+  // Today's cycle day and bowel movements, which live outside the day row.
+  const extra = useMemo(() => {
+    const now = new Date();
+    const key = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const open = windows[windows.length - 1] ?? null;
+    const c = cycleToday(open && !open.end ? open : null, null, now);
+    const bowel = episodes.filter((e) => e.date === key && (e.kinds.includes(BOWEL) || e.stool != null)).length;
+    return { cycleDay: c ? `Day ${c.day}` : null, bowel: bowel || null };
+  }, [windows, episodes]);
+  const groups = useMemo(() => buildMetrics(today, vitals, extra), [today, vitals, extra]);
+  // Rows with a screen of their own beyond a single metric's.
+  const SCREEN_FOR: Record<string, Screen> = { [NAME.gutSymptoms]: 'gut', [NAME.bowel]: 'gut', [NAME.cycleDay]: 'cycle' };
   const counts = useMemo(() => recordedCount(groups), [groups]);
 
   return (
@@ -126,7 +141,9 @@ export function MetricsScreen() {
                         chooseMetric(metricForRow(row.label)!);
                         nav.push('metric');
                       }
-                    : undefined
+                    : SCREEN_FOR[row.label]
+                      ? () => nav.push(SCREEN_FOR[row.label])
+                      : undefined
                 }
               />
             ))}

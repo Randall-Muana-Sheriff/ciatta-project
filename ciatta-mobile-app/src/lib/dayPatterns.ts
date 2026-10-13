@@ -4,16 +4,17 @@
 // chart of a single day; heart rate, HRV, steps, blood oxygen and breathing
 // rate are what a watch or ring reads through a day.
 
+import { NAME, SHORT } from './metricNames';
 import { hourLabel } from './timeAxis';
 
 export type DayMetricKey = 'heart_rate' | 'hrv' | 'steps' | 'oxygen_saturation' | 'respiratory_rate';
 
 const METRICS: { key: DayMetricKey; label: string; unit: string; sum?: boolean; percent?: boolean }[] = [
-  { key: 'heart_rate', label: 'Heart rate', unit: 'bpm' },
-  { key: 'hrv', label: 'HRV', unit: 'ms' },
+  { key: 'heart_rate', label: 'Heart Rate', unit: 'bpm' },
+  { key: 'hrv', label: SHORT.hrv, unit: 'ms' },
   { key: 'steps', label: 'Steps', unit: 'steps', sum: true },
-  { key: 'oxygen_saturation', label: 'Blood oxygen', unit: '%', percent: true },
-  { key: 'respiratory_rate', label: 'Breathing rate', unit: 'br/min' },
+  { key: 'oxygen_saturation', label: NAME.spo2, unit: '%', percent: true },
+  { key: 'respiratory_rate', label: 'Respiratory Rate', unit: 'br/min' },
 ];
 export const DAY_METRICS = METRICS.map((m) => m.key);
 export const DAY_READ = [...DAY_METRICS, 'sleep_analysis'];

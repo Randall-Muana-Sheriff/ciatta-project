@@ -9,6 +9,7 @@
 //
 // Her notes are her own words and are left out unless she includes them.
 
+import { NAME } from './metricNames';
 import type { Day } from '../data/daily';
 import type { Reported } from '../data/repo';
 import { fmtHours } from './engine';
@@ -119,10 +120,10 @@ export function reportSections(input: ReportInput, include: readonly SectionId[]
     if (vs.length) measured.push({ label, value: `${say(avg(vs))} average`, note: `${vs.length} ${vs.length === 1 ? 'day' : 'days'} recorded` });
   };
   measure('Sleep', (d) => d.sleepHours, fmtHours);
-  measure('Resting heart rate', (d) => d.restingHR, (v) => `${Math.round(v)} bpm`);
-  measure('Heart rate variability', (d) => d.hrv, (v) => `${Math.round(v)} ms`);
+  measure(NAME.rhr, (d) => d.restingHR, (v) => `${Math.round(v)} bpm`);
+  measure(NAME.hrv, (d) => d.hrv, (v) => `${Math.round(v)} ms`);
   measure('Steps', (d) => d.steps, (v) => Math.round(v).toLocaleString('en-US'));
-  measure('Skin temperature from usual', (d) => d.tempDeviation, (v) => `${Math.abs(v).toFixed(1)} °C ${v >= 0 ? 'above' : 'below'}`);
+  measure(`${NAME.temp} from usual`, (d) => d.tempDeviation, (v) => `${Math.abs(v).toFixed(1)} °C ${v >= 0 ? 'above' : 'below'}`);
   add('measurements', 'Synced from her devices', measured, 'No device readings in this period.');
 
   // Labs: the latest result of each test in the period, outside its range

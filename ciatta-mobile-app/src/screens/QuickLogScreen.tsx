@@ -21,10 +21,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { emptyForm, formToEpisode } from '../data/cycleLog';
+import { emptyForm, formToEpisode, STOOL_TYPES } from '../data/cycleLog';
+import { chipIcon } from '../lib/chipIcons';
 import type { Attachment } from '../lib/attachments';
 import { displayCopy } from '../lib/displayCopy';
-import { bowelDetail, CATEGORIES, category, type CategoryKey } from '../lib/logCategories';
+import { BOWEL, bowelDetail, CATEGORIES, category, type CategoryKey } from '../lib/logCategories';
 import { mergeFound, planSave, readingLine, readQuick, runSave } from '../lib/quickLog';
 import { userFacingError } from '../lib/userFacingError';
 import { handPhoto } from '../lib/scanHandoff';
@@ -38,6 +39,8 @@ import { font, GUTTER } from '../theme';
 import { Composer } from '../ui/composer';
 import { DetailScreen, PrimaryButton } from '../ui/kit';
 import { ProductLogger } from '../ui/ProductLogger';
+import { Icon } from '../ui/icons';
+import { StoolPicture } from '../ui/stoolScale';
 import { takeLogCategory, takeLogMode } from '../lib/logHandoff';
 import { L, SPACE } from '../ui/surface';
 
@@ -50,6 +53,9 @@ export function QuickLogScreen() {
   // listening, typing or on the camera. A meal photo goes to the scan.
   const [mode] = useState(() => takeLogMode());
   const [tapped, setTapped] = useState<string[]>([]);
+  // Under Gut: the Bristol type of a bowel movement, one tap. Choosing one
+  // logs the movement with it.
+  const [stool, setStool] = useState<number | null>(null);
   const [text, setText] = useState('');
   const [files, setFiles] = useState<Attachment[]>([]);
   const [spoken, setSpoken] = useState(false);
@@ -99,7 +105,7 @@ export function QuickLogScreen() {
   };
   useEffect(() => {
     done.current = new Set();
-  }, [text, tapped, files, key]);
+  }, [text, tapped, files, key, stool]);
   useEffect(() => {
     if (mode === 'camera' && key === 'nutrition') void pickMeal('camera');
     // Once, on opening.
@@ -124,13 +130,15 @@ export function QuickLogScreen() {
   const choose = (next: CategoryKey) => {
     setKey(next);
     setTapped([]);
+    setStool(null);
   };
   const toggle = (item: string) =>
     setTapped((prev) => (prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]));
 
   const send = async () => {
     if (saving) return;
-    const plan = planSave({ text, selected: key, tapped, files });
+    const withStool = key === 'gut' && stool != null && !tapped.includes(BOWEL) ? [...tapped, BOWEL] : tapped;
+    const plan = planSave({ text, selected: key, tapped: withStool, files });
     if (!plan) return;
     const said = text.trim();
     setSaving(true);
@@ -165,6 +173,7 @@ export function QuickLogScreen() {
                     {
                       ...emptyForm(),
                       kinds: episode.kinds,
+                      stool: key === 'gut' ? stool : null,
                       flow: episode.flow,
                       day: episode.daysAgo,
                       periodStart: episode.daysAgo,
@@ -255,6 +264,36 @@ export function QuickLogScreen() {
 
         {error ? <Text style={[font('footnote'), q.error]}>{displayCopy(error)}</Text> : null}
 
+        {/* A bowel movement by its Bristol type: the seven pictures, one tap. */}
+        {key === 'gut' ? (
+          <>
+            <Text style={[font('caption1'), q.orTap]}>Bowel movement, by type</Text>
+            <View style={q.stools}>
+              {STOOL_TYPES.map(({ type, word }) => {
+                const on = stool === type;
+                return (
+                  <Pressable
+                    key={type}
+                    onPress={() => setStool(on ? null : type)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: on }}
+                    accessibilityLabel={`Type ${type}, ${displayCopy(word)}`}
+                    style={({ pressed }) => [q.stool, on && q.chipOn, pressed && q.pressed]}
+                  >
+                    <StoolPicture type={type} color={on ? L.ink : L.body} width={30} />
+                    <Text style={[font('caption2', on ? 'semibold' : 'regular'), on ? q.chipTextOn : q.chipText]}>{type}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {stool != null ? (
+              <Text style={[font('footnote'), q.noted]}>
+                {displayCopy(`Type ${stool}, ${STOOL_TYPES[stool - 1].word.toLowerCase()}. ${stool <= 2 ? 'On the hard side' : stool <= 4 ? 'The typical range' : 'On the loose side'} of the Bristol scale.`)}
+              </Text>
+            ) : null}
+          </>
+        ) : null}
+
         {chips.length ? <Text style={[font('caption1'), q.orTap]}>Or tap</Text> : null}
         {chips.length ? (
           <View style={q.chips}>
@@ -268,10 +307,19 @@ export function QuickLogScreen() {
                   accessibilityState={{ checked: on }}
                   style={({ pressed }) => [q.chip, on && q.chipOn, pressed && q.pressed]}
                 >
+                  <Icon name={chipIcon(item, key) ?? 'plus'} size={15} color={on ? L.ink : L.body} />
                   <Text style={[font('footnote', on ? 'semibold' : 'regular'), on ? q.chipTextOn : q.chipText]}>{displayCopy(item)}</Text>
                 </Pressable>
               );
             })}
+          </View>
+        ) : null}
+
+        {/* Taps alone are a log too: the send in the box needs words, so
+            a tap gets its own Save. */}
+        {tapped.length || stool != null ? (
+          <View style={{ marginTop: SPACE.near }}>
+            <PrimaryButton label={saving ? 'Saving' : 'Save'} disabled={saving} onPress={() => void send()} />
           </View>
         ) : null}
 
@@ -332,6 +380,17 @@ export function QuickLogScreen() {
 const q = StyleSheet.create({
   pad: { paddingHorizontal: GUTTER },
   orTap: { color: L.meta, marginTop: SPACE.near },
+  stools: { flexDirection: 'row', justifyContent: 'space-between', gap: 4, marginTop: 8 },
+  stool: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: L.rule,
+    backgroundColor: L.recessed,
+  },
   cats: { gap: 8, paddingHorizontal: GUTTER, paddingVertical: 4 },
   cat: {
     paddingVertical: 9,
@@ -346,6 +405,9 @@ const q = StyleSheet.create({
   catTextOn: { color: L.canvas },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 999,

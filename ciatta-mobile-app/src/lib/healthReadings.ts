@@ -10,6 +10,7 @@
 // the day it came from, because the most recent value for a metric may be
 // weeks old and a bare number would read as today's.
 
+import { NAME } from './metricNames';
 import type { Day } from '../data/daily';
 
 export type Reading = {
@@ -35,8 +36,8 @@ function withThousands(n: number): string {
 const FIELDS: { label: string; pick: (d: Day) => number | null; say: (n: number) => string }[] = [
   { label: 'Steps', pick: (d) => d.steps, say: (n) => withThousands(n) },
   { label: 'Sleep time', pick: (d) => d.sleepHours, say: hoursAndMinutes },
-  { label: 'Resting heart rate', pick: (d) => d.restingHR, say: (n) => `${Math.round(n)} bpm` },
-  { label: 'Heart rate variability', pick: (d) => d.hrv, say: (n) => `${Math.round(n)} ms` },
+  { label: NAME.rhr, pick: (d) => d.restingHR, say: (n) => `${Math.round(n)} bpm` },
+  { label: NAME.hrv, pick: (d) => d.hrv, say: (n) => `${Math.round(n)} ms` },
   { label: 'Active minutes', pick: (d) => d.activeMinutes, say: (n) => `${Math.round(n)} min` },
   { label: 'Time in bed', pick: (d) => d.timeInBed, say: hoursAndMinutes },
 ];

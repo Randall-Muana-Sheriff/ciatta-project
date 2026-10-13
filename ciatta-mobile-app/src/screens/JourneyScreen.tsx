@@ -1,3 +1,4 @@
+import { NAME } from '../lib/metricNames';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
@@ -61,8 +62,8 @@ const LANES: { key: Lane; title: string; sub: string; icon: IconName; color: str
   { key: 'sleep', title: 'Sleep', sub: 'Against 7 hours', icon: 'moon', color: C.lavender, height: 150 },
   { key: 'symptoms', title: 'Symptoms', sub: 'Most logged', icon: 'triangle', color: C.violet, height: ROW_TOP + SYMPTOM_ROWS * ROW_H + 12 },
   { key: 'hrv', title: 'HRV', sub: 'Daily, against your usual', icon: 'wave', color: METRIC_HUE.hrv, height: 110 },
-  { key: 'heart', title: 'Resting heart rate', sub: 'Daily, against your usual', icon: 'heart', color: METRIC_HUE.bp, height: 110 },
-  { key: 'temp', title: 'Skin temperature', sub: 'Above or below usual', icon: 'sun', color: METRIC_HUE.temp, height: 110 },
+  { key: 'heart', title: NAME.rhr, sub: 'Daily, against your usual', icon: 'heart', color: METRIC_HUE.bp, height: 110 },
+  { key: 'temp', title: NAME.temp, sub: 'Above or below usual', icon: 'sun', color: METRIC_HUE.temp, height: 110 },
   { key: 'steps', title: 'Steps', sub: 'Each day', icon: 'bars', color: METRIC_HUE.steps, height: 100 },
   { key: 'medications', title: 'Medications', sub: 'While taken', icon: 'pill', color: C.mint, height: 124 },
   { key: 'records', title: 'Labs', sub: 'Each visit, by range', icon: 'doc', color: C.green, height: 88 },

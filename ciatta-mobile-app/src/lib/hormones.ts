@@ -20,6 +20,7 @@
 // heart rate and the stress she logged in each phase, against her own
 // usual, from her completed cycles. Said only once two cycles back it.
 
+import { NAME } from './metricNames';
 import type { Day } from '../data/daily';
 import { type ClinicalPhase, type CycleWindow, estimatedPhase } from './cycleModel';
 import { fmtHours } from './engine';
@@ -81,7 +82,7 @@ const METRICS: {
 }[] = [
   { key: 'sleep', label: 'Sleep', get: (d) => d.sleepHours, say: (v) => fmtHours(v), differs: (v, u) => (v - u) / u, threshold: 0.05 },
   { key: 'hrv', label: 'HRV', get: (d) => d.hrv, say: (v) => `${Math.round(v)} ms`, differs: (v, u) => (v - u) / u, threshold: 0.05 },
-  { key: 'rhr', label: 'Resting heart rate', get: (d) => d.restingHR, say: (v) => `${Math.round(v)} bpm`, differs: (v, u) => (v - u) / u, threshold: 0.03 },
+  { key: 'rhr', label: NAME.rhr, get: (d) => d.restingHR, say: (v) => `${Math.round(v)} bpm`, differs: (v, u) => (v - u) / u, threshold: 0.03 },
   { key: 'stress', label: 'Stress you logged', get: (d) => d.stress, say: (v) => `${v.toFixed(1)} of 5`, differs: (v, u) => v - u, threshold: 0.4 },
 ];
 

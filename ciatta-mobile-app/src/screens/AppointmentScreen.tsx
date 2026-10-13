@@ -9,6 +9,7 @@
 // is the point: a brief is read by a clinician in about ninety seconds, and
 // a sentence invented at render time would be the hardest kind to catch.
 
+import { NAME } from '../lib/metricNames';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 
@@ -74,8 +75,8 @@ export function AppointmentScreen() {
       if (found) readings.push({ label, value: say(get(found) as number), on: found.date });
     };
     pick('Sleep', (d) => d.sleepHours, fmtHours);
-    pick('Resting heart rate', (d) => d.restingHR, (n) => `${Math.round(n)} bpm`);
-    pick('Heart rate variability', (d) => d.hrv, (n) => `${Math.round(n)} ms`);
+    pick(NAME.rhr, (d) => d.restingHR, (n) => `${Math.round(n)} bpm`);
+    pick(NAME.hrv, (d) => d.hrv, (n) => `${Math.round(n)} ms`);
 
     // Her own words, newest first.
     const notes = inWindow

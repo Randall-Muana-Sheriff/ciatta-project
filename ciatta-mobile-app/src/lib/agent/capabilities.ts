@@ -20,6 +20,7 @@
 //   An abstention is an answer. "There is not enough yet" is true and
 //   useful; an answer improvised to avoid saying it is neither.
 
+import { NAME } from '../metricNames';
 import type { Day } from '../../data/daily';
 import type { Episode } from '../../data/cycleLog';
 import { buildMetrics, recordedCount } from '../allMetrics';
@@ -129,7 +130,7 @@ export function answerRecord(r: Record): Answer {
   const d = r.today;
 
   if (d?.sleepHours != null) facts.push({ label: 'Sleep', value: fmtHours(d.sleepHours), from: 'measured', on: d.date });
-  if (d?.hrv != null) facts.push({ label: 'Heart rate variability', value: `${Math.round(d.hrv)} ms`, from: 'measured', on: d.date });
+  if (d?.hrv != null) facts.push({ label: NAME.hrv, value: `${Math.round(d.hrv)} ms`, from: 'measured', on: d.date });
   if (d?.steps != null) facts.push({ label: 'Steps', value: Math.round(d.steps).toLocaleString('en-US'), from: 'measured', on: d.date });
   if (r.cycleDay != null) {
     facts.push({ label: 'Cycle day', value: `${r.cycleDay}`, from: 'reported' });

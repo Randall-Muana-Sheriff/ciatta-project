@@ -43,7 +43,7 @@ test('each reading is the newest one there is, with the day it came from', () =>
     day('2026-10-07', { steps: 5000, restingHR: 58 }),
   ]);
   const steps = readings.find((r) => r.label === 'Steps');
-  const hr = readings.find((r) => r.label === 'Resting heart rate');
+  const hr = readings.find((r) => r.label === 'Resting Heart Rate');
   assert.equal(steps?.value, '8,432');
   assert.equal(steps?.on, '2026-10-09');
   assert.equal(hr?.value, '58 bpm', 'it did not take the newest heart rate');
@@ -73,8 +73,8 @@ test('steps are grouped, and every value carries its unit', () => {
   ]);
   const by = Object.fromEntries(readings.map((r) => [r.label, r.value]));
   assert.equal(by.Steps, '12,345');
-  assert.equal(by['Resting heart rate'], '58 bpm');
-  assert.equal(by['Heart rate variability'], '43 ms');
+  assert.equal(by['Resting Heart Rate'], '58 bpm');
+  assert.equal(by['Heart Rate Variability'], '43 ms');
   assert.equal(by['Active minutes'], '37 min');
 });
 

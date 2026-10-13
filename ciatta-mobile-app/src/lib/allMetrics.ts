@@ -16,6 +16,7 @@ import { fmtHours } from './engine';
 import { type Trend, trendOf } from './trend';
 import type { BaselineRow } from './metricDetail';
 import type { VitalCard } from './vitals';
+import { GROUP, NAME, SHORT } from './metricNames';
 
 export type MetricRow = {
   label: string;
@@ -38,28 +39,70 @@ const one = (n: number) => (Math.round(n * 10) / 10).toFixed(1);
 // she chose a number, and naming it for her is an interpretation.
 const scale = (n: number | null) => (n == null ? null : `${n} of 5`);
 
-export function buildMetrics(day: Day | null, vitals: readonly VitalCard[] = []): MetricGroup[] {
+export function buildMetrics(
+  day: Day | null,
+  vitals: readonly VitalCard[] = [],
+  // Today's cycle day and bowel movements, which live outside the day row.
+  extra: { cycleDay?: string | null; bowel?: number | null } = {},
+): MetricGroup[] {
   const d = day;
   const mins = (n: number | null) => (n == null ? null : `${Math.round(n)} min`);
 
   const sleep: MetricRow[] = [
-    { label: 'Time asleep', value: d?.sleepHours != null ? fmtHours(d.sleepHours) : null, from: 'measured' },
-    { label: 'Time in bed', value: d?.timeInBed != null ? fmtHours(d.timeInBed) : null, from: 'measured' },
-    { label: 'Deep', value: mins(d?.stages?.deep ?? null), from: 'measured' },
-    { label: 'REM', value: mins(d?.stages?.rem ?? null), from: 'measured' },
-    { label: 'Light', value: mins(d?.stages?.light ?? null), from: 'measured' },
-    { label: 'Awake', value: mins(d?.stages?.awake ?? null), from: 'measured' },
+    { label: NAME.timeAsleep, value: d?.sleepHours != null ? fmtHours(d.sleepHours) : null, from: 'measured' },
+    { label: NAME.timeInBed, value: d?.timeInBed != null ? fmtHours(d.timeInBed) : null, from: 'measured' },
+    { label: NAME.deep, value: mins(d?.stages?.deep ?? null), from: 'measured' },
+    { label: NAME.rem, value: mins(d?.stages?.rem ?? null), from: 'measured' },
+    { label: NAME.light, value: mins(d?.stages?.light ?? null), from: 'measured' },
+    { label: NAME.awake, value: mins(d?.stages?.awake ?? null), from: 'measured' },
   ];
 
   const heart: MetricRow[] = [
     {
-      label: 'Heart rate variability',
+      label: NAME.hrv,
       value: d?.hrv != null ? `${Math.round(d.hrv)} ms` : null,
       from: 'measured',
     },
-    { label: 'Resting heart rate', value: d?.restingHR != null ? `${Math.round(d.restingHR)} bpm` : null, from: 'measured' },
+    { label: NAME.rhr, value: d?.restingHR != null ? `${Math.round(d.restingHR)} bpm` : null, from: 'measured' },
+  ];
+
+  const movement: MetricRow[] = [
+    { label: NAME.steps, value: d?.steps != null ? Math.round(d.steps).toLocaleString('en-US') : null, from: 'measured' },
+    { label: NAME.active, value: mins(d?.activeMinutes ?? null), from: 'measured' },
     {
-      label: 'Skin temperature',
+      label: NAME.workouts,
+      // An empty array is a real answer here, unlike a null column: the day
+      // row exists and lists no workouts. Without a row at all it is
+      // unknown, which is the null case above it.
+      value: d ? `${d.workouts.length}` : null,
+      from: 'measured',
+    },
+  ];
+
+  const checkIns: MetricRow[] = [
+    { label: NAME.energy, value: scale(d?.energy ?? null), from: 'reported' },
+    { label: NAME.mood, value: scale(d?.mood ?? null), from: 'reported' },
+    { label: NAME.stress, value: scale(d?.stress ?? null), from: 'reported' },
+  ];
+
+  const intake: MetricRow[] = [
+    { label: NAME.caffeine, value: d?.caffeine != null ? `${d.caffeine}` : null, from: 'reported' },
+    { label: NAME.alcohol, value: d?.alcohol != null ? `${d.alcohol}` : null, from: 'reported' },
+    { label: NAME.foods, value: d?.foods?.length ? d.foods.join(', ') : null, from: 'reported' },
+  ];
+
+  // Blood pressure, blood oxygen and weight, which live in observations
+  // rather than on the day row. Shown here with the same rule they carry
+  // everywhere: the figure and when it was taken, or nothing.
+  const vitalRows: MetricRow[] = [
+    ...vitals.map((v) => ({
+      label: v.label,
+      value: v.value,
+      from: 'measured' as const,
+      note: v.note,
+    })),
+    {
+      label: NAME.temp,
       // In words, not signed: a minus is a dash to display copy.
       value:
         d?.tempDeviation == null
@@ -74,49 +117,20 @@ export function buildMetrics(day: Day | null, vitals: readonly VitalCard[] = [])
     },
   ];
 
-  const movement: MetricRow[] = [
-    { label: 'Steps', value: d?.steps != null ? Math.round(d.steps).toLocaleString('en-US') : null, from: 'measured' },
-    { label: 'Active minutes', value: mins(d?.activeMinutes ?? null), from: 'measured' },
-    {
-      label: 'Workouts',
-      // An empty array is a real answer here, unlike a null column: the day
-      // row exists and lists no workouts. Without a row at all it is
-      // unknown, which is the null case above it.
-      value: d ? `${d.workouts.length}` : null,
-      from: 'measured',
-    },
+  const gut: MetricRow[] = [
+    { label: NAME.gutSymptoms, value: d?.digestion?.length ? d.digestion.join(', ') : null, from: 'reported' },
+    { label: NAME.bowel, value: extra.bowel != null ? `${extra.bowel}` : null, from: 'reported' },
   ];
-
-  const checkIns: MetricRow[] = [
-    { label: 'Energy', value: scale(d?.energy ?? null), from: 'reported' },
-    { label: 'Mood', value: scale(d?.mood ?? null), from: 'reported' },
-    { label: 'Stress', value: scale(d?.stress ?? null), from: 'reported' },
-  ];
-
-  const intake: MetricRow[] = [
-    { label: 'Caffeine', value: d?.caffeine != null ? `${d.caffeine}` : null, from: 'reported' },
-    { label: 'Alcohol', value: d?.alcohol != null ? `${d.alcohol}` : null, from: 'reported' },
-    { label: 'Foods', value: d?.foods?.length ? d.foods.join(', ') : null, from: 'reported' },
-    { label: 'Digestion', value: d?.digestion?.length ? d.digestion.join(', ') : null, from: 'reported' },
-  ];
-
-  // Blood pressure, blood oxygen and weight, which live in observations
-  // rather than on the day row. Shown here with the same rule they carry
-  // everywhere: the figure and when it was taken, or nothing.
-  const vitalRows: MetricRow[] = vitals.map((v) => ({
-    label: v.label,
-    value: v.value,
-    from: 'measured' as const,
-    note: v.note,
-  }));
 
   return [
-    { title: 'Sleep', rows: sleep },
-    { title: 'Heart', rows: heart },
-    ...(vitalRows.length ? [{ title: 'Vitals', rows: vitalRows }] : []),
-    { title: 'Movement', rows: movement },
-    { title: 'How you felt', rows: checkIns },
-    { title: 'Intake', rows: intake },
+    { title: GROUP.sleep, rows: sleep },
+    { title: GROUP.heart, rows: heart },
+    { title: GROUP.vitals, rows: vitalRows },
+    { title: GROUP.movement, rows: movement },
+    { title: GROUP.cycle, rows: [{ label: NAME.cycleDay, value: extra.cycleDay ?? null, from: 'reported' }] },
+    { title: GROUP.mind, rows: checkIns },
+    { title: GROUP.nutrition, rows: intake },
+    { title: GROUP.gut, rows: gut },
   ];
 }
 
@@ -220,7 +234,7 @@ export function headlineMetrics(
   // pressure", and BP and SpO2 are what she reads on the cuff and the
   // watch anyway. The All screen keeps the full names, where there is a
   // line to spell them on.
-  const SHORT: Record<string, string> = { bp: 'BP', spo2: 'SpO2' };
+  const SHORTEN: Record<string, string> = { bp: SHORT.bp, spo2: SHORT.spo2 };
   // A card from a reading, or the same card empty. The note carries the
   // age when there is one, and the qualifier only when there is a value
   // to qualify.
@@ -244,7 +258,7 @@ export function headlineMetrics(
     const found = any && !any.note ? any : undefined;
     return {
       key,
-      label: SHORT[key] ?? found?.label ?? key,
+      label: SHORTEN[key] ?? found?.label ?? key,
       value: found?.value ?? null,
       from: 'measured',
       ...(found?.trend ? { trend: found.trend } : {}),
@@ -260,22 +274,22 @@ export function headlineMetrics(
   // sign, because a minus is a dash to display copy; the note says which
   // way, in words, and how old the reading is when it is not today's.
   const skinTemp = (found: { value: number; note?: string } | null): HeadlineMetric => {
-    if (!found) return { key: 'temp', label: 'Skin temp', value: null, from: 'measured' };
+    if (!found) return { key: 'temp', label: SHORT.temp, value: null, from: 'measured' };
     const size = one(Math.abs(found.value));
     const way = size === '0.0' ? 'At usual' : found.value > 0 ? 'Above usual' : 'Below usual';
     return {
       key: 'temp',
-      label: 'Skin temp',
+      label: SHORT.temp,
       value: `${size} °C`,
       note: found.note ? `${way}, ${found.note.charAt(0).toLowerCase()}${found.note.slice(1)}` : way,
       from: 'measured',
     };
   };
   return [
-    trended(card('sleep', 'Sleep', read((d) => d.sleepHours), (v) => fmtHours(v)), (d) => d.sleepHours, 'percent', 'sleep_hours'),
-    trended(card('hrv', 'HRV', read((d) => d.hrv), (v) => `${Math.round(v)} ms`), (d) => d.hrv, 'percent', 'hrv'),
+    trended(card('sleep', NAME.sleep, read((d) => d.sleepHours), (v) => fmtHours(v)), (d) => d.sleepHours, 'percent', 'sleep_hours'),
+    trended(card('hrv', SHORT.hrv, read((d) => d.hrv), (v) => `${Math.round(v)} ms`), (d) => d.hrv, 'percent', 'hrv'),
     trended(
-      card('steps', 'Steps', read((d) => d.steps), (v) => Math.round(v).toLocaleString('en-US')),
+      card('steps', NAME.steps, read((d) => d.steps), (v) => Math.round(v).toLocaleString('en-US')),
       (d) => d.steps,
       'percent',
       'steps',

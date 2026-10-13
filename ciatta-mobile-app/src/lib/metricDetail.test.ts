@@ -223,9 +223,9 @@ test('amounts are drawn from zero; levels around what was seen; temperature eith
 
 test('rows on the All screen open the metric they belong to', () => {
   assert.equal(metricForRow('Deep'), 'sleep');
-  assert.equal(metricForRow('Resting heart rate'), 'rhr');
-  assert.equal(metricForRow('Active minutes'), 'steps');
-  assert.equal(metricForRow('Blood oxygen'), 'spo2');
+  assert.equal(metricForRow('Resting Heart Rate'), 'rhr');
+  assert.equal(metricForRow('Active Minutes'), 'steps');
+  assert.equal(metricForRow('Blood Oxygen'), 'spo2');
   assert.equal(metricForRow('Mood'), null, 'a check in has no metric screen');
 });
 

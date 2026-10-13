@@ -43,6 +43,7 @@ import { FoodScanScreen } from './screens/FoodScanScreen';
 import { ProcedureScreen } from './screens/ProcedureScreen';
 import { ProductSafetyScreen } from './screens/ProductSafetyScreen';
 import { NutritionTargetsScreen } from './screens/NutritionTargetsScreen';
+import { GutScreen } from './screens/GutScreen';
 import { QuickLogScreen } from './screens/QuickLogScreen';
 import { SleepScreen } from './screens/SleepScreen';
 import { SymptomsScreen } from './screens/SymptomsScreen';
@@ -91,6 +92,7 @@ const DETAIL_SCREENS: Record<Screen, ComponentType> = {
   profile: ProfileScreen,
   calendar: CalendarScreen,
   quickLog: QuickLogScreen,
+  gut: GutScreen,
   nutritionTargets: NutritionTargetsScreen,
   foodScan: FoodScanScreen,
   procedure: ProcedureScreen,

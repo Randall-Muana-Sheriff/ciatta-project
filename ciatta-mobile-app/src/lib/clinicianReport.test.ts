@@ -75,8 +75,8 @@ test('measurements are averages over the days recorded, labelled measured', () =
   assert.equal(m.source, 'Synced from her devices');
   assert.deepEqual(m.rows.slice(0, 3), [
     { label: 'Sleep', value: '6h 30m average', note: '2 days recorded' },
-    { label: 'Resting heart rate', value: '61 bpm average', note: '2 days recorded' },
-    { label: 'Heart rate variability', value: '45 ms average', note: '2 days recorded' },
+    { label: 'Resting Heart Rate', value: '61 bpm average', note: '2 days recorded' },
+    { label: 'Heart Rate Variability', value: '45 ms average', note: '2 days recorded' },
   ]);
 });
 

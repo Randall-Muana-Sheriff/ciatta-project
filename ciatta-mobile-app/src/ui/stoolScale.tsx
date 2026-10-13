@@ -6,10 +6,10 @@ import { displayCopy } from '../lib/displayCopy';
 import { C, font, RADIUS } from '../theme';
 
 // Simple line pictures for the seven stool types, drawn in one weight.
-function Picture({ type, color }: { type: number; color: string }) {
+export function StoolPicture({ type, color, width = 44 }: { type: number; color: string; width?: number }) {
   const line = { stroke: color, strokeWidth: 1.5, fill: 'none' } as const;
   return (
-    <Svg width={44} height={24} viewBox="0 0 44 24">
+    <Svg width={width} height={(width * 24) / 44} viewBox="0 0 44 24">
       {type === 1 ? [8, 17, 27, 36].map((cx, i) => <Circle key={cx} cx={cx} cy={i % 2 ? 9 : 15} r={3.5} {...line} />) : null}
       {type === 2 ? (
         <Path d="M6 12a5 5 0 0 1 8-4a5 5 0 0 1 8 0a5 5 0 0 1 8 0a5 5 0 0 1 8 4a5 5 0 0 1-8 4a5 5 0 0 1-8 0a5 5 0 0 1-8 0a5 5 0 0 1-8-4z" {...line} />
@@ -42,7 +42,7 @@ export function StoolScale({ value, onChange }: { value: number | null; onChange
             accessibilityLabel={`Type ${type}, ${displayCopy(word)}`}
             style={[s.row, on && s.on]}
           >
-            <Picture type={type} color={on ? C.text : C.secondary} />
+            <StoolPicture type={type} color={on ? C.text : C.secondary} />
             <Text style={[font('subhead', on ? 'semibold' : 'regular'), { color: on ? C.text : C.secondary, flex: 1 }]}>{displayCopy(word)}</Text>
             <Text style={[font('footnote'), { color: C.secondary }]}>Type {type}</Text>
           </Pressable>

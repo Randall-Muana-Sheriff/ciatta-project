@@ -31,7 +31,11 @@ import { BarRow } from './cycleInputs';
 import { HairlineChart, LengthDots } from './lineCharts';
 import { Hypnogram } from './Hypnogram';
 import { lastNight, type Night } from '../lib/hypnogram';
-import { type BaselineRow, seriesForDays, usualFor } from '../lib/metricDetail';
+import { type BaselineRow, fmt, type MetricKey, type Point, seriesForDays, usualFor, type VitalDay } from '../lib/metricDetail';
+import { GROUP, NAME } from '../lib/metricNames';
+import { gutOut } from '../lib/gut';
+import { chooseMetric } from '../lib/metricHandoff';
+import { bloodOxygen, bloodPressure, type VitalCard } from '../lib/vitals';
 import { MetricChart } from './MetricChart';
 import { METRIC_HUE } from './metricHue';
 import { ChevronRight } from './kit';
@@ -144,10 +148,24 @@ export function HealthDashboard({
   const [daylight, setDaylight] = useState<{ day: string; minutes: number }[]>([]);
   const [targets, setTargets] = useState<NutritionTargets>({});
   const [dialWidth, setDialWidth] = useState(0);
+  const [vitalDays, setVitalDays] = useState<VitalDay[]>([]);
+  const [vitalCards, setVitalCards] = useState<VitalCard[]>([]);
   useEffect(() => {
     let ignore = false;
     repo.loadJournal().then((j) => !ignore && setJournal(j)).catch(() => {});
     repo.loadLabs().then((l) => !ignore && setLabs(l)).catch(() => {});
+    {
+      const from = new Date(Date.now() - 28 * 86400000);
+      const key = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-${String(from.getDate()).padStart(2, '0')}`;
+      repo
+        .loadVitalDays(key, Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')
+        .then((v) => !ignore && setVitalDays(v))
+        .catch(() => {});
+      repo
+        .loadVitals()
+        .then((rows) => !ignore && setVitalCards([bloodPressure(rows, new Date()), bloodOxygen(rows, new Date())]))
+        .catch(() => {});
+    }
     repo.loadBaselines().then((b) => !ignore && setBaselines(b)).catch(() => {});
     repo
       .loadSleepSamples(new Date(Date.now() - 36 * 3600000).toISOString())
@@ -250,6 +268,23 @@ export function HealthDashboard({
   const symptomMax = Math.max(1, ...symptomTally.map((t) => t.count));
 
   const latestDraw = useMemo(() => labDraws(labs)[0] ?? null, [labs]);
+
+  // Vitals, each with its four weeks and its latest figure.
+  const vitalRows = useMemo(() => {
+    const temp = mostRecentValue(days, (x) => x.tempDeviation);
+    const rows: { key: MetricKey; label: string; value: string | null; points: Point[] }[] = [
+      { key: 'bp', label: NAME.bp, value: vitalCards.find((v) => v.key === 'bp')?.value ?? null, points: seriesForDays('bp', days, vitalDays, 28, now) },
+      { key: 'spo2', label: NAME.spo2, value: vitalCards.find((v) => v.key === 'spo2')?.value ?? null, points: seriesForDays('spo2', days, vitalDays, 28, now) },
+      { key: 'temp', label: NAME.temp, value: temp ? fmt('temp', temp.value) : null, points: seriesForDays('temp', days, vitalDays, 28, now) },
+    ];
+    return rows.filter((r) => r.points.some((p) => p.value != null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [days, vitalDays, vitalCards]);
+  const gut = useMemo(() => gutOut({ episodes, days, now: new Date() }), [episodes, days]);
+  const summaryOf = (key: CategoryKey) =>
+    categorySummary(key, { journal: (journal?.months ?? []).flatMap((m) => m.items), days, episodes, now: new Date() }).rows;
+  const gutRows = useMemo(() => summaryOf('gut'), [journal, days, episodes]);
+  const mindRows = useMemo(() => summaryOf('mind'), [journal, days, episodes]);
   const meds = useMemo(
     () => medsView({ reported, logs: (journal?.months ?? []).flatMap((m) => m.items), now: new Date() }),
     [reported, journal],
@@ -263,19 +298,19 @@ export function HealthDashboard({
           placeholder before her first sync), and nothing shown for a night
           nothing measured, rather than a fabricated "0h 00m". */}
       {sleepEntry ? (
-      <Card title="Sleep" meta={dayLabel(sleepEntry.day.date, now)} onPress={() => open('sleep')}>
+      <Card title={GROUP.sleep} meta={dayLabel(sleepEntry.day.date, now)} onPress={() => open('sleep')}>
         {/* Last night, stage by stage: the same hypnogram the Sleep screen
             draws. Absent when her device recorded no stages for it. */}
         {night ? <Hypnogram night={night} /> : null}
         <View style={d.tiles}>
           <View style={d.tile} accessible accessibilityLabel={`Total sleep ${fmtHours(sleepEntry.value)}${usual.sleep != null ? `, usual ${fmtHours(usual.sleep)}` : ''}`}>
-            <Text style={[font('footnote'), { color: C.secondary }]}>Total Sleep</Text>
+            <Text style={[font('footnote'), { color: C.secondary }]}>{NAME.timeAsleep}</Text>
             <Text style={[numeral(20, 'medium'), { color: C.text }]}>{fmtHours(sleepEntry.value)}</Text>
             {usual.sleep != null ? <Text style={[font('caption1'), { color: C.secondary }]}>Usual {fmtHours(usual.sleep)}</Text> : null}
           </View>
           {timeInBed != null ? (
             <View style={d.tile} accessible accessibilityLabel={`Time in bed ${fmtHours(timeInBed)}, asleep ${Math.round((sleepEntry.value / timeInBed) * 100)} percent of it`}>
-              <Text style={[font('footnote'), { color: C.secondary }]}>Time in Bed</Text>
+              <Text style={[font('footnote'), { color: C.secondary }]}>{NAME.timeInBed}</Text>
               <Text style={[numeral(20, 'medium'), { color: C.text }]}>{fmtHours(timeInBed)}</Text>
               <Text style={[font('caption1'), { color: C.secondary }]}>Asleep {Math.round((sleepEntry.value / timeInBed) * 100)}% of it</Text>
             </View>
@@ -284,35 +319,6 @@ export function HealthDashboard({
         <Text style={[font('footnote'), d.chartLabel]}>Total sleep, last 14 nights</Text>
         <MetricChart metric="sleep" points={seriesForDays('sleep', days, [], 14, now)} usual={usualFor('sleep', baselines)} color={METRIC_HUE.sleep} size="card" />
         {usualFor('sleep', baselines) ? <Text style={[font('caption1'), d.note]}>Shaded: your usual range.</Text> : null}
-      </Card>
-      ) : null}
-
-      {/* Movement: a tile only draws for a figure the week actually has. */}
-      {movement.series.length ? (
-      <Card title="Movement" meta="Last 7 days" onPress={() => open('movement')}>
-        <View style={d.row3}>
-          {movement.steps.recent != null ? (
-          <Stat
-            label="Steps a day"
-            value={fmtCount(movement.steps.recent)}
-            sub={movement.steps.usual != null ? `Usual ${fmtCount(movement.steps.usual)}` : undefined}
-          />
-          ) : null}
-          {movement.active.recent != null ? (
-          <Stat
-            label="Active min"
-            value={`${Math.round(movement.active.recent)}`}
-            sub={movement.active.usual != null ? `Usual ${Math.round(movement.active.usual)}` : undefined}
-          />
-          ) : null}
-          <Stat
-            label="Workouts"
-            value={`${movement.workouts.recent}`}
-            sub={movement.workouts.usual != null ? `Usually ${Math.round(movement.workouts.usual)}` : undefined}
-          />
-        </View>
-        <Text style={[font('footnote'), d.chartLabel]}>Daily steps, last 28 days</Text>
-        <MetricChart metric="steps" points={seriesForDays('steps', days, [], 28, now)} usual={usualFor('steps', baselines)} color={METRIC_HUE.steps} size="card" />
       </Card>
       ) : null}
 
@@ -326,12 +332,12 @@ export function HealthDashboard({
           may not have (Fix round 2: date led rather than a staleness bound,
           since hiding a real value would undo Fix round 1, item 2). */}
       {rhrEntry || hrvEntry ? (
-      <Card title="Recovery" meta="Last 28 days" onPress={() => openInsight('rhrHigh')}>
+      <Card title={GROUP.heart} meta="Last 28 days" onPress={() => openInsight('rhrHigh')}>
         <View style={d.tiles}>
           {rhrEntry ? (
           <View style={d.tile}>
             <Stat
-              label="Resting heart rate"
+              label={NAME.rhr}
               value={`${Math.round(rhrEntry.value)} bpm`}
               sub={[usual.rhr != null ? `Usual ${Math.round(usual.rhr)}` : null, dayLabel(rhrEntry.day.date, now)].filter(Boolean).join(' · ')}
             />
@@ -341,7 +347,7 @@ export function HealthDashboard({
           {hrvEntry ? (
           <View style={d.tile}>
             <Stat
-              label="HRV"
+              label={NAME.hrv}
               value={`${Math.round(hrvEntry.value)} ms`}
               sub={[usual.hrv != null ? `Usual ${Math.round(usual.hrv)}` : null, dayLabel(hrvEntry.day.date, now)].filter(Boolean).join(' · ')}
             />
@@ -352,21 +358,63 @@ export function HealthDashboard({
       </Card>
       ) : null}
 
-      {/* Weather: the background, never about her body. Drawn only once
-          there is weather to show. */}
-      {weather.length ? (
-      <Card title="Weather" meta="Last 7 days">
-        {weather.map((line) => (
-          <Text key={line} style={[font('subhead'), { color: C.text }]}>
-            {displayCopy(line)}
-          </Text>
-        ))}
-        <Text style={[font('caption1'), d.note]}>Around you, not about your body.</Text>
+      {/* Vitals: blood pressure, blood oxygen and skin temperature, each
+          with its chart, named as everywhere else. Each opens its screen. */}
+      {vitalRows.length ? (
+        <Card title={GROUP.vitals} meta="Last 28 days">
+          {vitalRows.map((v, n) => (
+            <Pressable
+              key={v.key}
+              onPress={() => {
+                chooseMetric(v.key);
+                open('metric');
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`${v.label}, ${v.value ?? 'not recorded'}`}
+              style={({ pressed }) => [d.vital, n > 0 && d.sep, pressed && d.pressed]}
+            >
+              <View style={d.vitalHead}>
+                <Text style={[font('subhead'), { color: C.text, flex: 1 }]}>{v.label}</Text>
+                <Text style={[font('subhead', 'semibold'), { color: C.text }]}>{displayCopy(v.value ?? 'Not yet')}</Text>
+                <ChevronRight />
+              </View>
+              <MetricChart metric={v.key} points={v.points} usual={usualFor(v.key, baselines)} color={METRIC_HUE[v.key]} size="card" />
+            </Pressable>
+          ))}
+        </Card>
+      ) : null}
+
+      {/* Movement: a tile only draws for a figure the week actually has. */}
+      {movement.series.length ? (
+      <Card title={GROUP.movement} meta="Last 7 days" onPress={() => open('movement')}>
+        <View style={d.row3}>
+          {movement.steps.recent != null ? (
+          <Stat
+            label={NAME.steps}
+            value={fmtCount(movement.steps.recent)}
+            sub={movement.steps.usual != null ? `A day · Usual ${fmtCount(movement.steps.usual)}` : 'A day'}
+          />
+          ) : null}
+          {movement.active.recent != null ? (
+          <Stat
+            label={NAME.active}
+            value={`${Math.round(movement.active.recent)}`}
+            sub={movement.active.usual != null ? `Usual ${Math.round(movement.active.usual)}` : undefined}
+          />
+          ) : null}
+          <Stat
+            label={NAME.workouts}
+            value={`${movement.workouts.recent}`}
+            sub={movement.workouts.usual != null ? `Usually ${Math.round(movement.workouts.usual)}` : undefined}
+          />
+        </View>
+        <Text style={[font('footnote'), d.chartLabel]}>Daily steps, last 28 days</Text>
+        <MetricChart metric="steps" points={seriesForDays('steps', days, [], 28, now)} usual={usualFor('steps', baselines)} color={METRIC_HUE.steps} size="card" />
       </Card>
       ) : null}
 
       {/* Cycle */}
-      <Card title="Cycle" meta={lens.header.value} onPress={() => open('cycle')}>
+      <Card title={GROUP.cycle} meta={lens.header.value} onPress={() => open('cycle')}>
         <View style={d.row3}>
           <Stat label={lens.header.label} value={lens.header.value} />
           {lens.secondary ? <Stat label={lens.secondary.label} value={lens.secondary.value} /> : null}
@@ -412,12 +460,12 @@ export function HealthDashboard({
 
       {/* Check ins */}
       {last ? (
-      <Card title="Stress, Energy, Mood" meta="Last 14 days" onPress={() => open('journal')}>
+      <Card title={GROUP.mind} meta="Last 14 days" onPress={() => open('journal')}>
         {(
           [
-            { label: 'Stress', key: 'stress' },
-            { label: 'Energy', key: 'energy' },
-            { label: 'Mood', key: 'mood' },
+            { label: NAME.energy, key: 'energy' },
+            { label: NAME.mood, key: 'mood' },
+            { label: NAME.stress, key: 'stress' },
           ] as const
         ).map((row) => {
           const values = last14.map((x) => x[row.key]);
@@ -439,21 +487,114 @@ export function HealthDashboard({
             </View>
           );
         })}
-      </Card>
-      ) : null}
-
-      {/* Symptoms and digestion */}
-      {symptomTally.length ? (
-      <Card title="Symptoms" meta="Last 60 days" onPress={() => open('symptoms')}>
-        {symptomTally.slice(0, 5).map((t) => (
-          <BarRow key={t.label} label={t.label} count={t.count} max={symptomMax} color={M.reported} unit=" days" />
+        {/* What she logged under Mind, in the same card. */}
+        {mindRows.map((r) => (
+          <BarRow key={r.item} label={r.item} count={r.days} max={Math.max(1, ...mindRows.map((x) => x.days))} color={M.reported} unit={r.days === 1 ? ' day' : ' days'} />
         ))}
       </Card>
       ) : null}
 
       {/* What she logged by category, in the last 30 days. A category she
           has logged nothing in has no card, so a new record stays short. */}
-      {categoryCards.map(({ key, summary }) => {
+      {categoryCards.filter((c) => c.key === 'nutrition').map(({ key, summary }) => {
+        const max = Math.max(1, ...summary.rows.map((r) => r.days));
+        if (key === 'nutrition') {
+          return (
+            <View key={key} style={[d.card, d.mealCard]}>
+              <View style={d.mealBody}>
+                {/* The card's name first, as every other card has it. */}
+                <View style={d.cardHead}>
+                  <Text style={[font('title3', 'semibold'), { color: C.text, flex: 1 }]}>{categoryOf(key).label}</Text>
+                  <Text style={[font('footnote'), { color: C.secondary }]}>Last 30 days</Text>
+                </View>
+                {/* Her latest meal, by name and when she ate it. */}
+                {meal ? (
+                  <Text style={[font('headline'), { color: C.text }]}>
+                    {displayCopy(meal.title)}
+                    <Text style={[font('subhead'), { color: C.secondary }]}>{`  ${meal.meal}`}</Text>
+                  </Text>
+                ) : null}
+                {/* Calories (design: IMG_4912). Every scanned figure stays
+                    marked as an estimate. */}
+                {calories ? (
+                  <View style={d.cal} onLayout={(e) => setDialWidth(e.nativeEvent.layout.width)}>
+                    <Text style={[font('subhead'), { color: C.secondary }]}>{calories.title}</Text>
+                    <View style={d.calTop}>
+                      <View style={d.calFigure}>
+                        <Text style={[numeral(48), { color: C.text }]}>{calories.kcal ?? 'Not yet'}</Text>
+                        {calories.kcal ? <Text style={[font('footnote'), { color: C.secondary }]}>KCAL</Text> : null}
+                      </View>
+                      <View style={d.calSide}>
+                        <Text style={[font('footnote'), { color: C.text }]}>{calories.protein} protein</Text>
+                        <Text style={[font('footnote'), { color: C.text }]}>{calories.fat} fat</Text>
+                      </View>
+                    </View>
+                    {calories.estimated ? <Text style={[font('caption1'), d.note]}>Estimated from your meal photos</Text> : null}
+                    {calories.dial && dialWidth ? (
+                      <>
+                        <CaloriesDial fill={calories.dial.fill} width={dialWidth} />
+                        <Text style={[font('caption1'), d.calDialLabel]}>{calories.dial.label}</Text>
+                      </>
+                    ) : null}
+                    {calories.note ? (
+                      <View style={d.calNote}>
+                        <Text style={[font('footnote', 'semibold'), { color: C.text }]}>From your record</Text>
+                        <Text style={[font('footnote'), d.note]}>{displayCopy(calories.note)}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null}
+                {summary.rows.map((r) => (
+                  <BarRow key={r.item} label={r.item} count={r.days} max={max} color={M.reported} unit={r.days === 1 ? ' day' : ' days'} />
+                ))}
+              </View>
+            </View>
+          );
+        }
+        return (
+          <Card key={key} title={categoryOf(key).label} meta="Last 30 days">
+            {summary.rows.map((r) => (
+              <BarRow key={r.item} label={r.item} count={r.days} max={max} color={M.reported} unit={r.days === 1 ? ' day' : ' days'} />
+            ))}
+            {summary.extra ? <Text style={[font('footnote'), d.note]}>{displayCopy(summary.extra)}</Text> : null}
+          </Card>
+        );
+      })}
+
+      {/* Gut: bowel movements by Bristol type, and what she logged under
+          Gut. Opens the Gut screen, in and out. */}
+      {gut.count || gutRows.length ? (
+        <Card title={GROUP.gut} meta="Last 28 days" onPress={() => open('gut')}>
+          {gut.count ? (
+            <View style={d.row3}>
+              <Stat label={NAME.bowel} value={`${gut.count}`} sub={gut.perDay ?? undefined} />
+              {gut.mix.hard + gut.mix.typical + gut.mix.loose ? (
+                <Stat
+                  label="Typical form"
+                  value={`${Math.round((gut.mix.typical / (gut.mix.hard + gut.mix.typical + gut.mix.loose)) * 100)}%`}
+                  sub="Bristol types 3 and 4"
+                />
+              ) : null}
+            </View>
+          ) : null}
+          {gutRows.map((r) => (
+            <BarRow key={r.item} label={r.item} count={r.days} max={Math.max(1, ...gutRows.map((x) => x.days))} color={M.reported} unit={r.days === 1 ? ' day' : ' days'} />
+          ))}
+        </Card>
+      ) : null}
+
+      {/* Symptoms and digestion */}
+      {symptomTally.length ? (
+      <Card title={GROUP.symptoms} meta="Last 60 days" onPress={() => open('symptoms')}>
+        {symptomTally.slice(0, 5).map((t) => (
+          <BarRow key={t.label} label={t.label} count={t.count} max={symptomMax} color={M.reported} unit=" days" />
+        ))}
+      </Card>
+      ) : null}
+
+      {/* The rest of what she logged by category, in the last 30 days. A category she
+          has logged nothing in has no card, so a new record stays short. */}
+      {categoryCards.filter((c) => c.key !== 'nutrition').map(({ key, summary }) => {
         const max = Math.max(1, ...summary.rows.map((r) => r.days));
         if (key === 'nutrition') {
           return (
@@ -521,7 +662,7 @@ export function HealthDashboard({
       {/* Medications and supplements she named, kept apart, with when
           each was last logged. */}
       {named.length ? (
-        <Card title="Medications" meta={`${meds.medications.length} medications, ${meds.supplements.length} supplements`} onPress={() => open('medications')}>
+        <Card title={GROUP.medications} meta={`${meds.medications.length} medications, ${meds.supplements.length} supplements`} onPress={() => open('medications')}>
           {named.map((m, n) => (
             <View key={`${m.kind}-${m.name}`} style={[d.medRow, n > 0 && d.sep]}>
               <View style={[d.medLine, { backgroundColor: m.kind === 'Medication' ? M.measured : M.reported }]} />
@@ -538,7 +679,7 @@ export function HealthDashboard({
 
       {/* Labs: her latest visit, each result with its status and range. */}
       {latestDraw ? (
-        <Card title="Labs" meta={labDay(latestDraw.on)} onPress={() => open('healthrecords')}>
+        <Card title={GROUP.labs} meta={labDay(latestDraw.on)} onPress={() => open('healthrecords')}>
           {latestDraw.results.map((r, n) => (
             <View key={r.id} style={[d.labRow, n > 0 && d.sep]}>
               <View style={d.labHead}>
@@ -554,6 +695,19 @@ export function HealthDashboard({
         </Card>
       ) : null}
 
+      {/* Weather: the background, never about her body. Drawn only once
+          there is weather to show. */}
+      {weather.length ? (
+      <Card title={GROUP.weather} meta="Last 7 days">
+        {weather.map((line) => (
+          <Text key={line} style={[font('subhead'), { color: C.text }]}>
+            {displayCopy(line)}
+          </Text>
+        ))}
+        <Text style={[font('caption1'), d.note]}>Around you, not about your body.</Text>
+      </Card>
+      ) : null}
+
       {/*
         Health Records, Your Notes and Connected Sources used to sit here.
         Records is the Health tab's third view now, notes are reached from
@@ -566,7 +720,9 @@ export function HealthDashboard({
 
 // The logging categories that have a dashboard card, in the Log screen's
 // order. Cycle has its own card above, Context and Note are not tallies.
-const CATEGORY_CARDS: CategoryKey[] = ['nutrition', 'gut', 'body', 'mind', 'skin', 'sexual', 'meds', 'supplements'];
+// Gut and Mind have cards of their own above, which carry their category's
+// rows, so they are not repeated here.
+const CATEGORY_CARDS: CategoryKey[] = ['nutrition', 'body', 'skin', 'sexual', 'meds', 'supplements'];
 
 const d = StyleSheet.create({
   // The Nutrition card: no photo across the top; the usual padding.
@@ -595,4 +751,6 @@ const d = StyleSheet.create({
   labRow: { gap: 4, paddingVertical: 8 },
   labHead: { flexDirection: 'row', alignItems: 'baseline' },
   sep: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.separator },
+  vital: { gap: 6, paddingVertical: 8 },
+  vitalHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
 });

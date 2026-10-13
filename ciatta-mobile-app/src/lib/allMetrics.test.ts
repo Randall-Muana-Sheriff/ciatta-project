@@ -64,7 +64,7 @@ test('a day with no workouts logged says none, but no day at all says nothing', 
 // ── How each figure is said ──────────────────────────────────────────
 
 test('sleep is hours and minutes, not a decimal', () => {
-  assert.equal(find({ ...empty, sleepHours: 7.5 }, 'Time asleep')?.value, '7h 30m');
+  assert.equal(find({ ...empty, sleepHours: 7.5 }, 'Time Asleep')?.value, '7h 30m');
 });
 
 test('stages are minutes', () => {
@@ -74,12 +74,12 @@ test('stages are minutes', () => {
 });
 
 test('skin temperature says which way in words, never with a sign, and never as a body temperature', () => {
-  const warm = find({ ...empty, tempDeviation: 0.42 }, 'Skin temperature');
+  const warm = find({ ...empty, tempDeviation: 0.42 }, 'Skin Temperature');
   assert.equal(warm?.value, '0.4 °C above usual');
   assert.equal(warm?.note, 'Change from your own usual');
   // A minus sign is a dash to display copy, so cooler is said, not signed.
-  assert.equal(find({ ...empty, tempDeviation: -0.3 }, 'Skin temperature')?.value, '0.3 °C below usual');
-  assert.equal(find({ ...empty, tempDeviation: 0 }, 'Skin temperature')?.value, 'At your usual');
+  assert.equal(find({ ...empty, tempDeviation: -0.3 }, 'Skin Temperature')?.value, '0.3 °C below usual');
+  assert.equal(find({ ...empty, tempDeviation: 0 }, 'Skin Temperature')?.value, 'At your usual');
 });
 
 test('a check in is the number she chose, never relabelled', () => {
@@ -93,7 +93,7 @@ test('a check in is the number she chose, never relabelled', () => {
 // ── Measured and reported stay apart ─────────────────────────────────
 
 test('instrument readings and her own check ins are labelled differently', () => {
-  assert.equal(find(empty, 'Heart rate variability')?.from, 'measured');
+  assert.equal(find(empty, 'Heart Rate Variability')?.from, 'measured');
   assert.equal(find(empty, 'Steps')?.from, 'measured');
   assert.equal(find(empty, 'Mood')?.from, 'reported');
   assert.equal(find(empty, 'Caffeine')?.from, 'reported');
@@ -141,7 +141,7 @@ test('a vital with no reading is still a card, absent rather than missing', () =
 });
 
 test('vitals passed in are used rather than recomputed', () => {
-  const given = [{ key: 'bp', label: 'Blood pressure', value: '118/76', from: 'measured' as const }];
+  const given = [{ key: 'bp', label: 'Blood Pressure', value: '118/76', from: 'measured' as const }];
   const bp = headlineMetrics([], given).find((m) => m.key === 'bp')!;
   assert.equal(bp.value, '118/76');
 });
@@ -155,8 +155,8 @@ test('the grid abbreviates where a third of a row cannot hold the name', () => {
 
 test('the full names survive for the screen that has room for them', () => {
   const now = new Date();
-  assert.equal(bloodPressure([], now).label, 'Blood pressure');
-  assert.equal(bloodOxygen([], now).label, 'Blood oxygen');
+  assert.equal(bloodPressure([], now).label, 'Blood Pressure');
+  assert.equal(bloodOxygen([], now).label, 'Blood Oxygen');
 });
 
 test('headline labels are short enough for a third of a row', () => {
@@ -178,7 +178,7 @@ test('heart rate variability carries its unit', () => {
 
 test('resting heart rate moved to All, where there is room for every reading', () => {
   assert.ok(!headlineMetrics([]).some((m) => m.key === 'restingHR'));
-  assert.ok(find({ ...empty, restingHR: 58.6 }, 'Resting heart rate')?.value === '59 bpm');
+  assert.ok(find({ ...empty, restingHR: 58.6 }, 'Resting Heart Rate')?.value === '59 bpm');
 });
 
 test('a measured zero still shows, unlike a missing figure', () => {
@@ -212,8 +212,8 @@ test('Today is daily: an older reading is not shown, and no card says how old', 
 
 test('a vital taken on an earlier day is not shown as today\'s', () => {
   const given = [
-    { key: 'bp', label: 'Blood pressure', value: '118/76', note: '3 weeks ago', from: 'measured' as const },
-    { key: 'spo2', label: 'Blood oxygen', value: '98%', from: 'measured' as const },
+    { key: 'bp', label: 'Blood Pressure', value: '118/76', note: '3 weeks ago', from: 'measured' as const },
+    { key: 'spo2', label: 'Blood Oxygen', value: '98%', from: 'measured' as const },
   ];
   const by = Object.fromEntries(headlineMetrics([], given).map((m) => [m.key, m]));
   assert.equal(by.bp.value, null);
@@ -259,7 +259,7 @@ test('a card with too little history has no trend rather than an invented one', 
 
 test('a vital passes its trend through to the card', () => {
   const trend = { points: [97, 98, 98], change: '→ 0%', spoken: 'level with your recent average' };
-  const given = [{ key: 'spo2', label: 'Blood oxygen', value: '98%', from: 'measured' as const, trend }];
+  const given = [{ key: 'spo2', label: 'Blood Oxygen', value: '98%', from: 'measured' as const, trend }];
   assert.deepEqual(headlineMetrics([], given).find((m) => m.key === 'spo2')!.trend, trend);
 });
 

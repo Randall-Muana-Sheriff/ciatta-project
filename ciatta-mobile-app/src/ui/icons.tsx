@@ -41,6 +41,16 @@ const ICONS = {
   chevronDown: [p('M5 9l7 7 7-7')],
   arrowRight: [p('M4 12h16M14 6l6 6-6 6')],
   moon: [p('M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z')],
+  // Pictures for the Log screen's quick chips, on the same grid.
+  cup: [p('M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z'), p('M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16'), p('M8.5 3.5c-.8 1 .8 2 0 3M12 3.5c-.8 1 .8 2 0 3')],
+  glass: [p('M7 3.5h10l-1 6.5a4 4 0 0 1-8 0z'), p('M12 14v6M8.5 20.5h7'), p('M7.6 7.5h8.8')],
+  utensils: [p('M6 3v7a2 2 0 0 0 4 0V3M8 3v18'), p('M17 21V3c-2 1.5-3 4-3 7h3')],
+  plane: [p('M10.5 13.5 3 11l1.5-1.5 7.5 1 4-4.5a1.8 1.8 0 0 1 2.5 2.5l-4.5 4 1 7.5L14 21l-2.5-7.5'), p('M7 17l-2 .5.5-2')],
+  dumbbell: [p('M6.5 7v10M17.5 7v10'), p('M3.5 9.5v5M20.5 9.5v5'), p('M6.5 12h11')],
+  cloud: [p('M7 18.5h10a4 4 0 0 0 .5-8A5.5 5.5 0 0 0 7 9.5a4.5 4.5 0 0 0 0 9z')],
+  zigzag: [p('M3 14l3-6 3 8 3-10 3 10 3-6 3 4')],
+  bubbles: [o(8, 14, 4), o(15.5, 9, 3), o(17, 16.5, 2), dot(9.5, 6, 1)],
+  toilet: [p('M6 4h6v7H6z'), p('M4 11h16a8 6 0 0 1-8 6 8 6 0 0 1-8-6z'), p('M9 17v3.5h6V17')],
   // The metric marks, one per headline metric, after the references in
   // ciatta-visual-assets, redrawn on this grid so they sit with the rest.
   sleep: [p('M18 15.5A7.5 7.5 0 0 1 8.5 6a7.5 7.5 0 1 0 9.5 9.5z'), p('M15 3.5h4l-4 4h4')],

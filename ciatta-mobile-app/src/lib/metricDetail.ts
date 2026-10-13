@@ -10,6 +10,7 @@
 import type { Day } from '../data/daily';
 import { dayNote } from './allMetrics';
 import { fmtCount, fmtHours } from './engine';
+import { NAME } from './metricNames';
 import { hourLabel } from './timeAxis';
 
 export type MetricKey = 'sleep' | 'hrv' | 'rhr' | 'steps' | 'bp' | 'temp' | 'spo2';
@@ -25,13 +26,13 @@ export const RANGES: { key: Range; label: string; days: number }[] = [
 ];
 
 export const METRIC_TITLE: Record<MetricKey, string> = {
-  sleep: 'Sleep',
-  hrv: 'Heart Rate Variability',
-  rhr: 'Resting Heart Rate',
-  steps: 'Steps',
-  bp: 'Blood Pressure',
-  temp: 'Skin Temperature',
-  spo2: 'Blood Oxygen',
+  sleep: NAME.sleep,
+  hrv: NAME.hrv,
+  rhr: NAME.rhr,
+  steps: NAME.steps,
+  bp: NAME.bp,
+  temp: NAME.temp,
+  spo2: NAME.spo2,
 };
 
 // As the baselines table stores it.
@@ -315,7 +316,7 @@ export function extras(key: MetricKey, days: readonly Day[], points: readonly Po
       if (rhr.length) rows.push({ label: 'Average resting heart rate', value: `${Math.round(avg(rhr))} bpm` });
       const u = sufficient(baselines, 'resting_hr');
       if (u) rows.push({ label: 'Your usual resting heart rate', value: `${Math.round(u.low!)} to ${Math.round(u.high!)} bpm` });
-      return rows.length ? [{ title: 'Resting heart rate', rows }] : [];
+      return rows.length ? [{ title: NAME.rhr, rows }] : [];
     }
     case 'temp': {
       const got = points.filter(has);
@@ -371,19 +372,19 @@ export function scaleFor(key: MetricKey, points: readonly Point[], usual: Usual 
 // Sleep; resting heart rate opens HRV, where it is shown beside it; active
 // minutes open Steps. Her check ins have no screen of their own here.
 const ROW_METRIC: Record<string, MetricKey> = {
-  'Time asleep': 'sleep',
-  'Time in bed': 'sleep',
-  Deep: 'sleep',
-  REM: 'sleep',
-  Light: 'sleep',
-  Awake: 'sleep',
-  'Heart rate variability': 'hrv',
-  'Resting heart rate': 'rhr',
-  'Skin temperature': 'temp',
-  Steps: 'steps',
-  'Active minutes': 'steps',
-  'Blood pressure': 'bp',
-  'Blood oxygen': 'spo2',
+  [NAME.timeAsleep]: 'sleep',
+  [NAME.timeInBed]: 'sleep',
+  [NAME.deep]: 'sleep',
+  [NAME.rem]: 'sleep',
+  [NAME.light]: 'sleep',
+  [NAME.awake]: 'sleep',
+  [NAME.hrv]: 'hrv',
+  [NAME.rhr]: 'rhr',
+  [NAME.temp]: 'temp',
+  [NAME.steps]: 'steps',
+  [NAME.active]: 'steps',
+  [NAME.bp]: 'bp',
+  [NAME.spo2]: 'spo2',
 };
 
 export const metricForRow = (label: string): MetricKey | null => ROW_METRIC[label] ?? null;

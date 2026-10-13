@@ -1,3 +1,4 @@
+import { NAME } from './metricNames';
 // The readings that never reached daily_metrics.
 //
 // Blood pressure, blood oxygen and weight all sync from Apple Health and
@@ -86,7 +87,7 @@ export function bloodPressure(readings: readonly Reading[], now: Date, usual?: n
   // The trend follows the systolic, the number a cuff leads with.
   return withTrend({
     key: 'bp',
-    label: 'Blood pressure',
+    label: NAME.bp,
     value: sameDay ? `${Math.round(sys.value)}/${Math.round(dia.value)}` : null,
     note: sameDay ? (whenNote(sys.at, now) ?? undefined) : undefined,
     from: 'measured',
@@ -100,7 +101,7 @@ export function bloodOxygen(readings: readonly Reading[], now: Date, usual?: num
   const pct = r ? (r.value <= 1 ? r.value * 100 : r.value) : null;
   return withTrend({
     key: 'spo2',
-    label: 'Blood oxygen',
+    label: NAME.spo2,
     value: pct == null ? null : `${Math.round(pct)}%`,
     note: r ? (whenNote(r.at, now) ?? undefined) : undefined,
     from: 'measured',
@@ -112,11 +113,11 @@ export function weight(readings: readonly Reading[], now: Date, units?: Units): 
   // In her units, when she has chosen them; otherwise as it arrived.
   const kg = r && units ? toKg(r.value, r.unit) : null;
   if (r && kg != null) {
-    return { key: 'weight', label: 'Weight', value: formatWeight(kg, units!).value, note: whenNote(r.at, now) ?? undefined, from: 'measured' };
+    return { key: 'weight', label: NAME.weight, value: formatWeight(kg, units!).value, note: whenNote(r.at, now) ?? undefined, from: 'measured' };
   }
   return {
     key: 'weight',
-    label: 'Weight',
+    label: NAME.weight,
     // The unit comes from the reading rather than being assumed. A figure
     // shown in the wrong unit is a wrong figure.
     value: r ? `${Math.round(r.value * 10) / 10}${r.unit ? ` ${r.unit}` : ''}` : null,

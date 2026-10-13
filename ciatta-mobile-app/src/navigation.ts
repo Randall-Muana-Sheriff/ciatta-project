@@ -46,7 +46,8 @@ export type Screen =
   | 'referral'
   | 'bodyMeasurements'
   | 'shareClinician'
-  | 'productSafety';
+  | 'productSafety'
+  | 'gut';
 
 export type Nav = {
   tab: Tab;
