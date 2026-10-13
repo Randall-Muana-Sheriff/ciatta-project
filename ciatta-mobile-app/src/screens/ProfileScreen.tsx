@@ -12,6 +12,7 @@ import { type Connection, loadConnections } from '../data/providers';
 import { intelligenceLine, metricLine, patternReadiness } from '../lib/patternReadiness';
 import { profileOverview } from '../lib/profileOverview';
 import { connectAppleHealth } from '../lib/connectHealth';
+import { SYSTEM_DOTS } from '../lib/bodyMap';
 import { displayCopy } from '../lib/displayCopy';
 import { userFacingError } from '../lib/userFacingError';
 import { type Screen, useNav } from '../navigation';
@@ -226,7 +227,7 @@ function BodySystems({ profile }: { profile: Profile }) {
       <View style={p.grid}>
         {profile.bodySystems.map((b) => (
           <View key={b.label} style={p.system}>
-            <Icon name={b.icon} size={20} color={b.tone === 'text' ? C.secondary : OVERVIEW_TONE[b.tone]} weight={1.8} />
+            <Icon name={b.icon} size={20} color={SYSTEM_DOTS[b.label]?.color ?? C.secondary} weight={1.8} />
             <Text style={[font('subhead'), { color: C.text, flex: 1 }]}>{displayCopy(b.label)}</Text>
           </View>
         ))}

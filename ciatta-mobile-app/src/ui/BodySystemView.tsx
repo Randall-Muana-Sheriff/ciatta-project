@@ -149,10 +149,11 @@ export function BodySystemView({
                 accessibilityLabel={`${displayCopy(s.label)}. ${stateWords(s.lead ?? undefined)}${s.lead ? `. ${s.lead.title}` : ''}`}
                 style={[b.row, on && b.rowOn]}
               >
-                {SYSTEM_DOTS[s.label] ? <View style={[b.key, { backgroundColor: SYSTEM_DOTS[s.label].color }]} /> : <View style={b.key} />}
-                <Icon name={icons.get(s.label) ?? 'body'} size={18} color={on ? C.text : C.secondary} weight={1.8} />
+                {/* The icon carries the system's colour, the same as its dot
+                    on the figure; the name stays white. */}
+                <Icon name={icons.get(s.label) ?? 'body'} size={18} color={SYSTEM_DOTS[s.label]?.color ?? C.text} weight={1.8} />
                 <Text
-                  style={[font('footnote', on ? 'medium' : 'regular'), { color: on ? C.text : C.secondary, flex: 1 }]}
+                  style={[font('footnote', on ? 'medium' : 'regular'), { color: C.text, flex: 1 }]}
                   numberOfLines={2}
                 >
                   {displayCopy(s.short)}
@@ -274,7 +275,6 @@ const b = StyleSheet.create({
   silhouette: { ...StyleSheet.absoluteFill, opacity: 0.24 },
   dot: { position: 'absolute' },
   dotOn: { shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
-  key: { width: 8, height: 8, borderRadius: 4 },
   viewLabel: { color: C.secondary, textAlign: 'center', marginTop: 8 },
 
   detail: { marginTop: 16 },
