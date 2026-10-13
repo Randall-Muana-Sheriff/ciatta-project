@@ -1,5 +1,4 @@
 import { useNav } from '../navigation';
-import { useData } from '../state/session';
 import { DetailScreen, SourceFooter } from '../ui/kit';
 import { RecordsView } from '../ui/RecordsView';
 

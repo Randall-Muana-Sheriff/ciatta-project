@@ -15,6 +15,7 @@ import { weight } from '../lib/vitals';
 import { healthStats } from '../lib/healthFacts';
 import { type Insurance, insuranceFact } from '../lib/insurance';
 import { askForCharacteristics, readCharacteristics } from '../lib/healthKit';
+import { openAppleHealth } from '../lib/openHealth';
 import { useCycleInsights } from '../state/cycleStore';
 import { profileOverview } from '../lib/profileOverview';
 import { connectAppleHealth } from '../lib/connectHealth';
@@ -56,7 +57,6 @@ const TONE: Record<Tone, string> = {
 const OVERVIEW_TONE: Record<Tone, string> = { coral: C.coral, mint: C.mint, lavender: C.lavender, indigo: C.lavender, text: C.gray };
 
 // Account, export and sharing flows arrive with the data layer.
-const notYet = () => {};
 
 // ── Overview pieces ────────────────────────────────────────────
 
@@ -71,7 +71,8 @@ function CareGroup({ profile, onOpen }: { profile: Profile; onOpen: (screen: Scr
           tint={TONE[c.tone]}
           title={c.label}
           sub={`${c.value} · ${c.sub}`}
-          onPress={notYet}
+          // Who looks after her is in her provider records.
+          onPress={() => onOpen('chart')}
         />
       ))}
       <ListRow icon="shield" tint={TONE.lavender} title="Insurance" sub="Your insurer and plan" onPress={() => onOpen('insurance')} />
@@ -527,7 +528,9 @@ function Connections({ onOpen }: { onOpen: (screen: Screen) => void }) {
               {link ? (
                 <LinkButton label={link.label} onPress={() => onOpen(link.screen)} />
               ) : (
-                <LinkButton label="Manage access" onPress={notYet} />
+                // iOS keeps what a device may share in the Health app, not
+                // here: Health, Sharing, Apps, Ciatta. This opens it.
+                <LinkButton label="Manage in Apple Health" onPress={() => void openAppleHealth()} />
               )}
             </Expandable>
           );
