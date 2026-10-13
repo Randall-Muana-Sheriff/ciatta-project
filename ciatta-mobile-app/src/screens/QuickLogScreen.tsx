@@ -38,13 +38,14 @@ import { font, GUTTER } from '../theme';
 import { Composer } from '../ui/composer';
 import { DetailScreen, PrimaryButton } from '../ui/kit';
 import { ProductLogger } from '../ui/ProductLogger';
+import { takeLogCategory } from '../lib/logHandoff';
 import { L, SPACE } from '../ui/surface';
 
 export function QuickLogScreen() {
   const nav = useNav();
   const repo = useRepo();
   const { add, startDraft } = useCycle();
-  const [key, setKey] = useState<CategoryKey>('cycle');
+  const [key, setKey] = useState<CategoryKey>(() => takeLogCategory() ?? 'cycle');
   const [tapped, setTapped] = useState<string[]>([]);
   const [text, setText] = useState('');
   const [files, setFiles] = useState<Attachment[]>([]);

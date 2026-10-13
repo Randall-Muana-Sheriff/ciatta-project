@@ -8,13 +8,13 @@ import {
   type BodyReading,
   readSystems,
   REGION_BY_ID,
-  REGION_LOCATION,
-  type RegionId,
   stateWords,
   SYSTEM_DOTS,
   WHOLE_BODY,
 } from '../lib/bodyMap';
 import { displayCopy } from '../lib/displayCopy';
+import { category } from '../lib/logCategories';
+import { SYSTEM_CATEGORY } from '../lib/systemLogs';
 import { C, font, GUTTER, M, RADIUS } from '../theme';
 import { Panel } from './chrome';
 import { Icon } from './icons';
@@ -60,7 +60,7 @@ export function BodySystemView({
 }: {
   reading: BodyReading;
   onOpen: (point: BodyPoint) => void;
-  onLog: (region: RegionId) => void;
+  onLog: (system: string) => void;
 }) {
   const reduce = useReduceMotion();
   const { width } = useWindowDimensions();
@@ -130,10 +130,7 @@ export function BodySystemView({
   );
   const rotateY = angle.interpolate({ inputRange: [0, 360], outputRange: ['0deg', '360deg'], extrapolate: 'extend' });
 
-  const byRegion = new Map(reading.points.map((p) => [p.region, p]));
   const wholeBody = system.points.find((p) => p.region === 'systemic' && p.state === 'lit');
-  // A place in this system with nothing logged yet, so she can add to it.
-  const loggable = system.regions.find((r) => REGION_LOCATION[r] && !byRegion.has(r));
 
   return (
     <View>
@@ -261,11 +258,13 @@ export function BodySystemView({
         ) : (
           <Text style={[font('body'), { color: C.secondary, marginTop: 6 }]}>Nothing recorded for this system yet.</Text>
         )}
-        {loggable ? (
-          <View style={{ marginTop: 12 }}>
-            <SecondaryButton label="Log Something Here" onPress={() => onLog(loggable)} />
-          </View>
-        ) : null}
+        {/* Every system can be logged, on the Log category that logs it. */}
+        <View style={{ marginTop: 12 }}>
+          <SecondaryButton
+            label={`Log ${system.label === WHOLE_BODY ? 'a Note' : `in ${category(SYSTEM_CATEGORY[system.label] ?? 'note').label}`}`}
+            onPress={() => onLog(system.label)}
+          />
+        </View>
       </Panel>
     </View>
   );

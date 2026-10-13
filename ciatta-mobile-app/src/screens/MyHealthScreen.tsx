@@ -1,11 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { type BodyPoint, readBody, REGION_LOCATION, type RegionId } from '../lib/bodyMap';
+import { type BodyPoint, readBody, WHOLE_BODY } from '../lib/bodyMap';
+import { chooseLogCategory } from '../lib/logHandoff';
+import { loggedPoints, SYSTEM_CATEGORY } from '../lib/systemLogs';
 import { useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
-import { useData } from '../state/session';
+import { useData, useRepo } from '../state/session';
 import { C, font, GUTTER } from '../theme';
 import { NAV_CLEARANCE } from '../ui/surface';
 import { BodySystemView } from '../ui/BodySystemView';
@@ -19,12 +21,31 @@ const VIEWS = ['Dashboard', 'Body', 'Records'] as const;
 // Health: every metric as a dashboard, or located on the body.
 export function MyHealthScreen() {
   const nav = useNav();
-  const { startDraft, setFocus } = useCycle();
+  const { setFocus } = useCycle();
   const { movement, ranked } = useInsights();
   const { signals, summaries, lens } = useCycleInsights();
   const { days, records } = useData();
   const [view, setView] = useState<(typeof VIEWS)[number]>('Dashboard');
-  const body = useMemo(() => readBody({ signals, days, ranked, draws: records?.draws ?? [] }), [signals, days, ranked, records]);
+  const repo = useRepo();
+  // What she logged on the Log screen, placed under the systems it is
+  // about. Read again whenever Body is back in view, so a log she just
+  // made shows.
+  const [logged, setLogged] = useState<BodyPoint[]>([]);
+  useEffect(() => {
+    if (view !== 'Body' || nav.depth > 1) return;
+    let ignore = false;
+    repo
+      .loadJournal()
+      .then((j) => !ignore && setLogged(loggedPoints(j, new Date())))
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, [repo, view, nav.depth]);
+  const body = useMemo(() => {
+    const read = readBody({ signals, days, ranked, draws: records?.draws ?? [] });
+    return { ...read, systemic: [...read.systemic, ...logged] };
+  }, [signals, days, ranked, records, logged]);
 
   const openInsight = (id: string) => {
     setFocus(id);
@@ -34,11 +55,11 @@ export function MyHealthScreen() {
     if (p.insightId) openInsight(p.insightId);
     else if (p.screen) nav.push(p.screen);
   };
-  // Logging from the body starts with that place already chosen.
-  const logAt = (region: RegionId) => {
-    const location = REGION_LOCATION[region];
-    startDraft({ form: location ? { kinds: ['Pain'], locations: [location] } : { kinds: ['Symptoms'] } });
-    nav.push('cycleLog');
+  // Logging from a system opens the Log screen on the category that logs
+  // it: Digestive on Gut, Nervous on Mind, the whole body on Note.
+  const logFor = (system: string) => {
+    chooseLogCategory(system === WHOLE_BODY ? 'note' : (SYSTEM_CATEGORY[system] ?? 'note'));
+    nav.push('quickLog');
   };
 
   return (
@@ -63,7 +84,7 @@ export function MyHealthScreen() {
             openInsight={openInsight}
           />
         ) : view === 'Body' ? (
-          <BodySystemView reading={body} onOpen={openPoint} onLog={logAt} />
+          <BodySystemView reading={body} onOpen={openPoint} onLog={logFor} />
         ) : (
           <RecordsView onOpen={nav.push} />
         )}
