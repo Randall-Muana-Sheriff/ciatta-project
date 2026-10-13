@@ -6,9 +6,12 @@
 // of every one of those steps, which is to say the fastest part of the
 // experience was the last thing she reached.
 //
-// So: a tab row saying which part of her record this belongs to, the box
-// with a real example sentence in it, and send. The questionnaire is one
-// link away, unchanged, for the episode worth describing properly.
+// So: a row of eight categories saying what this is mostly about, one tap
+// chips for the common things in that category, the box with a real
+// example sentence in it, and send. One sentence may name several
+// categories; lib/quickLog's planSave files each part where the record
+// already keeps it. The detailed forms are one link away, for the entry
+// worth describing properly.
 //
 // The sentence is read by lib/quickLog for the vocabulary the record
 // already uses, and everything it recognised is printed under the box
@@ -16,71 +19,89 @@
 // did not recognise are kept verbatim rather than dropped.
 
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { emptyForm, formToEpisode } from '../data/cycleLog';
 import type { Attachment } from '../lib/attachments';
 import { displayCopy } from '../lib/displayCopy';
-import { type QuickTab, QUICK_TABS, quickTab, readingLine, readQuick } from '../lib/quickLog';
+import { CATEGORIES, category, type CategoryKey } from '../lib/logCategories';
+import { mergeFound, planSave, readingLine, readQuick } from '../lib/quickLog';
 import { userFacingError } from '../lib/userFacingError';
 import { type Screen, useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
 import { useRepo } from '../state/session';
 import { font, GUTTER } from '../theme';
 import { Composer } from '../ui/composer';
-import { DetailScreen, SegmentedControl } from '../ui/kit';
+import { DetailScreen } from '../ui/kit';
 import { L, SPACE } from '../ui/surface';
-
-const LABELS = QUICK_TABS.map((t) => t.label) as [string, string, string];
 
 export function QuickLogScreen() {
   const nav = useNav();
   const repo = useRepo();
   const { add } = useCycle();
-  const [key, setKey] = useState<QuickTab>('cycle');
+  const [key, setKey] = useState<CategoryKey>('cycle');
+  const [tapped, setTapped] = useState<string[]>([]);
   const [text, setText] = useState('');
-  // What she added with the plus: a photo, an image, a PDF or a video.
-  // Kept with whichever entry the sentence becomes.
   const [files, setFiles] = useState<Attachment[]>([]);
   const [spoken, setSpoken] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const tab = quickTab(key);
+  const cat = category(key);
   const reading = useMemo(() => readQuick(text), [text]);
-  const recognised = readingLine(reading);
+  const recognised = readingLine(
+    tapped.length ? mergeFound(reading.found, { [key]: tapped }) : reading.found,
+    reading.flow,
+    reading.daysAgo,
+  );
+
+  // Switching category clears the chips, which belong to the category they
+  // were tapped in. Her words stay: she may have chosen the category after
+  // writing the sentence.
+  const choose = (next: CategoryKey) => {
+    setKey(next);
+    setTapped([]);
+  };
+  const toggle = (item: string) =>
+    setTapped((prev) => (prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]));
 
   const send = async () => {
+    if (saving) return;
+    const plan = planSave({ text, selected: key, tapped, files });
+    if (!plan) return;
     const said = text.trim();
-    // A file on its own is an entry too: a lab report photographed with
-    // nothing to add is still worth keeping.
-    if ((!said && !files.length) || saving) return;
     setSaving(true);
     setError(null);
     try {
-      if (key === 'cycle') {
-        // A real episode, through the path the questionnaire uses, so it
-        // reaches the same record and the same engine.
+      const day = new Date();
+      const iso = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+      if (plan.episode) {
         add(
           formToEpisode(
             {
               ...emptyForm(),
-              kinds: reading.kinds,
-              flow: reading.flow,
-              day: reading.daysAgo,
-              periodStart: reading.daysAgo,
-              context: reading.context,
-              note: said,
-              attachments: files,
+              kinds: plan.episode.kinds,
+              flow: plan.episode.flow,
+              day: plan.episode.daysAgo,
+              periodStart: plan.episode.daysAgo,
+              context: plan.episode.context,
+              note: plan.wordsGoTo === 'episode' ? said : '',
+              attachments: plan.wordsGoTo === 'episode' ? files : [],
             },
             false,
           ),
         );
-      } else {
-        // Her day and her notes both land in the journal, dated, in her
-        // words. A day is filed as Context because that is what the record
-        // calls food, caffeine, sleep and the rest of what surrounded it.
-        await repo.addJournal(said, key === 'day' ? 'Context' : 'Notes', files);
+      }
+      if (plan.daily) {
+        await repo.saveDailyLog({
+          day: iso,
+          digestion: plan.daily.digestion,
+          ...(plan.wordsGoTo === 'daily' && said ? { note: said } : {}),
+          ...(plan.wordsGoTo === 'daily' && files.length ? { attachments: files } : {}),
+        });
+      }
+      if (plan.journal) {
+        await repo.addJournal(said, plan.journal.kind, files, { category: plan.journal.category, items: plan.journal.items });
       }
       nav.back();
     } catch (e) {
@@ -92,20 +113,46 @@ export function QuickLogScreen() {
 
   return (
     <DetailScreen title="Log" onBack={nav.back}>
-      <View style={q.pad}>
-        <SegmentedControl
-          segments={LABELS}
-          active={tab.label}
-          onChange={(label) => setKey((QUICK_TABS.find((t) => t.label === label) ?? QUICK_TABS[0]).key)}
-        />
+      {/* Eight subjects, one row, scrolled sideways: the label is the choice. */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={q.cats}>
+        {CATEGORIES.map((c) => {
+          const on = c.key === key;
+          return (
+            <Pressable
+              key={c.key}
+              onPress={() => choose(c.key)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: on }}
+              style={({ pressed }) => [q.cat, on && q.catOn, pressed && q.pressed]}
+            >
+              <Text style={[font('subhead', on ? 'semibold' : 'regular'), on ? q.catTextOn : q.catText]}>{c.label}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
 
-        {/*
-          The box, immediately. One line above it says the two ways in,
-          because the mic in the corner is the fastest route for someone
-          holding a phone in one hand and is easy to miss.
-        */}
-        <Text style={[font('caption1'), q.hint]}>Type it or say it, in a sentence. For example:</Text>
-        <Text style={[font('subhead'), q.example]}>{displayCopy(tab.example)}</Text>
+      <View style={q.pad}>
+        {cat.quick.length ? (
+          <View style={q.chips}>
+            {cat.quick.map((item) => {
+              const on = tapped.includes(item);
+              return (
+                <Pressable
+                  key={item}
+                  onPress={() => toggle(item)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: on }}
+                  style={({ pressed }) => [q.chip, on && q.chipOn, pressed && q.pressed]}
+                >
+                  <Text style={[font('footnote', on ? 'semibold' : 'regular'), on ? q.chipTextOn : q.chipText]}>{item}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
+
+        <Text style={[font('caption1'), q.hint]}>Or type it or say it, in a sentence. For example:</Text>
+        <Text style={[font('subhead'), q.example]}>{displayCopy(cat.example)}</Text>
 
         <Composer
           value={text}
@@ -113,39 +160,34 @@ export function QuickLogScreen() {
             setText(v);
             if (how === 'spoken') setSpoken(true);
           }}
-          placeholder={tab.example}
-          label={`Log ${tab.label.toLowerCase()} in your own words`}
+          placeholder={cat.example}
+          label={`Log ${cat.label.toLowerCase()} in your own words`}
           attachments={files}
           onAttachments={setFiles}
           onSend={send}
         />
 
-        {/*
-          What was recognised, shown before it is stored. Reported, not
-          measured: these are her words read back, and the only reason to
-          print them is so she can correct the sentence if Ciatta read it
-          wrong.
-        */}
         {recognised ? (
           <Text style={[font('footnote'), q.noted]}>
             Will be saved as: {displayCopy(recognised)}
             {spoken ? ', spoken' : ''}
           </Text>
         ) : text.trim() ? (
-          <Text style={[font('footnote'), q.noted]}>Saved in your own words.</Text>
+          <Text style={[font('footnote'), q.noted]}>Saved in your own words, under {cat.label}.</Text>
         ) : null}
 
         {error ? <Text style={[font('footnote'), q.error]}>{displayCopy(error)}</Text> : null}
 
-        {/* The long form, for the episode worth describing properly. */}
-        <Pressable
-          onPress={() => nav.push(tab.detail as Screen)}
-          accessibilityRole="button"
-          accessibilityLabel={tab.detailLabel}
-          style={({ pressed }) => [q.detail, pressed && q.pressed]}
-        >
-          <Text style={[font('subhead'), q.detailText]}>{displayCopy(tab.detailLabel)}</Text>
-        </Pressable>
+        {cat.detail && cat.detailLabel ? (
+          <Pressable
+            onPress={() => nav.push(cat.detail as Screen)}
+            accessibilityRole="button"
+            accessibilityLabel={cat.detailLabel}
+            style={({ pressed }) => [q.detail, pressed && q.pressed]}
+          >
+            <Text style={[font('subhead'), q.detailText]}>{displayCopy(cat.detailLabel)}</Text>
+          </Pressable>
+        ) : null}
       </View>
     </DetailScreen>
   );
@@ -153,6 +195,29 @@ export function QuickLogScreen() {
 
 const q = StyleSheet.create({
   pad: { paddingHorizontal: GUTTER },
+  cats: { gap: 8, paddingHorizontal: GUTTER, paddingVertical: 4 },
+  cat: {
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: L.rule,
+    backgroundColor: L.recessed,
+  },
+  catOn: { backgroundColor: L.ink, borderColor: L.ink },
+  catText: { color: L.body },
+  catTextOn: { color: L.canvas },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: SPACE.near },
+  chip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: L.rule,
+  },
+  chipOn: { backgroundColor: L.statement, borderColor: L.ink },
+  chipText: { color: L.body },
+  chipTextOn: { color: L.ink },
   hint: { color: L.meta, marginTop: SPACE.block },
   example: { color: L.body, marginTop: 4, marginBottom: 12, lineHeight: 22 },
   noted: { color: L.meta, marginTop: 10, lineHeight: 18 },
