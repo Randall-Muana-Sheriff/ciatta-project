@@ -869,8 +869,12 @@ const p = StyleSheet.create({
   ring: { width: 88, height: 88, alignItems: 'center', justifyContent: 'center' },
   // Each fact in a card of its own, three to a row.
   facts: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 16, gap: 8 },
+  // Three to a row that share the width evenly whatever the gaps take,
+  // and one height for all, so the six line up as a grid.
   fact: {
-    width: '31.8%',
+    flexBasis: '30%',
+    flexGrow: 1,
+    minHeight: 96,
     backgroundColor: L.recessed,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
