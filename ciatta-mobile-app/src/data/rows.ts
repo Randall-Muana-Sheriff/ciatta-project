@@ -2,6 +2,7 @@ import { type Episode, normalizeEpisode, parseDay, shortDate } from './cycleLog'
 import type { EntryKind, SourceKind } from './sample';
 import { type Attachment, normalizeAttachments } from '../lib/attachments';
 import type { CategoryKey } from '../lib/logCategories';
+import { FULLNESS, type Fullness, PRODUCTS, type Product, type ProductUse } from '../lib/periodProducts';
 import type { Found } from '../lib/quickLog';
 
 // The shapes the database stores, and the app types they come from. Pure, so
@@ -224,5 +225,28 @@ export function sourceView(r: SourceRow): SourceView {
       { label: 'Since', value: shortDate(new Date(r.created_at)) },
       { label: 'Last updated', value: r.last_synced_at ? shortDate(new Date(r.last_synced_at)) : 'Not yet' },
     ],
+  };
+}
+
+// A period product use, as stored. A product outside the list the app
+// offers is dropped rather than shown under a name she never chose.
+export type ProductUseRow = {
+  client_id: string;
+  product: string;
+  size: string;
+  started_at: string;
+  ended_at: string | null;
+  fullness: string | null;
+};
+
+export function productUseView(r: ProductUseRow): ProductUse | null {
+  if (!(PRODUCTS as readonly string[]).includes(r.product)) return null;
+  return {
+    id: r.client_id,
+    product: r.product as Product,
+    size: r.size,
+    startedAt: r.started_at,
+    endedAt: r.ended_at,
+    fullness: (FULLNESS as readonly string[]).includes(r.fullness ?? '') ? (r.fullness as Fullness) : null,
   };
 }

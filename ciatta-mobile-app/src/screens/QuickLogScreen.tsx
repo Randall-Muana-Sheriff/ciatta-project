@@ -33,6 +33,7 @@ import { useRepo } from '../state/session';
 import { font, GUTTER } from '../theme';
 import { Composer } from '../ui/composer';
 import { DetailScreen } from '../ui/kit';
+import { ProductLogger } from '../ui/ProductLogger';
 import { L, SPACE } from '../ui/surface';
 
 export function QuickLogScreen() {
@@ -167,6 +168,9 @@ export function QuickLogScreen() {
             })}
           </View>
         ) : null}
+
+        {/* Products are logged by tap and saved at once, under Cycle only. */}
+        {key === 'cycle' ? <ProductLogger /> : null}
 
         <Text style={[font('caption1'), q.hint]}>Or type it or say it, in a sentence. For example:</Text>
         <Text style={[font('subhead'), q.example]}>{displayCopy(cat.example)}</Text>

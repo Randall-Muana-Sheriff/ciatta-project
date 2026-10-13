@@ -84,3 +84,16 @@ test('an old entry with no category reads as none, not as a guess', () => {
   const view = journalView([{ client_id: 'j1', text: 'x', kind: 'Notes', tag: null, occurred_at: '2026-10-12T09:00:00Z' }]);
   assert.equal(view.months[0].items[0].category, undefined);
 });
+
+test('a product use row reads back as she logged it', async () => {
+  const { productUseView } = await import('./rows');
+  assert.deepEqual(
+    productUseView({ client_id: 'p1', product: 'Tampon', size: 'Super', started_at: '2026-10-12T08:00:00Z', ended_at: null, fullness: null }),
+    { id: 'p1', product: 'Tampon', size: 'Super', startedAt: '2026-10-12T08:00:00Z', endedAt: null, fullness: null },
+  );
+});
+
+test('a product the app no longer offers is dropped rather than misread', async () => {
+  const { productUseView } = await import('./rows');
+  assert.equal(productUseView({ client_id: 'p1', product: 'Sponge', size: 'x', started_at: '2026-10-12T08:00:00Z', ended_at: null, fullness: null }), null);
+});

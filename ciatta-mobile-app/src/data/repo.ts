@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Attachment } from '../lib/attachments';
 import type { DailyPatch } from '../lib/dailyLog';
+import { endUse, type Fullness, type Product, type ProductUse, startUse } from '../lib/periodProducts';
 import type { CategoryKey } from '../lib/logCategories';
 import type { Found } from '../lib/quickLog';
 import { type CycleProfile, normalizeProfile } from '../lib/cycleProfile';
@@ -21,6 +22,8 @@ import {
   type JournalRow,
   type JournalView,
   journalView,
+  type ProductUseRow,
+  productUseView,
   rowToEpisode,
   type SourceRow,
   sourceView,
@@ -82,6 +85,11 @@ export type Repo = {
   addJournal(text: string, kind: EntryKind, attachments?: Attachment[], tags?: { category: CategoryKey; items: Found }): Promise<void>;
   // Her own columns of one day, merged into whatever the day already holds.
   saveDailyLog(patch: DailyPatch): Promise<void>;
+  // Period products: her uses, newest last; putting one in (which closes
+  // the one that was in); and taking it out.
+  loadProductUses(): Promise<ProductUse[]>;
+  startProduct(next: { id: string; product: Product; size: string; at: string }): Promise<void>;
+  endProduct(out: { at: string; fullness: Fullness | null }): Promise<void>;
   loadSources(): Promise<SourceView[]>;
   loadDays(): Promise<Day[]>;
   // Her newest live insight, or null when the server has not written one:
@@ -159,6 +167,7 @@ const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 export function demoRepo(): Repo {
   let own: Episode[] = [];
   let view: JournalView = journal;
+  let productUses: ProductUse[] = [];
   return {
     mode: 'demo',
     loadEpisodes: async () => own,
@@ -176,6 +185,14 @@ export function demoRepo(): Repo {
     // The example person's record is fixed; a demo save changes nothing she
     // could be misled by.
     saveDailyLog: async () => {},
+    // Kept in memory for the session, so the example person can try it.
+    loadProductUses: async () => productUses,
+    startProduct: async (next) => {
+      productUses = startUse(productUses, next);
+    },
+    endProduct: async (out) => {
+      productUses = endUse(productUses, out);
+    },
     addJournal: async (text, kind, attachments = [], tags) => {
       const d = new Date();
       const month = `${d.toLocaleString('en-US', { month: 'long' })} ${d.getFullYear()}`;
@@ -205,12 +222,18 @@ export function demoRepo(): Repo {
       medications: ['Levothyroxine'],
       supplements: ['Magnesium'],
     }),
-    loadVitals: async () => [
-      { metric: 'blood_pressure_systolic', value: 118, unit: 'mmHg', at: new Date().toISOString() },
-      { metric: 'blood_pressure_diastolic', value: 76, unit: 'mmHg', at: new Date().toISOString() },
-      { metric: 'oxygen_saturation', value: 0.98, unit: '%', at: new Date().toISOString() },
-      { metric: 'body_mass', value: 64.2, unit: 'kg', at: new Date().toISOString() },
-    ],
+    // The example person's last week of cuff and watch readings, newest
+    // first as the real read returns them, so her cards have a line.
+    loadVitals: async () => {
+      const ago = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
+      const week = <T,>(xs: T[]) => xs.map((value, n) => ({ value, at: ago(n) }));
+      return [
+        ...week([118, 121, 119, 122, 120, 123, 121]).map((r) => ({ metric: 'blood_pressure_systolic', unit: 'mmHg', ...r })),
+        ...week([76, 78, 77, 79, 78, 80, 78]).map((r) => ({ metric: 'blood_pressure_diastolic', unit: 'mmHg', ...r })),
+        ...week([0.98, 0.97, 0.98, 0.97, 0.96, 0.97, 0.97]).map((r) => ({ metric: 'oxygen_saturation', unit: '%', ...r })),
+        { metric: 'body_mass', value: 64.2, unit: 'kg', at: ago(0) },
+      ].sort((a, b) => b.at.localeCompare(a.at));
+    },
     loadReferences: async () => [
       {
         id: 'sample-endo-delay',
@@ -392,6 +415,34 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       );
       return journalView(rows);
     },
+    async loadProductUses() {
+      const rows = must(
+        await db
+          .from('product_uses')
+          .select('client_id, product, size, started_at, ended_at, fullness')
+          .order('started_at')
+          .limit(500),
+      ) as ProductUseRow[] | null;
+      return (rows ?? []).map(productUseView).filter((u): u is ProductUse => u != null);
+    },
+    async startProduct(next) {
+      // Close what was in at the moment the new one goes in, then add the
+      // new one. The database refuses a second open use, so a close that
+      // did not land fails the insert rather than leaving two in.
+      must(await db.from('product_uses').update({ ended_at: next.at }).is('ended_at', null));
+      must(
+        await db.from('product_uses').insert({
+          user_id: userId,
+          client_id: next.id,
+          product: next.product,
+          size: next.size,
+          started_at: next.at,
+        }),
+      );
+    },
+    async endProduct(out) {
+      must(await db.from('product_uses').update({ ended_at: out.at, fullness: out.fullness }).is('ended_at', null));
+    },
     async saveDailyLog(patch) {
       must(
         await db.rpc('save_daily_log', {
@@ -530,8 +581,9 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       return rows ?? [];
     },
     async loadVitals() {
-      // Ordered newest first and deduped in code to the first of each
-      // metric, which is one round trip rather than one per metric.
+      // Ordered newest first, every reading rather than the newest of each:
+      // the cards read the newest with find(), and the trend line under
+      // each one needs the ones before it. One round trip for all metrics.
       const rows = must(
         await db
           .from('observations')
@@ -541,14 +593,7 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
           .order('occurred_at', { ascending: false })
           .limit(200),
       ) as { metric: string; value: number; unit: string | null; occurred_at: string }[] | null;
-      const seen = new Set<string>();
-      const out: VitalReading[] = [];
-      for (const r of rows ?? []) {
-        if (seen.has(r.metric)) continue;
-        seen.add(r.metric);
-        out.push({ metric: r.metric, value: Number(r.value), unit: r.unit, at: r.occurred_at });
-      }
-      return out;
+      return (rows ?? []).map((r) => ({ metric: r.metric, value: Number(r.value), unit: r.unit, at: r.occurred_at }));
     },
     async loadIntraday(sinceIso) {
       // Only the two metrics the day chart draws, and only today's. Reading
