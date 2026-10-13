@@ -82,6 +82,33 @@ test('buildDayRow never writes sleep_hours when the incoming day did not carry i
   assert.equal('sleep_hours' in row, false);
 });
 
+test('buildDayRow refuses a night of zero sleep and keeps the rest of the day', () => {
+  // What an earlier build sent for a night the phone only knew she was in
+  // bed for.
+  const row = buildDayRow({ day: '2026-06-01', sleep_hours: 0, time_in_bed: 5.5 }, { user_id: 'u1', source_id: 's1' });
+  assert.equal('sleep_hours' in row, false);
+  assert.equal(row.time_in_bed, 5.5);
+
+  const slept = buildDayRow({ day: '2026-06-02', sleep_hours: 6.25 }, { user_id: 'u1', source_id: 's1' });
+  assert.equal(slept.sleep_hours, 6.25);
+
+  const unreadable = buildDayRow({ day: '2026-06-03', sleep_hours: 'none', steps: 40 }, { user_id: 'u1', source_id: 's1' });
+  assert.equal('sleep_hours' in unreadable, false);
+  assert.equal(unreadable.steps, 40);
+});
+
+test('buildDayRow carries a null through, which clears the column: the app read the source and found no night', () => {
+  const row = buildDayRow(
+    { day: '2026-06-03', sleep_hours: null, time_in_bed: null, stage_deep: null },
+    { user_id: 'u1', source_id: 's1' },
+  );
+  assert.equal(row.sleep_hours, null);
+  assert.equal(row.time_in_bed, null);
+  assert.equal(row.stage_deep, null);
+  assert.equal('sleep_hours' in row, true);
+  assert.equal('steps' in row, false, 'a column that was not named is still left alone');
+});
+
 test('buildDayRow omits absent list columns rather than defaulting them to empty lists', () => {
   const row = buildDayRow({ day: '2026-06-01', steps: 3500 }, { user_id: 'u1', source_id: 's1' });
   assert.equal('workouts' in row, false);

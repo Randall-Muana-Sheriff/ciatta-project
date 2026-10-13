@@ -285,3 +285,63 @@ test('every relation emitted carries a gap the database check will accept', () =
     if (cap != null) assert.ok(link.gap_hours <= cap, `${link.relation} carried ${link.gap_hours} hours`);
   }
 });
+
+// ── Events and device readings ─────────────────────────────────
+const reading = (id: string, metric: string, iso: string): LinkInput => ({ id, metric, occurredAt: iso, measured: true });
+
+test('two continuous device readings are never linked: they are two series, not a relationship', () => {
+  const links = buildLinks([
+    reading('s', 'steps', '2026-09-10T06:00:00.000Z'),
+    reading('h', 'heart_rate', '2026-09-10T06:05:00.000Z'),
+    reading('e', 'active_energy', '2026-09-11T06:00:00.000Z'),
+  ]);
+  assert.deepEqual(links, []);
+});
+
+test('an event is linked to the readings a week either side of it, earlier one first', () => {
+  const links = buildLinks([
+    reading('before', 'sleep_analysis', '2026-09-08T06:00:00.000Z'),
+    at('period', 'period_start', '2026-09-10T09:00:00.000Z'),
+    reading('after', 'steps', '2026-09-12T18:00:00.000Z'),
+    reading('far', 'steps', '2026-09-20T18:00:00.000Z'),
+  ]);
+  assert.deepEqual(
+    links.map((l) => [l.a_observation_id, l.b_observation_id, l.relation]).sort(),
+    [
+      ['before', 'period', 'within_3d'],
+      ['period', 'after', 'within_3d'],
+    ]
+  );
+});
+
+test('two events near each other are linked once, not once from each side', () => {
+  const links = buildLinks([
+    at('note', 'note', '2026-09-10T09:00:00.000Z'),
+    at('pain', 'pain_episode', '2026-09-11T09:00:00.000Z'),
+  ]);
+  assert.equal(links.length, 1);
+  assert.deepEqual([links[0].a_observation_id, links[0].b_observation_id], ['note', 'pain']);
+});
+
+test('a record shaped like a real one is cheap: thousands of readings, a handful of events', () => {
+  const rows: LinkInput[] = [];
+  const start = Date.parse('2026-06-25T00:00:00Z');
+  for (let i = 0; i < 5000; i++) {
+    rows.push(reading(`r${String(i).padStart(5, '0')}`, ['steps', 'heart_rate', 'hrv', 'active_energy'][i % 4], new Date(start + i * 26 * 60000).toISOString()));
+  }
+  rows.push(at('p1', 'period_start', '2026-07-20T09:00:00.000Z'));
+  rows.push(at('p2', 'period_start', '2026-08-17T09:00:00.000Z'));
+  const began = process.cpuUsage();
+  const links = buildLinks(rows);
+  const cpuMs = (process.cpuUsage(began).user + process.cpuUsage(began).system) / 1000;
+  assert.ok(links.length > 0);
+  assert.ok(links.every((l) => l.a_observation_id.startsWith('p') || l.b_observation_id.startsWith('p')), 'every link has an event in it');
+  assert.ok(cpuMs < 500, `linking took ${cpuMs} ms of CPU`);
+});
+
+test('affordability counts what the scan will do, not how much she has', () => {
+  assert.equal(linksAreAffordable(50000, 20), true, 'fifty thousand readings and twenty events is a small scan');
+  assert.equal(linksAreAffordable(50000, 50000), false, 'fifty thousand events is not');
+  assert.equal(linksAreAffordable(MAX_LINKED_OBSERVATIONS), true, 'the one argument rule is unchanged');
+  assert.equal(linksAreAffordable(MAX_LINKED_OBSERVATIONS + 1), false);
+});
