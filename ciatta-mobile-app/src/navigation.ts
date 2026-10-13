@@ -36,6 +36,8 @@ export type Screen =
   | 'addProcedure'
   | 'addRecord'
   | 'metric'
+  | 'privacy'
+  | 'shareClinician'
   | 'productSafety';
 
 export type Nav = {

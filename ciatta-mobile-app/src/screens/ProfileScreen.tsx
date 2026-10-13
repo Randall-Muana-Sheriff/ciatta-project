@@ -525,7 +525,11 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
       return;
     }
     if (!userId) return;
-    exportAndShare(userId).catch((e) => setDataFooter(userFacingError(e, 'Your data did not download. Try again.')));
+    // Every table she has, read and written to one file, takes a moment.
+    setDataFooter('Gathering your record into one file.');
+    exportAndShare(userId)
+      .then(() => setDataFooter(null))
+      .catch((e) => setDataFooter(userFacingError(e, 'Your data did not download. Try again.')));
   };
 
   const onDelete = () => {
@@ -566,9 +570,9 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
       </ListGroup>
 
       <ListGroup header="Privacy and Data" footer={dataFooter ?? undefined}>
-        <ListRow first title="Who Can See This" sub="Only you. Nothing is sold or shared." onPress={notYet} />
-        <ListRow title="Share with a Clinician" sub="A summary to bring to an appointment" onPress={notYet} />
-        <ListRow title="Download Your Data" sub="Everything you and your sources have shared" onPress={onDownload} />
+        <ListRow first title="Who Can See This" sub="Only you. Nothing is sold or shared." onPress={() => onOpen('privacy')} />
+        <ListRow title="Share with a Clinician" sub="A PDF summary, made on this phone" onPress={() => onOpen('shareClinician')} />
+        <ListRow title="Download Your Data" sub="Everything Ciatta holds, as one file" onPress={onDownload} />
       </ListGroup>
 
       <ListGroup footer={accountNote ?? undefined}>

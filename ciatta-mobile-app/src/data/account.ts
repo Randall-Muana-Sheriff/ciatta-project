@@ -1,26 +1,40 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { File, Paths } from 'expo-file-system';
 import { Share } from 'react-native';
 
+import { buildExport, EXPORT_COLUMNS, EXPORT_TABLES, type ExportTable, exportFileName, type TableRead } from '../lib/dataExport';
 import { supabase } from '../lib/supabase';
 import { clearLocalRecord } from './localKeys';
 import { paginateAll } from './pagination';
 
 // Everything she owns, read as her, so RLS guarantees it is only hers.
-export const EXPORT_TABLES = [
-  'profiles', 'health_sources', 'raw_inputs', 'episodes', 'journal_entries',
-  'medications', 'supplements', 'documents', 'results', 'observations',
-] as const;
+// Written to a file she can keep and sent through the share sheet, so it can
+// go to Files, Mail or AirDrop. It used to be pasted into the share sheet as
+// text, which a large record overflows, and it left most tables out. Which
+// tables, and what the file says about each, is in lib/dataExport.ts.
+const ORDER_BY: Partial<Record<ExportTable, string>> = { health_summaries: 'user_id' };
 
 export async function exportAndShare(userId: string): Promise<void> {
-  const out: Record<string, unknown> = { exported_at: new Date().toISOString(), user_id: userId };
+  const reads: Partial<Record<ExportTable, TableRead>> = {};
   for (const table of EXPORT_TABLES) {
-    out[table] = await paginateAll((from, to) =>
-      table === 'profiles'
-        ? supabase.from(table).select('*').eq('id', userId).order('id').range(from, to)
-        : supabase.from(table).select('*').order('id').range(from, to),
-    );
+    try {
+      reads[table] = (await paginateAll((from, to) =>
+        table === 'profiles'
+          ? supabase.from(table).select('*').eq('id', userId).order('id').range(from, to)
+          : supabase.from(table).select(EXPORT_COLUMNS[table] ?? '*').order(ORDER_BY[table] ?? 'id').range(from, to),
+      )) as Record<string, unknown>[];
+    } catch (e) {
+      // One table that cannot be read is listed in the file as such,
+      // rather than losing the rest of her record with it.
+      reads[table] = { error: e instanceof Error ? e.message : (e as { message?: string })?.message ?? 'unknown' };
+    }
   }
-  await Share.share({ message: JSON.stringify(out, null, 2), title: 'Your data' });
+  const now = new Date();
+  const file = new File(Paths.cache, exportFileName(now));
+  if (file.exists) file.delete();
+  file.create();
+  file.write(JSON.stringify(buildExport(reads, userId, now), null, 2));
+  await Share.share({ url: file.uri, title: 'Your Ciatta data' });
 }
 
 // Deletes her files, then her account; every row cascades from the account.
