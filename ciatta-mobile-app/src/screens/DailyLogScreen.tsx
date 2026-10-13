@@ -13,7 +13,7 @@
 // which an estimate renders as a measurement.
 
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
   CHECK_INS,
@@ -123,6 +123,29 @@ export function DailyLogScreen() {
     >
       <Text style={[font('body'), s.lede]}>{displayCopy(logLine(log))}</Text>
 
+      {/* ── In her own words, first ──────────────────────────
+          The day starts where she would start: saying it. The same box
+          as everywhere else, with the mic in its corner and the camera,
+          images, a PDF and a video behind its plus. The sections below
+          are for the parts she wants to tap rather than say. */}
+      <View style={s.section}>
+        <Eyebrow>Tell us about today</Eyebrow>
+        <Text style={[font('caption1'), s.note]}>Say it, type it, or add a photo, image, PDF or video.</Text>
+        <View style={{ marginTop: 10 }}>
+          <Composer
+            value={log.note}
+            onChange={(v) => set('note', v)}
+            placeholder="However you would say it"
+            label="Tell us about today"
+            attachments={log.attachments}
+            onAttachments={(next) => set('attachments', next)}
+            // Saved with the rest of the day by Save today, so send only
+            // puts the keyboard away.
+            onSend={() => Keyboard.dismiss()}
+          />
+        </View>
+      </View>
+
       {/* ── Food ─────────────────────────────────────────────── */}
       <View style={s.section}>
         <Eyebrow>What you ate</Eyebrow>
@@ -218,24 +241,6 @@ export function DailyLogScreen() {
         ))}
       </View>
 
-      {/* ── Anything else ────────────────────────────────────── */}
-      <View style={s.section}>
-        <Eyebrow>Anything else</Eyebrow>
-        {/*
-          The same box as everywhere else, and a working one. It was
-          wired to an empty string and an ignored onChange, so typing in
-          it did nothing at all.
-        */}
-        <Composer
-          value={log.note}
-          onChange={(v) => set('note', v)}
-          placeholder="However you would say it"
-          label="Anything else about today"
-          attachments={log.attachments}
-          onAttachments={(next) => set('attachments', next)}
-          onSend={() => {}}
-        />
-      </View>
     </DetailScreen>
   );
 }
