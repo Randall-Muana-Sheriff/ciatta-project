@@ -235,10 +235,7 @@ export function BodySystemView({
       </View>
 
       <Panel style={b.detail}>
-        <Text style={[font('footnote', 'semibold'), { color: system.lead ? M[system.lead.meaning] : C.secondary }]}>
-          {stateWords(system.lead ?? undefined)}
-        </Text>
-        <Text style={[font('title3', 'semibold'), { color: C.text, marginTop: 2 }]}>{displayCopy(system.label)}</Text>
+        <Text style={[font('title3', 'semibold'), { color: C.text }]}>{displayCopy(system.label)}</Text>
         {system.points.length ? (
           system.points.map((p, n) => (
             <View key={`${p.region}-${p.title}`} style={[b.item, n > 0 && b.itemSep]}>
@@ -247,9 +244,14 @@ export function BodySystemView({
                 {p.region === 'systemic' ? 'Whole body' : REGION_BY_ID[p.region].label}
               </Text>
               <Text style={[font('body'), { color: C.text, marginTop: 4, lineHeight: 24 }]}>{p.detail}</Text>
-              <View style={b.tagRow}>
-                <Tag label={p.source} tone={SOURCE_TONE[p.source]} />
-              </View>
+              {/* Synced readings carry no tag: the screen is about her body,
+                  and the device is not news. What she reported, a lab and a
+                  pattern still say so. */}
+              {p.source !== 'Synced' ? (
+                <View style={b.tagRow}>
+                  <Tag label={p.source} tone={SOURCE_TONE[p.source]} />
+                </View>
+              ) : null}
               {p.insightId || p.screen ? (
                 <LinkButton label={p.insightId ? 'See the Evidence' : 'Open Details'} onPress={() => onOpen(p)} />
               ) : null}

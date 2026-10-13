@@ -121,11 +121,6 @@ export function MovementScreen() {
         <SecLabel right="Last 28 days">Daily Steps</SecLabel>
         <Panel>
           <StepsChart movement={movement} />
-          {movement.band ? (
-          <Text style={[font('footnote'), { color: C.secondary, marginTop: 8 }]}>
-            The shaded band is your usual range. Coral days fell below it.
-          </Text>
-          ) : null}
         </Panel>
       </View>
       ) : null}
