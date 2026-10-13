@@ -10,6 +10,7 @@ import type { SourceView } from '../data/rows';
 import type { Reported } from '../data/repo';
 import { type Connection, loadConnections } from '../data/providers';
 import { intelligenceLine, metricLine, patternReadiness } from '../lib/patternReadiness';
+import { bodySystems } from '../data/adapter';
 import { overviewFacts } from '../lib/overviewFacts';
 import { weight } from '../lib/vitals';
 import { healthStats } from '../lib/healthFacts';
@@ -295,14 +296,15 @@ function CycleGroup({ onOpen }: { onOpen: (screen: Screen) => void }) {
   );
 }
 
-function BodySystems({ profile }: { profile: Profile }) {
+// The ten body systems are the same for everyone, so every account sees them.
+function BodySystems() {
   return (
     <View>
       <Text style={[font('title3', 'semibold'), { color: C.text, marginBottom: 8 }]} accessibilityRole="header">
         Body Systems
       </Text>
       <View style={p.grid}>
-        {profile.bodySystems.map((b) => (
+        {bodySystems.map((b) => (
           <View key={b.label} style={p.system}>
             <Icon name={b.icon} size={20} color={SYSTEM_DOTS[b.label]?.color ?? C.secondary} weight={1.8} />
             <Text style={[font('subhead'), { color: C.text, flex: 1 }]}>{displayCopy(b.label)}</Text>
@@ -796,6 +798,7 @@ export function ProfileScreen() {
           <>
             <Reported reported={reported} />
             <CycleGroup onOpen={nav.push} />
+            <BodySystems />
             <ListGroup header="From your providers" footer="Results and notes your hospital sent, in their words.">
               <ListRow
                 first
@@ -832,7 +835,7 @@ export function ProfileScreen() {
             */}
             <DetailsGroup onOpen={nav.push} profile={profile} />
             <CycleGroup onOpen={nav.push} />
-            <BodySystems profile={profile} />
+            <BodySystems />
             <CareGroup profile={profile} onOpen={nav.push} />
           </>
         ) : null}
