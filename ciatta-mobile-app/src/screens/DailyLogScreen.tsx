@@ -102,11 +102,11 @@ export function DailyLogScreen() {
               try {
                 await repo.saveDailyLog(dailyLogPatch(log));
                 // Files go where she can see them again: a journal entry
-                // filed under Nutrition and gut.
+                // filed under Nutrition.
                 if (log.attachments.length) {
                   await repo.addJournal('', 'Context', log.attachments, {
                     category: 'nutrition',
-                    items: log.digestion.length ? { nutrition: [...log.digestion] } : {},
+                    items: log.digestion.length ? { gut: [...log.digestion] } : {},
                   });
                 }
                 nav.back();
@@ -189,7 +189,7 @@ export function DailyLogScreen() {
       {/* ── Gut ──────────────────────────────────────────────── */}
       <View style={s.section}>
         <Eyebrow>Your gut</Eyebrow>
-        {/* Stool is logged once, under Nutrition and gut on the Log screen,
+        {/* Stool is logged once, under Gut on the Log screen,
             as the bowel movement entry the body map reads. */}
         <Chips
           options={DIGESTION_FLAGS}

@@ -57,7 +57,7 @@ export function QuickLogScreen() {
   const cat = category(key);
   const reading = useMemo(() => readQuick(text), [text]);
   // A bowel movement she tapped or wrote, with the way into its full detail.
-  const bowel = bowelDetail([...(key === 'nutrition' ? tapped : []), ...(reading.found.nutrition ?? [])]);
+  const bowel = bowelDetail([...(key === 'gut' ? tapped : []), ...(reading.found.gut ?? [])]);
   const recognised = readingLine(
     tapped.length ? mergeFound(reading.found, { [key]: tapped }) : reading.found,
     reading.flow,

@@ -156,6 +156,8 @@ export type JournalView = {
       attachments?: Attachment[];
       category?: CategoryKey;
       items?: Found;
+      // When it happened, as stored. Absent on sample entries.
+      at?: string;
     }[];
   }[];
 };
@@ -183,6 +185,7 @@ export function journalView(rows: JournalRow[]): JournalView {
       attachments: normalizeAttachments(r.metadata?.attachments),
       category: typeof r.metadata?.category === 'string' ? (r.metadata.category as CategoryKey) : undefined,
       items: r.metadata?.items && typeof r.metadata.items === 'object' ? (r.metadata.items as Found) : undefined,
+      at: r.occurred_at,
     });
   }
   const oldest = new Date(sorted[sorted.length - 1].occurred_at);

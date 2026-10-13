@@ -31,7 +31,7 @@ test('irregular endometriosis: days since period, length dots, endometriosis pai
   assert.equal(l.predicts, false);
   assert.equal(l.painSplit, true);
   assert.ok(l.contexts.includes('Pain with bowel movements'));
-  // Logged under Nutrition and gut on the Log screen now, so the cycle
+  // Logged under Gut on the Log screen now, so the cycle
   // questionnaire no longer offers a second way in. Old episodes keep it.
   assert.ok(!l.kinds.includes('Bowel movement'));
   assert.ok(l.symptoms.includes('Positive ovulation test'));

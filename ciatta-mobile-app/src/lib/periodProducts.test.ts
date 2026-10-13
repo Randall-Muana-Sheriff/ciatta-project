@@ -50,3 +50,26 @@ test('how long it has been in, in her words', () => {
   assert.equal(inForLine(u, new Date(2026, 9, 12, 8, 40)), 'In for 40m');
   assert.equal(inForLine(u, new Date(2026, 9, 12, 7, 0)), 'In for 0m', 'a clock behind never reads negative');
 });
+
+test('the cycle card line: what is in now, with how long', async () => {
+  const { productsLine } = await import('./periodProducts');
+  const uses = startUse([], { id: 'a', product: 'Tampon', size: 'Super', at: at(8) });
+  assert.equal(productsLine(uses, at(1), new Date(2026, 9, 12, 10, 10)), 'Super tampon in, for 2h 10m');
+});
+
+test('the cycle card line: this period so far, when nothing is in', async () => {
+  const { productsLine } = await import('./periodProducts');
+  let uses: ProductUse[] = [];
+  uses = startUse(uses, { id: 'a', product: 'Tampon', size: 'Super', at: at(8) });
+  uses = startUse(uses, { id: 'b', product: 'Tampon', size: 'Super', at: at(12) });
+  uses = startUse(uses, { id: 'c', product: 'Pad', size: 'Overnight', at: at(22) });
+  uses = endUse(uses, { at: at(23), fullness: null });
+  assert.equal(productsLine(uses, at(0), new Date(2026, 9, 12, 23, 30)), 'This period: 3 changes, mostly Super tampon');
+  // Uses from before this period started are not this period's.
+  assert.equal(productsLine(uses, at(13), new Date(2026, 9, 12, 23, 30)), 'This period: 1 change, mostly Overnight pad');
+});
+
+test('no products logged means no line at all', async () => {
+  const { productsLine } = await import('./periodProducts');
+  assert.equal(productsLine([], at(0), new Date(2026, 9, 12, 12)), null);
+});

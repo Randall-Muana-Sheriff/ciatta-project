@@ -1,5 +1,5 @@
-import { type ReactNode, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { dayLabel, daysBetween, parseDay, shortDate, type Episode } from '../data/cycleLog';
 import type { Day } from '../data/daily';
@@ -8,7 +8,15 @@ import { type CycleSummary, type Signal, tally } from '../lib/cyclePatterns';
 import { displayCopy } from '../lib/displayCopy';
 import { fmtCount, fmtHours, mostRecentValue, type MovementSummary } from '../lib/engine';
 import type { Screen } from '../navigation';
-import { useData, useSession } from '../state/session';
+import { useData, useRepo, useSession } from '../state/session';
+import { useCycle, useCycleInsights } from '../state/cycleStore';
+import { categorySummary } from '../lib/categorySummary';
+import { category as categoryOf, type CategoryKey } from '../lib/logCategories';
+import { productsLine, type ProductUse } from '../lib/periodProducts';
+import { type EnvironmentDay, weatherLines } from '../lib/weather';
+import { latestMeal } from '../lib/mealPhoto';
+import { images } from './images';
+import type { JournalView } from '../data/rows';
 import { C, font, M, numeral, RADIUS } from '../theme';
 import { BarRow } from './cycleInputs';
 import { BedArc, type CompleteStages, DotScale, HairlineChart, RangeBar, type Stage, StageLegend, StageRings } from './lineCharts';
@@ -112,7 +120,46 @@ export function HealthDashboard({
   const [stage, setStage] = useState<Stage>('Deep');
   const { records, medications } = useData();
   const { mode } = useSession();
+  const repo = useRepo();
+  const { episodes } = useCycle();
+  const { windows } = useCycleInsights();
   const now = new Date();
+
+  // What the newer cards read: her journal (for the logging categories),
+  // her period products, and the weather around her. Each starts empty, and
+  // an empty source means its card is simply not drawn.
+  const [journal, setJournal] = useState<JournalView | null>(null);
+  const [productUses, setProductUses] = useState<ProductUse[]>([]);
+  const [environment, setEnvironment] = useState<EnvironmentDay[]>([]);
+  useEffect(() => {
+    let ignore = false;
+    repo.loadJournal().then((j) => !ignore && setJournal(j)).catch(() => {});
+    repo.loadProductUses().then((u) => !ignore && setProductUses(u)).catch(() => {});
+    repo.loadEnvironment().then((e) => !ignore && setEnvironment(e)).catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, [repo]);
+
+  const mealFrom = (entries: Parameters<typeof latestMeal>[0]) => {
+    const found = latestMeal(entries);
+    if (found) return { source: { uri: found.uri }, title: found.title, meal: found.meal };
+    if (mode === 'demo') return { source: images.sampleMeal, title: 'Yogurt bowl with berries', meal: 'Breakfast' as const };
+    return null;
+  };
+  const categoryCards = useMemo(() => {
+    const entries = (journal?.months ?? []).flatMap((m) => m.items);
+    const input = { journal: entries, days, episodes, now: new Date() };
+    return CATEGORY_CARDS.map((key) => ({ key, summary: categorySummary(key, input) })).filter(
+      (c) => c.summary.rows.length || c.summary.extra || (c.key === 'nutrition' && mealFrom(entries)),
+    );
+  }, [journal, days, episodes, mode]);
+  // The Nutrition card's photo: her latest meal photo, or for the example
+  // person a sample breakfast.
+  const meal = useMemo(() => mealFrom((journal?.months ?? []).flatMap((m) => m.items)), [journal, mode]);
+  const periodStart = windows[windows.length - 1]?.start;
+  const products = periodStart ? productsLine(productUses, periodStart.toISOString(), now) : null;
+  const weather = weatherLines(environment);
 
   // Undefined until her record holds a day; the "any record at all" cards
   // below wait for one. This is deliberately not "today's data": days
@@ -304,6 +351,19 @@ export function HealthDashboard({
       </Card>
       ) : null}
 
+      {/* Weather: the background, never about her body. Drawn only once
+          there is weather to show. */}
+      {weather.length ? (
+      <Card title="Weather" meta="Last 7 days">
+        {weather.map((line) => (
+          <Text key={line} style={[font('subhead'), { color: C.text }]}>
+            {displayCopy(line)}
+          </Text>
+        ))}
+        <Text style={[font('caption1'), d.note]}>Around you, not about your body.</Text>
+      </Card>
+      ) : null}
+
       {/* Cycle */}
       <Card title="Cycle" meta={lens.header.value} onPress={() => open('cycle')}>
         <View style={d.row3}>
@@ -327,6 +387,8 @@ export function HealthDashboard({
             />
           </>
         ) : null}
+        {/* Period products, only once she has logged some this period. */}
+        {products ? <Text style={[font('subhead'), { color: C.text }]}>{displayCopy(products)}</Text> : null}
       </Card>
 
       {/* Pain and flare ups. With no cycle logged at all there is nothing on
@@ -395,6 +457,46 @@ export function HealthDashboard({
       </Card>
       ) : null}
 
+      {/* What she logged by category, in the last 30 days. A category she
+          has logged nothing in has no card, so a new record stays short. */}
+      {categoryCards.map(({ key, summary }) => {
+        const max = Math.max(1, ...summary.rows.map((r) => r.days));
+        if (key === 'nutrition') {
+          return (
+            <View key={key} style={[d.card, d.mealCard]}>
+              {/* Her own latest meal across the top, named by when she ate
+                  it. The example person has a sample breakfast. */}
+              {meal ? (
+                <View>
+                  <Image source={meal.source} style={d.mealPhoto} resizeMode="cover" accessibilityIgnoresInvertColors accessible={false} />
+                  <View style={d.mealPill}>
+                    <Text style={[font('caption1', 'semibold'), d.mealPillText]}>{meal.meal.toUpperCase()}</Text>
+                  </View>
+                </View>
+              ) : null}
+              <View style={d.mealBody}>
+                {meal ? <Text style={[font('headline'), { color: C.text }]}>{displayCopy(meal.title)}</Text> : null}
+                <View style={d.cardHead}>
+                  <Text style={[font('title3', 'semibold'), { color: C.text, flex: 1 }]}>{categoryOf(key).label}</Text>
+                  <Text style={[font('footnote'), { color: C.secondary }]}>Last 30 days</Text>
+                </View>
+                {summary.rows.map((r) => (
+                  <BarRow key={r.item} label={r.item} count={r.days} max={max} color={M.reported} unit={r.days === 1 ? ' day' : ' days'} />
+                ))}
+              </View>
+            </View>
+          );
+        }
+        return (
+          <Card key={key} title={categoryOf(key).label} meta="Last 30 days">
+            {summary.rows.map((r) => (
+              <BarRow key={r.item} label={r.item} count={r.days} max={max} color={M.reported} unit={r.days === 1 ? ' day' : ' days'} />
+            ))}
+            {summary.extra ? <Text style={[font('footnote'), d.note]}>{displayCopy(summary.extra)}</Text> : null}
+          </Card>
+        );
+      })}
+
       {/* Medications */}
       {medications ? (
       <Card title="Medications" meta={`${medications.current.length} current`} onPress={() => open('medications')}>
@@ -453,7 +555,26 @@ export function HealthDashboard({
   );
 }
 
+// The logging categories that have a dashboard card, in the Log screen's
+// order. Cycle has its own card above, Context and Note are not tallies.
+const CATEGORY_CARDS: CategoryKey[] = ['nutrition', 'gut', 'body', 'mind', 'skin', 'sexual'];
+
 const d = StyleSheet.create({
+  // The Nutrition card: the photo bleeds to the card's edges, then the
+  // usual padding below it.
+  mealCard: { padding: 0, overflow: 'hidden', gap: 0 },
+  mealPhoto: { width: '100%', height: 160 },
+  mealPill: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.38)',
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+  mealPillText: { color: '#FFFFFF', letterSpacing: 0.6 },
+  mealBody: { padding: 16, gap: 10 },
   stack: { gap: 16, marginTop: 4 },
   pressed: { opacity: 0.55 },
   card: { backgroundColor: C.card, borderRadius: RADIUS, padding: 16, gap: 10 },

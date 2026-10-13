@@ -3,17 +3,26 @@
 Date: 2026-10-13
 App: `ciatta-mobile-app` (Expo 57, React Native)
 Status: design approved in conversation, awaiting spec review
-References: `ciatta-visual-assets/IMG_4911.jpg` (scan), `IMG_4912.jpg` (card)
+References: `ciatta-visual-assets/IMG_4911.jpg` (scan), `IMG_4912.jpg` (card),
+`IMG_4823.PNG` (food photo header)
 
 ## Goal
 
-When she photographs a meal under Nutrition and gut, Ciatta names each food
+When she photographs a meal under Nutrition, Ciatta names each food
 on the photo the way IMG_4911 does (a frosted label pinned to each item, a
 dotted ring around it) and estimates protein, carbs, fat and calories. The
-Health dashboard's Nutrition and gut card becomes the IMG_4912 card: the
+Health dashboard's Nutrition card gains the IMG_4912 calories block: the
 day's calories, protein and fat, and a dial, with her gut flags beneath.
 
 ## Decisions (from the conversation)
+
+- Nutrition and Gut are separate categories (2026-10-13, built): Nutrition
+  is food, drink and goals; Gut is digestion and bowel movements. Each has
+  its own Log category and dashboard card.
+- The Nutrition card opens with a real food photo (IMG_4823): her most
+  recent photo logged under Nutrition, with a meal pill (Breakfast, Lunch,
+  Dinner or Snack, by the hour) and the meal's name beneath. No photo, no
+  header; never a stock image for a real account. Built.
 
 - Photos are read by OpenAI's vision model, `gpt-4o` by default, through a
   server function. The key never reaches the phone.
@@ -22,7 +31,7 @@ day's calories, protein and fat, and a dial, with her gut flags beneath.
 - Macro cards show what she ate. Only if she sets her own daily targets do
   they switch to "Left" with the ring filling toward her number. Ciatta
   never proposes or invents a target.
-- The Calories card from IMG_4912 is the Nutrition and gut card.
+- The Calories block from IMG_4912 sits on the Nutrition card, under its photo.
 
 ## Constraints
 
@@ -31,8 +40,8 @@ day's calories, protein and fat, and a dial, with her gut flags beneath.
 - UI copy has no em dash, en dash or hyphen, through `displayCopy()`.
   Numbers use a comma for thousands ("1,250").
 - The attachment rule ("Ciatta does not read what is inside a file")
-  changes for one case only: a photo taken or added under Nutrition and
-  gut, sent to be scanned. The scan screen says so. Photos anywhere else
+  changes for one case only: a photo taken or added under Nutrition, sent
+  to be scanned. The scan screen says so. Photos anywhere else
   are still never read.
 - The photo is sent once for the scan and not stored on the server or
   logged. It stays on the phone with the meal, like other attachments.
@@ -96,13 +105,13 @@ Scan screen (`screens/FoodScanScreen.tsx`), laid out as IMG_4911:
   in this photo" with "Add foods yourself", which opens the same screen
   with an empty list.
 
-Entry points: under Nutrition and gut on the Log screen, a "Scan a meal"
+Entry points: under Nutrition on the Log screen, a "Scan a meal"
 button (camera, or library), and any photo she adds there with the plus.
 
-## 3. The Nutrition and gut card (IMG_4912)
+## 3. The Nutrition card (IMG_4823 header, IMG_4912 block)
 
-On the Health dashboard, replacing the current list card for this
-category, shown once she has logged a meal or a gut flag in 30 days:
+On the Health dashboard, under the meal photo header, shown once she has
+logged a meal or a Nutrition item in 30 days:
 
 - Title "Calories" ("Calories Progress" when she has a kcal target), the
   open arrow to her meals list at top right.
@@ -111,8 +120,8 @@ category, shown once she has logged a meal or a gut flag in 30 days:
 - The dial: with a kcal target, the arc fills toward it. Without one, the
   arc fills toward her usual day (median kcal of her logged days, at least
   7 of them in 30), marked "Your usual 1,800". With neither, no dial.
-- Beneath: her gut flags for 30 days, as the current card lists them, and
-  bowel movements.
+- Beneath: her Nutrition items for 30 days (caffeine, alcohol, skipped
+  meals, eating late). Gut flags and bowel movements are on the Gut card.
 - "From your record" in place of "AI Chef's Tips": one line, only when her
   own record supports it, from a fixed set: protein under her target on
   most logged days this week; or the engine's food and bloating finding

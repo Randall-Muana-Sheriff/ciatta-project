@@ -10,7 +10,7 @@ import type { EntryKind } from '../data/sample';
 import type { Screen } from '../navigation';
 import { DIGESTION_FLAGS } from './dailyLog';
 
-export type CategoryKey = 'cycle' | 'nutrition' | 'body' | 'mind' | 'skin' | 'sexual' | 'context' | 'note';
+export type CategoryKey = 'cycle' | 'nutrition' | 'gut' | 'body' | 'mind' | 'skin' | 'sexual' | 'context' | 'note';
 
 export type LogCategory = {
   key: CategoryKey;
@@ -29,7 +29,7 @@ export type LogCategory = {
 };
 
 // The episode kind the body map, cycle patterns and cycle lens already
-// read. Logged under Nutrition and gut, stored as an episode.
+// read. Logged under Gut, stored as an episode.
 export const BOWEL = 'Bowel movement';
 
 export const CATEGORIES: readonly LogCategory[] = [
@@ -42,14 +42,25 @@ export const CATEGORIES: readonly LogCategory[] = [
     detailLabel: 'Describe it step by step',
     journalKind: 'Symptoms',
   },
+  // Nutrition and Gut were one category and are two different things:
+  // what she ate and drank, against any goals she set, and how her gut was.
   {
     key: 'nutrition',
-    label: 'Nutrition and gut',
-    example: 'Porridge and two coffees, bloated after lunch',
-    quick: [...DIGESTION_FLAGS, BOWEL],
+    label: 'Nutrition',
+    example: 'Porridge and two coffees, skipped lunch',
+    quick: ['Caffeine', 'Alcohol', 'Skipped a meal', 'Ate late'],
     detail: 'dailyLog',
-    detailLabel: 'Log food, drinks, and how your gut felt',
+    detailLabel: 'Log food and drinks',
     journalKind: 'Context',
+  },
+  {
+    key: 'gut',
+    label: 'Gut',
+    example: 'Bloated after lunch, and a loose stool this morning',
+    quick: [...DIGESTION_FLAGS, BOWEL],
+    detail: null,
+    detailLabel: null,
+    journalKind: 'Symptoms',
   },
   {
     key: 'body',

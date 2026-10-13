@@ -9,6 +9,9 @@ export const images = {
   medications: require('../../assets/images/cia/medications.jpg'),
   journal: require('../../assets/images/cia/journal.jpg'),
   movement: require('../../assets/images/cia/movement.jpg'),
+  // The example person's breakfast, for the Nutrition card's photo. Brooke
+  // Lark on Unsplash, resized to 1200px.
+  sampleMeal: require('../../assets/images/cia/sample-breakfast.jpg'),
   // Canonical front view from the Ciatta design system (07 · Body).
   body: require('../../assets/images/cia/body.png'),
   // The welcome screen's photograph, resized from the 3512x6240 original.

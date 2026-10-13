@@ -42,7 +42,7 @@ test('notes group by month, newest first', () => {
   assert.deepEqual(view.months.map((m) => m.month), ['July 2026', 'March 2026']);
   assert.deepEqual(view.months[0].items[0], {
     text: 'Slept through four nights.', date: '3 Jul', tag: 'Sleep', kind: 'Notes', usedInInsight: false, attachments: [],
-    category: undefined, items: undefined,
+    category: undefined, items: undefined, at: '2026-07-03T12:00:00Z',
   });
   assert.equal(view.months[1].items[0].tag, 'Context');
 });
@@ -96,4 +96,9 @@ test('a product use row reads back as she logged it', async () => {
 test('a product the app no longer offers is dropped rather than misread', async () => {
   const { productUseView } = await import('./rows');
   assert.equal(productUseView({ client_id: 'p1', product: 'Sponge', size: 'x', started_at: '2026-10-12T08:00:00Z', ended_at: null, fullness: null }), null);
+});
+
+test('a journal entry keeps when it happened, so a dashboard can count recent days', () => {
+  const view = journalView([{ client_id: 'j', text: 'x', kind: 'Notes', tag: null, occurred_at: '2026-10-12T09:00:00Z' }]);
+  assert.equal(view.months[0].items[0].at, '2026-10-12T09:00:00Z');
 });

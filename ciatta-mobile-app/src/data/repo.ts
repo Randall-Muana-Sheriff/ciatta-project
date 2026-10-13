@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Attachment } from '../lib/attachments';
 import type { DailyPatch } from '../lib/dailyLog';
 import { endUse, type Fullness, type Product, type ProductUse, startUse } from '../lib/periodProducts';
+import type { EnvironmentDay } from '../lib/weather';
 import type { CategoryKey } from '../lib/logCategories';
 import type { Found } from '../lib/quickLog';
 import { type CycleProfile, normalizeProfile } from '../lib/cycleProfile';
@@ -88,6 +89,9 @@ export type Repo = {
   // Period products: her uses, newest last; putting one in (which closes
   // the one that was in); and taking it out.
   loadProductUses(): Promise<ProductUse[]>;
+  // The weather and daylight around her, by day. Empty until the
+  // environment fetch exists for her account.
+  loadEnvironment(): Promise<EnvironmentDay[]>;
   startProduct(next: { id: string; product: Product; size: string; at: string }): Promise<void>;
   endProduct(out: { at: string; fullness: Fullness | null }): Promise<void>;
   loadSources(): Promise<SourceView[]>;
@@ -166,7 +170,37 @@ const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 
 export function demoRepo(): Repo {
   let own: Episode[] = [];
-  let view: JournalView = journal;
+  // The example person's recent logs by category, dated from today, so the
+  // dashboard's category cards have something of hers to count.
+  const recent = (daysAgo: number) => new Date(Date.now() - daysAgo * 86400000).toISOString();
+  const logged: [number, string, EntryKind, CategoryKey, Found][] = [
+    [0, 'Two coffees before ten', 'Context', 'nutrition', { nutrition: ['Caffeine'] }],
+    [2, 'Coffee, and skipped lunch', 'Context', 'nutrition', { nutrition: ['Caffeine', 'Skipped a meal'] }],
+    [4, 'Glass of wine with a late dinner', 'Context', 'nutrition', { nutrition: ['Alcohol', 'Ate late'] }],
+    [1, 'Foggy all afternoon, hard to focus', 'Symptoms', 'mind', { mind: ['Brain fog', 'Hard to focus'] }],
+    [3, 'Headache by the evening', 'Symptoms', 'mind', { mind: ['Headache'] }],
+    [6, 'Foggy again', 'Symptoms', 'mind', { mind: ['Brain fog'] }],
+    [2, 'Night sweats, woke twice', 'Symptoms', 'body', { body: ['Night sweats', 'Fatigue'] }],
+    [9, 'Tired all day', 'Symptoms', 'body', { body: ['Fatigue'] }],
+    [4, 'Breakout on my chin', 'Symptoms', 'skin', { skin: ['Acne'] }],
+    [12, 'More hair in the brush', 'Symptoms', 'skin', { skin: ['Hair shedding'] }],
+    [5, 'Needing to pee more often', 'Symptoms', 'sexual', { sexual: ['Urinary urgency'] }],
+  ];
+  const sampleRecent = logged.map(([ago, text, kind, cat, items]) => ({
+    text,
+    date: new Date(recent(ago)).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+    tag: kind,
+    kind,
+    usedInInsight: false,
+    category: cat,
+    items,
+    at: recent(ago),
+  }));
+  let view: JournalView = {
+    ...journal,
+    count: journal.count + sampleRecent.length,
+    months: [{ month: 'This month', items: sampleRecent }, ...journal.months],
+  };
   let productUses: ProductUse[] = [];
   return {
     mode: 'demo',
@@ -187,6 +221,27 @@ export function demoRepo(): Repo {
     saveDailyLog: async () => {},
     // Kept in memory for the session, so the example person can try it.
     loadProductUses: async () => productUses,
+    // A sample autumn week for the example person, so the card can be seen.
+    loadEnvironment: async () =>
+      [
+        [21, 13, 0.62, 668],
+        [23, 14, 0.66, 665],
+        [19, 12, 0.78, 662],
+        [18, 11, 0.81, 659],
+        [20, 12, 0.7, 656],
+        [22, 13, 0.64, 653],
+        [21, 12, 0.6, 650],
+      ].map(([max, min, humidity, daylight], n) => {
+        const d = new Date(Date.now() - (7 - n) * 86400000);
+        return {
+          day: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+          tempMaxC: max,
+          tempMinC: min,
+          humidityMean: humidity,
+          daylightMinutes: daylight,
+          condition: null,
+        };
+      }),
     startProduct: async (next) => {
       productUses = startUse(productUses, next);
     },
@@ -414,6 +469,32 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
             .range(from, to) as unknown as Page<JournalRow>,
       );
       return journalView(rows);
+    },
+    async loadEnvironment() {
+      // environment_days arrives with the WeatherKit fetch. Until that
+      // exists on her project the read fails, and that means no card.
+      try {
+        const since = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+        const rows = must(
+          await db
+            .from('environment_days')
+            .select('day, temp_max_c, temp_min_c, humidity_mean, daylight_minutes, condition')
+            .gte('day', since)
+            .order('day'),
+        ) as
+          | { day: string; temp_max_c: number | null; temp_min_c: number | null; humidity_mean: number | null; daylight_minutes: number | null; condition: string | null }[]
+          | null;
+        return (rows ?? []).map((r) => ({
+          day: r.day,
+          tempMaxC: r.temp_max_c == null ? null : Number(r.temp_max_c),
+          tempMinC: r.temp_min_c == null ? null : Number(r.temp_min_c),
+          humidityMean: r.humidity_mean == null ? null : Number(r.humidity_mean),
+          daylightMinutes: r.daylight_minutes == null ? null : Number(r.daylight_minutes),
+          condition: r.condition,
+        }));
+      } catch {
+        return [];
+      }
     },
     async loadProductUses() {
       const rows = must(

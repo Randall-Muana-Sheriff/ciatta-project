@@ -4,10 +4,10 @@ import { test } from 'node:test';
 import { WHAT_HAPPENED } from '../data/cycleLog';
 import { BOWEL, CATEGORIES, category } from './logCategories';
 
-test('eight categories, in the order the Log screen shows them', () => {
+test('nine categories, in the order the Log screen shows them', () => {
   assert.deepEqual(
     CATEGORIES.map((c) => c.key),
-    ['cycle', 'nutrition', 'body', 'mind', 'skin', 'sexual', 'context', 'note'],
+    ['cycle', 'nutrition', 'gut', 'body', 'mind', 'skin', 'sexual', 'context', 'note'],
   );
 });
 
@@ -29,8 +29,9 @@ test('a detailed form is named only where one exists', () => {
   for (const c of CATEGORIES) assert.equal(c.detail === null, c.detailLabel === null, c.key);
 });
 
-test('stool is logged under Nutrition and gut, as the episode kind the record already reads', () => {
-  assert.ok(category('nutrition').quick.includes(BOWEL));
+test('stool is logged under Gut, as the episode kind the record already reads', () => {
+  assert.ok(category('gut').quick.includes(BOWEL));
+  assert.ok(!category('nutrition').quick.includes(BOWEL));
   assert.ok((WHAT_HAPPENED as readonly string[]).includes(BOWEL));
 });
 
@@ -54,4 +55,11 @@ test('a bowel movement opens its own detail: the stool scale, pain and flags', a
   assert.deepEqual(d.draft, { form: { kinds: ['Bowel movement'] } });
   assert.ok(!/[-–—]/.test(d.label));
   assert.equal(bowelDetail(['Gas']), null);
+});
+
+test('nutrition is food and drink, gut is gut health', () => {
+  assert.equal(category('nutrition').label, 'Nutrition');
+  assert.equal(category('gut').label, 'Gut');
+  assert.deepEqual([...category('nutrition').quick], ['Caffeine', 'Alcohol', 'Skipped a meal', 'Ate late']);
+  assert.ok(category('gut').quick.includes('Bloating'));
 });

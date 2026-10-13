@@ -52,7 +52,7 @@ const unique = (xs: string[]) => [...new Set(xs)];
 function kindsFor(p: CycleProfile): string[] {
   const out: string[] = [];
   for (const k of WHAT_HAPPENED) {
-    // Logged under Nutrition and gut instead; still a kind an old episode
+    // Logged under Gut instead; still a kind an old episode
     // can carry, which is why WHAT_HAPPENED keeps it.
     if (k === 'Bowel movement') continue;
     out.push(k);

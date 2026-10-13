@@ -121,14 +121,18 @@ const PHRASES: [RegExp, CategoryKey | null, string | null][] = [
 const CUES: [RegExp, CategoryKey, string][] = [
   [/\b(period|menstruat\w*|bleeding|bled)\b/i, 'cycle', 'Period'],
   [/\bspott?ing\b/i, 'cycle', 'Spotting'],
-  [/\bbloat\w*/i, 'nutrition', 'Bloating'],
-  [/\bcramp\w*/i, 'nutrition', 'Cramping'],
-  [/\b(nausea|nauseous|queasy)\b/i, 'nutrition', 'Nausea'],
-  [/\b(reflux|heartburn)\b/i, 'nutrition', 'Reflux'],
-  [/\b(gassy|gas pain|trapped gas|(lots of|so much|bad) gas|flatulen\w*)\b/i, 'nutrition', 'Gas'],
-  [/\bconstipat\w*/i, 'nutrition', 'Constipation'],
-  [/\b(loose (stools?|bowels?|poo|poop)|diarrh\w*)\b/i, 'nutrition', 'Loose'],
-  [/\b(stool|poop|pooped|bowel)\b/i, 'nutrition', BOWEL],
+  [/\b(coffees?|espresso|lattes?|caffeine|energy drinks?|cola)\b/i, 'nutrition', 'Caffeine'],
+  [/\b(wine|beers?|alcohol|cocktails?|drinks? (last night|after work)|gin|vodka|prosecco)\b/i, 'nutrition', 'Alcohol'],
+  [/\bskipped (breakfast|lunch|dinner|a meal|meals)\b|\bdid not eat\b|\bdidn.t eat\b/i, 'nutrition', 'Skipped a meal'],
+  [/\b(late dinner|ate late|eating late|midnight snack)\b/i, 'nutrition', 'Ate late'],
+  [/\bbloat\w*/i, 'gut', 'Bloating'],
+  [/\bcramp\w*/i, 'gut', 'Cramping'],
+  [/\b(nausea|nauseous|queasy)\b/i, 'gut', 'Nausea'],
+  [/\b(reflux|heartburn)\b/i, 'gut', 'Reflux'],
+  [/\b(gassy|gas pain|trapped gas|(lots of|so much|bad) gas|flatulen\w*)\b/i, 'gut', 'Gas'],
+  [/\bconstipat\w*/i, 'gut', 'Constipation'],
+  [/\b(loose (stools?|bowels?|poo|poop)|diarrh\w*)\b/i, 'gut', 'Loose'],
+  [/\b(stool|poop|pooped|bowel)\b/i, 'gut', BOWEL],
   [/\b(pain|painful|ache|aching|aches|sore|hurts?|hurting)\b/i, 'body', 'Pain'],
   [/\b(fatigue|fatigued|exhausted|tired)\b/i, 'body', 'Fatigue'],
   [/\bchills?\b/i, 'body', 'Chills'],
@@ -188,9 +192,9 @@ export function readCategories(text: string): Found {
   // Cramps alongside a period are period pain, not a gut flag: the engine
   // reads digestion for food and bloating, and filing her cramps there
   // would put her period in her gut.
-  if (found.cycle?.length && found.nutrition?.includes('Cramping')) {
-    found.nutrition = found.nutrition.filter((x) => x !== 'Cramping');
-    if (!found.nutrition.length) delete found.nutrition;
+  if (found.cycle?.length && found.gut?.includes('Cramping')) {
+    found.gut = found.gut.filter((x) => x !== 'Cramping');
+    if (!found.gut.length) delete found.gut;
     add(found, 'body', 'Pain');
   }
   // Keep each category in its chip order, whatever order the reads ran in.
@@ -224,7 +228,7 @@ export function readQuick(text: string): QuickReading {
   };
 }
 
-const ORDER: CategoryKey[] = ['cycle', 'nutrition', 'body', 'mind', 'skin', 'sexual', 'context'];
+const ORDER: CategoryKey[] = ['cycle', 'nutrition', 'gut', 'body', 'mind', 'skin', 'sexual', 'context'];
 
 // What was recognised, grouped as it will be filed. Null when nothing was,
 // so no empty label is drawn; the words still save.
@@ -259,7 +263,7 @@ export type SavePlan = {
   wordsGoTo: 'journal' | 'episode' | 'daily';
 };
 
-const JOURNAL_KEYS: CategoryKey[] = ['body', 'mind', 'skin', 'sexual', 'context'];
+const JOURNAL_KEYS: CategoryKey[] = ['nutrition', 'body', 'mind', 'skin', 'sexual', 'context'];
 
 export function planSave(input: { text: string; selected: CategoryKey; tapped: string[]; files: Attachment[] }): SavePlan | null {
   const text = input.text.trim();
@@ -267,18 +271,18 @@ export function planSave(input: { text: string; selected: CategoryKey; tapped: s
   if (!text && !input.files.length && !Object.keys(found).length) return null;
   // Cramps she logs from Cycle or Body are pain where she feels it, not a
   // gut flag, whatever else the sentence says.
-  if ((input.selected === 'cycle' || input.selected === 'body') && found.nutrition?.includes('Cramping')) {
-    found.nutrition = found.nutrition.filter((x) => x !== 'Cramping');
-    if (!found.nutrition.length) delete found.nutrition;
+  if ((input.selected === 'cycle' || input.selected === 'body') && found.gut?.includes('Cramping')) {
+    found.gut = found.gut.filter((x) => x !== 'Cramping');
+    if (!found.gut.length) delete found.gut;
     found.body = [...new Set(['Pain', ...(found.body ?? [])])];
   }
 
   const kinds = [
     ...(found.cycle ?? []),
     ...(found.body?.includes('Pain') ? ['Pain'] : []),
-    ...(found.nutrition?.includes(BOWEL) ? [BOWEL] : []),
+    ...(found.gut?.includes(BOWEL) ? [BOWEL] : []),
   ];
-  const digestion = (found.nutrition ?? []).filter((x) => x !== BOWEL);
+  const digestion = (found.gut ?? []).filter((x) => x !== BOWEL);
 
   const items: Found = {};
   for (const key of JOURNAL_KEYS) {

@@ -53,7 +53,7 @@ test('reads a day back only when she named one', () => {
 test('one sentence is read into every category it names', () => {
   const f = readCategories('Period started, bloated after lunch, foggy all afternoon, breakout on my chin');
   assert.deepEqual(f.cycle, ['Period']);
-  assert.deepEqual(f.nutrition, ['Bloating']);
+  assert.deepEqual(f.gut, ['Bloating']);
   assert.deepEqual(f.mind, ['Brain fog']);
   assert.deepEqual(f.skin, ['Acne']);
 });
@@ -100,7 +100,7 @@ test('tapped chips count as hers, in the category she tapped them in', () => {
 });
 
 test('a bowel movement is saved as the episode kind the record reads', () => {
-  const plan = planSave({ text: '', selected: 'nutrition', tapped: ['Bowel movement', 'Gas'], files: [] })!;
+  const plan = planSave({ text: '', selected: 'gut', tapped: ['Bowel movement', 'Gas'], files: [] })!;
   assert.deepEqual(plan.episode?.kinds, ['Bowel movement']);
   assert.deepEqual(plan.daily?.digestion, ['Gas']);
 });
@@ -147,24 +147,24 @@ test('period cramps are pain, not a gut flag', () => {
   assert.deepEqual(plan.episode?.kinds, ['Period', 'Pain']);
   assert.equal(plan.daily, null);
   // Cramping with nothing about a period is still read as gut.
-  assert.deepEqual(readCategories('cramping after lunch, bloated').nutrition, ['Bloating', 'Cramping']);
+  assert.deepEqual(readCategories('cramping after lunch, bloated').gut, ['Bloating', 'Cramping']);
 });
 
 test('everyday phrases do not become symptoms', () => {
   for (const s of ['run down', 'wind down after work', 'gas station coffee', 'loose jeans', 'on the pill', 'period leaked']) {
     const f = readCategories(s);
     assert.equal(f.mind?.includes('Low mood') ?? false, false, s);
-    assert.equal(f.nutrition?.includes('Gas') ?? false, false, s);
-    assert.equal(f.nutrition?.includes('Loose') ?? false, false, s);
+    assert.equal(f.gut?.includes('Gas') ?? false, false, s);
+    assert.equal(f.gut?.includes('Loose') ?? false, false, s);
     assert.equal(f.context?.includes('Took medication') ?? false, false, s);
     assert.equal(f.sexual?.includes('Leaking') ?? false, false, s);
     assert.equal(f.context?.includes('Exercised') ?? false, false, s);
   }
   assert.deepEqual(readCategories('feeling down today').mind, ['Low mood']);
   assert.deepEqual(readCategories('went for a run').context, ['Exercised']);
-  assert.deepEqual(readCategories('very gassy').nutrition, ['Gas']);
+  assert.deepEqual(readCategories('very gassy').gut, ['Gas']);
   // A loose stool is a bowel movement too, which is true.
-  assert.deepEqual(readCategories('loose stool').nutrition, ['Loose', 'Bowel movement']);
+  assert.deepEqual(readCategories('loose stool').gut, ['Loose', 'Bowel movement']);
   assert.deepEqual(readCategories('leaking when I sneeze').sexual, ['Leaking']);
 });
 
@@ -183,9 +183,9 @@ test('something she says she does not have is not recorded', () => {
 
 test('a file is kept where she can see it again, even beside gut flags', () => {
   const file = { id: 'f', kind: 'photo' as const, name: 'Photo at 9:00 AM', uri: 'file:///p.jpg', addedAt: '2026-10-12T09:00:00Z' };
-  const plan = planSave({ text: '', selected: 'nutrition', tapped: ['Bloating'], files: [file] })!;
+  const plan = planSave({ text: '', selected: 'gut', tapped: ['Bloating'], files: [file] })!;
   assert.deepEqual(plan.daily?.digestion, ['Bloating']);
-  assert.equal(plan.journal?.category, 'nutrition');
+  assert.equal(plan.journal?.category, 'gut');
   assert.equal(plan.wordsGoTo, 'journal');
 });
 
@@ -216,4 +216,19 @@ test('a retry after a failed save never repeats a step that already landed', asy
   journalFails = false;
   await runSave(steps, done);
   assert.deepEqual(calls, ['daily', 'journal', 'journal', 'episode']);
+});
+
+// Nutrition and gut are two things: food and goals, and gut health.
+test('food and drink read into Nutrition, gut symptoms into Gut', () => {
+  const f = readCategories('two coffees and a glass of wine, skipped lunch, bloated after dinner');
+  assert.deepEqual(f.nutrition, ['Caffeine', 'Alcohol', 'Skipped a meal']);
+  assert.deepEqual(f.gut, ['Bloating']);
+  assert.deepEqual(readCategories('late dinner again').nutrition, ['Ate late']);
+});
+
+test('nutrition items are kept as a journal entry under Nutrition, gut flags on the day', () => {
+  const plan = planSave({ text: 'coffee and bloated', selected: 'nutrition', tapped: [], files: [] })!;
+  assert.deepEqual(plan.journal?.items.nutrition, ['Caffeine']);
+  assert.equal(plan.journal?.category, 'nutrition');
+  assert.deepEqual(plan.daily?.digestion, ['Bloating']);
 });
