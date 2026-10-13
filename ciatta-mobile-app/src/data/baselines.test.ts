@@ -18,6 +18,8 @@ import {
   median,
   MIN_BASELINE_N,
   MIN_RUN_STREAK,
+  VITAL_BASELINE_METRICS,
+  vitalDailyMeans,
   recentWindow,
   WINDOW_SIZE,
 } from '../../supabase/functions/baselines/compute';
@@ -309,4 +311,32 @@ test('sustained() (engine) and detectRun() (compute) agree on recent across a ga
     Math.abs(engineChange!.recent - run!.recent) < 1e-9,
     `engine recent ${engineChange!.recent} should match compute recent ${run!.recent}`
   );
+});
+
+test('blood pressure and blood oxygen get a usual too, from each day\'s average', () => {
+  assert.deepEqual([...VITAL_BASELINE_METRICS], ['blood_pressure_systolic', 'blood_pressure_diastolic', 'oxygen_saturation']);
+  const rows = [
+    { metric: 'blood_pressure_systolic', occurred_at: '2026-10-12T08:00:00Z', value: 120 },
+    { metric: 'blood_pressure_systolic', occurred_at: '2026-10-12T20:00:00Z', value: 130 },
+    { metric: 'blood_pressure_systolic', occurred_at: '2026-10-13T08:00:00Z', value: 118 },
+    { metric: 'blood_pressure_diastolic', occurred_at: '2026-10-12T08:00:00Z', value: 80 },
+    { metric: 'oxygen_saturation', occurred_at: '2026-10-12T08:00:00Z', value: 0.97 },
+    { metric: 'oxygen_saturation', occurred_at: '2026-10-12T09:00:00Z', value: 95 },
+    { metric: 'blood_pressure_systolic', occurred_at: '2026-10-14T08:00:00Z', value: null },
+  ];
+  assert.deepEqual([...vitalDailyMeans(rows, 'blood_pressure_systolic')], [['2026-10-12', 125], ['2026-10-13', 118]]);
+  // A fraction and a percent from two devices read as the same scale.
+  assert.deepEqual([...vitalDailyMeans(rows, 'oxygen_saturation')], [['2026-10-12', 96]]);
+});
+
+test('blood oxygen\'s usual range is narrow and never above 100%', () => {
+  const days = Array.from({ length: 91 }, (_, n) => (n < 56 ? 96 + (n % 3) : null));
+  const dates = Array.from({ length: 91 }, (_, n) => `d${n}`);
+  const b = computeMetric(dates, days, 'oxygen_saturation')!.baseline;
+  assert.equal(b.median, 97);
+  assert.ok(b.high! <= 100, `high was ${b.high}`);
+  assert.ok(b.low! >= 94, `low was ${b.low}, too wide to call usual`);
+  // Every other metric keeps the 8% floor.
+  const sleep = computeMetric(dates, days.map((v) => (v == null ? null : 7)))!.baseline;
+  assert.ok(Math.abs(sleep.low! - 7 * 0.92) < 1e-9);
 });

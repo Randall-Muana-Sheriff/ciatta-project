@@ -45,3 +45,11 @@ test('no change text carries a dash', () => {
     assert.ok(!/[-–—]/.test(t!.change ?? ''), t!.change ?? '');
   }
 });
+
+test('with her usual known, the arrow measures against it, not the last few readings', () => {
+  const t = trendOf([7, 7, 7, 6], 'percent', 8);
+  assert.equal(t?.change, '↓ 25%');
+  assert.equal(t?.spoken, 'down 25% from your usual');
+  assert.deepEqual(t?.points, [7, 7, 7, 6]);
+  assert.equal(trendOf([7, 7, 8.1], 'percent', 8)?.spoken, 'level with your usual');
+});

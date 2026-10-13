@@ -27,6 +27,9 @@ import type { IntradayPoint } from '../data/repo';
 import { ground, HUE, L, mark, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow } from '../ui/chrome';
 import { MetricCard, METRIC_CARD_GAP } from '../ui/metricCard';
+import { METRIC_HUE } from '../ui/metricHue';
+import { chooseMetric } from '../lib/metricHandoff';
+import type { BaselineRow, MetricKey } from '../lib/metricDetail';
 import { ProductNowCard } from '../ui/ProductNowCard';
 import type { IconName } from '../ui/icons';
 import { Icon } from '../ui/icons';
@@ -120,18 +123,6 @@ function KeySwatch({ kind }: { kind: ChartKey }) {
   );
 }
 
-// One colour per metric on Today's grid, so six cards of the same shape
-// are told apart at a glance. An exception to the meaning palette, made on
-// this grid only: every one of these is measured, so the meaning colour
-// would paint all six the same. Red stays out, kept for escalation.
-const METRIC_HUE: Record<string, string> = {
-  sleep: '#8E9BFF',
-  hrv: '#5ED3C4',
-  steps: '#E8C46A',
-  bp: '#F27D9B',
-  temp: '#F09A5B',
-  spo2: '#6FB6F5',
-};
 
 type Action = { key: string; icon: IconName; title: string; sub?: string; onPress?: () => void };
 
@@ -148,14 +139,20 @@ export function TodayScreen() {
   // Blood pressure, blood oxygen and weight live in observations rather
   // than on the day row, so they are read separately.
   const [vitals, setVitals] = useState<VitalCard[]>([]);
+  // Her usual for each metric, so each card's arrow measures against it.
+  const [baselines, setBaselines] = useState<BaselineRow[]>([]);
   useEffect(() => {
     let ignore = false;
-    repo
-      .loadVitals()
-      .then((rows) => {
+    Promise.all([repo.loadVitals(), repo.loadBaselines().catch(() => [] as BaselineRow[])])
+      .then(([rows, usual]) => {
         if (ignore) return;
         const now = new Date();
-        setVitals([bloodPressure(rows, now), bloodOxygen(rows, now)]);
+        const median = (metric: string) => {
+          const b = usual.find((x) => x.metric === metric);
+          return b?.sufficient ? b.median : null;
+        };
+        setBaselines(usual);
+        setVitals([bloodPressure(rows, now, median('blood_pressure_systolic')), bloodOxygen(rows, now, median('oxygen_saturation'))]);
       })
       .catch(() => {
         // The cards say not yet, which is true when the read failed too.
@@ -416,10 +413,20 @@ export function TodayScreen() {
           read in.
         */}
         <View style={t.grid}>
-          {headlineMetrics(days, vitals).map((m) => (
-            <View key={m.key} style={t.gridCell}>
+          {headlineMetrics(days, vitals, new Date(), baselines).map((m) => (
+            <Pressable
+              key={m.key}
+              style={({ pressed }) => [t.gridCell, pressed && t.pressed]}
+              onPress={() => {
+                chooseMetric(m.key as MetricKey);
+                nav.push('metric');
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`${m.label}, ${m.value ?? 'not recorded today'}${m.note && m.value ? `, ${m.note}` : ''}`}
+              accessibilityHint="Opens this metric over time"
+            >
               <MetricCard label={m.label} value={m.value} note={m.note} from={m.from} trend={m.trend} color={METRIC_HUE[m.key]} />
-            </View>
+            </Pressable>
           ))}
         </View>
 

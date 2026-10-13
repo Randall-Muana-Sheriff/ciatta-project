@@ -32,6 +32,8 @@ import {
   buildDenseWindow,
   isoDay,
   METRICS,
+  VITAL_BASELINE_METRICS,
+  vitalDailyMeans,
   WINDOW_DAYS,
   WINDOW_SIZE,
   type Metric,
@@ -143,6 +145,48 @@ async function runJob(admin: any, job: JobRow): Promise<{ metrics: string[] }> {
       if (changeError) throw changeError;
     }
 
+    computed.push(metric);
+  }
+
+  // Blood pressure and blood oxygen: a usual from each day's average, so
+  // the metric screens can say whether a reading is usual for her. Only
+  // the usual is written. A sustained change in either is not raised as a
+  // finding from here: that would be a new kind of alert, and it is not
+  // one anybody has decided to send.
+  type VitalRow = { id: string; metric: string; occurred_at: string; value: number | null };
+  const vitalRows = await readAllPages<VitalRow>((after, limit) => {
+    const query = admin
+      .from('observations')
+      .select('id, metric, occurred_at, value')
+      .eq('user_id', job.user_id)
+      .in('metric', [...VITAL_BASELINE_METRICS])
+      .gte('occurred_at', start.toISOString())
+      .lte('occurred_at', today.toISOString());
+    return (after ? query.or(keysetFilter(after)) : query)
+      .order('occurred_at')
+      .order('id')
+      .limit(limit);
+  });
+  for (const metric of VITAL_BASELINE_METRICS) {
+    const { dates, values } = buildDenseWindow(vitalDailyMeans(vitalRows, metric), today, WINDOW_SIZE);
+    const result = computeMetric(dates, values, metric);
+    if (!result) continue;
+    const { error: vitalBaselineError } = await admin.from('baselines').upsert(
+      {
+        user_id: job.user_id,
+        metric,
+        window_days: WINDOW_DAYS,
+        median: result.baseline.median,
+        low: result.baseline.low,
+        high: result.baseline.high,
+        variability: result.baseline.variability,
+        n: result.baseline.n,
+        sufficient: result.baseline.sufficient,
+        computed_at: today.toISOString(),
+      },
+      { onConflict: 'user_id,metric,window_days' }
+    );
+    if (vitalBaselineError) throw vitalBaselineError;
     computed.push(metric);
   }
 

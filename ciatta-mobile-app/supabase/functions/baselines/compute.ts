@@ -84,6 +84,37 @@ export const MIN_RUN_STREAK = 5;
 export const METRICS = ['sleep_hours', 'steps', 'resting_hr', 'hrv', 'active_minutes'] as const;
 export type Metric = (typeof METRICS)[number];
 
+// Read from observations rather than daily_metrics, because a cuff and a
+// watch post several readings a day and none of them reach the day row.
+// Each day is the average of that day's readings, then the usual is worked
+// out the same way as for the day row's metrics.
+export const VITAL_BASELINE_METRICS = ['blood_pressure_systolic', 'blood_pressure_diastolic', 'oxygen_saturation'] as const;
+
+// One mean per calendar day for one metric. Blood oxygen arrives as a
+// fraction from HealthKit and as a percent from some devices; both are read
+// as a percent so one day's readings can be averaged together.
+export function vitalDailyMeans(
+  rows: readonly { metric: string; occurred_at: string; value: number | null }[],
+  metric: string
+): Map<string, number> {
+  const sums = new Map<string, { sum: number; count: number }>();
+  for (const row of rows) {
+    if (row.metric !== metric || row.value == null) continue;
+    const value = metric === 'oxygen_saturation' && row.value <= 1 ? row.value * 100 : row.value;
+    const day = isoDay(new Date(row.occurred_at));
+    const bucket = sums.get(day) ?? { sum: 0, count: 0 };
+    bucket.sum += value;
+    bucket.count += 1;
+    sums.set(day, bucket);
+  }
+  const out = new Map<string, number>();
+  for (const day of [...sums.keys()].sort()) {
+    const { sum, count } = sums.get(day)!;
+    out.set(day, Math.round((sum / count) * 10) / 10);
+  }
+  return out;
+}
+
 // Baseline window: days 35 to 90 back from today, exactly as
 // src/lib/engine.ts baselineDays() slices a Day[]
 // (`days.slice(days.length - 91, days.length - 35)`). `values` here is one
@@ -203,7 +234,16 @@ function runQuality(values: (number | null)[], firstIndex: number, endIndex: num
 // with today last (see buildDenseWindow). Returns null when there is no
 // data at all for this metric in the window: a metric never measured gets
 // no row, not an insufficient one full of nulls.
-export function computeMetric(dates: string[], values: (number | null)[]): MetricResult | null {
+// Blood oxygen sits in a few points just under 100%, so the 8% floor on
+// the spread would call 89% usual and allow a usual above 100%. Its floor
+// is one point either side instead, and its range stops at 100.
+function shaped(b: Band, metric?: string): Band {
+  if (metric !== 'oxygen_saturation') return b;
+  const spread = Math.max(1.5 * 1.4826 * b.mad, 1);
+  return { ...b, low: b.median - spread, high: Math.min(100, b.median + spread) };
+}
+
+export function computeMetric(dates: string[], values: (number | null)[], metric?: string): MetricResult | null {
   if (dates.length !== values.length) throw new Error('dates and values must line up one per day');
   if (values.every((v) => v == null)) return null;
 
@@ -215,7 +255,7 @@ export function computeMetric(dates: string[], values: (number | null)[]): Metri
     return { baseline: { median: null, low: null, high: null, variability: null, n, sufficient: false }, change: null };
   }
 
-  const b = band(baselineValues);
+  const b = shaped(band(baselineValues), metric);
   const baseline: MetricBaseline = { median: b.median, low: b.low, high: b.high, variability: b.mad, n, sufficient: true };
 
   const run = detectRun(values, b);

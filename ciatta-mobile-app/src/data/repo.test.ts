@@ -249,3 +249,19 @@ test('a record she adds is kept as a note filed to her records', async () => {
   assert.equal(item?.filed, 'records');
   assert.deepEqual(item?.attachments, [file]);
 });
+
+test('the example person has a usual range and daily vitals for the metric screens', async () => {
+  const repo = demoRepo();
+  const baselines = await repo.loadBaselines();
+  const sleep = baselines.find((b) => b.metric === 'sleep_hours');
+  assert.ok(sleep?.sufficient, 'enough example nights to know her usual sleep');
+  assert.ok(sleep!.low! < sleep!.median! && sleep!.median! < sleep!.high!);
+  const vitals = await repo.loadVitalDays('2000-01-01', 'UTC');
+  const o2 = vitals.filter((v) => v.metric === 'oxygen_saturation');
+  assert.ok(o2.length > 0 && o2.every((v) => v.avg > 1), 'blood oxygen as a percent');
+});
+
+test('the example person\'s usual blood oxygen never reaches past 100%', async () => {
+  const o2 = (await demoRepo().loadBaselines()).find((b) => b.metric === 'oxygen_saturation')!;
+  assert.ok(o2.sufficient && o2.high! <= 100 && o2.low! > 90);
+});

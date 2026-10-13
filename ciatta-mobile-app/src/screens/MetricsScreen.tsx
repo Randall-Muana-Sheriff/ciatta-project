@@ -15,15 +15,18 @@
 // would be the exact error the rest of the app refuses.
 
 import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { buildMetrics, type MetricRow, recordedCount, recordedLine } from '../lib/allMetrics';
 import { bloodOxygen, bloodPressure, type VitalCard, weight } from '../lib/vitals';
 import { displayCopy } from '../lib/displayCopy';
+import { metricForRow } from '../lib/metricDetail';
+import { chooseMetric } from '../lib/metricHandoff';
 import { useNav } from '../navigation';
 import { useData, useRepo } from '../state/session';
 import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
+import { Icon } from '../ui/icons';
 import { DetailScreen } from '../ui/kit';
 import { HUE, L, SPACE, TILE_RADIUS } from '../ui/surface';
 
@@ -81,7 +84,19 @@ export function MetricsScreen() {
           <Eyebrow>{group.title}</Eyebrow>
           <View style={s.card}>
             {group.rows.map((row, n) => (
-              <Row key={row.label} row={row} first={n === 0} />
+              <Row
+                key={row.label}
+                row={row}
+                first={n === 0}
+                onOpen={
+                  metricForRow(row.label)
+                    ? () => {
+                        chooseMetric(metricForRow(row.label)!);
+                        nav.push('metric');
+                      }
+                    : undefined
+                }
+              />
             ))}
           </View>
         </View>
@@ -91,12 +106,15 @@ export function MetricsScreen() {
 }
 
 // One metric on one line: its name, where it came from, and the figure.
-function Row({ row, first }: { row: MetricRow; first: boolean }) {
+function Row({ row, first, onOpen }: { row: MetricRow; first: boolean; onOpen?: () => void }) {
   const missing = row.value == null;
   return (
-    <View
-      style={[s.row, !first && s.divided]}
+    <Pressable
+      onPress={onOpen}
+      disabled={!onOpen}
+      style={({ pressed }) => [s.row, !first && s.divided, pressed && s.pressed]}
       accessible
+      accessibilityRole={onOpen ? 'button' : undefined}
       accessibilityLabel={`${row.label}, ${row.value ?? 'not recorded'}${
         row.from === 'reported' ? ', you reported this' : ''
       }`}
@@ -115,7 +133,8 @@ function Row({ row, first }: { row: MetricRow; first: boolean }) {
       <Text style={[font('subhead', missing ? 'regular' : 'semibold'), missing ? s.missing : s.value]}>
         {row.value ?? 'Not yet'}
       </Text>
-    </View>
+      {onOpen ? <Icon name="chevronRight" size={14} color={L.meta} /> : null}
+    </Pressable>
   );
 }
 
@@ -141,5 +160,6 @@ const s = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: HUE.reported },
   value: { color: L.ink },
   missing: { color: L.meta },
+  pressed: { opacity: 0.6 },
 
 });

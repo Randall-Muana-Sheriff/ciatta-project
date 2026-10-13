@@ -36,8 +36,8 @@ export type VitalCard = {
 const series = (readings: readonly Reading[], metric: string, scale: (v: number) => number = (v) => v) =>
   readings.filter((x) => x.metric === metric).map((x) => scale(x.value)).reverse();
 
-const withTrend = (card: VitalCard, values: number[]): VitalCard => {
-  const t = trendOf(values, 'percent');
+const withTrend = (card: VitalCard, values: number[], usual?: number | null): VitalCard => {
+  const t = trendOf(values, 'percent', usual);
   return t ? { ...card, trend: t } : card;
 };
 
@@ -78,7 +78,7 @@ const find = (readings: readonly Reading[], metric: string) => readings.find((r)
 // Shown only when both halves are present and were taken on the same day.
 // A systolic from Tuesday over a diastolic from Friday is not a blood
 // pressure reading, it is two numbers printed with a slash between them.
-export function bloodPressure(readings: readonly Reading[], now: Date): VitalCard {
+export function bloodPressure(readings: readonly Reading[], now: Date, usual?: number | null): VitalCard {
   const sys = fresh(find(readings, 'blood_pressure_systolic'), now);
   const dia = fresh(find(readings, 'blood_pressure_diastolic'), now);
   const sameDay = sys && dia && startOfDay(new Date(sys.at)) === startOfDay(new Date(dia.at));
@@ -89,10 +89,10 @@ export function bloodPressure(readings: readonly Reading[], now: Date): VitalCar
     value: sameDay ? `${Math.round(sys.value)}/${Math.round(dia.value)}` : null,
     note: sameDay ? (whenNote(sys.at, now) ?? undefined) : undefined,
     from: 'measured',
-  }, series(readings, 'blood_pressure_systolic'));
+  }, series(readings, 'blood_pressure_systolic'), usual);
 }
 
-export function bloodOxygen(readings: readonly Reading[], now: Date): VitalCard {
+export function bloodOxygen(readings: readonly Reading[], now: Date, usual?: number | null): VitalCard {
   const r = fresh(find(readings, 'oxygen_saturation'), now);
   // HealthKit reports saturation as a fraction. A 0.98 printed as 0.98
   // would read as nothing at all to anyone who has seen a pulse oximeter.
@@ -103,7 +103,7 @@ export function bloodOxygen(readings: readonly Reading[], now: Date): VitalCard 
     value: pct == null ? null : `${Math.round(pct)}%`,
     note: r ? (whenNote(r.at, now) ?? undefined) : undefined,
     from: 'measured',
-  }, series(readings, 'oxygen_saturation', (v) => (v <= 1 ? v * 100 : v)));
+  }, series(readings, 'oxygen_saturation', (v) => (v <= 1 ? v * 100 : v)), usual);
 }
 
 export function weight(readings: readonly Reading[], now: Date): VitalCard {

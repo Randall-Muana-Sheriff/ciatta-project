@@ -27,12 +27,19 @@ export type Trend = {
 // 'percent' for anything measured from zero; 'degrees' for skin
 // temperature, which is already a difference from usual, so a percent of
 // it would mean nothing.
-export function trendOf(values: readonly (number | null)[], unit: 'percent' | 'degrees'): Trend | null {
+//
+// `known` is her usual from the baselines function (the median of her own
+// readings 5 to 13 weeks ago), when there is enough history for one. With
+// it, the arrow says how the latest reading sits against her usual; without
+// it, against the average of the readings before it, and the words say
+// which.
+export function trendOf(values: readonly (number | null)[], unit: 'percent' | 'degrees', known?: number | null): Trend | null {
   const points = values.filter((v): v is number => v != null).slice(-WINDOW);
   if (points.length < FEWEST) return null;
   const latest = points[points.length - 1];
   const earlier = points.slice(0, -1);
-  const usual = earlier.reduce((a, b) => a + b, 0) / earlier.length;
+  const usual = known ?? earlier.reduce((a, b) => a + b, 0) / earlier.length;
+  const against = known != null ? 'your usual' : 'your recent average';
 
   let size: number;
   let level: boolean;
@@ -52,6 +59,6 @@ export function trendOf(values: readonly (number | null)[], unit: 'percent' | 'd
   return {
     points,
     change: `${arrow} ${figure}`,
-    spoken: level ? 'level with your recent average' : `${size > 0 ? 'up' : 'down'} ${figure} from your recent average`,
+    spoken: level ? `level with ${against}` : `${size > 0 ? 'up' : 'down'} ${figure} from ${against}`,
   };
 }

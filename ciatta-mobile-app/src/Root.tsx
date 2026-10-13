@@ -27,6 +27,7 @@ import { MedicationsScreen } from './screens/MedicationsScreen';
 import { MyHealthScreen } from './screens/MyHealthScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { AddRecordScreen } from './screens/AddRecordScreen';
+import { MetricDetailScreen } from './screens/MetricDetailScreen';
 import { AddProcedureScreen } from './screens/AddProcedureScreen';
 import { FoodScanScreen } from './screens/FoodScanScreen';
 import { ProcedureScreen } from './screens/ProcedureScreen';
@@ -85,6 +86,7 @@ const DETAIL_SCREENS: Record<Screen, ComponentType> = {
   procedure: ProcedureScreen,
   addProcedure: AddProcedureScreen,
   addRecord: AddRecordScreen,
+  metric: MetricDetailScreen,
   productSafety: ProductSafetyScreen,
 };
 

@@ -34,6 +34,8 @@ import {
 } from './rows';
 import { type EntryKind, insight as sampleInsight, journal, person, sources } from './sample';
 import { VITAL_METRICS } from '../lib/vitals';
+import { band, median } from '../lib/engine';
+import type { BaselineRow, VitalDay } from '../lib/metricDetail';
 
 // Every daily_metrics column daysFromRows/rowToDay actually reads. Named
 // explicitly, like every other realRepo method, rather than select('*'),
@@ -160,6 +162,10 @@ export type Repo = {
   // The newest reading of each vital that never folded into a daily row:
   // blood pressure, blood oxygen, weight.
   loadVitals(): Promise<VitalReading[]>;
+  // Her usual range per metric, as the baselines function last worked it out.
+  loadBaselines(): Promise<BaselineRow[]>;
+  // Blood pressure and blood oxygen, one row per metric per day since a day.
+  loadVitalDays(since: string, tz: string): Promise<VitalDay[]>;
 };
 
 // A published finding, quoted. summary is verbatim from the source, which
@@ -399,6 +405,8 @@ export function demoRepo(): Repo {
         { metric: 'body_mass', value: 64.2, unit: 'kg', at: ago(0) },
       ].sort((a, b) => b.at.localeCompare(a.at));
     },
+    loadBaselines: async () => demoBaselines(loadSampleDays(), demoVitalDays()),
+    loadVitalDays: async (since) => demoVitalDays().filter((v) => v.day >= since),
     loadReferences: async () => [
       {
         id: 'sample-endo-delay',
@@ -900,6 +908,19 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       ) as { metric: string; value: number; unit: string | null; occurred_at: string }[] | null;
       return (rows ?? []).map((r) => ({ metric: r.metric, value: Number(r.value), unit: r.unit, at: r.occurred_at }));
     },
+    async loadBaselines() {
+      const rows = must(
+        await db.from('baselines').select('metric, median, low, high, n, sufficient').eq('window_days', 90),
+      ) as { metric: string; median: number | string | null; low: number | string | null; high: number | string | null; n: number; sufficient: boolean }[] | null;
+      const num = (v: number | string | null) => (v == null ? null : Number(v));
+      return (rows ?? []).map((r) => ({ metric: r.metric, median: num(r.median), low: num(r.low), high: num(r.high), n: r.n, sufficient: r.sufficient }));
+    },
+    async loadVitalDays(since, tz) {
+      const rows = must(await db.rpc('vital_days', { p_since: since, p_tz: tz })) as
+        | { metric: string; day: string; avg_value: number | string; min_value: number | string; max_value: number | string; n: number }[]
+        | null;
+      return (rows ?? []).map((r) => ({ metric: r.metric, day: r.day, avg: Number(r.avg_value), min: Number(r.min_value), max: Number(r.max_value), n: r.n }));
+    },
     async loadIntraday(sinceIso) {
       // Only the two metrics the day chart draws, and only today's. Reading
       // every observation since midnight would pull the whole of Apple
@@ -915,4 +936,60 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       return rows.map((r) => ({ metric: r.metric, value: r.value, valueText: r.value_text, at: r.occurred_at }));
     },
   };
+}
+
+// ── Example person's metric history ───────────────────────────
+
+const localIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+// Six months of cuff and watch readings for the example person, one row per
+// metric per day, steady with a small daily wobble. Every few days has no
+// cuff reading, as a real record would.
+function demoVitalDays(): VitalDay[] {
+  const out: VitalDay[] = [];
+  const now = new Date();
+  for (let n = 181; n >= 0; n--) {
+    const day = localIso(new Date(now.getFullYear(), now.getMonth(), now.getDate() - n));
+    const wobble = Math.sin(n * 1.7) * 3;
+    if (n % 4 !== 1) {
+      out.push({ metric: 'blood_pressure_systolic', day, avg: Math.round(119 + wobble), min: Math.round(116 + wobble), max: Math.round(123 + wobble), n: 2 });
+      out.push({ metric: 'blood_pressure_diastolic', day, avg: Math.round(77 + wobble / 2), min: Math.round(75 + wobble / 2), max: Math.round(79 + wobble / 2), n: 2 });
+    }
+    const o2 = Math.round((97 + Math.sin(n * 0.9)) * 10) / 10;
+    out.push({ metric: 'oxygen_saturation', day, avg: o2, min: Math.round(o2 - 2.5), max: Math.min(100, Math.round(o2 + 1.5)), n: 6 });
+  }
+  return out;
+}
+
+// What the baselines function would store for the example person: the
+// same band, over the same window of days 35 to 90 back.
+function demoBaselines(days: readonly Day[], vitals: readonly VitalDay[]): BaselineRow[] {
+  const now = new Date();
+  const from = localIso(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 90));
+  const to = localIso(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 35));
+  const row = (metric: string, values: number[]): BaselineRow => {
+    if (values.length < 20) return { metric, median: null, low: null, high: null, n: values.length, sufficient: false };
+    // Blood oxygen as the server shapes it: one point either side at
+    // least, and never above 100.
+    if (metric === 'oxygen_saturation') {
+      const mid = median(values);
+      const spread = Math.max(1.5 * 1.4826 * median(values.map((v) => Math.abs(v - mid))), 1);
+      return { metric, median: mid, low: mid - spread, high: Math.min(100, mid + spread), n: values.length, sufficient: true };
+    }
+    const b = band(values);
+    return { metric, median: b.usual, low: b.low, high: b.high, n: values.length, sufficient: true };
+  };
+  const window = days.filter((d) => d.date >= from && d.date <= to);
+  const fromDays = (get: (d: Day) => number | null) => window.map(get).filter((v): v is number => v != null);
+  const fromVitals = (metric: string) => vitals.filter((v) => v.metric === metric && v.day >= from && v.day <= to).map((v) => v.avg);
+  return [
+    row('sleep_hours', fromDays((d) => d.sleepHours)),
+    row('steps', fromDays((d) => d.steps)),
+    row('hrv', fromDays((d) => d.hrv)),
+    row('resting_hr', fromDays((d) => d.restingHR)),
+    row('active_minutes', fromDays((d) => d.activeMinutes)),
+    row('blood_pressure_systolic', fromVitals('blood_pressure_systolic')),
+    row('blood_pressure_diastolic', fromVitals('blood_pressure_diastolic')),
+    row('oxygen_saturation', fromVitals('oxygen_saturation')),
+  ];
 }

@@ -257,3 +257,11 @@ test('a vital passes its trend through to the card', () => {
   const given = [{ key: 'spo2', label: 'Blood oxygen', value: '98%', from: 'measured' as const, trend }];
   assert.deepEqual(headlineMetrics([], given).find((m) => m.key === 'spo2')!.trend, trend);
 });
+
+test('a headline card measures its arrow against her usual when it is known', () => {
+  const days = [7, 7, 7, 6].map((h, n) => ({ ...empty, date: `2026-10-1${n}`, sleepHours: h }));
+  const cards = headlineMetrics(days, [], new Date(2026, 9, 13, 9), [{ metric: 'sleep_hours', median: 8, low: 7, high: 9, n: 40, sufficient: true }]);
+  assert.equal(cards.find((c) => c.key === 'sleep')?.trend?.spoken, 'down 25% from your usual');
+  const without = headlineMetrics(days, [], new Date(2026, 9, 13, 9));
+  assert.match(without.find((c) => c.key === 'sleep')!.trend!.spoken!, /recent average/);
+});

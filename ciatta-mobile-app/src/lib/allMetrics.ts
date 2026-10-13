@@ -14,6 +14,7 @@
 import type { Day } from '../data/daily';
 import { fmtHours } from './engine';
 import { type Trend, trendOf } from './trend';
+import type { BaselineRow } from './metricDetail';
 import type { VitalCard } from './vitals';
 
 export type MetricRow = {
@@ -215,7 +216,13 @@ export function headlineMetrics(
   days: readonly Day[],
   vitals: readonly VitalCard[] = [],
   now: Date = new Date(),
+  baselines: readonly BaselineRow[] = [],
 ): HeadlineMetric[] {
+  // Her usual for a metric, when the server has enough history to know it.
+  const usualOf = (metric: string) => {
+    const b = baselines.find((x) => x.metric === metric);
+    return b?.sufficient && b.median != null ? b.median : null;
+  };
   const one = (n: number) => (Math.round(n * 10) / 10).toFixed(1);
   const read = (get: (d: Day) => number | null) => latest(days, get, now);
   // The grid abbreviates. A third of a row does not hold "Blood
@@ -252,8 +259,8 @@ export function headlineMetrics(
   };
   // The card's line and arrow, from every day she has, not only the one
   // the figure came from.
-  const trended = (m: HeadlineMetric, get: (d: Day) => number | null, unit: 'percent' | 'degrees'): HeadlineMetric => {
-    const t = trendOf(days.map(get), unit);
+  const trended = (m: HeadlineMetric, get: (d: Day) => number | null, unit: 'percent' | 'degrees', metric?: string): HeadlineMetric => {
+    const t = trendOf(days.map(get), unit, metric ? usualOf(metric) : null);
     return t ? { ...m, trend: t } : m;
   };
   // Skin temperature is a difference from her usual. The figure carries no
@@ -272,12 +279,13 @@ export function headlineMetrics(
     };
   };
   return [
-    trended(card('sleep', 'Sleep', read((d) => d.sleepHours), (v) => fmtHours(v)), (d) => d.sleepHours, 'percent'),
-    trended(card('hrv', 'HRV', read((d) => d.hrv), (v) => `${Math.round(v)} ms`), (d) => d.hrv, 'percent'),
+    trended(card('sleep', 'Sleep', read((d) => d.sleepHours), (v) => fmtHours(v)), (d) => d.sleepHours, 'percent', 'sleep_hours'),
+    trended(card('hrv', 'HRV', read((d) => d.hrv), (v) => `${Math.round(v)} ms`), (d) => d.hrv, 'percent', 'hrv'),
     trended(
       card('steps', 'Steps', read((d) => d.steps), (v) => Math.round(v).toLocaleString('en-US')),
       (d) => d.steps,
       'percent',
+      'steps',
     ),
     vital('bp'),
     trended(skinTemp(read((d) => d.tempDeviation)), (d) => d.tempDeviation, 'degrees'),

@@ -35,6 +35,7 @@ export type Screen =
   | 'procedure'
   | 'addProcedure'
   | 'addRecord'
+  | 'metric'
   | 'productSafety';
 
 export type Nav = {
