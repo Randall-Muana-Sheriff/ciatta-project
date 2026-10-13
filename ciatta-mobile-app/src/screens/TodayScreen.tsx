@@ -26,6 +26,7 @@ import { AXIS, buildDay, CHART_KEY_LABEL, chartKey, type ChartKey, type DayChart
 import type { IntradayPoint } from '../data/repo';
 import { ground, HUE, L, mark, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow } from '../ui/chrome';
+import { images } from '../ui/images';
 import { MetricCard, METRIC_CARD_GAP } from '../ui/metricCard';
 import { METRIC_HUE } from '../ui/metricHue';
 import { chooseMetric } from '../lib/metricHandoff';
@@ -482,7 +483,13 @@ export function TodayScreen() {
         */}
         <View style={t.section}>
           <Eyebrow>You can</Eyebrow>
-          <ListGroup light style={{ marginTop: 10 }}>
+          {/* As the Nutrition card was: the photo across the top, edge to
+              edge, with its label on it, and the actions beneath. */}
+          <View style={t.youCan}>
+            <Image source={images.youCan} style={t.youCanPhoto} resizeMode="cover" accessibilityIgnoresInvertColors accessible={false} />
+            <View style={t.youCanPill}>
+              <Text style={[font('caption1', 'semibold'), t.youCanPillText]}>FOR TODAY</Text>
+            </View>
             <ListRow
               light
               first
@@ -508,7 +515,7 @@ export function TodayScreen() {
               sub="Build a brief from your record to take with you."
               onPress={go('appointment')}
             />
-          </ListGroup>
+          </View>
         </View>
       </View>
     </ScrollView>
@@ -612,6 +619,25 @@ const t = StyleSheet.create({
   all: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   allText: { color: L.body },
 
+  youCan: {
+    marginTop: 10,
+    borderRadius: TILE_RADIUS,
+    overflow: 'hidden',
+    backgroundColor: L.recessed,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: L.rule,
+  },
+  youCanPhoto: { width: '100%', height: 160 },
+  youCanPill: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.38)',
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+  youCanPillText: { color: '#FFFFFF', letterSpacing: 0.6 },
   card: {
     marginTop: SPACE.tight,
     backgroundColor: L.recessed,

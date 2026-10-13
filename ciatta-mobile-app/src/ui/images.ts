@@ -12,6 +12,9 @@ export const images = {
   // The example person's breakfast, for the Nutrition card's photo. Brooke
   // Lark on Unsplash, resized to 1200px.
   sampleMeal: require('../../assets/images/cia/sample-breakfast.jpg'),
+  // The header of Today's You can card: a morning in bed with tea and a
+  // book. Toa Heftiba on Unsplash, resized to 1200px.
+  youCan: require('../../assets/images/cia/you-can.jpg'),
   // Canonical front view from the Ciatta design system (07 · Body).
   body: require('../../assets/images/cia/body.png'),
   // The welcome screen's photograph, resized from the 3512x6240 original.

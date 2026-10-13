@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { dayLabel, daysBetween, parseDay, shortDate, type Episode } from '../data/cycleLog';
 import type { Day } from '../data/daily';
@@ -485,18 +485,14 @@ export function HealthDashboard({
         if (key === 'nutrition') {
           return (
             <View key={key} style={[d.card, d.mealCard]}>
-              {/* Her own latest meal across the top, named by when she ate
-                  it. The example person has a sample breakfast. */}
-              {meal ? (
-                <View>
-                  <Image source={meal.source} style={d.mealPhoto} resizeMode="cover" accessibilityIgnoresInvertColors accessible={false} />
-                  <View style={d.mealPill}>
-                    <Text style={[font('caption1', 'semibold'), d.mealPillText]}>{meal.meal.toUpperCase()}</Text>
-                  </View>
-                </View>
-              ) : null}
               <View style={d.mealBody}>
-                {meal ? <Text style={[font('headline'), { color: C.text }]}>{displayCopy(meal.title)}</Text> : null}
+                {/* Her latest meal, by name and when she ate it. */}
+                {meal ? (
+                  <Text style={[font('headline'), { color: C.text }]}>
+                    {displayCopy(meal.title)}
+                    <Text style={[font('subhead'), { color: C.secondary }]}>{`  ${meal.meal}`}</Text>
+                  </Text>
+                ) : null}
                 {/* Calories (design: IMG_4912). Every scanned figure stays
                     marked as an estimate. */}
                 {calories ? (
@@ -611,20 +607,8 @@ export function HealthDashboard({
 const CATEGORY_CARDS: CategoryKey[] = ['nutrition', 'gut', 'body', 'mind', 'skin', 'sexual', 'meds', 'supplements'];
 
 const d = StyleSheet.create({
-  // The Nutrition card: the photo bleeds to the card's edges, then the
-  // usual padding below it.
+  // The Nutrition card: no photo across the top; the usual padding.
   mealCard: { padding: 0, overflow: 'hidden', gap: 0 },
-  mealPhoto: { width: '100%', height: 160 },
-  mealPill: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.38)',
-    borderRadius: 999,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-  },
-  mealPillText: { color: '#FFFFFF', letterSpacing: 0.6 },
   mealBody: { padding: 16, gap: 10 },
   cal: { gap: 6, paddingBottom: 6 },
   calTop: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
