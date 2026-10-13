@@ -8,6 +8,8 @@ import {
   cycleGaps,
   CYCLE_NORMAL,
   labMarkers,
+  medMarks,
+  notePins,
   flareSpans,
   lanesWithData,
   levelBins,
@@ -154,4 +156,27 @@ test('a measured level is a daily average, or weekly over a year, and absent whe
   ];
   assert.deepEqual(levelBins(days, (d) => d.hrv, 'day').map((b) => [b.start.getDate(), b.value]), [[12, 40], [13, 50]]);
   assert.deepEqual(levelBins(days, (d) => d.hrv, 'week').map((b) => b.value), [45]);
+});
+
+test('medication days from her logs, medications and supplements apart, a missed one hollow', () => {
+  const marks = medMarks([
+    { at: '2026-10-13T09:00:00Z', category: 'meds', items: { meds: ['Levothyroxine', 'Took medication'] }, text: '' },
+    { at: '2026-10-12T09:00:00Z', category: 'meds', items: { meds: ['Missed a dose'] }, text: '' },
+    { at: '2026-10-11T09:00:00Z', category: 'supplements', items: { supplements: ['Magnesium'] }, text: '' },
+    { at: '2026-10-11T09:00:00Z', category: 'gut', items: { gut: ['Bloating'] }, text: '' },
+  ]);
+  assert.deepEqual(marks.map((m) => [m.row, m.missed, m.label]), [
+    ['supplements', false, 'Magnesium'],
+    ['meds', true, 'Missed a dose'],
+    ['meds', false, 'Levothyroxine'],
+  ]);
+});
+
+test('notes as pins with a short quote, her words cut at a word', () => {
+  const pins = notePins([
+    { at: '2026-10-13T09:00:00Z', category: 'note', items: {}, text: 'Work has been really stressful all week and I am tired' },
+    { at: '2026-10-12T09:00:00Z', category: 'gut', items: {}, text: '' },
+  ]);
+  assert.equal(pins.length, 1);
+  assert.deepEqual(pins[0].lines, ['Work has been', 'really stressful', 'all week and I am…']);
 });

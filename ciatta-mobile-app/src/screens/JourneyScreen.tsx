@@ -19,6 +19,10 @@ import {
   binFor,
   cycleGaps,
   labMarkers,
+  type MedMark,
+  medMarks,
+  type NotePin,
+  notePins,
   flareSpans,
   type LaneKey,
   lanesWithData,
@@ -135,6 +139,8 @@ function LaneMarks({
   height,
   onNote,
   baselines,
+  meds,
+  pins,
 }: {
   lane: Lane;
   x: (at: Date) => number | null;
@@ -151,6 +157,8 @@ function LaneMarks({
   height: number;
   onNote: () => void;
   baselines: readonly BaselineRow[];
+  meds: readonly MedMark[];
+  pins: readonly NotePin[];
 }) {
   // Where a month position lands, or null when it is outside the window.
   const at = (m: number) => x(dateAtMonthPos(m));
@@ -407,6 +415,43 @@ function LaneMarks({
       );
     }
     case 'medications':
+      // Her own logs: a mark per day on its row, Medications above and
+      // Supplements below, a missed one hollow, the latest named.
+      if (meds.length) {
+        const rowY = { meds: 34, supplements: 78 } as const;
+        const lastOf = (row: 'meds' | 'supplements') => [...meds].reverse().find((m) => m.row === row && x(m.at) != null);
+        return (
+          <G>
+            {(['meds', 'supplements'] as const).map((row) => (
+              <G key={row}>
+                <Line x1={0} x2={plotW} y1={rowY[row]} y2={rowY[row]} stroke={C.text} opacity={0.06} strokeWidth={10} strokeLinecap="round" />
+                <SvgText x={4} y={rowY[row] - 10} fill={C.tertiary} fontSize={10} fontFamily={fonts.regular}>
+                  {row === 'meds' ? 'Medications' : 'Supplements'}
+                </SvgText>
+              </G>
+            ))}
+            {meds.map((m, i) => {
+              const cx = x(m.at);
+              if (cx == null) return null;
+              const color = m.row === 'meds' ? C.mint : C.lavender;
+              return m.missed ? (
+                <Circle key={i} cx={cx} cy={rowY[m.row]} r={5} fill="none" stroke={color} strokeWidth={2} />
+              ) : (
+                <Circle key={i} cx={cx} cy={rowY[m.row]} r={5} fill={color} />
+              );
+            })}
+            {(['meds', 'supplements'] as const).map((row) => {
+              const last = lastOf(row);
+              const cx = last ? x(last.at) : null;
+              return last && cx != null && last.label ? (
+                <Label key={`l${row}`} x={cx} y={rowY[row] + 20} color={C.text}>
+                  {last.label}
+                </Label>
+              ) : null;
+            })}
+          </G>
+        );
+      }
       if (!journey) return null;
       return (
         <G>
@@ -459,6 +504,29 @@ function LaneMarks({
         </G>
       );
     case 'notes':
+      // Her own notes, each a pin with a short quote; tapping one opens
+      // her notes.
+      if (pins.length) {
+        return (
+          <G>
+            {pins.map((n, i) => {
+              const cx = x(n.at);
+              if (cx == null) return null;
+              return (
+                <G key={i} onPress={onNote}>
+                  <Line x1={cx} x2={cx} y1={24} y2={50} stroke={C.indigo} strokeWidth={2} opacity={0.6} />
+                  <Circle cx={cx} cy={18} r={8} fill={C.indigo} />
+                  {n.lines.map((line, k) => (
+                    <Label key={k} x={cx} y={68 + k * 16} color={C.secondary}>
+                      {`${k === 0 ? '\u201C' : ''}${line}${k === n.lines.length - 1 ? '\u201D' : ''}`}
+                    </Label>
+                  ))}
+                </G>
+              );
+            })}
+          </G>
+        );
+      }
       if (!journey) return null;
       // A pin where she wrote, with her words under it. Tapping one opens
       // her notes.
@@ -544,11 +612,16 @@ export function JourneyScreen() {
   const repo = useRepo();
   const [baselines, setBaselines] = useState<BaselineRow[]>([]);
   const [labs, setLabs] = useState<LabResult[]>([]);
+  const [journalLogs, setJournalLogs] = useState<{ at?: string; category?: string; items?: Partial<Record<string, string[]>>; text: string }[]>([]);
   useEffect(() => {
     let ignore = false;
     repo
       .loadLabs()
       .then((rows) => !ignore && setLabs(rows))
+      .catch(() => {});
+    repo
+      .loadJournal()
+      .then((j) => !ignore && setJournalLogs(j.months.flatMap((m) => m.items)))
       .catch(() => {});
     repo
       .loadBaselines()
@@ -602,6 +675,8 @@ export function JourneyScreen() {
   // Only the lanes she has given Ciatta something for. A woman who tracks
   // her cycle and wears a ring sees a cycle, HRV and heart rate, not a
   // column of empty lanes for things she has never logged.
+  const meds = useMemo(() => medMarks(journalLogs), [journalLogs]);
+  const pins = useMemo(() => notePins(journalLogs), [journalLogs]);
   const available = useMemo(
     () =>
       lanesWithData({
@@ -614,11 +689,11 @@ export function JourneyScreen() {
         heart: days.filter((d) => d.restingHR != null).length,
         temp: days.filter((d) => d.tempDeviation != null).length,
         steps: days.filter((d) => d.steps != null).length,
-        medications: journey?.medications.length ?? 0,
+        medications: meds.length || (journey?.medications.length ?? 0),
         records: labMarkers(labs).length,
-        notes: journey?.notes.length ?? 0,
+        notes: pins.length || (journey?.notes.length ?? 0),
       }),
-    [signals, windows, days, journey, labs],
+    [signals, windows, days, journey, labs, meds, pins],
   );
   const lanesHere = LANES.filter((l) => available.includes(l.key));
   const shownLanes = lanesHere.filter((l) => !hidden.includes(l.key));
@@ -783,6 +858,8 @@ export function JourneyScreen() {
                       height={lane.height}
                       onNote={() => nav.push('journal')}
                       baselines={baselines}
+                      meds={meds}
+                      pins={pins}
                     />
                   </Svg>
                 </View>

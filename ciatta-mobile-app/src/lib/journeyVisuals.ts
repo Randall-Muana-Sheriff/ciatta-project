@@ -262,3 +262,54 @@ export function labMarkers(labs: readonly LabResult[]): DrawMarker[] {
 // blind eyes. A log with no number is shown lightly, never as a guess.
 export const severityOpacity = (severity: number | null) =>
   severity == null ? 0.22 : 0.18 + (Math.min(10, Math.max(0, severity)) / 10) * 0.82;
+
+// ── Medications and notes, from her logs ───────────────────────
+
+type JournalLike = { at?: string; category?: string; items?: Partial<Record<string, string[]>>; text: string };
+
+export type MedMark = { at: Date; row: 'meds' | 'supplements'; missed: boolean; label: string };
+
+const GENERIC = new Set(['Took medication', 'Took supplement']);
+const MISSED = new Set(['Missed a dose', 'Skipped a supplement']);
+
+// A mark for each day she logged a medication or a supplement, on its own
+// row, named by what she took when she named it; a missed dose is hollow.
+export function medMarks(logs: readonly JournalLike[]): MedMark[] {
+  const out: MedMark[] = [];
+  for (const l of logs) {
+    if (!l.at || (l.category !== 'meds' && l.category !== 'supplements')) continue;
+    const row = l.category;
+    const items = l.items?.[row] ?? [];
+    const missed = items.some((i) => MISSED.has(i));
+    const named = items.find((i) => !GENERIC.has(i) && !MISSED.has(i) && !/^(Started|Stopped|Side effect)/.test(i));
+    out.push({ at: new Date(l.at), row, missed, label: missed ? items.find((i) => MISSED.has(i))! : (named ?? items[0] ?? '') });
+  }
+  return out.sort((a, b) => a.at.getTime() - b.at.getTime());
+}
+
+export type NotePin = { at: Date; lines: string[] };
+
+// Her words, up to three short lines, cut at a word.
+function quote(text: string, width = 18, lines = 3): string[] {
+  const words = text.trim().split(/\s+/);
+  const out: string[] = [];
+  let line = '';
+  for (const w of words) {
+    if ((line ? `${line} ${w}` : w).length > width && line) {
+      out.push(line);
+      line = w;
+      if (out.length === lines) break;
+    } else line = line ? `${line} ${w}` : w;
+  }
+  if (out.length < lines && line) out.push(line);
+  const used = out.join(' ').split(/\s+/).length;
+  if (used < words.length) out[out.length - 1] = `${out[out.length - 1]}…`;
+  return out;
+}
+
+export function notePins(logs: readonly JournalLike[]): NotePin[] {
+  return logs
+    .filter((l) => l.at && l.text.trim())
+    .map((l) => ({ at: new Date(l.at!), lines: quote(l.text) }))
+    .sort((a, b) => a.at.getTime() - b.at.getTime());
+}
