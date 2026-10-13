@@ -212,7 +212,28 @@ export function demoRepo(): Repo {
   };
   let productUses: ProductUse[] = [];
   let targets: NutritionTargets = {};
-  let meals: Meal[] = [];
+  // The example person's last eight days of meals, so her Nutrition card
+  // has a usual day to fill toward. Figures are sample estimates, marked as
+  // estimates like any scan.
+  let meals: Meal[] = [1820, 2050, 1760, 1990, 2120, 1880, 1940, 0].map((kcal, n) => {
+    const daysAgo = 7 - n;
+    const at = new Date(Date.now() - daysAgo * 86400000);
+    at.setHours(daysAgo === 0 ? 8 : 13, 0, 0, 0);
+    const today = daysAgo === 0;
+    return {
+      id: `sample-meal-${n}`,
+      eatenAt: at.toISOString(),
+      photoUri: null,
+      items: today
+        ? [
+            { name: 'Greek Yogurt', portion: '200 g', kcal: 190, protein_g: 18, carbs_g: 8, fat_g: 9, at: null, from: 'estimated' as const },
+            { name: 'Mixed Berries', portion: '1 cup', kcal: 70, protein_g: 1, carbs_g: 17, fat_g: 0.5, at: null, from: 'estimated' as const },
+            { name: 'Granola', portion: '40 g', kcal: 180, protein_g: 4, carbs_g: 26, fat_g: 7, at: null, from: 'estimated' as const },
+            { name: 'Coffee With Milk', portion: '1 mug', kcal: 60, protein_g: 3, carbs_g: 5, fat_g: 3, at: null, from: 'estimated' as const },
+          ]
+        : [{ name: 'Meals', portion: 'the day', kcal, protein_g: Math.round(kcal * 0.04), carbs_g: Math.round(kcal * 0.12), fat_g: Math.round(kcal * 0.035), at: null, from: 'estimated' as const }],
+    };
+  });
   return {
     mode: 'demo',
     loadEpisodes: async () => own,

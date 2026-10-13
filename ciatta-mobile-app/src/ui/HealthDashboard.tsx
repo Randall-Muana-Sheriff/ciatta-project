@@ -15,6 +15,10 @@ import { category as categoryOf, type CategoryKey } from '../lib/logCategories';
 import { productsLine, type ProductUse } from '../lib/periodProducts';
 import { type EnvironmentDay, weatherLines } from '../lib/weather';
 import { latestMeal } from '../lib/mealPhoto';
+import { caloriesBlock } from '../lib/calories';
+import type { Meal } from '../lib/foodScan';
+import type { NutritionTargets } from '../lib/nutritionTargets';
+import { CaloriesDial } from './CaloriesDial';
 import { images } from './images';
 import type { JournalView } from '../data/rows';
 import { C, font, M, numeral, RADIUS } from '../theme';
@@ -131,11 +135,16 @@ export function HealthDashboard({
   const [journal, setJournal] = useState<JournalView | null>(null);
   const [productUses, setProductUses] = useState<ProductUse[]>([]);
   const [environment, setEnvironment] = useState<EnvironmentDay[]>([]);
+  const [meals, setMeals] = useState<Meal[]>([]);
+  const [targets, setTargets] = useState<NutritionTargets>({});
+  const [dialWidth, setDialWidth] = useState(0);
   useEffect(() => {
     let ignore = false;
     repo.loadJournal().then((j) => !ignore && setJournal(j)).catch(() => {});
     repo.loadProductUses().then((u) => !ignore && setProductUses(u)).catch(() => {});
     repo.loadEnvironment().then((e) => !ignore && setEnvironment(e)).catch(() => {});
+    repo.loadMeals(new Date(Date.now() - 30 * 86400000).toISOString()).then((m) => !ignore && setMeals(m)).catch(() => {});
+    repo.loadNutritionTargets().then((t) => !ignore && setTargets(t)).catch(() => {});
     return () => {
       ignore = true;
     };
@@ -147,13 +156,14 @@ export function HealthDashboard({
     if (mode === 'demo') return { source: images.sampleMeal, title: 'Yogurt bowl with berries', meal: 'Breakfast' as const };
     return null;
   };
+  const calories = useMemo(() => caloriesBlock(meals, targets, new Date()), [meals, targets]);
   const categoryCards = useMemo(() => {
     const entries = (journal?.months ?? []).flatMap((m) => m.items);
     const input = { journal: entries, days, episodes, now: new Date() };
     return CATEGORY_CARDS.map((key) => ({ key, summary: categorySummary(key, input) })).filter(
-      (c) => c.summary.rows.length || c.summary.extra || (c.key === 'nutrition' && mealFrom(entries)),
+      (c) => c.summary.rows.length || c.summary.extra || (c.key === 'nutrition' && (mealFrom(entries) || calories)),
     );
-  }, [journal, days, episodes, mode]);
+  }, [journal, days, episodes, mode, calories]);
   // The Nutrition card's photo: her latest meal photo, or for the example
   // person a sample breakfast.
   const meal = useMemo(() => mealFrom((journal?.months ?? []).flatMap((m) => m.items)), [journal, mode]);
@@ -476,6 +486,36 @@ export function HealthDashboard({
               ) : null}
               <View style={d.mealBody}>
                 {meal ? <Text style={[font('headline'), { color: C.text }]}>{displayCopy(meal.title)}</Text> : null}
+                {/* Calories (design: IMG_4912). Every scanned figure stays
+                    marked as an estimate. */}
+                {calories ? (
+                  <View style={d.cal} onLayout={(e) => setDialWidth(e.nativeEvent.layout.width)}>
+                    <Text style={[font('subhead'), { color: C.secondary }]}>{calories.title}</Text>
+                    <View style={d.calTop}>
+                      <View style={d.calFigure}>
+                        <Text style={[numeral(48), { color: C.text }]}>{calories.kcal ?? 'Not yet'}</Text>
+                        {calories.kcal ? <Text style={[font('footnote'), { color: C.secondary }]}>KCAL</Text> : null}
+                      </View>
+                      <View style={d.calSide}>
+                        <Text style={[font('footnote'), { color: C.text }]}>{calories.protein} protein</Text>
+                        <Text style={[font('footnote'), { color: C.text }]}>{calories.fat} fat</Text>
+                      </View>
+                    </View>
+                    {calories.estimated ? <Text style={[font('caption1'), d.note]}>Estimated from your meal photos</Text> : null}
+                    {calories.dial && dialWidth ? (
+                      <>
+                        <CaloriesDial fill={calories.dial.fill} width={dialWidth} />
+                        <Text style={[font('caption1'), d.calDialLabel]}>{calories.dial.label}</Text>
+                      </>
+                    ) : null}
+                    {calories.note ? (
+                      <View style={d.calNote}>
+                        <Text style={[font('footnote', 'semibold'), { color: C.text }]}>From your record</Text>
+                        <Text style={[font('footnote'), d.note]}>{displayCopy(calories.note)}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null}
                 <View style={d.cardHead}>
                   <Text style={[font('title3', 'semibold'), { color: C.text, flex: 1 }]}>{categoryOf(key).label}</Text>
                   <Text style={[font('footnote'), { color: C.secondary }]}>Last 30 days</Text>
@@ -575,6 +615,12 @@ const d = StyleSheet.create({
   },
   mealPillText: { color: '#FFFFFF', letterSpacing: 0.6 },
   mealBody: { padding: 16, gap: 10 },
+  cal: { gap: 6, paddingBottom: 6 },
+  calTop: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  calFigure: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  calSide: { alignItems: 'flex-end', gap: 4, paddingBottom: 8 },
+  calDialLabel: { color: C.secondary, textAlign: 'center', marginTop: -8 },
+  calNote: { alignItems: 'center', gap: 2, marginTop: 6 },
   stack: { gap: 16, marginTop: 4 },
   pressed: { opacity: 0.55 },
   card: { backgroundColor: C.card, borderRadius: RADIUS, padding: 16, gap: 10 },
