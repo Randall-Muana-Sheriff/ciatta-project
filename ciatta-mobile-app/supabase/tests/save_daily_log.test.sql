@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(9);
+select plan(14);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -31,6 +31,21 @@ select is((select note from public.daily_metrics where day = '2026-10-12'), E'fi
 select lives_ok($$ select public.save_daily_log('2026-10-13', p_mood => 4::smallint) $$, 'a day with no device row is created');
 select is((select provenance::text from public.daily_metrics where day = '2026-10-13'), 'REPORTED', 'and is marked as hers');
 
+-- Order is kept: her earlier flags first, then the new ones in the order
+-- she gave them, each once.
+select public.save_daily_log('2026-10-14', p_digestion => array['Reflux', 'Bloating']);
+select public.save_daily_log('2026-10-14', p_digestion => array['Gas', 'Bloating', 'Nausea']);
+select is((select digestion from public.daily_metrics where day = '2026-10-14'), array['Reflux', 'Bloating', 'Gas', 'Nausea'],
+  'flags keep the order she logged them in');
+
+-- Files are appended to the day, never replacing the ones before.
+select public.save_daily_log('2026-10-14', p_attachments => '[{"id":"f1","kind":"photo"}]'::jsonb);
+select public.save_daily_log('2026-10-14', p_attachments => '[{"id":"f2","kind":"document"}]'::jsonb);
+select is((select jsonb_array_length(metadata->'attachments') from public.daily_metrics where day = '2026-10-14'), 2,
+  'files are appended');
+select is((select metadata->'attachments'->0->>'id' from public.daily_metrics where day = '2026-10-14'), 'f1',
+  'the first file stays first');
+
 -- B cannot reach A's day: the function writes only the caller's row.
 set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-00000000000b","role":"authenticated"}';
 select public.save_daily_log('2026-10-12', p_caffeine => 9);
@@ -38,6 +53,16 @@ reset role;
 select is((select caffeine from public.daily_metrics
            where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-10-12'), 2::numeric,
   'another person saving the same date never writes her row');
+
+-- Signed out, nothing is written.
+set local request.jwt.claims to '{"role":"authenticated"}';
+select throws_ok($$ select public.save_daily_log('2026-10-12', p_caffeine => 1) $$, '42501', null,
+  'a caller with no user is refused');
+reset role;
+set local role anon;
+select throws_ok($$ select public.save_daily_log('2026-10-12', p_caffeine => 1) $$, '42501', null,
+  'the anonymous role cannot call it at all');
+reset role;
 
 select * from finish();
 rollback;
