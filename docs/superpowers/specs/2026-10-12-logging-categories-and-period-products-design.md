@@ -76,10 +76,14 @@ A category entry is stored where its kind already lives, so nothing existing
 moves tables:
 
 - `cycle`, `body` pain: episodes (`episodes` table, unchanged shape).
-- `nutrition`: the daily log. Bowel fields in new cycle episodes stop being
-  offered (old episodes keep theirs and still load).
+- `nutrition`: gut flags, foods, caffeine and alcohol go to `daily_metrics`
+  through the `save_daily_log` RPC. Stool is logged here but stored as a
+  `Bowel movement` episode, because the body map, cycle patterns and cycle
+  lens read it from episodes and `daily_metrics` has no stool column. The
+  cycle questionnaire and the Daily Log screen stop offering their own copy
+  (old episodes keep theirs and still load).
 - `mind`, `skin`, `sexual`, `context`, `note`: `journal_entries`, with
-  `metadata.category` and `metadata.items: string[]` (chips she tapped). The
+  `metadata.category` and `metadata.items` (chips she tapped, by category). The
   `kind` column keeps its check constraint: `mind`, `skin`, `sexual` and
   `body` symptoms map to `Symptoms`; `context` maps to `Context`; `note` to
   `Notes`.
