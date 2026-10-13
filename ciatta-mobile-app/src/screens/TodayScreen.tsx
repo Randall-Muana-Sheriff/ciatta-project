@@ -306,7 +306,7 @@ export function TodayScreen() {
           hitSlop={10}
           style={({ pressed }) => [t.menu, pressed && t.pressed]}
         >
-          <Icon name="menu" size={22} color={L.body} />
+          <Icon name="menu" size={26} color={L.ink} />
         </Pressable>
         <Wordmark />
         <Pressable
@@ -316,7 +316,7 @@ export function TodayScreen() {
           hitSlop={10}
           style={({ pressed }) => [t.menu, pressed && t.pressed]}
         >
-          <Icon name="calendar" size={21} color={L.body} />
+          <Icon name="calendar" size={25} color={L.ink} />
         </Pressable>
       </View>
 
