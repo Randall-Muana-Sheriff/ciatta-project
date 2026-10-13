@@ -40,6 +40,10 @@ export type Screen =
   | 'insurance'
   | 'lab'
   | 'addLabs'
+  | 'visitPrep'
+  | 'labBrief'
+  | 'referrals'
+  | 'referral'
   | 'shareClinician'
   | 'productSafety';
 

@@ -69,7 +69,7 @@ const CARDS: { id: CapabilityId; title: string; what: string; ask: string }[] = 
     id: 'clinical',
     title: 'From your providers',
     what: 'Results and notes your hospital sent, in their words',
-    ask: 'What did my labs say?',
+    ask: 'What has my provider sent?',
   },
   {
     id: 'context',

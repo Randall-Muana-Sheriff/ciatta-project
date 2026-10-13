@@ -288,3 +288,15 @@ test('the example person has labs, and a scanned report is saved as hers', async
   assert.equal(after.length, before.length + 1);
   assert.equal(after.find((l) => l.on === '2026-10-01')?.source, 'report');
 });
+
+test('a referral she tracks saves, updates its steps, and can be removed', async () => {
+  const repo = demoRepo();
+  const r = { id: 'r1', specialty: 'Gynecology', clinician: null, reason: 'Pelvic pain', referredBy: 'Dr Kim', referredOn: '2026-10-01', steps: { referred: '2026-10-01' }, scheduledFor: null, notes: null };
+  await repo.saveReferral(r);
+  await repo.saveReferral({ ...r, steps: { ...r.steps, insurance: '2026-10-03' } });
+  const list = await repo.loadReferrals();
+  assert.equal(list.length, 1);
+  assert.equal(list[0].steps.insurance, '2026-10-03');
+  await repo.deleteReferral('r1');
+  assert.equal((await repo.loadReferrals()).length, 0);
+});

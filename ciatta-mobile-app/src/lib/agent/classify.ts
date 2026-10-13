@@ -38,6 +38,8 @@ const RED_FLAGS = [
 ];
 
 const MATCHERS: { id: CapabilityId; any: string[] }[] = [
+  // Before prepare and navigate, which also name specialists.
+  { id: 'referral', any: ['referral', 'referred', 'refer me'] },
   {
     id: 'prepare',
     any: ['appointment', 'see my doctor', 'brief', 'summary for', 'gynae', 'gynecologist', 'specialist visit'],
@@ -48,16 +50,14 @@ const MATCHERS: { id: CapabilityId; any: string[] }[] = [
   },
   {
     id: 'navigate',
-    any: ['book', 'booking', 'find a doctor', 'find a clinician', 'referral', 'insurance', 'covered', 'coverage', 'who should i see'],
+    any: ['book', 'booking', 'find a doctor', 'find a clinician', 'insurance', 'covered', 'coverage', 'who should i see'],
   },
   {
     id: 'pattern',
     any: ['pattern', 'changed', 'changing', 'trend', 'connection', 'related', 'noticed anything', 'what have you found'],
   },
-  {
-    id: 'clinical',
-    any: ['lab', 'labs', 'blood work', 'bloodwork', 'blood test', 'test result', 'results from', 'my doctor sent', 'my chart', 'provider sent'],
-  },
+  { id: 'labs', any: ['lab', 'labs', 'blood work', 'bloodwork', 'blood test', 'test result'] },
+  { id: 'clinical', any: ['results from', 'my doctor sent', 'my chart', 'provider sent'] },
   {
     id: 'record',
     any: [
@@ -102,4 +102,15 @@ export function redFlagsIn(message: string): string[] {
   const text = message.toLowerCase();
   const hits = RED_FLAGS.filter((w) => text.includes(w));
   return hits.filter((w) => !hits.some((other) => other !== w && other.includes(w)));
+}
+
+// A lab test she has on record, named in what she wrote, so "is my
+// ferritin ok?" reaches her labs without the word lab in it.
+export function mentionsLab(message: string, names: readonly string[]): string | null {
+  const text = message.toLowerCase();
+  for (const n of names) {
+    const k = n.trim().toLowerCase();
+    if (k && new RegExp(`\\b${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(text)) return n;
+  }
+  return null;
 }

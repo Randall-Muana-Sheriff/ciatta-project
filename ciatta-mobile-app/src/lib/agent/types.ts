@@ -43,6 +43,10 @@ export type CapabilityId =
   | 'context'
   // What her hospitals sent: results, conditions, medications.
   | 'clinical'
+  // Her labs: a named test against its lab's range, or her latest visit.
+  | 'labs'
+  // Referrals she is tracking, or one she mentions, drafted for her.
+  | 'referral'
   // None of the above.
   | 'decline';
 
@@ -67,7 +71,16 @@ export type Fact = {
 
 // What the user may do next, offered by the capability that answered. These
 // are app actions, never outward ones: every one of them opens a screen.
-export type Suggestion = { label: string; screen?: string; tab?: string };
+export type Suggestion = {
+  label: string;
+  screen?: string;
+  tab?: string;
+  // Which lab a lab brief opens on.
+  lab?: string;
+  // A referral to open, or a specialty to start one with.
+  referral?: string;
+  referralDraft?: string;
+};
 
 export type Answer = {
   capability: CapabilityId;

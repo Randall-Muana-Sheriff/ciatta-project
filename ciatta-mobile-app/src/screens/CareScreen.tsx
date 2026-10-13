@@ -32,13 +32,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { respond, type Record as AgentRecord } from '../lib/agent/capabilities';
-import { classify } from '../lib/agent/classify';
+import { classify, mentionsLab } from '../lib/agent/classify';
 import { wordOrFallback } from '../lib/agent/check';
 import { capabilityCards, type CapabilityCard, readinessLine } from '../lib/agent/readiness';
 import { buildRecord } from '../lib/agent/record';
+import { chooseReferral } from '../lib/agent/handoff';
+import { interventions } from '../lib/agent/proactive';
+import { chooseLab } from '../lib/labHandoff';
+import { useAgentContext } from '../state/agentContext';
 import { loadClinicalRecords } from '../data/providers';
 import type { ClinicalRecord } from '../lib/providers/fhirMap';
-import type { Fact, Turn } from '../lib/agent/types';
+import type { Fact, Suggestion, Turn } from '../lib/agent/types';
 import { countedWindows, cycleToday, medianLength } from '../lib/cycleModel';
 import { displayCopy } from '../lib/displayCopy';
 import { type Screen, useNav } from '../navigation';
@@ -64,6 +68,8 @@ const HOW_I_WORK = [
 ];
 
 const INTRO_SEEN = 'ciatta.care.introSeen';
+// Action cards she chose Not now on, by id, so each stays put away.
+const DISMISSED = 'ciatta.care.dismissed';
 
 // What she calls the agent. Three to choose from, the way a first meeting
 // offers a name rather than asking her to invent one; Ciatta first, since
@@ -177,6 +183,9 @@ export function CareScreen() {
   // scattered through lib/agent.
   // useData().today is the written brief, not a row. The agent needs the
   // row, which is the same lookup Today does.
+  // Everything else she has given Ciatta, read for every question.
+  const { context } = useAgentContext();
+
   const todayRow = useMemo(() => {
     const d = new Date();
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -187,7 +196,7 @@ export function CareScreen() {
     const open = windows[windows.length - 1] ?? null;
     const predicted = lens.predicts ? medianLength(countedWindows(windows, profile)) : null;
     const now = cycleToday(open && !open.end ? open : null, predicted, new Date());
-    return buildRecord({
+    const built = buildRecord({
       name: person?.firstName ?? null,
       today: todayRow,
       days,
@@ -199,7 +208,28 @@ export function CareScreen() {
       cyclePhase: now?.phase ?? null,
       clinical,
     });
-  }, [person, todayRow, days, episodes, reported, references, clinical, ranked, windows, lens, profile]);
+    return { ...built, context };
+  }, [person, todayRow, days, episodes, reported, references, clinical, ranked, windows, lens, profile, context]);
+
+  // What Ciatta raises on its own from her record, minus what she put away.
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    AsyncStorage.getItem(DISMISSED)
+      .then((v) => v && setDismissed(new Set(JSON.parse(v) as string[])))
+      .catch(() => {});
+  }, []);
+  const actionCards = useMemo(() => interventions(context, new Date(), dismissed), [context, dismissed]);
+  const dismiss = (id: string) => {
+    const next = new Set(dismissed).add(id);
+    setDismissed(next);
+    AsyncStorage.setItem(DISMISSED, JSON.stringify([...next])).catch(() => {});
+  };
+  const openSuggestion = (sug: { screen?: string; lab?: string; referral?: string; referralDraft?: string }) => {
+    if (!sug.screen) return;
+    if (sug.lab) chooseLab(sug.lab);
+    if (sug.screen === 'referral') chooseReferral(sug.referral ?? null, sug.referralDraft ?? null);
+    nav.push(sug.screen as Screen);
+  };
 
   // Recomputed whenever her record changes, by running the capabilities.
   // Readiness held separately from the answer is readiness that can lie.
@@ -212,7 +242,11 @@ export function CareScreen() {
       const message = text.trim();
       if (!message) return;
       const at = new Date().toISOString();
-      const capability = classify(message);
+      // A test she has on record, named without the word lab, is a lab
+      // question; a warning sign is always escalated first.
+      const routed = classify(message);
+      const capability =
+        routed !== 'escalate' && mentionsLab(message, context.labs.map((l) => l.name)) ? 'labs' : routed;
       const answer = respond(message, record, capability);
       // No backend reached yet, so there is no rewrite to weigh and the
       // deterministic sentence stands. wordOrFallback is still the only
@@ -235,7 +269,7 @@ export function CareScreen() {
       }
       requestAnimationFrame(() => scroller.current?.scrollToEnd({ animated: true }));
     },
-    [record, files, introSeen],
+    [record, files, introSeen, context],
   );
 
   return (
@@ -274,6 +308,38 @@ export function CareScreen() {
                 `${person?.firstName ? `Hi ${person.firstName}, I` : 'Hi, I'}’m ${name}. I answer questions about your health from your own record.`,
               )}
             </Text>
+          </View>
+
+          {/* What Ciatta noticed in her record on its own, each card with
+              the facts behind it and a next step she can take. */}
+          {actionCards.map((card) => (
+            <View key={card.id} style={[s.actionCard, card.tone === 'urgent' && s.actionUrgent]}>
+              <Text style={[font('subhead', 'semibold'), s.bubbleText]}>{displayCopy(card.title)}</Text>
+              <Text style={[font('footnote'), s.actionDetail]}>{displayCopy(card.detail)}</Text>
+              <View style={s.suggestions}>
+                {card.action ? (
+                  <Pressable onPress={() => openSuggestion(card.action!)} accessibilityRole="button" style={({ pressed }) => [s.suggestion, pressed && s.pressed]}>
+                    <Text style={[font('footnote', 'semibold'), s.suggestionText]}>{card.action.label}</Text>
+                  </Pressable>
+                ) : null}
+                <Pressable onPress={() => dismiss(card.id)} accessibilityRole="button" accessibilityLabel={`Dismiss: ${card.title}`} hitSlop={6}>
+                  <Text style={[font('footnote'), s.actionDetail]}>Not now</Text>
+                </Pressable>
+              </View>
+            </View>
+          ))}
+
+          {/* What Ciatta can do for her, on request. */}
+          <View style={s.suggestions}>
+            {[
+              { label: 'Visit prep', screen: 'visitPrep' },
+              { label: 'Referrals', screen: 'referrals' },
+              { label: 'Labs', screen: 'healthrecords' },
+            ].map((t) => (
+              <Pressable key={t.label} onPress={() => nav.push(t.screen as Screen)} accessibilityRole="button" style={({ pressed }) => [s.suggestion, pressed && s.pressed]}>
+                <Text style={[font('footnote', 'semibold'), s.suggestionText]}>{t.label}</Text>
+              </Pressable>
+            ))}
           </View>
 
           {introSeen === false ? (
@@ -380,7 +446,7 @@ export function CareScreen() {
                     : null}
                 </View>
               ) : (
-                <AnswerBlock key={turn.id} turn={turn} onOpen={(screen) => nav.push(screen as Screen)} />
+                <AnswerBlock key={turn.id} turn={turn} onOpen={openSuggestion} />
               ),
             )}
           </View>
@@ -440,7 +506,7 @@ function CapabilityRow({ card, onRun }: { card: CapabilityCard; onRun: () => voi
   );
 }
 
-function AnswerBlock({ turn, onOpen }: { turn: Turn; onOpen: (screen: string) => void }) {
+function AnswerBlock({ turn, onOpen }: { turn: Turn; onOpen: (sug: Suggestion) => void }) {
   const a = turn.answer;
   if (!a) return null;
   const escalating = a.capability === 'escalate';
@@ -482,7 +548,7 @@ function AnswerBlock({ turn, onOpen }: { turn: Turn; onOpen: (screen: string) =>
           {a.suggestions.map((sug) => (
             <Pressable
               key={sug.label}
-              onPress={() => sug.screen && onOpen(sug.screen)}
+              onPress={() => onOpen(sug)}
               accessibilityRole="button"
               style={({ pressed }) => [s.suggestion, pressed && s.pressed]}
             >
@@ -609,7 +675,16 @@ const s = StyleSheet.create({
 
   abstained: { color: L.meta, marginTop: 10, lineHeight: 18 },
 
-  suggestions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
+  suggestions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 14 },
+  actionCard: {
+    backgroundColor: L.recessed,
+    borderRadius: 16,
+    borderWidth: st,
+    borderColor: L.rule,
+    padding: 14,
+  },
+  actionUrgent: { borderColor: 'rgba(236, 93, 74, 0.6)', backgroundColor: 'rgba(236, 93, 74, 0.10)' },
+  actionDetail: { color: L.meta, marginTop: 4, lineHeight: 18 },
   suggestion: {
     backgroundColor: L.recessed,
     borderRadius: 999,

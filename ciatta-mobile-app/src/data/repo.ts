@@ -37,6 +37,7 @@ import { VITAL_METRICS } from '../lib/vitals';
 import { band, median } from '../lib/engine';
 import type { BaselineRow, VitalDay } from '../lib/metricDetail';
 import { type Insurance, insuranceFromRow } from '../lib/insurance';
+import type { Referral } from '../lib/referrals';
 import { type LabFlag, type LabResult, type LabScan, parseRange, readLabScan, type ScannedTest } from '../lib/labs';
 import { records as sampleRecords } from './sample';
 
@@ -173,6 +174,10 @@ export type Repo = {
   scanLab(base64: string, kind: 'image' | 'pdf'): Promise<LabScan>;
   // The lines she checked, saved as one visit read from a report.
   saveLabs(tests: ScannedTest[], on: string, lab: string | null): Promise<void>;
+  // Referrals she is tracking.
+  loadReferrals(): Promise<Referral[]>;
+  saveReferral(r: Referral): Promise<void>;
+  deleteReferral(id: string): Promise<void>;
   // Her health insurance, as she entered it. Null when she has not.
   loadInsurance(): Promise<Insurance | null>;
   saveInsurance(ins: Insurance | null): Promise<void>;
@@ -240,6 +245,8 @@ export function demoRepo(): Repo {
     items,
     at: recent(ago),
   }));
+  // Referrals the example person tracks in this session.
+  let referrals: Referral[] = [];
   // The example person's labs, from the sample's draws.
   let labs: LabResult[] = sampleLabs();
   // The example person's insurance, as the sample shows it.
@@ -439,6 +446,13 @@ export function demoRepo(): Repo {
         ...labs,
         ...tests.map((t, n) => ({ id: `scan-${Date.now()}-${n}`, ...t, status: 'final', source: 'report' as const, lab, on })),
       ];
+    },
+    loadReferrals: async () => referrals,
+    saveReferral: async (r) => {
+      referrals = [...referrals.filter((x) => x.id !== r.id), r];
+    },
+    deleteReferral: async (id) => {
+      referrals = referrals.filter((x) => x.id !== id);
     },
     loadInsurance: async () => insurance,
     saveInsurance: async (next) => {
@@ -983,6 +997,59 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
           })),
         ),
       );
+    },
+    async loadReferrals() {
+      const rows = must(
+        await db
+          .from('referrals')
+          .select('client_id, specialty, clinician, reason, referred_by, referred_on, steps, scheduled_for, notes')
+          .order('created_at', { ascending: false }),
+      ) as
+        | {
+            client_id: string;
+            specialty: string;
+            clinician: string | null;
+            reason: string | null;
+            referred_by: string | null;
+            referred_on: string | null;
+            steps: Referral['steps'] | null;
+            scheduled_for: string | null;
+            notes: string | null;
+          }[]
+        | null;
+      return (rows ?? []).map((r) => ({
+        id: r.client_id,
+        specialty: r.specialty,
+        clinician: r.clinician,
+        reason: r.reason,
+        referredBy: r.referred_by,
+        referredOn: r.referred_on,
+        steps: r.steps && typeof r.steps === 'object' ? r.steps : {},
+        scheduledFor: r.scheduled_for,
+        notes: r.notes,
+      }));
+    },
+    async saveReferral(r) {
+      must(
+        await db.from('referrals').upsert(
+          {
+            user_id: userId,
+            client_id: r.id,
+            specialty: r.specialty.trim(),
+            clinician: r.clinician,
+            reason: r.reason,
+            referred_by: r.referredBy,
+            referred_on: r.referredOn,
+            steps: r.steps,
+            scheduled_for: r.scheduledFor,
+            notes: r.notes,
+          },
+          { onConflict: 'user_id,client_id' },
+        ),
+      );
+    },
+    async deleteReferral(id) {
+      must(await db.from('referrals').delete().eq('client_id', id));
     },
     async loadInsurance() {
       const row = must(await db.from('profiles').select('insurance').eq('id', userId).maybeSingle()) as { insurance: unknown } | null;

@@ -25,6 +25,11 @@ import type { Episode } from '../../data/cycleLog';
 import { buildMetrics, recordedCount } from '../allMetrics';
 import { fmtHours } from '../engine';
 import type { Answer, Fact, Suggestion } from './types';
+import { isOutside, labDay, labDraws, labHistory, labStatus } from '../labs';
+import { currentStep, nextAction, referralFromMessage } from '../referrals';
+import { mentionsLab } from './classify';
+import type { AgentContext } from './proactive';
+import { labBrief, visitPrep } from './tasks';
 import { redFlagsIn } from './classify';
 
 // Everything a capability is allowed to read. Assembled by the screen from
@@ -61,6 +66,10 @@ export type Record = {
     flag: string | null;
     effectiveOn: string | null;
   }[];
+  // Everything else she has given Ciatta, gathered fresh for each
+  // question: readings against her usual, labs, symptoms, what she takes,
+  // insurance and referrals. Absent until it has been read.
+  context?: AgentContext;
 };
 
 const PREPARE: Suggestion = { label: 'Prepare for an appointment', screen: 'appointment' };
@@ -184,6 +193,7 @@ export function answerPattern(r: Record): Answer {
 // ── Prepare ──────────────────────────────────────────────────────────
 
 export function answerPrepare(r: Record): Answer {
+  if (r.context) return answerPrepareFull(r.context);
   const withNotes = r.days.filter((d) => d.note).length;
   const facts: Fact[] = [
     { label: 'Days of record', value: `${r.days.length}`, from: 'derived' },
@@ -411,6 +421,10 @@ export function respond(message: string, r: Record, capability: import('./types'
       return answerContext(r);
     case 'clinical':
       return answerClinical(r);
+    case 'labs':
+      return answerLabs(r, message);
+    case 'referral':
+      return answerReferral(r, message);
     default:
       return answerDecline();
   }
@@ -421,4 +435,137 @@ export function respond(message: string, r: Record, capability: import('./types'
 function name(r: Record): string {
   const n = (r.name ?? '').trim();
   return n ? `${n}, ` : '';
+}
+
+// ── Visit prep, labs and referrals, from the context ─────────────────
+
+const VISIT_PREP: Suggestion = { label: 'Open your visit prep', screen: 'visitPrep' };
+const ADD_LABS: Suggestion = { label: 'Add a lab report', screen: 'addLabs' };
+const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+const listed = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
+
+// The summary she takes to a visit, counted here and laid out on its own
+// screen, where she can read, change and share it.
+function answerPrepareFull(c: AgentContext): Answer {
+  const prep = visitPrep(c, new Date());
+  const lines = (t: string) => prep.sections.find((x) => x.title === t)?.lines.length ?? 0;
+  const changed = lines('What changed');
+  const labs = lines('Labs outside range');
+  const referrals = lines('Referrals');
+  const parts = [
+    ...(changed ? [count(changed, 'thing that changed', 'things that changed')] : []),
+    ...(labs ? [count(labs, 'lab outside its range', 'labs outside their range')] : []),
+    ...(referrals ? [count(referrals, 'referral in progress', 'referrals in progress')] : []),
+    ...(prep.questions.length ? [count(prep.questions.length, 'question to ask', 'questions to ask')] : []),
+  ];
+  return {
+    capability: 'prepare',
+    text: parts.length
+      ? `Here is what I would bring: ${listed(parts)}. Open it to read, change and share.`
+      : 'Nothing in your record stands out for a visit yet. You can still open it and add your own questions.',
+    facts: [
+      { label: 'Things that changed', value: `${changed}`, from: 'derived' },
+      { label: 'Labs outside range', value: `${labs}`, from: 'measured' },
+      { label: 'Referrals in progress', value: `${referrals}`, from: 'reported' },
+      { label: 'Questions', value: `${prep.questions.length}`, from: 'derived' },
+    ],
+    suggestions: [VISIT_PREP],
+  };
+}
+
+// Her labs: a test she named, against the range its lab printed, with its
+// trend; or her latest visit. Never what a result means.
+export function answerLabs(r: Record, message: string): Answer {
+  const labs = r.context?.labs ?? [];
+  if (!labs.length) {
+    return {
+      capability: 'labs',
+      text: 'There are no labs in your record yet. Add a lab report, or connect a provider, and I can go through them with you.',
+      facts: [],
+      suggestions: [ADD_LABS],
+      abstained: 'no_data',
+    };
+  }
+  const named = mentionsLab(message, [...new Set(labs.map((l) => l.name))]);
+  if (named) {
+    const history = labHistory(labs, named);
+    const l = history[history.length - 1];
+    const st = labStatus(l);
+    const value = l.value != null ? `${l.value}${l.unit ? ` ${l.unit}` : ''}` : (l.valueText ?? '');
+    const against =
+      st.key === 'noRange'
+        ? 'and the lab printed no range for it'
+        : st.key === 'inRange'
+          ? `within the lab's range${l.rangeText ? ` of ${l.rangeText}` : ''}`
+          : l.rangeText
+            ? `${st.label.toLowerCase()} against the lab's range of ${l.rangeText}`
+            : `flagged ${st.label.toLowerCase()} by the lab`;
+    const brief = labBrief(labs, named);
+    const prev = [...history].reverse().find((x) => x !== l && x.value != null);
+    const facts: Fact[] = [
+      { label: l.name, value, from: 'measured', on: l.on },
+      { label: 'Collected', value: labDay(l.on), from: 'measured' },
+      ...(l.rangeText ? [{ label: 'Lab range', value: l.rangeText, from: 'measured' as const }] : []),
+      ...(prev
+        ? [
+            { label: 'Previous', value: `${prev.value}${prev.unit ? ` ${prev.unit}` : ''}`, from: 'measured' as const, on: prev.on },
+            { label: 'Previous collected', value: labDay(prev.on), from: 'measured' as const },
+          ]
+        : []),
+    ];
+    return {
+      capability: 'labs',
+      text: `Your ${l.name.toLowerCase()} was ${value} on ${labDay(l.on)}, ${against}.${brief?.trend ? ` ${brief.trend}` : ''}`,
+      facts,
+      suggestions: [{ label: 'Decode this lab', screen: 'labBrief', lab: l.name }],
+    };
+  }
+  const latest = labDraws(labs)[0];
+  const outside = latest.results.filter(isOutside);
+  return {
+    capability: 'labs',
+    text:
+      `Your latest labs are from ${labDay(latest.on)}: ${outside.length} of ${latest.results.length} outside the lab's range.` +
+      (outside.length ? ` ${outside.map((x) => `${x.name} ${labStatus(x).label.toLowerCase()}`).join(', ')}.` : ' All within range.'),
+    facts: [
+      { label: 'Collected', value: labDay(latest.on), from: 'measured' },
+      { label: 'Outside range', value: `${outside.length}`, from: 'measured' },
+      { label: 'Results', value: `${latest.results.length}`, from: 'measured' },
+    ],
+    suggestions: outside.length ? [{ label: 'Decode this lab', screen: 'labBrief', lab: outside[0].name }] : [{ label: 'Open your labs', screen: 'healthrecords' }],
+  };
+}
+
+// Referrals: one she mentions, offered for tracking; the ones she tracks,
+// with what is next. Ciatta prepares each step; she makes the call.
+export function answerReferral(r: Record, message: string): Answer {
+  const tracked = r.context?.referrals ?? [];
+  const draft = referralFromMessage(message);
+  if (draft && !tracked.some((x) => x.specialty.toLowerCase() === draft.specialty.toLowerCase())) {
+    return {
+      capability: 'referral',
+      text: `Shall I keep track of your referral to ${draft.specialty}? I will lay out each step, from checking your insurance to the visit, and prepare what to say at each one.`,
+      facts: [{ label: 'Referral', value: draft.specialty, from: 'reported' }],
+      suggestions: [{ label: 'Track this referral', screen: 'referral', referralDraft: draft.specialty }],
+    };
+  }
+  const open = tracked.filter((x) => currentStep(x));
+  if (!open.length) {
+    return {
+      capability: 'referral',
+      text: 'You are not tracking any referrals. If you have been referred to a specialist, tell me who, and I will lay out the steps.',
+      facts: [],
+      suggestions: [{ label: 'Track a referral', screen: 'referral' }],
+    };
+  }
+  const next = nextAction(open[0], !!r.context?.insurance);
+  return {
+    capability: 'referral',
+    text: `${open
+      .slice(0, 3)
+      .map((x) => `${x.specialty}: ${currentStep(x)!.label.toLowerCase()} is next.`)
+      .join(' ')}${next ? ` ${next.text}` : ''}`,
+    facts: open.slice(0, 3).map((x) => ({ label: 'Referral', value: x.specialty, from: 'reported' as const })),
+    suggestions: [{ label: 'Open your referrals', screen: 'referrals' }],
+  };
 }
