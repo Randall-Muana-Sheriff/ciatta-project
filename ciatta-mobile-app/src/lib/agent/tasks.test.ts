@@ -24,6 +24,11 @@ const ctx: AgentContext = {
   insurance: { provider: 'Anthem', plan: 'PPO' },
   referrals: [{ id: 'r1', specialty: 'Gynecology', clinician: null, reason: 'Pelvic pain', referredBy: null, referredOn: '2026-10-01', steps: { referred: '2026-10-01' }, scheduledFor: null, notes: null }],
   severe: [],
+  vitals: { bp: null, spo2: null },
+  gut: null,
+  cycle: null,
+  visit: null,
+  today: [],
 };
 
 test('a visit prep summary: what changed, labs outside range, what she takes, referrals', () => {

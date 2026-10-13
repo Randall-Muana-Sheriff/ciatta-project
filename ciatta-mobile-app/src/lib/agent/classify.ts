@@ -63,7 +63,7 @@ const MATCHERS: { id: CapabilityId; any: string[] }[] = [
     any: [
       'how did i', 'how many', 'how much', 'how long', 'when was', 'when did', 'last period', 'my sleep',
       'my steps', 'my hrv', 'heart rate', 'show me', 'what did i', 'my cycle', 'my data', 'my record',
-      'in my record', 'what is in my',
+      'in my record', 'what is in my', 'my gut', 'bowel', 'stool', 'digestion', 'blood pressure', 'oxygen', 'spo2',
     ],
   },
   // Last, and narrowly. An earlier version matched a bare "what is ",

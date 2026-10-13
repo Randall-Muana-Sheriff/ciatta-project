@@ -5,7 +5,7 @@
 
 import { isOutside, labDay, labHistory, type LabResult, labStatus } from '../labs';
 import { currentStep } from '../referrals';
-import type { AgentContext } from './proactive';
+import { type AgentContext, bpBand, bpLine, spo2Line, stoolLean } from './proactive';
 
 export type PrepSection = { title: string; lines: string[] };
 export type VisitPrep = { sections: PrepSection[]; questions: string[] };
@@ -34,11 +34,27 @@ export function visitPrep(c: AgentContext, _now: Date): VisitPrep {
   const labs = latestByTest(c.labs).filter(isOutside);
   const missed = c.meds.month.find((m) => m.label === 'Missed a dose')?.days ?? 0;
   const referrals = c.referrals.filter((r) => currentStep(r));
+  const bp = c.vitals.bp && bpBand(c.vitals.bp) !== 'usual' ? c.vitals.bp : null;
+  const spo2 = c.vitals.spo2 && c.vitals.spo2.value < 95 ? c.vitals.spo2 : null;
+  const blood = c.gut?.blood ?? 0;
+  const lean = c.gut ? stoolLean(c.gut) : null;
+  const times = (n: number) => `${n} ${n === 1 ? 'occasion' : 'occasions'}`;
 
   const sections: PrepSection[] = [
     {
+      title: 'This visit',
+      lines: [
+        ...(c.visit ? [[c.visit.title, lower(c.visit.when), c.visit.location].filter(Boolean).join(', ')] : []),
+        ...(c.cycle ? [`Cycle day ${c.cycle.day}${c.cycle.phase ? `, ${lower(c.cycle.phase)}` : ''}`] : []),
+      ],
+    },
+    {
       title: 'What changed',
       lines: [
+        ...(bp ? [bpLine(bp)] : []),
+        ...(spo2 ? [spo2Line(spo2)] : []),
+        ...(blood ? [`Blood with a bowel movement on ${times(blood)} in the last 4 weeks`] : []),
+        ...(lean ? [`Most logged bowel movements ${lean} in the last 4 weeks (Bristol ${lean === 'loose' ? 'types 5 to 7' : 'types 1 and 2'})`] : []),
         ...readings.map((r) => `${r.label} ${r.side} my usual for ${r.daysOutside} days, latest ${r.latest} against ${r.usual}`),
         ...symptoms.map((s) => `${s.name} on ${s.days} days in the last 90, more often lately${s.worst != null ? `, worst ${s.worst} of 10` : ''}`),
       ],
@@ -62,6 +78,10 @@ export function visitPrep(c: AgentContext, _now: Date): VisitPrep {
   ].filter((s) => s.lines.length);
 
   const questions = [
+    ...(bp ? [`My blood pressure was ${bp.systolic}/${bp.diastolic} on ${short(bp.on)}. Is that worth checking, and how often should I measure it?`] : []),
+    ...(spo2 ? [`My watch read my blood oxygen at ${spo2.value}% on ${short(spo2.on)}. Is that something to look into?`] : []),
+    ...(blood ? [`I saw blood with a bowel movement on ${times(blood)} in the last 4 weeks. What should we look at?`] : []),
+    ...(lean ? [`Most of my bowel movements lately have been ${lean}. What could be behind that?`] : []),
     ...readings.map((r) => `My ${lower(r.label)} has been ${r.side} my usual for ${r.daysOutside} days. Is that worth looking into?`),
     ...symptoms.map((s) => `I have had ${lower(s.name)} on ${s.days} days in the last 90, more often lately. What could be behind it?`),
     ...labs.map(

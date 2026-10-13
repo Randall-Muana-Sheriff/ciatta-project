@@ -125,13 +125,88 @@ export function answerClinical(r: Record): Answer {
   };
 }
 
-export function answerRecord(r: Record): Answer {
+// What the gut and vitals questions read, by the words she used.
+const GUT_WORDS = ['gut', 'bowel', 'stool', 'poo', 'digest', 'constipat', 'diarrh'];
+const VITAL_WORDS = ['blood pressure', 'oxygen', 'spo2', ' bp'];
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const shortDay = (day: string) => {
+  const [, m, d] = day.split('-').map(Number);
+  return `${d} ${MONTHS_SHORT[m - 1]}`;
+};
+
+// Her gut over four weeks, from what she logged: how many movements, how
+// often, and how many of those with a type sat in the typical range.
+export function answerGut(r: Record): Answer {
+  const g = r.context?.gut;
+  if (!g || !g.count) {
+    return {
+      capability: 'record',
+      text: 'No bowel movements are logged in the last 4 weeks. Log one with its type under Gut, and your pattern builds from there.',
+      facts: [{ label: 'Weeks', value: '4', from: 'derived' }],
+      suggestions: [{ label: 'Your gut', screen: 'gut' }],
+      abstained: 'no_data',
+    };
+  }
+  const rated = g.mix.hard + g.mix.typical + g.mix.loose;
+  const facts: Fact[] = [
+    { label: 'Bowel movements logged, 4 weeks', value: `${g.count}`, from: 'reported' },
+    { label: 'How often', value: g.perDay ?? '', from: 'derived' },
+    { label: 'Typical form', value: `${g.mix.typical} of ${rated}`, from: 'derived' },
+    { label: 'Typical range', value: 'Bristol types 3 and 4', from: 'reference' },
+    ...(g.blood ? [{ label: 'Blood with a movement', value: `${g.blood}`, from: 'reported' as const }] : []),
+  ];
+  const typed = rated ? ` ${g.mix.typical} of the ${rated} with a type were in the typical range, Bristol types 3 and 4.` : '';
+  const blood = g.blood ? ` You logged blood with ${g.blood} of them, which is worth raising with a clinician soon.` : '';
+  return {
+    capability: 'record',
+    text: `In the last 4 weeks you logged ${g.count} bowel ${g.count === 1 ? 'movement' : 'movements'}, about ${g.perDay}.${typed}${blood}`,
+    facts,
+    suggestions: [{ label: 'Your gut', screen: 'gut' }, ...(g.blood ? [VISIT_PREP] : [])],
+  };
+}
+
+// Her latest blood pressure and blood oxygen, each with its day.
+export function answerVitals(r: Record): Answer {
+  const v = r.context?.vitals;
+  const parts: string[] = [];
+  const facts: Fact[] = [];
+  if (v?.bp) {
+    parts.push(`blood pressure was ${v.bp.systolic}/${v.bp.diastolic} on ${shortDay(v.bp.on)}`);
+    facts.push({ label: NAME.bp, value: `${v.bp.systolic}/${v.bp.diastolic}`, from: 'measured', on: v.bp.on });
+  }
+  if (v?.spo2) {
+    parts.push(`blood oxygen ${v.spo2.value}% on ${shortDay(v.spo2.on)}`);
+    facts.push({ label: NAME.spo2, value: `${v.spo2.value}%`, from: 'measured', on: v.spo2.on });
+  }
+  if (!parts.length) {
+    return {
+      capability: 'record',
+      text: 'No blood pressure or blood oxygen readings have arrived yet. A cuff or a watch that writes to Apple Health brings them here.',
+      facts: [],
+      suggestions: [METRICS],
+      abstained: 'no_data',
+    };
+  }
+  return {
+    capability: 'record',
+    text: `Your latest ${parts.join(', and ')}.`,
+    facts,
+    suggestions: [METRICS],
+  };
+}
+
+export function answerRecord(r: Record, message = ''): Answer {
+  const asked = ` ${message.toLowerCase()}`;
+  if (GUT_WORDS.some((w) => asked.includes(w))) return answerGut(r);
+  if (VITAL_WORDS.some((w) => asked.includes(w))) return answerVitals(r);
   const facts: Fact[] = [];
   const d = r.today;
 
   if (d?.sleepHours != null) facts.push({ label: 'Sleep', value: fmtHours(d.sleepHours), from: 'measured', on: d.date });
   if (d?.hrv != null) facts.push({ label: NAME.hrv, value: `${Math.round(d.hrv)} ms`, from: 'measured', on: d.date });
   if (d?.steps != null) facts.push({ label: 'Steps', value: Math.round(d.steps).toLocaleString('en-US'), from: 'measured', on: d.date });
+  // Today's wearable readings through the day, as ranges.
+  for (const t of r.context?.today ?? []) facts.push({ label: t.label, value: t.range, from: 'measured' });
   if (r.cycleDay != null) {
     facts.push({ label: 'Cycle day', value: `${r.cycleDay}`, from: 'reported' });
     if (r.cyclePhase) facts.push({ label: 'Phase', value: r.cyclePhase, from: 'reported' });
@@ -407,7 +482,7 @@ export function answerDecline(): Answer {
 export function respond(message: string, r: Record, capability: import('./types').CapabilityId): Answer {
   switch (capability) {
     case 'record':
-      return answerRecord(r);
+      return answerRecord(r, message);
     case 'pattern':
       return answerPattern(r);
     case 'prepare':

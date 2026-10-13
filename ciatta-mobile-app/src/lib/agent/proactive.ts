@@ -15,6 +15,7 @@ import type { BaselineRow } from '../metricDetail';
 import { nextAction, type Referral, stalled } from '../referrals';
 import { type SymptomRow, symptomsView } from '../symptomsView';
 import type { Fact } from './types';
+import { type GutOut, gutOut } from '../gut';
 
 export type Reading = {
   key: string;
@@ -35,7 +36,42 @@ export type AgentContext = {
   referrals: Referral[];
   // Logs she rated 8 or more in the last three days.
   severe: { on: string; what: string; severity: number }[];
+  // Connected since: her latest blood pressure and blood oxygen, four weeks
+  // of her gut, where she is in her cycle, her next care visit from her
+  // calendar, and today's wearable readings as ranges.
+  vitals: Vitals;
+  gut: GutOut | null;
+  cycle: { day: number; phase: string | null } | null;
+  visit: { title: string; when: string; location: string | null } | null;
+  today: { label: string; range: string }[];
 };
+
+export type Vitals = {
+  bp: { systolic: number; diastolic: number; on: string } | null;
+  spo2: { value: number; on: string } | null;
+};
+
+// The newest blood pressure pair (the top and bottom number taken together)
+// and the newest blood oxygen, read as a percent.
+export function latestVitals(rows: readonly { metric: string; value: number; at: string }[]): Vitals {
+  const newest = (metric: string) => [...rows].filter((r) => r.metric === metric).sort((a, b) => b.at.localeCompare(a.at));
+  const sys = newest('blood_pressure_systolic')[0];
+  const dia = sys ? newest('blood_pressure_diastolic').find((r) => r.at === sys.at) ?? newest('blood_pressure_diastolic')[0] : undefined;
+  const o2 = newest('oxygen_saturation')[0];
+  const day = (at: string) => iso(new Date(at));
+  return {
+    bp: sys && dia ? { systolic: Math.round(sys.value), diastolic: Math.round(dia.value), on: day(sys.at) } : null,
+    spo2: o2 ? { value: Math.round(o2.value <= 1 ? o2.value * 100 : o2.value), on: day(o2.at) } : null,
+  };
+}
+
+// Blood pressure in the ACC/AHA 2017 bands, from the top and bottom number.
+export function bpBand(bp: { systolic: number; diastolic: number }): 'crisis' | 'high' | 'raised' | 'usual' {
+  if (bp.systolic >= 180 || bp.diastolic >= 120) return 'crisis';
+  if (bp.systolic >= 140 || bp.diastolic >= 90) return 'high';
+  if (bp.systolic >= 130 || bp.diastolic >= 80) return 'raised';
+  return 'usual';
+}
 
 // The unit is said once, after a range: "55 to 68 bpm".
 const METRICS: { key: string; label: string; get: (d: Day) => number | null; say: (v: number) => string; range: (lo: number, hi: number) => string }[] = [
@@ -104,6 +140,11 @@ export function buildContext(input: {
   insurance: Insurance | null;
   referrals: readonly Referral[];
   now: Date;
+  vitals?: Vitals;
+  episodes?: readonly { date: string; kinds: string[]; stool: number | null; bowelPain: string | null; bowelFlags: string[] }[];
+  cycle?: { day: number; phase: string | null } | null;
+  visit?: { title: string; when: string; location: string | null } | null;
+  today?: { label: string; range: string }[];
 }): AgentContext {
   const since = input.now.getTime() - 3 * 86400000;
   return {
@@ -116,12 +157,17 @@ export function buildContext(input: {
     severe: input.signals
       .filter((s) => s.episode.severity != null && s.episode.severity >= 8 && s.date.getTime() >= since)
       .map((s) => ({ on: iso(s.date), what: s.episode.kinds.includes('Pain') ? 'Pain' : (s.episode.symptoms?.[0] ?? 'A symptom'), severity: s.episode.severity! })),
+    vitals: input.vitals ?? { bp: null, spo2: null },
+    gut: input.episodes ? gutOut({ episodes: input.episodes, days: input.days, now: input.now }) : null,
+    cycle: input.cycle ?? null,
+    visit: input.visit ?? null,
+    today: input.today ?? [],
   };
 }
 
 // ── Action cards ───────────────────────────────────────────────
 
-export type CardKind = 'urgent' | 'lab' | 'reading' | 'symptom' | 'missed' | 'referral' | 'insurance';
+export type CardKind = 'urgent' | 'lab' | 'reading' | 'symptom' | 'missed' | 'referral' | 'insurance' | 'vital' | 'gut' | 'visit';
 
 export type ActionCard = {
   id: string;
@@ -139,9 +185,96 @@ const short = (day: string) => {
   return `${d} ${MONTHS[m - 1]}`;
 };
 
+// The lines the cards and the visit prep share, so both say it the same way.
+export function bpLine(bp: { systolic: number; diastolic: number; on: string }): string {
+  const band = bpBand(bp);
+  const where = band === 'crisis' ? 'in the crisis range' : band === 'high' ? 'in the high range' : band === 'raised' ? 'in the raised range' : 'in the usual range';
+  return `Blood pressure ${bp.systolic}/${bp.diastolic} on ${short(bp.on)}, ${where}`;
+}
+export function spo2Line(o: { value: number; on: string }): string {
+  return `Blood oxygen ${o.value}% on ${short(o.on)}${o.value < 95 ? ', under the typical 95 to 100%' : ''}`;
+}
+// Which way her logged movements lean, when enough carry a type.
+export function stoolLean(g: GutOut): 'loose' | 'hard' | null {
+  const rated = g.mix.hard + g.mix.typical + g.mix.loose;
+  if (rated < 4) return null;
+  if (g.mix.loose / rated > 0.5) return 'loose';
+  if (g.mix.hard / rated > 0.5) return 'hard';
+  return null;
+}
+
 export function interventions(c: AgentContext, now: Date, dismissed: ReadonlySet<string>): ActionCard[] {
   const cards: ActionCard[] = [];
   const month = iso(now).slice(0, 7);
+
+  // Blood in stool comes first among the new ones: it is the one a
+  // clinician should hear about whatever else is going on.
+  if (c.gut?.blood) {
+    cards.push({
+      id: `gut:blood:${month}`,
+      kind: 'gut',
+      tone: 'urgent',
+      title: `Blood with a bowel movement, logged ${c.gut.blood} ${c.gut.blood === 1 ? 'time' : 'times'} in 4 weeks`,
+      detail: 'Blood in stool is worth raising with a clinician soon. If it is heavy, or you feel faint or dizzy, get care now.',
+      facts: [{ label: 'Blood with a movement', value: `${c.gut.blood}`, from: 'reported' }],
+      action: { label: 'Prepare for a visit', screen: 'visitPrep' },
+    });
+  }
+
+  if (c.vitals.bp) {
+    const band = bpBand(c.vitals.bp);
+    if (band === 'crisis' || band === 'high') {
+      cards.push({
+        id: `vital:bp:${c.vitals.bp.on}`,
+        kind: 'vital',
+        tone: band === 'crisis' ? 'urgent' : 'attention',
+        title: bpLine(c.vitals.bp),
+        detail:
+          band === 'crisis'
+            ? 'A reading this high is worth checking again now. With chest pain, a severe headache, weakness or trouble speaking, get emergency care.'
+            : 'One reading is a starting point. A few more, at rest and at the same time of day, show whether it holds.',
+        facts: [{ label: 'Blood Pressure', value: `${c.vitals.bp.systolic}/${c.vitals.bp.diastolic}`, from: 'measured', on: c.vitals.bp.on }],
+        action: { label: 'Prepare for a visit', screen: 'visitPrep' },
+      });
+    }
+  }
+  if (c.vitals.spo2 && c.vitals.spo2.value < 95) {
+    cards.push({
+      id: `vital:spo2:${c.vitals.spo2.on}`,
+      kind: 'vital',
+      tone: c.vitals.spo2.value < 90 ? 'urgent' : 'attention',
+      title: spo2Line(c.vitals.spo2),
+      detail:
+        c.vitals.spo2.value < 90
+          ? 'If you are short of breath, confused or your lips look blue, get care now.'
+          : 'A watch reading can dip with movement or a loose fit. If it stays low at rest, it is worth raising.',
+      facts: [{ label: 'Blood Oxygen', value: `${c.vitals.spo2.value}%`, from: 'measured', on: c.vitals.spo2.on }],
+      action: { label: 'Prepare for a visit', screen: 'visitPrep' },
+    });
+  }
+  const lean = c.gut ? stoolLean(c.gut) : null;
+  if (c.gut && lean) {
+    cards.push({
+      id: `gut:form:${lean}:${month}`,
+      kind: 'gut',
+      tone: 'info',
+      title: `Most of your logged movements were ${lean}`,
+      detail: lean === 'loose' ? 'Bristol types 5 to 7, over the last 4 weeks.' : 'Bristol types 1 and 2, over the last 4 weeks.',
+      facts: [{ label: lean === 'loose' ? 'Loose' : 'Hard', value: `${c.gut.mix[lean]}`, from: 'reported' }],
+      action: { label: 'See your gut', screen: 'gut' },
+    });
+  }
+  if (c.visit) {
+    cards.push({
+      id: `visit:${c.visit.title}:${c.visit.when}`,
+      kind: 'visit',
+      tone: 'info',
+      title: `Prepare for ${c.visit.title}`,
+      detail: `${c.visit.when}. A summary from your record, with the questions worth asking.`,
+      facts: [{ label: 'Visit', value: c.visit.title, from: 'reported' }],
+      action: { label: 'Open your visit prep', screen: 'visitPrep' },
+    });
+  }
 
   for (const s of c.severe) {
     cards.push({

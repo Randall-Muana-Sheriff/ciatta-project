@@ -20,6 +20,11 @@ const ctx: AgentContext = {
   insurance: null,
   referrals: [{ id: 'r1', specialty: 'Gynecology', clinician: null, reason: null, referredBy: null, referredOn: '2026-10-01', steps: { referred: '2026-10-01' }, scheduledFor: null, notes: null }],
   severe: [],
+  vitals: { bp: null, spo2: null },
+  gut: null,
+  cycle: null,
+  visit: null,
+  today: [],
 };
 
 const record = (context: AgentContext | undefined): Record => ({

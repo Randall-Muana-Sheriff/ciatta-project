@@ -41,6 +41,11 @@ const ctx = (over: Partial<AgentContext> = {}): AgentContext => ({
   insurance: null,
   referrals: [],
   severe: [],
+  vitals: { bp: null, spo2: null },
+  gut: null,
+  cycle: null,
+  visit: null,
+  today: [],
   ...over,
 });
 
