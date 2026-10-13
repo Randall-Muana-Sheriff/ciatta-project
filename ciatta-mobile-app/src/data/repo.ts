@@ -37,6 +37,8 @@ import { VITAL_METRICS } from '../lib/vitals';
 import { band, median } from '../lib/engine';
 import type { BaselineRow, VitalDay } from '../lib/metricDetail';
 import { type Insurance, insuranceFromRow } from '../lib/insurance';
+import { type LabFlag, type LabResult, type LabScan, parseRange, readLabScan, type ScannedTest } from '../lib/labs';
+import { records as sampleRecords } from './sample';
 
 // Every daily_metrics column daysFromRows/rowToDay actually reads. Named
 // explicitly, like every other realRepo method, rather than select('*'),
@@ -165,6 +167,12 @@ export type Repo = {
   loadVitals(): Promise<VitalReading[]>;
   // Her usual range per metric, as the baselines function last worked it out.
   loadBaselines(): Promise<BaselineRow[]>;
+  // Her labs, from her providers and from reports she had read.
+  loadLabs(): Promise<LabResult[]>;
+  // Reads a photo or PDF of a lab report. Nothing is saved until saveLabs.
+  scanLab(base64: string, kind: 'image' | 'pdf'): Promise<LabScan>;
+  // The lines she checked, saved as one visit read from a report.
+  saveLabs(tests: ScannedTest[], on: string, lab: string | null): Promise<void>;
   // Her health insurance, as she entered it. Null when she has not.
   loadInsurance(): Promise<Insurance | null>;
   saveInsurance(ins: Insurance | null): Promise<void>;
@@ -232,6 +240,8 @@ export function demoRepo(): Repo {
     items,
     at: recent(ago),
   }));
+  // The example person's labs, from the sample's draws.
+  let labs: LabResult[] = sampleLabs();
   // The example person's insurance, as the sample shows it.
   let insurance: Insurance | null = { provider: 'Anthem', plan: 'PPO' };
   let view: JournalView = {
@@ -412,6 +422,24 @@ export function demoRepo(): Repo {
       ].sort((a, b) => b.at.localeCompare(a.at));
     },
     loadBaselines: async () => demoBaselines(loadSampleDays(), demoVitalDays()),
+    loadLabs: async () => labs,
+    // A fixed example reading, so the flow can be tried without a key.
+    scanLab: async () =>
+      readLabScan({
+        not_lab: false,
+        collected_on: '2026-10-01',
+        lab: 'Example Lab',
+        tests: [
+          { name: 'Hemoglobin', value: 12.6, value_text: null, unit: 'g/dL', range: '12.0 to 15.5', flag: null },
+          { name: 'Ferritin', value: 13, value_text: null, unit: 'ng/mL', range: '15 to 150', flag: 'L' },
+        ],
+      }),
+    saveLabs: async (tests, on, lab) => {
+      labs = [
+        ...labs,
+        ...tests.map((t, n) => ({ id: `scan-${Date.now()}-${n}`, ...t, status: 'final', source: 'report' as const, lab, on })),
+      ];
+    },
     loadInsurance: async () => insurance,
     saveInsurance: async (next) => {
       insurance = next;
@@ -918,6 +946,44 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       ) as { metric: string; value: number; unit: string | null; occurred_at: string }[] | null;
       return (rows ?? []).map((r) => ({ metric: r.metric, value: Number(r.value), unit: r.unit, at: r.occurred_at }));
     },
+    async loadLabs() {
+      const rows = must(
+        await db
+          .from('results')
+          .select('id, test_name, value, value_text, unit, reference_low, reference_high, reference_text, flag, status, source, provider, occurred_at')
+          .order('occurred_at', { ascending: false })
+          .limit(1000),
+      ) as LabRow[] | null;
+      return (rows ?? []).map(labFromRow);
+    },
+    async scanLab(base64, kind) {
+      const { data, error } = await db.functions.invoke('lab-scan', { body: { file: base64, kind } });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return readLabScan(data);
+    },
+    async saveLabs(tests, on, lab) {
+      if (!tests.length) return;
+      must(
+        await db.from('results').insert(
+          tests.map((t) => ({
+            user_id: userId,
+            test_name: t.name,
+            value: t.value,
+            value_text: t.valueText,
+            unit: t.unit,
+            reference_low: t.low,
+            reference_high: t.high,
+            reference_text: t.rangeText,
+            flag: t.flag,
+            status: 'final',
+            provider: lab,
+            source: 'report',
+            occurred_at: `${on}T12:00:00Z`,
+          })),
+        ),
+      );
+    },
     async loadInsurance() {
       const row = must(await db.from('profiles').select('insurance').eq('id', userId).maybeSingle()) as { insurance: unknown } | null;
       return insuranceFromRow(row?.insurance);
@@ -1009,4 +1075,70 @@ function demoBaselines(days: readonly Day[], vitals: readonly VitalDay[]): Basel
     row('blood_pressure_diastolic', fromVitals('blood_pressure_diastolic')),
     row('oxygen_saturation', fromVitals('oxygen_saturation')),
   ];
+}
+
+// ── Labs ───────────────────────────────────────────────────────
+
+type LabRow = {
+  id: string;
+  test_name: string;
+  value: number | string | null;
+  value_text: string | null;
+  unit: string | null;
+  reference_low: number | string | null;
+  reference_high: number | string | null;
+  reference_text: string | null;
+  flag: string | null;
+  status: string | null;
+  source: string | null;
+  provider: string | null;
+  occurred_at: string;
+};
+
+const numOrNull = (v: number | string | null) => (v == null ? null : Number(v));
+
+function labFromRow(r: LabRow): LabResult {
+  return {
+    id: r.id,
+    name: r.test_name,
+    value: numOrNull(r.value),
+    valueText: r.value_text,
+    unit: r.unit,
+    low: numOrNull(r.reference_low),
+    high: numOrNull(r.reference_high),
+    rangeText: r.reference_text,
+    flag: (r.flag as LabFlag | null) ?? null,
+    status: r.status,
+    // A row from before Labs had a source came with her records.
+    source: r.source === 'report' ? 'report' : 'provider',
+    lab: r.provider,
+    on: r.occurred_at.slice(0, 10),
+  };
+}
+
+const SAMPLE_MONTH: Record<string, string> = { Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06', Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12' };
+
+// The example person's draws ("12 Jun 2026", "41 ng/mL", "15 to 150") as labs.
+function sampleLabs(): LabResult[] {
+  return sampleRecords.draws.flatMap((d, i) => {
+    const [day, mon, year] = d.date.split(' ');
+    const on = `${year}-${SAMPLE_MONTH[mon]}-${day.padStart(2, '0')}`;
+    return d.results.map((r, k) => {
+      const [num, ...unit] = r.value.split(' ');
+      return {
+        id: `sample-${i}-${k}`,
+        name: r.name,
+        value: Number(num),
+        valueText: null,
+        unit: unit.join(' ') || null,
+        ...parseRange(r.range),
+        rangeText: r.range,
+        flag: null,
+        status: 'final',
+        source: 'provider' as const,
+        lab: d.lab,
+        on,
+      };
+    });
+  });
 }

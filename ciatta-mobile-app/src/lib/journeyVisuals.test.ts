@@ -7,7 +7,7 @@ import {
   binStart,
   cycleGaps,
   CYCLE_NORMAL,
-  drawMarkers,
+  labMarkers,
   flareSpans,
   lanesWithData,
   levelBins,
@@ -120,13 +120,13 @@ test('the symptom grid has a row for each of her most logged symptoms, shaded by
   assert.deepEqual(grid[0].cells.map((c) => [c.start.getDate(), c.severity]), [[10, 6], [12, null]]);
 });
 
-test('a lab draw is marked by whether every result sat inside its range', () => {
-  const marks = drawMarkers([
-    { date: '12 Jun 2026', lab: 'Quest', results: [{ status: 'In' }, { status: 'Low' }] },
-    { date: '3 Feb 2026', lab: 'Quest', results: [{ status: 'In' }] },
-    { date: 'not a date', lab: 'Quest', results: [] },
-  ]);
-  assert.deepEqual(marks.map((m) => [m.at.getMonth(), m.outside, m.outsideCount]), [[5, true, 1], [1, false, 0]]);
+test('a lab visit is marked by how many of its results sat outside their range', () => {
+  const lab = (on: string, value: number) => ({
+    id: on + value, name: 'Ferritin', value, valueText: null, unit: 'ng/mL', low: 15, high: 150, rangeText: '15 to 150',
+    flag: null, status: 'final', source: 'provider' as const, lab: 'Quest', on,
+  });
+  const marks = labMarkers([lab('2026-06-12', 12), lab('2026-06-12', 41), lab('2026-02-03', 41)]);
+  assert.deepEqual(marks.map((m) => [m.at.getMonth(), m.outside, m.outsideCount, m.count]), [[5, true, 1, 2], [1, false, 0, 1]]);
 });
 
 test('severity is one colour, darker as it rises', () => {

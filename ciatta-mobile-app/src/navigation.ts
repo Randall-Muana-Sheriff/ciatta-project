@@ -38,6 +38,8 @@ export type Screen =
   | 'metric'
   | 'privacy'
   | 'insurance'
+  | 'lab'
+  | 'addLabs'
   | 'shareClinician'
   | 'productSafety';
 

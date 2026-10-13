@@ -181,6 +181,67 @@ export function mapResource(resource: unknown): ClinicalRecord | null {
   };
 }
 
+// A lab result as Labs keeps it: the number and unit apart, the range the
+// lab printed (as numbers when it gave them, and as its words always), and
+// the lab's own HL7 interpretation code. Still nothing is interpreted here:
+// the code is carried as the lab sent it, and a result with no flag gets
+// none. Vitals, and labs with no date or no result, are not labs.
+export type LabRecord = {
+  sourceId: string;
+  name: string;
+  value: number | null;
+  valueText: string | null;
+  unit: string | null;
+  low: number | null;
+  high: number | null;
+  rangeText: string | null;
+  flag: 'N' | 'H' | 'L' | 'HH' | 'LL' | 'A' | 'AA' | null;
+  on: string;
+  status: string | null;
+};
+
+const LAB_CODES = ['N', 'H', 'L', 'HH', 'LL', 'A', 'AA'] as const;
+
+function interpretationCode(value: unknown): LabRecord['flag'] {
+  for (const entry of arr(value)) {
+    for (const coding of arr(obj(entry)?.coding)) {
+      const code = str(obj(coding)?.code)?.toUpperCase();
+      if (code && (LAB_CODES as readonly string[]).includes(code)) return code as LabRecord['flag'];
+    }
+  }
+  return null;
+}
+
+export function labFromResource(resource: unknown): LabRecord | null {
+  const r = obj(resource);
+  if (!r || str(r.resourceType) !== 'Observation' || isVital(r)) return null;
+  const id = str(r.id);
+  const name = nameOf(r);
+  const on = effectiveDay(r);
+  if (!id || !name || !on) return null;
+  const q = obj(r.valueQuantity);
+  const n = num(q?.value);
+  const unit = q ? (str(q.unit) ?? str(q.code)) : null;
+  // A number without its unit is not a value (see above).
+  const value = n != null && unit ? n : null;
+  const valueText = value == null ? (codeableName(r.valueCodeableConcept) ?? str(r.valueString)) : null;
+  if (value == null && !valueText) return null;
+  const range = obj(arr(r.referenceRange)[0]);
+  return {
+    sourceId: `Observation/${id}`,
+    name,
+    value,
+    valueText,
+    unit: value != null ? unit : null,
+    low: num(obj(range?.low)?.value),
+    high: num(obj(range?.high)?.value),
+    rangeText: str(range?.text),
+    flag: interpretationCode(r.interpretation),
+    on,
+    status: str(r.status),
+  };
+}
+
 // A whole Bundle, with everything unreadable left out rather than guessed
 // at. The count of what was skipped is returned, because a sync that
 // silently dropped half her chart should be visible somewhere.

@@ -33,6 +33,10 @@ export function privacyFacts(input: { sources: string[]; providers: string[]; we
       body: 'When you scan a meal, the photo is sent to OpenAI to name the foods and estimate them. Ciatta does not keep the photo on its servers; it stays on your phone with the meal.',
     },
     {
+      title: 'Lab reports',
+      body: 'When you add a lab report, the photo or PDF is sent to OpenAI to read the results. Ciatta does not keep the file on its servers; only the results you check and save are kept.',
+    },
+    {
       title: 'Files you attach',
       body: 'Photos, videos and PDFs you add to a log or a record stay on this phone. They are not uploaded.',
     },

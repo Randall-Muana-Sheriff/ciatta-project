@@ -18,7 +18,7 @@ import {
   type Bin,
   binFor,
   cycleGaps,
-  drawMarkers,
+  labMarkers,
   flareSpans,
   type LaneKey,
   lanesWithData,
@@ -33,6 +33,7 @@ import {
 import { useNav } from '../navigation';
 import { METRIC_HUE } from '../ui/metricHue';
 import type { BaselineRow } from '../lib/metricDetail';
+import type { LabResult } from '../lib/labs';
 import { type Axis, axisFor, emptyFor, posIn, type Scale, SCALES } from '../lib/timeAxis';
 import { LargeTitle, Panel } from '../ui/chrome';
 import { Icon, type IconName } from '../ui/icons';
@@ -59,7 +60,7 @@ const LANES: { key: Lane; title: string; sub: string; icon: IconName; color: str
   { key: 'temp', title: 'Skin temperature', sub: 'Above or below usual', icon: 'sun', color: METRIC_HUE.temp, height: 110 },
   { key: 'steps', title: 'Steps', sub: 'Each day', icon: 'bars', color: METRIC_HUE.steps, height: 100 },
   { key: 'medications', title: 'Medications', sub: 'While taken', icon: 'pill', color: C.mint, height: 124 },
-  { key: 'records', title: 'Records', sub: 'Lab draws, by range', icon: 'doc', color: C.green, height: 88 },
+  { key: 'records', title: 'Labs', sub: 'Each visit, by range', icon: 'doc', color: C.green, height: 88 },
   { key: 'notes', title: 'Notes', sub: 'In your words', icon: 'chat', color: C.indigo, height: 124 },
 ];
 
@@ -129,7 +130,7 @@ function LaneMarks({
   cycle,
   days,
   journey,
-  draws,
+  labs,
   plotW,
   height,
   onNote,
@@ -145,7 +146,7 @@ function LaneMarks({
   cycle: CyclePoint[];
   days: readonly Day[];
   journey: Data['journey'];
-  draws: NonNullable<Data['records']>['draws'];
+  labs: readonly LabResult[];
   plotW: number;
   height: number;
   onNote: () => void;
@@ -439,7 +440,7 @@ function LaneMarks({
       // its range, a filled amber marker with the count when any did not.
       return (
         <G>
-          {drawMarkers(draws).map((d) => {
+          {labMarkers(labs).map((d) => {
             const cx = x(d.at);
             if (cx == null) return null;
             return (
@@ -538,12 +539,17 @@ function MonthDetail({
 
 export function JourneyScreen() {
   const { signals, fertility, windows, lens, profile } = useCycleInsights();
-  const { journey, days, records } = useData();
+  const { journey, days } = useData();
   const nav = useNav();
   const repo = useRepo();
   const [baselines, setBaselines] = useState<BaselineRow[]>([]);
+  const [labs, setLabs] = useState<LabResult[]>([]);
   useEffect(() => {
     let ignore = false;
+    repo
+      .loadLabs()
+      .then((rows) => !ignore && setLabs(rows))
+      .catch(() => {});
     repo
       .loadBaselines()
       .then((rows) => !ignore && setBaselines(rows))
@@ -596,7 +602,6 @@ export function JourneyScreen() {
   // Only the lanes she has given Ciatta something for. A woman who tracks
   // her cycle and wears a ring sees a cycle, HRV and heart rate, not a
   // column of empty lanes for things she has never logged.
-  const draws = records?.draws ?? [];
   const available = useMemo(
     () =>
       lanesWithData({
@@ -610,10 +615,10 @@ export function JourneyScreen() {
         temp: days.filter((d) => d.tempDeviation != null).length,
         steps: days.filter((d) => d.steps != null).length,
         medications: journey?.medications.length ?? 0,
-        records: drawMarkers(draws).length,
+        records: labMarkers(labs).length,
         notes: journey?.notes.length ?? 0,
       }),
-    [signals, windows, days, journey, draws],
+    [signals, windows, days, journey, labs],
   );
   const lanesHere = LANES.filter((l) => available.includes(l.key));
   const shownLanes = lanesHere.filter((l) => !hidden.includes(l.key));
@@ -773,7 +778,7 @@ export function JourneyScreen() {
                       cycle={cycle}
                       days={days}
                       journey={journey}
-                      draws={records?.draws ?? []}
+                      labs={labs}
                       plotW={plotW}
                       height={lane.height}
                       onNote={() => nav.push('journal')}

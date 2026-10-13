@@ -30,6 +30,8 @@ import { AddRecordScreen } from './screens/AddRecordScreen';
 import { MetricDetailScreen } from './screens/MetricDetailScreen';
 import { PrivacyScreen } from './screens/PrivacyScreen';
 import { InsuranceScreen } from './screens/InsuranceScreen';
+import { LabDetailScreen } from './screens/LabDetailScreen';
+import { AddLabsScreen } from './screens/AddLabsScreen';
 import { ShareClinicianScreen } from './screens/ShareClinicianScreen';
 import { AddProcedureScreen } from './screens/AddProcedureScreen';
 import { FoodScanScreen } from './screens/FoodScanScreen';
@@ -92,6 +94,8 @@ const DETAIL_SCREENS: Record<Screen, ComponentType> = {
   metric: MetricDetailScreen,
   privacy: PrivacyScreen,
   insurance: InsuranceScreen,
+  lab: LabDetailScreen,
+  addLabs: AddLabsScreen,
   shareClinician: ShareClinicianScreen,
   productSafety: ProductSafetyScreen,
 };

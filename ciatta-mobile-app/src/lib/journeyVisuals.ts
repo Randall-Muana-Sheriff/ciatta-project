@@ -12,7 +12,7 @@
 //   Symptoms     A row per symptom she logs most, a cell per day or week,
 //                shaded by severity, as symptom diaries are drawn.
 //   Medications  Bars while taken, as LifeLines drew them (Plaisant et al. 1996).
-//   Records      A marker per lab draw, by whether its results sat inside
+//   Labs         A marker per lab visit, by whether its results sat inside
 //                their ranges (Zikmund-Fisher et al., JMIR 2018).
 //   Notes        A pin with her words.
 //
@@ -21,6 +21,7 @@
 
 import type { Day } from '../data/daily';
 import type { CycleWindow } from './cycleModel';
+import { labDraws, type LabResult } from './labs';
 import type { Scale } from './timeAxis';
 
 export type Bin = 'hour' | 'day' | 'week';
@@ -244,20 +245,15 @@ export function symptomGrid(signals: readonly SignalLike[], bin: Bin, rows = 4):
 
 // ── Records ────────────────────────────────────────────────────
 
-const MONTH_INDEX: Record<string, number> = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+export type DrawMarker = { at: Date; lab: string | null; outside: boolean; outsideCount: number; count: number };
 
-export type DrawMarker = { at: Date; lab: string; outside: boolean; outsideCount: number; count: number };
-
-export function drawMarkers(draws: readonly { date: string; lab: string; results: readonly { status: string }[] }[]): DrawMarker[] {
-  const out: DrawMarker[] = [];
-  for (const d of draws) {
-    const [day, mon, year] = d.date.split(' ');
-    const m = MONTH_INDEX[mon];
-    if (m == null || !Number(day) || !Number(year)) continue;
-    const outsideCount = d.results.filter((r) => r.status === 'Low' || r.status === 'High').length;
-    out.push({ at: new Date(Number(year), m, Number(day), 12), lab: d.lab, outside: outsideCount > 0, outsideCount, count: d.results.length });
-  }
-  return out;
+// One marker per lab visit, by how many of its results sat outside their
+// range, using the same statuses as Labs.
+export function labMarkers(labs: readonly LabResult[]): DrawMarker[] {
+  return labDraws(labs).map((d) => {
+    const [y, m, day] = d.on.split('-').map(Number);
+    return { at: new Date(y, m - 1, day, 12), lab: d.lab, outside: d.outside > 0, outsideCount: d.outside, count: d.results.length };
+  });
 }
 
 // ── Shading ────────────────────────────────────────────────────

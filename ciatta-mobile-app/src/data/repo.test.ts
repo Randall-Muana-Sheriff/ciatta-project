@@ -273,3 +273,18 @@ test('her insurance saves and reads back, and can be removed', async () => {
   await repo.saveInsurance(null);
   assert.equal(await repo.loadInsurance(), null);
 });
+
+test('the example person has labs, and a scanned report is saved as hers', async () => {
+  const repo = demoRepo();
+  const before = await repo.loadLabs();
+  assert.ok(before.length > 0 && before.every((l) => l.source === 'provider' || l.source === 'report'));
+  const ferritin = before.find((l) => l.name === 'Ferritin')!;
+  assert.equal(ferritin.unit, 'ng/mL');
+  assert.equal(ferritin.low, 15);
+  const scan = await repo.scanLab('base64', 'image');
+  assert.ok(scan.tests.length > 0);
+  await repo.saveLabs(scan.tests.slice(0, 1), '2026-10-01', 'Example Lab');
+  const after = await repo.loadLabs();
+  assert.equal(after.length, before.length + 1);
+  assert.equal(after.find((l) => l.on === '2026-10-01')?.source, 'report');
+});

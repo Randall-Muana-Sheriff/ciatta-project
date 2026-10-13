@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { codeableName, effectiveDay, interpretation, isRetracted, mapBundle, mapResource, quantity } from './fhirMap';
+import { codeableName, effectiveDay, interpretation, isRetracted, labFromResource, mapBundle, mapResource, quantity } from './fhirMap';
 
 const obs = (over: Record<string, unknown> = {}) => ({
   resourceType: 'Observation',
@@ -149,4 +149,40 @@ test('the edge function copy of the mapper is identical to this one', () => {
   );
   const body = (text: string) => text.slice(text.indexOf('export type ClinicalKind'));
   assert.equal(body(deployed), body(here), 'the deployed mapper has drifted from the tested one');
+});
+
+test('a lab keeps its number, unit, printed range and the lab\'s own code', () => {
+  const lab = labFromResource({
+    resourceType: 'Observation',
+    id: 'o1',
+    status: 'final',
+    category: [{ coding: [{ code: 'laboratory' }] }],
+    code: { text: 'Ferritin' },
+    valueQuantity: { value: 12, unit: 'ng/mL' },
+    referenceRange: [{ low: { value: 15 }, high: { value: 150 }, text: '15 to 150 ng/mL' }],
+    interpretation: [{ coding: [{ code: 'L' }] }],
+    effectiveDateTime: '2026-06-12T07:41:00Z',
+  });
+  assert.deepEqual(lab, {
+    sourceId: 'Observation/o1', name: 'Ferritin', value: 12, valueText: null, unit: 'ng/mL',
+    low: 15, high: 150, rangeText: '15 to 150 ng/mL', flag: 'L', on: '2026-06-12', status: 'final',
+  });
+});
+
+test('a lab with words for a result, and the range only as text', () => {
+  const lab = labFromResource({
+    resourceType: 'Observation', id: 'o2', code: { text: 'HBsAg' },
+    valueCodeableConcept: { text: 'Non reactive' }, referenceRange: [{ text: 'Non reactive' }], effectiveDateTime: '2026-06-12',
+  });
+  assert.equal(lab?.value, null);
+  assert.equal(lab?.valueText, 'Non reactive');
+  assert.equal(lab?.rangeText, 'Non reactive');
+  assert.equal(lab?.low, null);
+});
+
+test('vitals, labs without a date, and labs without a result are not labs', () => {
+  assert.equal(labFromResource({ resourceType: 'Observation', id: 'v', category: [{ coding: [{ code: 'vital-signs' }] }], code: { text: 'Heart rate' }, valueQuantity: { value: 60, unit: 'bpm' }, effectiveDateTime: '2026-06-12' }), null);
+  assert.equal(labFromResource({ resourceType: 'Observation', id: 'n', code: { text: 'TSH' }, valueQuantity: { value: 2, unit: 'mIU/L' } }), null);
+  assert.equal(labFromResource({ resourceType: 'Observation', id: 'e', code: { text: 'TSH' }, effectiveDateTime: '2026-06-12' }), null);
+  assert.equal(labFromResource({ resourceType: 'Condition', id: 'c', code: { text: 'Asthma' } }), null);
 });

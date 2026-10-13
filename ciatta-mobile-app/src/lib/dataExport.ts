@@ -47,6 +47,7 @@ export type ExportTable = (typeof EXPORT_TABLES)[number];
 export const EXPORT_SKIPPED: Record<string, string> = {
   jobs: 'A queue of work for the server to do, not information about you.',
   food_scan_uses: 'A count of meal scans per day, kept on the server only to limit scans to 40 a day.',
+  lab_scan_uses: 'A count of lab reports read per day, kept on the server only to limit them to 20 a day.',
 };
 
 // Read as these columns rather than all of them. A provider connection's
@@ -72,7 +73,7 @@ const ABOUT_TABLES: Record<ExportTable, string> = {
   medications: 'Medications you named.',
   supplements: 'Supplements you named.',
   documents: 'Documents you added.',
-  results: 'Lab results.',
+  results: 'Your labs: from your providers and from reports you had read, each with the lab\'s range and flag.',
   provider_connections: 'Hospitals and clinics you connected. The keys Ciatta uses to reach them stay on the server.',
   clinical_records: 'Records your providers sent, in their words.',
   environment_days: 'Weather, air quality and daylight around you, by day.',

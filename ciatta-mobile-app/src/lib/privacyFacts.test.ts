@@ -26,6 +26,7 @@ test('each outside service is named only when it is in use', () => {
 test('meal photos and shared summaries are explained', () => {
   const facts = privacyFacts(base);
   assert.match(facts.find((f) => f.title === 'Meal photos')!.body, /OpenAI/);
+  assert.match(facts.find((f) => f.title === 'Lab reports')!.body, /OpenAI/);
   assert.match(facts.find((f) => f.title === 'Summaries you share')!.body, /on your phone/);
   assert.match(facts.find((f) => f.title === 'Files you attach')!.body, /this phone/);
 });

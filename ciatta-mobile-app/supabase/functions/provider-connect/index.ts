@@ -28,7 +28,7 @@ import {
   refreshBody,
   resourceQuery,
 } from './exchange.ts';
-import { mapBundle } from './fhirMap.ts';
+import { labFromResource, mapBundle } from './fhirMap.ts';
 
 const url = Deno.env.get('SUPABASE_URL') ?? '';
 const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
@@ -202,8 +202,40 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
     // immunisations, and the rest of the chart still arrives.
     if (!res.ok) continue;
 
-    const { records, skipped: missed } = mapBundle(await res.json().catch(() => null));
+    const bundle = await res.json().catch(() => null);
+    const { records, skipped: missed } = mapBundle(bundle);
     skipped += missed;
+
+    // Labs also go into her lab results, with the number, unit and printed
+    // range kept apart, so Labs can draw where each value sits. Keyed by
+    // connection and resource, so a re sync updates rather than repeats.
+    if (type === 'Observation') {
+      const labs = (Array.isArray(bundle?.entry) ? bundle.entry : [])
+        .map((e: { resource?: unknown }) => labFromResource(e?.resource))
+        .filter((l: ReturnType<typeof labFromResource>): l is NonNullable<ReturnType<typeof labFromResource>> => l != null);
+      if (labs.length) {
+        const { error: labError } = await admin.from('results').upsert(
+          labs.map((l: NonNullable<ReturnType<typeof labFromResource>>) => ({
+            user_id: uid,
+            test_name: l.name,
+            value: l.value,
+            value_text: l.valueText,
+            unit: l.unit,
+            reference_low: l.low,
+            reference_high: l.high,
+            reference_text: l.rangeText,
+            flag: l.flag,
+            status: l.status,
+            provider: conn.organization ?? conn.endpoint_name ?? null,
+            source: 'provider',
+            source_ref: `${connectionId}:${l.sourceId}`,
+            occurred_at: `${l.on}T12:00:00Z`,
+          })),
+          { onConflict: 'user_id,source_ref' },
+        );
+        if (labError) throw labError;
+      }
+    }
     if (!records.length) continue;
 
     const rows = records.map((r) => ({

@@ -13,6 +13,7 @@ import { Share, StyleSheet, Switch, Text, View } from 'react-native';
 
 import type { JournalView } from '../data/rows';
 import type { Reported } from '../data/repo';
+import type { LabResult } from '../lib/labs';
 import { DEFAULT_SECTIONS, longDate, reportHtml, reportSections, SECTION_TITLES, type SectionId } from '../lib/clinicianReport';
 import { displayCopy } from '../lib/displayCopy';
 import { userFacingError } from '../lib/userFacingError';
@@ -30,7 +31,7 @@ const SPANS = [
   { label: '12 months', months: 12 },
 ] as const;
 
-const ORDER: SectionId[] = ['cycle', 'symptoms', 'measurements', 'conditions', 'medications', 'supplements', 'notes'];
+const ORDER: SectionId[] = ['cycle', 'symptoms', 'measurements', 'labs', 'conditions', 'medications', 'supplements', 'notes'];
 
 export function ShareClinicianScreen() {
   const nav = useNav();
@@ -41,6 +42,7 @@ export function ShareClinicianScreen() {
   const [include, setInclude] = useState<SectionId[]>(DEFAULT_SECTIONS);
   const [journal, setJournal] = useState<JournalView | null>(null);
   const [reported, setReported] = useState<Reported | null>(null);
+  const [labs, setLabs] = useState<LabResult[]>([]);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
@@ -48,6 +50,7 @@ export function ShareClinicianScreen() {
     let ignore = false;
     repo.loadJournal().then((j) => !ignore && setJournal(j)).catch(() => {});
     repo.loadReported().then((r) => !ignore && setReported(r)).catch(() => {});
+    repo.loadLabs().then((l) => !ignore && setLabs(l)).catch(() => {});
     return () => {
       ignore = true;
     };
@@ -79,10 +82,11 @@ export function ShareClinicianScreen() {
             .map((i) => ({ at: new Date(i.at!), category: i.category ?? 'note', items: i.items ?? {}, text: i.text })),
           cycles: windows.filter((w) => w.length != null).map((w) => ({ start: w.start, length: w.length! })),
           reported,
+          labs,
         },
         include,
       ),
-    [from, to, person, days, signals, journal, windows, reported, include],
+    [from, to, person, days, signals, journal, windows, reported, labs, include],
   );
 
   const html = () => reportHtml(sections, { from, to, name: person?.firstName ?? null, made: new Date() });

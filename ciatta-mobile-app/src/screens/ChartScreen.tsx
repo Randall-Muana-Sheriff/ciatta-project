@@ -104,7 +104,7 @@ export function ChartScreen() {
 
         {view.days.length ? (
           <View style={s.section}>
-            <Eyebrow>Results</Eyebrow>
+            <Eyebrow>Labs</Eyebrow>
             {view.days.map((day) => (
               <View key={day.on ?? 'undated'} style={s.day}>
                 <Text style={[font('footnote', 'semibold'), s.dayHead]}>{dayLabel(day.on)}</Text>

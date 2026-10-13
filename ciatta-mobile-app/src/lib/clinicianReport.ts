@@ -12,20 +12,22 @@
 import type { Day } from '../data/daily';
 import type { Reported } from '../data/repo';
 import { fmtHours } from './engine';
+import { isOutside, type LabResult, labStatus } from './labs';
 
-export type SectionId = 'cycle' | 'symptoms' | 'measurements' | 'conditions' | 'medications' | 'supplements' | 'notes';
+export type SectionId = 'cycle' | 'symptoms' | 'measurements' | 'labs' | 'conditions' | 'medications' | 'supplements' | 'notes';
 
 export const SECTION_TITLES: Record<SectionId, string> = {
   cycle: 'Cycle',
   symptoms: 'Symptoms',
   measurements: 'Measurements',
+  labs: 'Labs',
   conditions: 'Conditions and procedures',
   medications: 'Medications',
   supplements: 'Supplements',
   notes: 'In her own words',
 };
 
-export const DEFAULT_SECTIONS: SectionId[] = ['cycle', 'symptoms', 'measurements', 'conditions', 'medications', 'supplements'];
+export const DEFAULT_SECTIONS: SectionId[] = ['cycle', 'symptoms', 'measurements', 'labs', 'conditions', 'medications', 'supplements'];
 
 export type ReportInput = {
   from: Date;
@@ -36,6 +38,7 @@ export type ReportInput = {
   logs: readonly { at: Date; category: string; items: Partial<Record<string, string[]>>; text: string }[];
   cycles: readonly { start: Date; length: number }[];
   reported: Reported | null;
+  labs?: readonly LabResult[];
 };
 
 export type ReportRow = { label: string; value: string; note?: string };
@@ -121,6 +124,28 @@ export function reportSections(input: ReportInput, include: readonly SectionId[]
   measure('Steps', (d) => d.steps, (v) => Math.round(v).toLocaleString('en-US'));
   measure('Skin temperature from usual', (d) => d.tempDeviation, (v) => `${Math.abs(v).toFixed(1)} °C ${v >= 0 ? 'above' : 'below'}`);
   add('measurements', 'Synced from her devices', measured, 'No device readings in this period.');
+
+  // Labs: the latest result of each test in the period, outside its range
+  // first, each with its status and the lab's own range.
+  const latestByTest = new Map<string, LabResult>();
+  for (const l of input.labs ?? []) {
+    if (!inRange(dayOf(l.on))) continue;
+    const key = l.name.trim().toLowerCase();
+    const was = latestByTest.get(key);
+    if (!was || l.on > was.on) latestByTest.set(key, l);
+  }
+  add(
+    'labs',
+    'From her providers and lab reports',
+    [...latestByTest.values()]
+      .sort((a, b) => Number(isOutside(b)) - Number(isOutside(a)) || a.name.localeCompare(b.name))
+      .map((l) => ({
+        label: l.name,
+        value: l.value != null ? `${l.value}${l.unit ? ` ${l.unit}` : ''}` : (l.valueText ?? ''),
+        note: `${labStatus(l).label}${l.rangeText ? `, range ${l.rangeText}` : ''}, ${short(dayOf(l.on))}`,
+      })),
+    'No labs in this period.',
+  );
 
   const r = input.reported;
   add(

@@ -34,6 +34,12 @@ const input: ReportInput = {
     { start: new Date(2025, 11, 1), length: 40 },
   ],
   reported: { conditions: ['Endometriosis'], surgeries: ['Laparoscopy'], medications: ['Levothyroxine'], supplements: ['Magnesium'] },
+  labs: [
+    { id: '1', name: 'Ferritin', value: 12, valueText: null, unit: 'ng/mL', low: 15, high: 150, rangeText: '15 to 150', flag: null, status: 'final', source: 'report', lab: 'Quest', on: '2026-09-12' },
+    { id: '2', name: 'Ferritin', value: 30, valueText: null, unit: 'ng/mL', low: 15, high: 150, rangeText: '15 to 150', flag: null, status: 'final', source: 'report', lab: 'Quest', on: '2026-08-01' },
+    { id: '3', name: 'TSH', value: 2.1, valueText: null, unit: 'mIU/L', low: 0.4, high: 4, rangeText: '0.4 to 4.0', flag: null, status: 'final', source: 'provider', lab: 'Quest', on: '2026-09-12' },
+    { id: '4', name: 'Vitamin D', value: 20, valueText: null, unit: 'ng/mL', low: 30, high: 100, rangeText: '30 to 100', flag: null, status: 'final', source: 'provider', lab: 'Quest', on: '2026-01-01' },
+  ],
 };
 
 const rows = (id: string, include = DEFAULT_SECTIONS) => reportSections(input, include).find((s) => s.id === id)!;
@@ -99,4 +105,12 @@ test('the page escapes her words and carries the period, the source of each sect
   assert.ok(html.includes('Synced from her devices'));
   assert.ok(html.includes('not a diagnosis'));
   assert.ok(!/[–—]/.test(html.replace(/<style>[\s\S]*<\/style>/, '')));
+});
+
+test('labs: the latest of each test in the period, outside range first, with the lab\'s range', () => {
+  assert.deepEqual(rows('labs').rows, [
+    { label: 'Ferritin', value: '12 ng/mL', note: 'Low, range 15 to 150, 12 Sep' },
+    { label: 'TSH', value: '2.1 mIU/L', note: 'In range, range 0.4 to 4.0, 12 Sep' },
+  ]);
+  assert.equal(rows('labs').source, 'From her providers and lab reports');
 });
