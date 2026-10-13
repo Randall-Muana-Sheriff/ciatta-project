@@ -224,7 +224,7 @@ export function BodySystemView({
                           borderRadius: size / 2,
                           backgroundColor: dot.color,
                         },
-                        on && { borderWidth: 3, borderColor: C.bg, shadowColor: dot.color },
+                        on && { shadowColor: dot.color },
                         on && b.dotOn,
                       ]}
                     />
