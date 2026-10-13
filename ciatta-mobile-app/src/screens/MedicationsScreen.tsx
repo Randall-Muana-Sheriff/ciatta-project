@@ -1,89 +1,117 @@
-import { useState } from 'react';
+// Medications and supplements, from her own record, kept apart: what she
+// named, when she last logged each, what she logged in the last 30 days,
+// and the changes she logged in her own words. No reminders to take
+// anything and no adherence score. The counting is in lib/medsView.ts.
+
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import type { Data } from '../data/adapter';
+import type { Reported } from '../data/repo';
+import type { JournalView } from '../data/rows';
+import { displayCopy } from '../lib/displayCopy';
+import { chooseLogCategory } from '../lib/logHandoff';
+import { medsView, type NamedItem } from '../lib/medsView';
 import { useNav } from '../navigation';
-import { useData } from '../state/session';
+import { useRepo } from '../state/session';
 import { C, font } from '../theme';
-import { MedTimeline } from '../ui/charts';
-import { DetailScreen, EmptyNote, Expandable, Facts, SegmentedControl, LinkButton, SecLabel, SourceFooter } from '../ui/kit';
+import { DetailScreen, EmptyNote, SecLabel, SecondaryButton, SourceFooter } from '../ui/kit';
+import { L, TILE_RADIUS } from '../ui/surface';
 
-const TABS = ['Current', 'All'] as const;
-
-type Med = NonNullable<Data['medications']>['current'][number];
-
-function MedCard({ med, past = false }: { med: Med; past?: boolean }) {
+function ItemCard({ item, kind }: { item: NamedItem; kind: string }) {
   return (
-    <View style={[m.card, past && { opacity: 0.7 }]}>
-      <View style={m.nameRow}>
-        <Text style={[font('callout', 'semibold'), { color: C.text }]}>{med.name}</Text>
-        <Text style={[font('subhead'), { color: C.secondary }]}>{med.dose}</Text>
-      </View>
+    <View style={m.card} accessible accessibilityLabel={`${item.name}, ${kind}, ${item.last ? `last logged ${item.last}` : 'not logged yet'}`}>
       <View style={m.between}>
-        <Text style={[font('footnote'), { color: C.secondary }]}>{med.timing}</Text>
-        <Text style={[font('caption1'), { color: C.muted }]}>{med.since}</Text>
+        <Text style={[font('callout', 'semibold'), { color: C.text, flex: 1 }]}>{displayCopy(item.name)}</Text>
+        <Text style={[font('footnote'), { color: C.secondary }]}>{kind}</Text>
       </View>
-      {med.note ? <Text style={[font('footnote', 'semibold'), { color: C.blueLink, marginTop: 6 }]}>{med.note}</Text> : null}
+      <Text style={[font('footnote'), { color: C.secondary, marginTop: 4 }]}>
+        {item.last ? `Last logged ${item.last} · ${item.days} ${item.days === 1 ? 'day' : 'days'} logged` : 'Not logged yet'}
+      </Text>
     </View>
   );
 }
 
 export function MedicationsScreen() {
   const nav = useNav();
-  const { medications } = useData();
-  const [tab, setTab] = useState<(typeof TABS)[number]>('Current');
-  const [open, setOpen] = useState<string | null>(medications?.changes[0].label ?? null);
+  const repo = useRepo();
+  const [reported, setReported] = useState<Reported | null>(null);
+  const [journal, setJournal] = useState<JournalView | null>(null);
+  useEffect(() => {
+    if (nav.depth > 1 && journal) return;
+    repo.loadReported().then(setReported).catch(() => {});
+    repo.loadJournal().then(setJournal).catch(() => {});
+    // Read again when she comes back from logging.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repo, nav.depth]);
 
-  if (!medications) {
-    return (
-      <DetailScreen title="Medications" onBack={nav.back}>
-        <EmptyNote text="Nothing here yet. This fills in as you log and connect sources." />
-      </DetailScreen>
-    );
-  }
+  const view = useMemo(
+    () => medsView({ reported, logs: (journal?.months ?? []).flatMap((x) => x.items), now: new Date() }),
+    [reported, journal],
+  );
+  const log = (key: 'meds' | 'supplements') => {
+    chooseLogCategory(key);
+    nav.push('quickLog');
+  };
+  const nothing = !view.medications.length && !view.supplements.length && !view.month.length && !view.changes.length;
 
   return (
     <DetailScreen
       title="Medications"
       onBack={nav.back}
-      footer={<SourceFooter kind="logged" text="You logged these. There are no reminders to take anything." />}
+      footer={<SourceFooter kind="logged" text="You named and logged these. There are no reminders to take anything." />}
     >
-      <SegmentedControl segments={TABS} active={tab} onChange={setTab} />
+      {nothing ? <EmptyNote text="No medications or supplements yet. Log one, and it appears here." /> : null}
 
-      <SecLabel right={`${medications.current.length} items`}>Taking now</SecLabel>
-      {medications.current.map((med) => (
-        <MedCard key={med.name} med={med} />
-      ))}
+      {view.medications.length ? (
+        <>
+          <SecLabel right={`${view.medications.length}`}>Medications</SecLabel>
+          {view.medications.map((x) => (
+            <ItemCard key={x.name} item={x} kind="Medication" />
+          ))}
+        </>
+      ) : null}
 
-      {tab === 'All' ? (
+      {view.supplements.length ? (
         <View style={{ marginTop: 12 }}>
-          <SecLabel right={`${medications.stopped.length} item`}>Stopped</SecLabel>
-          {medications.stopped.map((med) => (
-            <MedCard key={med.name} med={med} past />
+          <SecLabel right={`${view.supplements.length}`}>Supplements</SecLabel>
+          {view.supplements.map((x) => (
+            <ItemCard key={x.name} item={x} kind="Supplement" />
           ))}
         </View>
       ) : null}
 
-      <View style={{ marginTop: 8, marginBottom: 8 }}>
-        <SecLabel right="Jan to Aug">Timeline</SecLabel>
-        <MedTimeline rows={medications.timeline} />
-      </View>
+      {view.month.length ? (
+        <View style={{ marginTop: 12 }}>
+          <SecLabel right="Days logged">Last 30 days</SecLabel>
+          <View style={m.card}>
+            {view.month.map((x, n) => (
+              <View key={x.label} style={[m.between, n > 0 && m.divided]}>
+                <Text style={[font('subhead'), { color: C.text }]}>{x.label}</Text>
+                <Text style={[font('subhead', 'semibold'), { color: C.text }]}>{x.days}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
 
-      <View style={{ marginTop: 8 }}>
-        <SecLabel right="Last 6 months">Recent changes</SecLabel>
-        {medications.changes.map((c, n) => (
-          <Expandable
-            key={c.label}
-            first={n === 0}
-            title={c.label}
-            value={c.date}
-            open={open === c.label}
-            onToggle={() => setOpen(open === c.label ? null : c.label)}
-          >
-            <Facts rows={c.facts} />
-            {c.link ? <LinkButton label={c.link} onPress={() => nav.push('healthrecords')} /> : null}
-          </Expandable>
-        ))}
+      {view.changes.length ? (
+        <View style={{ marginTop: 12 }}>
+          <SecLabel right="As you logged them">Changes</SecLabel>
+          {view.changes.map((c, n) => (
+            <View key={`${c.label}-${n}`} style={m.card}>
+              <View style={m.between}>
+                <Text style={[font('subhead', 'semibold'), { color: C.text }]}>{c.label}</Text>
+                <Text style={[font('footnote'), { color: C.secondary }]}>{c.on}</Text>
+              </View>
+              {c.words ? <Text style={[font('footnote'), { color: C.secondary, marginTop: 4 }]}>{displayCopy(c.words)}</Text> : null}
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      <View style={{ marginTop: 20, gap: 12 }}>
+        <SecondaryButton label="Log in Medications" onPress={() => log('meds')} />
+        <SecondaryButton label="Log in Supplements" onPress={() => log('supplements')} />
       </View>
     </DetailScreen>
   );
@@ -91,14 +119,13 @@ export function MedicationsScreen() {
 
 const m = StyleSheet.create({
   card: {
-    backgroundColor: C.card,
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    marginBottom: 8,
+    backgroundColor: L.recessed,
+    borderRadius: TILE_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.borderSub,
+    borderColor: L.rule,
+    padding: 14,
+    marginBottom: 10,
   },
-  nameRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 2 },
-  between: { flexDirection: 'row', justifyContent: 'space-between' },
+  between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingVertical: 2 },
+  divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule, marginTop: 8, paddingTop: 8 },
 });
