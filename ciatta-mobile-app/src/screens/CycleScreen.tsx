@@ -1,22 +1,42 @@
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { countedWindows, medianLength } from '../lib/cycleModel';
 import { painSplit, tally } from '../lib/cyclePatterns';
 import { displayCopy } from '../lib/displayCopy';
 import { FERTILITY_DISCLAIMER, fmtRange } from '../lib/fertility';
 import { useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
+import { useData } from '../state/session';
 import { C, font, RADIUS } from '../theme';
 import { ListGroup, ListRow, Panel } from '../ui/chrome';
 import { ObservationCard } from '../ui/cycleInputs';
 import { DetailScreen, PrimaryButton, SecLabel, SecondaryButton, SourceFooter, Tag } from '../ui/kit';
 import { FertilityStrip, LengthDots, MonthsSince, PostpartumTimeline } from '../ui/lineCharts';
 import { experienceRows } from '../lib/experienceRows';
+import { hormoneView, phaseEffects } from '../lib/hormones';
+import { HormonesSection } from '../ui/HormonesSection';
 
 // Cycle home: timing, then what the cycle felt like, then how it's changing.
 export function CycleScreen() {
   const nav = useNav();
   const { startDraft } = useCycle();
-  const { signals, summaries, observations, template, lens, profile, fertility } = useCycleInsights();
+  const { signals, summaries, observations, template, lens, profile, fertility, windows } = useCycleInsights();
+  const { days } = useData();
+  // Hormones: the typical shape fitted to her cycle, and each phase in her
+  // own record. Placed by her open cycle and her usual length.
+  const hormones = useMemo(() => {
+    const open = windows[windows.length - 1] ?? null;
+    const counted = countedWindows(windows, profile);
+    return hormoneView({
+      open: open && !open.end ? open : null,
+      usualLength: counted.length ? medianLength(counted) : null,
+      situations: profile.situations,
+      confirmedOvulation: fertility.confirmedThisCycle && fertility.ovulation ? fertility.ovulation.start : null,
+      now: new Date(),
+    });
+  }, [windows, profile, fertility]);
+  const effects = useMemo(() => phaseEffects(days, windows), [days, windows]);
 
   const current = summaries[summaries.length - 1] ?? null;
   const last4 = summaries.slice(-4);
@@ -195,6 +215,20 @@ export function CycleScreen() {
           <ListRow first={!lens.lengths.length} title="Pain days" sub={last4.map((c) => c.painDays).join(' → ') || 'None logged'} />
           <ListRow title="Pain locations" sub={overallLocations.join(' · ') || 'None logged'} />
         </ListGroup>
+      </View>
+
+      {/* Hormones across the cycle, under her cycle's own data. */}
+      <View style={cy.section}>
+        <SecLabel>Hormones</SecLabel>
+        {hormones?.applies ? (
+          <HormonesSection view={hormones} effects={effects} />
+        ) : (
+          <Text style={[font('footnote'), cy.note]}>
+            {hormones
+              ? 'Your situation changes the usual hormone pattern, so a typical curve would not describe your cycle. Your own data still shows here as it builds.'
+              : 'Log a period, and Ciatta places you in your cycle and shows how hormones typically move through it.'}
+          </Text>
+        )}
       </View>
 
       {observations.length ? (
