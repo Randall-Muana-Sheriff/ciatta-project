@@ -12,6 +12,8 @@
 // saying so would be presenting an old number as a current one, which is
 // the same failure as inventing it.
 
+import { type Trend, trendOf } from './trend';
+
 export type Reading = {
   metric: string;
   value: number;
@@ -25,6 +27,18 @@ export type VitalCard = {
   value: string | null;
   note?: string;
   from: 'measured';
+  // Her recent readings of it and which way they move, when there are
+  // enough of them. See lib/trend.ts.
+  trend?: Trend;
+};
+
+// Every reading of one metric, oldest first. Readings arrive newest first.
+const series = (readings: readonly Reading[], metric: string, scale: (v: number) => number = (v) => v) =>
+  readings.filter((x) => x.metric === metric).map((x) => scale(x.value)).reverse();
+
+const withTrend = (card: VitalCard, values: number[]): VitalCard => {
+  const t = trendOf(values, 'percent');
+  return t ? { ...card, trend: t } : card;
 };
 
 const DAY_MS = 86400000;
@@ -68,13 +82,14 @@ export function bloodPressure(readings: readonly Reading[], now: Date): VitalCar
   const sys = fresh(find(readings, 'blood_pressure_systolic'), now);
   const dia = fresh(find(readings, 'blood_pressure_diastolic'), now);
   const sameDay = sys && dia && startOfDay(new Date(sys.at)) === startOfDay(new Date(dia.at));
-  return {
+  // The trend follows the systolic, the number a cuff leads with.
+  return withTrend({
     key: 'bp',
     label: 'Blood pressure',
     value: sameDay ? `${Math.round(sys.value)}/${Math.round(dia.value)}` : null,
     note: sameDay ? (whenNote(sys.at, now) ?? undefined) : undefined,
     from: 'measured',
-  };
+  }, series(readings, 'blood_pressure_systolic'));
 }
 
 export function bloodOxygen(readings: readonly Reading[], now: Date): VitalCard {
@@ -82,13 +97,13 @@ export function bloodOxygen(readings: readonly Reading[], now: Date): VitalCard 
   // HealthKit reports saturation as a fraction. A 0.98 printed as 0.98
   // would read as nothing at all to anyone who has seen a pulse oximeter.
   const pct = r ? (r.value <= 1 ? r.value * 100 : r.value) : null;
-  return {
+  return withTrend({
     key: 'spo2',
     label: 'Blood oxygen',
     value: pct == null ? null : `${Math.round(pct)}%`,
     note: r ? (whenNote(r.at, now) ?? undefined) : undefined,
     from: 'measured',
-  };
+  }, series(readings, 'oxygen_saturation', (v) => (v <= 1 ? v * 100 : v)));
 }
 
 export function weight(readings: readonly Reading[], now: Date): VitalCard {

@@ -96,3 +96,25 @@ test('every vital is measured, so none is confused with what she reported', () =
     assert.equal(card.from, 'measured');
   }
 });
+
+test('blood oxygen trends across her readings, newest last, as percent', () => {
+  // Readings arrive newest first, as the repo returns them.
+  const rows = [r('oxygen_saturation', 0.98, 0), r('oxygen_saturation', 0.97, 1), r('oxygen_saturation', 0.97, 2), r('oxygen_saturation', 0.96, 3)];
+  const v = bloodOxygen(rows, NOW);
+  assert.deepEqual(v.trend?.points, [96, 97, 97, 98]);
+  assert.equal(v.value, '98%', 'the card still shows the newest');
+});
+
+test('blood pressure trends on the systolic, the number a cuff leads with', () => {
+  const rows = [
+    r('blood_pressure_systolic', 130, 0), r('blood_pressure_diastolic', 85, 0),
+    r('blood_pressure_systolic', 120, 1), r('blood_pressure_systolic', 118, 2), r('blood_pressure_systolic', 122, 3),
+  ];
+  const v = bloodPressure(rows, NOW);
+  assert.deepEqual(v.trend?.points, [122, 118, 120, 130]);
+  assert.equal(v.trend?.change, '↑ 8%');
+});
+
+test('one reading of a vital has no trend', () => {
+  assert.equal(bloodOxygen([r('oxygen_saturation', 0.98, 0)], NOW).trend, undefined);
+});

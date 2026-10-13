@@ -11,7 +11,6 @@ export function adjacentTab(tab: Tab, step: 1 | -1): Tab {
 }
 
 export type Screen =
-  | 'insight'
   | 'sleep'
   | 'cycle'
   | 'symptoms'

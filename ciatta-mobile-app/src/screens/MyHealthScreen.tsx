@@ -11,9 +11,10 @@ import { NAV_CLEARANCE } from '../ui/surface';
 import { BodySystemView } from '../ui/BodySystemView';
 import { LargeTitle } from '../ui/chrome';
 import { HealthDashboard } from '../ui/HealthDashboard';
+import { RecordsView } from '../ui/RecordsView';
 import { SegmentedControl } from '../ui/kit';
 
-const VIEWS = ['Dashboard', 'Body'] as const;
+const VIEWS = ['Dashboard', 'Body', 'Records'] as const;
 
 // Health: every metric as a dashboard, or located on the body.
 export function MyHealthScreen() {
@@ -60,10 +61,11 @@ export function MyHealthScreen() {
             lens={lens}
             open={nav.push}
             openInsight={openInsight}
-            openProfile={() => nav.push('profile')}
           />
-        ) : (
+        ) : view === 'Body' ? (
           <BodySystemView reading={body} onOpen={openPoint} onLog={logAt} />
+        ) : (
+          <RecordsView onOpen={nav.push} />
         )}
       </View>
     </ScrollView>

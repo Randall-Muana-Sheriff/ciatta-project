@@ -503,10 +503,10 @@ const s = StyleSheet.create({
   // The wordmark used to open this screen and its clear space was doing
   // the work of a top margin. Taken out, the title needs its own.
   intro: { alignItems: 'center', paddingHorizontal: GUTTER, paddingTop: SPACE.near },
-  // The name sits on the avatar's foot, overlapping it a little, so the
-  // two read as one figure with its name tag.
+  // The name sits just under the mark, clear of its line, so a hairline
+  // circle is not cut by the pill.
   namePill: {
-    marginTop: -10,
+    marginTop: 6,
     backgroundColor: L.canvas,
     borderRadius: 999,
     borderWidth: st,

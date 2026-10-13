@@ -361,12 +361,6 @@ export const profile = {
     { icon: 'hourglass', tone: 'coral', title: 'Genetics', lines: ['1 report', 'View insights'] },
     { icon: 'leaf', tone: 'mint', title: 'Lifestyle & Habits', lines: ['Sleep, nutrition, activity, stress, and more'], screen: 'sleep' },
   ] as { icon: IconName; tone: Tone; title: string; lines: string[]; screen?: Screen }[],
-  biomarkers: [
-    { value: '72', label: 'Resting HR', unit: 'bpm', change: '↓ 6%', tone: 'text', trend: [76, 75, 77, 74, 73, 74, 72] },
-    { value: '54', label: 'HRV', unit: 'ms', change: '↑ 12%', tone: 'text', trend: [46, 48, 47, 50, 52, 51, 54] },
-    { value: '36.6', label: 'Body Temp', unit: '°C', change: '→ 0%', tone: 'lavender', trend: [36.5, 36.6, 36.5, 36.7, 36.6, 36.6, 36.6] },
-    { value: '98', label: 'SpO₂', unit: '%', change: '→ 0%', tone: 'text', trend: [97, 98, 97, 98, 98, 99, 98] },
-  ] as { value: string; label: string; unit: string; change: string; tone: Tone; trend: number[] }[],
   bodySystems: [
     { label: 'Heart Health', icon: 'heart', tone: 'coral' },
     { label: 'Kidney Function', icon: 'kidney', tone: 'coral' },

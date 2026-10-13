@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Switch, Text, useWindowDimensions, View } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { expo } from '../../app.json';
 import { deleteAccount, exportAndShare } from '../data/account';
@@ -9,7 +9,6 @@ import type { SourceKind, Tone } from '../data/sample';
 import type { SourceView } from '../data/rows';
 import type { Reported } from '../data/repo';
 import { type Connection, loadConnections } from '../data/providers';
-import { smooth } from '../lib/curve';
 import { intelligenceLine, metricLine, patternReadiness } from '../lib/patternReadiness';
 import { profileOverview } from '../lib/profileOverview';
 import { connectAppleHealth } from '../lib/connectHealth';
@@ -213,55 +212,6 @@ function CycleGroup({ onOpen }: { onOpen: (screen: Screen) => void }) {
         onPress={() => onOpen('cycleProfile')}
       />
     </ListGroup>
-  );
-}
-
-function Sparkline({ points, color }: { points: number[]; color: string }) {
-  const W = 56;
-  const H = 20;
-  const lo = Math.min(...points);
-  const hi = Math.max(...points);
-  const d = smooth(
-    points.map((v, i) => ({
-      x: (i / (points.length - 1)) * W,
-      y: H - 2 - ((v - lo) / (hi - lo || 1)) * (H - 4),
-    })),
-  );
-  return (
-    <Svg width={W} height={H}>
-      <Path d={d} stroke={color} strokeWidth={1.8} fill="none" strokeLinejoin="round" strokeLinecap="round" />
-    </Svg>
-  );
-}
-
-function Biomarkers({ onOpen, profile }: { onOpen: (screen: Screen) => void; profile: Profile }) {
-  return (
-    <View>
-      <View style={p.sectionHead}>
-        <Text style={[font('title3', 'semibold'), { color: C.text, flex: 1 }]} accessibilityRole="header">
-          Biomarkers
-        </Text>
-        <TextButton label="View Trends" onPress={() => onOpen('healthrecords')} />
-      </View>
-      <View style={p.grid}>
-        {profile.biomarkers.map((b) => (
-          <View key={b.label} style={[p.tile, { width: '48.5%' }]} accessible accessibilityLabel={`${b.label}, ${b.value} ${b.unit}, ${b.change}`}>
-            <Text style={[font('footnote'), { color: C.secondary }]}>{b.label}</Text>
-            <View style={p.bioValue}>
-              <Text style={[numeral(24), { color: C.text }]}>{b.value}</Text>
-              <Text style={[font('footnote'), { color: C.secondary }]}>{b.unit}</Text>
-            </View>
-            <View style={p.bioFoot}>
-              <Text style={[font('caption1', 'semibold'), { color: C.secondary }]}>{b.change}</Text>
-              <Sparkline points={b.trend} color={C.mint} />
-            </View>
-          </View>
-        ))}
-      </View>
-      <View style={{ marginTop: 12 }}>
-        <SecondaryButton label="View Full Report" onPress={() => onOpen('healthrecords')} />
-      </View>
-    </View>
   );
 }
 
@@ -719,13 +669,12 @@ export function ProfileScreen() {
           <>
             {/*
               One subject, one screen: what she told Ciatta, what her
-              cycle looks like, what the labs say, and who is looking
-              after her. A lab result and the clinician who ordered it
-              belong in the same place.
+              cycle looks like, and who is looking after her. The biomarker
+              tiles moved to Today, where each metric card carries its own
+              trend line and arrow, computed from her readings.
             */}
             <DetailsGroup onOpen={nav.push} profile={profile} />
             <CycleGroup onOpen={nav.push} />
-            <Biomarkers onOpen={nav.push} profile={profile} />
             <BodySystems profile={profile} />
             <CareGroup profile={profile} />
           </>
@@ -769,8 +718,6 @@ const p = StyleSheet.create({
   track: { height: 5, borderRadius: 2.5, backgroundColor: C.fill, marginTop: 6, overflow: 'hidden' },
   fillBar: { height: 5, borderRadius: 2.5 },
 
-  bioValue: { flexDirection: 'row', alignItems: 'baseline', gap: 4, marginTop: 2 },
-  bioFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
 
   system: {
     width: '48.5%',

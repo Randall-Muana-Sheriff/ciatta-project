@@ -13,6 +13,7 @@
 
 import type { Day } from '../data/daily';
 import { fmtHours } from './engine';
+import { type Trend, trendOf } from './trend';
 import type { VitalCard } from './vitals';
 
 export type MetricRow = {
@@ -159,6 +160,8 @@ export type HeadlineMetric = {
   // taken, for the vitals that do not arrive daily.
   note?: string;
   from: 'measured' | 'reported' | 'derived';
+  // Her recent readings and which way they move. Absent with too few.
+  trend?: Trend;
 };
 
 // The latest value for a field, with the day it came from.
@@ -238,20 +241,35 @@ export function headlineMetrics(
       value: found?.value ?? null,
       note: found?.note,
       from: 'measured',
+      ...(found?.trend ? { trend: found.trend } : {}),
     };
   };
+  // The card's line and arrow, from every day she has, not only the one
+  // the figure came from.
+  const trended = (m: HeadlineMetric, get: (d: Day) => number | null, unit: 'percent' | 'degrees'): HeadlineMetric => {
+    const t = trendOf(days.map(get), unit);
+    return t ? { ...m, trend: t } : m;
+  };
   return [
-    card('sleep', 'Sleep', read((d) => d.sleepHours), (v) => fmtHours(v)),
-    card('hrv', 'HRV', read((d) => d.hrv), (v) => `${Math.round(v)} ms`),
-    card('steps', 'Steps', read((d) => d.steps), (v) => Math.round(v).toLocaleString('en-US')),
+    trended(card('sleep', 'Sleep', read((d) => d.sleepHours), (v) => fmtHours(v)), (d) => d.sleepHours, 'percent'),
+    trended(card('hrv', 'HRV', read((d) => d.hrv), (v) => `${Math.round(v)} ms`), (d) => d.hrv, 'percent'),
+    trended(
+      card('steps', 'Steps', read((d) => d.steps), (v) => Math.round(v).toLocaleString('en-US')),
+      (d) => d.steps,
+      'percent',
+    ),
     vital('bp'),
-    card(
-      'temp',
-      'Skin temp',
-      read((d) => d.tempDeviation),
-      (v) => `${v > 0 ? '+' : ''}${one(v)} °C`,
-      // Named as a difference, because that is what the sensor reports.
-      'From usual',
+    trended(
+      card(
+        'temp',
+        'Skin temp',
+        read((d) => d.tempDeviation),
+        (v) => `${v > 0 ? '+' : ''}${one(v)} °C`,
+        // Named as a difference, because that is what the sensor reports.
+        'From usual',
+      ),
+      (d) => d.tempDeviation,
+      'degrees',
     ),
     vital('spo2'),
   ];

@@ -228,3 +228,27 @@ test('an absent skin temperature carries no note either', () => {
 test('every headline is measured, so none is confused with what she reported', () => {
   for (const m of headlineMetrics([empty])) assert.equal(m.from, 'measured', m.key);
 });
+
+test('each daily card carries the trend of her own readings', () => {
+  const days = [48, 50, 52, 49, 51, 50, 56].map((hrv, i) => ({ ...empty, date: `2026-10-0${i + 1}`, hrv }));
+  const m = headlineMetrics(days, [], new Date(2026, 9, 7, 12)).find((x) => x.key === 'hrv')!;
+  assert.deepEqual(m.trend?.points, [48, 50, 52, 49, 51, 50, 56]);
+  assert.equal(m.trend?.change, '↑ 12%');
+});
+
+test('skin temperature trends in degrees', () => {
+  const days = [0.1, 0.0, -0.1, 0.4].map((t, i) => ({ ...empty, date: `2026-10-0${i + 1}`, tempDeviation: t }));
+  const m = headlineMetrics(days, [], new Date(2026, 9, 4, 12)).find((x) => x.key === 'temp')!;
+  assert.equal(m.trend?.change, '↑ 0.4 °C');
+});
+
+test('a card with too little history has no trend rather than an invented one', () => {
+  const m = headlineMetrics([{ ...empty, hrv: 50 }], [], ON).find((x) => x.key === 'hrv')!;
+  assert.equal(m.trend, undefined);
+});
+
+test('a vital passes its trend through to the card', () => {
+  const trend = { points: [97, 98, 98], change: '→ 0%', spoken: 'level with your recent average' };
+  const given = [{ key: 'spo2', label: 'Blood oxygen', value: '98%', from: 'measured' as const, trend }];
+  assert.deepEqual(headlineMetrics([], given).find((m) => m.key === 'spo2')!.trend, trend);
+});

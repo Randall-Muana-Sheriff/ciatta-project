@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import type { JournalView } from '../data/rows';
 import type { Attachment } from '../lib/attachments';
@@ -75,13 +75,7 @@ export function JournalScreen() {
         <View key={group.month} style={{ marginBottom: 4 }}>
           <Text style={[font('caption2', 'semibold'), { color: C.rose, marginBottom: 8 }]}>{group.month}</Text>
           {group.items.map((item) => (
-            <Pressable
-              key={item.date + item.text}
-              disabled={!item.usedInInsight}
-              onPress={() => nav.push('insight')}
-              accessibilityRole={item.usedInInsight ? 'button' : undefined}
-              style={({ pressed }) => [j.card, pressed && { opacity: 0.7 }]}
-            >
+            <View key={item.date + item.text} style={j.card}>
               {item.text ? (
                 <Text style={[font('subhead'), { color: C.text, lineHeight: 22, marginBottom: 8 }]}>{displayCopy(item.text)}</Text>
               ) : null}
@@ -95,7 +89,7 @@ export function JournalScreen() {
                 <Text style={[font('caption1'), { color: C.muted }]}>{item.date}</Text>
                 <Tag label={item.tag} tone={item.usedInInsight ? 'amber' : 'neutral'} />
               </View>
-            </Pressable>
+            </View>
           ))}
         </View>
       ))}

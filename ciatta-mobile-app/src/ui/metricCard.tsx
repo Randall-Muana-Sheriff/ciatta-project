@@ -11,11 +11,14 @@
 // or a dash for a missing value, and the absent case is styled quietly
 // rather than in the ink a real reading gets.
 
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { displayCopy } from '../lib/displayCopy';
+import type { Trend } from '../lib/trend';
 import { font } from '../theme';
-import { HUE, L } from './surface';
+import { Sparkline } from './sparkline';
+import { HUE, L, mark } from './surface';
 
 export type MetricCardProps = {
   label: string;
@@ -27,6 +30,14 @@ export type MetricCardProps = {
   // typed are different facts, and the dot is how the card says which
   // without a sentence.
   from: 'measured' | 'reported' | 'derived';
+  // Which way her recent readings move, drawn as the biomarker tiles
+  // drew it: the change with its arrow, and a small line. Absent when
+  // there are too few readings to draw one honestly.
+  trend?: Trend;
+  // A colour of its own for the dot and the line, where a screen wants
+  // each metric told apart at a glance. Without it the dot says where the
+  // figure came from, in the app's meaning colours.
+  color?: string;
 };
 
 const DOT: Record<MetricCardProps['from'], string> = {
@@ -35,16 +46,21 @@ const DOT: Record<MetricCardProps['from'], string> = {
   derived: HUE.timeDepth,
 };
 
-export function MetricCard({ label, value, note, from }: MetricCardProps) {
+export function MetricCard({ label, value, note, from, trend, color }: MetricCardProps) {
   const missing = value == null;
+  const spokenTrend = trend?.spoken && !missing ? `, ${trend.spoken}` : '';
+  // The width the line actually has, after the change figure has taken
+  // what it needs. A fixed width spilled past the edge of any card whose
+  // figure ran long, like a step count up 143%.
+  const [lineWidth, setLineWidth] = useState(0);
   return (
     <View
       style={[s.card, missing && s.cardMissing]}
       accessible
-      accessibilityLabel={`${label}, ${value ?? 'not recorded today'}${note && !missing ? `, ${note}` : ''}`}
+      accessibilityLabel={`${label}, ${value ?? 'not recorded today'}${note && !missing ? `, ${note}` : ''}${spokenTrend}`}
     >
       <View style={s.head}>
-        <View style={[s.dot, { backgroundColor: DOT[from] }, missing && s.dotMissing]} />
+        <View style={[s.dot, { backgroundColor: color ?? DOT[from] }, missing && s.dotMissing]} />
         <Text style={[font('caption1'), s.label]} numberOfLines={1}>
           {displayCopy(label)}
         </Text>
@@ -58,6 +74,27 @@ export function MetricCard({ label, value, note, from }: MetricCardProps) {
         <Text style={[font('caption2'), s.note]} numberOfLines={1}>
           {displayCopy(note)}
         </Text>
+      ) : null}
+      {trend && !missing ? (
+        <View style={s.trend}>
+          {trend.change ? (
+            <Text style={[font('caption2', 'semibold'), s.change]} numberOfLines={1}>
+              {trend.change}
+            </Text>
+          ) : (
+            <View />
+          )}
+          <View style={s.line} onLayout={(e) => setLineWidth(Math.floor(e.nativeEvent.layout.width))}>
+            {lineWidth > 12 ? (
+              <Sparkline
+                points={trend.points}
+                color={color ?? mark(from === 'reported' ? 'reported' : 'measured')}
+                width={Math.min(lineWidth, 48)}
+                height={16}
+              />
+            ) : null}
+          </View>
+        </View>
       ) : null}
     </View>
   );
@@ -81,6 +118,8 @@ const s = StyleSheet.create({
     borderColor: L.rule,
     paddingVertical: 10,
     paddingHorizontal: 11,
+    // Nothing drawn inside a card leaves it.
+    overflow: 'hidden',
   },
   // An absent reading keeps its edge and loses its fill, so the card is
   // still a card and still legible as the place that figure will appear.
@@ -92,4 +131,8 @@ const s = StyleSheet.create({
   value: { color: L.ink },
   absent: { color: L.meta },
   note: { color: L.meta },
+  trend: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  // The figure keeps its full width; the line takes what is left.
+  change: { color: L.body, flexShrink: 0 },
+  line: { flex: 1, minWidth: 0, height: 16, alignItems: 'flex-end' },
 });

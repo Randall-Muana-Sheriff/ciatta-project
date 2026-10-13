@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { dayLabel, daysBetween, parseDay, shortDate, type Episode } from '../data/cycleLog';
@@ -8,9 +8,8 @@ import { type CycleSummary, type Signal, tally } from '../lib/cyclePatterns';
 import { displayCopy } from '../lib/displayCopy';
 import { fmtCount, fmtHours, mostRecentValue, type MovementSummary } from '../lib/engine';
 import type { Screen } from '../navigation';
-import { useData, useRepo, useSession } from '../state/session';
+import { useData, useSession } from '../state/session';
 import { C, font, M, numeral, RADIUS } from '../theme';
-import { ListGroup, ListRow } from './chrome';
 import { BarRow } from './cycleInputs';
 import { BedArc, type CompleteStages, DotScale, HairlineChart, RangeBar, type Stage, StageLegend, StageRings } from './lineCharts';
 import { ChevronRight } from './kit';
@@ -101,7 +100,6 @@ export function HealthDashboard({
   lens,
   open,
   openInsight,
-  openProfile,
 }: {
   days: Day[];
   movement: MovementSummary;
@@ -110,29 +108,12 @@ export function HealthDashboard({
   lens: Lens;
   open: (screen: Screen) => void;
   openInsight: (id: string) => void;
-  openProfile: () => void;
 }) {
   const [stage, setStage] = useState<Stage>('Deep');
   const { records, medications } = useData();
   const { mode } = useSession();
-  const repo = useRepo();
-  const [sourceNames, setSourceNames] = useState<string | null>(null);
   const now = new Date();
 
-  // Real mode shows what she actually connected, not the sample list; nothing
-  // renders while that loads rather than claiming a source she never added.
-  useEffect(() => {
-    if (mode === 'demo') return;
-    let ignore = false;
-    repo.loadSources().then((rows) => {
-      if (!ignore) setSourceNames(rows.map((r) => r.name).join(' · '));
-    }).catch(() => {});
-    return () => {
-      ignore = true;
-    };
-  }, [mode, repo]);
-
-  const connectedSourcesSub = mode === 'demo' ? 'Apple Health · Lab Records · Manual Entries' : (sourceNames ?? undefined);
   // Undefined until her record holds a day; the "any record at all" cards
   // below wait for one. This is deliberately not "today's data": days
   // always extends through today, which is often an empty placeholder from
@@ -462,11 +443,12 @@ export function HealthDashboard({
       </Card>
       ) : null}
 
-      <ListGroup>
-        <ListRow first icon="doc" tint={C.green} title="Health Records" sub="Results and documents" onPress={() => open('healthrecords')} />
-        <ListRow icon="chat" tint={C.indigo} title="Your Notes" sub="Everything you've written down" onPress={() => open('journal')} />
-        <ListRow icon="layers" tint={C.blue} title="Connected Sources" sub={connectedSourcesSub} onPress={openProfile} />
-      </ListGroup>
+      {/*
+        Health Records, Your Notes and Connected Sources used to sit here.
+        Records is the Health tab's third view now, notes are reached from
+        logging, and sources live in Profile, so three rows of doors to
+        elsewhere were taken off the end of the dashboard.
+      */}
     </View>
   );
 }

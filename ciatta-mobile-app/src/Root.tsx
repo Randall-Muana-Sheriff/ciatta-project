@@ -17,7 +17,6 @@ import { CycleScreen } from './screens/CycleScreen';
 import { EvidenceScreen } from './screens/EvidenceScreen';
 import { MovementScreen } from './screens/MovementScreen';
 import { HealthRecordsScreen } from './screens/HealthRecordsScreen';
-import { InsightScreen } from './screens/InsightScreen';
 import { JournalScreen } from './screens/JournalScreen';
 import { JourneyScreen } from './screens/JourneyScreen';
 import { MedicationsScreen } from './screens/MedicationsScreen';
@@ -52,7 +51,6 @@ const TAB_SCREENS: Record<Tab, ComponentType> = {
 };
 
 const DETAIL_SCREENS: Record<Screen, ComponentType> = {
-  insight: InsightScreen,
   sleep: SleepScreen,
   cycle: CycleScreen,
   symptoms: SymptomsScreen,

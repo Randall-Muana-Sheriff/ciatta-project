@@ -10,8 +10,7 @@ import { smooth } from '../lib/curve';
 import { displayCopy } from '../lib/displayCopy';
 import { monthSummary, type Signal } from '../lib/cyclePatterns';
 import type { Ovulation } from '../lib/fertility';
-import { useNav } from '../navigation';
-import { useCycle, useCycleInsights } from '../state/cycleStore';
+import { useCycleInsights } from '../state/cycleStore';
 import { useData } from '../state/session';
 import { C, font, fonts, GUTTER, RADIUS } from '../theme';
 import { NAV_CLEARANCE } from '../ui/surface';
@@ -19,7 +18,7 @@ import { sleepPoints, sleepScale, symptomPlacement, symptomPoints } from '../lib
 import { type Axis, axisFor, emptyFor, posIn, type Scale, SCALES } from '../lib/timeAxis';
 import { LargeTitle, Panel } from '../ui/chrome';
 import { Icon, type IconName } from '../ui/icons';
-import { ChevronRight, Row, SecondaryButton } from '../ui/kit';
+import { Row } from '../ui/kit';
 
 // The window is chosen now, not assumed. Day reads in hours, year in
 // months, and every lane positions against whichever is picked rather than
@@ -417,8 +416,6 @@ function MonthDetail({
 }
 
 export function JourneyScreen() {
-  const nav = useNav();
-  const { startDraft } = useCycle();
   const { signals, fertility, windows, lens, profile } = useCycleInsights();
   const { journey, days } = useData();
   const { width } = useWindowDimensions();
@@ -649,32 +646,13 @@ export function JourneyScreen() {
           journey={journey}
         />
 
-        {journey ? (
-          <Pressable onPress={() => nav.push('insight')} accessibilityRole="button" style={({ pressed }) => pressed && j.pressed}>
-            <Panel style={j.insight}>
-              <Icon name="sparkle" size={24} color={C.tint} weight={1.8} />
-              <View style={{ flex: 1 }}>
-                <Text style={[font('footnote', 'semibold'), { color: C.tint }]}>
-                  Something changed in {monthName(journeyAxis.monthDate(NOW))}
-                </Text>
-                <Text style={[font('headline'), { color: C.text, marginTop: 2 }]}>{displayCopy(journey.insight.headline)}</Text>
-                <Text style={[font('subhead'), { color: C.secondary, marginTop: 2 }]}>See what happened during this time.</Text>
-              </View>
-              <ChevronRight />
-            </Panel>
-          </Pressable>
-        ) : null}
-
-        <View style={{ marginTop: 16, gap: 12 }}>
-          <SecondaryButton
-            label="Log Cycle Experience"
-            onPress={() => {
-              startDraft();
-              nav.push('cycleLog');
-            }}
-          />
-          <SecondaryButton label="Show Key Insights" onPress={() => nav.push('insight')} />
-        </View>
+        {/*
+          No "Something changed" card here. A change worth her attention
+          reaches her as a push notification, when it happens, rather than
+          waiting on this tab for her to come and find it.
+        */}
+        {/* Logging lives behind the plus in the bottom navigation, on every
+            screen, so Journey does not carry a second way in. */}
       </View>
     </ScrollView>
   );
@@ -747,5 +725,4 @@ const j = StyleSheet.create({
   chipDot: { width: 10, height: 10, borderRadius: 5 },
 
   detail: { marginBottom: 16 },
-  insight: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS },
 });

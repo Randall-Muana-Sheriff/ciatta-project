@@ -119,6 +119,19 @@ function KeySwatch({ kind }: { kind: ChartKey }) {
   );
 }
 
+// One colour per metric on Today's grid, so six cards of the same shape
+// are told apart at a glance. An exception to the meaning palette, made on
+// this grid only: every one of these is measured, so the meaning colour
+// would paint all six the same. Red stays out, kept for escalation.
+const METRIC_HUE: Record<string, string> = {
+  sleep: '#8E9BFF',
+  hrv: '#5ED3C4',
+  steps: '#E8C46A',
+  bp: '#F27D9B',
+  temp: '#F09A5B',
+  spo2: '#6FB6F5',
+};
+
 type Action = { key: string; icon: IconName; title: string; sub?: string; onPress?: () => void };
 
 export function TodayScreen() {
@@ -401,7 +414,7 @@ export function TodayScreen() {
         <View style={t.grid}>
           {headlineMetrics(days, vitals).map((m) => (
             <View key={m.key} style={t.gridCell}>
-              <MetricCard label={m.label} value={m.value} note={m.note} from={m.from} />
+              <MetricCard label={m.label} value={m.value} note={m.note} from={m.from} trend={m.trend} color={METRIC_HUE[m.key]} />
             </View>
           ))}
         </View>
@@ -420,12 +433,16 @@ export function TodayScreen() {
         */}
         {todayIsPlaceholder ? null : (
           <>
-          {/* Named like Metrics above it, so the two read as sections. */}
+          {/*
+            Named once, like Metrics above it. "Insights" rather than
+            "Today's insights": the screen is Today and the chart card
+            above is Today's Patterns, so a third "Today's" would be noise.
+            The card itself carries no second label.
+          */}
           <View style={t.sectionHead}>
             <Eyebrow>Insights</Eyebrow>
           </View>
           <Tile span={2} emphasis style={t.lead}>
-            {today.kicker ? <Text style={[font('caption1'), t.leadEyebrow]}>{today.kicker.toUpperCase()}</Text> : null}
             <Text style={[font('body'), t.leadText]}>{displayCopy(brief.text)}</Text>
           </Tile>
           </>
@@ -571,8 +588,7 @@ const t = StyleSheet.create({
   // A figure she has not produced today reads as absent, not as zero.
   cycleNone: { color: L.meta },
   lead: { marginTop: SPACE.tight },
-  leadEyebrow: { color: L.meta, letterSpacing: 1.1 },
-  leadText: { color: L.ink, lineHeight: 25, marginTop: 6 },
+  leadText: { color: L.ink, lineHeight: 25 },
 
   // The heading row: a section's worth of air above it, almost none below,
   // so it reads down onto the card it names rather than up at the chart.
