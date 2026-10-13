@@ -22,7 +22,9 @@ import { JourneyScreen } from './screens/JourneyScreen';
 import { MedicationsScreen } from './screens/MedicationsScreen';
 import { MyHealthScreen } from './screens/MyHealthScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
+import { AddProcedureScreen } from './screens/AddProcedureScreen';
 import { FoodScanScreen } from './screens/FoodScanScreen';
+import { ProcedureScreen } from './screens/ProcedureScreen';
 import { NutritionTargetsScreen } from './screens/NutritionTargetsScreen';
 import { QuickLogScreen } from './screens/QuickLogScreen';
 import { SleepScreen } from './screens/SleepScreen';
@@ -74,6 +76,8 @@ const DETAIL_SCREENS: Record<Screen, ComponentType> = {
   quickLog: QuickLogScreen,
   nutritionTargets: NutritionTargetsScreen,
   foodScan: FoodScanScreen,
+  procedure: ProcedureScreen,
+  addProcedure: AddProcedureScreen,
 };
 
 // Four tabs, each with its own stack of detail screens. The tab bar stays

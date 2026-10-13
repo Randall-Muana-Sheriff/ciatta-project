@@ -7,12 +7,16 @@
 // Health tab's own Dashboard, Body, Records control, and a second row of
 // tabs under the first is one decision too many.
 
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 
 import type { Data } from '../data/adapter';
-import { type Screen } from '../navigation';
-import { useData } from '../state/session';
+import { loadClinicalRecords } from '../data/providers';
+import { type ProcedureEntry, procedureList } from '../lib/procedureEffect';
+import { chooseProcedure, prefillProcedure } from '../lib/procedureHandoff';
+import { type Screen, useNav } from '../navigation';
+import { useData, useRepo } from '../state/session';
 import { C, font, numeral } from '../theme';
 import { ListGroup, ListRow } from './chrome';
 import { EmptyNote, Row, SecondaryButton, Tag } from './kit';
@@ -51,6 +55,33 @@ function Dashes() {
 
 export function RecordsView({ onOpen }: { onOpen: (screen: Screen) => void }) {
   const { records } = useData();
+  const repo = useRepo();
+  const nav = useNav();
+  const [procedures, setProcedures] = useState<{ dated: ProcedureEntry[]; undated: string[] }>({ dated: [], undated: [] });
+
+  // Her procedures: the ones she added, the dated ones her providers sent,
+  // and surgeries she named at onboarding that still need a date. Read
+  // again whenever Records is back in view, so one she just added shows.
+  useEffect(() => {
+    if (nav.depth > 1) return;
+    let ignore = false;
+    Promise.all([
+      repo.loadAddedProcedures().catch(() => []),
+      loadClinicalRecords().catch(() => []),
+      repo.loadReported().catch(() => null),
+    ]).then(([added, clinical, reported]) => {
+      if (!ignore) setProcedures(procedureList(added, clinical, reported?.surgeries ?? []));
+    });
+    return () => {
+      ignore = true;
+    };
+  }, [repo, nav.depth]);
+
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const shown = (iso: string) => {
+    const [y, m, d] = iso.split('-').map(Number);
+    return `${d} ${MONTHS[m - 1]} ${y}`;
+  };
   return (
     <View>
       {records ? (
@@ -105,6 +136,41 @@ export function RecordsView({ onOpen }: { onOpen: (screen: Screen) => void }) {
           <EmptyNote text="No lab results or documents yet. They appear here as you add them or connect a provider." />
         </View>
       )}
+
+      {/* Procedures, each opening what her record did either side of it. */}
+      <ListGroup header="Procedures" footer="Tap one to see six weeks before and after, from your own record." style={hr.section}>
+        {procedures.dated.map((p, n) => (
+          <ListRow
+            key={p.id}
+            first={n === 0}
+            icon="doc"
+            title={p.name}
+            sub={`${shown(p.date)} · ${p.source}`}
+            onPress={() => {
+              chooseProcedure(p);
+              onOpen('procedure');
+            }}
+          />
+        ))}
+        {procedures.undated.map((name, n) => (
+          <ListRow
+            key={`u-${name}`}
+            first={procedures.dated.length === 0 && n === 0}
+            title={name}
+            sub="Add the date to see before and after"
+            onPress={() => {
+              prefillProcedure(name);
+              onOpen('addProcedure');
+            }}
+          />
+        ))}
+        <ListRow
+          first={!procedures.dated.length && !procedures.undated.length}
+          icon="plus"
+          title="Add a Procedure"
+          onPress={() => onOpen('addProcedure')}
+        />
+      </ListGroup>
 
       <ListGroup header="From your providers" footer="Results and notes your hospital sent, in their words." style={hr.section}>
         <ListRow first icon="doc" title="Provider records" sub="Results, conditions and medications" onPress={() => onOpen('chart')} />

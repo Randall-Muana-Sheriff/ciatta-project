@@ -99,6 +99,10 @@ export type Repo = {
   // A meal photo read by the food scan, already checked (lib/foodScan).
   scanFood(imageBase64: string): Promise<Scan>;
   saveMeal(meal: Meal): Promise<void>;
+  // Procedures she added with their date. Provider procedures come from
+  // her clinical records instead.
+  loadAddedProcedures(): Promise<{ id: string; name: string; date: string }[]>;
+  addProcedure(p: { id: string; name: string; date: string }): Promise<void>;
   loadMeals(sinceIso: string): Promise<Meal[]>;
   saveNutritionTargets(t: NutritionTargets): Promise<void>;
   startProduct(next: { id: string; product: Product; size: string; at: string }): Promise<void>;
@@ -212,6 +216,16 @@ export function demoRepo(): Repo {
   };
   let productUses: ProductUse[] = [];
   let targets: NutritionTargets = {};
+  // The example person's laparoscopy, ten weeks ago, so her before and
+  // after has six weeks of sample record on each side.
+  const lap = new Date(Date.now() - 70 * 86400000);
+  let procedures = [
+    {
+      id: 'sample-lap',
+      name: 'Laparoscopy',
+      date: `${lap.getFullYear()}-${String(lap.getMonth() + 1).padStart(2, '0')}-${String(lap.getDate()).padStart(2, '0')}`,
+    },
+  ];
   // The example person's last eight days of meals, so her Nutrition card
   // has a usual day to fill toward. Figures are sample estimates, marked as
   // estimates like any scan.
@@ -264,6 +278,10 @@ export function demoRepo(): Repo {
           { name: 'Lamb’s Lettuce', portion: '1 handful', kcal: 6, protein_g: 0.6, carbs_g: 1, fat_g: 0.1, x: 0.58, y: 0.5, r: 0.08 },
         ],
       }),
+    loadAddedProcedures: async () => procedures,
+    addProcedure: async (p) => {
+      procedures = [...procedures.filter((x) => x.id !== p.id), p];
+    },
     saveMeal: async (meal) => {
       meals = [...meals.filter((m) => m.id !== meal.id), meal];
     },
@@ -552,6 +570,19 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       const { data, error } = await db.functions.invoke('food-scan', { body: { image: imageBase64 } });
       if (error) throw error;
       return readScan(data);
+    },
+    async loadAddedProcedures() {
+      const rows = must(await db.from('procedures').select('client_id, name, performed_on').order('performed_on')) as
+        | { client_id: string; name: string; performed_on: string }[]
+        | null;
+      return (rows ?? []).map((r) => ({ id: r.client_id, name: r.name, date: r.performed_on }));
+    },
+    async addProcedure(p) {
+      must(
+        await db
+          .from('procedures')
+          .upsert({ user_id: userId, client_id: p.id, name: p.name.trim(), performed_on: p.date }, { onConflict: 'user_id,client_id' }),
+      );
     },
     async saveMeal(meal) {
       const t = mealTotals(meal.items);

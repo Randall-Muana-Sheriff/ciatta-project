@@ -31,7 +31,9 @@ export type Screen =
   | 'calendar'
   | 'quickLog'
   | 'nutritionTargets'
-  | 'foodScan';
+  | 'foodScan'
+  | 'procedure'
+  | 'addProcedure';
 
 export type Nav = {
   tab: Tab;
