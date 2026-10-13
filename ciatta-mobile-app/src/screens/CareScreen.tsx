@@ -507,7 +507,9 @@ const s = StyleSheet.create({
   // circle is not cut by the pill.
   namePill: {
     marginTop: 6,
-    backgroundColor: L.canvas,
+    // Translucent, as every other surface is, so Care's wash shows through
+    // rather than a solid dark pill sitting on it.
+    backgroundColor: L.recessed,
     borderRadius: 999,
     borderWidth: st,
     borderColor: L.rule,
