@@ -1,7 +1,7 @@
 import { type Episode, normalizeEpisode, parseDay, shortDate } from './cycleLog';
 import type { EntryKind, SourceKind } from './sample';
 import { type Attachment, normalizeAttachments } from '../lib/attachments';
-import type { CategoryKey } from '../lib/logCategories';
+import { CATEGORIES, type CategoryKey } from '../lib/logCategories';
 import { FULLNESS, type Fullness, PRODUCTS, type Product, type ProductUse } from '../lib/periodProducts';
 import type { Found } from '../lib/quickLog';
 
@@ -183,8 +183,8 @@ export function journalView(rows: JournalRow[]): JournalView {
       kind: r.kind,
       usedInInsight: false,
       attachments: normalizeAttachments(r.metadata?.attachments),
-      category: typeof r.metadata?.category === 'string' ? (r.metadata.category as CategoryKey) : undefined,
-      items: r.metadata?.items && typeof r.metadata.items === 'object' ? (r.metadata.items as Found) : undefined,
+      category: CATEGORY_KEYS.includes(r.metadata?.category as CategoryKey) ? (r.metadata!.category as CategoryKey) : undefined,
+      items: foundFrom(r.metadata?.items),
       at: r.occurred_at,
     });
   }
@@ -252,4 +252,20 @@ export function productUseView(r: ProductUseRow): ProductUse | null {
     endedAt: r.ended_at,
     fullness: (FULLNESS as readonly string[]).includes(r.fullness ?? '') ? (r.fullness as Fullness) : null,
   };
+}
+
+const CATEGORY_KEYS = CATEGORIES.map((c) => c.key);
+
+// Category items as stored, checked: only known categories, only lists of
+// words. Anything else, including an older flat list, counts as none, so a
+// damaged entry can never put a figure on the dashboard.
+function foundFrom(value: unknown): Found | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const out: Found = {};
+  for (const [key, list] of Object.entries(value as Record<string, unknown>)) {
+    if (!CATEGORY_KEYS.includes(key as CategoryKey) || !Array.isArray(list)) continue;
+    const words = list.filter((w): w is string => typeof w === 'string' && w.trim().length > 0);
+    if (words.length) out[key as CategoryKey] = words;
+  }
+  return Object.keys(out).length ? out : undefined;
 }

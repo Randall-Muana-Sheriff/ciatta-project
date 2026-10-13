@@ -180,7 +180,7 @@ export function QuickLogScreen() {
               accessibilityState={{ selected: on }}
               style={({ pressed }) => [q.cat, on && q.catOn, pressed && q.pressed]}
             >
-              <Text style={[font('subhead', on ? 'semibold' : 'regular'), on ? q.catTextOn : q.catText]}>{c.label}</Text>
+              <Text style={[font('subhead', on ? 'semibold' : 'regular'), on ? q.catTextOn : q.catText]}>{displayCopy(c.label)}</Text>
             </Pressable>
           );
         })}
@@ -199,7 +199,7 @@ export function QuickLogScreen() {
                   accessibilityState={{ checked: on }}
                   style={({ pressed }) => [q.chip, on && q.chipOn, pressed && q.pressed]}
                 >
-                  <Text style={[font('footnote', on ? 'semibold' : 'regular'), on ? q.chipTextOn : q.chipText]}>{item}</Text>
+                  <Text style={[font('footnote', on ? 'semibold' : 'regular'), on ? q.chipTextOn : q.chipText]}>{displayCopy(item)}</Text>
                 </Pressable>
               );
             })}
@@ -230,7 +230,7 @@ export function QuickLogScreen() {
             setText(v);
             if (how === 'spoken') setSpoken(true);
           }}
-          placeholder={cat.example}
+          placeholder={displayCopy(cat.example)}
           label={`Log ${cat.label.toLowerCase()} in your own words`}
           attachments={files}
           onAttachments={(next) => {
@@ -262,7 +262,7 @@ export function QuickLogScreen() {
             {spoken ? ', spoken' : ''}
           </Text>
         ) : text.trim() ? (
-          <Text style={[font('footnote'), q.noted]}>Saved in your own words, under {cat.label}.</Text>
+          <Text style={[font('footnote'), q.noted]}>{displayCopy(`Saved in your own words, under ${cat.label}.`)}</Text>
         ) : null}
 
         {error ? <Text style={[font('footnote'), q.error]}>{displayCopy(error)}</Text> : null}

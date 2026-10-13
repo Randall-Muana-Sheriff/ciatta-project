@@ -102,3 +102,15 @@ test('a journal entry keeps when it happened, so a dashboard can count recent da
   const view = journalView([{ client_id: 'j', text: 'x', kind: 'Notes', tag: null, occurred_at: '2026-10-12T09:00:00Z' }]);
   assert.equal(view.months[0].items[0].at, '2026-10-12T09:00:00Z');
 });
+
+test('stored category items are checked before they are counted', () => {
+  const read = (items: unknown, category: unknown = 'mind') =>
+    journalView([{ client_id: 'j', text: 'x', kind: 'Symptoms', tag: null, occurred_at: '2026-10-12T09:00:00Z', metadata: { category, items } }])
+      .months[0].items[0];
+  // An older shape, a flat list, is not by category: nothing is counted from it.
+  assert.equal(read(['Brain fog']).items, undefined);
+  // Unknown categories and anything that is not a list of words are dropped.
+  assert.deepEqual(read({ mind: ['Brain fog', 3, ''], stars: ['x'], gut: 'Bloating' }).items, { mind: ['Brain fog'] });
+  // A category the app does not have is not one.
+  assert.equal(read({}, 'stars').category, undefined);
+});

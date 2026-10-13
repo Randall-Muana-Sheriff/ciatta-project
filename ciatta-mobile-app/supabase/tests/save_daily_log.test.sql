@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(14);
+select plan(17);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -53,6 +53,15 @@ reset role;
 select is((select caffeine from public.daily_metrics
            where user_id = '00000000-0000-0000-0000-00000000000a' and day = '2026-10-12'), 2::numeric,
   'another person saving the same date never writes her row');
+
+-- A day far in the future, a date from before records, or files that are
+-- not a list are refused rather than stored.
+select throws_ok($$ select public.save_daily_log((current_date + 30)::date, p_caffeine => 1) $$, '22023', null,
+  'a day in the future is refused');
+select throws_ok($$ select public.save_daily_log('1850-01-01', p_caffeine => 1) $$, '22023', null,
+  'a day before any record is refused');
+select throws_ok($$ select public.save_daily_log('2026-10-14', p_attachments => '{"not":"a list"}'::jsonb) $$, '22023', null,
+  'files must be a list');
 
 -- Signed out, nothing is written.
 set local request.jwt.claims to '{"role":"authenticated"}';
