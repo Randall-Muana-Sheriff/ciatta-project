@@ -4,17 +4,18 @@ import { test } from 'node:test';
 import { WHAT_HAPPENED } from '../data/cycleLog';
 import { BOWEL, CATEGORIES, category } from './logCategories';
 
-test('ten categories, in the order the Log screen shows them', () => {
+test('eleven categories, in the order the Log screen shows them', () => {
   assert.deepEqual(
     CATEGORIES.map((c) => c.key),
-    ['cycle', 'nutrition', 'gut', 'body', 'mind', 'skin', 'sexual', 'meds', 'context', 'note'],
+    ['cycle', 'nutrition', 'gut', 'body', 'mind', 'skin', 'sexual', 'meds', 'supplements', 'context', 'note'],
   );
 });
 
-test('medications and supplements are their own category, not context', () => {
-  const meds = category('meds');
-  assert.equal(meds.label, 'Medications and supplements');
-  assert.deepEqual(meds.quick, ['Took medication', 'Took supplement', 'Missed a dose', 'Started something new', 'Stopped something', 'Side effect']);
+test('medications and supplements are two categories, neither of them context', () => {
+  assert.equal(category('meds').label, 'Medications');
+  assert.deepEqual(category('meds').quick, ['Took medication', 'Missed a dose', 'Started a new medication', 'Stopped a medication', 'Side effect']);
+  assert.equal(category('supplements').label, 'Supplements');
+  assert.deepEqual(category('supplements').quick, ['Took supplement', 'Skipped a supplement', 'Started a new supplement', 'Stopped a supplement']);
   assert.ok(!category('context').quick.includes('Took medication'));
 });
 

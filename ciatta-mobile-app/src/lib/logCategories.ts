@@ -10,7 +10,7 @@ import type { EntryKind } from '../data/sample';
 import type { Screen } from '../navigation';
 import { DIGESTION_FLAGS } from './dailyLog';
 
-export type CategoryKey = 'cycle' | 'nutrition' | 'gut' | 'body' | 'mind' | 'skin' | 'sexual' | 'meds' | 'context' | 'note';
+export type CategoryKey = 'cycle' | 'nutrition' | 'gut' | 'body' | 'mind' | 'skin' | 'sexual' | 'meds' | 'supplements' | 'context' | 'note';
 
 export type LogCategory = {
   key: CategoryKey;
@@ -104,14 +104,23 @@ export const CATEGORIES: readonly LogCategory[] = [
     detailLabel: null,
     journalKind: 'Symptoms',
   },
-  // What she took, missed, started or stopped. Her own medicines and
-  // supplements from her profile are offered as chips beside these on the
-  // Log screen, so a tap names the one she means.
+  // Medicines and supplements are kept apart: what a clinician prescribed
+  // and what she chose to take are different facts. Her own, from her
+  // profile, are offered as chips beside these on the Log screen.
   {
     key: 'meds',
-    label: 'Medications and supplements',
-    example: 'Took my levothyroxine late, and started magnesium at night',
-    quick: ['Took medication', 'Took supplement', 'Missed a dose', 'Started something new', 'Stopped something', 'Side effect'],
+    label: 'Medications',
+    example: 'Took my levothyroxine late, and a headache from the new pill',
+    quick: ['Took medication', 'Missed a dose', 'Started a new medication', 'Stopped a medication', 'Side effect'],
+    detail: null,
+    detailLabel: null,
+    journalKind: 'Context',
+  },
+  {
+    key: 'supplements',
+    label: 'Supplements',
+    example: 'Took magnesium at night, forgot my vitamin D',
+    quick: ['Took supplement', 'Skipped a supplement', 'Started a new supplement', 'Stopped a supplement'],
     detail: null,
     detailLabel: null,
     journalKind: 'Context',

@@ -97,6 +97,14 @@ export type Found = Partial<Record<CategoryKey, string[]>>;
 // recognised only to be set aside: "sore throat" is not pelvic pain and
 // "period leaked" is not urinary leaking.
 const PHRASES: [RegExp, CategoryKey | null, string | null][] = [
+  // Supplements first, so "stopped taking the iron supplement" is read
+  // once, as a supplement, and never also as a medication.
+  [/\b(forgot|missed|skipped) (to take )?(my |the )?(vitamins?(?: [a-z]\\d*)?|supplements?|magnesium|iron|fish oil|omega ?3s?|zinc|probiotics?|folic acid|biotin)\b/gi, 'supplements', 'Skipped a supplement'],
+  [/\bstarted (taking )?(a |the |my )?(new )?(vitamins?(?: [a-z]\\d*)?|supplements?|magnesium|iron|fish oil|omega ?3s?|zinc|probiotics?|folic acid|biotin)\b/gi, 'supplements', 'Started a new supplement'],
+  [/\b(stopped taking|stopped|came off) (a |the |my )?(\w+ )?(vitamins?(?: [a-z]\\d*)?|supplements?|magnesium|iron|fish oil|omega ?3s?|zinc|probiotics?|folic acid|biotin)\b/gi, 'supplements', 'Stopped a supplement'],
+  [/\bmissed (a|my) (dose|pill|tablet)s?\b|\bforgot (to take )?my (pill|meds|medication|tablets?)\b/gi, 'meds', 'Missed a dose'],
+  [/\bstarted (taking )?(a |the |my )?(new )?(medication|meds|pill|prescription|tablets?)\b|\bnew (medication|meds|prescription)\b/gi, 'meds', 'Started a new medication'],
+  [/\bstopped taking\b|\bcame off\b|\bstopped (my|the) (meds|medication|pill)\b/gi, 'meds', 'Stopped a medication'],
   [/\bbleeding after sex\b/gi, 'sexual', 'Bleeding after sex'],
   [/\bpain(ful)? (with|during) sex\b|\bpainful sex\b/gi, 'sexual', 'Pain with sex'],
   [/\b(vaginal dryness|dryness down there)\b/gi, 'sexual', 'Vaginal dryness'],
@@ -163,10 +171,7 @@ const CUES: [RegExp, CategoryKey, string][] = [
   [/\b(stressful|stressed)\b/i, 'context', 'Stressful event'],
   [/\b(flight|flew|travel\w*|trip)\b/i, 'context', 'Travel'],
   [/\b(ibuprofen|paracetamol|tylenol|advil|painkillers?|medication|meds|took (a|my) pill)\b/i, 'meds', 'Took medication'],
-  [/\b(supplements?|vitamins?|magnesium|iron tablets?)\b/i, 'meds', 'Took supplement'],
-  [/\b(missed (a|my) (dose|pill|tablet)|forgot (to take )?my (pill|meds|medication|tablets?))\b/i, 'meds', 'Missed a dose'],
-  [/\bstarted (a |taking )?(new )?(medication|meds|pill|supplement|tablets?)\b|\bnew (medication|meds|prescription)\b/i, 'meds', 'Started something new'],
-  [/\bstopped taking\b|\bcame off (the |my )?\w+|\bstopped (my|the) (meds|medication|pill|supplement|iron|vitamins?)\b/i, 'meds', 'Stopped something'],
+  [/\b(supplements?|vitamins?|magnesium|iron tablets?|fish oil|zinc|probiotics?)\b/i, 'supplements', 'Took supplement'],
   [/\bside effects?\b/i, 'meds', 'Side effect'],
   [/\b(sick|ill|a cold|flu|fever)\b/i, 'context', 'Illness'],
   [/\b(damp|mou?ld|mouldy|moldy|mildew)\b/i, 'context', 'Damp or mould at home'],
@@ -233,7 +238,7 @@ export function readQuick(text: string): QuickReading {
   };
 }
 
-const ORDER: CategoryKey[] = ['cycle', 'nutrition', 'gut', 'body', 'mind', 'skin', 'sexual', 'meds', 'context'];
+const ORDER: CategoryKey[] = ['cycle', 'nutrition', 'gut', 'body', 'mind', 'skin', 'sexual', 'meds', 'supplements', 'context'];
 
 // What was recognised, grouped as it will be filed. Null when nothing was,
 // so no empty label is drawn; the words still save.
@@ -271,7 +276,7 @@ export type SavePlan = {
   daysAgo: number;
 };
 
-const JOURNAL_KEYS: CategoryKey[] = ['nutrition', 'body', 'mind', 'skin', 'sexual', 'meds', 'context'];
+const JOURNAL_KEYS: CategoryKey[] = ['nutrition', 'body', 'mind', 'skin', 'sexual', 'meds', 'supplements', 'context'];
 
 export function planSave(input: { text: string; selected: CategoryKey; tapped: string[]; files: Attachment[] }): SavePlan | null {
   const text = input.text.trim();

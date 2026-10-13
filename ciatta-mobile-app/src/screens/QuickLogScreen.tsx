@@ -59,12 +59,13 @@ export function QuickLogScreen() {
   // against it as she types.
   const [inNow, setInNow] = useState<ProductUse | null>(null);
   // Her own medicines and supplements, from her profile, offered as chips
-  // under Medications and supplements so a tap names the one she means.
-  const [own, setOwn] = useState<string[]>([]);
+  // under their own category so a tap names the one she means.
+  const [own, setOwn] = useState<{ meds: string[]; supplements: string[] }>({ meds: [], supplements: [] });
   useEffect(() => {
+    const clean = (xs: string[]) => [...new Set(xs.map((x) => x.trim()).filter(Boolean))];
     repo
       .loadReported()
-      .then((r) => setOwn([...new Set([...r.medications, ...r.supplements].map((x) => x.trim()).filter(Boolean))]))
+      .then((r) => setOwn({ meds: clean(r.medications), supplements: clean(r.supplements) }))
       .catch(() => {});
   }, [repo]);
   useEffect(() => {
@@ -97,7 +98,8 @@ export function QuickLogScreen() {
   }, [text, tapped, files, key]);
 
   const cat = category(key);
-  const chips = key === 'meds' ? [...own.filter((x) => !cat.quick.includes(x)), ...cat.quick] : cat.quick;
+  const mine = key === 'meds' ? own.meds : key === 'supplements' ? own.supplements : [];
+  const chips = [...mine.filter((x) => !cat.quick.includes(x)), ...cat.quick];
   const reading = useMemo(() => readQuick(text), [text]);
   // A bowel movement she tapped or wrote, with the way into its full detail.
   const bowel = bowelDetail([...(key === 'gut' ? tapped : []), ...(reading.found.gut ?? [])]);

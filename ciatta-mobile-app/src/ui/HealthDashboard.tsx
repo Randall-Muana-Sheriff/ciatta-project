@@ -608,7 +608,7 @@ export function HealthDashboard({
 
 // The logging categories that have a dashboard card, in the Log screen's
 // order. Cycle has its own card above, Context and Note are not tallies.
-const CATEGORY_CARDS: CategoryKey[] = ['nutrition', 'gut', 'body', 'mind', 'skin', 'sexual', 'meds'];
+const CATEGORY_CARDS: CategoryKey[] = ['nutrition', 'gut', 'body', 'mind', 'skin', 'sexual', 'meds', 'supplements'];
 
 const d = StyleSheet.create({
   // The Nutrition card: the photo bleeds to the card's edges, then the

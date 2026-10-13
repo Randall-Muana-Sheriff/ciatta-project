@@ -253,17 +253,24 @@ test('damp or mould at home is hers to report, under Context', () => {
   assert.deepEqual(readCategories('mildew in the bathroom').context, ['Damp or mould at home']);
 });
 
-test('medication words file under Medications and supplements', () => {
-  assert.deepEqual(readCategories('took ibuprofen at noon and my magnesium').meds, ['Took medication', 'Took supplement']);
+test('medicine words file under Medications, supplement words under Supplements', () => {
+  const both = readCategories('took ibuprofen at noon and my magnesium');
+  assert.deepEqual(both.meds, ['Took medication']);
+  assert.deepEqual(both.supplements, ['Took supplement']);
   assert.deepEqual(readCategories('forgot my pill this morning').meds, ['Missed a dose']);
   assert.deepEqual(readCategories('missed a dose of levothyroxine').meds, ['Missed a dose']);
-  assert.deepEqual(readCategories('started a new medication on monday').meds, ['Took medication', 'Started something new']);
-  assert.deepEqual(readCategories('stopped taking the iron').meds, ['Stopped something']);
+  assert.deepEqual(readCategories('started a new medication on monday').meds, ['Started a new medication']);
+  assert.deepEqual(readCategories('stopped taking the levothyroxine').meds, ['Stopped a medication']);
   assert.deepEqual(readCategories('nausea from the new tablets, a side effect I think').meds, ['Side effect']);
+  const vit = readCategories('forgot my vitamins, and stopped taking the iron supplement');
+  assert.deepEqual(vit.supplements, ['Skipped a supplement', 'Stopped a supplement']);
+  assert.equal(vit.meds, undefined, 'a supplement is never filed as a medication');
+  assert.deepEqual(readCategories('started magnesium at night').supplements, ['Started a new supplement']);
 });
 
 test('one of her own medicines, tapped, is kept with the entry', () => {
   const plan = planSave({ text: '', selected: 'meds', tapped: ['Levothyroxine'], files: [] })!;
   assert.deepEqual(plan.journal, { kind: 'Context', category: 'meds', items: { meds: ['Levothyroxine'] } });
-  assert.equal(plan.episode, null);
+  const sup = planSave({ text: '', selected: 'supplements', tapped: ['Magnesium'], files: [] })!;
+  assert.deepEqual(sup.journal, { kind: 'Context', category: 'supplements', items: { supplements: ['Magnesium'] } });
 });
