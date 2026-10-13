@@ -6,7 +6,6 @@ import { type Data, journeyAxis } from '../data/adapter';
 import type { Day } from '../data/daily';
 import { addDays, shortDate } from '../data/cycleLog';
 import { countedWindows, type CycleWindow, medianLength } from '../lib/cycleModel';
-import { smooth } from '../lib/curve';
 import { displayCopy } from '../lib/displayCopy';
 import { monthSummary, type Signal } from '../lib/cyclePatterns';
 import type { Ovulation } from '../lib/fertility';
@@ -14,7 +13,21 @@ import { useCycleInsights } from '../state/cycleStore';
 import { useData } from '../state/session';
 import { C, font, fonts, GUTTER, RADIUS } from '../theme';
 import { NAV_CLEARANCE } from '../ui/surface';
-import { sleepPoints, sleepScale, symptomPlacement, symptomPoints } from '../lib/journeyLanes';
+import { fmtHours } from '../lib/engine';
+import {
+  type Bin,
+  binFor,
+  cycleGaps,
+  drawMarkers,
+  flareSpans,
+  painCells,
+  periodBlocks,
+  severityOpacity,
+  SLEEP_GUIDE_HOURS,
+  sleepBins,
+  symptomGrid,
+} from '../lib/journeyVisuals';
+import { useNav } from '../navigation';
 import { type Axis, axisFor, emptyFor, posIn, type Scale, SCALES } from '../lib/timeAxis';
 import { LargeTitle, Panel } from '../ui/chrome';
 import { Icon, type IconName } from '../ui/icons';
@@ -26,15 +39,19 @@ import { Row } from '../ui/kit';
 
 type Lane = 'cycle' | 'pain' | 'flare' | 'sleep' | 'symptoms' | 'medications' | 'records' | 'notes';
 
+const SYMPTOM_ROWS = 4;
+const ROW_H = 18;
+const ROW_TOP = 48;
+
 const LANES: { key: Lane; title: string; sub: string; icon: IconName; color: string; height: number }[] = [
-  { key: 'cycle', title: 'Cycle', sub: 'Length, days', icon: 'target', color: C.coral, height: 104 },
-  { key: 'pain', title: 'Pain', sub: 'Severity, reported', icon: 'wave', color: C.coral, height: 92 },
-  { key: 'flare', title: 'Flare ups', sub: 'You reported', icon: 'flame', color: C.coral, height: 64 },
-  { key: 'sleep', title: 'Sleep', sub: 'Total, hours', icon: 'moon', color: C.lavender, height: 108 },
-  { key: 'symptoms', title: 'Symptoms', sub: 'Logged', icon: 'triangle', color: C.violet, height: 100 },
-  { key: 'medications', title: 'Medications', sub: 'Active', icon: 'pill', color: C.mint, height: 104 },
-  { key: 'records', title: 'Records', sub: 'Results', icon: 'doc', color: C.green, height: 96 },
-  { key: 'notes', title: 'Notes', sub: 'What you said', icon: 'chat', color: C.indigo, height: 112 },
+  { key: 'cycle', title: 'Cycle', sub: 'Periods, days between', icon: 'target', color: C.coral, height: 76 },
+  { key: 'pain', title: 'Pain', sub: 'Worst each day, 0 to 10', icon: 'wave', color: C.coral, height: 48 },
+  { key: 'flare', title: 'Flare ups', sub: 'Start to end', icon: 'flame', color: C.coral, height: 48 },
+  { key: 'sleep', title: 'Sleep', sub: 'Against 7 hours', icon: 'moon', color: C.lavender, height: 104 },
+  { key: 'symptoms', title: 'Symptoms', sub: 'Most logged', icon: 'triangle', color: C.violet, height: ROW_TOP + SYMPTOM_ROWS * ROW_H + 8 },
+  { key: 'medications', title: 'Medications', sub: 'While taken', icon: 'pill', color: C.mint, height: 104 },
+  { key: 'records', title: 'Records', sub: 'Lab draws, by range', icon: 'doc', color: C.green, height: 72 },
+  { key: 'notes', title: 'Notes', sub: 'In your words', icon: 'chat', color: C.indigo, height: 104 },
 ];
 
 const SIDE = 8;
@@ -87,15 +104,6 @@ function Label({
   );
 }
 
-function Glow({ x, y, color }: { x: number; y: number; color: string }) {
-  return (
-    <G>
-      <Circle cx={x} cy={y} r={10} fill={color} opacity={0.25} />
-      <Circle cx={x} cy={y} r={5} fill={C.bg} stroke={color} strokeWidth={2.5} />
-    </G>
-  );
-}
-
 // Cycle, pain and flare ups come from her episodes. The other lanes are drawn
 // from the sample journey, so they stay empty without it.
 function LaneMarks({
@@ -103,160 +111,153 @@ function LaneMarks({
   x,
   axisFrom,
   axisTo,
+  bin,
   signals,
+  windows,
   cycle,
   days,
   journey,
+  draws,
   plotW,
+  height,
+  onNote,
 }: {
   lane: Lane;
   x: (at: Date) => number | null;
   axisFrom: Date;
   axisTo: Date;
+  bin: Bin;
   signals: Signal[];
+  windows: CycleWindow[];
   cycle: CyclePoint[];
   days: readonly Day[];
   journey: Data['journey'];
+  draws: NonNullable<Data['records']>['draws'];
   plotW: number;
+  height: number;
+  onNote: () => void;
 }) {
   // Where a month position lands, or null when it is outside the window.
   const at = (m: number) => x(dateAtMonthPos(m));
-
-  // A span that starts before the window or ends after it still happened
-  // during it. Clamping draws the part that is in view, where filtering on
-  // both ends would hide a medication she has taken all year from every
-  // view shorter than a year.
-  const span = (fromM: number, toM: number): [number, number] | null => {
-    const a = dateAtMonthPos(fromM);
-    const b = dateAtMonthPos(toM);
-    const pa = x(a);
-    const pb = x(b);
-    if (pa == null && pb == null) {
-      // Both ends outside: in view only if the span brackets the window.
-      if (!(a <= axisFrom && b >= axisTo)) return null;
-      return [0, plotW];
-    }
-    return [pa ?? 0, pb ?? plotW];
+  const span0 = axisFrom.getTime();
+  const span1 = axisTo.getTime();
+  // A stretch of time as two x positions, clamped to the window, or null
+  // when none of it is in view. A period that began before the window
+  // still shows the part of it that falls inside.
+  const stretch = (a: Date, b: Date): [number, number] | null => {
+    const s0 = a.getTime();
+    const s1 = b.getTime();
+    if (s1 <= span0 || s0 >= span1) return null;
+    const f = (t: number) => ((Math.min(span1, Math.max(span0, t)) - span0) / (span1 - span0)) * plotW;
+    return [f(s0), f(s1)];
   };
-  // eslint-disable-next-line prefer-const
+  const span = (fromM: number, toM: number) => stretch(dateAtMonthPos(fromM), dateAtMonthPos(toM));
+
   switch (lane) {
     case 'cycle': {
-      // Only the cycles in view. A point outside the window used to be
-      // placed at a sentinel off the canvas, which drew the path out to
-      // the left and back again across the whole lane.
-      cycle = cycle.filter((c) => x(c.at) != null);
-      if (cycle.length === 0) return null;
-      // Filtered above, so every point here has a position. Asserted once
-      // rather than each call site falling back to a sentinel that can
-      // never be reached and reads as though it can.
-      const px = (c: CyclePoint) => x(c.at) as number;
-      // Lengths fill the lane, longer cycles higher.
-      const all = cycle.map((c) => c.days);
-      const lo = Math.min(...all);
-      const hi = Math.max(...all);
-      const y = (v: number) => (hi === lo ? 52 : 26 + ((hi - v) / (hi - lo)) * 52);
-      const past = cycle.filter((c) => !c.expected);
+      // Each period as a block as long as she bled, darker for heavier
+      // flow, and the days from one period to the next written between
+      // them. A length outside 24 to 38 days is in amber, the colour for
+      // ranges.
+      const blocks = periodBlocks(signals);
+      const gaps = cycleGaps(windows);
       const next = cycle.find((c) => c.expected);
-      const nowPt = past[past.length - 1];
+      const nextAt = next ? stretch(next.at, addDays(next.at, 5)) : null;
+      const top = 34;
       return (
         <G>
-          <Path
-            d={smooth(past.map((c) => ({ x: px(c) as number, y: y(c.days) })))}
-            stroke={C.coral}
-            strokeWidth={2}
-            fill="none"
-          />
-          {next && nowPt ? (
-            <G>
-              <Line x1={px(nowPt)} y1={y(nowPt.days)} x2={px(next)} y2={y(next.days)} stroke={C.gray} strokeDasharray="2 3" />
-              <Circle cx={px(next)} cy={y(next.days)} r={3} fill={C.gray} />
-              <Label x={px(next)} y={y(next.days) - 12} opacity={0.7}>
-                {next.days}
-              </Label>
-            </G>
+          <Line x1={0} x2={plotW} y1={top + 18} y2={top + 18} stroke={C.text} opacity={0.08} />
+          {blocks.map((b, i) => {
+            const p = stretch(b.start, b.end);
+            if (!p) return null;
+            return (
+              <Rect
+                key={`b${i}`}
+                x={p[0]}
+                y={top}
+                width={Math.max(3, p[1] - p[0] - 1)}
+                height={18}
+                rx={4}
+                fill={C.coral}
+                opacity={b.flow == null ? 0.5 : 0.35 + b.flow * 0.16}
+              />
+            );
+          })}
+          {nextAt ? (
+            <Rect x={nextAt[0]} y={top} width={Math.max(3, nextAt[1] - nextAt[0])} height={18} rx={4} fill="none" stroke={C.gray} strokeDasharray="3 3" />
           ) : null}
-          {past.map((c, i) =>
-            c === nowPt ? (
-              <Glow key={i} x={px(c)} y={y(c.days)} color={C.coral} />
-            ) : (
-              <Circle key={i} cx={px(c)} cy={y(c.days)} r={3.5} fill={C.coral} />
-            ),
-          )}
-          {past.map((c, i) => (
-            <Label key={`t${i}`} x={px(c)} y={y(c.days) - 13} color={c === nowPt ? C.coral : C.text}>
-              {c.days}
-            </Label>
-          ))}
+          {gaps.map((g, i) => {
+            const cx = x(g.mid);
+            return cx == null ? null : (
+              <Label key={`g${i}`} x={cx} y={22} color={g.outside ? C.amber : C.secondary}>
+                {`${g.days}d`}
+              </Label>
+            );
+          })}
         </G>
       );
     }
-    case 'pain':
-      // Higher and stronger dots are more severe episodes.
+    case 'pain': {
+      // A strip of days, each at her worst rating that day, one colour
+      // darker as it rises. A day with no rating is left empty.
+      const cells = painCells(signals, bin);
       return (
         <G>
-          {signals
-            .filter((s) => s.pain && s.episode.severity != null && x(s.date) != null)
-            .map((s) => {
-              const sev = s.episode.severity!;
-              return (
-                <Circle
-                  key={s.episode.id}
-                  cx={x(s.date) as number}
-                  cy={76 - sev * 5.5}
-                  r={3 + sev * 0.25}
-                  fill={C.coral}
-                  opacity={0.55 + sev * 0.045}
-                />
-              );
-            })}
+          <Rect x={0} y={12} width={plotW} height={24} rx={4} fill={C.text} opacity={0.04} />
+          {cells.map((c, i) => {
+            const p = stretch(c.start, c.end);
+            return p ? (
+              <Rect key={i} x={p[0]} y={12} width={Math.max(2, p[1] - p[0] - 1)} height={24} rx={2} fill={C.coral} opacity={severityOpacity(c.severity)} />
+            ) : null;
+          })}
         </G>
       );
+    }
     case 'flare':
+      // From when it started to when it ended. One with no end is a
+      // moment, drawn as a diamond rather than given a length.
       return (
         <G>
-          {signals
-            .filter((s) => s.episode.flareUpUserReported && x(s.date) != null)
-            .map((s) => {
-              const cx = x(s.date) as number;
-              return (
-                <Rect
-                  key={s.episode.id}
-                  x={cx - 5}
-                  y={26}
-                  width={10}
-                  height={10}
-                  rx={2}
-                  fill={C.coral}
-                  transform={`rotate(45 ${cx} 31)`}
-                />
-              );
-            })}
+          {flareSpans(signals).map((f, i) => {
+            if (f.until) {
+              const p = stretch(f.at, f.until);
+              return p ? <Rect key={i} x={p[0]} y={18} width={Math.max(4, p[1] - p[0])} height={12} rx={6} fill={C.coral} /> : null;
+            }
+            const cx = x(f.at);
+            return cx == null ? null : (
+              <Rect key={i} x={cx - 5} y={19} width={10} height={10} rx={2} fill={C.coral} transform={`rotate(45 ${cx} 24)`} />
+            );
+          })}
         </G>
       );
     case 'sleep': {
-      // Her own nights, placed by date. This lane used to come from
-      // sample.journey, which positions points by month index on a seven
-      // month strip, so in real mode it drew nothing at all.
-      const pts = sleepPoints(days);
-      if (!pts.length) return null;
-      const y = sleepScale(pts, 96);
-      // One label per point is unreadable at a month or a year. The last
-      // night in view gets the number; the rest carry the shape.
-      const lastIn = [...pts].reverse().find((pt) => x(pt.at) != null);
+      // Each night, or each week's average over a year, as a bar up or
+      // down from seven hours, the line the AASM and SRS recommend adults
+      // sleep at or above. Short nights hang below it.
+      const nights = sleepBins(days, bin);
+      const guide = height / 2;
+      const reach = Math.max(2, ...nights.map((n) => Math.abs(n.hours - SLEEP_GUIDE_HOURS)));
+      const y = (h: number) => guide - ((h - SLEEP_GUIDE_HOURS) / reach) * (height / 2 - 14);
+      const lastIn = [...nights].reverse().find((n) => stretch(n.start, n.end));
       return (
         <G>
-          {pts.map((pt, i) => {
-            const cx = x(pt.at);
-            if (cx == null) return null;
-            const top = y(pt.hours);
+          <Line x1={0} x2={plotW} y1={guide} y2={guide} stroke={C.text} opacity={0.22} strokeDasharray="3 4" />
+          <SvgText x={4} y={guide - 4} fill={C.tertiary} fontSize={10} fontFamily={fonts.regular}>
+            7h
+          </SvgText>
+          {nights.map((n, i) => {
+            const p = stretch(n.start, n.end);
+            if (!p) return null;
+            const w = Math.min(10, Math.max(2, (p[1] - p[0]) * 0.6));
+            const cx = (p[0] + p[1]) / 2;
+            const a = Math.min(guide, y(n.hours));
+            const b = Math.max(guide, y(n.hours));
             return (
               <G key={i}>
-                {/* The bar is 6 wide, so it is offset by half to sit on
-                    its point. */}
-                <Rect x={cx - 3} y={top} width={6} height={Math.max(2, 96 - top)} rx={3} fill={C.lavender} />
-                {pt === lastIn ? (
-                  <Label x={cx} y={112} color={C.text}>
-                    {pt.label.replace(' ', '')}
+                <Rect x={cx - w / 2} y={a} width={w} height={Math.max(2, b - a)} rx={w / 2} fill={C.lavender} opacity={n.hours < SLEEP_GUIDE_HOURS ? 0.55 : 1} />
+                {n === lastIn ? (
+                  <Label x={cx} y={n.hours < SLEEP_GUIDE_HOURS ? b + 13 : a - 5} color={C.text}>
+                    {fmtHours(n.hours).replace(' ', '')}
                   </Label>
                 ) : null}
               </G>
@@ -266,18 +267,22 @@ function LaneMarks({
       );
     }
     case 'symptoms': {
-      // Every log she made, at the severity she gave it. Not averaged per
-      // day: a mean would flatten a nine and a four into two sixes.
-      const pts = symptomPoints(signals);
-      if (!pts.length) return null;
+      // A row for each symptom she logs most, a cell for each day (or week
+      // over a year) she logged it, darker for higher severity.
+      const grid = symptomGrid(signals, bin, SYMPTOM_ROWS);
       return (
         <G>
-          {pts.map((pt, i) => {
-            const cx = x(pt.at);
-            if (cx == null) return null;
-            const place = symptomPlacement(pt, 88);
-            return <Circle key={i} cx={cx} cy={place.y} r={place.r} fill={C.violet} />;
-          })}
+          {grid.map((row, r) => (
+            <G key={row.symptom}>
+              <Rect x={0} y={ROW_TOP + r * ROW_H} width={plotW} height={ROW_H - 4} rx={3} fill={C.text} opacity={0.04} />
+              {row.cells.map((c, i) => {
+                const p = stretch(c.start, c.end);
+                return p ? (
+                  <Rect key={i} x={p[0]} y={ROW_TOP + r * ROW_H} width={Math.max(2, p[1] - p[0] - 1)} height={ROW_H - 4} rx={2} fill={C.violet} opacity={severityOpacity(c.severity)} />
+                ) : null;
+              })}
+            </G>
+          ))}
         </G>
       );
     }
@@ -287,33 +292,21 @@ function LaneMarks({
         <G>
           {journey.medications.map((med) => {
             const color = med.tone === 'mint' ? C.mint : C.lavender;
-            // Clamped rather than filtered: a medication taken all year is
-            // in view in every window, even when neither of its ends is.
+            // A bar while she takes it, clamped to the window so one taken
+            // all year shows in every view. Where it carries on past what
+            // is recorded, the bar continues as an outline.
             const line = span(med.from, med.to);
-            if (!line) return null;
-            const [x1, x2] = line;
-            const fromIn = at(med.from);
-            const toIn = at(med.to);
             const ongoing = med.ongoing == null ? null : span(med.to, med.ongoing);
             const labelX = at(med.labelAt);
+            if (!line && !ongoing) return null;
             return (
               <G key={med.name}>
-                <Line x1={x1} y1={med.y} x2={x2} y2={med.y} stroke={color} strokeWidth={2.5} strokeLinecap="round" />
-                {/* The end caps are only drawn where the end itself is in
-                    view, so a clamped line does not grow a dot at the edge
-                    that reads as the day she started or stopped. */}
-                {fromIn != null ? <Circle cx={fromIn} cy={med.y} r={3.5} fill={color} /> : null}
-                {toIn != null ? <Circle cx={toIn} cy={med.y} r={3.5} fill={color} /> : null}
+                {line ? <Rect x={line[0]} y={med.y - 5} width={Math.max(4, line[1] - line[0])} height={10} rx={5} fill={color} /> : null}
                 {ongoing ? (
-                  <G>
-                    <Line x1={ongoing[0]} y1={med.y} x2={ongoing[1]} y2={med.y} stroke={C.gray} strokeDasharray="2 3" />
-                    {med.ongoing != null && at(med.ongoing) != null ? (
-                      <Circle cx={at(med.ongoing) as number} cy={med.y} r={3} fill={C.gray} />
-                    ) : null}
-                  </G>
+                  <Rect x={ongoing[0]} y={med.y - 5} width={Math.max(4, ongoing[1] - ongoing[0])} height={10} rx={5} fill="none" stroke={color} strokeDasharray="3 3" />
                 ) : null}
                 {labelX != null ? (
-                  <Label x={labelX} y={med.y - 10} color={C.text}>
+                  <Label x={labelX} y={med.y - 12} color={C.text}>
                     {med.name}
                   </Label>
                 ) : null}
@@ -323,16 +316,22 @@ function LaneMarks({
         </G>
       );
     case 'records':
-      if (!journey) return null;
+      // A marker per lab draw: an open ring when every result sat inside
+      // its range, a filled amber marker with the count when any did not.
       return (
         <G>
-          {journey.records.map((r) => {
-            const cx = at(r.m);
-            return cx == null ? null : (
-              <G key={r.label}>
-                <Circle cx={cx} cy={36} r={3.5} fill={C.green} />
-                <Label x={cx} y={60}>
-                  {r.label}
+          {drawMarkers(draws).map((d) => {
+            const cx = x(d.at);
+            if (cx == null) return null;
+            return (
+              <G key={d.at.toISOString()}>
+                {d.outside ? (
+                  <Rect x={cx - 6} y={22} width={12} height={12} rx={2} fill={C.amber} transform={`rotate(45 ${cx} 28)`} />
+                ) : (
+                  <Circle cx={cx} cy={28} r={6} fill="none" stroke={C.green} strokeWidth={2} />
+                )}
+                <Label x={cx} y={54} color={d.outside ? C.amber : C.secondary}>
+                  {d.outside ? `${d.outsideCount} of ${d.count} outside` : 'All in range'}
                 </Label>
               </G>
             );
@@ -341,20 +340,23 @@ function LaneMarks({
       );
     case 'notes':
       if (!journey) return null;
+      // A pin where she wrote, with her words under it. Tapping one opens
+      // her notes.
       return (
         <G>
           {journey.notes.map((n) => {
             const cx = at(n.m);
             if (cx == null) return null;
             return (
-            <G key={n.m}>
-              {n.m === NOW ? <Glow x={cx} y={34} color={C.indigo} /> : <Circle cx={cx} cy={34} r={3.5} fill={C.lavender} />}
-              {n.lines.map((line, k) => (
-                <Label key={line} x={cx} y={60 + k * 15}>
-                  {line}
-                </Label>
-              ))}
-            </G>
+              <G key={n.m} onPress={onNote}>
+                <Line x1={cx} x2={cx} y1={20} y2={40} stroke={C.indigo} strokeWidth={1.5} opacity={0.6} />
+                <Circle cx={cx} cy={16} r={5} fill={C.indigo} />
+                {n.lines.map((line, k) => (
+                  <Label key={line} x={cx} y={56 + k * 15} color={C.secondary}>
+                    {`${k === 0 ? '\u201C' : ''}${line}${k === n.lines.length - 1 ? '\u201D' : ''}`}
+                  </Label>
+                ))}
+              </G>
             );
           })}
         </G>
@@ -417,7 +419,8 @@ function MonthDetail({
 
 export function JourneyScreen() {
   const { signals, fertility, windows, lens, profile } = useCycleInsights();
-  const { journey, days } = useData();
+  const { journey, days, records } = useData();
+  const nav = useNav();
   const { width } = useWindowDimensions();
   const current = windows[windows.length - 1] ?? null;
   const cycle = cycleLane(windows, current, lens.predicts ? medianLength(countedWindows(windows, profile)) : null);
@@ -458,6 +461,7 @@ export function JourneyScreen() {
   };
 
   const shownLanes = LANES.filter((l) => !hidden.includes(l.key));
+  const symptomNames = useMemo(() => symptomGrid(signals, binFor(scale), SYMPTOM_ROWS).map((r) => r.symptom), [signals, scale]);
 
   // Whether anything at all falls in the window, so the chart can say it
   // is empty instead of showing a grid with nothing on it.
@@ -536,6 +540,15 @@ export function JourneyScreen() {
                   <Text style={[font('caption1'), { color: C.secondary }]} numberOfLines={1}>
                     {lane.sub}
                   </Text>
+                  {/* The symptom grid's rows are named here, where the
+                      names stay put while the plot scrolls. */}
+                  {lane.key === 'symptoms'
+                    ? symptomNames.map((name) => (
+                        <Text key={name} style={[font('caption2'), j.rowName]} numberOfLines={1}>
+                          {displayCopy(name)}
+                        </Text>
+                      ))
+                    : null}
                 </View>
               </View>
             ))}
@@ -591,11 +604,16 @@ export function JourneyScreen() {
                       x={x}
                       axisFrom={axis.from}
                       axisTo={axis.to}
+                      bin={binFor(scale)}
                       signals={signals}
+                      windows={windows}
                       cycle={cycle}
                       days={days}
                       journey={journey}
+                      draws={records?.draws ?? []}
                       plotW={plotW}
+                      height={lane.height}
+                      onNote={() => nav.push('journal')}
                     />
                   </Svg>
                 </View>
@@ -695,6 +713,7 @@ const j = StyleSheet.create({
   },
   pickedRule: { height: 2, width: 18, borderRadius: 1, marginTop: 3, backgroundColor: 'transparent' },
   chartRow: { flexDirection: 'row' },
+  rowName: { color: C.tertiary, height: ROW_H, lineHeight: ROW_H },
   labelCol: { width: LABEL_W },
   axisSpacer: { height: 26 },
   axisRow: { position: 'relative' },
