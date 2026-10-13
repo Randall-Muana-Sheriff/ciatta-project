@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, G, Line, Path, Rect } from 'react-native-svg';
 
 import { headlineMetrics } from '../lib/allMetrics';
 import { bloodOxygen, bloodPressure, type VitalCard } from '../lib/vitals';
@@ -25,14 +24,15 @@ import { chooseLogCategory } from '../lib/logHandoff';
 import { todayState } from '../lib/todayState';
 import { userFacingError } from '../lib/userFacingError';
 import { TodayStart } from '../ui/TodayStart';
+import { PatternLanes } from '../ui/PatternLanes';
+import { patternLanes } from '../lib/patternLanes';
+import { actionPlan, type PlanItem, type PlanKey } from '../lib/actionPlan';
+import { usePlanDone } from '../state/planDone';
 import { upcomingVisits, visitWhen } from '../lib/calendarEvents';
 import { useDeviceCalendar } from '../state/deviceCalendar';
 import { font, fonts, GUTTER } from '../theme';
 import { Eyebrow, Tile } from '../ui/bento';
 import { Wordmark } from '../ui/Wordmark';
-import { smooth } from '../lib/curve';
-import { AXIS, buildDay, CHART_KEY_LABEL, chartKey, type ChartKey, type DayChart, VIEW } from '../lib/todayChart';
-import type { IntradayPoint } from '../data/repo';
 import { ground, HUE, L, mark, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow } from '../ui/chrome';
 import { images } from '../ui/images';
@@ -40,7 +40,7 @@ import { MetricCard, METRIC_CARD_GAP } from '../ui/metricCard';
 import { METRIC_HUE } from '../ui/metricHue';
 import { METRIC_ICON } from '../ui/metricIcon';
 import { chooseMetric } from '../lib/metricHandoff';
-import { type BaselineRow, type MetricKey } from '../lib/metricDetail';
+import { type BaselineRow, type MetricKey, usualFor } from '../lib/metricDetail';
 import { ProductNowCard } from '../ui/ProductNowCard';
 import type { IconName } from '../ui/icons';
 import { Icon } from '../ui/icons';
@@ -50,96 +50,11 @@ function greeting(now: Date): string {
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
 }
 
-// The day, drawn the way the concept draws it, on this app's ground.
-//
-// Every stroke is a mark, so each takes a Base step; the wash under the
-// line is the same hue's Tint, which is the one place a tint belongs. The
-// concept drew all of this in white because its screen was Graphite.
-function DayChartView({ day, label }: { day: DayChart; label: string }) {
-  return (
-    <View accessible accessibilityRole="image" accessibilityLabel={label}>
-      <Svg width="100%" height={undefined} viewBox={`0 0 ${VIEW.w} ${VIEW.h}`} style={t.day}>
-        {/* the night she has already had */}
-        {day.asleep.map((a, i) => (
-          <Rect key={i} x={a.x} y={0} width={a.width} height={VIEW.base} rx={2} fill={L.rule} />
-        ))}
-
-        {/* her own usual, across the hours she was awake */}
-        {day.usual ? (
-          <Line
-            x1={day.usual.from}
-            x2={day.usual.to}
-            y1={day.usual.y}
-            y2={day.usual.y}
-            stroke={L.meta}
-            strokeDasharray="1.6 2.4"
-            strokeWidth={0.6}
-          />
-        ) : null}
-        <Line x1={0} x2={VIEW.w} y1={VIEW.base} y2={VIEW.base} stroke={L.rule} strokeWidth={0.6} />
-
-        <Path d={day.area} fill={ground('measured')} />
-        <Path d={day.line} fill="none" stroke={mark('measured')} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-
-        {/* where now is, and the last reading it follows */}
-        <Line x1={day.nowX} x2={day.nowX} y1={VIEW.top - 2} y2={VIEW.rail} stroke={L.rule} strokeWidth={0.6} />
-        <Circle cx={day.points[day.points.length - 1].x} cy={day.points[day.points.length - 1].y} r={2} fill={mark('measured')} />
-
-        {/* what she logged, on its own rail so it does not fight the line */}
-        {day.marks.map((m, i) => (
-          <G key={i}>
-            <Line x1={m.x} x2={m.x} y1={VIEW.base} y2={VIEW.rail} stroke={L.rule} strokeWidth={0.5} />
-            <Circle cx={m.x} cy={VIEW.rail} r={m.r} fill={mark('reported')} />
-          </G>
-        ))}
-      </Svg>
-      <View style={t.axis}>
-        {AXIS.map((a) => (
-          <Text key={a} style={[font('caption2'), t.axisText]}>
-            {a}
-          </Text>
-        ))}
-      </View>
-      {/*
-        What the pattern is made of, named. Only what is drawn right now,
-        so the key changes with the day: early on it may be the line alone,
-        and her usual, her night and her logs join as they exist.
-      */}
-      <View style={t.key} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-        {chartKey(day).map((k) => (
-          <View key={k} style={t.keyItem}>
-            <KeySwatch kind={k} />
-            <Text style={[font('caption2'), t.axisText]}>{CHART_KEY_LABEL[k]}</Text>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-// A small sample of each mark, drawn the way the chart draws it.
-function KeySwatch({ kind }: { kind: ChartKey }) {
-  return (
-    <Svg width={14} height={8} viewBox="0 0 14 8">
-      {kind === 'heartRate' ? (
-        <Line x1={1} x2={13} y1={4} y2={4} stroke={mark('measured')} strokeWidth={2} strokeLinecap="round" />
-      ) : kind === 'usual' ? (
-        <Line x1={1} x2={13} y1={4} y2={4} stroke={L.meta} strokeWidth={1.2} strokeDasharray="1.6 2.4" />
-      ) : kind === 'asleep' ? (
-        <Rect x={1} y={0.5} width={12} height={7} rx={1.5} fill={L.rule} />
-      ) : (
-        <Circle cx={7} cy={4} r={3} fill={mark('reported')} />
-      )}
-    </Svg>
-  );
-}
-
-
 type Action = { key: string; icon: IconName; title: string; sub?: string; onPress?: () => void };
 
 export function TodayScreen() {
   const nav = useNav();
-  const { startDraft, accept, watching, setWatching } = useCycle();
+  const { startDraft, accept, watching, setWatching, episodes } = useCycle();
   const { today: brief, ranked } = useInsights();
   const { windows, signals, lens, profile, fertility } = useCycleInsights();
   const { person, today, days, todayIsPlaceholder } = useData();
@@ -227,24 +142,6 @@ export function TodayScreen() {
     };
   }, [repo]);
 
-  const [intraday, setIntraday] = useState<IntradayPoint[]>([]);
-  useEffect(() => {
-    const midnight = new Date();
-    midnight.setHours(0, 0, 0, 0);
-    let ignore = false;
-    repo
-      .loadIntraday(midnight.toISOString())
-      .then((rows) => {
-        if (!ignore) setIntraday(rows);
-      })
-      .catch(() => {
-        // No chart rather than an invented one.
-      });
-    return () => {
-      ignore = true;
-    };
-  }, [repo]);
-
   // Where today sits in her cycle. Null when there is no open cycle or
   // when it has been left open too long to mean anything, and the header
   // then says nothing rather than guessing.
@@ -283,6 +180,10 @@ export function TodayScreen() {
     return estimatedPhaseLabel(estimatedPhase(cycleNow.day, medianLength(countedWindows(windows, profile))));
   }, [windows, fertility, cycleNow, profile]);
 
+  const todayKey = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })();
   // Today's own row, when there is one. days arrives oldest first.
   const todayDay = useMemo(() => {
     const iso = new Date();
@@ -290,75 +191,81 @@ export function TodayScreen() {
     return days.find((d) => d.date === key) ?? null;
   }, [days]);
 
-  // The day, built only from what arrived. buildDay returns null when there
-  // is not enough to draw, which is the honest state on a first morning.
-  const day = useMemo(() => {
-    const readings = intraday
-      .filter((r) => r.metric === 'heart_rate' && r.value != null)
-      .map((r) => ({ at: new Date(r.at), value: r.value as number }));
-    const sleepEnds = intraday.filter((r) => r.metric === 'sleep_analysis').map((r) => new Date(r.at));
-    const woke = sleepEnds.length ? new Date(Math.max(...sleepEnds.map((d) => d.getTime()))) : null;
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    // Her own usual for this metric, from her own history and nowhere else.
-    const restingHistory = days.map((d) => d.restingHR).filter((v): v is number => v != null);
-    const usual = restingHistory.length >= 3
-      ? restingHistory.reduce((a, b) => a + b, 0) / restingHistory.length
-      : null;
-    // What she logged today, on its own rail. Severity sizes the dot, so
-    // the rail says how much as well as when.
-    const marks = signals
-      .filter((sg) => sg.pain && sg.episode.severity != null && sg.date >= startOfDay)
-      .map((sg) => ({ at: sg.date, weight: sg.episode.severity as number }));
-
-    return buildDay({
-      readings,
-      asleep: woke ? [{ from: startOfDay, to: woke }] : [],
-      marks,
-      usual,
-      now: new Date(),
-    });
-  }, [intraday, days, signals]);
   const go = (screen: Screen) => () => nav.push(screen);
   const now = new Date();
 
-  // Actions that fit the pattern being told today.
-  const actions: Action[] = [];
-  // A care visit in her calendar this week, to get ready for. Read from
-  // this phone only once she connected it on the Calendar screen.
-  if (nextVisit) {
-    actions.push({
-      key: 'visit',
-      icon: 'calendarPlus',
-      title: displayCopy(`Prepare for ${nextVisit.title}`),
-      sub: displayCopy(`${visitWhen(nextVisit, now)}. Build a brief from your record to take with you.`),
-      onPress: go('appointment'),
+  // Today's plan: what she could do today, each item with its reason in
+  // her own numbers. See lib/actionPlan.
+  const usualOf = (key: 'sleep' | 'hrv' | 'rhr' | 'steps') => usualFor(key, baselines);
+  const usualLength = lens.predicts ? medianLength(countedWindows(windows, profile)) : null;
+  const loggedToday =
+    episodes.some((e) => e.date === todayKey) ||
+    (!!todayDay && ([todayDay.mood, todayDay.energy, todayDay.stress].some((v) => v != null) || todayDay.foods.length > 0));
+  const plan = actionPlan({
+    days,
+    usual: {
+      sleep: usualOf('sleep')?.median ?? null,
+      hrv: usualOf('hrv'),
+      rhr: usualOf('rhr'),
+      steps: usualOf('steps')?.median ?? null,
+    },
+    cycle: cycleNow ? { day: cycleNow.day, usualLength, bleeding: cycleNow.phase === 'During period' } : null,
+    loggedToday,
+    visit: nextVisit ? { title: nextVisit.title, when: visitWhen(nextVisit, now) } : null,
+    watchSuggested: brief.lead?.id === 'combined' && watching.nextCycle !== true,
+    walkSuggested: !!brief.recommendation && !brief.walkPlanned,
+    now,
+  });
+  const { done, toggle } = usePlanDone(now);
+  const PLAN_ICON: Record<PlanKey, IconName> = {
+    visit: 'calendarPlus', flow: 'drop', period: 'drop', recover: 'heartPulse', sleep: 'sleep', walk: 'steps', watch: 'target', log: 'plus',
+  };
+  const openMetric = (key: MetricKey) => {
+    chooseMetric(key);
+    nav.push('metric');
+  };
+  const doItem = (item: PlanItem) => {
+    switch (item.key) {
+      case 'visit':
+        return nav.push('appointment');
+      case 'flow':
+        return logCycle();
+      case 'period':
+        return nav.push('cycle');
+      case 'recover':
+        return openMetric('hrv');
+      case 'sleep':
+        return openMetric('sleep');
+      case 'walk':
+        if (brief.recommendation && !brief.walkPlanned) accept('walk');
+        return openMetric('steps');
+      case 'watch':
+        setWatching('nextCycle', true);
+        return toggle('watch');
+      case 'log':
+        return logSymptoms();
+    }
+  };
+
+  // Fourteen days of her record on one timeline, for Today's Patterns.
+  const lanes = useMemo(() => {
+    const periodDays = new Set<string>();
+    for (const w of windows) {
+      const end = w.end ?? (cycleNow && cycleNow.phase === 'During period' ? new Date() : w.start);
+      for (let d = new Date(w.start); d <= end; d.setDate(d.getDate() + 1)) {
+        periodDays.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+      }
+    }
+    const band = (u: { low: number; high: number } | null) => (u ? { low: u.low, high: u.high } : null);
+    return patternLanes({
+      days,
+      episodes,
+      periodDays,
+      usual: { sleep: usualFor('sleep', baselines)?.median ?? null, hrv: band(usualFor('hrv', baselines)), rhr: band(usualFor('rhr', baselines)) },
+      cycleDayToday: cycleNow?.day ?? null,
+      now: new Date(),
     });
-  }
-  if (brief.lead?.id === 'combined') {
-    const on = watching.nextCycle === true;
-    actions.push({
-      key: 'watch',
-      icon: 'target',
-      title: 'Watch Your Next Cycle',
-      sub: on ? 'Watching. It will show here when your next cycle ends.' : undefined,
-      onPress: on ? undefined : () => setWatching('nextCycle', true),
-    });
-  }
-  if (brief.recommendation) {
-    actions.push({
-      key: 'walk',
-      icon: 'sun',
-      title: brief.walkPlanned ? 'Walk Planned for Today' : 'Try a Short Walk Today',
-      sub: brief.walkPlanned ? 'The next few days will show how it goes.' : 'Only if it feels appropriate.',
-      onPress: brief.walkPlanned ? undefined : () => accept('walk'),
-    });
-  }
-  // Nothing is pushed here unconditionally any more. What is left above is
-  // only what today's pattern earned: a watch worth setting, a walk worth
-  // trying. Preparing for an appointment is always available and has moved
-  // to the foot of Worth Doing Next, which is where the things that are
-  // always available live.
+  }, [days, episodes, windows, baselines, cycleNow]);
 
   return (
     <ScrollView style={t.fill} contentContainerStyle={t.body}>
@@ -416,32 +323,20 @@ export function TodayScreen() {
         <View style={t.dayCard}>
           <View style={t.dayHead}>
             <Text style={[font('caption1'), t.dayHeadText]}>TODAY&rsquo;S PATTERNS</Text>
-            {/* The date, not the cycle day: the cycle day has its own row at
-                the bottom of this card, and saying it twice made it noise. */}
-            <Text style={[font('caption1'), t.dayHeadText]}>
-              {now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
-            </Text>
+            <Text style={[font('caption1'), t.dayHeadText]}>LAST 14 DAYS</Text>
           </View>
-          {day ? (
-            <DayChartView
-              day={day}
-              // Everything drawn, said. A chart described only by its line
-              // leaves a blind reader without the sleep block and the
-              // logs, which are half of what is on it.
-              label={[
-                `Your heart rate through today, ${day.points.length} readings between ${day.low.toFixed(0)} and ${day.high.toFixed(0)}.`,
-                day.asleep.length ? 'Your sleep is shaded at the start of the day.' : '',
-                day.marks.length
-                  ? `${day.marks.length} ${day.marks.length === 1 ? 'log' : 'logs'} marked below the line.`
-                  : '',
-                day.usual ? 'Your own usual is the dashed line.' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            />
+          {/*
+            The last fortnight, lane over lane on one run of days, so what
+            lines up is seen rather than told: the Olivia summary's stacked
+            shape, read for patterns.
+          */}
+          {lanes.lanes.length ? (
+            <Pressable onPress={() => nav.goTab('journey')} accessibilityHint="Opens your Journey" style={({ pressed }) => [pressed && t.pressed]}>
+              <PatternLanes view={lanes} />
+            </Pressable>
           ) : (
             <Text style={[font('subhead'), t.dayEmpty]}>
-              Not enough readings today to draw your day yet.
+              Your patterns appear here as days of sleep, heart readings and logs build up.
             </Text>
           )}
 
@@ -591,16 +486,58 @@ export function TodayScreen() {
           pattern does. The concept calls this the try block and gives it
           one job: the thing she might do about what she just read.
         */}
-        {actions.length ? (
-          <View style={t.section}>
+        <View style={t.section}>
+          <View style={t.planHead}>
             <Eyebrow>What you could try</Eyebrow>
-            <ListGroup light style={{ marginTop: 10 }}>
-              {actions.map((a, n) => (
-                <ListRow light key={a.key} first={n === 0} icon={a.icon} title={a.title} sub={a.sub} onPress={a.onPress} />
-              ))}
-            </ListGroup>
+            {plan.length ? (
+              <Text style={[font('caption1'), t.planCount]}>
+                {`${plan.filter((p) => done.includes(p.key)).length} of ${plan.length} done`}
+              </Text>
+            ) : null}
           </View>
-        ) : null}
+          {plan.length ? (
+            <View style={t.plan}>
+              {plan.map((item, n) => {
+                const ticked = done.includes(item.key);
+                return (
+                  <View key={item.key} style={[t.planRow, n > 0 && t.planRule]}>
+                    <Pressable
+                      onPress={() => toggle(item.key)}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: ticked }}
+                      accessibilityLabel={`Mark ${item.title} done`}
+                      hitSlop={8}
+                      style={[t.tick, ticked && t.tickOn]}
+                    >
+                      {ticked ? <Icon name="check" size={14} color={L.canvas} weight={2} /> : null}
+                    </Pressable>
+                    <Pressable
+                      onPress={() => doItem(item)}
+                      accessibilityRole="button"
+                      style={({ pressed }) => [t.planBody, pressed && t.pressed]}
+                    >
+                      <View style={t.planTitleRow}>
+                        <Icon name={PLAN_ICON[item.key]} size={16} color={ticked ? L.meta : L.ink} />
+                        <Text style={[font('subhead', 'semibold'), ticked ? t.planDone : t.planTitle]}>{displayCopy(item.title)}</Text>
+                      </View>
+                      <Text style={[font('footnote'), t.planWhy]}>{displayCopy(item.why)}</Text>
+                    </Pressable>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            // Nothing earned today: said, with when the plan comes back.
+            <View style={[t.plan, t.planEmpty]}>
+              <Icon name="check" size={20} color={L.meta} />
+              <Text style={[font('subhead', 'semibold'), t.planTitle]}>Nothing needs doing today</Text>
+              <Text style={[font('footnote'), t.planWhy, { textAlign: 'center' }]}>
+                Your plan is built each morning from your sleep, heart, cycle and logs. New items appear here as readings arrive.
+              </Text>
+            </View>
+          )}
+          <Text style={[font('caption2'), t.planNote]}>Suggestions from your own record, not medical advice.</Text>
+        </View>
 
           </>
         )}
@@ -699,14 +636,7 @@ const t = StyleSheet.create({
   },
   dayHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   dayHeadText: { color: L.meta, letterSpacing: 0.9 },
-  // The viewBox is 132 by 40, so the box it draws into keeps that ratio
-  // and the geometry is never stretched.
-  day: { width: '100%', aspectRatio: 132 / 40 },
   dayEmpty: { color: L.body, lineHeight: 21, paddingVertical: 10 },
-  axis: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 },
-  axisText: { color: L.meta },
-  key: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 14, rowGap: 6, marginTop: 10 },
-  keyItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
 
   // The cycle sits on its own full width row above the three pills, and
   // divides from them, so it reads as the context rather than as a fourth
@@ -780,4 +710,34 @@ const t = StyleSheet.create({
     borderColor: L.rule,
   },
   chart: { flex: 1, aspectRatio: 190 / 150 },
+  planHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  planCount: { color: L.meta },
+  plan: {
+    marginTop: 10,
+    backgroundColor: L.recessed,
+    borderRadius: TILE_RADIUS,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: L.rule,
+    paddingHorizontal: 14,
+  },
+  planRow: { flexDirection: 'row', gap: 12, paddingVertical: 14 },
+  planRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },
+  tick: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: L.meta,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  tickOn: { backgroundColor: L.ink, borderColor: L.ink },
+  planBody: { flex: 1, gap: 4 },
+  planTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  planTitle: { color: L.ink },
+  planDone: { color: L.meta, textDecorationLine: 'line-through' },
+  planWhy: { color: L.body, lineHeight: 19 },
+  planEmpty: { alignItems: 'center', gap: 6, paddingVertical: 22 },
+  planNote: { color: L.meta, marginTop: 8 },
 });
