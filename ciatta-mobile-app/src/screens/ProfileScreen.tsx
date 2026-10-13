@@ -430,15 +430,15 @@ function WeatherRow() {
       : state === 'failed'
         ? 'Allowed, but weather is not set up yet. It will fill in once it is.'
         : state === 'working'
-          ? 'Adding the weather around you'
-          : 'Off. Adds the weather and daylight around you as background.';
+          ? 'Adding the air quality around you'
+          : 'Off. Adds the air quality and daylight around you as background.';
   return (
     <ListGroup header="Weather" footer="Only a rough area, about 10 km, leaves your phone, and it is never stored.">
       <ListRow
         first
         icon="sun"
         tint={TONE.indigo}
-        title="Weather and Daylight"
+        title="Air Quality and Daylight"
         sub={sub}
         onPress={
           state === 'on' || state === 'working'

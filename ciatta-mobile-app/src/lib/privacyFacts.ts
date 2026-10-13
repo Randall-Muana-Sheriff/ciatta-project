@@ -48,7 +48,7 @@ export function privacyFacts(input: { sources: string[]; providers: string[]; we
   if (input.weatherOn) {
     facts.push({
       title: 'Weather around you',
-      body: 'Only a rough area, about 10 km, is sent to fetch the weather and air quality. Your location is never stored.',
+      body: 'Only a rough area, about 10 km, is sent to fetch the air quality around you. Your location is never stored.',
     });
   }
   if (input.findingsOn) {

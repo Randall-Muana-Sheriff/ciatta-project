@@ -161,7 +161,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Ciatta uses your approximate area to add the weather and daylight around you to your record. Only a rough area leaves your phone, and it is never stored."
+          "locationWhenInUsePermission": "Ciatta uses your approximate area to add the air quality around you to your record. Only a rough area leaves your phone, and it is never stored."
         }
       ],
       "react-native-health-connect",

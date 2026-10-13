@@ -28,13 +28,12 @@ export function checkRequest(body: unknown, now: Date): Request | { error: strin
   return { lat, lon, from, to };
 }
 
-// Her local calendar day for an instant, in the area's time zone.
-const localDay = (iso: string, tz: string) =>
-  new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso));
-
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const round = (n: number, places: number) => Math.round(n * 10 ** places) / 10 ** places;
 
+// The weather columns, kept on the table but not filled: Ciatta reads the
+// air around her (Open-Meteo, no key) and her own daylight (Apple Health),
+// and no longer fetches temperature or humidity.
 export type WeatherRow = {
   temp_max_c: number | null;
   temp_min_c: number | null;
@@ -42,40 +41,6 @@ export type WeatherRow = {
   condition: string | null;
   daylight_minutes: number | null;
 };
-
-export function mapWeatherKit(json: unknown, tz: string): Map<string, WeatherRow> {
-  const out = new Map<string, WeatherRow>();
-  const j = (json ?? {}) as { forecastDaily?: { days?: unknown[] }; forecastHourly?: { hours?: unknown[] } };
-  const blank = (): WeatherRow => ({ temp_max_c: null, temp_min_c: null, humidity_mean: null, condition: null, daylight_minutes: null });
-
-  for (const raw of j.forecastDaily?.days ?? []) {
-    const d = raw as Record<string, unknown>;
-    if (typeof d.forecastStart !== 'string') continue;
-    const sunrise = typeof d.sunrise === 'string' ? Date.parse(d.sunrise) : NaN;
-    const sunset = typeof d.sunset === 'string' ? Date.parse(d.sunset) : NaN;
-    out.set(localDay(d.forecastStart, tz), {
-      ...blank(),
-      temp_max_c: num(d.temperatureMax),
-      temp_min_c: num(d.temperatureMin),
-      condition: typeof d.conditionCode === 'string' ? d.conditionCode : null,
-      daylight_minutes: Number.isFinite(sunrise) && Number.isFinite(sunset) && sunset > sunrise ? Math.round((sunset - sunrise) / 60000) : null,
-    });
-  }
-
-  const humid = new Map<string, number[]>();
-  for (const raw of j.forecastHourly?.hours ?? []) {
-    const h = raw as Record<string, unknown>;
-    const v = num(h.humidity);
-    if (typeof h.forecastStart !== 'string' || v == null || v < 0 || v > 1) continue;
-    const day = localDay(h.forecastStart, tz);
-    humid.set(day, [...(humid.get(day) ?? []), v]);
-  }
-  for (const [day, vs] of humid) {
-    const row = out.get(day) ?? blank();
-    out.set(day, { ...row, humidity_mean: round(vs.reduce((a, b) => a + b, 0) / vs.length, 3) });
-  }
-  return out;
-}
 
 export type AirRow = {
   pm2_5: number | null;

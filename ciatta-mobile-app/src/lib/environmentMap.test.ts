@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { checkRequest, mapAirQuality, mapWeatherKit, mergeDays } from '../../supabase/functions/environment/map.ts';
+import { checkRequest, mapAirQuality, mergeDays } from '../../supabase/functions/environment/map.ts';
 
 const NOW = new Date('2026-10-13T12:00:00Z');
 
@@ -14,34 +14,6 @@ test('a request is a rough area, a past range, and no more than 120 days', () =>
   assert.match((checkRequest({ lat: 51.5, lon: -0.1, from: '2026-10-12', to: '2026-10-20' }, NOW) as { error: string }).error, /future/);
   assert.match((checkRequest({ lat: 95, lon: 0, from: '2026-10-01', to: '2026-10-02' }, NOW) as { error: string }).error, /area/);
   assert.match((checkRequest({ lat: 51.5, lon: -0.1, from: '2026-10-12', to: '2026-10-01' }, NOW) as { error: string }).error, /range/);
-});
-
-test('WeatherKit days become rows in her local days, humidity averaged from the hours', () => {
-  const json = {
-    forecastDaily: {
-      days: [
-        { forecastStart: '2026-10-11T23:00:00Z', temperatureMax: 21.4, temperatureMin: 12.1, conditionCode: 'PartlyCloudy', sunrise: '2026-10-12T06:15:00Z', sunset: '2026-10-12T17:15:00Z' },
-      ],
-    },
-    forecastHourly: {
-      hours: [
-        { forecastStart: '2026-10-11T23:00:00Z', humidity: 0.7 },
-        { forecastStart: '2026-10-12T11:00:00Z', humidity: 0.5 },
-        { forecastStart: '2026-10-12T23:00:00Z', humidity: 0.9 },
-      ],
-    },
-  };
-  const rows = mapWeatherKit(json, 'Europe/London');
-  assert.deepEqual(rows.get('2026-10-12'), {
-    temp_max_c: 21.4, temp_min_c: 12.1, humidity_mean: 0.6, condition: 'PartlyCloudy', daylight_minutes: 660,
-  });
-  assert.equal(rows.get('2026-10-13')?.humidity_mean, 0.9, 'an hour of the next local day counts there');
-});
-
-test('a missing WeatherKit field is null, never guessed', () => {
-  const rows = mapWeatherKit({ forecastDaily: { days: [{ forecastStart: '2026-10-11T23:00:00Z', temperatureMax: 20 }] } }, 'Europe/London');
-  assert.deepEqual(rows.get('2026-10-12'), { temp_max_c: 20, temp_min_c: null, humidity_mean: null, condition: null, daylight_minutes: null });
-  assert.equal(mapWeatherKit(null, 'UTC').size, 0);
 });
 
 test('Open-Meteo hours become a day: PM2.5 averaged, AQI and pollen at their worst', () => {
