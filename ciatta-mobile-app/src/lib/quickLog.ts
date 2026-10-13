@@ -262,6 +262,9 @@ export type SavePlan = {
   daily: { digestion: string[] } | null;
   journal: { kind: EntryKind; category: CategoryKey; items: Found } | null;
   wordsGoTo: 'journal' | 'episode' | 'daily';
+  // How many days back she said this was. Dates every part, not only the
+  // episode.
+  daysAgo: number;
 };
 
 const JOURNAL_KEYS: CategoryKey[] = ['nutrition', 'body', 'mind', 'skin', 'sexual', 'context'];
@@ -296,9 +299,12 @@ export function planSave(input: { text: string; selected: CategoryKey; tapped: s
   const wantsJournal =
     Object.keys(items).length > 0 ||
     input.selected === 'note' ||
-    (hasWords && !kinds.length && !digestion.length && input.selected !== 'cycle') ||
+    (hasWords && !kinds.length && !digestion.length) ||
     (input.files.length > 0 && !kinds.length);
-  const wantsEpisode = kinds.length > 0 || (hasWords && input.selected === 'cycle' && !wantsJournal);
+  // An episode only when there is a kind to file: words with nothing
+  // recognised are a note, filed under the category she chose, never an
+  // empty cycle entry.
+  const wantsEpisode = kinds.length > 0;
 
   const journalCategory: CategoryKey =
     (JOURNAL_KEYS as CategoryKey[]).includes(input.selected) || input.selected === 'note'
@@ -312,6 +318,7 @@ export function planSave(input: { text: string; selected: CategoryKey; tapped: s
     daily: digestion.length ? { digestion } : null,
     journal: wantsJournal ? { kind: category(journalCategory).journalKind, category: journalCategory, items } : null,
     wordsGoTo: wantsJournal ? 'journal' : wantsEpisode ? 'episode' : 'daily',
+    daysAgo: readDaysAgo(text),
   };
 }
 

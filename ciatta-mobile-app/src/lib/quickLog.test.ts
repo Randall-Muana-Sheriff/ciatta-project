@@ -87,11 +87,26 @@ test('unrecognised words under a category are kept, in that category', () => {
   assert.equal(plan.wordsGoTo, 'journal');
 });
 
-test('unrecognised words under Cycle stay a cycle entry, as before', () => {
+test('unrecognised words under Cycle are kept as a note filed under Cycle, not an empty cycle entry', () => {
   const plan = planSave({ text: 'felt off today', selected: 'cycle', tapped: [], files: [] })!;
-  assert.ok(plan.episode);
-  assert.equal(plan.journal, null);
-  assert.equal(plan.wordsGoTo, 'episode');
+  assert.equal(plan.episode, null);
+  assert.equal(plan.journal?.category, 'cycle');
+  assert.equal(plan.wordsGoTo, 'journal');
+});
+
+test('a lone file under Cycle is kept as a note too', () => {
+  const file = { id: 'f', kind: 'photo' as const, name: 'Photo', uri: 'file:///p.jpg', addedAt: '2026-10-12T09:00:00Z' };
+  const plan = planSave({ text: '', selected: 'cycle', tapped: [], files: [file] })!;
+  assert.equal(plan.episode, null);
+  assert.equal(plan.journal?.category, 'cycle');
+});
+
+test('yesterday dates every part of the entry, not only the cycle part', () => {
+  const plan = planSave({ text: 'bloated and foggy yesterday', selected: 'gut', tapped: [], files: [] })!;
+  assert.equal(plan.daysAgo, 1);
+  assert.deepEqual(plan.daily?.digestion, ['Bloating']);
+  assert.deepEqual(plan.journal?.items.mind, ['Brain fog']);
+  assert.equal(planSave({ text: 'bloated', selected: 'gut', tapped: [], files: [] })!.daysAgo, 0);
 });
 
 test('tapped chips count as hers, in the category she tapped them in', () => {

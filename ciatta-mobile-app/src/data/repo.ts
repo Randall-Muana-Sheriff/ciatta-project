@@ -85,7 +85,9 @@ export type Repo = {
   loadJournal(): Promise<JournalView>;
   // Files ride along in metadata, as they do on an episode. Optional, so a
   // caller with nothing attached passes nothing.
-  addJournal(text: string, kind: EntryKind, attachments?: Attachment[], tags?: { category: CategoryKey; items: Found }): Promise<void>;
+  // `at` dates the entry to when it happened, when she said so (yesterday,
+  // three days ago); otherwise now.
+  addJournal(text: string, kind: EntryKind, attachments?: Attachment[], tags?: { category: CategoryKey; items: Found }, at?: string): Promise<void>;
   // Her own columns of one day, merged into whatever the day already holds.
   saveDailyLog(patch: DailyPatch): Promise<void>;
   // Period products: her uses, newest last; putting one in (which closes
@@ -346,10 +348,10 @@ export function demoRepo(): Repo {
     endProduct: async (out) => {
       productUses = endUse(productUses, out);
     },
-    addJournal: async (text, kind, attachments = [], tags) => {
-      const d = new Date();
+    addJournal: async (text, kind, attachments = [], tags, at) => {
+      const d = at ? new Date(at) : new Date();
       const month = `${d.toLocaleString('en-US', { month: 'long' })} ${d.getFullYear()}`;
-      const item = { text, date: `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`, tag: kind, kind, usedInInsight: false, attachments, category: tags?.category, items: tags?.items };
+      const item = { text, date: `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`, tag: kind, kind, usedInInsight: false, attachments, category: tags?.category, items: tags?.items, at: d.toISOString() };
       const rest = view.months.filter((m) => m.month !== month);
       const current = view.months.find((m) => m.month === month);
       view = { ...view, count: view.count + 1, months: [{ month, items: [item, ...(current?.items ?? [])] }, ...rest] };
@@ -740,14 +742,14 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
         }),
       );
     },
-    async addJournal(text, kind, attachments = [], tags) {
+    async addJournal(text, kind, attachments = [], tags, at) {
       must(
         await db.from('journal_entries').insert({
           user_id: userId,
           client_id: `j-${Date.now()}`,
           text,
           kind,
-          occurred_at: new Date().toISOString(),
+          occurred_at: at ?? new Date().toISOString(),
           metadata: {
             ...(attachments.length ? { attachments } : {}),
             ...(tags ? { category: tags.category, items: tags.items } : {}),

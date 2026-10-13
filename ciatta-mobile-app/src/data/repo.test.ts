@@ -232,3 +232,11 @@ test('demo mode has no loop and its loop writes are no ops', async () => {
   await repo.reportOutcome('a1', 'improved');
   await repo.dismissRecommendation('r1', 'not_relevant');
 });
+
+test('a note can be dated to the day she said, not only now', async () => {
+  const repo = demoRepo();
+  const yesterday = new Date(Date.now() - 86400000).toISOString();
+  await repo.addJournal('Bloated', 'Symptoms', [], { category: 'gut', items: { gut: ['Bloating'] } }, yesterday);
+  const items = (await repo.loadJournal()).months.flatMap((m) => m.items);
+  assert.equal(items.find((i) => i.text === 'Bloated')?.at, yesterday);
+});

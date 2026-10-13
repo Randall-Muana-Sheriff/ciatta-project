@@ -115,8 +115,12 @@ export function QuickLogScreen() {
     setSaving(true);
     setError(null);
     try {
+      // The day she said this was: today, yesterday, or a number of days
+      // back. Every part of the entry is filed on it.
       const day = new Date();
+      day.setDate(day.getDate() - plan.daysAgo);
       const iso = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+      const when = plan.daysAgo ? day.toISOString() : undefined;
       const episode = plan.episode;
       const daily = plan.daily;
       const journal = plan.journal;
@@ -131,7 +135,7 @@ export function QuickLogScreen() {
                 })
             : undefined,
           journal: journal
-            ? () => repo.addJournal(said, journal.kind, files, { category: journal.category, items: journal.items })
+            ? () => repo.addJournal(said, journal.kind, files, { category: journal.category, items: journal.items }, when)
             : undefined,
           episode: episode
             ? () =>
