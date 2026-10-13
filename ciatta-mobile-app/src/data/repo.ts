@@ -421,7 +421,7 @@ export function demoRepo(): Repo {
     // The example person's day. Demo is explicitly not her record, so a
     // drawn day here is an illustration rather than a claim.
     loadIntraday: async (_since, metrics) =>
-      metrics ? demoIntraday(metrics) : sampleIntraday(),
+      metrics ? [...sampleIntraday().filter((r) => metrics.includes(r.metric)), ...demoIntraday(metrics)] : sampleIntraday(),
     loadReported: async () => ({
       conditions: ['Endometriosis'],
       surgeries: [],

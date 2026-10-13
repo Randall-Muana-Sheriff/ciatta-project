@@ -24,8 +24,13 @@ import { chooseLogCategory } from '../lib/logHandoff';
 import { todayState } from '../lib/todayState';
 import { userFacingError } from '../lib/userFacingError';
 import { TodayStart } from '../ui/TodayStart';
-import { PatternLanes } from '../ui/PatternLanes';
-import { patternLanes } from '../lib/patternLanes';
+import { DayPair } from '../ui/DayPair';
+import { DAY_READ, dayPatterns } from '../lib/dayPatterns';
+import { SymptomCompare } from '../ui/SymptomCompare';
+import { symptomStrip, type Range as StripRange } from '../lib/symptomStrip';
+import { symptomDays } from '../lib/symptomsView';
+import type { IntradayPoint } from '../data/repo';
+import type { JournalView } from '../data/rows';
 import { actionPlan, type PlanItem, type PlanKey } from '../lib/actionPlan';
 import { usePlanDone } from '../state/planDone';
 import { upcomingVisits, visitWhen } from '../lib/calendarEvents';
@@ -247,25 +252,38 @@ export function TodayScreen() {
     }
   };
 
-  // Fourteen days of her record on one timeline, for Today's Patterns.
-  const lanes = useMemo(() => {
-    const periodDays = new Set<string>();
-    for (const w of windows) {
-      const end = w.end ?? (cycleNow && cycleNow.phase === 'During period' ? new Date() : w.start);
-      for (let d = new Date(w.start); d <= end; d.setDate(d.getDate() + 1)) {
-        periodDays.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
-      }
-    }
-    const band = (u: { low: number; high: number } | null) => (u ? { low: u.low, high: u.high } : null);
-    return patternLanes({
-      days,
-      episodes,
-      periodDays,
-      usual: { sleep: usualFor('sleep', baselines)?.median ?? null, hrv: band(usualFor('hrv', baselines)), rhr: band(usualFor('rhr', baselines)) },
-      cycleDayToday: cycleNow?.day ?? null,
-      now: new Date(),
-    });
-  }, [days, episodes, windows, baselines, cycleNow]);
+  // Today's Patterns: today's wearable readings, hour by hour. Labs are
+  // snapshots and the cycle runs in months, so neither is drawn on a day.
+  const [intraday, setIntraday] = useState<IntradayPoint[]>([]);
+  useEffect(() => {
+    const midnight = new Date();
+    midnight.setHours(0, 0, 0, 0);
+    let ignore = false;
+    repo
+      .loadIntraday(midnight.toISOString(), DAY_READ)
+      .then((rows) => !ignore && setIntraday(rows))
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, [repo, nav.depth]);
+  const dayView = useMemo(() => dayPatterns(intraday, new Date()), [intraday]);
+
+  // Symptoms side by side, from every place she logs them.
+  const [journal, setJournal] = useState<JournalView | null>(null);
+  useEffect(() => {
+    repo.loadJournal().then(setJournal).catch(() => {});
+  }, [repo, nav.depth]);
+  const [stripRange, setStripRange] = useState<StripRange>('7');
+  const strip = useMemo(
+    () =>
+      symptomStrip(
+        symptomDays({ signals, logs: (journal?.months ?? []).flatMap((m) => m.items), days, now: new Date() }),
+        stripRange,
+        new Date(),
+      ),
+    [signals, journal, days, stripRange],
+  );
 
   return (
     <ScrollView style={t.fill} contentContainerStyle={t.body}>
@@ -323,20 +341,19 @@ export function TodayScreen() {
         <View style={t.dayCard}>
           <View style={t.dayHead}>
             <Text style={[font('caption1'), t.dayHeadText]}>TODAY&rsquo;S PATTERNS</Text>
-            <Text style={[font('caption1'), t.dayHeadText]}>LAST 14 DAYS</Text>
+            <Text style={[font('caption1'), t.dayHeadText]}>
+              {now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
+            </Text>
           </View>
           {/*
-            The last fortnight, lane over lane on one run of days, so what
-            lines up is seen rather than told: the Olivia summary's stacked
-            shape, read for patterns.
+            The day itself, from her wearable: two metrics at a time on the
+            day's hours, so one can be read against the other.
           */}
-          {lanes.lanes.length ? (
-            <Pressable onPress={() => nav.goTab('journey')} accessibilityHint="Opens your Journey" style={({ pressed }) => [pressed && t.pressed]}>
-              <PatternLanes view={lanes} />
-            </Pressable>
+          {dayView.series.length ? (
+            <DayPair view={dayView} />
           ) : (
             <Text style={[font('subhead'), t.dayEmpty]}>
-              Your patterns appear here as days of sleep, heart readings and logs build up.
+              Your day appears here as your watch or ring sends heart rate, HRV and steps.
             </Text>
           )}
 
@@ -587,6 +604,13 @@ export function TodayScreen() {
             />
           </View>
         </View>
+
+        {/* Symptoms side by side, below the ways in. */}
+        {state.state === 'content' ? (
+          <View style={t.section}>
+            <SymptomCompare strip={strip} range={stripRange} onRange={setStripRange} onLog={logSymptoms} onAll={go('symptoms')} />
+          </View>
+        ) : null}
       </View>
     </ScrollView>
   );

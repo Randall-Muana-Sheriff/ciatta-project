@@ -43,7 +43,9 @@ function groupOf(name: string): string {
   return 'Body';
 }
 
-export function symptomsView(input: { signals: readonly Signal[]; logs: readonly Log[]; days: readonly DayRow[]; now: Date }): SymptomsView {
+// Each symptom she logged in the last 90 days, by day, with the worst
+// rating she gave that day. Shared with Today's symptom card.
+export function symptomDays(input: { signals: readonly Signal[]; logs: readonly Log[]; days: readonly DayRow[]; now: Date }): Map<string, Map<string, number | null>> {
   const today = new Date(input.now.getFullYear(), input.now.getMonth(), input.now.getDate()).getTime();
   const since = today - (WINDOW - 1) * DAY;
   // name -> day key -> worst rating that day (null when none given)
@@ -70,6 +72,12 @@ export function symptomsView(input: { signals: readonly Signal[]; logs: readonly
     }
   }
   for (const d of input.days) for (const name of d.digestion ?? []) note(name, parseDay(d.date), null);
+  return seen;
+}
+
+export function symptomsView(input: { signals: readonly Signal[]; logs: readonly Log[]; days: readonly DayRow[]; now: Date }): SymptomsView {
+  const today = new Date(input.now.getFullYear(), input.now.getMonth(), input.now.getDate()).getTime();
+  const seen = symptomDays(input);
 
   const split = today - 29 * DAY;
   const list: SymptomRow[] = [...seen.entries()]
