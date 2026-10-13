@@ -30,6 +30,7 @@
         "npm:expo-apple-authentication@~57.0.2",
         "npm:expo-build-properties@~57.0.20",
         "npm:expo-calendar@~57.0.4",
+        "npm:expo-constants@~57.0.21",
         "npm:expo-crypto@~57.0.3",
         "npm:expo-dev-client@~57.0.19",
         "npm:expo-device@~57.0.2",

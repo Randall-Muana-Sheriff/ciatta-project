@@ -77,6 +77,11 @@ Deno.serve(async (req) => {
   const { data: who, error: whoError } = await db.auth.getUser();
   if (whoError || !who?.user) return json({ error: 'Not allowed' }, 401);
 
+  // Counted before anything is spent: past 40 today, refused.
+  const { data: allowed, error: claimError } = await db.rpc('claim_food_scan');
+  if (claimError) return json({ error: 'Could not check today\'s scans' }, 500);
+  if (allowed !== true) return json({ error: 'That is the most scans for today. You can still add foods yourself.' }, 429);
+
   if (!openAiKey) {
     console.log('food-scan: no OPENAI_API_KEY configured');
     return json({ error: 'Scanning is not set up yet' }, 503);
