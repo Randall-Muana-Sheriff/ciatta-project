@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { JournalView } from '../data/rows';
+import type { Attachment } from '../lib/attachments';
 import { displayCopy } from '../lib/displayCopy';
 import { userFacingError } from '../lib/userFacingError';
 import { useNav } from '../navigation';
@@ -19,6 +20,7 @@ export function JournalScreen() {
   const [journal, setJournal] = useState<JournalView | null>(null);
   const [composing, setComposing] = useState(false);
   const [text, setText] = useState('');
+  const [files, setFiles] = useState<Attachment[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,13 +38,14 @@ export function JournalScreen() {
 
   const save = async () => {
     const trimmed = text.trim();
-    if (!trimmed || saving) return;
+    if ((!trimmed && !files.length) || saving) return;
     setSaving(true);
     setError(null);
     try {
-      await repo.addJournal(trimmed, filter === 'All' ? 'Notes' : filter);
+      await repo.addJournal(trimmed, filter === 'All' ? 'Notes' : filter, files);
       await load();
       setText('');
+      setFiles([]);
       setComposing(false);
     } catch (e) {
       setError(userFacingError(e, 'That entry did not save. Try again.'));
@@ -79,7 +82,15 @@ export function JournalScreen() {
               accessibilityRole={item.usedInInsight ? 'button' : undefined}
               style={({ pressed }) => [j.card, pressed && { opacity: 0.7 }]}
             >
-              <Text style={[font('subhead'), { color: C.text, lineHeight: 22, marginBottom: 8 }]}>{displayCopy(item.text)}</Text>
+              {item.text ? (
+                <Text style={[font('subhead'), { color: C.text, lineHeight: 22, marginBottom: 8 }]}>{displayCopy(item.text)}</Text>
+              ) : null}
+              {/* Named, not opened: the file stays on her phone. */}
+              {item.attachments?.map((f) => (
+                <Text key={f.id} style={[font('caption1'), { color: C.muted, marginBottom: 6 }]} numberOfLines={1}>
+                  {f.name}
+                </Text>
+              ))}
               <View style={j.cardFoot}>
                 <Text style={[font('caption1'), { color: C.muted }]}>{item.date}</Text>
                 <Tag label={item.tag} tone={item.usedInInsight ? 'amber' : 'neutral'} />
@@ -99,19 +110,19 @@ export function JournalScreen() {
             gesture for committing what she wrote, in the same corner, on
             every screen that takes her words.
 
-            No attachments here. The journal row has text, kind, tag and a
-            date and nowhere to put a file, and offering a plus that
-            quietly dropped her photo would be worse than not offering one.
+            The plus as well, like every box she logs in. Files are kept in
+            the entry's metadata, the same way an episode keeps them.
           */}
           <Composer
             value={text}
             onChange={setText}
             placeholder="What are you noticing?"
             label="What are you noticing"
+            attachments={files}
+            onAttachments={setFiles}
             onSend={() => {
-              if (text.trim() && !saving) void save();
+              if ((text.trim() || files.length) && !saving) void save();
             }}
-            minHeight={120}
           />
           {error ? <Text style={[font('footnote'), { color: C.tint, marginTop: 10 }]}>{error}</Text> : null}
         </View>

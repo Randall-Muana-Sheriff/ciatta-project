@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import type { Attachment } from '../lib/attachments';
 import { type CycleProfile, normalizeProfile } from '../lib/cycleProfile';
 import type { Answers as OnboardingAnswers } from '../lib/onboarding';
 import type { DailyRow } from '../lib/healthMetrics';
@@ -73,7 +74,9 @@ export type Repo = {
   // things she never finished saying. Everything lands or nothing does.
   completeOnboarding(a: OnboardingAnswers): Promise<void>;
   loadJournal(): Promise<JournalView>;
-  addJournal(text: string, kind: EntryKind): Promise<void>;
+  // Files ride along in metadata, as they do on an episode. Optional, so a
+  // caller with nothing attached passes nothing.
+  addJournal(text: string, kind: EntryKind, attachments?: Attachment[]): Promise<void>;
   loadSources(): Promise<SourceView[]>;
   loadDays(): Promise<Day[]>;
   // Her newest live insight, or null when the server has not written one:
@@ -165,10 +168,10 @@ export function demoRepo(): Repo {
     loadOnboardedAt: async () => new Date().toISOString(),
     completeOnboarding: async () => {},
     loadJournal: async () => view,
-    addJournal: async (text, kind) => {
+    addJournal: async (text, kind, attachments = []) => {
       const d = new Date();
       const month = `${d.toLocaleString('en-US', { month: 'long' })} ${d.getFullYear()}`;
-      const item = { text, date: `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`, tag: kind, kind, usedInInsight: false };
+      const item = { text, date: `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`, tag: kind, kind, usedInInsight: false, attachments };
       const rest = view.months.filter((m) => m.month !== month);
       const current = view.months.find((m) => m.month === month);
       view = { ...view, count: view.count + 1, months: [{ month, items: [item, ...(current?.items ?? [])] }, ...rest] };
@@ -374,15 +377,24 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
         (from, to) =>
           db
             .from('journal_entries')
-            .select('client_id, text, kind, tag, occurred_at')
+            .select('client_id, text, kind, tag, occurred_at, metadata')
             .order('occurred_at')
             .order('client_id')
             .range(from, to) as unknown as Page<JournalRow>,
       );
       return journalView(rows);
     },
-    async addJournal(text, kind) {
-      must(await db.from('journal_entries').insert({ user_id: userId, client_id: `j-${Date.now()}`, text, kind, occurred_at: new Date().toISOString() }));
+    async addJournal(text, kind, attachments = []) {
+      must(
+        await db.from('journal_entries').insert({
+          user_id: userId,
+          client_id: `j-${Date.now()}`,
+          text,
+          kind,
+          occurred_at: new Date().toISOString(),
+          metadata: attachments.length ? { attachments } : {},
+        }),
+      );
     },
     async loadSources() {
       const rows = must(await db.from('health_sources').select('kind, name, status, last_synced_at, created_at').order('created_at')) as SourceRow[];

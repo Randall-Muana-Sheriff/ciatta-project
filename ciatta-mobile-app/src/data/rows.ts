@@ -1,5 +1,6 @@
 import { type Episode, normalizeEpisode, parseDay, shortDate } from './cycleLog';
 import type { EntryKind, SourceKind } from './sample';
+import { type Attachment, normalizeAttachments } from '../lib/attachments';
 
 // The shapes the database stores, and the app types they come from. Pure, so
 // both modes and the tests share one mapping.
@@ -127,12 +128,24 @@ export function rowToEpisode(r: EpisodeRow): Episode {
 
 // ── Notes ──────────────────────────────────────────────────────
 
-export type JournalRow = { client_id: string; text: string; kind: EntryKind; tag: string | null; occurred_at: string };
+export type JournalRow = {
+  client_id: string;
+  text: string;
+  kind: EntryKind;
+  tag: string | null;
+  occurred_at: string;
+  // Files kept with the entry, in metadata like an episode's. Absent on
+  // rows written before entries could carry any.
+  metadata?: { attachments?: unknown } | null;
+};
 
 export type JournalView = {
   count: number;
   since: string;
-  months: { month: string; items: { text: string; date: string; tag: string; kind: EntryKind; usedInInsight: boolean }[] }[];
+  months: {
+    month: string;
+    items: { text: string; date: string; tag: string; kind: EntryKind; usedInInsight: boolean; attachments?: Attachment[] }[];
+  }[];
 };
 
 const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -149,7 +162,14 @@ export function journalView(rows: JournalRow[]): JournalView {
       group = { month, items: [] };
       months.push(group);
     }
-    group.items.push({ text: r.text, date: shortDate(d), tag: r.tag ?? r.kind, kind: r.kind, usedInInsight: false });
+    group.items.push({
+      text: r.text,
+      date: shortDate(d),
+      tag: r.tag ?? r.kind,
+      kind: r.kind,
+      usedInInsight: false,
+      attachments: normalizeAttachments(r.metadata?.attachments),
+    });
   }
   const oldest = new Date(sorted[sorted.length - 1].occurred_at);
   return { count: rows.length, since: `Since ${MONTHS_LONG[oldest.getMonth()]}`, months };

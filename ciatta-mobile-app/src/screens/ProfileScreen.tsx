@@ -10,12 +10,14 @@ import type { SourceView } from '../data/rows';
 import type { Reported } from '../data/repo';
 import { type Connection, loadConnections } from '../data/providers';
 import { smooth } from '../lib/curve';
+import { intelligenceLine, metricLine, patternReadiness } from '../lib/patternReadiness';
 import { profileOverview } from '../lib/profileOverview';
 import { connectAppleHealth } from '../lib/connectHealth';
 import { displayCopy } from '../lib/displayCopy';
 import { userFacingError } from '../lib/userFacingError';
 import { type Screen, useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
+import { useInsights } from '../state/insights';
 import { useData, useRepo, useSession } from '../state/session';
 import { C, font, GUTTER, numeral, RADIUS } from '../theme';
 import { L, NAV_CLEARANCE, TILE_RADIUS } from '../ui/surface';
@@ -42,6 +44,8 @@ const TONE: Record<Tone, string> = {
   indigo: C.blue,
   text: C.fillSelected,
 };
+
+const OVERVIEW_TONE: Record<Tone, string> = { coral: C.coral, mint: C.mint, lavender: C.lavender, indigo: C.lavender, text: C.gray };
 
 // Account, export and sharing flows arrive with the data layer.
 const notYet = () => {};
@@ -87,71 +91,93 @@ function CareGroup({ profile }: { profile: Profile }) {
   );
 }
 
-function ScoreRing({ score }: { score: number }) {
+// How many measures Ciatta can compare against her own usual. The ring
+// used to hold a health score out of 100, which nothing in her rows can
+// produce; this holds a count the engine can actually stand behind.
+function ReadyRing({ ready, total }: { ready: number; total: number }) {
   const r = 36;
   const len = 2 * Math.PI * r;
   return (
-    <View style={p.ring} accessible accessibilityLabel={`Health score ${score} out of 100`}>
+    <View style={p.ring} accessible accessibilityLabel={`${ready} of ${total} measures can be compared with your usual`}>
       <Svg width={88} height={88} viewBox="0 0 88 88" style={StyleSheet.absoluteFill}>
         <Defs>
-          <LinearGradient id="score" x1="0" y1="0" x2="1" y2="1">
+          <LinearGradient id="ready" x1="0" y1="0" x2="1" y2="1">
             <Stop offset="0" stopColor={C.coral} />
             <Stop offset="0.5" stopColor={C.indigo} />
             <Stop offset="1" stopColor={C.mint} />
           </LinearGradient>
         </Defs>
         <Circle cx={44} cy={44} r={r} stroke={C.fill} strokeWidth={7} fill="none" />
-        <Circle
-          cx={44}
-          cy={44}
-          r={r}
-          stroke="url(#score)"
-          strokeWidth={7}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={`${(len * score) / 100} ${len}`}
-          transform="rotate(-90 44 44)"
-        />
+        {ready ? (
+          <Circle
+            cx={44}
+            cy={44}
+            r={r}
+            stroke="url(#ready)"
+            strokeWidth={7}
+            fill="none"
+            strokeLinecap="round"
+            strokeDasharray={`${(len * ready) / total} ${len}`}
+            transform="rotate(-90 44 44)"
+          />
+        ) : null}
       </Svg>
-      <Text style={[numeral(28, 'bold'), { color: C.text }]}>{score}</Text>
+      <Text style={[numeral(28, 'bold'), { color: C.text }]}>{ready}</Text>
+      <Text style={[font('caption2'), { color: C.secondary, marginTop: -2 }]}>of {total}</Text>
     </View>
   );
 }
 
-const OVERVIEW_TONE: Record<Tone, string> = { coral: C.coral, mint: C.mint, lavender: C.lavender, indigo: C.lavender, text: C.gray };
-
-function HealthOverview({ profile }: { profile: Profile }) {
+// What Ciatta is doing with her record. It does not grade her health. It
+// learns what is usual for her, measure by measure, and says when
+// something moves away from that, so the overview shows exactly that: what
+// it has found, and how far each measure is from being comparable.
+function HealthOverview() {
+  const { days } = useData();
+  const { ranked } = useInsights();
+  const ready = useMemo(() => patternReadiness(days), [days]);
+  const found = ranked.filter((i) => i.triage === 'Surface' || i.triage === 'Investigate').length;
+  const watching = ranked.filter((i) => i.triage === 'Watch').length;
+  const count = ready.filter((r) => r.ready).length;
   return (
     <Panel>
       <View style={p.overviewTop}>
-        <ScoreRing score={profile.score} />
+        <ReadyRing ready={count} total={ready.length} />
         <View style={{ flex: 1 }}>
           <Text style={[font('headline'), { color: C.text }]}>Health Overview</Text>
           <Text style={[font('footnote'), { color: C.secondary, marginTop: 2 }]}>
-            A snapshot of your health from the data available, out of 100.
+            {displayCopy(intelligenceLine(days, ready, found, watching))}
           </Text>
         </View>
       </View>
-      <View style={p.progressRow}>
-        {profile.overview.map((g) => (
-          <View
-            key={g.label}
-            style={{ flex: 1 }}
-            accessible
-            accessibilityLabel={`${g.label}, ${g.done} of ${g.total} complete`}
-          >
-            <Text style={[font('footnote', 'semibold'), { color: C.text }]}>{g.label}</Text>
-            <View style={p.segments}>
-              {Array.from({ length: g.total }, (_, i) => (
-                <View key={i} style={[p.segment, { backgroundColor: i < g.done ? OVERVIEW_TONE[g.tone] : C.fill }]} />
-              ))}
+      {/*
+        One row per measure: how much of its usual Ciatta has learned. The
+        bar fills toward the days a comparison needs, not toward a target
+        for her to hit.
+      */}
+      <View style={p.measures}>
+        {ready.map((r) => (
+          <View key={r.key} accessible accessibilityLabel={`${r.label}, ${metricLine(r)}`}>
+            <View style={p.measureHead}>
+              <Text style={[font('footnote', 'semibold'), { color: C.text, flex: 1 }]}>{r.label}</Text>
+              <Text style={[font('caption1'), { color: C.secondary }]}>
+                {r.ready ? 'Comparing' : `${r.have} of ${r.need} days`}
+              </Text>
             </View>
-            <Text style={[font('caption1'), { color: C.secondary, marginTop: 4 }]}>
-              {g.done} of {g.total} done
-            </Text>
+            <View style={p.track}>
+              <View
+                style={[
+                  p.fillBar,
+                  { width: `${Math.min(100, (r.have / r.need) * 100)}%`, backgroundColor: r.ready ? C.mint : C.lavender },
+                ]}
+              />
+            </View>
           </View>
         ))}
       </View>
+      <Text style={[font('caption1'), { color: C.secondary, marginTop: 14 }]}>
+        Compared against your own days 35 to 90 back, never a population average.
+      </Text>
     </Panel>
   );
 }
@@ -643,19 +669,19 @@ export function ProfileScreen() {
           sample only, so a signed in woman saw an empty note on a
           record that was not empty.
 
-          What is not here is deliberate. No score ring and no stat
-          tiles: a health score out of 100 is a number nobody can
-          compute from her rows without inventing most of it, and this
-          app does not invent numbers. The paragraph says what is in
-          her record, which is the question someone opens their own
-          profile to answer.
+          No health score and no stat tiles: a score out of 100 is a
+          number nobody can compute from her rows without inventing most
+          of it. The overview shows what Ciatta is doing with her record
+          instead, which is real in this mode too, and the paragraph
+          closes with what is in it.
         */}
         {!profile && seg === 'Overview' ? (
           <>
+            <HealthOverview />
+            <CycleGroup onOpen={nav.push} />
             <View style={p.overviewCard}>
               <Text style={[font('body'), p.overviewText]}>{displayCopy(overview)}</Text>
             </View>
-            <CycleGroup onOpen={nav.push} />
           </>
         ) : null}
 
@@ -678,16 +704,15 @@ export function ProfileScreen() {
         {profile && seg === 'Overview' ? (
           <>
             {/*
-              Her record in a paragraph before any of it is counted. The
-              tiles and rings said how much is there; this says what is
-              there, which is the question someone opens their own profile
-              to answer. It grows as the record does.
+              What Ciatta is doing with her record leads, then the facts
+              about her, then her record in a paragraph to close: the
+              summary reads best after the parts it summarises.
             */}
+            <HealthOverview />
+            <StatTiles cols={cols} profile={profile} />
             <View style={p.overviewCard}>
               <Text style={[font('body'), p.overviewText]}>{displayCopy(overview)}</Text>
             </View>
-            <StatTiles cols={cols} profile={profile} />
-            <HealthOverview profile={profile} />
           </>
         ) : null}
         {profile && seg === 'Health' ? (
@@ -739,9 +764,10 @@ const p = StyleSheet.create({
   overviewText: { color: L.ink, lineHeight: 25 },
   overviewTop: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   ring: { width: 88, height: 88, alignItems: 'center', justifyContent: 'center' },
-  progressRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
-  segments: { flexDirection: 'row', gap: 3, marginTop: 6 },
-  segment: { flex: 1, height: 5, borderRadius: 2.5 },
+  measures: { gap: 12, marginTop: 16 },
+  measureHead: { flexDirection: 'row', alignItems: 'baseline' },
+  track: { height: 5, borderRadius: 2.5, backgroundColor: C.fill, marginTop: 6, overflow: 'hidden' },
+  fillBar: { height: 5, borderRadius: 2.5 },
 
   bioValue: { flexDirection: 'row', alignItems: 'baseline', gap: 4, marginTop: 2 },
   bioFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },

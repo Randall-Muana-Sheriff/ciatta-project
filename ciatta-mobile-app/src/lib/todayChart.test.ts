@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildDay, smooth, VIEW } from './todayChart';
+import { buildDay, chartKey, type DayChart, smooth, VIEW } from './todayChart';
 
 const at = (h: number, m = 0) => new Date(2026, 9, 10, h, m, 0);
 const reading = (h: number, value: number) => ({ at: at(h), value });
@@ -112,4 +112,26 @@ test('the path starts with a move and then only curves', () => {
   assert.ok(d.startsWith('M0.00,0.00'));
   assert.equal(d.match(/C/g)?.length, 2, 'one curve per gap between readings');
   assert.ok(!d.includes('L'), 'the smoothing fell back to straight lines');
+});
+
+const bare: DayChart = {
+  line: '',
+  area: '',
+  points: [{ x: 0, y: 10 }],
+  asleep: [],
+  usual: null,
+  nowX: 60,
+  marks: [],
+  low: 55,
+  high: 80,
+};
+
+test('the key names only what is drawn', () => {
+  assert.deepEqual(chartKey(bare), ['heartRate']);
+  assert.deepEqual(
+    chartKey({ ...bare, usual: { y: 12, from: 20, to: 60 }, asleep: [{ x: 0, width: 20 }], marks: [{ x: 40, r: 2 }] }),
+    ['heartRate', 'usual', 'asleep', 'logged'],
+  );
+  // No history yet means no usual, so the key does not promise one.
+  assert.deepEqual(chartKey({ ...bare, asleep: [{ x: 0, width: 20 }] }), ['heartRate', 'asleep']);
 });

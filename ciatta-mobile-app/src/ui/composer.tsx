@@ -65,8 +65,12 @@ export type ComposerProps = {
   // and a required prop makes the next one decide rather than inherit
   // silence.
   onSend: () => void;
-  minHeight?: number;
 };
+
+// One size everywhere, the one Care settled on: a single line at rest, so
+// the box does not claim the screen before she has anything to say, and it
+// grows as she writes. Not a prop, so no screen can drift from it.
+const MIN_HEIGHT = 52;
 
 const id = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -98,7 +102,6 @@ export function Composer({
   attachments = [],
   onAttachments,
   onSend,
-  minHeight = 148,
 }: ComposerProps) {
   // Why a picker did not open. Permission refused is the common one and is
   // not an error she did anything wrong, so it reads as a fact and says
@@ -233,7 +236,7 @@ export function Composer({
           placeholderTextColor={L.meta}
           multiline
           textAlignVertical="top"
-          style={[font('body'), s.field, { minHeight }]}
+          style={[font('body'), s.field, { minHeight: MIN_HEIGHT }]}
           accessibilityLabel={label}
         />
 

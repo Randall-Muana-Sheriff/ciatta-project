@@ -3,7 +3,15 @@ import { test } from 'node:test';
 
 import type { Day } from '../data/daily';
 import { sustained } from './engine';
-import { anyReady, BASELINE_MIN, BASELINE_TO, metricLine, patternReadiness, readinessLine } from './patternReadiness';
+import {
+  anyReady,
+  BASELINE_MIN,
+  BASELINE_TO,
+  intelligenceLine,
+  metricLine,
+  patternReadiness,
+  readinessLine,
+} from './patternReadiness';
 
 const empty: Day = {
   date: '2026-10-11',
@@ -85,4 +93,18 @@ test('no line carries a dash, which display copy forbids', () => {
   const days = series(45);
   const ready = patternReadiness(days);
   for (const s of [readinessLine(days, ready), ...ready.map(metricLine)]) assert.ok(!/[-–—]/.test(s), s);
+});
+
+test('the overview leads with patterns, then watching, then readiness', () => {
+  const days = series(60);
+  const ready = patternReadiness(days);
+  assert.equal(
+    intelligenceLine(days, ready, 2, 1),
+    'Ciatta has found 2 patterns in your record, each measured against your own usual, and one more is being watched.',
+  );
+  assert.match(intelligenceLine(days, ready, 0, 1), /^Ciatta is watching one possible pattern/);
+  assert.equal(intelligenceLine(days, ready, 0, 0), 'Nothing stands out against your own usual right now.');
+  // No baseline anywhere: the readiness line, not a reassurance.
+  const young = series(30);
+  assert.equal(intelligenceLine(young, patternReadiness(young), 0, 0), readinessLine(young, patternReadiness(young)));
 });

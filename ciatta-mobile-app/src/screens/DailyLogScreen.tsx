@@ -227,7 +227,6 @@ export function DailyLogScreen() {
           attachments={log.attachments}
           onAttachments={(next) => set('attachments', next)}
           onSend={() => {}}
-          minHeight={120}
         />
       </View>
     </DetailScreen>

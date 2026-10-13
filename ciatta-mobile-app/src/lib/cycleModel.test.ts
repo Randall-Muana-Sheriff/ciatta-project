@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { addDays, emptyForm, type Episode, formToEpisode, isoDay } from '../data/cycleLog';
-import { bandOf, clinicalPhase, clinicalPhaseLabel, countedWindows, cycleToday, cycleTodayLabel, cycleWindows, medianLength, periodStarts, phaseLine, phaseOf, regularity, type CycleWindow } from './cycleModel';
+import { bandOf, clinicalPhase, clinicalPhaseLabel, countedWindows, estimatedPhase, estimatedPhaseLabel, cycleToday, cycleTodayLabel, cycleWindows, medianLength, periodStarts, phaseLine, phaseOf, regularity, type CycleWindow } from './cycleModel';
 import type { CycleProfile } from './cycleProfile';
 
 const NOW = new Date(2026, 8, 15);
@@ -198,4 +198,20 @@ test('a clinical name never appears beside the observational one', () => {
   // Two names for where she is, shown together, is the screen hedging.
   const line = phaseLine('Follicular', 'After period') as string;
   assert.ok(!line.includes('After period'), line);
+});
+
+test('an estimated phase comes from the day and her own usual length', () => {
+  assert.equal(estimatedPhase(3, null), 'Menstrual');
+  // Day 12 of a 28 day cycle is before ovulation on day 14.
+  assert.equal(estimatedPhase(12, null), 'Follicular');
+  assert.equal(estimatedPhase(14, 28), 'Ovulatory');
+  assert.equal(estimatedPhase(20, 28), 'Luteal');
+  // Her own 40 day cycle puts ovulation near day 26, so day 20 is still before it.
+  assert.equal(estimatedPhase(20, 40), 'Follicular');
+});
+
+test('an estimated phase says it is one, before the name', () => {
+  assert.equal(estimatedPhaseLabel('Follicular'), 'Likely follicular');
+  assert.equal(estimatedPhaseLabel('Luteal'), 'Likely luteal');
+  assert.equal(estimatedPhaseLabel('Menstrual'), 'Menstrual');
 });

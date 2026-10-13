@@ -1,21 +1,28 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, G, Line, Path, Rect } from 'react-native-svg';
 
 import { headlineMetrics } from '../lib/allMetrics';
 import { bloodOxygen, bloodPressure, type VitalCard } from '../lib/vitals';
 import { displayCopy } from '../lib/displayCopy';
-import { type CyclePoint, cycleTrend, fmtHours } from '../lib/engine';
-import { clinicalPhase, countedWindows, cycleToday, cycleTodayLabel, medianLength, phaseLine } from '../lib/cycleModel';
+import {
+  clinicalPhase,
+  clinicalPhaseLabel,
+  countedWindows,
+  cycleToday,
+  estimatedPhase,
+  estimatedPhaseLabel,
+  medianLength,
+} from '../lib/cycleModel';
 import { type Screen, useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
 import { useData, useRepo } from '../state/session';
-import { font, fonts, GUTTER, numeral } from '../theme';
+import { font, fonts, GUTTER } from '../theme';
 import { Eyebrow, Tile } from '../ui/bento';
 import { Wordmark } from '../ui/Wordmark';
 import { smooth } from '../lib/curve';
-import { AXIS, buildDay, type DayChart, VIEW } from '../lib/todayChart';
+import { AXIS, buildDay, CHART_KEY_LABEL, chartKey, type ChartKey, type DayChart, VIEW } from '../lib/todayChart';
 import type { IntradayPoint } from '../data/repo';
 import { ground, HUE, L, mark, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow } from '../ui/chrome';
@@ -26,70 +33,6 @@ import { Icon } from '../ui/icons';
 function greeting(now: Date): string {
   const h = now.getHours();
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-}
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-// Fits values into a band of the chart, higher values nearer the top.
-function scale(vs: number[], top: number, bottom: number) {
-  const lo = Math.min(...vs);
-  const hi = Math.max(...vs);
-  return (v: number) => (hi === lo ? (top + bottom) / 2 : top + ((hi - v) / (hi - lo)) * (bottom - top));
-}
-
-// The last completed cycles, labelled by the month each started, with the
-// sleep of each cycle's final week. The latest cycle is shaded.
-function TrendChart({ points }: { points: CyclePoint[] }) {
-  const W = 190;
-  const H = 150;
-  const base = 122;
-  const xs = points.map((_, i) => (points.length === 1 ? W / 2 : 26 + (i * 138) / (points.length - 1)));
-  const days = points.map((p) => p.length);
-  const hours = points.map((p) => p.sleep);
-  // Only the cycles that actually have a sleep figure set the scale's
-  // range: a cycle with no nights recorded must not drag the floor toward a
-  // fabricated zero for every other point on the same chart. The dots and
-  // path themselves are already gated on p.sleep != null below, so a
-  // missing entry's placeholder position is never drawn.
-  const knownHours = hours.filter((h): h is number => h != null);
-  const cy = scale(days, 24, 64);
-  const sy = knownHours.length ? scale(knownHours, 76, 104) : () => 90;
-  // The same curve the day chart draws, so a line does not change
-  // character between two cards on one screen.
-  const line = (ys: number[]) => smooth(ys.map((y, i) => ({ x: xs[i], y })));
-  const cys = days.map(cy);
-  const sys = hours.map((h) => (h != null ? sy(h) : 90));
-  const last = xs.length - 1;
-  const label = { fontSize: 11, textAnchor: 'middle' } as const;
-
-  return (
-    <View style={t.chart} accessible={false} importantForAccessibility="no-hide-descendants">
-      <Svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`}>
-        <Rect x={xs[last] - 18} y={0} width={36} height={base} rx={4} fill={L.ink} opacity={0.05} />
-        <Line x1={4} y1={base} x2={W} y2={base} stroke={L.rule} />
-        <Path d={line(cys)} stroke={mark('reported')} strokeWidth={2} fill="none" />
-        {points.every((p) => p.sleep != null) ? <Path d={line(sys)} stroke={mark('measured')} strokeWidth={2} fill="none" /> : null}
-        {xs.map((x, i) => (
-          <G key={i}>
-            <Circle cx={x} cy={cys[i]} r={3.5} fill={mark('reported')} />
-            <SvgText x={x} y={cys[i] - 9} fill={i === last ? mark('reported') : L.meta} fontFamily={fonts.regular} {...label}>
-              {days[i]}
-            </SvgText>
-            {points[i].sleep != null ? <Circle cx={x} cy={sys[i]} r={3.5} fill={mark('measured')} /> : null}
-            <SvgText
-              x={x}
-              y={base + 18}
-              fill={i === last ? L.ink : L.meta}
-              fontFamily={i === last ? fonts.semibold : fonts.regular}
-              {...label}
-            >
-              {MONTHS[points[i].start.getMonth()]}
-            </SvgText>
-          </G>
-        ))}
-      </Svg>
-    </View>
-  );
 }
 
 // The day, drawn the way the concept draws it, on this app's ground.
@@ -142,7 +85,37 @@ function DayChartView({ day, label }: { day: DayChart; label: string }) {
           </Text>
         ))}
       </View>
+      {/*
+        What the pattern is made of, named. Only what is drawn right now,
+        so the key changes with the day: early on it may be the line alone,
+        and her usual, her night and her logs join as they exist.
+      */}
+      <View style={t.key} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+        {chartKey(day).map((k) => (
+          <View key={k} style={t.keyItem}>
+            <KeySwatch kind={k} />
+            <Text style={[font('caption2'), t.axisText]}>{CHART_KEY_LABEL[k]}</Text>
+          </View>
+        ))}
+      </View>
     </View>
+  );
+}
+
+// A small sample of each mark, drawn the way the chart draws it.
+function KeySwatch({ kind }: { kind: ChartKey }) {
+  return (
+    <Svg width={14} height={8} viewBox="0 0 14 8">
+      {kind === 'heartRate' ? (
+        <Line x1={1} x2={13} y1={4} y2={4} stroke={mark('measured')} strokeWidth={2} strokeLinecap="round" />
+      ) : kind === 'usual' ? (
+        <Line x1={1} x2={13} y1={4} y2={4} stroke={L.meta} strokeWidth={1.2} strokeDasharray="1.6 2.4" />
+      ) : kind === 'asleep' ? (
+        <Rect x={1} y={0.5} width={12} height={7} rx={1.5} fill={L.rule} />
+      ) : (
+        <Circle cx={7} cy={4} r={3} fill={mark('reported')} />
+      )}
+    </Svg>
   );
 }
 
@@ -208,13 +181,13 @@ export function TodayScreen() {
     const predicted = lens.predicts ? medianLength(countedWindows(windows, profile)) : null;
     return cycleToday(open && !open.end ? open : null, predicted, new Date());
   }, [windows, lens, profile]);
-  const cycleLabel = useMemo(() => cycleTodayLabel(cycleNow), [cycleNow]);
 
-  // The clinical name, when it has been earned.
+  // The phase, in the corner of the cycle row.
   //
-  // Only a confirmed ovulation counts: a logged test or a temperature
-  // shift. The predicted window is a prediction, and naming her phase
-  // from one would be presenting an estimate as a position.
+  // The clinical name when it has been earned: only a confirmed ovulation
+  // counts, from a logged test or a temperature shift. Otherwise an
+  // estimate, and the label says "Likely" so an estimate is never shown as
+  // a position.
   const phaseText = useMemo(() => {
     const open = windows[windows.length - 1] ?? null;
     const confirmed =
@@ -225,8 +198,14 @@ export function TodayScreen() {
         : null;
     const today = new Date();
     const bleeding = !!open && !open.end && cycleNow != null && cycleNow.day <= 5 && cycleNow.phase === 'During period';
-    return phaseLine(clinicalPhase({ date: today, bleeding, ovulation: confirmed }), cycleNow?.phase ?? null);
-  }, [windows, fertility, cycleNow]);
+    const clinical = clinicalPhase({ date: today, bleeding, ovulation: confirmed });
+    if (clinical) return clinicalPhaseLabel(clinical);
+    // Nothing confirmed, so an estimate from the day and her own usual
+    // length, labelled as one. An empty corner told her nothing about where
+    // she is; "Likely follicular" tells her something and says how sure.
+    if (!cycleNow) return null;
+    return estimatedPhaseLabel(estimatedPhase(cycleNow.day, medianLength(countedWindows(windows, profile))));
+  }, [windows, fertility, cycleNow, profile]);
 
   // Today's own row, when there is one. days arrives oldest first.
   const todayDay = useMemo(() => {
@@ -266,15 +245,6 @@ export function TodayScreen() {
   }, [intraday, days, signals]);
   const go = (screen: Screen) => () => nav.push(screen);
   const now = new Date();
-
-  // The first and latest of the recent completed cycles, and the sleep of
-  // their final weeks.
-  const points = cycleTrend(windows, days);
-  const first = points[0];
-  const latest = points[points.length - 1];
-  const sleepFrom = first?.sleep != null ? fmtHours(first.sleep) : null;
-  const sleepTo = latest?.sleep != null ? fmtHours(latest.sleep) : null;
-  const sleepText = sleepFrom && sleepTo ? ` Sleep in the final week went from ${sleepFrom} to ${sleepTo}.` : '';
 
   // Actions that fit the pattern being told today.
   const actions: Action[] = [];
@@ -349,8 +319,10 @@ export function TodayScreen() {
         <View style={t.dayCard}>
           <View style={t.dayHead}>
             <Text style={[font('caption1'), t.dayHeadText]}>TODAY&rsquo;S PATTERNS</Text>
+            {/* The date, not the cycle day: the cycle day has its own row at
+                the bottom of this card, and saying it twice made it noise. */}
             <Text style={[font('caption1'), t.dayHeadText]}>
-              {(cycleLabel ?? now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })).toUpperCase()}
+              {now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
             </Text>
           </View>
           {day ? (
@@ -434,37 +406,6 @@ export function TodayScreen() {
           ))}
         </View>
 
-        {points.length >= 2 ? (
-          <>
-            <Pressable
-              onPress={go('cycle')}
-              accessibilityRole="button"
-              accessibilityLabel={`Cycle length went from ${first.length} to ${latest.length} days.${sleepText} Opens Cycle.`}
-              style={({ pressed }) => [t.trend, pressed && t.pressed]}
-            >
-              <View style={t.trendLeft}>
-                <Text style={[font('footnote'), { color: L.meta }]}>Cycle length, days</Text>
-                <View style={t.fromTo}>
-                  <Text style={[numeral(28), { color: L.meta }]}>{first.length}</Text>
-                  <Icon name="arrowRight" size={16} color={L.meta} weight={2} />
-                  <Text style={[numeral(28), { color: mark('reported') }]}>{latest.length}</Text>
-                </View>
-                {sleepFrom && sleepTo ? (
-                  <>
-                    <Text style={[font('footnote'), { color: L.meta, marginTop: 14 }]}>Sleep, final week</Text>
-                    <View style={t.fromTo}>
-                      <Text style={[numeral(17), { color: L.meta }]}>{sleepFrom}</Text>
-                      <Icon name="arrowRight" size={14} color={L.meta} weight={2} />
-                      <Text style={[numeral(17), { color: mark('measured') }]}>{sleepTo}</Text>
-                    </View>
-                  </>
-                ) : null}
-              </View>
-              <TrendChart points={points} />
-            </Pressable>
-            <View style={t.divider} />
-          </>
-        ) : null}
         </View>
 
         {/*
@@ -478,10 +419,16 @@ export function TodayScreen() {
           is plenty.
         */}
         {todayIsPlaceholder ? null : (
+          <>
+          {/* Named like Metrics above it, so the two read as sections. */}
+          <View style={t.sectionHead}>
+            <Eyebrow>Insights</Eyebrow>
+          </View>
           <Tile span={2} emphasis style={t.lead}>
             {today.kicker ? <Text style={[font('caption1'), t.leadEyebrow]}>{today.kicker.toUpperCase()}</Text> : null}
             <Text style={[font('body'), t.leadText]}>{displayCopy(brief.text)}</Text>
           </Tile>
+          </>
         )}
 
         {/*
@@ -590,6 +537,8 @@ const t = StyleSheet.create({
   dayEmpty: { color: L.body, lineHeight: 21, paddingVertical: 10 },
   axis: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 },
   axisText: { color: L.meta },
+  key: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 14, rowGap: 6, marginTop: 10 },
+  keyItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
 
   // The cycle sits on its own full width row above the three pills, and
   // divides from them, so it reads as the context rather than as a fourth
@@ -621,7 +570,7 @@ const t = StyleSheet.create({
   cycleValue: { color: L.ink },
   // A figure she has not produced today reads as absent, not as zero.
   cycleNone: { color: L.meta },
-  lead: { marginTop: SPACE.block },
+  lead: { marginTop: SPACE.tight },
   leadEyebrow: { color: L.meta, letterSpacing: 1.1 },
   leadText: { color: L.ink, lineHeight: 25, marginTop: 6 },
 
@@ -644,9 +593,5 @@ const t = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,
   },
-  trend: { flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: -8 },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: L.rule, marginVertical: 16 },
-  trendLeft: { width: 136 },
-  fromTo: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   chart: { flex: 1, aspectRatio: 190 / 150 },
 });

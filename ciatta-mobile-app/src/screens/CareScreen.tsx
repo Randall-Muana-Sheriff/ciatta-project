@@ -27,6 +27,7 @@
 //   and not as a reply, because "there is not enough yet" reads very
 //   differently from a confident sentence of the same length.
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -49,8 +50,26 @@ import type { Attachment } from '../lib/attachments';
 import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { Composer } from '../ui/composer';
+import { AgentAvatar } from '../ui/AgentAvatar';
 import { Icon } from '../ui/icons';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
+
+// Said once, the first time she opens Care. Each line is a promise the
+// code below keeps, which is the only reason it is allowed to be said.
+const HOW_I_WORK = [
+  'I answer from your record and nowhere else: what you log, what your devices measure, and what your providers send.',
+  'Under every answer I show where it came from, so you can tell what you said from what was measured.',
+  'When there is not enough in your record, I say so rather than guess.',
+  'The more you log, the more I can answer.',
+];
+
+const INTRO_SEEN = 'ciatta.care.introSeen';
+
+// What she calls the agent. Three to choose from, the way a first meeting
+// offers a name rather than asking her to invent one; Ciatta first, since
+// it is the name she already knows. Kept on this phone.
+const AGENT_NAME = 'ciatta.care.agentName';
+const NAMES = ['Ciatta', 'Iris', 'Wren'] as const;
 
 const DOT: Record<Fact['from'], string> = {
   measured: HUE.measured,
@@ -124,6 +143,34 @@ export function CareScreen() {
   // the same four ways in.
   const [files, setFiles] = useState<Attachment[]>([]);
   const scroller = useRef<ScrollView | null>(null);
+  // The list opens short. Seven boxed rows and an open box beneath them
+  // filled the first screen edge to edge; one, the first that is ready,
+  // shows what tapping does, and the rest are one tap away.
+  const [allShown, setAllShown] = useState(false);
+  // Whether she has had the introduction. Null until the read lands, so
+  // the bullets never flash in for someone who has seen them.
+  const [introSeen, setIntroSeen] = useState<boolean | null>(null);
+  // The name she chose, or null before she has chosen one. Until then the
+  // agent goes by Ciatta and asks.
+  const [agentName, setAgentName] = useState<string | null>(null);
+  const [naming, setNaming] = useState(false);
+  useEffect(() => {
+    AsyncStorage.getItem(INTRO_SEEN)
+      .then((v) => setIntroSeen(v === '1'))
+      .catch(() => setIntroSeen(false));
+    AsyncStorage.getItem(AGENT_NAME)
+      .then((v) => {
+        if (v) setAgentName(v);
+        else setNaming(true);
+      })
+      .catch(() => setNaming(true));
+  }, []);
+  const name = agentName ?? NAMES[0];
+  const chooseName = (next: string) => {
+    setAgentName(next);
+    setNaming(false);
+    AsyncStorage.setItem(AGENT_NAME, next).catch(() => {});
+  };
 
   // Everything a capability may read, and nothing more. Assembled here so
   // the boundary is one object in one place rather than a set of imports
@@ -157,6 +204,8 @@ export function CareScreen() {
   // Recomputed whenever her record changes, by running the capabilities.
   // Readiness held separately from the answer is readiness that can lie.
   const cards = useMemo(() => capabilityCards(record), [record]);
+  const sorted = useMemo(() => [...cards].sort((a, b) => Number(b.ready) - Number(a.ready)), [cards]);
+  const ready = sorted.filter((c) => c.ready);
 
   const send = useCallback(
     (text: string) => {
@@ -178,52 +227,142 @@ export function CareScreen() {
       ]);
       setDraft('');
       setFiles([]);
+      // Her first question is the moment the introduction has done its
+      // job. Seen from then on, so the next visit opens on a greeting.
+      if (introSeen === false) {
+        setIntroSeen(true);
+        AsyncStorage.setItem(INTRO_SEEN, '1').catch(() => {});
+      }
       requestAnimationFrame(() => scroller.current?.scrollToEnd({ animated: true }));
     },
-    [record, files],
+    [record, files, introSeen],
   );
 
   return (
     <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView ref={scroller} style={s.fill} contentContainerStyle={s.body} keyboardDismissMode="interactive">
+        {/*
+          The agent, centred, with the name she gave it. Tapping the name
+          is how she changes it.
+        */}
         <View style={s.intro}>
-          <Text style={[font('title2'), s.title]} accessibilityRole="header">
-            Care
-          </Text>
-          {/*
-            One sentence, and the boundary is the whole of it. The earlier
-            version also counted the capabilities and promised it would say
-            when it could not answer, but the list below counts itself and
-            every row states its own readiness, so saying it here was the
-            screen explaining what it was about to show.
-          */}
-          <Text style={[font('body'), s.lede]}>It answers from your record and nowhere else.</Text>
-          <Text style={[font('caption1'), s.limit]}>
-            Ciatta can make mistakes and responses are not meant for medical advice. Always consult a healthcare
-            professional.
-          </Text>
+          <AgentAvatar size={72} />
+          <Pressable
+            onPress={() => setNaming((v) => !v)}
+            accessibilityRole="button"
+            accessibilityLabel={`${name}. Change name`}
+            hitSlop={8}
+            style={({ pressed }) => [s.namePill, pressed && s.pressed]}
+          >
+            <Text style={[font('subhead', 'semibold'), s.nameText]} accessibilityRole="header">
+              {name}
+            </Text>
+          </Pressable>
         </View>
 
         {/*
-          The capability list, which is the interface rather than a menu
-          beside it. Ready first: the ones she can use now are the point,
-          and a list led by what is unavailable reads as a broken product.
+          The opening, as Ciatta speaking rather than a page about Ciatta.
+          The same shape a first conversation with any agent has: who it
+          is, how it works, and where to start, then the box. How it works
+          is said once, the first time; after that she knows, and the
+          opening is a greeting and a place to begin.
         */}
-        <View style={s.section}>
-          <View style={s.sectionHead}>
-            <Eyebrow>What it can do</Eyebrow>
-            <Text style={[font('caption1'), s.count]}>{displayCopy(readinessLine(cards))}</Text>
+        <View style={s.thread}>
+          <View style={s.bubble}>
+            <Text style={[font('body'), s.bubbleText]}>
+              {displayCopy(
+                `${person?.firstName ? `Hi ${person.firstName}, I` : 'Hi, I'}’m ${name}. I answer questions about your health from your own record.`,
+              )}
+            </Text>
           </View>
-          {[...cards]
-            .sort((a, b) => Number(b.ready) - Number(a.ready))
-            .map((c) => (
-              <CapabilityRow key={c.id} card={c} onRun={() => send(c.ask)} />
-            ))}
+
+          {introSeen === false ? (
+            <View style={s.bubble}>
+              <Text style={[font('body'), s.bubbleText]}>A bit about how I work:</Text>
+              {HOW_I_WORK.map((line) => (
+                <View key={line} style={s.bullet}>
+                  <Text style={[font('body'), s.bubbleText]}>{'\u2022'}</Text>
+                  <Text style={[font('body'), s.bubbleText, { flex: 1 }]}>{displayCopy(line)}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {naming ? (
+            <View style={s.bubble}>
+              <Text style={[font('body'), s.bubbleText]}>
+                What would you like to call me? You can change this any time by tapping my name.
+              </Text>
+              <View style={s.names}>
+                {NAMES.map((n) => {
+                  const on = n === name;
+                  return (
+                    <Pressable
+                      key={n}
+                      onPress={() => chooseName(n)}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: on }}
+                      style={({ pressed }) => [s.nameOption, on && s.nameOptionOn, pressed && s.pressed]}
+                    >
+                      <Text style={[font('body', on ? 'semibold' : 'regular'), s.bubbleText]}>{n}</Text>
+                      {on ? <Icon name="check" size={16} color={L.ink} /> : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          ) : null}
+
+          {/*
+            Where to start: what she can ask right now, as things to tap.
+            Ready first, because those answer; the full list, with what
+            each one is waiting for, is one tap further.
+          */}
+          <View style={s.bubble}>
+            <Text style={[font('body'), s.bubbleText]}>
+              {ready.length ? 'Here is where we could start:' : 'Your record is still filling in. Here is what I will be able to do:'}
+            </Text>
+            {ready.length ? (
+              <View style={s.suggestions}>
+                {ready.slice(0, 3).map((c) => (
+                  <Pressable
+                    key={c.id}
+                    onPress={() => send(c.ask)}
+                    accessibilityRole="button"
+                    style={({ pressed }) => [s.suggestion, pressed && s.pressed]}
+                  >
+                    <Text style={[font('footnote', 'semibold'), s.suggestionText]}>{c.title}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+            <Pressable
+              onPress={() => setAllShown((v) => !v)}
+              accessibilityRole="button"
+              accessibilityLabel={allShown ? 'Hide what I can do' : 'Everything I can do'}
+              hitSlop={8}
+              style={({ pressed }) => [s.more, pressed && s.pressed]}
+            >
+              <Text style={[font('footnote', 'semibold'), s.moreText]}>
+                {displayCopy(allShown ? 'Hide' : `Everything I can do, ${readinessLine(cards).toLowerCase()}`)}
+              </Text>
+              <View style={allShown ? s.flipped : undefined}>
+                <Icon name="chevronDown" size={14} color={L.body} />
+              </View>
+            </Pressable>
+          </View>
+
+          {allShown ? (
+            <View style={s.allCaps}>
+              {sorted.map((c) => (
+                <CapabilityRow key={c.id} card={c} onRun={() => send(c.ask)} />
+              ))}
+            </View>
+          ) : null}
         </View>
 
         {turns.length ? (
-          <View style={s.section}>
-            <Eyebrow>This session</Eyebrow>
+          <View style={s.thread}>
             {turns.map((turn) =>
               turn.role === 'her' ? (
                 <View key={turn.id} style={s.hers}>
@@ -257,8 +396,16 @@ export function CareScreen() {
           attachments={files}
           onAttachments={setFiles}
           onSend={() => send(draft)}
-          minHeight={120}
         />
+        {/*
+          The disclaimer, last of everything and under the box it is about,
+          so it is the final thing read before she asks rather than a
+          paragraph between her and the screen.
+        */}
+        <Text style={[font('caption1'), s.limit]}>
+          Ciatta can make mistakes and responses are not meant for medical advice. Always consult a healthcare
+          professional.
+        </Text>
       </View>
     </KeyboardAvoidingView>
   );
@@ -355,19 +502,52 @@ const s = StyleSheet.create({
   body: { paddingBottom: SPACE.block },
   // The wordmark used to open this screen and its clear space was doing
   // the work of a top margin. Taken out, the title needs its own.
-  intro: { paddingHorizontal: GUTTER, paddingTop: SPACE.near },
-  title: { color: L.ink, letterSpacing: -0.4 },
-  lede: { color: L.body, lineHeight: 24, marginTop: 10 },
-  limit: { color: L.meta, lineHeight: 19, marginTop: 12 },
-
-  section: { marginTop: SPACE.section, paddingHorizontal: GUTTER },
-  sectionHead: {
+  intro: { alignItems: 'center', paddingHorizontal: GUTTER, paddingTop: SPACE.near },
+  // The name sits on the avatar's foot, overlapping it a little, so the
+  // two read as one figure with its name tag.
+  namePill: {
+    marginTop: -10,
+    backgroundColor: L.canvas,
+    borderRadius: 999,
+    borderWidth: st,
+    borderColor: L.rule,
+    paddingVertical: 5,
+    paddingHorizontal: 14,
+  },
+  nameText: { color: L.ink },
+  names: { gap: SPACE.tight, marginTop: 12 },
+  nameOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: SPACE.tight,
+    borderRadius: TILE_RADIUS,
+    borderWidth: st,
+    borderColor: L.rule,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
   },
-  count: { color: L.meta },
+  nameOptionOn: { borderColor: L.ink, borderWidth: 1.5 },
+  limit: { color: L.meta, lineHeight: 19, marginTop: SPACE.tight, textAlign: 'center' },
+
+  // Ciatta's side of the conversation: her messages sit right on the
+  // statement ground, Ciatta's on the left on the recessed one.
+  thread: { paddingHorizontal: GUTTER, marginTop: SPACE.block },
+  // One width for every message of Ciatta's, so the opening reads as a
+  // column of cards rather than a ragged stack sized to each sentence.
+  bubble: {
+    alignSelf: 'flex-start',
+    width: '90%',
+    marginTop: SPACE.tight,
+    backgroundColor: L.recessed,
+    borderRadius: TILE_RADIUS,
+    borderWidth: st,
+    borderColor: L.rule,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  bubbleText: { color: L.ink, lineHeight: 24 },
+  bullet: { flexDirection: 'row', gap: 10, marginTop: SPACE.tight, paddingLeft: 4 },
+  allCaps: { marginTop: SPACE.near },
 
   cap: {
     flexDirection: 'row',
@@ -377,10 +557,13 @@ const s = StyleSheet.create({
     borderRadius: TILE_RADIUS,
     borderWidth: st,
     borderColor: L.rule,
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 16,
     marginBottom: SPACE.grid,
   },
+  more: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 4, paddingTop: 12 },
+  moreText: { color: L.body },
+  flipped: { transform: [{ rotate: '180deg' }] },
   // Not disabled, only quieter. It still answers, by saying what is
   // missing, so it keeps its edge and loses its fill.
   capBlocked: { backgroundColor: 'transparent' },

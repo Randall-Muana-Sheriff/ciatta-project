@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase';
 import { userFacingError } from '../lib/userFacingError';
 import { useSession } from '../state/session';
 import { C, font, GUTTER, RADIUS } from '../theme';
+import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
 import { Ground } from '../ui/Ground';
 import { L } from '../ui/surface';
@@ -408,9 +409,12 @@ export function SignInScreen() {
               <Pressable
                 onPress={enterDemo}
                 accessibilityRole="button"
-                style={({ pressed }) => [s.inlineHit, pressed && s.pressed]}
+                accessibilityLabel="Look Around First"
+                style={({ pressed }) => [s.inlineHit, s.lookAround, pressed && s.pressed]}
               >
                 <Text style={[font('footnote'), { color: C.tint }]}>Look Around First</Text>
+                {/* The arrow says this goes somewhere: into the app, as a guest. */}
+                <Icon name="arrowRight" size={14} color={C.tint} weight={2} />
               </Pressable>
             </View>
           </View>
@@ -616,6 +620,8 @@ const s = StyleSheet.create({
     marginTop: 10,
   },
   inlineHit: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
+  // Label and arrow on one line, the arrow a hair off the text.
+  lookAround: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   // The two policy labels, centred, with a middle dot between them.
   legal: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 10, marginTop: 10 },
   // The sign up pane is dark now, so this is written for dark. The

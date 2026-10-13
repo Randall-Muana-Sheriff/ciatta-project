@@ -19,6 +19,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { emptyForm, formToEpisode } from '../data/cycleLog';
+import type { Attachment } from '../lib/attachments';
 import { displayCopy } from '../lib/displayCopy';
 import { type QuickTab, QUICK_TABS, quickTab, readingLine, readQuick } from '../lib/quickLog';
 import { userFacingError } from '../lib/userFacingError';
@@ -38,6 +39,9 @@ export function QuickLogScreen() {
   const { add } = useCycle();
   const [key, setKey] = useState<QuickTab>('cycle');
   const [text, setText] = useState('');
+  // What she added with the plus: a photo, an image, a PDF or a video.
+  // Kept with whichever entry the sentence becomes.
+  const [files, setFiles] = useState<Attachment[]>([]);
   const [spoken, setSpoken] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +52,9 @@ export function QuickLogScreen() {
 
   const send = async () => {
     const said = text.trim();
-    if (!said || saving) return;
+    // A file on its own is an entry too: a lab report photographed with
+    // nothing to add is still worth keeping.
+    if ((!said && !files.length) || saving) return;
     setSaving(true);
     setError(null);
     try {
@@ -65,6 +71,7 @@ export function QuickLogScreen() {
               periodStart: reading.daysAgo,
               context: reading.context,
               note: said,
+              attachments: files,
             },
             false,
           ),
@@ -73,7 +80,7 @@ export function QuickLogScreen() {
         // Her day and her notes both land in the journal, dated, in her
         // words. A day is filed as Context because that is what the record
         // calls food, caffeine, sleep and the rest of what surrounded it.
-        await repo.addJournal(said, key === 'day' ? 'Context' : 'Notes');
+        await repo.addJournal(said, key === 'day' ? 'Context' : 'Notes', files);
       }
       nav.back();
     } catch (e) {
@@ -108,8 +115,9 @@ export function QuickLogScreen() {
           }}
           placeholder={tab.example}
           label={`Log ${tab.label.toLowerCase()} in your own words`}
+          attachments={files}
+          onAttachments={setFiles}
           onSend={send}
-          minHeight={120}
         />
 
         {/*

@@ -128,3 +128,24 @@ export function buildDay(input: {
 
 // The hour labels under the chart, at the quarters the concept uses.
 export const AXIS = ['12a', '6a', '12p', '6p', '12a'] as const;
+
+// What is drawn on the day right now, for the key under it. Only what is
+// present: a key naming a dashed line that is not there teaches her to
+// look for it. Heart rate first, because the line is the day; the rest in
+// the order they sit on the chart, top to bottom.
+export type ChartKey = 'heartRate' | 'usual' | 'asleep' | 'logged';
+
+export const CHART_KEY_LABEL: Record<ChartKey, string> = {
+  heartRate: 'Heart rate',
+  usual: 'Your usual',
+  asleep: 'Asleep',
+  logged: 'You logged',
+};
+
+export function chartKey(day: DayChart): ChartKey[] {
+  const keys: ChartKey[] = ['heartRate'];
+  if (day.usual) keys.push('usual');
+  if (day.asleep.length) keys.push('asleep');
+  if (day.marks.length) keys.push('logged');
+  return keys;
+}

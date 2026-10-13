@@ -889,19 +889,16 @@ export function buildInsights(input: EngineInput): Insights {
   const onToday = new Set([...told, ...rest.map((i) => i.id)]);
   const final: Insight[] = ranked.map((i) => (i.triage === 'Surface' && !onToday.has(i.id) ? { ...i, triage: 'Watch' } : i));
 
-  const parts = lead ? [lead.brief, ...rest.map((i) => i.brief)] : [input.opening];
-  if (recommendation) {
-    parts.push(
-      walkPlanned
-        ? 'You planned a short walk today, and the next few days will show whether your energy or sleep follow.'
-        : recommendation.brief,
-    );
-  }
-  if (lead) parts.push('Still watching whether these changes keep happening together.');
+  // Today's text is the lead story and nothing after it. It used to run on
+  // into the next two patterns, the suggestion and a closing line, which
+  // came to eight sentences: a paragraph to read before the day had
+  // started. The other patterns stay surfaced and open from Evidence, and
+  // the suggestion already has its own row under the brief.
+  const text = lead ? lead.brief : input.opening;
 
   return {
     ranked: final,
-    today: { text: parts.join(' '), lead, recommendation, walkPlanned },
+    today: { text, lead, recommendation, walkPlanned },
     movement: movementSummary(days),
   };
 }

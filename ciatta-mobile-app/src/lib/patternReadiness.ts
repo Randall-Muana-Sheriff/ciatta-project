@@ -102,3 +102,25 @@ export function metricLine(r: MetricReadiness): string {
   }
   return `${r.have} of ${r.need} days in the comparison window.`;
 }
+
+// What Ciatta's reading of her record amounts to, for the overview on her
+// profile. Patterns first, because they are what the comparison is for;
+// readiness when there are none, because then it is the honest answer.
+export function intelligenceLine(
+  days: readonly Day[],
+  ready: readonly MetricReadiness[],
+  found: number,
+  watching: number,
+): string {
+  const watched = watching ? `, and ${watching === 1 ? 'one more is' : `${watching} more are`} being watched` : '';
+  if (found) {
+    const n = found === 1 ? 'one pattern' : `${found} patterns`;
+    return `Ciatta has found ${n} in your record, each measured against your own usual${watched}.`;
+  }
+  if (watching) {
+    const n = watching === 1 ? 'one possible pattern' : `${watching} possible patterns`;
+    return `Ciatta is watching ${n}, and will show it when it has happened often enough to be sure.`;
+  }
+  if (anyReady(ready)) return 'Nothing stands out against your own usual right now.';
+  return readinessLine(days, ready);
+}

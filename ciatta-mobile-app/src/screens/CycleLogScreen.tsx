@@ -470,7 +470,6 @@ export function CycleLogScreen() {
             // is finish the thought and move her on, which is what the
             // gesture means everywhere else.
             onSend={next}
-            minHeight={120}
           />
           {/*
             Which of her words Ciatta recognised. It came with the old note

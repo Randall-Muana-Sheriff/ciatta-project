@@ -167,6 +167,27 @@ export function clinicalPhaseLabel(phase: ClinicalPhase): string {
   return phase === 'Menstrual' ? 'Menstrual' : `${phase} phase`;
 }
 
+// An estimate of the phase from the cycle day alone, for when nothing has
+// confirmed ovulation. Labelled as an estimate every time it is shown, so
+// it is never mistaken for the confirmed name above.
+//
+// Ovulation is placed fourteen days before the cycle is expected to end,
+// because the luteal phase varies far less than the follicular one. The
+// expected end is her own median length when there is one, and 28 days
+// only when there is nothing of hers to go on.
+export function estimatedPhase(day: number, usualLength: number | null): ClinicalPhase {
+  if (day <= 5) return 'Menstrual';
+  const ovulation = (usualLength ?? 28) - 14;
+  if (Math.abs(day - ovulation) <= OVULATORY_DAYS) return 'Ovulatory';
+  return day < ovulation ? 'Follicular' : 'Luteal';
+}
+
+// "Likely follicular": the hedge is the first word, so it is read before
+// the name it qualifies.
+export function estimatedPhaseLabel(phase: ClinicalPhase): string {
+  return phase === 'Menstrual' ? 'Menstrual' : `Likely ${phase.toLowerCase()}`;
+}
+
 // The line Today shows: the clinical name when it is earned, and the
 // observational one when it is not. Never both, and never a clinical name
 // hedged into meaninglessness.

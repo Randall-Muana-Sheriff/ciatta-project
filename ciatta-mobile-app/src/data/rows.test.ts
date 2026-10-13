@@ -41,9 +41,17 @@ test('notes group by month, newest first', () => {
   assert.equal(view.since, 'Since March');
   assert.deepEqual(view.months.map((m) => m.month), ['July 2026', 'March 2026']);
   assert.deepEqual(view.months[0].items[0], {
-    text: 'Slept through four nights.', date: '3 Jul', tag: 'Sleep', kind: 'Notes', usedInInsight: false,
+    text: 'Slept through four nights.', date: '3 Jul', tag: 'Sleep', kind: 'Notes', usedInInsight: false, attachments: [],
   });
   assert.equal(view.months[1].items[0].tag, 'Context');
+});
+
+test('a note keeps the files added with the plus', () => {
+  const file = { id: 'f1', kind: 'document', name: 'labs.pdf', uri: 'file:///labs.pdf', addedAt: '2026-10-12T09:00:00Z' };
+  const view = journalView([
+    { client_id: 'j1', text: '', kind: 'Notes', tag: null, occurred_at: '2026-10-12T09:00:00Z', metadata: { attachments: [file] } },
+  ]);
+  assert.deepEqual(view.months[0].items[0].attachments, [file]);
 });
 
 test('no notes reads as no notes', () => {
