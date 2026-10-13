@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Switch, Text, useWindowDimensions, View } from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { expo } from '../../app.json';
@@ -10,6 +10,9 @@ import type { SourceView } from '../data/rows';
 import type { Reported } from '../data/repo';
 import { type Connection, loadConnections } from '../data/providers';
 import { intelligenceLine, metricLine, patternReadiness } from '../lib/patternReadiness';
+import { overviewFacts } from '../lib/overviewFacts';
+import { weight } from '../lib/vitals';
+import { useCycleInsights } from '../state/cycleStore';
 import { profileOverview } from '../lib/profileOverview';
 import { connectAppleHealth } from '../lib/connectHealth';
 import { SYSTEM_DOTS } from '../lib/bodyMap';
@@ -53,26 +56,6 @@ const OVERVIEW_TONE: Record<Tone, string> = { coral: C.coral, mint: C.mint, lave
 const notYet = () => {};
 
 // ── Overview pieces ────────────────────────────────────────────
-
-function StatTiles({ cols, profile }: { cols: 2 | 4; profile: Profile }) {
-  return (
-    <View style={p.grid}>
-      {profile.stats.map((s) => (
-        <View
-          key={s.label}
-          style={[p.tile, { width: cols === 4 ? '23.5%' : '48.5%' }]}
-          accessible
-          accessibilityLabel={`${s.label}, ${s.value}${s.sub ? `, ${s.sub}` : ''}`}
-        >
-          <Icon name={s.icon} size={20} color={s.tone === 'lavender' ? C.lavender : C.coral} weight={1.8} />
-          <Text style={[font('footnote'), { color: C.secondary, marginTop: 8 }]}>{s.label}</Text>
-          <Text style={[font('title3', 'semibold'), { color: C.text }]}>{displayCopy(s.value)}</Text>
-          {s.sub ? <Text style={[font('footnote'), { color: C.secondary }]}>{s.sub}</Text> : null}
-        </View>
-      ))}
-    </View>
-  );
-}
 
 function CareGroup({ profile }: { profile: Profile }) {
   return (
@@ -134,8 +117,27 @@ function ReadyRing({ ready, total }: { ready: number; total: number }) {
 // learns what is usual for her, measure by measure, and says when
 // something moves away from that, so the overview shows exactly that: what
 // it has found, and how far each measure is from being comparable.
-function HealthOverview() {
+function HealthOverview({ stats = [] }: { stats?: readonly { label: string; value: string; sub?: string }[] }) {
   const { days } = useData();
+  const repo = useRepo();
+  const { windows } = useCycleInsights();
+  // Her latest weight, and the day her last period started, for the facts
+  // at the top of the card.
+  const [weightCard, setWeightCard] = useState<{ value: string | null; note?: string } | null>(null);
+  useEffect(() => {
+    let ignore = false;
+    repo
+      .loadVitals()
+      .then((rows) => !ignore && setWeightCard(weight(rows, new Date())))
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, [repo]);
+  const facts = useMemo(
+    () => overviewFacts({ stats, weight: weightCard, lastPeriod: windows[windows.length - 1]?.start ?? null, now: new Date() }),
+    [stats, weightCard, windows],
+  );
   const { ranked } = useInsights();
   const ready = useMemo(() => patternReadiness(days), [days]);
   const found = ranked.filter((i) => i.triage === 'Surface' || i.triage === 'Investigate').length;
@@ -151,6 +153,19 @@ function HealthOverview() {
             {displayCopy(intelligenceLine(days, ready, found, watching))}
           </Text>
         </View>
+      </View>
+      {/* The facts about her a clinician asks first, inside the card. */}
+      <View style={p.facts}>
+        {facts.map((f) => (
+          <View key={f.key} style={p.fact} accessible accessibilityLabel={`${f.label}, ${f.value ?? 'not added'}${f.sub ? `, ${f.sub}` : ''}`}>
+            <Icon name={f.icon} size={16} color={f.key === 'insurance' ? C.lavender : C.coral} weight={1.8} />
+            <Text style={[font('caption1'), { color: C.secondary, marginTop: 6 }]} numberOfLines={1}>{f.label}</Text>
+            <Text style={[font('subhead', 'semibold'), { color: f.value ? C.text : C.tertiary }]} numberOfLines={1} adjustsFontSizeToFit>
+              {f.value ? displayCopy(f.value) : 'Not added'}
+            </Text>
+            {f.sub ? <Text style={[font('caption2'), { color: C.secondary }]} numberOfLines={1}>{displayCopy(f.sub)}</Text> : null}
+          </View>
+        ))}
       </View>
       {/*
         One row per measure: how much of its usual Ciatta has learned. The
@@ -589,7 +604,6 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
 
 export function ProfileScreen() {
   const nav = useNav();
-  const { width } = useWindowDimensions();
   const repo = useRepo();
   const { profile, person, mode, days } = useData();
   const [sources, setSources] = useState<SourceView[]>([]);
@@ -645,7 +659,6 @@ export function ProfileScreen() {
       }),
     [person, onboardedAt, reported, days, sources],
   );
-  const cols = width >= 430 ? 4 : 2;
   // Her own first name until her record holds a full profile.
   const name = profile?.name ?? person?.firstName ?? null;
   // The sample portrait is a photograph of one particular woman. It belongs
@@ -736,8 +749,7 @@ export function ProfileScreen() {
               about her, then her record in a paragraph to close: the
               summary reads best after the parts it summarises.
             */}
-            <HealthOverview />
-            <StatTiles cols={cols} profile={profile} />
+            <HealthOverview stats={profile.stats} />
             <Connections onOpen={nav.push} />
             <View style={p.overviewCard}>
               <Text style={[font('body'), p.overviewText]}>{displayCopy(overview)}</Text>
@@ -792,6 +804,8 @@ const p = StyleSheet.create({
   overviewText: { color: L.ink, lineHeight: 25 },
   overviewTop: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   ring: { width: 88, height: 88, alignItems: 'center', justifyContent: 'center' },
+  facts: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 16, rowGap: 10 },
+  fact: { width: '33.33%', paddingRight: 8 },
   measures: { gap: 12, marginTop: 16 },
   measureHead: { flexDirection: 'row', alignItems: 'baseline' },
   track: { height: 5, borderRadius: 2.5, backgroundColor: C.fill, marginTop: 6, overflow: 'hidden' },
