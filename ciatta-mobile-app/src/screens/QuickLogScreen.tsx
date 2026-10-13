@@ -58,6 +58,15 @@ export function QuickLogScreen() {
   // What she has in, so warning signs written in any category are checked
   // against it as she types.
   const [inNow, setInNow] = useState<ProductUse | null>(null);
+  // Her own medicines and supplements, from her profile, offered as chips
+  // under Medications and supplements so a tap names the one she means.
+  const [own, setOwn] = useState<string[]>([]);
+  useEffect(() => {
+    repo
+      .loadReported()
+      .then((r) => setOwn([...new Set([...r.medications, ...r.supplements].map((x) => x.trim()).filter(Boolean))]))
+      .catch(() => {});
+  }, [repo]);
   useEffect(() => {
     repo.loadProductUses().then((u) => setInNow(openUse(u))).catch(() => {});
   }, [repo]);
@@ -88,6 +97,7 @@ export function QuickLogScreen() {
   }, [text, tapped, files, key]);
 
   const cat = category(key);
+  const chips = key === 'meds' ? [...own.filter((x) => !cat.quick.includes(x)), ...cat.quick] : cat.quick;
   const reading = useMemo(() => readQuick(text), [text]);
   // A bowel movement she tapped or wrote, with the way into its full detail.
   const bowel = bowelDetail([...(key === 'gut' ? tapped : []), ...(reading.found.gut ?? [])]);
@@ -187,9 +197,9 @@ export function QuickLogScreen() {
       </ScrollView>
 
       <View style={q.pad}>
-        {cat.quick.length ? (
+        {chips.length ? (
           <View style={q.chips}>
-            {cat.quick.map((item) => {
+            {chips.map((item) => {
               const on = tapped.includes(item);
               return (
                 <Pressable

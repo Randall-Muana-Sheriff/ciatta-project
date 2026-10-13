@@ -4,11 +4,18 @@ import { test } from 'node:test';
 import { WHAT_HAPPENED } from '../data/cycleLog';
 import { BOWEL, CATEGORIES, category } from './logCategories';
 
-test('nine categories, in the order the Log screen shows them', () => {
+test('ten categories, in the order the Log screen shows them', () => {
   assert.deepEqual(
     CATEGORIES.map((c) => c.key),
-    ['cycle', 'nutrition', 'gut', 'body', 'mind', 'skin', 'sexual', 'context', 'note'],
+    ['cycle', 'nutrition', 'gut', 'body', 'mind', 'skin', 'sexual', 'meds', 'context', 'note'],
   );
+});
+
+test('medications and supplements are their own category, not context', () => {
+  const meds = category('meds');
+  assert.equal(meds.label, 'Medications and supplements');
+  assert.deepEqual(meds.quick, ['Took medication', 'Took supplement', 'Missed a dose', 'Started something new', 'Stopped something', 'Side effect']);
+  assert.ok(!category('context').quick.includes('Took medication'));
 });
 
 test('every category has a real example sentence', () => {

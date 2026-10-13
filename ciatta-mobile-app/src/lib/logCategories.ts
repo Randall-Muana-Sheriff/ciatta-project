@@ -2,7 +2,7 @@
 //
 // Logging was split by screen: a Cycle questionnaire, a Daily Log, a
 // journal, each with its own copy of some of the same things. These are
-// the eight subjects instead, each with the chips worth one tap and the
+// the subjects instead, each with the chips worth one tap and the
 // example sentence that teaches the rest. Where each one is stored is
 // decided in lib/quickLog.ts, not here: this file only names things.
 
@@ -10,7 +10,7 @@ import type { EntryKind } from '../data/sample';
 import type { Screen } from '../navigation';
 import { DIGESTION_FLAGS } from './dailyLog';
 
-export type CategoryKey = 'cycle' | 'nutrition' | 'gut' | 'body' | 'mind' | 'skin' | 'sexual' | 'context' | 'note';
+export type CategoryKey = 'cycle' | 'nutrition' | 'gut' | 'body' | 'mind' | 'skin' | 'sexual' | 'meds' | 'context' | 'note';
 
 export type LogCategory = {
   key: CategoryKey;
@@ -104,11 +104,23 @@ export const CATEGORIES: readonly LogCategory[] = [
     detailLabel: null,
     journalKind: 'Symptoms',
   },
+  // What she took, missed, started or stopped. Her own medicines and
+  // supplements from her profile are offered as chips beside these on the
+  // Log screen, so a tap names the one she means.
+  {
+    key: 'meds',
+    label: 'Medications and supplements',
+    example: 'Took my levothyroxine late, and started magnesium at night',
+    quick: ['Took medication', 'Took supplement', 'Missed a dose', 'Started something new', 'Stopped something', 'Side effect'],
+    detail: null,
+    detailLabel: null,
+    journalKind: 'Context',
+  },
   {
     key: 'context',
     label: 'Context',
     example: 'Slept badly, long flight, took ibuprofen at noon',
-    quick: ['Slept badly', 'Slept well', 'Exercised', 'Stressful event', 'Travel', 'Took medication', 'Took supplement', 'Sex', 'Illness', 'Damp or mould at home'],
+    quick: ['Slept badly', 'Slept well', 'Exercised', 'Stressful event', 'Travel', 'Sex', 'Illness', 'Damp or mould at home'],
     detail: null,
     detailLabel: null,
     journalKind: 'Context',

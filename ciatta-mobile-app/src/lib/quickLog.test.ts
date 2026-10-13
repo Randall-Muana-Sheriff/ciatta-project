@@ -171,7 +171,7 @@ test('everyday phrases do not become symptoms', () => {
     assert.equal(f.mind?.includes('Low mood') ?? false, false, s);
     assert.equal(f.gut?.includes('Gas') ?? false, false, s);
     assert.equal(f.gut?.includes('Loose') ?? false, false, s);
-    assert.equal(f.context?.includes('Took medication') ?? false, false, s);
+    assert.equal(f.meds?.includes('Took medication') ?? false, false, s);
     assert.equal(f.sexual?.includes('Leaking') ?? false, false, s);
     assert.equal(f.context?.includes('Exercised') ?? false, false, s);
   }
@@ -251,4 +251,19 @@ test('nutrition items are kept as a journal entry under Nutrition, gut flags on 
 test('damp or mould at home is hers to report, under Context', () => {
   assert.deepEqual(readCategories('the flat is damp again, mould behind the wardrobe').context, ['Damp or mould at home']);
   assert.deepEqual(readCategories('mildew in the bathroom').context, ['Damp or mould at home']);
+});
+
+test('medication words file under Medications and supplements', () => {
+  assert.deepEqual(readCategories('took ibuprofen at noon and my magnesium').meds, ['Took medication', 'Took supplement']);
+  assert.deepEqual(readCategories('forgot my pill this morning').meds, ['Missed a dose']);
+  assert.deepEqual(readCategories('missed a dose of levothyroxine').meds, ['Missed a dose']);
+  assert.deepEqual(readCategories('started a new medication on monday').meds, ['Took medication', 'Started something new']);
+  assert.deepEqual(readCategories('stopped taking the iron').meds, ['Stopped something']);
+  assert.deepEqual(readCategories('nausea from the new tablets, a side effect I think').meds, ['Side effect']);
+});
+
+test('one of her own medicines, tapped, is kept with the entry', () => {
+  const plan = planSave({ text: '', selected: 'meds', tapped: ['Levothyroxine'], files: [] })!;
+  assert.deepEqual(plan.journal, { kind: 'Context', category: 'meds', items: { meds: ['Levothyroxine'] } });
+  assert.equal(plan.episode, null);
 });

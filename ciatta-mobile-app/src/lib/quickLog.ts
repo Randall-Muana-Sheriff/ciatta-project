@@ -162,8 +162,12 @@ const CUES: [RegExp, CategoryKey, string][] = [
   [/\b(exercised|workout|worked out|gym|yoga|walked|jog\w*|went for a run|ran \d)\b/i, 'context', 'Exercised'],
   [/\b(stressful|stressed)\b/i, 'context', 'Stressful event'],
   [/\b(flight|flew|travel\w*|trip)\b/i, 'context', 'Travel'],
-  [/\b(ibuprofen|paracetamol|tylenol|advil|painkillers?|medication|meds|took (a|my) pill)\b/i, 'context', 'Took medication'],
-  [/\b(supplement|vitamin|magnesium|iron tablets?)\b/i, 'context', 'Took supplement'],
+  [/\b(ibuprofen|paracetamol|tylenol|advil|painkillers?|medication|meds|took (a|my) pill)\b/i, 'meds', 'Took medication'],
+  [/\b(supplements?|vitamins?|magnesium|iron tablets?)\b/i, 'meds', 'Took supplement'],
+  [/\b(missed (a|my) (dose|pill|tablet)|forgot (to take )?my (pill|meds|medication|tablets?))\b/i, 'meds', 'Missed a dose'],
+  [/\bstarted (a |taking )?(new )?(medication|meds|pill|supplement|tablets?)\b|\bnew (medication|meds|prescription)\b/i, 'meds', 'Started something new'],
+  [/\bstopped taking\b|\bcame off (the |my )?\w+|\bstopped (my|the) (meds|medication|pill|supplement|iron|vitamins?)\b/i, 'meds', 'Stopped something'],
+  [/\bside effects?\b/i, 'meds', 'Side effect'],
   [/\b(sick|ill|a cold|flu|fever)\b/i, 'context', 'Illness'],
   [/\b(damp|mou?ld|mouldy|moldy|mildew)\b/i, 'context', 'Damp or mould at home'],
 ];
@@ -229,7 +233,7 @@ export function readQuick(text: string): QuickReading {
   };
 }
 
-const ORDER: CategoryKey[] = ['cycle', 'nutrition', 'gut', 'body', 'mind', 'skin', 'sexual', 'context'];
+const ORDER: CategoryKey[] = ['cycle', 'nutrition', 'gut', 'body', 'mind', 'skin', 'sexual', 'meds', 'context'];
 
 // What was recognised, grouped as it will be filed. Null when nothing was,
 // so no empty label is drawn; the words still save.
@@ -267,7 +271,7 @@ export type SavePlan = {
   daysAgo: number;
 };
 
-const JOURNAL_KEYS: CategoryKey[] = ['nutrition', 'body', 'mind', 'skin', 'sexual', 'context'];
+const JOURNAL_KEYS: CategoryKey[] = ['nutrition', 'body', 'mind', 'skin', 'sexual', 'meds', 'context'];
 
 export function planSave(input: { text: string; selected: CategoryKey; tapped: string[]; files: Attachment[] }): SavePlan | null {
   const text = input.text.trim();
