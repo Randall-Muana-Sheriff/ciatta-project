@@ -59,7 +59,13 @@ export function buildMetrics(day: Day | null, vitals: readonly VitalCard[] = [])
     { label: 'Resting heart rate', value: d?.restingHR != null ? `${Math.round(d.restingHR)} bpm` : null, from: 'measured' },
     {
       label: 'Skin temperature',
-      value: d?.tempDeviation != null ? `${d.tempDeviation > 0 ? '+' : ''}${one(d.tempDeviation)} °C` : null,
+      // In words, not signed: a minus is a dash to display copy.
+      value:
+        d?.tempDeviation == null
+          ? null
+          : one(Math.abs(d.tempDeviation)) === '0.0'
+            ? 'At your usual'
+            : `${one(Math.abs(d.tempDeviation))} °C ${d.tempDeviation > 0 ? 'above' : 'below'} usual`,
       from: 'measured',
       // Named as a difference, because that is what the sensor reports. A
       // bare figure here would read as a body temperature.
@@ -250,6 +256,21 @@ export function headlineMetrics(
     const t = trendOf(days.map(get), unit);
     return t ? { ...m, trend: t } : m;
   };
+  // Skin temperature is a difference from her usual. The figure carries no
+  // sign, because a minus is a dash to display copy; the note says which
+  // way, in words, and how old the reading is when it is not today's.
+  const skinTemp = (found: { value: number; note?: string } | null): HeadlineMetric => {
+    if (!found) return { key: 'temp', label: 'Skin temp', value: null, from: 'measured' };
+    const size = one(Math.abs(found.value));
+    const way = size === '0.0' ? 'At usual' : found.value > 0 ? 'Above usual' : 'Below usual';
+    return {
+      key: 'temp',
+      label: 'Skin temp',
+      value: `${size} °C`,
+      note: found.note ? `${way}, ${found.note.charAt(0).toLowerCase()}${found.note.slice(1)}` : way,
+      from: 'measured',
+    };
+  };
   return [
     trended(card('sleep', 'Sleep', read((d) => d.sleepHours), (v) => fmtHours(v)), (d) => d.sleepHours, 'percent'),
     trended(card('hrv', 'HRV', read((d) => d.hrv), (v) => `${Math.round(v)} ms`), (d) => d.hrv, 'percent'),
@@ -259,18 +280,7 @@ export function headlineMetrics(
       'percent',
     ),
     vital('bp'),
-    trended(
-      card(
-        'temp',
-        'Skin temp',
-        read((d) => d.tempDeviation),
-        (v) => `${v > 0 ? '+' : ''}${one(v)} °C`,
-        // Named as a difference, because that is what the sensor reports.
-        'From usual',
-      ),
-      (d) => d.tempDeviation,
-      'degrees',
-    ),
+    trended(skinTemp(read((d) => d.tempDeviation)), (d) => d.tempDeviation, 'degrees'),
     vital('spo2'),
   ];
 }

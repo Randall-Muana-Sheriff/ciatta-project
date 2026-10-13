@@ -70,11 +70,13 @@ test('stages are minutes', () => {
   assert.equal(find(day, 'REM')?.value, '95 min');
 });
 
-test('skin temperature is signed and named as a change, never a body temperature', () => {
+test('skin temperature says which way in words, never with a sign, and never as a body temperature', () => {
   const warm = find({ ...empty, tempDeviation: 0.42 }, 'Skin temperature');
-  assert.equal(warm?.value, '+0.4 °C');
+  assert.equal(warm?.value, '0.4 °C above usual');
   assert.equal(warm?.note, 'Change from your own usual');
-  assert.equal(find({ ...empty, tempDeviation: -0.3 }, 'Skin temperature')?.value, '-0.3 °C');
+  // A minus sign is a dash to display copy, so cooler is said, not signed.
+  assert.equal(find({ ...empty, tempDeviation: -0.3 }, 'Skin temperature')?.value, '0.3 °C below usual');
+  assert.equal(find({ ...empty, tempDeviation: 0 }, 'Skin temperature')?.value, 'At your usual');
 });
 
 test('a check in is the number she chose, never relabelled', () => {
@@ -185,18 +187,21 @@ test('a measured zero still shows, unlike a missing figure', () => {
 // The fixture day, so these do not depend on what day the suite runs.
 const ON = new Date(2026, 9, 11, 12);
 
-test('skin temperature is signed, and a reading from today says it is a difference', () => {
+test('the skin temperature card gives the size, and says above or below usual in words', () => {
   const m = headlineMetrics([{ ...empty, tempDeviation: 0.42 }], [], ON).find((x) => x.key === 'temp')!;
-  assert.equal(m.value, '+0.4 °C');
-  assert.equal(m.note, 'From usual');
+  assert.equal(m.value, '0.4 °C');
+  assert.equal(m.note, 'Above usual');
+  const cool = headlineMetrics([{ ...empty, tempDeviation: -0.3 }], [], ON).find((x) => x.key === 'temp')!;
+  assert.equal(cool.value, '0.3 °C');
+  assert.equal(cool.note, 'Below usual');
+  for (const v of [m.value!, cool.value!]) assert.ok(!/[-–—−]/.test(v), v);
 });
 
-test('an older reading says how old instead, since the sign already marks it a difference', () => {
-  // Staleness is the thing she cannot infer from the figure. The plus
-  // sign carries the rest.
+test('an older reading keeps its direction and says how old', () => {
+  // With no sign on the figure, the note carries both: which way, and when.
   const later = new Date(2026, 9, 13, 12);
-  const m = headlineMetrics([{ ...empty, tempDeviation: 0.42 }], [], later).find((x) => x.key === 'temp')!;
-  assert.equal(m.note, '2 days ago');
+  const m = headlineMetrics([{ ...empty, tempDeviation: -0.42 }], [], later).find((x) => x.key === 'temp')!;
+  assert.equal(m.note, 'Below usual, 2 days ago');
 });
 
 test('the latest reading is shown, not only today, with its age', () => {
