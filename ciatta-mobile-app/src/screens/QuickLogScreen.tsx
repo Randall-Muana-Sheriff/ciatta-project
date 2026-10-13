@@ -38,7 +38,7 @@ import { font, GUTTER } from '../theme';
 import { Composer } from '../ui/composer';
 import { DetailScreen, PrimaryButton } from '../ui/kit';
 import { ProductLogger } from '../ui/ProductLogger';
-import { takeLogCategory } from '../lib/logHandoff';
+import { takeLogCategory, takeLogMode } from '../lib/logHandoff';
 import { L, SPACE } from '../ui/surface';
 
 export function QuickLogScreen() {
@@ -46,6 +46,9 @@ export function QuickLogScreen() {
   const repo = useRepo();
   const { add, startDraft } = useCycle();
   const [key, setKey] = useState<CategoryKey>(() => takeLogCategory() ?? 'body');
+  // How she chose to log, from the button that opened this: the box opens
+  // listening, typing or on the camera. A meal photo goes to the scan.
+  const [mode] = useState(() => takeLogMode());
   const [tapped, setTapped] = useState<string[]>([]);
   const [text, setText] = useState('');
   const [files, setFiles] = useState<Attachment[]>([]);
@@ -97,6 +100,11 @@ export function QuickLogScreen() {
   useEffect(() => {
     done.current = new Set();
   }, [text, tapped, files, key]);
+  useEffect(() => {
+    if (mode === 'camera' && key === 'nutrition') void pickMeal('camera');
+    // Once, on opening.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const cat = category(key);
   const mine = key === 'meds' ? own.meds : key === 'supplements' ? own.supplements : [];
@@ -200,6 +208,54 @@ export function QuickLogScreen() {
       </ScrollView>
 
       <View style={q.pad}>
+        {/* Say it, type it or snap it: the box first, with the example
+            as its placeholder. Taps and forms follow for whoever wants them. */}
+        <Text style={[font('caption1'), q.hint]}>Say it, type it, or add a photo with the plus.</Text>
+        <Composer
+          value={text}
+          onChange={(v, how) => {
+            setText(v);
+            if (how === 'spoken') setSpoken(true);
+          }}
+          placeholder={displayCopy(cat.example)}
+          label={`Log ${cat.label.toLowerCase()} in your own words`}
+          attachments={files}
+          onAttachments={(next) => {
+            // Under Nutrition, a photo added with the plus is a meal to
+            // read, so it goes to the scan rather than sitting as a file.
+            const added = next.find((f) => f.kind === 'photo' && !files.some((x) => x.id === f.id));
+            if (key === 'nutrition' && added) {
+              handPhoto(added.uri);
+              nav.push('foodScan');
+              return;
+            }
+            setFiles(next);
+          }}
+          onSend={send}
+          start={mode === 'camera' && key === 'nutrition' ? null : mode}
+        />
+
+        {/* Toxic shock warning signs with a tampon, cup or disc in: said at
+            once, before anything else, whatever category she is in. */}
+        {urgent ? (
+          <Pressable onPress={() => nav.push('productSafety')} accessibilityRole="button" style={q.urgent}>
+            <Text style={[font('subhead', 'semibold'), q.urgentText]}>{displayCopy(urgent)}</Text>
+            <Text style={[font('footnote'), q.urgentText]}>Warning signs and what to do</Text>
+          </Pressable>
+        ) : null}
+
+        {recognised ? (
+          <Text style={[font('footnote'), q.noted]}>
+            Will be saved as: {displayCopy(recognised)}
+            {spoken ? ', spoken' : ''}
+          </Text>
+        ) : text.trim() ? (
+          <Text style={[font('footnote'), q.noted]}>{displayCopy(`Saved in your own words, under ${cat.label}.`)}</Text>
+        ) : null}
+
+        {error ? <Text style={[font('footnote'), q.error]}>{displayCopy(error)}</Text> : null}
+
+        {chips.length ? <Text style={[font('caption1'), q.orTap]}>Or tap</Text> : null}
         {chips.length ? (
           <View style={q.chips}>
             {chips.map((item) => {
@@ -234,51 +290,6 @@ export function QuickLogScreen() {
           </View>
         ) : null}
 
-        <Text style={[font('caption1'), q.hint]}>Or type it or say it, in a sentence. For example:</Text>
-        <Text style={[font('subhead'), q.example]}>{displayCopy(cat.example)}</Text>
-
-        <Composer
-          value={text}
-          onChange={(v, how) => {
-            setText(v);
-            if (how === 'spoken') setSpoken(true);
-          }}
-          placeholder={displayCopy(cat.example)}
-          label={`Log ${cat.label.toLowerCase()} in your own words`}
-          attachments={files}
-          onAttachments={(next) => {
-            // Under Nutrition, a photo added with the plus is a meal to
-            // read, so it goes to the scan rather than sitting as a file.
-            const added = next.find((f) => f.kind === 'photo' && !files.some((x) => x.id === f.id));
-            if (key === 'nutrition' && added) {
-              handPhoto(added.uri);
-              nav.push('foodScan');
-              return;
-            }
-            setFiles(next);
-          }}
-          onSend={send}
-        />
-
-        {/* Toxic shock warning signs with a tampon, cup or disc in: said at
-            once, before anything else, whatever category she is in. */}
-        {urgent ? (
-          <Pressable onPress={() => nav.push('productSafety')} accessibilityRole="button" style={q.urgent}>
-            <Text style={[font('subhead', 'semibold'), q.urgentText]}>{displayCopy(urgent)}</Text>
-            <Text style={[font('footnote'), q.urgentText]}>Warning signs and what to do</Text>
-          </Pressable>
-        ) : null}
-
-        {recognised ? (
-          <Text style={[font('footnote'), q.noted]}>
-            Will be saved as: {displayCopy(recognised)}
-            {spoken ? ', spoken' : ''}
-          </Text>
-        ) : text.trim() ? (
-          <Text style={[font('footnote'), q.noted]}>{displayCopy(`Saved in your own words, under ${cat.label}.`)}</Text>
-        ) : null}
-
-        {error ? <Text style={[font('footnote'), q.error]}>{displayCopy(error)}</Text> : null}
 
         {/*
           The stool scale, pain and flags live in the bowel step of the full
@@ -300,7 +311,12 @@ export function QuickLogScreen() {
 
         {cat.detail && cat.detailLabel ? (
           <Pressable
-            onPress={() => nav.push(cat.detail as Screen)}
+            onPress={() => {
+              // The step by step cycle form opens on a fresh entry, carrying
+              // what she already wrote here.
+              if (cat.detail === 'cycleLog') startDraft({ form: { note: text.trim(), attachments: files } });
+              nav.push(cat.detail as Screen);
+            }}
             accessibilityRole="button"
             accessibilityLabel={cat.detailLabel}
             style={({ pressed }) => [q.detail, pressed && q.pressed]}
@@ -315,6 +331,7 @@ export function QuickLogScreen() {
 
 const q = StyleSheet.create({
   pad: { paddingHorizontal: GUTTER },
+  orTap: { color: L.meta, marginTop: SPACE.near },
   cats: { gap: 8, paddingHorizontal: GUTTER, paddingVertical: 4 },
   cat: {
     paddingVertical: 9,
@@ -327,7 +344,7 @@ const q = StyleSheet.create({
   catOn: { backgroundColor: L.ink, borderColor: L.ink },
   catText: { color: L.body },
   catTextOn: { color: L.canvas },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: SPACE.near },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   chip: {
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -338,8 +355,7 @@ const q = StyleSheet.create({
   chipOn: { backgroundColor: L.statement, borderColor: L.ink },
   chipText: { color: L.body },
   chipTextOn: { color: L.ink },
-  hint: { color: L.meta, marginTop: SPACE.block },
-  example: { color: L.body, marginTop: 4, marginBottom: 12, lineHeight: 22 },
+  hint: { color: L.meta, marginTop: SPACE.near, marginBottom: 10 },
   noted: { color: L.meta, marginTop: 10, lineHeight: 18 },
   error: { color: L.ink, marginTop: 10 },
   detail: { marginTop: SPACE.block, paddingVertical: 14, alignItems: 'center' },

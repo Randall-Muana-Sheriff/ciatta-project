@@ -20,7 +20,8 @@ import { intelligenceLine, patternReadiness } from '../lib/patternReadiness';
 import { todayInsight } from '../lib/todayInsight';
 import { useData, useRepo, useSession } from '../state/session';
 import { connectAppleHealth } from '../lib/connectHealth';
-import { chooseLogCategory } from '../lib/logHandoff';
+import { chooseLogCategory, chooseLogMode } from '../lib/logHandoff';
+import { LogBox } from '../ui/LogBox';
 import { todayState } from '../lib/todayState';
 import { userFacingError } from '../lib/userFacingError';
 import { TodayStart } from '../ui/TodayStart';
@@ -59,7 +60,7 @@ type Action = { key: string; icon: IconName; title: string; sub?: string; onPres
 
 export function TodayScreen() {
   const nav = useNav();
-  const { startDraft, accept, watching, setWatching, episodes } = useCycle();
+  const { accept, watching, setWatching, episodes } = useCycle();
   const { today: brief, ranked } = useInsights();
   const { windows, signals, lens, profile, fertility } = useCycleInsights();
   const { person, today, days, todayIsPlaceholder } = useData();
@@ -88,9 +89,11 @@ export function TodayScreen() {
     chooseLogCategory('body');
     nav.push('quickLog');
   };
+  // The cycle is logged the same way as everything else: the Log screen on
+  // Cycle, voice and text first, the step by step form a link inside it.
   const logCycle = () => {
-    startDraft();
-    nav.push('cycleLog');
+    chooseLogCategory('cycle');
+    nav.push('quickLog');
   };
 
   // Connecting Apple Health from Today, the same sequence Profile and
@@ -573,27 +576,14 @@ export function TodayScreen() {
             <View style={t.youCanPill}>
               <Text style={[font('caption1', 'semibold'), t.youCanPillText]}>FOR TODAY</Text>
             </View>
-            <ListRow
-              light
-              first
-              icon="plus"
-              title="Log Today's Symptoms"
-              sub="Body, mind, gut, skin, and anything else you notice today."
-              onPress={logSymptoms}
-            />
-            <ListRow
-              light
-              icon="drop"
-              title="Log Cycle Experience"
-              sub="Bleeding, period pain, and flare ups."
-              onPress={logCycle}
-            />
-            <ListRow
-              light
-              icon="leaf"
-              title="Log Food and Drinks"
-              sub="Meals, caffeine, alcohol, and how the day felt."
-              onPress={go('dailyLog')}
+            {/* Logging, one step from here: the topic, then speak, type or
+                take a photo. The Log screen opens already doing it. */}
+            <LogBox
+              onLog={(topic, how) => {
+                chooseLogCategory(topic);
+                chooseLogMode(how);
+                nav.push('quickLog');
+              }}
             />
             <ListRow
               light

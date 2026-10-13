@@ -5,6 +5,7 @@ import { countedWindows, medianLength } from '../lib/cycleModel';
 import { painSplit, tally } from '../lib/cyclePatterns';
 import { displayCopy } from '../lib/displayCopy';
 import { FERTILITY_DISCLAIMER, fmtRange } from '../lib/fertility';
+import { chooseLogCategory } from '../lib/logHandoff';
 import { useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useData } from '../state/session';
@@ -48,9 +49,11 @@ export function CycleScreen() {
   const overallLocations = top(signals.filter((s) => s.pain).map((s) => s.episode.locations), 3);
   const split = lens.painSplit ? painSplit(signals) : null;
 
+  // Logged the way everything is: the Log screen on Cycle, voice and text
+  // first, with the step by step form a link inside it.
   const log = () => {
-    startDraft();
-    nav.push('cycleLog');
+    chooseLogCategory('cycle');
+    nav.push('quickLog');
   };
   const similar = () => {
     if (!template) return;

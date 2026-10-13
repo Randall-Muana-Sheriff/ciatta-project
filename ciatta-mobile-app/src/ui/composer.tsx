@@ -21,7 +21,7 @@
 // phone, because there is no bucket yet and an upload she was told happened
 // would be worse than one that did not.
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
@@ -65,6 +65,9 @@ export type ComposerProps = {
   // and a required prop makes the next one decide rather than inherit
   // silence.
   onSend: () => void;
+  // Opened from a voice, type or camera button: the box starts doing that,
+  // once, as it appears, so the tap that chose it was the only step.
+  start?: 'voice' | 'type' | 'camera' | null;
 };
 
 // One size everywhere, the one Care settled on: a single line at rest, so
@@ -102,7 +105,9 @@ export function Composer({
   attachments = [],
   onAttachments,
   onSend,
+  start = null,
 }: ComposerProps) {
+  const field = useRef<TextInput>(null);
   // Why a picker did not open. Permission refused is the common one and is
   // not an error she did anything wrong, so it reads as a fact and says
   // where to change it.
@@ -198,6 +203,14 @@ export function Composer({
     return pickDocument();
   };
 
+  useEffect(() => {
+    if (start === 'voice') dictation.start();
+    else if (start === 'type') setTimeout(() => field.current?.focus(), 250);
+    else if (start === 'camera' && canAdd) void takePhoto();
+    // Once, as the box appears.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Listening always wins: it is the state she needs a way out of, and a
   // send that replaced the only stop would leave a live microphone with no
   // way to end it. Otherwise text in the box means send.
@@ -230,6 +243,7 @@ export function Composer({
 
       <View style={s.wrap}>
         <TextInput
+          ref={field}
           value={value}
           onChangeText={(t) => onChange(t, 'typed')}
           placeholder={placeholder}

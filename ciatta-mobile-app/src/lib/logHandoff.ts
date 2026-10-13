@@ -15,3 +15,18 @@ export const takeLogCategory = (): CategoryKey | null => {
   next = null;
   return key;
 };
+
+// How she chose to log: by voice, by typing, or with the camera. The Log
+// screen opens already doing it, so one tap from Today is one step in.
+export type LogMode = 'voice' | 'type' | 'camera';
+let mode: LogMode | null = null;
+
+export const chooseLogMode = (m: LogMode) => {
+  mode = m;
+};
+
+export const takeLogMode = (): LogMode | null => {
+  const m = mode;
+  mode = null;
+  return m;
+};
