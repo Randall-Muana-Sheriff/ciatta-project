@@ -26,6 +26,8 @@ import { Eyebrow } from './bento';
 
 type Draw = NonNullable<Data['records']>['draws'][number];
 
+const LAB_PANELS = ['Substance Levels', 'Other Panels'];
+
 function DrawGroup({ draw }: { draw: Draw }) {
   return (
     <View>
@@ -140,6 +142,12 @@ export function RecordsView({ onOpen }: { onOpen: (screen: Screen) => void }) {
 
           <DrawGroup draw={records.draws[1]} />
           <Row title={records.older.date} sub={records.older.lab} value={records.older.count} valueColor={C.secondary} />
+
+          {/* Lab panels that are not parts of the body, so they sit with
+              results rather than among the body systems. */}
+          {LAB_PANELS.map((name) => (
+            <Row key={name} title={name} sub="Lab panel" value="None yet" valueColor={C.muted} />
+          ))}
 
           <View style={{ paddingTop: 16 }}>
             <SecondaryButton label="Import Results" />

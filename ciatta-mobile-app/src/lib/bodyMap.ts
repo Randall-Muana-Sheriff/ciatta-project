@@ -275,13 +275,13 @@ export function readBody({
   }
   const stress = found('stressHigh');
   if (stress) {
-    systemic.push({ region: 'systemic', meaning: 'reported', state: 'lit', halo: false, title: 'Stress', detail: stress.brief, source: 'You reported', insightId: stress.id });
+    systemic.push({ region: 'systemic', meaning: 'reported', state: 'lit', halo: false, title: 'Stress', detail: stress.brief, source: 'You reported', insightId: stress.id, system: 'Nervous' });
   }
   const vitaminD = found('bio:Vitamin D');
   if (vitaminD) {
-    systemic.push({ region: 'systemic', meaning: 'attention', state: 'lit', halo: false, title: 'Vitamin D below range', detail: vitaminD.brief, source: 'Lab', insightId: vitaminD.id, system: 'Nutrients' });
+    systemic.push({ region: 'systemic', meaning: 'attention', state: 'lit', halo: false, title: 'Vitamin D below range', detail: vitaminD.brief, source: 'Lab', insightId: vitaminD.id, system: 'Metabolic' });
   }
-  // Iron stores have no single place; they belong with blood function.
+  // Iron stores have no single place; they belong with the blood.
   const ferritin = draws
     .map((d) => ({ date: d.date, r: d.results.find((x) => x.name === 'Ferritin') }))
     .find((x) => x.r);
@@ -296,7 +296,7 @@ export function readBody({
       detail: `Ferritin was ${ferritin.r.value} on ${ferritin.date}, against a range of ${ferritin.r.range}.`,
       source: 'Lab',
       screen: 'healthrecords',
-      system: 'Blood Function',
+      system: 'Circulatory',
     });
   }
 
@@ -331,30 +331,28 @@ export function readBody({
 // Where each body system from Profile sits, keyed by its Profile label so the
 // two lists can't drift apart. A system only claims a region when what is
 // logged there really belongs to it: back pain isn't a kidney finding, so
-// Kidney Function and Liver & Pancreas have no region and show labs only.
+// Urinary has no region and shows labs only. The chest is heart and lungs,
+// so Circulatory and Respiratory share it. Skin is logged by category, not
+// by place.
 export const SYSTEM_PLACES: Record<string, { short: string; regions: RegionId[] }> = {
-  'Heart Health': { short: 'Heart', regions: ['chest'] },
-  'Kidney Function': { short: 'Kidneys', regions: [] },
-  'Liver & Pancreas': { short: 'Liver & Pancreas', regions: [] },
-  'Digestive & Gut Health': { short: 'Digestive & Gut', regions: ['upper_abdomen', 'lower_abdomen'] },
-  'Metabolic Health': { short: 'Metabolic', regions: [] },
-  'Reproductive Health': { short: 'Reproductive', regions: ['pelvis', 'lower_abdomen'] },
-  'Bones & Muscles': {
-    short: 'Bones & Muscles',
+  Circulatory: { short: 'Circulatory', regions: ['chest'] },
+  Respiratory: { short: 'Respiratory', regions: ['chest'] },
+  Digestive: { short: 'Digestive', regions: ['upper_abdomen', 'lower_abdomen'] },
+  Metabolic: { short: 'Metabolic', regions: ['neck'] },
+  Reproductive: { short: 'Reproductive', regions: ['pelvis', 'lower_abdomen'] },
+  Urinary: { short: 'Urinary', regions: [] },
+  Immune: { short: 'Immune', regions: [] },
+  Musculoskeletal: {
+    short: 'Musculoskeletal',
     regions: ['shoulder_right', 'shoulder_left', 'upper_back', 'lower_back', 'hip_right', 'hip_left', 'knee_right', 'knee_left'],
   },
-  'Immune Regulation': { short: 'Immune', regions: [] },
-  'Blood Function': { short: 'Blood', regions: [] },
-  Nutrients: { short: 'Nutrients', regions: [] },
-  'Thyroid Function': { short: 'Thyroid', regions: ['neck'] },
-  'Autoimmune Health': { short: 'Autoimmune', regions: [] },
-  'Infectious Diseases': { short: 'Infectious', regions: [] },
-  'Substance Levels': { short: 'Substances', regions: [] },
-  'Other Panels': { short: 'Other Panels', regions: [] },
+  Nervous: { short: 'Nervous', regions: ['head'] },
+  Skin: { short: 'Skin', regions: [] },
 };
 
-// Sleep, fatigue and stress belong to no single system; they stay together
-// under the whole body rather than disappearing.
+// Fatigue belongs to no single system; it stays under the whole body rather
+// than disappearing. Sleep sits with the head, so it is Nervous, as is
+// stress, with mood.
 export const WHOLE_BODY = 'Whole Body';
 
 export type SystemReading = {
@@ -370,9 +368,9 @@ export function readSystems(reading: BodyReading, labels: string[]): SystemReadi
   return [...labels, WHOLE_BODY].map((label) => {
     const whole = label === WHOLE_BODY;
     const place = SYSTEM_PLACES[label] ?? { short: label, regions: [] };
-    const regions: RegionId[] = whole ? ['head', 'systemic'] : place.regions;
+    const regions: RegionId[] = whole ? ['systemic'] : place.regions;
     const points = whole
-      ? [...reading.points.filter((p) => p.region === 'head'), ...reading.systemic.filter((p) => !p.system)]
+      ? reading.systemic.filter((p) => !p.system)
       : [...reading.points.filter((p) => regions.includes(p.region)), ...reading.systemic.filter((p) => p.system === label)];
     const lead = points.find((p) => p.halo) ?? points.find((p) => p.state === 'lit') ?? points[0] ?? null;
     return { label, short: whole ? WHOLE_BODY : place.short, regions, points, lead };
