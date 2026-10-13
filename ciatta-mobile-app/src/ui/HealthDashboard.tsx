@@ -375,7 +375,7 @@ export function HealthDashboard({
       {/* Weather: the background, never about her body. Drawn only once
           there is weather to show. */}
       {weather.length ? (
-      <Card title="Around You" meta="Last 7 days">
+      <Card title="Weather" meta="Last 7 days">
         {weather.map((line) => (
           <Text key={line} style={[font('subhead'), { color: C.text }]}>
             {displayCopy(line)}
