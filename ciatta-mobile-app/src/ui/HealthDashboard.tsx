@@ -19,6 +19,7 @@ import { caloriesBlock } from '../lib/calories';
 import type { Meal } from '../lib/foodScan';
 import type { NutritionTargets } from '../lib/nutritionTargets';
 import { CaloriesDial } from './CaloriesDial';
+import { runEnvironmentSync } from '../state/environmentRun';
 import { images } from './images';
 import type { JournalView } from '../data/rows';
 import { C, font, M, numeral, RADIUS } from '../theme';
@@ -142,7 +143,13 @@ export function HealthDashboard({
     let ignore = false;
     repo.loadJournal().then((j) => !ignore && setJournal(j)).catch(() => {});
     repo.loadProductUses().then((u) => !ignore && setProductUses(u)).catch(() => {});
-    repo.loadEnvironment().then((e) => !ignore && setEnvironment(e)).catch(() => {});
+    // Fetch any weather days still missing (at most once a day, and only
+    // if she allowed it), then read what is stored.
+    runEnvironmentSync(repo)
+      .catch(() => 'failed')
+      .then(() => repo.loadEnvironment())
+      .then((e) => !ignore && setEnvironment(e))
+      .catch(() => {});
     repo.loadMeals(new Date(Date.now() - 30 * 86400000).toISOString()).then((m) => !ignore && setMeals(m)).catch(() => {});
     repo.loadNutritionTargets().then((t) => !ignore && setTargets(t)).catch(() => {});
     return () => {

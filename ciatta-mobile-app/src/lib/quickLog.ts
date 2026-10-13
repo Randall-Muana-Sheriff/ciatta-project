@@ -165,6 +165,7 @@ const CUES: [RegExp, CategoryKey, string][] = [
   [/\b(ibuprofen|paracetamol|tylenol|advil|painkillers?|medication|meds|took (a|my) pill)\b/i, 'context', 'Took medication'],
   [/\b(supplement|vitamin|magnesium|iron tablets?)\b/i, 'context', 'Took supplement'],
   [/\b(sick|ill|a cold|flu|fever)\b/i, 'context', 'Illness'],
+  [/\b(damp|mou?ld|mouldy|moldy|mildew)\b/i, 'context', 'Damp or mould at home'],
 ];
 
 // "No pain today", "not bloated": what she says she does not have is set

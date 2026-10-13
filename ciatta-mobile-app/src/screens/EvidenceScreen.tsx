@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 
 import { displayCopy } from '../lib/displayCopy';
@@ -6,7 +7,8 @@ import { metricLine, patternReadiness, readinessLine } from '../lib/patternReadi
 import { useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
-import { useData } from '../state/session';
+import { useData, useRepo } from '../state/session';
+import { environmentLine } from '../lib/environmentContext';
 import { C, font } from '../theme';
 import { ListGroup, ListRow } from '../ui/chrome';
 import { DetailScreen, SecondaryButton, SourceFooter, Tag } from '../ui/kit';
@@ -25,6 +27,14 @@ export function EvidenceScreen() {
   const { focus, setFocus, watching, setWatching } = useCycle();
   const { ranked, today } = useInsights();
   const { days } = useData();
+  const repo = useRepo();
+  const [weather, setWeather] = useState<string | null>(null);
+  useEffect(() => {
+    repo
+      .loadEnvironment()
+      .then((env) => setWeather(environmentLine(env, new Date())))
+      .catch(() => {});
+  }, [repo]);
   const shown = ranked.filter((i) => i.triage !== 'Ignore');
   // Without a chosen pattern, open on the story Today leads with.
   const item = shown.find((i) => i.id === (focus ?? today.lead?.id)) ?? shown[0];
@@ -85,6 +95,9 @@ export function EvidenceScreen() {
         {item.evidence.alternatives.map((line, n) => (
           <ListRow key={line} first={n === 0} title={line} />
         ))}
+        {/* The weather, only when it was unusual for her, and never as a
+            cause: background a stretch happened against. */}
+        {weather ? <ListRow title={displayCopy(weather)} sub="From Apple Weather" /> : null}
       </ListGroup>
 
       <ListGroup

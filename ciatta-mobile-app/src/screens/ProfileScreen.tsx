@@ -18,6 +18,7 @@ import { type Screen, useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
 import { useData, useRepo, useSession } from '../state/session';
+import { askForWeather, weatherIsOn } from '../state/environmentRun';
 import { C, font, GUTTER, numeral, RADIUS } from '../theme';
 import { L, NAV_CLEARANCE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow, Panel, TextButton } from '../ui/chrome';
@@ -330,6 +331,45 @@ function Reported({ reported }: { reported: Reported | null }) {
   );
 }
 
+// The weather around her: off until she says yes, then an approximate
+// area only. Saying yes fills the last 90 days so patterns she already has
+// get their background.
+function WeatherRow() {
+  const repo = useRepo();
+  const [state, setState] = useState<'unknown' | 'off' | 'on' | 'failed' | 'working'>('unknown');
+  useEffect(() => {
+    weatherIsOn().then((on) => setState(on ? 'on' : 'off'));
+  }, []);
+  const sub =
+    state === 'on'
+      ? 'On, for your approximate area only'
+      : state === 'failed'
+        ? 'Allowed, but weather is not set up yet. It will fill in once it is.'
+        : state === 'working'
+          ? 'Adding the weather around you'
+          : 'Off. Adds the weather and daylight around you as background.';
+  return (
+    <ListGroup header="Around You" footer="Only a rough area, about 10 km, leaves your phone, and it is never stored.">
+      <ListRow
+        first
+        icon="sun"
+        tint={TONE.indigo}
+        title="Weather and Daylight"
+        sub={sub}
+        onPress={
+          state === 'on' || state === 'working'
+            ? undefined
+            : async () => {
+                setState('working');
+                const r = await askForWeather(repo);
+                setState(r === 'off' ? 'off' : r === 'failed' ? 'failed' : 'on');
+              }
+        }
+      />
+    </ListGroup>
+  );
+}
+
 // ── Settings: sources, notifications, privacy, account ────────
 
 const KIND_LABEL: Record<SourceKind, string> = { measured: 'Measured', lab: 'Lab', logged: 'You logged' };
@@ -477,6 +517,8 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
         app keeps everywhere else.
       */}
       <Providers onOpen={onOpen} />
+
+      <WeatherRow />
 
       <ListGroup header="Your Goals" footer="Optional. Ciatta never sets these for you.">
         <ListRow first icon="leaf" tint={TONE.mint} title="Nutrition Targets" sub="Calories, protein, carbs, fat" onPress={() => onOpen('nutritionTargets')} />

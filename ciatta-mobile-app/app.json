@@ -53,6 +53,12 @@
       "expo-font",
       "expo-status-bar",
       "expo-apple-authentication",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Ciatta uses your approximate area to add the weather and daylight around you to your record. Only a rough area leaves your phone, and it is never stored."
+        }
+      ],
       "react-native-health-connect",
       [
         "@kingstinct/react-native-healthkit",

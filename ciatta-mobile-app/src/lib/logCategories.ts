@@ -108,7 +108,7 @@ export const CATEGORIES: readonly LogCategory[] = [
     key: 'context',
     label: 'Context',
     example: 'Slept badly, long flight, took ibuprofen at noon',
-    quick: ['Slept badly', 'Slept well', 'Exercised', 'Stressful event', 'Travel', 'Took medication', 'Took supplement', 'Sex', 'Illness'],
+    quick: ['Slept badly', 'Slept well', 'Exercised', 'Stressful event', 'Travel', 'Took medication', 'Took supplement', 'Sex', 'Illness', 'Damp or mould at home'],
     detail: null,
     detailLabel: null,
     journalKind: 'Context',

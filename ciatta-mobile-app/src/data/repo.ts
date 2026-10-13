@@ -94,6 +94,9 @@ export type Repo = {
   // The weather and daylight around her, by day. Empty until the
   // environment fetch exists for her account.
   loadEnvironment(): Promise<EnvironmentDay[]>;
+  // Asks the server to fetch the weather for a rough area and a range of
+  // days. The coordinates are already rounded and are not stored.
+  fetchEnvironment(req: { lat: number; lon: number; from: string; to: string }): Promise<void>;
   // Her optional daily nutrition targets. Empty when she set none.
   loadNutritionTargets(): Promise<NutritionTargets>;
   // A meal photo read by the food scan, already checked (lib/foodScan).
@@ -286,6 +289,8 @@ export function demoRepo(): Repo {
       meals = [...meals.filter((m) => m.id !== meal.id), meal];
     },
     loadMeals: async (since) => meals.filter((m) => m.eatenAt >= since),
+    // The example person's weather is a fixed sample; nothing is fetched.
+    fetchEnvironment: async () => {},
     loadNutritionTargets: async () => targets,
     saveNutritionTargets: async (t) => {
       targets = normalizeTargets(t);
@@ -540,11 +545,17 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       );
       return journalView(rows);
     },
+    async fetchEnvironment(req) {
+      const { error } = await db.functions.invoke('environment', { body: req });
+      if (error) throw error;
+    },
     async loadEnvironment() {
       // environment_days arrives with the WeatherKit fetch. Until that
       // exists on her project the read fails, and that means no card.
       try {
-        const since = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+        // Four months: the Evidence line compares three weeks with the 90
+        // days before them; the dashboard card reads the last seven.
+        const since = new Date(Date.now() - 120 * 86400000).toISOString().slice(0, 10);
         const rows = must(
           await db
             .from('environment_days')

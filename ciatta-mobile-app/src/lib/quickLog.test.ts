@@ -232,3 +232,8 @@ test('nutrition items are kept as a journal entry under Nutrition, gut flags on 
   assert.equal(plan.journal?.category, 'nutrition');
   assert.deepEqual(plan.daily?.digestion, ['Bloating']);
 });
+
+test('damp or mould at home is hers to report, under Context', () => {
+  assert.deepEqual(readCategories('the flat is damp again, mould behind the wardrobe').context, ['Damp or mould at home']);
+  assert.deepEqual(readCategories('mildew in the bathroom').context, ['Damp or mould at home']);
+});
