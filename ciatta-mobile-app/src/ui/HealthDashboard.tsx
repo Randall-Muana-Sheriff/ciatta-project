@@ -486,6 +486,11 @@ export function HealthDashboard({
           return (
             <View key={key} style={[d.card, d.mealCard]}>
               <View style={d.mealBody}>
+                {/* The card's name first, as every other card has it. */}
+                <View style={d.cardHead}>
+                  <Text style={[font('title3', 'semibold'), { color: C.text, flex: 1 }]}>{categoryOf(key).label}</Text>
+                  <Text style={[font('footnote'), { color: C.secondary }]}>Last 30 days</Text>
+                </View>
                 {/* Her latest meal, by name and when she ate it. */}
                 {meal ? (
                   <Text style={[font('headline'), { color: C.text }]}>
@@ -523,10 +528,6 @@ export function HealthDashboard({
                     ) : null}
                   </View>
                 ) : null}
-                <View style={d.cardHead}>
-                  <Text style={[font('title3', 'semibold'), { color: C.text, flex: 1 }]}>{categoryOf(key).label}</Text>
-                  <Text style={[font('footnote'), { color: C.secondary }]}>Last 30 days</Text>
-                </View>
                 {summary.rows.map((r) => (
                   <BarRow key={r.item} label={r.item} count={r.days} max={max} color={M.reported} unit={r.days === 1 ? ' day' : ' days'} />
                 ))}
