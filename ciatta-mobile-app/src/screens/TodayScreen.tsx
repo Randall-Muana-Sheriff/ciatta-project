@@ -553,7 +553,6 @@ export function TodayScreen() {
               </Text>
             </View>
           )}
-          <Text style={[font('caption2'), t.planNote]}>Suggestions from your own record, not medical advice.</Text>
         </View>
 
           </>
@@ -758,5 +757,4 @@ const t = StyleSheet.create({
   planDone: { color: L.meta, textDecorationLine: 'line-through' },
   planWhy: { color: L.body, lineHeight: 19 },
   planEmpty: { alignItems: 'center', gap: 6, paddingVertical: 22 },
-  planNote: { color: L.meta, marginTop: 8 },
 });
