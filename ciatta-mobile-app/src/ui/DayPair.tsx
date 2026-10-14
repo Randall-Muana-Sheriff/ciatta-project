@@ -51,16 +51,14 @@ export function DayPair({ view, usual = {} }: { view: DayView; usual?: Partial<R
 
   return (
     <View>
-      {/* Two lines, no more: how the pair moved, and where each stands. */}
+      {/* How the pair moved, then where each stands, at a size she can
+          read at a glance: one block, never more than three lines. */}
       {lead ? (
-        <View style={s.insight} accessibilityLiveRegion="polite">
-          <Text style={[font('subhead', 'semibold'), s.lead]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
-            {displayCopy(lead)}
-          </Text>
-          <Text style={[font('footnote'), s.state]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
-            {displayCopy(state)}
-          </Text>
-        </View>
+        <Text style={[font('body'), s.insight]} numberOfLines={3} accessibilityLiveRegion="polite">
+          <Text style={[font('body', 'semibold'), s.lead]}>{displayCopy(lead)}</Text>
+          {'\n'}
+          <Text style={[font('subhead'), s.state]}>{displayCopy(state)}</Text>
+        </Text>
       ) : null}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>
         {view.series.map((m) => {
@@ -124,7 +122,7 @@ export function DayPair({ view, usual = {} }: { view: DayView; usual?: Partial<R
 }
 
 const s = StyleSheet.create({
-  insight: { gap: 2, marginBottom: 12 },
+  insight: { marginBottom: 12, lineHeight: 23 },
   lead: { color: L.ink },
   state: { color: L.body },
   chips: { gap: 6 },
