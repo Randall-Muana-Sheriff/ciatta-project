@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { headlineMetrics } from '../lib/allMetrics';
 import { bloodOxygen, bloodPressure, type VitalCard } from '../lib/vitals';
 import { displayCopy } from '../lib/displayCopy';
+import { fitTitle } from '../lib/fitTitle';
 import {
   clinicalPhase,
   clinicalPhaseLabel,
@@ -66,6 +67,7 @@ function greeting(now: Date): string {
 
 export function TodayScreen() {
   const nav = useNav();
+  const { width: screenWidth } = useWindowDimensions();
   const { accept, watching, setWatching, episodes } = useCycle();
   const { today: brief, ranked } = useInsights();
   const { windows, signals, lens, profile, fertility } = useCycleInsights();
@@ -318,6 +320,9 @@ export function TodayScreen() {
     });
   }, [seen, episodes, mealsToday, todayDay, cycleNow, lens, windows, profile, todayKey]);
 
+  const hello = displayCopy(person ? `${greeting(now)}, ${person.firstName}` : greeting(now));
+  const helloSize = fitTitle(hello, screenWidth - GUTTER * 2);
+
   return (
     <ScrollView style={t.fill} contentContainerStyle={t.body}>
       {/*
@@ -352,8 +357,14 @@ export function TodayScreen() {
       </View>
 
       <View style={t.pad}>
-        <Text style={[font('largeTitle', 'bold'), t.hello]} accessibilityRole="header" numberOfLines={2}>
-          {displayCopy(person ? `${greeting(now)}, ${person.firstName}` : greeting(now))}
+        {/* One row on every phone: the Large Title where it fits, sized
+            down from the screen's width for a long name. */}
+        <Text
+          style={[font('largeTitle', 'bold'), t.hello, { fontSize: helloSize, lineHeight: Math.round(helloSize * 1.2) }]}
+          accessibilityRole="header"
+          numberOfLines={1}
+        >
+          {hello}
         </Text>
 
         {state.state === 'empty' ? (
