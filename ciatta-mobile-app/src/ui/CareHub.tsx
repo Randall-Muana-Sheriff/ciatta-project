@@ -17,7 +17,6 @@ import { chooseReferral } from '../lib/agent/handoff';
 import { type Screen, useNav } from '../navigation';
 import { useCareHub } from '../state/careHub';
 import { font } from '../theme';
-import { Eyebrow } from './bento';
 import { Icon, type IconName } from './icons';
 import { images } from './images';
 import { PhotoCard } from './PhotoCard';
@@ -59,8 +58,7 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
           rest beneath; or, with nothing open, all caught up. */}
       <View style={s.section}>
         <PhotoCard source={images.carePlan} style={{ minHeight: 300 }}>
-          <Icon name="sparkle" size={20} color="#FFFFFF" />
-          <View style={{ flex: 1, minHeight: 60 }} />
+          <View style={{ flex: 1, minHeight: 80 }} />
           {hub.plan.length ? (
             <>
               <Text style={[font('footnote', 'semibold'), s.whiteMeta]}>{`Open plan · ${hub.plan.length} ${hub.plan.length === 1 ? 'step' : 'steps'}`}</Text>
@@ -85,13 +83,24 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
         </PhotoCard>
       </View>
 
-      {/* Open requests */}
-      <Section title="Open requests" action={{ label: choosing ? 'Close' : 'New', onPress: () => setChoosing((v) => !v) }}>
+      {/* Open requests, set as Prescriptions and Labs are: on a photograph,
+          the heading inside, white type. */}
+      <View style={s.section}>
+        <PhotoCard source={images.youCan}>
+          <View style={s.cardHead}>
+            <View style={{ flex: 1 }}>
+              <Text style={[font('headline'), s.white]} accessibilityRole="header">Open requests</Text>
+              <Text style={[font('footnote'), s.whiteMeta]}>Ciatta drafts them; you send them</Text>
+            </View>
+            <Pressable onPress={() => setChoosing((v) => !v)} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [s.smallWhite, pressed && s.pressed]}>
+              <Text style={[font('footnote', 'semibold'), { color: '#0C0E11' }]}>{choosing ? 'Close' : 'New'}</Text>
+            </Pressable>
+          </View>
         {choosing ? (
           <View style={s.kinds}>
             {NEW_KINDS.map((k) => (
               <Pressable key={k.kind} onPress={() => draft(k.kind)} accessibilityRole="button" style={({ pressed }) => [s.kind, pressed && s.pressed]}>
-                <Text style={[font('footnote', 'semibold'), s.ink]}>{k.label}</Text>
+                <Text style={[font('footnote', 'semibold'), s.white]}>{k.label}</Text>
               </Pressable>
             ))}
           </View>
@@ -112,9 +121,10 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
             />
           ))
         ) : !choosing ? (
-          <Empty text="Ask your clinician for a refill, labs, your records or a referral. Ciatta drafts it; you send it." />
+          <Text style={[font('subhead'), s.whiteMeta]}>Ask your clinician for a refill, labs, your records or a referral.</Text>
         ) : null}
-      </Section>
+        </PhotoCard>
+      </View>
 
       {/* Prescriptions, as Lotus sets it: on a photograph, what is on
           file, and a line that asks the concierge. */}
@@ -261,21 +271,6 @@ function WhiteButton({ label, onPress }: { label: string; onPress: () => void })
   );
 }
 
-function Section({ title, action, children }: { title: string; action?: { label: string; onPress: () => void }; children: React.ReactNode }) {
-  return (
-    <View style={s.section}>
-      <View style={s.head}>
-        <Eyebrow>{title}</Eyebrow>
-        {action ? (
-          <Pressable onPress={action.onPress} accessibilityRole="button" hitSlop={8}>
-            <Text style={[font('footnote', 'semibold'), s.body]}>{action.label}</Text>
-          </Pressable>
-        ) : null}
-      </View>
-      <View style={s.card}><CardFill />{children}</View>
-    </View>
-  );
-}
 
 function Row({
   icon,
@@ -296,31 +291,28 @@ function Row({
 }) {
   return (
     <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? 'button' : undefined} style={({ pressed }) => [s.row, !first && s.rule, pressed && onPress && s.pressed]}>
-      <Icon name={icon} size={18} color={G.body} />
+      <Icon name={icon} size={18} color="rgba(255,255,255,0.8)" />
       <View style={{ flex: 1 }}>
-        <Text style={[font('subhead'), s.ink]} numberOfLines={2}>
+        <Text style={[font('subhead', 'semibold'), s.white]} numberOfLines={2}>
           {displayCopy(title)}
         </Text>
         {sub ? (
-          <Text style={[font('caption1'), s.meta]} numberOfLines={1}>
+          <Text style={[font('footnote'), s.whiteMeta]} numberOfLines={1}>
             {displayCopy(sub)}
           </Text>
         ) : null}
       </View>
       {pill ? (
         <View style={s.pill}>
-          <Text style={[font('caption2', 'semibold'), s.ink]}>{pill}</Text>
+          <Text style={[font('caption2', 'semibold'), s.white]}>{pill}</Text>
         </View>
       ) : null}
-      {right ? <Text style={[font('caption1'), s.meta]}>{right}</Text> : null}
-      {onPress ? <Icon name="chevronRight" size={14} color={G.meta} /> : null}
+      {right ? <Text style={[font('caption1'), s.whiteMeta]}>{right}</Text> : null}
+      {onPress ? <Icon name="chevronRight" size={14} color="rgba(255,255,255,0.7)" /> : null}
     </Pressable>
   );
 }
 
-function Empty({ text }: { text: string }) {
-  return <Text style={[font('subhead'), s.empty]}>{text}</Text>;
-}
 
 
 const st = StyleSheet.hairlineWidth;
@@ -330,15 +322,17 @@ const s = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   card: { marginTop: SPACE.tight, backgroundColor: L.glass, borderRadius: TILE_RADIUS, paddingHorizontal: 14, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
-  rule: { borderTopWidth: st, borderTopColor: L.rule },
+  rule: { borderTopWidth: st, borderTopColor: 'rgba(255,255,255,0.18)' },
   ink: { color: G.ink },
   body: { color: G.body },
   meta: { color: G.meta },
   note: { color: L.meta, paddingBottom: 12 },
   empty: { color: G.body, lineHeight: 21, paddingVertical: 14 },
-  pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: G.fill},
+  pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.16)' },
   kinds: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 12 },
-  kind: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: st, borderColor: L.rule, backgroundColor: L.statement },
+  kind: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.14)' },
+  cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  smallWhite: { backgroundColor: '#FFFFFF', borderRadius: 999, minHeight: 32, paddingHorizontal: 14, justifyContent: 'center' },
   ask: { flexDirection: 'row', gap: 8, paddingVertical: 12, borderTopWidth: st, borderTopColor: L.rule },
   team: { gap: 12, paddingVertical: 14 },
   member: { width: 172, height: 232 },

@@ -388,7 +388,7 @@ const s = StyleSheet.create({
     height: 48,
     textAlign: 'center',
   },
-  add: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: L.ink },
+  add: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: G.ink },
 
   card: {
     marginTop: 12,
@@ -413,7 +413,7 @@ const s = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: L.recessed,
   },
-  chipOn: { backgroundColor: L.fillSelected, borderColor: L.edgeOn },
+  chipOn: { backgroundColor: G.fillSelected, borderColor: G.rule },
 
   counter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 },
   counterRight: { flexDirection: 'row', alignItems: 'center', gap: 14 },
@@ -442,7 +442,7 @@ const s = StyleSheet.create({
     borderWidth: st,
     borderColor: L.rule,
   },
-  dotOn: { backgroundColor: L.fillSelected, borderColor: L.edgeOn },
+  dotOn: { backgroundColor: G.fillSelected, borderColor: G.rule },
 
   footer: { paddingHorizontal: GUTTER, paddingTop: 12, paddingBottom: 8 },
   pressed: { opacity: 0.55 },

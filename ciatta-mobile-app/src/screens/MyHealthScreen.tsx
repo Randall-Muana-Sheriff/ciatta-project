@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { type BodyPoint, readBody } from '../lib/bodyMap';
 import { drawsFromLabs } from '../lib/labs';
@@ -17,7 +17,9 @@ import { defaultTopic, explorePrompt } from '../lib/systemReview';
 import { useAgentContext } from '../state/agentContext';
 import { LargeTitle } from '../ui/chrome';
 import { RecordsView } from '../ui/RecordsView';
-import { Lead, SegmentedControl } from '../ui/kit';
+import { SegmentedControl } from '../ui/kit';
+import { G } from '../ui/scheme';
+import { font } from '../theme';
 
 // The dashboard of every chart lives behind All on Today now; Health is
 // her body and her records.
@@ -65,7 +67,7 @@ export function MyHealthScreen() {
       <LargeTitle title="Health" />
 
       <View style={h.pad}>
-        <Lead style={{ marginBottom: 16 }} text="Everything about your health, in one place." />
+        <Text style={[font('subhead'), { color: G.body, marginBottom: 16 }]}>Everything about your health, in one place.</Text>
         <SegmentedControl segments={VIEWS} active={view} onChange={setView} />
 
         {view === 'Body' ? (

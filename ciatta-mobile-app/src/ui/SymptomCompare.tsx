@@ -274,5 +274,5 @@ const s = StyleSheet.create({
   pressed: { opacity: 0.6 },
   pickChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   pickChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: L.recessed},
-  pickChipOn: { backgroundColor: L.ink, borderColor: L.ink },
+  pickChipOn: { backgroundColor: G.ink, borderColor: G.ink },
 });

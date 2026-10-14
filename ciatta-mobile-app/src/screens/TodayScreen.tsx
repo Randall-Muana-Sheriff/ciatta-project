@@ -352,7 +352,7 @@ export function TodayScreen() {
       </View>
 
       <View style={t.pad}>
-        <Text style={[font('title2'), t.hello]} accessibilityRole="header">
+        <Text style={[font('largeTitle', 'bold'), t.hello]} accessibilityRole="header" numberOfLines={2}>
           {displayCopy(person ? `${greeting(now)}, ${person.firstName}` : greeting(now))}
         </Text>
 
@@ -675,7 +675,7 @@ const t = StyleSheet.create({
   },
   // Both sides reserve the same width so the mark stays centred.
   menu: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  hello: { color: G.ink, letterSpacing: -0.4 },
+  hello: { color: G.ink, letterSpacing: 0.2 },
 
   dayCard: {
     backgroundColor: L.glass,

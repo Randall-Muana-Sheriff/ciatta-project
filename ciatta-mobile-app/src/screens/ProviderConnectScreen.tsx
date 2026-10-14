@@ -86,12 +86,12 @@ export function ProviderConnectScreen() {
     <>
       <DetailScreen title="Find your health institution" onBack={nav.back}>
       <View style={s.searchWrap}>
-        <Icon name="search" size={18} color={L.meta} />
+        <Icon name="search" size={18} color={G.meta} />
         <TextInput
           value={query}
           onChangeText={setQuery}
           placeholder="Hospital or clinic name"
-          placeholderTextColor={L.meta}
+          placeholderTextColor={G.meta}
           autoCapitalize="words"
           autoCorrect={false}
           returnKeyType="search"
@@ -100,7 +100,7 @@ export function ProviderConnectScreen() {
         />
         {query ? (
           <Pressable onPress={() => setQuery('')} accessibilityRole="button" accessibilityLabel="Clear" hitSlop={8}>
-            <Icon name="xmark" size={15} color={L.meta} />
+            <Icon name="xmark" size={15} color={G.meta} />
           </Pressable>
         ) : null}
       </View>
@@ -395,10 +395,10 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     height: 48,
     borderRadius: TILE_RADIUS,
-    backgroundColor: L.field,
+    backgroundColor: G.card,
     overflow: 'hidden',
   },
-  search: { flex: 1, color: L.ink },
+  search: { flex: 1, color: G.ink },
 
   centre: { alignItems: 'center', gap: 10, paddingVertical: SPACE.block },
   note: { color: G.meta, marginHorizontal: GUTTER, marginTop: 12, lineHeight: 19 },

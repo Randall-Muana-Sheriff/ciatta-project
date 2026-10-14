@@ -172,5 +172,5 @@ const s = StyleSheet.create({
   thumbOn: { backgroundColor: '#FFFFFF', borderColor: '#FFFFFF' },
   logos: { flexDirection: 'row', marginRight: 2 },
   savedChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, backgroundColor: L.recessed },
-  savedChipOn: { backgroundColor: L.ink, borderColor: L.ink },
+  savedChipOn: { backgroundColor: G.ink, borderColor: G.ink },
 });

@@ -94,3 +94,13 @@ test('the grounds are flat: #161616 on dark, #F1F0ED on light', () => {
   assert.equal(PALETTES.light.G.mid, '#F1F0ED');
   assert.equal(PALETTES.dark.L.canvas, '#161616');
 });
+
+test('lists, rows and the text box follow the mode, and their type reads on them', () => {
+  assert.equal(PALETTES.light.G.card, '#FFFFFF');
+  for (const mode of ['light', 'dark'] as const) {
+    const g = PALETTES[mode].G;
+    assert.ok(contrast(g.ink, g.card) >= 12, `${mode} ink on card`);
+    assert.ok(contrast(g.body, g.card) >= 7, `${mode} body on card`);
+    assert.ok(contrast(g.meta, g.card) >= 4.5, `${mode} meta on card`);
+  }
+});

@@ -398,7 +398,7 @@ export function CareScreen() {
                       style={({ pressed }) => [s.nameOption, on && s.nameOptionOn, pressed && s.pressed]}
                     >
                       <Text style={[font('body', on ? 'semibold' : 'regular'), s.bubbleText]}>{n}</Text>
-                      {on ? <Icon name="check" size={16} color={L.ink} /> : null}
+                      {on ? <Icon name="check" size={16} color={G.ink} /> : null}
                     </Pressable>
                   );
                 })}
@@ -662,7 +662,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
   },
   nameOptionOn: { borderColor: ON_WHITE, borderWidth: 1.5 },
-  limit: { color: L.meta, lineHeight: 19, marginTop: SPACE.tight, textAlign: 'center' },
+  limit: { color: G.meta, lineHeight: 19, marginTop: SPACE.tight, textAlign: 'center' },
 
   // Ciatta's side of the conversation: her messages sit right on the
   // statement ground, Ciatta's on the left on the recessed one.

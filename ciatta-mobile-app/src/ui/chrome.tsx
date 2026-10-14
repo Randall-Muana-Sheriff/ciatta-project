@@ -57,7 +57,7 @@ export function LargeTitle({ title, eyebrow, trailing }: { title?: string; eyebr
           </Text>
         ) : null}
         {title ? (
-          <Text style={[font('headline', 'bold'), { color: G.ink }]} accessibilityRole="header">
+          <Text style={[font('largeTitle', 'bold'), { color: G.ink, letterSpacing: 0.2 }]} accessibilityRole="header">
             {title}
           </Text>
         ) : null}
@@ -76,8 +76,8 @@ export function Panel({ children, style }: { children: ReactNode; style?: object
 export function PanelTitle({ icon, children }: { icon: IconName; children: string }) {
   return (
     <View style={s.panelTitle}>
-      <Icon name={icon} size={20} color={C.text} weight={1.8} />
-      <Text style={[font('headline'), { color: C.text, flex: 1 }]} accessibilityRole="header">
+      <Icon name={icon} size={20} color={G.ink} weight={1.8} />
+      <Text style={[font('headline'), { color: G.ink, flex: 1 }]} accessibilityRole="header">
         {children}
       </Text>
     </View>
@@ -162,18 +162,18 @@ export function ListRow({
       disabled={!onPress}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityState={selected === undefined ? undefined : { selected }}
-      style={({ pressed }) => [s.row, pressed && { backgroundColor: light ? L.rule : C.cardHi }]}
+      style={({ pressed }) => [s.row, pressed && { backgroundColor: light ? G.rule : G.fillSelected }]}
     >
-      {icon ? light ? <Icon name={icon} size={20} color={L.ink} /> : <IconSquare icon={icon} color={tint ?? C.tint} /> : null}
+      {icon ? light ? <Icon name={icon} size={20} color={G.ink} /> : <IconSquare icon={icon} color={tint ?? G.ink} /> : null}
       <View style={[s.rowBody, !first && (light ? s.rowSepLight : s.rowSep)]}>
         <View style={{ flex: 1 }}>
-          <Text style={[font('body'), { color: destructive ? C.red : light ? L.ink : C.text }]}>{displayCopy(title)}</Text>
+          <Text style={[font('body'), { color: destructive ? C.red : light ? G.ink : G.ink }]}>{displayCopy(title)}</Text>
           {sub ? (
-            <Text style={[font('footnote'), { color: light ? L.meta : C.secondary, marginTop: 2 }]}>{displayCopy(sub)}</Text>
+            <Text style={[font('footnote'), { color: light ? G.meta : G.body, marginTop: 2 }]}>{displayCopy(sub)}</Text>
           ) : null}
         </View>
-        {value ? <Text style={[font('body'), { color: light ? L.meta : C.secondary }]}>{displayCopy(value)}</Text> : null}
-        {selected === undefined ? right : selected ? <Icon name="check" size={20} color={light ? L.ink : C.tint} weight={2} /> : <View style={s.checkBlank} />}
+        {value ? <Text style={[font('body'), { color: light ? G.meta : G.body }]}>{displayCopy(value)}</Text> : null}
+        {selected === undefined ? right : selected ? <Icon name="check" size={20} color={light ? G.ink : G.ink} weight={2} /> : <View style={s.checkBlank} />}
         {selected === undefined && onPress && !destructive ? <ChevronRight light={light} /> : null}
       </View>
     </Pressable>
@@ -337,19 +337,19 @@ const s = StyleSheet.create({
   groupHeader: { color: G.ink, marginBottom: 12 },
   groupHeaderLight: { color: G.ink },
   groupLight: {
-    backgroundColor: L.field,
+    backgroundColor: G.card,
     borderRadius: TILE_RADIUS,
-    overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
-  rowSepLight: { borderTopColor: L.rule },
+    overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: G.rule },
+  rowSepLight: { borderTopColor: G.rule },
   group: {
-    backgroundColor: L.field,
+    backgroundColor: G.card,
     borderRadius: TILE_RADIUS,
-    overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
+    overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: G.rule },
   groupFooter: { color: G.body, marginTop: 6, paddingHorizontal: 16 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 16, minHeight: 44 },
   checkBlank: { width: 20 },
   rowBody: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingVertical: 11, paddingRight: 16 },
-  rowSep: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.separator },
+  rowSep: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: G.rule },
 
   // The bar floats: the wrapper holds the safe area, lays the two cards out
   // in a row, and lets taps through to the screen either side of them.
@@ -420,9 +420,9 @@ const s = StyleSheet.create({
   // one step above the page, and it is edged like a selected tile so the two
   // read as the same kind of selection.
   tabOn: {
-    backgroundColor: C.fillSelected,
+    backgroundColor: G.fillSelected,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.edgeOn,
+    borderColor: G.rule,
   },
   tabLabel: { fontFamily: fonts.medium, fontSize: 11, lineHeight: 13 },
 });

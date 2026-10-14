@@ -317,7 +317,7 @@ export function Row({
   sub,
   value,
   valueColor,
-  titleColor = C.text,
+  titleColor = G.ink,
   onPress,
   first = false,
 }: {
@@ -482,7 +482,7 @@ export const s = StyleSheet.create({
 
   card: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 16, overflow: 'hidden' },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 44, paddingVertical: 11 },
-  rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.separator },
+  rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: G.rule },
   rowText: { flex: 1, paddingRight: 12 },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   openCard: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, paddingVertical: 12, paddingHorizontal: 16, marginVertical: 4, overflow: 'hidden' },

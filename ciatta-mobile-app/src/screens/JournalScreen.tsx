@@ -122,7 +122,7 @@ export function JournalScreen() {
               if ((text.trim() || files.length) && !saving) void save();
             }}
           />
-          {error ? <Text style={[font('footnote'), { color: C.tint, marginTop: 10 }]}>{error}</Text> : null}
+          {error ? <Text style={[font('footnote'), { color: G.ink, marginTop: 10 }]}>{error}</Text> : null}
         </View>
       ) : (
         <View style={{ paddingTop: 12 }}>

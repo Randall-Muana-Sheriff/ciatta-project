@@ -54,7 +54,6 @@ export function SystemCard({
           hitSlop={8}
           style={({ pressed }) => [c.explore, pressed && c.pressed]}
         >
-          <Icon name="sparkle" size={14} color={G.ink} />
           <Text style={[font('footnote', 'semibold'), { color: G.ink }]}>Explore</Text>
         </Pressable>
       </View>

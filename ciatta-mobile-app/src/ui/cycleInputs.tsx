@@ -228,7 +228,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   dotBelow: { backgroundColor: 'rgba(242,149,122,0.25)' },
-  dotOn: { backgroundColor: C.tint },
+  dotOn: { backgroundColor: G.ink },
   scaleEnds: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
 
   stepper: {

@@ -49,6 +49,9 @@ export const G = {
   rule: 'rgba(255, 255, 255, 0.1)',
   pill: '#FFFFFF',
   onPill: '#0C0E11',
+  // A plain surface on the ground, for lists, the text box and rows: white
+  // on light, a step below the ground on dark, with the ground's inks on it.
+  card: '#0F0F0F',
 };
 
 type Palette = {
@@ -91,9 +94,9 @@ function build(mode: Mode): Palette {
   const ground = (c: string) => ({ top: c, mid: c, foot: c, washFrom: 0, washTo: 0 });
   const g: typeof G = onDark
     ? { mode: 'dark', ...ground('#161616'), bar: 'rgba(14, 16, 20, 0.94)', shadow: '#000000', statusBar: 'light',
-        ink: '#FFFFFF', body: '#D2D5DA', meta: '#A9AEB5', fill: 'rgba(255, 255, 255, 0.08)', fillSelected: 'rgba(255, 255, 255, 0.15)', rule: 'rgba(255, 255, 255, 0.1)', pill: '#FFFFFF', onPill: '#0C0E11' }
+        ink: '#FFFFFF', body: '#D2D5DA', meta: '#A9AEB5', fill: 'rgba(255, 255, 255, 0.08)', fillSelected: 'rgba(255, 255, 255, 0.15)', rule: 'rgba(255, 255, 255, 0.1)', pill: '#FFFFFF', onPill: '#0C0E11', card: '#0F0F0F' }
     : { mode: 'light', ...ground('#F1F0ED'), bar: 'rgba(22, 22, 22, 0.94)', shadow: '#2A2520', statusBar: 'dark',
-        ink: '#0C0E11', body: '#373C44', meta: '#59606A', fill: 'rgba(12, 14, 17, 0.06)', fillSelected: 'rgba(12, 14, 17, 0.12)', rule: 'rgba(12, 14, 17, 0.12)', pill: '#161616', onPill: '#FFFFFF' };
+        ink: '#0C0E11', body: '#373C44', meta: '#59606A', fill: 'rgba(12, 14, 17, 0.06)', fillSelected: 'rgba(12, 14, 17, 0.12)', rule: 'rgba(12, 14, 17, 0.12)', pill: '#161616', onPill: '#FFFFFF', card: '#FFFFFF' };
   // A card on light is paper lifted toward white rather than darkened, so
   // it still reads as nearer than the ground.
   // Dark glass: a smoked fill over the blur, so a card is darker than the

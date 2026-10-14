@@ -478,7 +478,7 @@ export function CycleLogScreen() {
             read at all, so it stays.
           */}
           {noted.length ? (
-            <Text style={[font('footnote'), { color: C.secondary, marginTop: 10 }]}>
+            <Text style={[font('footnote'), { color: G.body, marginTop: 10 }]}>
               Noted: {displayCopy(noted.join(', '))}
             </Text>
           ) : null}

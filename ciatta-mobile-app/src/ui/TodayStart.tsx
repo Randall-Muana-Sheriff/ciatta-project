@@ -35,7 +35,7 @@ export function TodayStart({
       <View style={s.card}>
         <CardFill />
         <View style={s.badge}>
-          <Icon name="sparkle" size={22} color={L.ink} />
+          <Icon name="notebook" size={22} color={L.ink} />
         </View>
         <Text style={[font('title3', 'semibold'), s.title]} accessibilityRole="header">
           Start your record

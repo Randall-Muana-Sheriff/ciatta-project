@@ -39,8 +39,8 @@ export function ViewByPicker({ scale, onChange }: { scale: Scale; onChange: (sca
               accessibilityState={{ selected: v.key === scale }}
               style={s.item}
             >
-              <Text style={[font('subhead', v.key === scale ? 'semibold' : 'regular'), { color: C.text }]}>{v.label}</Text>
-              {v.key === scale ? <Icon name="check" size={16} color={C.text} /> : null}
+              <Text style={[font('subhead', v.key === scale ? 'semibold' : 'regular'), { color: G.ink }]}>{v.label}</Text>
+              {v.key === scale ? <Icon name="check" size={16} color={G.ink} /> : null}
             </Pressable>
           ))}
         </View>
@@ -63,7 +63,7 @@ const s = StyleSheet.create({
   menu: {
     marginTop: 6,
     borderRadius: TILE_RADIUS,
-    backgroundColor: L.field,
+    backgroundColor: G.card,
     overflow: 'hidden',
   },
   item: {

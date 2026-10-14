@@ -253,7 +253,7 @@ export function QuickLogScreen() {
                     accessibilityLabel={`Type ${type}, ${displayCopy(word)}`}
                     style={({ pressed }) => [q.stool, on && q.chipOn, pressed && q.pressed]}
                   >
-                    <StoolPicture type={type} color={on ? L.ink : L.body} width={30} />
+                    <StoolPicture type={type} color={on ? G.ink : G.body} width={30} />
                     <Text style={[font('caption2', on ? 'semibold' : 'regular'), on ? q.chipTextOn : q.chipText]}>{type}</Text>
                   </Pressable>
                 );
@@ -283,7 +283,7 @@ export function QuickLogScreen() {
                         accessibilityState={{ checked: on }}
                         style={({ pressed }) => [q.chip, on && q.chipOn, pressed && q.pressed]}
                       >
-                        <Icon name={chipIcon(item, g.category) ?? 'plus'} size={15} color={on ? L.ink : L.body} />
+                        <Icon name={chipIcon(item, g.category) ?? 'plus'} size={15} color={on ? G.ink : G.body} />
                         <Text style={[font('footnote', on ? 'semibold' : 'regular'), on ? q.chipTextOn : q.chipText]}>{displayCopy(item)}</Text>
                       </Pressable>
                     );
@@ -306,7 +306,7 @@ export function QuickLogScreen() {
                   accessibilityState={{ checked: on }}
                   style={({ pressed }) => [q.chip, on && q.chipOn, pressed && q.pressed]}
                 >
-                  <Icon name={chipIcon(item, key) ?? 'plus'} size={15} color={on ? L.ink : L.body} />
+                  <Icon name={chipIcon(item, key) ?? 'plus'} size={15} color={on ? G.ink : G.body} />
                   <Text style={[font('footnote', on ? 'semibold' : 'regular'), on ? q.chipTextOn : q.chipText]}>{displayCopy(item)}</Text>
                 </Pressable>
               );
@@ -371,9 +371,9 @@ export function QuickLogScreen() {
 
 const q = StyleSheet.create({
   pad: { paddingHorizontal: GUTTER },
-  orTap: { color: L.meta, marginTop: SPACE.near },
+  orTap: { color: G.meta, marginTop: SPACE.near },
   group: { marginTop: SPACE.near },
-  groupTitle: { color: L.ink },
+  groupTitle: { color: G.ink },
   stools: { flexDirection: 'row', justifyContent: 'space-between', gap: 4, marginTop: 8 },
   stool: {
     flex: 1,
@@ -392,7 +392,7 @@ const q = StyleSheet.create({
     backgroundColor: G.fill,
     overflow: 'hidden',
   },
-  catOn: { backgroundColor: L.ink, borderColor: L.ink },
+  catOn: { backgroundColor: G.ink, borderColor: G.ink },
   catText: { color: G.body },
   catTextOn: { color: G.onPill },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
@@ -403,14 +403,14 @@ const q = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 999, backgroundColor: L.recessed },
-  chipOn: { backgroundColor: L.statement, borderColor: L.ink },
-  chipText: { color: L.body },
-  chipTextOn: { color: L.ink },
+  chipOn: { backgroundColor: G.fillSelected, borderColor: G.ink },
+  chipText: { color: G.body },
+  chipTextOn: { color: G.ink },
   hint: { color: G.meta, marginTop: SPACE.near, marginBottom: 10 },
-  noted: { color: L.meta, marginTop: 10, lineHeight: 18 },
-  error: { color: L.ink, marginTop: 10 },
+  noted: { color: G.meta, marginTop: 10, lineHeight: 18 },
+  error: { color: G.ink, marginTop: 10 },
   detail: { marginTop: SPACE.block, paddingVertical: 14, alignItems: 'center' },
-  detailText: { color: L.body },
+  detailText: { color: G.body },
   pressed: { opacity: 0.55 },
   scan: { marginTop: SPACE.block, gap: 4 },
   urgent: {
@@ -422,5 +422,5 @@ const q = StyleSheet.create({
     borderColor: '#EC5D4A',
     backgroundColor: 'rgba(236, 93, 74, 0.12)',
   },
-  urgentText: { color: L.ink, lineHeight: 20 },
+  urgentText: { color: G.ink, lineHeight: 20 },
 });

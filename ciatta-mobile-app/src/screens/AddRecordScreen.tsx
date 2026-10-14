@@ -71,5 +71,5 @@ export function AddRecordScreen() {
 const a = StyleSheet.create({
   lead: { color: G.ink, marginBottom: 6 },
   hint: { color: G.meta, marginBottom: SPACE.near },
-  note: { color: L.meta, marginTop: 8 },
+  note: { color: G.meta, marginTop: 8 },
 });

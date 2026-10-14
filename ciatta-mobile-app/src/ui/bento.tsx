@@ -19,6 +19,7 @@ import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native'
 import { font, GUTTER } from '../theme';
 import { Icon, type IconName } from './icons';
 import { L, TILE_RADIUS } from './surface';
+import { G } from './scheme';
 
 export const BENTO_GAP = 10;
 
@@ -136,9 +137,9 @@ export function ActionTile({
 
 const s = StyleSheet.create({
   masthead: { paddingHorizontal: GUTTER, paddingTop: 8, paddingBottom: 18 },
-  eyebrow: { color: L.meta, letterSpacing: 1.1 },
-  title: { color: L.ink, letterSpacing: -0.8, marginTop: 6 },
-  sub: { color: L.meta, marginTop: 8, lineHeight: 24 },
+  eyebrow: { color: G.meta, letterSpacing: 1.1 },
+  title: { color: G.ink, letterSpacing: -0.8, marginTop: 6 },
+  sub: { color: G.meta, marginTop: 8, lineHeight: 24 },
 
   row: { flexDirection: 'row', gap: BENTO_GAP, marginTop: BENTO_GAP },
   tile: {

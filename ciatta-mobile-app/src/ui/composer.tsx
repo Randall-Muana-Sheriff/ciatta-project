@@ -262,7 +262,7 @@ export function Composer({
           value={value}
           onChangeText={(t) => onChange(t, 'typed')}
           placeholder={placeholder}
-          placeholderTextColor={L.meta}
+          placeholderTextColor={G.meta}
           multiline
           textAlignVertical="top"
           style={[font('body'), s.field, { minHeight: MIN_HEIGHT }]}
@@ -373,11 +373,11 @@ export function Composer({
 const s = StyleSheet.create({
   wrap: { position: 'relative' },
   field: {
-    color: L.ink,
-    backgroundColor: L.field,
+    color: G.ink,
+    backgroundColor: G.card,
     borderRadius: TILE_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
+    borderColor: G.rule,
     padding: 16,
     // Room at the foot for the controls, so a long answer scrolls behind
     // them rather than under them.
@@ -400,11 +400,11 @@ const s = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: L.recessed,
+    backgroundColor: G.fill,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
+    borderColor: G.rule,
   },
-  plusOn: { backgroundColor: L.ink, borderColor: L.ink },
+  plusOn: { backgroundColor: G.ink, borderColor: G.ink },
   // A cross is a plus turned, so the open state is the same glyph rotated
   // rather than a second icon that has to be kept looking like the first.
   turned: { transform: [{ rotate: '45deg' }] },
@@ -424,9 +424,9 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: L.recessed,
+    backgroundColor: G.fill,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
+    borderColor: G.rule,
   },
   wayWide: { paddingHorizontal: 16 },
   wayLabel: { color: G.ink },
@@ -436,11 +436,11 @@ const s = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: L.statement,
+    backgroundColor: G.fillSelected,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
+    borderColor: G.rule,
   },
-  actionOn: { backgroundColor: L.ink, borderColor: L.ink },
+  actionOn: { backgroundColor: G.ink, borderColor: G.ink },
   pressed: { opacity: 0.55 },
   partial: { color: G.meta, marginTop: 12, fontStyle: 'italic' },
   note: { color: G.meta, marginTop: 10, lineHeight: 18 },
