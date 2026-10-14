@@ -40,13 +40,23 @@ const parseDay = (iso: string) => {
   return new Date(y, m - 1, d, 12);
 };
 const listed = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
+const TITLE = /^(dr|dr\.|doctor|prof|prof\.)$/i;
+const initials = (name: string) => {
+  const words = name.split(/\s+/).filter((w) => w && !TITLE.test(w));
+  return [words[0], words.length > 1 ? words[words.length - 1] : undefined]
+    .filter((w): w is string => !!w)
     .map((w) => w[0].toUpperCase())
     .join('');
+};
+
+// A clinician's name as she enters it: first and last.
+export const clinicianName = (first: string, last: string) => [first.trim(), last.trim()].filter(Boolean).join(' ');
+
+// The same name split back for editing; a title is set aside.
+export function splitName(name: string): { first: string; last: string } {
+  const words = name.split(/\s+/).filter((w) => w && !TITLE.test(w));
+  return { first: words[0] ?? '', last: words.slice(1).join(' ') };
+}
 
 // ── Care team ──────────────────────────────────────────────────
 

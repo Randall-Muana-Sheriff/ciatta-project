@@ -280,8 +280,8 @@ export function demoRepo(): Repo {
       id: 'demo-refill',
       kind: 'refill',
       title: 'Refill: Levothyroxine',
-      body: 'Hello Dr Rivera,\n\nI would like to request a refill of Levothyroxine.\n\nThank you,\nAlex',
-      clinician: 'Dr Rivera',
+      body: 'Hello Dr Maria Rivera,\n\nI would like to request a refill of Levothyroxine.\n\nThank you,\nAlex',
+      clinician: 'Dr Maria Rivera',
       status: 'sent',
       sentOn: daysAgo(2).slice(0, 10),
       answeredOn: null,
@@ -301,7 +301,7 @@ export function demoRepo(): Repo {
   ];
   let reactions: Record<string, InsightReaction> = {};
   let team: ClinicianRow[] = [
-    { id: 'demo-rivera', name: 'Dr Rivera', role: 'Gynecologist', organization: 'Riverside Health', phone: null, email: null, notes: null },
+    { id: 'demo-rivera', name: 'Maria Rivera', role: 'Gynecologist', organization: 'Riverside Health', phone: null, email: null, notes: null },
   ];
   // The example person's labs, from the sample's draws.
   let labs: LabResult[] = sampleLabs();

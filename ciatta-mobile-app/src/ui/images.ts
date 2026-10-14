@@ -2,19 +2,20 @@
 export const images = {
   avatar: require('../../assets/images/cia/avatar.jpg'),
   horizon: require('../../assets/images/cia/horizon.jpg'),
-  records: require('../../assets/images/cia/records.jpg'),
-  cycle: require('../../assets/images/cia/cycle.jpg'),
-  sleep: require('../../assets/images/cia/sleep.jpg'),
-  symptoms: require('../../assets/images/cia/symptoms.jpg'),
-  medications: require('../../assets/images/cia/medications.jpg'),
-  journal: require('../../assets/images/cia/journal.jpg'),
-  movement: require('../../assets/images/cia/movement.jpg'),
   // The example person's breakfast, for the Nutrition card's photo. Brooke
   // Lark on Unsplash, resized to 1200px.
   sampleMeal: require('../../assets/images/cia/sample-breakfast.jpg'),
-  // The header of Today's You can card: spring blossom, no person in it.
-  // Valeriya on Pexels, resized and cropped to a landscape band.
-  youCan: require('../../assets/images/cia/you-can.jpg'),
+  // Headings generated for Ciatta in one style, the same as the Insights
+  // cards: a dark room, light in two of the design system's hues, a soft
+  // figure far out of focus. The You can log card, Prescriptions, Labs and
+  // the care team.
+  youCan: require('../../assets/images/heads/you-can.jpg'),
+  careRx: require('../../assets/images/heads/prescriptions.jpg'),
+  careLabs: require('../../assets/images/heads/labs.jpg'),
+  team1: require('../../assets/images/heads/team-1.jpg'),
+  team2: require('../../assets/images/heads/team-2.jpg'),
+  team3: require('../../assets/images/heads/team-3.jpg'),
+  team4: require('../../assets/images/heads/team-4.jpg'),
   // Canonical front view from the Ciatta design system (07 · Body).
   body: require('../../assets/images/cia/body.png'),
   // The welcome screen's photograph, resized from the 3512x6240 original.

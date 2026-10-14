@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
-import type { ClinicianRow } from '../lib/care';
+import { type ClinicianRow, clinicianName, splitName } from '../lib/care';
 import { openRequest, takeClinician } from '../lib/careHandoff';
 import { displayCopy } from '../lib/displayCopy';
 import { userFacingError } from '../lib/userFacingError';
@@ -26,8 +26,7 @@ const blank = (): ClinicianRow => ({
 });
 
 const FIELDS: { key: keyof ClinicianRow; label: string; placeholder: string; keyboard?: 'phone-pad' | 'email-address' }[] = [
-  { key: 'name', label: 'Name', placeholder: 'For example, Dr Rivera' },
-  { key: 'role', label: 'Role', placeholder: 'For example, Gynecologist' },
+  { key: 'role', label: 'Specialty', placeholder: 'For example, Gynecologist' },
   { key: 'organization', label: 'Where', placeholder: 'For example, Riverside Health' },
   { key: 'phone', label: 'Phone', placeholder: 'Optional', keyboard: 'phone-pad' },
   { key: 'email', label: 'Email', placeholder: 'Optional', keyboard: 'email-address' },
@@ -39,6 +38,9 @@ export function ClinicianScreen() {
   const repo = useRepo();
   const [openId] = useState(() => takeClinician());
   const [c, setC] = useState<ClinicianRow>(blank);
+  // First and last name, kept apart while she edits, joined when saved.
+  const [first, setFirst] = useState('');
+  const [last, setLast] = useState('');
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
@@ -48,7 +50,12 @@ export function ClinicianScreen() {
       .loadCareTeam()
       .then((rows) => {
         const found = rows.find((r) => r.id === openId);
-        if (found) setC(found);
+        if (found) {
+          setC(found);
+          const n = splitName(found.name);
+          setFirst(n.first);
+          setLast(n.last);
+        }
       })
       .catch(() => {});
   }, [repo, openId]);
@@ -57,7 +64,7 @@ export function ClinicianScreen() {
     setSaving(true);
     setNote(null);
     try {
-      await repo.saveClinician(c);
+      await repo.saveClinician({ ...c, name: clinicianName(first, last) });
       nav.back();
     } catch (e) {
       setNote(userFacingError(e, 'That did not save. Try again.'));
@@ -78,16 +85,26 @@ export function ClinicianScreen() {
 
   return (
     <DetailScreen
-      title={openId ? c.name || 'Clinician' : 'Add a Clinician'}
+      title={openId ? clinicianName(first, last) || 'Clinician' : 'Add a Clinician'}
       onBack={nav.back}
-      footer={<SaveBar label={saving ? 'Saving' : 'Save'} disabled={saving || !c.name.trim()} onPress={() => void save()} />}
+      footer={<SaveBar label={saving ? 'Saving' : 'Save'} disabled={saving || !first.trim() || !last.trim()} onPress={() => void save()} />}
     >
+      <View style={s.names}>
+        <View style={{ flex: 1 }}>
+          <Text style={[font('footnote'), s.label]}>First name</Text>
+          <TextInput value={first} onChangeText={setFirst} placeholder="Maria" placeholderTextColor={L.meta} autoCapitalize="words" style={[font('body'), s.input]} accessibilityLabel="First name" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[font('footnote'), s.label]}>Last name</Text>
+          <TextInput value={last} onChangeText={setLast} placeholder="Rivera" placeholderTextColor={L.meta} autoCapitalize="words" style={[font('body'), s.input]} accessibilityLabel="Last name" />
+        </View>
+      </View>
       {FIELDS.map((f) => (
         <View key={f.key}>
           <Text style={[font('footnote'), s.label]}>{f.label}</Text>
           <TextInput
             value={(c[f.key] as string | null) ?? ''}
-            onChangeText={(v) => setC((x) => ({ ...x, [f.key]: f.key === 'name' ? v : v || null }))}
+            onChangeText={(v) => setC((x) => ({ ...x, [f.key]: v || null }))}
             placeholder={f.placeholder}
             placeholderTextColor={L.meta}
             keyboardType={f.keyboard}
@@ -104,7 +121,7 @@ export function ClinicianScreen() {
           <SecondaryButton
             label="Draft a Message"
             onPress={() => {
-              openRequest({ draft: { kind: 'question', clinician: c.name } });
+              openRequest({ draft: { kind: 'question', clinician: clinicianName(first, last) } });
               nav.push('careRequest');
             }}
           />
@@ -117,6 +134,7 @@ export function ClinicianScreen() {
 }
 
 const s = StyleSheet.create({
+  names: { flexDirection: 'row', gap: 10 },
   label: { color: L.meta, marginTop: SPACE.near, marginBottom: 6 },
   input: { color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
   note: { color: L.meta, marginTop: 10, lineHeight: 18 },

@@ -1,6 +1,5 @@
 import type { Screen } from '../navigation';
 import type { IconName } from '../ui/icons';
-import type { images } from '../ui/images';
 
 // A made up person to build the UI against before the schema exists. Maya is
 // invented and every figure matches the Figma Make reference screens. Swap
@@ -263,25 +262,6 @@ export const today = {
     'Your two shortest cycles both ended during weeks when your sleep was lower than usual, a stretch when you also logged more stress. That has happened twice so far, which is enough to keep watching but not enough to say lower sleep caused the change.',
 };
 
-export const healthCards: {
-  title: string;
-  value: string;
-  period: string;
-  meta: string;
-  metaIcon: IconName;
-  tone: 'coral' | 'mint' | 'lavender';
-  image: keyof typeof images;
-  screen: Screen;
-}[] = [
-  { title: 'Health Records', value: '14 results · 3 documents', period: 'Results and documents', meta: '2 new since last visit', metaIcon: 'ring', tone: 'mint', image: 'records', screen: 'healthrecords' },
-  { title: 'Cycle', value: '26 to 29 days', period: 'Last 4 cycles', meta: 'Slightly shorter recently', metaIcon: 'wave', tone: 'coral', image: 'cycle', screen: 'cycle' },
-  { title: 'Sleep', value: '6h 12m average', period: 'Last 7 days', meta: '12% lower than your usual', metaIcon: 'bars', tone: 'coral', image: 'sleep', screen: 'sleep' },
-  // Value and meta are filled in live from the insight layer.
-  { title: 'Movement', value: 'Steps a day', period: 'Last 7 days', meta: 'Against your usual', metaIcon: 'bars', tone: 'coral', image: 'movement', screen: 'movement' },
-  { title: 'Symptoms', value: '3 observations', period: 'This month', meta: 'Fatigue, sleep disruption, stress', metaIcon: 'ring', tone: 'coral', image: 'symptoms', screen: 'symptoms' },
-  { title: 'Medications & Supplements', value: '4 active', period: '2 changes this year', meta: 'Levothyroxine · Magnesium · Vitamin D', metaIcon: 'pill', tone: 'coral', image: 'medications', screen: 'medications' },
-  { title: 'Your Notes', value: '38 entries', period: 'Last 30 days', meta: '“Work has been stressful lately…”', metaIcon: 'chat', tone: 'lavender', image: 'journal', screen: 'journal' },
-];
 
 // Month positions are fractional: cycles and draws do not land on month starts.
 // Seven months ending one month ahead, so the timeline always reaches today

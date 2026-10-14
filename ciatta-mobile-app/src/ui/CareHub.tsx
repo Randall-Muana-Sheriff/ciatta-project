@@ -102,7 +102,7 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
       {/* Prescriptions, as Lotus sets it: on a photograph, what is on
           file, and a line that asks the concierge. */}
       <View style={s.section}>
-        <PhotoCard source={images.medications}>
+        <PhotoCard source={images.careRx}>
           <Text style={[font('headline'), s.white]}>Prescriptions</Text>
           <Text style={[font('footnote'), s.whiteMeta]}>From your providers and your profile</Text>
           <Text style={[font('title3', 'semibold'), s.white, s.statement]}>
@@ -125,7 +125,7 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
 
       {/* Labs */}
       <View style={s.section}>
-        <PhotoCard source={images.records}>
+        <PhotoCard source={images.careLabs}>
           <Text style={[font('headline'), s.white]}>Labs</Text>
           <Text style={[font('footnote'), s.whiteMeta]}>From your providers and your reports</Text>
           <Pressable onPress={() => (hub.latestDraw ? nav.push('healthrecords') : undefined)} disabled={!hub.latestDraw}>
@@ -188,12 +188,19 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
                 <View style={s.memberFill}>
                   <Text style={[s.initials]}>{c.initials}</Text>
                 </View>
-                <Text style={[font('headline'), s.white]} numberOfLines={1}>
+                {/* First and last name, then specialty, as Lotus names its
+                    clinicians; where they practise below. */}
+                <Text style={[font('headline'), s.white]} numberOfLines={2}>
                   {displayCopy(c.name)}
                 </Text>
                 <Text style={[font('footnote', 'semibold'), s.whiteMeta]} numberOfLines={1}>
-                  {displayCopy(c.organization ?? c.role ?? 'From your calendar')}
+                  {displayCopy(c.source === 'provider' ? 'Your provider' : (c.role ?? 'Specialty not added'))}
                 </Text>
+                {c.organization && c.organization !== c.name ? (
+                  <Text style={[font('caption1'), s.whiteMeta]} numberOfLines={1}>
+                    {displayCopy(c.organization)}
+                  </Text>
+                ) : null}
               </PhotoCard>
             </Pressable>
           ))}
@@ -215,7 +222,7 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
   );
 }
 
-const TEAM_PHOTOS = [images.horizon, images.journal, images.cycle, images.sleep];
+const TEAM_PHOTOS = [images.team1, images.team2, images.team3, images.team4];
 const listNames = (xs: string[]) => (xs.length < 2 ? xs.join('') : xs.length === 2 ? `${xs[0]} and ${xs[1]}` : `${xs[0]}, ${xs[1]} and ${xs.length - 2} more`);
 
 // The line under a card that asks the concierge, as Lotus marks it.

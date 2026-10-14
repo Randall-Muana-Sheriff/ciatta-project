@@ -21,7 +21,8 @@ test('her care team: clinicians from her providers, referrals and calendar, and 
       ['Quest Diagnostics', 'Provider', 'provider'],
     ],
   );
-  assert.equal(team.find((c) => c.name === 'Dr Kim')!.initials, 'DK');
+  // A title is not an initial.
+  assert.equal(team.find((c) => c.name === 'Dr Kim')!.initials, 'K');
 });
 
 test('prescriptions: her medications from her providers and her own list, each once, with when she last logged it', () => {
@@ -87,4 +88,17 @@ test('latest activity: what happened in her record, newest first, six at most', 
     'Sent: Refill: Levothyroxine',
     'Gastroenterology referral: insurance checked',
   ]);
+});
+
+test('a clinician is named first and last, with their specialty, and split back for editing', async () => {
+  const { clinicianName, splitName } = await import('./care');
+  assert.equal(clinicianName('Maria', 'Rivera'), 'Maria Rivera');
+  assert.equal(clinicianName(' Maria ', ''), 'Maria');
+  assert.deepEqual(splitName('Maria Rivera'), { first: 'Maria', last: 'Rivera' });
+  assert.deepEqual(splitName('Dr Ama Osei Bonsu'), { first: 'Ama', last: 'Osei Bonsu' });
+  const team = careTeam({
+    added: [{ id: 'c1', name: 'Maria Rivera', role: 'Gynecologist', organization: 'Riverside Health', phone: null, email: null, notes: null }],
+    providers: [], referrals: [], visits: [],
+  });
+  assert.deepEqual([team[0].name, team[0].role, team[0].initials], ['Maria Rivera', 'Gynecologist', 'MR']);
 });
