@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as WebBrowser from 'expo-web-browser';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { expo } from '../../app.json';
 import { deleteAccount, exportAndShare } from '../data/account';
@@ -41,6 +41,8 @@ import { images } from '../ui/images';
 import { avatarInitial } from '../ui/initial';
 import { EmptyNote } from '../ui/kit';
 import { G } from '../ui/scheme';
+import { BookmarksList } from './BookmarksScreen';
+import { openInsight } from '../lib/careHandoff';
 
 type Profile = NonNullable<Data['profile']>;
 
@@ -171,7 +173,7 @@ function ProfileCard({
 
 function DetailsGroup({ onOpen, profile }: { onOpen: (screen: Screen) => void; profile: Profile }) {
   return (
-    <ListGroup header="Health Details">
+    <ListGroup>
       {profile.records.map((r, n) => (
         <ListRow
           key={r.title}
@@ -393,11 +395,63 @@ function HealthDetails({ onOpen, profile, reported }: { onOpen: (screen: Screen)
     <View style={p.stack}>
       {profile ? <DetailsGroup onOpen={onOpen} profile={profile} /> : <Reported reported={reported} />}
       <CycleGroup onOpen={onOpen} />
-      <ListGroup header="Your Goals" footer="Optional. Ciatta never sets these for you.">
-        <ListRow first icon="leaf" tint={TONE.mint} title="Nutrition Targets" sub="Calories, protein, carbs, fat" onPress={() => onOpen('nutritionTargets')} />
-        <ListRow icon="ruler" tint={TONE.coral} title="Body Measurements" sub="Blood type, height, weight and units" onPress={() => onOpen('bodyMeasurements')} />
-      </ListGroup>
+      <Goals />
     </View>
+  );
+}
+
+// What she wants to understand: the goals she wrote at onboarding, kept
+// and changed here in her own words. Ciatta reads them to decide what to
+// look for first; it never sets one for her.
+function Goals() {
+  const repo = useRepo();
+  const [goals, setGoals] = useState<string[]>([]);
+  const [draft, setDraft] = useState('');
+  useEffect(() => {
+    repo.loadGoals().then(setGoals).catch(() => {});
+  }, [repo]);
+  const save = (next: string[]) => {
+    setGoals(next);
+    void repo.saveGoals(next).catch(() => setGoals(goals));
+  };
+  const add = () => {
+    const g = draft.trim();
+    if (!g || goals.some((x) => x.toLowerCase() === g.toLowerCase())) return;
+    save([...goals, g]);
+    setDraft('');
+  };
+  return (
+    <ListGroup header="Your Goals" footer="What you told Ciatta you want to understand. It looks for these first.">
+      {goals.map((g, n) => (
+        <ListRow
+          key={g}
+          first={n === 0}
+          title={g}
+          right={
+            <Pressable onPress={() => save(goals.filter((x) => x !== g))} accessibilityRole="button" accessibilityLabel={`Remove ${g}`} hitSlop={10}>
+              <Icon name="xmark" size={16} color={G.meta} />
+            </Pressable>
+          }
+        />
+      ))}
+      <View style={[p.goalAdd, goals.length > 0 && p.goalRule]}>
+        <TextInput
+          value={draft}
+          onChangeText={setDraft}
+          onSubmitEditing={add}
+          returnKeyType="done"
+          placeholder="Add something you want to understand"
+          placeholderTextColor={G.meta}
+          style={[font('body'), { color: G.ink, flex: 1 }]}
+          accessibilityLabel="Add a goal"
+        />
+        {draft.trim() ? (
+          <Pressable onPress={add} accessibilityRole="button" style={p.goalButton}>
+            <Text style={[font('subhead', 'semibold'), { color: G.onPill }]}>Add</Text>
+          </Pressable>
+        ) : null}
+      </View>
+    </ListGroup>
   );
 }
 
@@ -460,10 +514,11 @@ function PrivacyData({ onOpen }: { onOpen: (screen: Screen) => void }) {
   );
 }
 
-type SheetKey = 'sources' | 'details' | 'appearance' | 'notifications' | 'privacy';
+type SheetKey = 'sources' | 'details' | 'bookmarks' | 'appearance' | 'notifications' | 'privacy';
 const SHEET_TITLE: Record<SheetKey, string> = {
   sources: 'Data Sources',
   details: 'Health Details',
+  bookmarks: 'Bookmarks',
   appearance: 'Appearance',
   notifications: 'Notifications',
   privacy: 'Privacy and Data',
@@ -546,7 +601,10 @@ export function ProfileScreen() {
     setSheet(null);
     nav.push(screen);
   };
-  const browse = (url: string) => () => void WebBrowser.openBrowserAsync(url);
+  // The marketing site's pages open as a sheet over Profile, like every
+  // other row here, rather than leaving for the browser.
+  const browse = (url: string) => () =>
+    void WebBrowser.openBrowserAsync(url, { presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET });
   const onDelete = () => {
     if (!userId) return;
     Alert.alert('Delete your account?', 'Your record, notes, sources and files are deleted for good. This cannot be undone.', [
@@ -593,7 +651,7 @@ export function ProfileScreen() {
         <ListGroup>
           <ListRow first light icon="zigzag" title="Data Sources" onPress={() => setSheet('sources')} />
           <ListRow light icon="doc" title="Health Details" onPress={() => setSheet('details')} />
-          <ListRow light icon="bookmark" title="Bookmarks" value={saved ? String(saved) : undefined} onPress={() => nav.push('bookmarks')} />
+          <ListRow light icon="bookmark" title="Bookmarks" value={saved ? String(saved) : undefined} onPress={() => setSheet('bookmarks')} />
         </ListGroup>
 
         <Text style={[font('footnote', 'semibold'), p.label]}>Settings</Text>
@@ -624,6 +682,15 @@ export function ProfileScreen() {
       <Sheet visible={sheet !== null} title={sheet ? SHEET_TITLE[sheet] : ''} onDone={() => setSheet(null)}>
         {sheet === 'sources' ? <DataSources onOpen={openFromSheet} /> : null}
         {sheet === 'details' ? <HealthDetails onOpen={openFromSheet} profile={profile ?? null} reported={reported} /> : null}
+        {sheet === 'bookmarks' ? (
+          <BookmarksList
+            onOpen={(id) => {
+              setSheet(null);
+              openInsight(id);
+              nav.push('insight');
+            }}
+          />
+        ) : null}
         {sheet === 'appearance' ? <Appearance /> : null}
         {sheet === 'notifications' ? <Notifications /> : null}
         {sheet === 'privacy' ? <PrivacyData onOpen={openFromSheet} /> : null}
@@ -642,6 +709,9 @@ const p = StyleSheet.create({
   avatar: { width: 84, height: 84, borderRadius: 42 },
   label: { color: G.meta, marginTop: 24, marginBottom: 8, marginLeft: 4 },
   paragraph: { color: G.body, lineHeight: 21, marginTop: 16 },
+  goalAdd: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 16, paddingRight: 10, minHeight: 50 },
+  goalRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: G.rule },
+  goalButton: { backgroundColor: G.pill, borderRadius: 999, minHeight: 32, paddingHorizontal: 14, justifyContent: 'center' },
   sheetCard: { backgroundColor: G.card, borderRadius: TILE_RADIUS, paddingHorizontal: 14 },
   source: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
   sourceRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: G.rule },

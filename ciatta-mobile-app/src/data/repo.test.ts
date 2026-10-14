@@ -313,3 +313,12 @@ test('the example person has a night of sleep stages to draw', async () => {
   assert.ok(night && night.staged);
   assert.deepEqual(night!.totals.map((t) => t.stage), ['awake', 'rem', 'light', 'deep']);
 });
+
+test('her onboarding goals read back and can be changed, in memory for the example person', async () => {
+  const repo = demoRepo();
+  const goals = await repo.loadGoals();
+  assert.ok(goals.length > 0, 'the example person has goals');
+  await repo.saveGoals(['Why I am so tired']);
+  assert.deepEqual(await repo.loadGoals(), ['Why I am so tired']);
+  assert.deepEqual(await demoRepo().loadGoals(), goals, 'a fresh demo starts from the sample');
+});

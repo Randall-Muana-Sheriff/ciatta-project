@@ -16,17 +16,31 @@ import { headingFor } from '../ui/InsightCards';
 import { Icon } from '../ui/icons';
 import { DetailScreen, EmptyNote, Lead } from '../ui/kit';
 import { PublisherLogo } from '../ui/PublisherLogo';
-import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { SPACE, TILE_RADIUS } from '../ui/surface';
 import { G } from '../ui/scheme';
 
 export function BookmarksScreen() {
   const nav = useNav();
+  return (
+    <DetailScreen title="Bookmarks" onBack={nav.back}>
+      <BookmarksList
+        onOpen={(id) => {
+          openInsight(id);
+          nav.push('insight');
+        }}
+      />
+    </DetailScreen>
+  );
+}
+
+// The list itself, shown on its own screen and in Profile's sheet.
+export function BookmarksList({ onOpen }: { onOpen: (insightId: string) => void }) {
   const { reactions, react } = useInsightReactions();
   const { library } = useResearchInsights(reactions);
   const saved = savedInsights(library, reactions);
 
   return (
-    <DetailScreen title="Bookmarks" onBack={nav.back}>
+    <View>
       <Lead style={s.lede} text="What you kept. Open one to read it again, or discuss it with Ciatta." />
       {saved.length ? (
         <View style={s.list}>
@@ -36,10 +50,7 @@ export function BookmarksScreen() {
             return (
               <Pressable
                 key={insight.id}
-                onPress={() => {
-                  openInsight(insight.id);
-                  nav.push('insight');
-                }}
+                onPress={() => onOpen(insight.id)}
                 accessibilityRole="button"
                 accessibilityLabel={insight.title}
                 style={({ pressed }) => [s.row, pressed && s.pressed]}
@@ -78,7 +89,7 @@ export function BookmarksScreen() {
           <EmptyNote text="Nothing saved yet. Tap the bookmark on any insight and it will be kept here." />
         </View>
       )}
-    </DetailScreen>
+    </View>
   );
 }
 

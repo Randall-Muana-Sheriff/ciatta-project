@@ -117,6 +117,10 @@ export type Repo = {
   savePushToken(token: string, platform: 'ios' | 'android'): Promise<void>;
   loadNotifyFindings(): Promise<boolean>;
   saveNotifyFindings(on: boolean): Promise<void>;
+  // What she wants to understand, as she wrote it at onboarding, and as
+  // she changes it later in Profile.
+  loadGoals(): Promise<string[]>;
+  saveGoals(goals: string[]): Promise<void>;
   // Her optional daily nutrition targets. Empty when she set none.
   loadNutritionTargets(): Promise<NutritionTargets>;
   // A meal photo read by the food scan, already checked (lib/foodScan).
@@ -328,6 +332,8 @@ export function demoRepo(): Repo {
   // has a usual day to fill toward. Figures are sample estimates, marked as
   // estimates like any scan.
   let notifyFindings = true;
+  // What the example person said she wants to understand.
+  let goals: string[] = ['Why I am so tired', 'What sets off my flares', 'Whether my cycle is changing'];
   let meals: Meal[] = [1820, 2050, 1760, 1990, 2120, 1880, 1940, 0].map((kcal, n) => {
     const daysAgo = 7 - n;
     const at = new Date(Date.now() - daysAgo * 86400000);
@@ -389,6 +395,10 @@ export function demoRepo(): Repo {
     fetchEnvironment: async () => {},
     // The example person gets no pushes; her setting lives for the session.
     savePushToken: async () => {},
+    loadGoals: async () => [...goals],
+    saveGoals: async (next) => {
+      goals = [...next];
+    },
     loadNotifyFindings: async () => notifyFindings,
     saveNotifyFindings: async (on) => {
       notifyFindings = on;
@@ -727,6 +737,19 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
           .from('push_tokens')
           .upsert({ user_id: userId, token, platform, updated_at: new Date().toISOString() }, { onConflict: 'user_id,token' }),
       );
+    },
+    async loadGoals() {
+      const row = must(await db.from('profiles').select('onboarding').eq('id', userId).maybeSingle()) as
+        | { onboarding: { goals?: string[] } | null }
+        | null;
+      return row?.onboarding?.goals ?? [];
+    },
+    async saveGoals(goals) {
+      // Merged into what onboarding saved, so the rest of it stays.
+      const row = must(await db.from('profiles').select('onboarding').eq('id', userId).maybeSingle()) as
+        | { onboarding: Record<string, unknown> | null }
+        | null;
+      must(await db.from('profiles').update({ onboarding: { ...(row?.onboarding ?? {}), goals } }).eq('id', userId));
     },
     async loadNotifyFindings() {
       const row = must(await db.from('profiles').select('notify_findings').eq('id', userId).maybeSingle()) as
