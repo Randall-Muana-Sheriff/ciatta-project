@@ -60,11 +60,14 @@ import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 
 // Said once, the first time she opens Care. Each line is a promise the
 // code below keeps, which is the only reason it is allowed to be said.
+// Said once, the first time. What the agent does comes first, because it
+// works on her behalf before she asks: it watches, raises and prepares.
+// Answering is the last of it, not the whole of it.
 const HOW_I_WORK = [
-  'I answer from your record and nowhere else: what you log, what your devices measure, and what your providers send.',
-  'Under every answer I show where it came from, so you can tell what you said from what was measured.',
-  'When there is not enough in your record, I say so rather than guess.',
-  'The more you log, the more I can answer.',
+  'I keep watch. When a reading, a lab or a symptom changes, I raise it here with the next step.',
+  'I do the work. A visit summary with your questions, a plain brief for each lab, and every step of a referral, ready for you to read, change and share.',
+  'I work from your record and nowhere else: what you log, what your devices measure, and what your providers send. Under every answer I show where it came from.',
+  'I prepare, you decide. I never contact anyone for you, and when your record is not enough, I say so rather than guess.',
 ];
 
 const INTRO_SEEN = 'ciatta.care.introSeen';
@@ -305,7 +308,7 @@ export function CareScreen() {
           <View style={s.bubble}>
             <Text style={[font('body'), s.bubbleText]}>
               {displayCopy(
-                `${person?.firstName ? `Hi ${person.firstName}, I` : 'Hi, I'}’m ${name}. I answer questions about your health from your own record.`,
+                `${person?.firstName ? `Hi ${person.firstName}, I` : 'Hi, I'}’m ${name}. I work on your health with you: I watch your record for what needs attention, get you ready for visits, decode your labs and keep your referrals moving. Ask me anything about your own data, too.`,
               )}
             </Text>
           </View>
