@@ -34,6 +34,7 @@ import { MARK_TOP, Wordmark } from '../ui/Wordmark';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { setActiveUnits } from '../lib/units';
 
 // Set over a dark photograph, so it keeps the dark palette in either mode.
 const L = PALETTES.dark.L;
@@ -411,6 +412,12 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
       await new Promise((r) => setTimeout(r, 450));
       setStageDone('answers');
       await repo.completeOnboarding(a);
+      // Her units, for every measure from here on. Changed later in Settings.
+      if (a.units) {
+        setActiveUnits(a.units);
+        const b = await repo.loadBody().catch(() => null);
+        await repo.saveBody({ ...(b ?? {}), units: a.units }).catch(() => {});
+      }
       setStageDone('saved');
       await reloadFirstName();
       await new Promise((r) => setTimeout(r, 450));
@@ -723,6 +730,20 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               options={AGE_RANGES.map((o) => o.label)}
               selected={AGE_RANGES.find((o) => o.id === a.ageRange)?.label ?? null}
               onPick={(label) => pick({ ageRange: AGE_RANGES.find((o) => o.label === label)?.id as AgeRange })}
+            />
+          </View>
+        ) : null}
+
+        {step === 'units' ? (
+          <View>
+            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+              Metric or imperial?
+            </Text>
+            <Text style={[font('body'), s.lede]}>Every measure in Ciatta follows this. You can change it any time in Settings.</Text>
+            <Choices
+              options={['Metric', 'Imperial']}
+              selected={a.units === 'metric' ? 'Metric' : a.units === 'imperial' ? 'Imperial' : null}
+              onPick={(label) => pick({ units: label === 'Metric' ? 'metric' : 'imperial' })}
             />
           </View>
         ) : null}

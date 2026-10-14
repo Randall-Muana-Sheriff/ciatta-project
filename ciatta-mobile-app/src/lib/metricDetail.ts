@@ -12,6 +12,7 @@ import { dayNote } from './allMetrics';
 import { fmtCount, fmtHours } from './engine';
 import { NAME } from './metricNames';
 import { hourLabel } from './timeAxis';
+import { formatTempChange } from './units';
 
 export type MetricKey = 'sleep' | 'hrv' | 'rhr' | 'steps' | 'bp' | 'temp' | 'spo2';
 // The same four scales Journey reads by, day first: a day hour by hour,
@@ -170,7 +171,7 @@ export function fmt(key: MetricKey, v: number, low?: number | null): string {
       return low != null ? `${Math.round(v)}/${Math.round(low)}` : `${Math.round(v)}`;
     case 'temp': {
       const size = Math.abs(v).toFixed(1);
-      return size === '0.0' ? 'At usual' : `${size} °C ${v > 0 ? 'above' : 'below'} usual`;
+      return size === '0.0' ? 'At usual' : `${formatTempChange(v)} ${v > 0 ? 'above' : 'below'} usual`;
     }
   }
 }
@@ -238,7 +239,7 @@ export function headline(key: MetricKey, points: readonly Point[], usual: Usual 
   const when = dayNote(last.day, now) ?? 'Today';
   if (key === 'temp') {
     const size = Math.abs(last.value).toFixed(1);
-    return { value: `${size} °C`, when, compare: size === '0.0' ? 'At your usual' : last.value > 0 ? 'Above your usual' : 'Below your usual' };
+    return { value: formatTempChange(last.value), when, compare: size === '0.0' ? 'At your usual' : last.value > 0 ? 'Above your usual' : 'Below your usual' };
   }
   const value = fmt(key, last.value, key === 'bp' ? last.low : undefined);
   if (!usual) return { value, when, compare: 'Not enough readings yet to know your usual range' };

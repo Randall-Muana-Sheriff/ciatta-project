@@ -121,7 +121,7 @@ test('one reading of a vital has no trend', () => {
 
 test('weight reads in her units when she has chosen them', () => {
   const r = [{ metric: 'body_mass', value: 64.2, unit: 'kg', at: NOW.toISOString() }];
-  assert.equal(weight(r, NOW, 'uk').value, '10 st 1.5 lb');
-  assert.equal(weight(r, NOW, 'us').value, '141.5 lb');
+  assert.equal(weight(r, NOW, 'imperial').value, '141.5 lb');
+  assert.equal(weight(r, NOW, 'metric').value, '64.2 kg');
   assert.equal(weight(r, NOW).value, '64.2 kg', 'as it arrived when no units are given');
 });

@@ -17,6 +17,7 @@ import { type Trend, trendOf } from './trend';
 import type { BaselineRow } from './metricDetail';
 import type { VitalCard } from './vitals';
 import { GROUP, NAME, SHORT } from './metricNames';
+import { formatTempChange } from './units';
 
 export type MetricRow = {
   label: string;
@@ -109,7 +110,7 @@ export function buildMetrics(
           ? null
           : one(Math.abs(d.tempDeviation)) === '0.0'
             ? 'At your usual'
-            : `${one(Math.abs(d.tempDeviation))} °C ${d.tempDeviation > 0 ? 'above' : 'below'} usual`,
+            : `${formatTempChange(d.tempDeviation)} ${d.tempDeviation > 0 ? 'above' : 'below'} usual`,
       from: 'measured',
       // Named as a difference, because that is what the sensor reports. A
       // bare figure here would read as a body temperature.

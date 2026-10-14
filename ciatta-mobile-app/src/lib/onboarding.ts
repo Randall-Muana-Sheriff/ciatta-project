@@ -12,6 +12,8 @@
 // is no third category yet, and a first session that implied otherwise would
 // be the most damaging place in the whole app to do it.
 
+import type { Units } from './units';
+
 export type Intent =
   | 'noticing_change'
   | 'managing_condition'
@@ -79,6 +81,7 @@ export type StepId =
   | 'intent'
   | 'tell'
   | 'age'
+  | 'units'
   | 'lifeStage'
   | 'cycle'
   | 'symptoms'
@@ -107,6 +110,9 @@ export type Answers = {
   openingMode: 'typed' | 'spoken' | null;
   intents: Intent[];
   ageRange: AgeRange | null;
+  // Metric or imperial, for every measure in the app. Saved to her body
+  // record when onboarding finishes; changed later in Settings.
+  units: Units | null;
   lifeStage: LifeStage | null;
   // Only asked when a cycle is relevant to her. See stepsFor.
   cycleLength: number | null;
@@ -131,6 +137,7 @@ export function emptyAnswers(): Answers {
     openingMode: null,
     intents: [],
     ageRange: null,
+    units: null,
     lifeStage: null,
     cycleLength: null,
     cycleRegular: null,
@@ -177,6 +184,7 @@ export function stepsFor(a: Answers): StepId[] {
     'intent',
     'tell',
     'age',
+    'units',
     'lifeStage',
     ...(cycleIsRelevant(a) ? (['cycle'] as StepId[]) : []),
     'symptoms',

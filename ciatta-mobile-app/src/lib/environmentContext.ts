@@ -8,6 +8,7 @@
 
 import { band } from './engine';
 import type { EnvironmentDay } from './weather';
+import { tempSymbol, tempValue } from './units';
 
 const STRETCH = 21;
 const USUAL = 90;
@@ -45,7 +46,8 @@ export function environmentLine(days: readonly EnvironmentDay[], now: Date): str
   const figures: string[] = [];
   if (temp) {
     words.push(temp.dir === 'up' ? 'hotter' : 'colder');
-    figures.push(`${Math.round(temp.m) < 0 ? `minus ${Math.abs(Math.round(temp.m))}` : Math.round(temp.m)} °C`);
+    const t = tempValue(temp.m);
+    figures.push(`${Math.round(t) < 0 ? `minus ${Math.abs(Math.round(t))}` : Math.round(t)} ${tempSymbol()}`);
   }
   if (humid) {
     words.push(humid.dir === 'up' ? 'more humid' : 'drier');

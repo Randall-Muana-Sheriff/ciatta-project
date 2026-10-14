@@ -7,6 +7,8 @@
 // it. Nothing is drawn from fewer than three readings, because two points
 // are a line Ciatta chose rather than one she produced.
 
+import { formatTempChange } from './units';
+
 // How many readings the line holds, and how few are too few to draw.
 const WINDOW = 7;
 const FEWEST = 3;
@@ -47,7 +49,7 @@ export function trendOf(values: readonly (number | null)[], unit: 'percent' | 'd
   if (unit === 'degrees') {
     size = latest - usual;
     level = Math.abs(size) < LEVEL_DEGREES;
-    figure = `${Math.abs(size).toFixed(1)} °C`;
+    figure = formatTempChange(size);
   } else {
     if (usual === 0) return { points, change: null, spoken: null };
     size = ((latest - usual) / Math.abs(usual)) * 100;

@@ -11,12 +11,12 @@ test('six facts, in a fixed order, the sixth her cycle situation', () => {
     body: resolveBody({ manual: { height_cm: 173, weight_kg: 64.2, weight_on: '2026-10-19', blood_type: 1 }, health: { bloodType: null, height: null, weight: null } }),
     insurance: { value: 'Anthem', sub: 'PPO' },
     situations: ['Endometriosis', 'Irregular'],
-    units: 'uk',
+    units: 'imperial',
     now: NOW,
   });
   assert.deepEqual(facts.map((f) => f.label), ['Age', 'Height', 'Weight', 'Blood Type', 'Insurance', 'Cycle situation']);
   assert.deepEqual(facts[1], { key: 'height', label: 'Height', value: '5 ft 8 in', sub: '173 cm', icon: 'ruler' });
-  assert.deepEqual(facts[2], { key: 'weight', label: 'Weight', value: '10 st 1.5 lb', sub: '64.2 kg', icon: 'body' });
+  assert.deepEqual(facts[2], { key: 'weight', label: 'Weight', value: '141.5 lb', sub: '64.2 kg', icon: 'body' });
   assert.deepEqual(facts[3], { key: 'blood', label: 'Blood Type', value: 'A positive', sub: 'Entered by you', icon: 'drop' });
   assert.deepEqual(facts[5], { key: 'situation', label: 'Cycle situation', value: 'Endometriosis', sub: 'and 1 more', icon: 'calendar' });
 });

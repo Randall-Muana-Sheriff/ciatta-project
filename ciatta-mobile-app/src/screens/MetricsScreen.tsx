@@ -20,7 +20,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { buildMetrics, type MetricRow, recordedCount, recordedLine } from '../lib/allMetrics';
 import { bloodOxygen, bloodPressure, type VitalCard, weight } from '../lib/vitals';
 import { displayCopy } from '../lib/displayCopy';
-import { defaultUnits } from '../lib/units';
+import { activeUnits } from '../lib/units';
 import { metricForRow } from '../lib/metricDetail';
 import { chooseMetric } from '../lib/metricHandoff';
 import { type Screen, useNav } from '../navigation';
@@ -61,7 +61,7 @@ export function MetricsScreen() {
       .then(([rows, body]) => {
         if (ignore) return;
         const now = new Date();
-        const units = body?.units ?? defaultUnits(Intl.DateTimeFormat().resolvedOptions().locale);
+        const units = activeUnits();
         setVitals([bloodPressure(rows, now), bloodOxygen(rows, now), weight(rows, now, units)]);
       })
       .catch(() => {

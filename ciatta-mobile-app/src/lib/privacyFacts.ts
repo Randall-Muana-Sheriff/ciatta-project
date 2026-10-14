@@ -5,6 +5,8 @@
 // on the phone; a clinician summary is made on the phone. A service she is
 // not using is not listed, so the page describes her, not every user.
 
+import { formatDistance } from './units';
+
 export type PrivacyFact = { title: string; body: string };
 
 export function privacyFacts(input: { sources: string[]; providers: string[]; weatherOn: boolean; findingsOn: boolean }): PrivacyFact[] {
@@ -48,7 +50,7 @@ export function privacyFacts(input: { sources: string[]; providers: string[]; we
   if (input.weatherOn) {
     facts.push({
       title: 'Weather around you',
-      body: 'Only a rough area, about 10 km, is sent to fetch the air quality around you. Your location is never stored.',
+      body: `Only a rough area, about ${formatDistance(10)}, is sent to fetch the air quality around you. Your location is never stored.`,
     });
   }
   if (input.findingsOn) {

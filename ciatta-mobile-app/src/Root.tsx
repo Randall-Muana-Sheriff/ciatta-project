@@ -55,6 +55,7 @@ import { TodayScreen } from './screens/TodayScreen';
 import { C } from './theme';
 import { BottomNav } from './ui/chrome';
 import { Ground, type GroundHue } from './ui/Ground';
+import { useUnits } from './state/units';
 
 // The ground each tab washes in. A pair per tab, so moving between them is
 // a change of place rather than four screens that look alike. The hues
@@ -145,6 +146,8 @@ export function Root() {
   // are allowed, and tapping a finding opens what it found.
   const repo = useRepo();
   const { mode } = useSession();
+  // Her units, set as the app's active system for every screen.
+  useUnits();
   useEffect(() => {
     if (mode === 'real') void registerForFindings(repo);
   }, [mode, repo]);

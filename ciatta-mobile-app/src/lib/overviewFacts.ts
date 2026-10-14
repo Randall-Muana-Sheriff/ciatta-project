@@ -16,7 +16,7 @@ import type { IconName } from '../ui/icons';
 export type OverviewFact = { key: string; label: string; value: string | null; sub?: string; icon: IconName };
 
 // As stored on her profile (20261014140000_body.sql).
-export type BodyManual = { blood_type?: number; height_cm?: number; weight_kg?: number; weight_on?: string; units?: Units };
+export type BodyManual = { blood_type?: number; height_cm?: number; weight_kg?: number; weight_on?: string; units?: Units; ethnicity?: string };
 
 export type BodyHealth = {
   bloodType: number | null;

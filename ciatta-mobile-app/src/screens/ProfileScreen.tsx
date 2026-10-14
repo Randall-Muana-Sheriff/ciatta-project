@@ -11,7 +11,8 @@ import type { Reported } from '../data/repo';
 import { type Connection, loadConnections } from '../data/providers';
 import { type BodyManual, overviewFacts, resolveBody } from '../lib/overviewFacts';
 import { ageFact } from '../lib/healthFacts';
-import { defaultUnits } from '../lib/units';
+import { activeUnits, formatDistance, UNIT_LABEL } from '../lib/units';
+import { type BodyField, BodySheet } from '../ui/BodySheet';
 import { type Insurance, insuranceFact } from '../lib/insurance';
 import { askForCharacteristics, readCharacteristics } from '../lib/healthKit';
 import { openAppleHealth } from '../lib/openHealth';
@@ -118,7 +119,7 @@ function ProfileCard({
       body: resolveBody({ manual: body, health: { bloodType: fromHealth ? traits.bloodType : null, height: heightRead, weight: weightRead } }),
       insurance: insuranceFact(insurance),
       situations: cycleProfile.situations,
-      units: body?.units ?? defaultUnits(Intl.DateTimeFormat().resolvedOptions().locale),
+      units: activeUnits(),
       now,
     });
   }, [stats, fromHealth, traits, body, heightRead, weightRead, insurance, cycleProfile]);
@@ -130,7 +131,10 @@ function ProfileCard({
       .catch(() => {});
   };
   // Where a tap on each fact goes.
-  const OPENS: Partial<Record<string, Screen>> = { height: 'bodyMeasurements', weight: 'bodyMeasurements', blood: 'bodyMeasurements', insurance: 'insurance', situation: 'cycleProfile' };
+  const OPENS: Partial<Record<string, Screen>> = { insurance: 'insurance', situation: 'cycleProfile' };
+  // Height, weight and blood type each open their own sheet, here.
+  const SHEETS: Partial<Record<string, BodyField>> = { height: 'height', weight: 'weight', blood: 'blood' };
+  const [sheet, setSheet] = useState<BodyField | null>(null);
   return (
     <Panel flat>
       <View style={p.facts}>
@@ -138,9 +142,9 @@ function ProfileCard({
           <Pressable
             key={f.key}
             style={p.fact}
-            disabled={!(OPENS[f.key] || (fromHealth && !f.value && f.key === 'age'))}
-            onPress={OPENS[f.key] ? () => onOpen(OPENS[f.key]!) : askHealth}
-            accessibilityRole={OPENS[f.key] || (fromHealth && !f.value && f.key === 'age') ? 'button' : undefined}
+            disabled={!(SHEETS[f.key] || OPENS[f.key] || (fromHealth && !f.value && f.key === 'age'))}
+            onPress={SHEETS[f.key] ? () => setSheet(SHEETS[f.key]!) : OPENS[f.key] ? () => onOpen(OPENS[f.key]!) : askHealth}
+            accessibilityRole={SHEETS[f.key] || OPENS[f.key] || (fromHealth && !f.value && f.key === 'age') ? 'button' : undefined}
             accessibilityLabel={`${f.label}, ${f.value ?? 'not added'}${f.sub ? `, ${f.sub}` : ''}`}
             accessibilityHint={OPENS[f.key] ? `Opens ${f.label.toLowerCase()}` : fromHealth && !f.value && f.key === 'age' ? 'Adds it from Apple Health' : undefined}
           >
@@ -153,13 +157,14 @@ function ProfileCard({
             {!f.sub && !f.value && fromHealth && f.key === 'age' ? (
               <Text style={[font('caption2'), { color: C.blueLink }]} numberOfLines={1}>From Apple Health</Text>
             ) : null}
-            {!f.value && OPENS[f.key] ? (
+            {!f.value && (OPENS[f.key] || SHEETS[f.key]) ? (
               <Text style={[font('caption2'), { color: C.blueLink }]} numberOfLines={1}>Add</Text>
             ) : null}
           </Pressable>
         ))}
       </View>
       <Text style={[font('subhead'), p.paragraph]}>{displayCopy(paragraph)}</Text>
+      <BodySheet field={sheet} onClose={() => setSheet(null)} onSaved={setBody} />
     </Panel>
   );
 }
@@ -376,7 +381,7 @@ function DataSources({ onOpen }: { onOpen: (screen: Screen) => void }) {
       </View>
       {note ? <Text style={[font('footnote'), { color: G.body, marginTop: 10 }]}>{displayCopy(note)}</Text> : null}
       <Text style={[font('footnote'), { color: G.meta, marginTop: 12 }]}>
-        Only a rough area, about 10 km, leaves your phone for the weather, and it is never stored.
+        {`Only a rough area, about ${formatDistance(10)}, leaves your phone for the weather, and it is never stored.`}
       </Text>
     </View>
   );
@@ -487,6 +492,7 @@ export function ProfileScreen() {
     };
   }, [repo]);
   const [sheet, setSheet] = useState<SheetKey | null>(null);
+  const [bodySheet, setBodySheet] = useState<BodyField | null>(null);
   const [accountNote, setAccountNote] = useState<string | null>(null);
   const { userId, signOut } = useSession();
   const { reactions } = useInsightReactions();
@@ -592,7 +598,8 @@ export function ProfileScreen() {
 
         <Text style={[font('footnote', 'semibold'), p.label]}>Settings</Text>
         <ListGroup>
-          <ListRow first light icon="moon" title="Appearance" onPress={() => setSheet('appearance')} />
+          <ListRow first light icon="ruler" title="Units" value={UNIT_LABEL[activeUnits()]} onPress={() => setBodySheet('units')} />
+          <ListRow light icon="moon" title="Appearance" onPress={() => setSheet('appearance')} />
           <ListRow light icon="clock" title="Notifications" onPress={() => setSheet('notifications')} />
           <ListRow light icon="shield" title="Privacy and Data" onPress={() => setSheet('privacy')} />
           <ListRow light icon="info" title="Help Center" onPress={browse(HELP_URL)} />
@@ -613,6 +620,7 @@ export function ProfileScreen() {
         <Text style={[font('footnote'), p.version]}>Version {expo.version}</Text>
       </View>
 
+      <BodySheet field={bodySheet} onClose={() => setBodySheet(null)} />
       <Sheet visible={sheet !== null} title={sheet ? SHEET_TITLE[sheet] : ''} onDone={() => setSheet(null)}>
         {sheet === 'sources' ? <DataSources onOpen={openFromSheet} /> : null}
         {sheet === 'details' ? <HealthDetails onOpen={openFromSheet} profile={profile ?? null} reported={reported} /> : null}

@@ -128,6 +128,7 @@ test('the sequence opens on the promise and closes on the reflection', () => {
     'intent',
     'tell',
     'age',
+    'units',
     'lifeStage',
     'cycle',
     'symptoms',
@@ -529,4 +530,11 @@ test('the profile with measured data holds no dash of any kind', () => {
   for (const dash of ['—', '–', '-']) {
     assert.ok(!p.includes(dash), `the profile contains ${dash}`);
   }
+});
+
+test('onboarding asks for her units once, straight after her age', () => {
+  const steps = stepsFor(answers());
+  assert.equal(steps.filter((x) => x === 'units').length, 1);
+  assert.equal(steps[steps.indexOf('age') + 1], 'units');
+  assert.equal(emptyAnswers().units, null);
 });

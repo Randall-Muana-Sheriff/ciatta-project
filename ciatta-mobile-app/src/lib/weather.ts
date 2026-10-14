@@ -2,6 +2,8 @@
 // three plain lines. Background, never about her body. A figure the source
 // did not give drops its line rather than being guessed.
 
+import { tempSymbol, tempValue } from './units';
+
 export type EnvironmentDay = {
   day: string;
   tempMaxC: number | null;
@@ -31,7 +33,7 @@ export function weatherLines(days: readonly EnvironmentDay[]): string[] {
   const lines: string[] = [];
   const lows = nums(week.map((d) => d.tempMinC));
   const highs = nums(week.map((d) => d.tempMaxC));
-  if (lows.length && highs.length) lines.push(`${degrees(Math.min(...lows))} to ${degrees(Math.max(...highs))} °C`);
+  if (lows.length && highs.length) lines.push(`${degrees(tempValue(Math.min(...lows)))} to ${degrees(tempValue(Math.max(...highs)))} ${tempSymbol()}`);
   const humidity = nums(week.map((d) => d.humidityMean));
   if (humidity.length) lines.push(`Humidity around ${Math.round(mean(humidity) * 100)}%`);
   const daylight = nums(week.map((d) => d.daylightMinutes));

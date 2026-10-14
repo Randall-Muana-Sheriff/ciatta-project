@@ -14,6 +14,7 @@ import type { Day } from '../data/daily';
 import type { Reported } from '../data/repo';
 import { fmtHours } from './engine';
 import { isOutside, type LabResult, labStatus } from './labs';
+import { formatTempChange } from './units';
 
 export type SectionId = 'cycle' | 'symptoms' | 'measurements' | 'labs' | 'conditions' | 'medications' | 'supplements' | 'notes';
 
@@ -123,7 +124,7 @@ export function reportSections(input: ReportInput, include: readonly SectionId[]
   measure(NAME.rhr, (d) => d.restingHR, (v) => `${Math.round(v)} bpm`);
   measure(NAME.hrv, (d) => d.hrv, (v) => `${Math.round(v)} ms`);
   measure('Steps', (d) => d.steps, (v) => Math.round(v).toLocaleString('en-US'));
-  measure(`${NAME.temp} from usual`, (d) => d.tempDeviation, (v) => `${Math.abs(v).toFixed(1)} °C ${v >= 0 ? 'above' : 'below'}`);
+  measure(`${NAME.temp} from usual`, (d) => d.tempDeviation, (v) => `${formatTempChange(v)} ${v >= 0 ? 'above' : 'below'}`);
   add('measurements', 'Synced from her devices', measured, 'No device readings in this period.');
 
   // Labs: the latest result of each test in the period, outside its range
