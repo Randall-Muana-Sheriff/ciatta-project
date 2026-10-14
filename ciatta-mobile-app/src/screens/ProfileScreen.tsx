@@ -4,8 +4,6 @@ import { Alert, Image, Pressable, ScrollView, StyleSheet, Switch, Text, TextInpu
 
 import { expo } from '../../app.json';
 import { deleteAccount, exportAndShare } from '../data/account';
-import type { Data } from '../data/adapter';
-import type { Tone } from '../data/sample';
 import type { SourceView } from '../data/rows';
 import type { Reported } from '../data/repo';
 import { type Connection, loadConnections } from '../data/providers';
@@ -39,21 +37,15 @@ import { Icon, type IconName } from '../ui/icons';
 import { Sheet } from '../ui/Sheet';
 import { images } from '../ui/images';
 import { avatarInitial } from '../ui/initial';
-import { EmptyNote } from '../ui/kit';
 import { G } from '../ui/scheme';
 import { BookmarksList } from './BookmarksScreen';
 import { openInsight } from '../lib/careHandoff';
+import { DETAIL_KINDS, type DetailKind, DETAILS, detailSummary } from '../lib/healthLists';
+import { type Situation, SITUATIONS, toggleSituation } from '../lib/cycleProfile';
+import { PickListSheet } from '../ui/PickListSheet';
 
-type Profile = NonNullable<Data['profile']>;
 
 
-const TONE: Record<Tone, string> = {
-  coral: C.coral,
-  mint: '#2FB8B4',
-  lavender: C.indigo,
-  indigo: C.blue,
-  text: G.fillSelected,
-};
 
 
 
@@ -171,71 +163,10 @@ function ProfileCard({
   );
 }
 
-function DetailsGroup({ onOpen, profile }: { onOpen: (screen: Screen) => void; profile: Profile }) {
-  return (
-    <ListGroup>
-      {profile.records.map((r, n) => (
-        <ListRow
-          key={r.title}
-          first={n === 0}
-          icon={r.icon}
-          tint={TONE[r.tone]}
-          title={r.title}
-          sub={r.lines.join(' · ')}
-          onPress={r.screen ? () => onOpen(r.screen!) : undefined}
-        />
-      ))}
-    </ListGroup>
-  );
-}
-
-function CycleGroup({ onOpen }: { onOpen: (screen: Screen) => void }) {
-  const { profile } = useCycle();
-  return (
-    <ListGroup header="Your Cycle">
-      <ListRow
-        first
-        icon="drop"
-        tint={C.coral}
-        title="Cycle Situation"
-        sub={profile.situations.join(' · ') || 'Not set yet'}
-        onPress={() => onOpen('cycleProfile')}
-      />
-    </ListGroup>
-  );
-}
 
 
 
-// What she told Ciatta, in her own words, grouped as she gave it.
-//
-// Null while the read is in flight is not the same as nothing reported,
-// so the section waits rather than claiming an empty history.
-function Reported({ reported }: { reported: Reported | null }) {
-  if (!reported) return null;
-  const groups: { header: string; items: string[] }[] = [
-    { header: 'Conditions', items: reported.conditions },
-    { header: 'Surgeries', items: reported.surgeries },
-    { header: 'Medications', items: reported.medications },
-    { header: 'Supplements', items: reported.supplements },
-  ].filter((g) => g.items.length > 0);
 
-  if (!groups.length) {
-    return <EmptyNote text="Ciatta has not been told about any conditions or medications yet." />;
-  }
-
-  return (
-    <>
-      {groups.map((g) => (
-        <ListGroup key={g.header} header={g.header}>
-          {g.items.map((item, n) => (
-            <ListRow key={item} first={n === 0} title={item} sub="You told Ciatta" />
-          ))}
-        </ListGroup>
-      ))}
-    </>
-  );
-}
 
 
 
@@ -389,13 +320,86 @@ function DataSources({ onOpen }: { onOpen: (screen: Screen) => void }) {
   );
 }
 
-// What she told Ciatta and what it holds about her body and cycle.
-function HealthDetails({ onOpen, profile, reported }: { onOpen: (screen: Screen) => void; profile: Profile | null; reported: Reported | null }) {
+// What she keeps about her health, each list in its own sheet: pick from
+// the common ones, or search and add her own. Nothing here leaves Profile.
+const DETAIL_TINT: Record<DetailKind, string> = {
+  conditions: C.coral,
+  allergies: C.lavender,
+  medications: '#2FB8B4',
+  vaccinations: C.blue,
+  genetics: C.coral,
+  lifestyle: '#2FB8B4',
+};
+
+function HealthDetails() {
+  const repo = useRepo();
+  const { profile: cycle, setProfile } = useCycle();
+  const [lists, setLists] = useState<Partial<Record<DetailKind, string[]>>>({});
+  const [open, setOpen] = useState<DetailKind | 'cycle' | null>(null);
+  useEffect(() => {
+    let ignore = false;
+    Promise.all(DETAIL_KINDS.map((k) => repo.loadDetails(k).then((v) => [k, v] as const)))
+      .then((entries) => !ignore && setLists(Object.fromEntries(entries)))
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, [repo]);
+  const change = (k: DetailKind, next: string[]) => {
+    setLists((l) => ({ ...l, [k]: next }));
+    void repo.saveDetails(k, next).catch(() => {});
+  };
+  // Cycle conditions are a closed set with rules (some replace each other),
+  // so a change goes through the same toggle the cycle screens use.
+  const changeCycle = (next: string[]) => {
+    const added = next.find((x) => !cycle.situations.includes(x as Situation));
+    const removed = cycle.situations.find((x) => !next.includes(x));
+    const s = (added ?? removed) as Situation | undefined;
+    if (s) setProfile(toggleSituation(cycle, s));
+  };
   return (
     <View style={p.stack}>
-      {profile ? <DetailsGroup onOpen={onOpen} profile={profile} /> : <Reported reported={reported} />}
-      <CycleGroup onOpen={onOpen} />
+      <ListGroup>
+        {DETAIL_KINDS.map((k, n) => (
+          <ListRow
+            key={k}
+            first={n === 0}
+            icon={DETAILS[k].icon}
+            tint={DETAIL_TINT[k]}
+            title={DETAILS[k].title}
+            sub={detailSummary(lists[k] ?? [])}
+            onPress={() => setOpen(k)}
+          />
+        ))}
+      </ListGroup>
+      <ListGroup header="Cycle Condition">
+        <ListRow first icon="drop" tint={C.coral} title="Cycle Condition" sub={cycle.situations.join(', ') || 'Not set yet'} onPress={() => setOpen('cycle')} />
+      </ListGroup>
       <Goals />
+
+      {DETAIL_KINDS.map((k) => (
+        <PickListSheet
+          key={k}
+          visible={open === k}
+          title={DETAILS[k].title}
+          placeholder={DETAILS[k].search}
+          options={DETAILS[k].options}
+          selected={lists[k] ?? []}
+          onChange={(next) => change(k, next)}
+          onClose={() => setOpen(null)}
+        />
+      ))}
+      <PickListSheet
+        visible={open === 'cycle'}
+        title="Cycle Condition"
+        placeholder="Search cycle conditions"
+        options={SITUATIONS.map((x) => x.id)}
+        selected={cycle.situations}
+        onChange={changeCycle}
+        onClose={() => setOpen(null)}
+        allowCustom={false}
+        note="Some of these replace each other, so choosing one can clear another."
+      />
     </View>
   );
 }
@@ -681,7 +685,7 @@ export function ProfileScreen() {
       <BodySheet field={bodySheet} onClose={() => setBodySheet(null)} />
       <Sheet visible={sheet !== null} title={sheet ? SHEET_TITLE[sheet] : ''} onDone={() => setSheet(null)}>
         {sheet === 'sources' ? <DataSources onOpen={openFromSheet} /> : null}
-        {sheet === 'details' ? <HealthDetails onOpen={openFromSheet} profile={profile ?? null} reported={reported} /> : null}
+        {sheet === 'details' ? <HealthDetails /> : null}
         {sheet === 'bookmarks' ? (
           <BookmarksList
             onOpen={(id) => {

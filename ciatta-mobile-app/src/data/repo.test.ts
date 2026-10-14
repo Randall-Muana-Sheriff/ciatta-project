@@ -322,3 +322,12 @@ test('her onboarding goals read back and can be changed, in memory for the examp
   assert.deepEqual(await repo.loadGoals(), ['Why I am so tired']);
   assert.deepEqual(await demoRepo().loadGoals(), goals, 'a fresh demo starts from the sample');
 });
+
+test('each health detail list reads back and can be changed, in memory for the example person', async () => {
+  const repo = demoRepo();
+  const conditions = await repo.loadDetails('conditions');
+  assert.ok(conditions.includes('Endometriosis'));
+  await repo.saveDetails('allergies', ['Penicillin', 'Latex']);
+  assert.deepEqual(await repo.loadDetails('allergies'), ['Penicillin', 'Latex']);
+  assert.deepEqual(await repo.loadDetails('genetics'), (await demoRepo().loadDetails('genetics')), 'other lists untouched');
+});

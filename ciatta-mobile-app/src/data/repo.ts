@@ -44,6 +44,7 @@ import { type LabFlag, type LabResult, type LabScan, parseRange, readLabScan, ty
 import { records as sampleRecords } from './sample';
 import type { CareRequest, ClinicianRow } from '../lib/care';
 import { INSIGHTS, type InsightReaction, type ResearchInsight } from '../lib/insights';
+import { type DetailKind, isSupplement } from '../lib/healthLists';
 
 // Every daily_metrics column daysFromRows/rowToDay actually reads. Named
 // explicitly, like every other realRepo method, rather than select('*'),
@@ -121,6 +122,10 @@ export type Repo = {
   // she changes it later in Profile.
   loadGoals(): Promise<string[]>;
   saveGoals(goals: string[]): Promise<void>;
+  // Her Health Details lists, as she keeps them in Profile: conditions,
+  // allergies, medications, vaccinations, genetics and lifestyle.
+  loadDetails(kind: DetailKind): Promise<string[]>;
+  saveDetails(kind: DetailKind, items: string[]): Promise<void>;
   // Her optional daily nutrition targets. Empty when she set none.
   loadNutritionTargets(): Promise<NutritionTargets>;
   // A meal photo read by the food scan, already checked (lib/foodScan).
@@ -334,6 +339,15 @@ export function demoRepo(): Repo {
   let notifyFindings = true;
   // What the example person said she wants to understand.
   let goals: string[] = ['Why I am so tired', 'What sets off my flares', 'Whether my cycle is changing'];
+  // The example person's Health Details.
+  let details: Partial<Record<DetailKind, string[]>> = {
+    conditions: ['Endometriosis', 'Hypothyroidism', 'Knee injury'],
+    allergies: ['Penicillin', 'Pollen', 'Shellfish', 'Lactose intolerance'],
+    medications: ['Levothyroxine', 'Dienogest', 'Ibuprofen', 'Tranexamic acid', 'Iron', 'Magnesium'],
+    vaccinations: ['Influenza', 'COVID 19', 'HPV', 'Tetanus, diphtheria, pertussis'],
+    genetics: ['MTHFR variant', 'Family history of endometriosis'],
+    lifestyle: ['Never smoked', 'Rarely drinks', 'Caffeine daily', 'Exercises regularly'],
+  };
   let meals: Meal[] = [1820, 2050, 1760, 1990, 2120, 1880, 1940, 0].map((kcal, n) => {
     const daysAgo = 7 - n;
     const at = new Date(Date.now() - daysAgo * 86400000);
@@ -395,6 +409,10 @@ export function demoRepo(): Repo {
     fetchEnvironment: async () => {},
     // The example person gets no pushes; her setting lives for the session.
     savePushToken: async () => {},
+    loadDetails: async (kind) => [...(details[kind] ?? [])],
+    saveDetails: async (kind, items) => {
+      details = { ...details, [kind]: [...items] };
+    },
     loadGoals: async () => [...goals],
     saveGoals: async (next) => {
       goals = [...next];
@@ -597,6 +615,24 @@ function must<T>(res: { data: T; error: unknown }): T {
 type Page<T> = PromiseLike<{ data: T[] | null; error: unknown }>;
 
 export function realRepo(db: SupabaseClient, userId: string): Repo {
+  // Keeps one of her record's tables in step with a list she edited: the
+  // names she added are inserted as reported, and those of her own reports
+  // she removed are deleted. Rows from a provider or a document stay.
+  const syncNames = async (table: 'conditions' | 'medications' | 'supplements', names: string[], extra: Record<string, unknown>) => {
+    const rows = must(await db.from(table).select(table === 'conditions' ? 'id, name, provenance, kind' : 'id, name, provenance')) as unknown as {
+      id: string;
+      name: string;
+      provenance: string;
+      kind?: string;
+    }[];
+    const mine = table === 'conditions' ? rows.filter((r) => r.kind === 'condition' || r.kind === 'surgery') : rows;
+    const have = new Set(mine.map((r) => r.name.toLowerCase()));
+    const want = new Set(names.map((n) => n.toLowerCase()));
+    const add = names.filter((n) => !have.has(n.toLowerCase()));
+    if (add.length) must(await db.from(table).insert(add.map((name) => ({ user_id: userId, name, provenance: 'REPORTED', ...extra }))));
+    const drop = mine.filter((r) => r.provenance === 'REPORTED' && !want.has(r.name.toLowerCase())).map((r) => r.id);
+    if (drop.length) must(await db.from(table).delete().in('id', drop));
+  };
   return {
     mode: 'real',
     async loadEpisodes() {
@@ -737,6 +773,40 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
           .from('push_tokens')
           .upsert({ user_id: userId, token, platform, updated_at: new Date().toISOString() }, { onConflict: 'user_id,token' }),
       );
+    },
+    async loadDetails(kind) {
+      const row = must(await db.from('profiles').select('onboarding').eq('id', userId).maybeSingle()) as
+        | { onboarding: { details?: Partial<Record<DetailKind, string[]>> } | null }
+        | null;
+      const kept = row?.onboarding?.details?.[kind];
+      if (kept) return kept;
+      // Before she has kept a list here, conditions and medications start
+      // from what she reported at onboarding.
+      if (kind === 'conditions') {
+        const rows = must(await db.from('conditions').select('kind, name')) as { kind: string; name: string }[];
+        return [...new Set(rows.filter((r) => r.kind === 'condition' || r.kind === 'surgery').map((r) => r.name))];
+      }
+      if (kind === 'medications') {
+        const [meds, sups] = await Promise.all([db.from('medications').select('name'), db.from('supplements').select('name')]);
+        return [...new Set([...(must(meds) as { name: string }[]), ...(must(sups) as { name: string }[])].map((r) => r.name))];
+      }
+      return [];
+    },
+    async saveDetails(kind, items) {
+      const row = must(await db.from('profiles').select('onboarding').eq('id', userId).maybeSingle()) as
+        | { onboarding: Record<string, unknown> | null }
+        | null;
+      const onboarding = row?.onboarding ?? {};
+      const details = { ...((onboarding.details as Record<string, string[]>) ?? {}), [kind]: items };
+      must(await db.from('profiles').update({ onboarding: { ...onboarding, details } }).eq('id', userId));
+      // Conditions and medications also live in their own tables, which is
+      // what the rest of Ciatta reads. Kept in step: what she added is
+      // inserted as reported, what she removed of her own reports is deleted.
+      if (kind === 'conditions') await syncNames('conditions', items, { kind: 'condition' });
+      if (kind === 'medications') {
+        await syncNames('medications', items.filter((n) => !isSupplement(n)), { occurred_at: new Date().toISOString() });
+        await syncNames('supplements', items.filter(isSupplement), { occurred_at: new Date().toISOString() });
+      }
     },
     async loadGoals() {
       const row = must(await db.from('profiles').select('onboarding').eq('id', userId).maybeSingle()) as
