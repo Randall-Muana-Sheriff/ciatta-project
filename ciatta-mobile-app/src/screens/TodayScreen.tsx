@@ -55,9 +55,9 @@ import { type BaselineRow, type MetricKey, usualFor } from '../lib/metricDetail'
 import { ProductNowCard } from '../ui/ProductNowCard';
 import type { IconName } from '../ui/icons';
 import { Icon } from '../ui/icons';
-import { BlurView } from 'expo-blur';
 import { CardFill } from '../ui/cardFill';
 import { G } from '../ui/scheme';
+import { chip } from '../ui/chip';
 
 function greeting(now: Date): string {
   const h = now.getHours();
@@ -483,7 +483,7 @@ export function TodayScreen() {
             {headlineMetrics(days, vitals, new Date(), baselines).map((m) => (
               <Pressable
                 key={m.key}
-                style={({ pressed }) => [t.gridCell, pressed && t.pressed]}
+                style={({ pressed }) => [chip.tile, t.gridCell, pressed && t.pressed]}
                 onPress={() => {
                   chooseMetric(m.key as MetricKey);
                   nav.push('metric');
@@ -492,7 +492,6 @@ export function TodayScreen() {
                 accessibilityLabel={`${m.label}, ${m.value ?? 'not recorded today'}${m.note && m.value ? `, ${m.note}` : ''}`}
                 accessibilityHint="Opens this metric over time"
               >
-                <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
                 <MetricCard
                   label={m.label}
                   value={m.value}
@@ -724,16 +723,11 @@ const t = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: METRIC_CARD_GAP },
   // Each metric its own card, on the same ground as every other card.
   metricsCard: { borderRadius: TILE_RADIUS, overflow: 'hidden', backgroundColor: L.glass, padding: 10 },
-  // Frosted glass over the container's photograph: a blur, a faint white
-  // lift and a bright hairline, as the reference sets its tiles.
+  // Each metric as the body system chips are drawn: no fill, a hairline
+  // edge (chip.tile), on the card's own glow.
   gridCell: {
     width: '30%',
     flexGrow: 1,
-    borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255, 255, 255, 0.28)',
     paddingHorizontal: 12,
     paddingVertical: 8,
   },

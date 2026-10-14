@@ -18,6 +18,7 @@ import { PhotoCard } from './PhotoCard';
 import { L } from './surface';
 import { G } from './scheme';
 import { SectionHeading } from './kit';
+import { chip } from './chip';
 
 // The heading images, generated for Ciatta in one style: a dark room,
 // light in two of the design system's hues, a soft figure out of focus.
@@ -96,7 +97,7 @@ export function InsightCards() {
                 </Text>
               ) : null}
               <View style={s.foot}>
-              <View style={s.sources}>
+              <View style={[chip.pill, s.sources]}>
                 <View style={s.logos}>
                   {[...new Set(insight.sources.map((x) => x.logo))].map((l, n) => (
                     <View key={l} style={{ marginLeft: n ? -6 : 0 }}>
@@ -104,7 +105,7 @@ export function InsightCards() {
                     </View>
                   ))}
                 </View>
-                <Text style={[font('footnote', 'semibold'), s.white]}>{`${insight.sources.length} ${insight.sources.length === 1 ? 'Source' : 'Sources'}`}</Text>
+                <Text style={[font('footnote'), chip.text]}>{`${insight.sources.length} ${insight.sources.length === 1 ? 'Source' : 'Sources'}`}</Text>
                 <Icon name="chevronRight" size={12} color="#FFFFFF" />
               </View>
               {/* What she thinks of it, which is what Ciatta learns from:
@@ -120,7 +121,7 @@ export function InsightCards() {
                       accessibilityLabel={r === 'up' ? 'Show more like this' : 'Show less like this'}
                       accessibilityState={{ selected: on }}
                       hitSlop={8}
-                      style={[s.thumb, on && s.thumbOn]}
+                      style={[chip.round, on && chip.on]}
                     >
                       <Icon name={r === 'up' ? 'thumbUp' : 'thumbDown'} size={17} color={on ? '#0C0E11' : '#FFFFFF'} />
                     </Pressable>
@@ -143,33 +144,11 @@ const s = StyleSheet.create({
   title: { color: '#FFFFFF', lineHeight: 28 },
   connection: { color: 'rgba(255,255,255,0.78)', lineHeight: 18 },
   white: { color: '#FFFFFF' },
-  sources: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.5)',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
+  sources: { alignSelf: 'flex-start' },
   pressed: { opacity: 0.7 },
   cardTop: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
   foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
   thumbs: { flexDirection: 'row', gap: 8 },
-  thumb: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.5)',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
-  thumbOn: { backgroundColor: '#FFFFFF', borderColor: '#FFFFFF' },
   logos: { flexDirection: 'row', marginRight: 2 },
   savedChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, backgroundColor: L.recessed },
   savedChipOn: { backgroundColor: G.ink, borderColor: G.ink },

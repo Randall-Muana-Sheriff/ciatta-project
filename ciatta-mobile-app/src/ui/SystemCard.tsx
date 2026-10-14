@@ -15,6 +15,7 @@ import { onGround } from './scheme';
 import { L, TILE_RADIUS } from './surface';
 import { CardFill } from './cardFill';
 import { G } from './scheme';
+import { chip } from './chip';
 
 export function SystemCard({
   label,
@@ -68,9 +69,9 @@ export function SystemCard({
               onPress={() => onExplore(t)}
               accessibilityRole="button"
               accessibilityLabel={`Explore ${t} with Ciatta`}
-              style={({ pressed }) => [c.topic, pressed && c.pressed]}
+              style={({ pressed }) => [chip.pill, pressed && c.pressed]}
             >
-              <Text style={[font('footnote'), { color: C.text }]}>{displayCopy(t)}</Text>
+              <Text style={[font('footnote'), chip.text]}>{displayCopy(t)}</Text>
             </Pressable>
           ))}
         </ScrollView>
@@ -156,7 +157,6 @@ const c = StyleSheet.create({
     backgroundColor: G.fill,
   },
   topics: { gap: 8 },
-  topic: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: C.borderSub },
   highlightsTitle: { color: C.text, marginTop: 4 },
   bullet: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   dot: { width: 7, height: 7, borderRadius: 3.5, marginTop: 9 },

@@ -1,28 +1,24 @@
-// Her records, as one view: lab results, documents, and what her
-// providers sent. Shown inline as the Health tab's Records view, and inside
-// the Health Records screen that other screens link to, so the two can
-// never drift apart.
+// Her records, as one view: lab results and what she added. Shown inline
+// as the Health tab's Records view, and inside the Health Records screen
+// that other screens link to, so the two can never drift apart.
 //
-// Labs and Documents are sections rather than tabs: this sits under the
+// Labs is a section rather than a tab: this sits under the
 // Health tab's own Dashboard, Body, Records control, and a second row of
 // tabs under the first is one decision too many.
 
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { loadClinicalRecords } from '../data/providers';
-import { type ProcedureEntry, procedureList } from '../lib/procedureEffect';
-import { chooseProcedure, prefillProcedure } from '../lib/procedureHandoff';
 import { type RecordEntry, recordEntries } from '../lib/recordEntries';
 import { type Screen, useNav } from '../navigation';
 import { displayCopy } from '../lib/displayCopy';
 import { type LabResult, labDay, labDraws, labStatus, latestSummary } from '../lib/labs';
 import { chooseLab } from '../lib/labHandoff';
 import { LabRangeBar, LabStatusTag } from './labs';
-import { useData, useRepo } from '../state/session';
+import { useRepo } from '../state/session';
 import { C, font } from '../theme';
 import { ListGroup, ListRow } from './chrome';
-import { EmptyNote, PrimaryButton, Row, SecondaryButton, SectionHeading } from './kit';
+import { EmptyNote, PrimaryButton, SecondaryButton, SectionHeading } from './kit';
 import { G } from './scheme';
 
 
@@ -97,23 +93,17 @@ function LabsSection({ onOpen }: { onOpen: (screen: Screen) => void }) {
         </View>
       ))}
       {draws.length > shown ? <SecondaryButton label="Show Earlier Labs" onPress={() => setShown((n) => n + 5)} /> : null}
-      <View style={{ paddingTop: 12 }}>
-        <SecondaryButton label="Add a Lab Report" onPress={() => onOpen('addLabs')} />
-      </View>
     </View>
   );
 }
 
 export function RecordsView({ onOpen }: { onOpen: (screen: Screen) => void }) {
-  const { records } = useData();
   const repo = useRepo();
   const nav = useNav();
-  const [procedures, setProcedures] = useState<{ dated: ProcedureEntry[]; undated: string[] }>({ dated: [], undated: [] });
   const [added, setAdded] = useState<RecordEntry[]>([]);
 
-  // Her procedures: the ones she added, the dated ones her providers sent,
-  // and surgeries she named at onboarding that still need a date. Read
-  // again whenever Records is back in view, so one she just added shows.
+  // What she added herself, read again whenever Records is back in view, so
+  // one she just added shows.
   useEffect(() => {
     if (nav.depth > 1) return;
     let ignore = false;
@@ -123,23 +113,11 @@ export function RecordsView({ onOpen }: { onOpen: (screen: Screen) => void }) {
         if (!ignore) setAdded(recordEntries(view));
       })
       .catch(() => {});
-    Promise.all([
-      repo.loadAddedProcedures().catch(() => []),
-      loadClinicalRecords().catch(() => []),
-      repo.loadReported().catch(() => null),
-    ]).then(([added, clinical, reported]) => {
-      if (!ignore) setProcedures(procedureList(added, clinical, reported?.surgeries ?? []));
-    });
     return () => {
       ignore = true;
     };
   }, [repo, nav.depth]);
 
-  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const shown = (iso: string) => {
-    const [y, m, d] = iso.split('-').map(Number);
-    return `${d} ${MONTHS[m - 1]} ${y}`;
-  };
   return (
     <View>
       {/* Every way a record reaches her, in one place: voice, camera, an
@@ -160,53 +138,6 @@ export function RecordsView({ onOpen }: { onOpen: (screen: Screen) => void }) {
       {/* Labs: from her providers and from reports she had read. */}
       <LabsSection onOpen={onOpen} />
 
-      {records?.documents.length ? (
-        <>
-          <View style={hr.section}>
-            <SectionHeading title="Documents" />
-          </View>
-          {records.documents.map((d, n) => (
-            <Row key={d.sub} first={n === 0} title={d.title} sub={`${d.sub} · ${d.kind}`} onPress={() => onOpen('addRecord')} />
-          ))}
-        </>
-      ) : null}
-
-      {/* Procedures, each opening what her record did either side of it.
-          Adding one lives behind Add to Your Records. */}
-      {procedures.dated.length || procedures.undated.length ? (
-        <ListGroup header="Procedures" footer="Tap one to see six weeks before and after, from your own record." style={hr.section}>
-          {procedures.dated.map((p, n) => (
-            <ListRow
-              key={p.id}
-              first={n === 0}
-              icon="doc"
-              title={p.name}
-              sub={`${shown(p.date)} · ${p.source}`}
-              onPress={() => {
-                chooseProcedure(p);
-                onOpen('procedure');
-              }}
-            />
-          ))}
-          {procedures.undated.map((name, n) => (
-            <ListRow
-              key={`u-${name}`}
-              first={procedures.dated.length === 0 && n === 0}
-              title={name}
-              sub="Add the date to see before and after"
-              onPress={() => {
-                prefillProcedure(name);
-                onOpen('addProcedure');
-              }}
-            />
-          ))}
-        </ListGroup>
-      ) : null}
-
-      {/* What her hospital sends arrives once she connects it. */}
-      <View style={hr.section}>
-        <SecondaryButton label="Connect a Provider" onPress={() => onOpen('providerConnect')} />
-      </View>
     </View>
   );
 }
