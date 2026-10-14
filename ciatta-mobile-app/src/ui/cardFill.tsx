@@ -1,5 +1,6 @@
-// A content card's ground, drawn exactly as an insight card is: an image
-// from the same generator, whole and uncropped, under the same dark wash. The same in light and dark, as the insight cards are: the
+// A content card's ground: a motion blurred film photograph, one per tab,
+// under the insight card's dark wash. Free under the Unsplash License; see
+// assets/images/cards/CREDITS.md. The same in light and dark, as the insight cards are: the
 // card is the object, and only the ground around it changes with the mode.
 
 import { Image, StyleSheet } from 'react-native';
@@ -18,9 +19,8 @@ export const cardImage = (from: GroundHue, to: GroundHue) => CARDS[`${from}-${to
 
 // The wash is the insight card's own, deepening toward the foot, with its
 // floor raised: a content card carries type from top to bottom, where an
-// insight card carries it only at the foot. At 62 percent the muted grey
-// still clears 5.9:1 and the coloured marks 4.8:1 on the brightest part of
-// any of the four.
+// insight card carries it only at the foot. Each photo is toned so that at
+// 62 percent every text colour clears 4.5:1 on its brightest part.
 const WASH = [0.62, 0.68, 0.76];
 
 export function CardFill() {
