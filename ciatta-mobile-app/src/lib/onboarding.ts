@@ -568,3 +568,29 @@ export function correctionTarget(a: Answers, label: string): StepId {
   // never cleared. Tapping it then opened a permission prompt.
   return 'tell';
 }
+
+// Her cycle condition, from what onboarding heard: where she is in life,
+// whether her cycle runs regularly, and the conditions she named that
+// shape a cycle. Seeded into Profile once, so the cycle screens start from
+// what she already said rather than asking again. Labels match Profile's
+// cycle situations exactly.
+const STAGE_SITUATION: Partial<Record<LifeStage, string>> = {
+  cycling: 'Regular',
+  cycle_irregular: 'Irregular',
+  perimenopause: 'Perimenopause',
+  postpartum: 'Postpartum',
+  contraception: 'Hormonal contraception',
+  menopause: 'No periods right now',
+};
+
+export function situationsFromOnboarding(a: Answers): string[] {
+  const out = new Set<string>();
+  const stage = a.lifeStage ? STAGE_SITUATION[a.lifeStage] : undefined;
+  if (stage) out.add(stage);
+  if (!stage && a.cycleRegular === true) out.add('Regular');
+  if (!stage && a.cycleRegular === false) out.add('Irregular');
+  const named = a.conditions.map((c) => c.toLowerCase());
+  if (named.some((c) => c.includes('endometriosis'))) out.add('Endometriosis');
+  if (named.some((c) => c.includes('pcos') || c.includes('polycystic') || c.includes('pmos'))) out.add('PCOS / PMOS');
+  return [...out];
+}

@@ -12,6 +12,7 @@ import {
   INTENTS,
   LIFE_STAGES,
   reflectionParagraph,
+  situationsFromOnboarding,
   stepsFor,
   type Answers,
 } from '../lib/onboarding';
@@ -537,4 +538,12 @@ test('onboarding asks for her units once, straight after her age', () => {
   assert.equal(steps.filter((x) => x === 'units').length, 1);
   assert.equal(steps[steps.indexOf('age') + 1], 'units');
   assert.equal(emptyAnswers().units, null);
+});
+
+test('her onboarding answers become her cycle condition in Profile', () => {
+  assert.deepEqual(situationsFromOnboarding(answers({ lifeStage: 'cycle_irregular', conditions: ['Endometriosis'] })).sort(), ['Endometriosis', 'Irregular']);
+  assert.deepEqual(situationsFromOnboarding(answers({ lifeStage: 'cycling', cycleRegular: true })), ['Regular']);
+  assert.deepEqual(situationsFromOnboarding(answers({ lifeStage: 'perimenopause', conditions: ['PCOS'] })).sort(), ['PCOS / PMOS', 'Perimenopause']);
+  assert.deepEqual(situationsFromOnboarding(answers({ lifeStage: 'contraception' })), ['Hormonal contraception']);
+  assert.deepEqual(situationsFromOnboarding(answers({ lifeStage: 'unsure' })), []);
 });

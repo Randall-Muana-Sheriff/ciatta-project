@@ -24,6 +24,12 @@ export type OverviewInput = {
   medications: string[];
   supplements: string[];
   symptoms: string[];
+  // What she keeps in Profile beside them: allergies she listed, and what
+  // she said she wants to understand. Optional, so older callers still read.
+  allergies?: string[];
+  goals?: string[];
+  // The language she would rather read in, from Personal Details.
+  language?: string | null;
   // What has arrived since, measured.
   observationCount: number;
   daysWithData: number;
@@ -79,6 +85,17 @@ export function profileOverview(input: OverviewInput): string {
         : `the symptoms you named are ${listJoin(input.symptoms)}`,
     );
   }
+
+  // Listed, never asserted: "you listed allergies to" rather than "you are
+  // allergic to", because the list is hers and the claim would be Ciatta's.
+  if (input.allergies?.length) told.push(`you listed allergies to ${listJoin(input.allergies)}`);
+  if (input.goals?.length) {
+    const goals = input.goals.map((g) => g.trim().replace(/^([A-Z])(?=[a-z])/, (c) => c.toLowerCase()));
+    told.push(`you want to understand ${listJoin(goals)}`);
+  }
+
+  // English is the default the whole app is written in, so it says nothing.
+  if (input.language && input.language !== 'English') told.push(`you prefer to read in ${input.language}`);
 
   if (told.length) {
     const joined = listJoin(told);

@@ -21,6 +21,7 @@ import { PrimaryButton } from './kit';
 import { G } from './scheme';
 import { Sheet } from './Sheet';
 import { TILE_RADIUS } from './surface';
+import { bumpProfile } from '../state/profileRevision';
 
 export type BodyField = 'blood' | 'height' | 'weight' | 'ethnicity' | 'gender' | 'language' | 'units';
 
@@ -63,6 +64,7 @@ export function BodySheet({ field, onClose, onSaved }: { field: BodyField | null
     const next = { ...body, ...patch };
     try {
       await repo.saveBody(next);
+      bumpProfile();
       onSaved?.(next);
       onClose();
     } catch (e) {

@@ -22,19 +22,20 @@ import {
   reflectionParagraph,
   type StepId,
   stepsFor,
+  situationsFromOnboarding,
 } from '../lib/onboarding';
 import { useRepo, useSession } from '../state/session';
 import { font, GUTTER, RADIUS } from '../theme';
-import { Icon } from '../ui/icons';
+import { Icon, type IconName } from '../ui/icons';
 import { images } from '../ui/images';
-import { Ground } from '../ui/Ground';
-import { PALETTES } from '../ui/scheme';
+import { G, PALETTES } from '../ui/scheme';
 
 import { MARK_TOP, Wordmark } from '../ui/Wordmark';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
 import { setActiveUnits } from '../lib/units';
+import { EMPTY_PROFILE, type Situation } from '../lib/cycleProfile';
 
 // Set over a dark photograph, so it keeps the dark palette in either mode.
 const L = PALETTES.dark.L;
@@ -83,20 +84,77 @@ const NO_CONTINUE: StepId[] = [...AUTO, 'connect', 'compiling'];
 // Paper, for the mark over the photograph.
 const PAPER = '#F2F3F4';
 
-const INK = L.ink;
-const MUTED = L.meta;
-const LINE = L.rule;
-const FIELD = L.recessed;
+// Set as Lotus sets its first session: a plain page (white on light, near
+// black on dark), black type, outlined pill fields and one solid pill.
+const INK = G.ink;
+const MUTED = G.meta;
+const LINE = G.rule;
+const FIELD = 'transparent';
+const PAGE = G.card;
+
+const SUB: Partial<Record<StepId, string>> = {
+  name: 'The name Ciatta will greet you by.',
+  intent: 'Pick all that apply. Ciatta starts there.',
+  tell: 'In your own words. Speak, type or add a photo.',
+  age: 'Some ranges and patterns change with age.',
+  lifeStage: 'So your cycle is read in the right context.',
+  cycle: 'From the first day of one period to the next.',
+  symptoms: 'Tap any that fit. You can add more later.',
+  conditions: 'Add each one. Skip if none.',
+  surgeries: 'Add each one. Skip if none.',
+  medications: 'Including contraception. Skip if none.',
+  supplements: 'Vitamins, minerals and anything else you take.',
+  goals: 'Ciatta looks for these first.',
+};
+
+// What each focus looks like as a tile.
+const INTENT_ICON: Record<Intent, IconName> = {
+  noticing_change: 'zigzag',
+  cycle: 'drop',
+  symptoms: 'heartPulse',
+  life_stage: 'flower',
+  managing_condition: 'stethoscope',
+  appointment: 'calendar',
+};
+
+// A grid of tiles, numbered in the order she picks them.
+function Tiles({ selected, onToggle }: { selected: readonly Intent[]; onToggle: (id: Intent) => void }) {
+  return (
+    <View style={s.tiles}>
+      {INTENTS.map((o) => {
+        const order = selected.indexOf(o.id);
+        const on = order >= 0;
+        return (
+          <Pressable
+            key={o.id}
+            onPress={() => onToggle(o.id)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: on }}
+            accessibilityLabel={o.label}
+            style={({ pressed }) => [s.tile, on && s.tileOn, pressed && s.pressed]}
+          >
+            {on ? (
+              <View style={s.badge}>
+                <Text style={[font('caption1', 'semibold'), { color: G.onPill }]}>{order + 1}</Text>
+              </View>
+            ) : null}
+            <Icon name={INTENT_ICON[o.id]} size={26} color={INK} />
+            <Text style={[font('headline'), s.tileText]}>{o.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
 // Dots, not "Step 8 of 9". A counter invites her to work out how much is
 // left and feel it as a cost. Dots say the same thing with no number to
 // resent.
 function Dots({ index, total }: { index: number; total: number }) {
+  const share = Math.max(0.04, Math.min(1, (index + 1) / Math.max(total, 1)));
   return (
-    <View style={s.dots} accessible accessibilityLabel={`Step ${index + 1} of ${total}`}>
-      {Array.from({ length: total }, (_, n) => (
-        <View key={n} style={[s.dot, n <= index && s.dotOn]} />
-      ))}
+    <View style={s.progress} accessible accessibilityLabel={`Step ${index + 1} of ${total}`}>
+      <View style={[s.progressFill, { width: `${share * 100}%` }]} />
     </View>
   );
 }
@@ -152,7 +210,7 @@ function Chips({
             accessibilityState={{ checked: on }}
             style={({ pressed }) => [s.chip, on && s.chipOn, pressed && s.pressed]}
           >
-            <Text style={[font('subhead'), { color: on ? L.canvas : INK }]}>{o}</Text>
+            <Text style={[font('subhead'), { color: on ? G.onPill : INK }]}>{o}</Text>
           </Pressable>
         );
       })}
@@ -208,7 +266,7 @@ function AddList({
               accessibilityLabel={`Remove ${x}`}
               style={({ pressed }) => [s.chip, s.chipOn, pressed && s.pressed]}
             >
-              <Text style={[font('subhead'), { color: L.canvas }]}>{x}</Text>
+              <Text style={[font('subhead'), { color: G.onPill }]}>{x}</Text>
             </Pressable>
           ))}
         </View>
@@ -412,6 +470,15 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
       await new Promise((r) => setTimeout(r, 450));
       setStageDone('answers');
       await repo.completeOnboarding(a);
+      // Her cycle condition, from her answers, so the cycle screens and
+      // Profile start from what she already said. Only into an empty one.
+      const seeded = situationsFromOnboarding(a);
+      if (seeded.length) {
+        const current = await repo.loadCycleProfile().catch(() => null);
+        if (!current?.situations.length) {
+          await repo.saveCycleProfile({ ...(current ?? EMPTY_PROFILE), situations: seeded as Situation[] }).catch(() => {});
+        }
+      }
       // Her units, for every measure from here on. Changed later in Settings.
       if (a.units) {
         setActiveUnits(a.units);
@@ -499,7 +566,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             middle rather than split top and bottom. */}
         <View style={[s.welcomeMid, { paddingBottom: insets.bottom }]}>
           <Text
-            style={[font('title2'), s.titleOnPhoto]}
+            style={[font('title1', 'semibold'), s.titleOnPhoto]}
             accessibilityRole="header"
             numberOfLines={1}
             adjustsFontSizeToFit
@@ -525,7 +592,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <Ground>
+    <View style={[s.fill, { backgroundColor: PAGE }]}>
       <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/*
         Back, progress, and Skip, in one row that holds still while a long
@@ -607,24 +674,14 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
                   accessibilityRole="button"
                   style={({ pressed }) => [s.primary, s.connect, pressed && s.pressed]}
                 >
-                  <Text style={[font('headline'), { color: L.canvas }]}>Try again</Text>
+                  <Text style={[font('headline'), { color: G.onPill }]}>Try again</Text>
                 </Pressable>
               </View>
             ) : null}
           </View>
         ) : null}
 
-        {step === 'reflect' || step === 'compiling' ? (
-          <View style={s.headerSide} />
-        ) : (
-          <Pressable
-            onPress={skip}
-            accessibilityRole="button"
-            style={({ pressed }) => [s.headerSide, s.headerRight, pressed && s.pressed]}
-          >
-            <Text style={[font('subhead'), { color: MUTED }]}>Skip</Text>
-          </Pressable>
-        )}
+        <View style={s.headerSide} />
       </View>
 
       {/*
@@ -637,7 +694,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         style={s.fill}
         contentContainerStyle={[
           s.body,
-          { justifyContent: BOTTOM.includes(step) ? 'flex-end' : 'center', paddingBottom: insets.bottom + 28 },
+          { justifyContent: BOTTOM.includes(step) ? 'flex-end' : 'flex-start', paddingBottom: insets.bottom + 28 },
         ]}
         keyboardShouldPersistTaps="handled"
       >
@@ -651,9 +708,10 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         */}
         {step === 'name' ? (
           <View>
-            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+            <Text style={[font('title1', 'semibold'), s.title]} accessibilityRole="header">
               What may I call you?
             </Text>
+            {SUB[step] ? <Text style={[font('subhead'), s.sub]}>{SUB[step]}</Text> : null}
             <TextInput
               value={a.name}
               onChangeText={(t) => set({ name: t })}
@@ -664,7 +722,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               autoCorrect={false}
               returnKeyType="done"
               onSubmitEditing={next}
-              style={[font('body'), s.input]}
+              style={[font('body'), s.input, s.nameInput]}
               accessibilityLabel="What may I call you"
             />
           </View>
@@ -672,25 +730,20 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
         {step === 'intent' ? (
           <View>
-            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+            <Text style={[font('title1', 'semibold'), s.title]} accessibilityRole="header">
               What brings you here?
             </Text>
-            <Chips
-              options={INTENTS.map((o) => o.label)}
-              selected={a.intents.map((id) => INTENTS.find((o) => o.id === id)?.label ?? '')}
-              onToggle={(label) => {
-                const id = INTENTS.find((o) => o.label === label)?.id;
-                if (id) set({ intents: toggle(a.intents, id as Intent) });
-              }}
-            />
+            {SUB[step] ? <Text style={[font('subhead'), s.sub]}>{SUB[step]}</Text> : null}
+            <Tiles selected={a.intents} onToggle={(id) => set({ intents: toggle(a.intents, id) })} />
           </View>
         ) : null}
 
         {step === 'tell' ? (
           <View>
-            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+            <Text style={[font('title1', 'semibold'), s.title]} accessibilityRole="header">
               What has been changing?
             </Text>
+            {SUB[step] ? <Text style={[font('subhead'), s.sub]}>{SUB[step]}</Text> : null}
             {/*
               The shared box. This screen invented the one control in the
               corner idea and carried its own copy of it for a while, which
@@ -723,9 +776,10 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         */}
         {step === 'age' ? (
           <View>
-            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+            <Text style={[font('title1', 'semibold'), s.title]} accessibilityRole="header">
               How old are you?
             </Text>
+            {SUB[step] ? <Text style={[font('subhead'), s.sub]}>{SUB[step]}</Text> : null}
             <Choices
               options={AGE_RANGES.map((o) => o.label)}
               selected={AGE_RANGES.find((o) => o.id === a.ageRange)?.label ?? null}
@@ -736,9 +790,10 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
         {step === 'units' ? (
           <View>
-            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+            <Text style={[font('title1', 'semibold'), s.title]} accessibilityRole="header">
               Metric or imperial?
             </Text>
+            {SUB[step] ? <Text style={[font('subhead'), s.sub]}>{SUB[step]}</Text> : null}
             <Text style={[font('body'), s.lede]}>Every measure in Ciatta follows this. You can change it any time in Settings.</Text>
             <Choices
               options={['Metric', 'Imperial']}
@@ -750,9 +805,10 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
         {step === 'lifeStage' ? (
           <View>
-            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+            <Text style={[font('title1', 'semibold'), s.title]} accessibilityRole="header">
               Where are you right now?
             </Text>
+            {SUB[step] ? <Text style={[font('subhead'), s.sub]}>{SUB[step]}</Text> : null}
             <Choices
               options={LIFE_STAGES.map((o) => o.label)}
               selected={LIFE_STAGES.find((o) => o.id === a.lifeStage)?.label ?? null}
@@ -763,9 +819,10 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
         {step === 'cycle' ? (
           <View>
-            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+            <Text style={[font('title1', 'semibold'), s.title]} accessibilityRole="header">
               How long is your usual cycle?
             </Text>
+            {SUB[step] ? <Text style={[font('subhead'), s.sub]}>{SUB[step]}</Text> : null}
             <Choices
               options={CYCLE_CHOICES}
               selected={cycleChoice(a.cycleLength, a.cycleRegular)[0] ?? null}
@@ -781,18 +838,20 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
         {step === 'symptoms' ? (
           <View>
-            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+            <Text style={[font('title1', 'semibold'), s.title]} accessibilityRole="header">
               What have you been noticing?
             </Text>
+            {SUB[step] ? <Text style={[font('subhead'), s.sub]}>{SUB[step]}</Text> : null}
             <Chips options={SYMPTOMS} selected={a.symptoms} onToggle={(v) => set({ symptoms: toggle(a.symptoms, v) })} />
           </View>
         ) : null}
 
         {step === 'conditions' ? (
           <View>
-            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+            <Text style={[font('title1', 'semibold'), s.title]} accessibilityRole="header">
               Anything you have been diagnosed with?
             </Text>
+            {SUB[step] ? <Text style={[font('subhead'), s.sub]}>{SUB[step]}</Text> : null}
             <AddList
               accessibilityLabel="Diagnosed conditions"
               placeholder="Endometriosis, PCOS, thyroid"
@@ -804,9 +863,10 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
         {step === 'surgeries' ? (
           <View>
-            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+            <Text style={[font('title1', 'semibold'), s.title]} accessibilityRole="header">
               Any surgeries?
             </Text>
+            {SUB[step] ? <Text style={[font('subhead'), s.sub]}>{SUB[step]}</Text> : null}
             <AddList
               accessibilityLabel="Surgeries"
               placeholder="Laparoscopy"
@@ -818,9 +878,10 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
         {step === 'medications' ? (
           <View>
-            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+            <Text style={[font('title1', 'semibold'), s.title]} accessibilityRole="header">
               What do you take?
             </Text>
+            {SUB[step] ? <Text style={[font('subhead'), s.sub]}>{SUB[step]}</Text> : null}
             <AddList
               accessibilityLabel="Medications"
               placeholder="Levothyroxine"
@@ -832,9 +893,10 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
         {step === 'supplements' ? (
           <View>
-            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+            <Text style={[font('title1', 'semibold'), s.title]} accessibilityRole="header">
               Any supplements?
             </Text>
+            {SUB[step] ? <Text style={[font('subhead'), s.sub]}>{SUB[step]}</Text> : null}
             <AddList
               accessibilityLabel="Supplements"
               placeholder="Magnesium"
@@ -846,9 +908,10 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
         {step === 'goals' ? (
           <View>
-            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+            <Text style={[font('title1', 'semibold'), s.title]} accessibilityRole="header">
               What do you want to understand?
             </Text>
+            {SUB[step] ? <Text style={[font('subhead'), s.sub]}>{SUB[step]}</Text> : null}
             <AddList
               accessibilityLabel="What you want to understand"
               placeholder="Why I am so tired"
@@ -991,7 +1054,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               accessibilityState={{ disabled: connecting }}
               style={({ pressed }) => [s.primary, s.connect, pressed && s.pressed]}
             >
-              <Text style={[font('headline'), { color: L.canvas }]}>
+              <Text style={[font('headline'), { color: G.onPill }]}>
                 {connecting ? 'Connecting' : 'Connect to Apple Health'}
               </Text>
             </Pressable>
@@ -1042,9 +1105,10 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
         {step === 'reflect' ? (
           <View>
-            <Text style={[font('title1'), s.title]} accessibilityRole="header">
+            <Text style={[font('title1', 'semibold'), s.title]} accessibilityRole="header">
               Here is what Ciatta has
             </Text>
+            {SUB[step] ? <Text style={[font('subhead'), s.sub]}>{SUB[step]}</Text> : null}
 
             <Text style={[font('subhead'), s.prose]}>{displayCopy(paragraph)}</Text>
 
@@ -1069,29 +1133,44 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         {step === 'reflect' ? (
           <View style={s.actions}>
             <Pressable onPress={finish} accessibilityRole="button" style={({ pressed }) => [s.primary, pressed && s.pressed]}>
-              <Text style={[font('headline'), { color: L.canvas }]}>{saving ? 'Saving' : 'Done'}</Text>
+              <Text style={[font('headline'), { color: G.onPill }]}>{saving ? 'Saving' : 'Done'}</Text>
             </Pressable>
           </View>
-        ) : NO_CONTINUE.includes(step) ? null : (
+        ) : step === 'compiling' ? null : NO_CONTINUE.includes(step) ? (
           <View style={s.actions}>
-            <Pressable onPress={next} accessibilityRole="button" style={({ pressed }) => [s.primary, pressed && s.pressed]}>
-              <Text style={[font('headline'), { color: L.canvas }]}>Continue</Text>
+            <Pressable onPress={skip} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [s.skip, pressed && s.pressed]}>
+              <Text style={[font('subhead'), { color: MUTED }]}>Skip</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={s.actions}>
+            <Pressable onPress={skip} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [s.skip, pressed && s.pressed]}>
+              <Text style={[font('subhead'), { color: MUTED }]}>Skip</Text>
+            </Pressable>
+            <Pressable
+              onPress={next}
+              disabled={step === 'name' && !a.name.trim()}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: step === 'name' && !a.name.trim() }}
+              style={({ pressed }) => [s.primary, step === 'name' && !a.name.trim() && s.primaryOff, pressed && s.pressed]}
+            >
+              <Text style={[font('headline'), { color: G.onPill }]}>Continue</Text>
             </Pressable>
           </View>
         )}
         </ScrollView>
       </KeyboardAvoidingView>
-    </Ground>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   fill: { flex: 1 },
   fillPhoto: { backgroundColor: L.canvas },
-  body: { paddingHorizontal: GUTTER, flexGrow: 1, paddingTop: 16 },
+  body: { paddingHorizontal: GUTTER, flexGrow: 1, paddingTop: 28 },
   bg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
   welcomeTop: { alignItems: 'center', paddingHorizontal: GUTTER },
-  welcomeMid: { flex: 1, justifyContent: 'center', paddingHorizontal: GUTTER },
+  welcomeMid: { flex: 1, justifyContent: 'flex-end', paddingHorizontal: GUTTER, paddingBottom: 28 },
   // Centred on the mark rather than sitting on its top edge: the control is
   // 44pt tall against a 22pt mark, so it is lifted by half the difference.
   // The offset is applied inline because this container holds its own top
@@ -1109,8 +1188,8 @@ const s = StyleSheet.create({
   titleOnPhoto: { color: '#FFFFFF', letterSpacing: -0.4 },
   ledeOnPhoto: { color: 'rgba(255,255,255,0.88)', marginTop: 16, lineHeight: 26 },
   primaryOnPhoto: {
-    height: 52,
-    borderRadius: RADIUS,
+    height: 56,
+    borderRadius: 999,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1176,7 +1255,7 @@ const s = StyleSheet.create({
   appLabel: { color: MUTED, maxWidth: 66, textAlign: 'center' },
   // The selected tile is outlined rather than filled: a filled tile would
   // fight the brand mark sitting inside it.
-  appTileOn: { borderWidth: 1.5, borderColor: INK, backgroundColor: L.statement },
+  appTileOn: { borderWidth: 1.5, borderColor: INK, backgroundColor: G.fillSelected },
   guideCard: { marginTop: 14, backgroundColor: FIELD, borderRadius: RADIUS, padding: 16 },
   guideTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   guideTitle: { flex: 1, color: INK },
@@ -1206,7 +1285,7 @@ const s = StyleSheet.create({
     borderRadius: 11,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: LINE,
-    backgroundColor: L.statement,
+    backgroundColor: G.fillSelected,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1217,7 +1296,7 @@ const s = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 7,
-    backgroundColor: L.recessed,
+    backgroundColor: G.fill,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
@@ -1247,17 +1326,17 @@ const s = StyleSheet.create({
   // Full width, 56pt, label left and the check right. A row list answers the
   // question "which one" where a wrapped row of pills asks it again.
   choice: {
-    minHeight: 56,
-    borderRadius: RADIUS,
+    minHeight: 58,
+    borderRadius: 18,
     backgroundColor: FIELD,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'transparent',
-    paddingHorizontal: 16,
+    borderWidth: 1.5,
+    borderColor: LINE,
+    paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  choiceOn: { backgroundColor: L.statement, borderColor: INK },
+  choiceOn: { borderColor: INK, borderWidth: 2 },
   title: { color: INK, letterSpacing: -0.4 },
   lede: { color: MUTED, marginTop: 16, lineHeight: 26 },
   quiet: { color: MUTED, marginTop: 14 },
@@ -1282,22 +1361,22 @@ const s = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
     paddingHorizontal: 16,
-    borderRadius: 22,
-    borderWidth: 1,
+    borderRadius: 999,
+    borderWidth: 1.5,
     borderColor: LINE,
-    backgroundColor: L.statement,
+    backgroundColor: FIELD,
   },
   chipOn: { backgroundColor: INK, borderColor: INK },
 
   field: { marginTop: 28 },
   addRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
-  input: { flex: 1, color: INK, backgroundColor: FIELD, borderRadius: RADIUS, paddingHorizontal: 14, height: 48 },
+  input: { flex: 1, color: INK, backgroundColor: FIELD, borderRadius: 999, borderWidth: 1.5, borderColor: LINE, paddingHorizontal: 20, height: 56 },
   add: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 14 },
   ghost: {
-    minHeight: 48,
+    minHeight: 56,
     marginTop: 14,
-    borderRadius: RADIUS,
-    borderWidth: 1,
+    borderRadius: 999,
+    borderWidth: 1.5,
     borderColor: LINE,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1306,8 +1385,32 @@ const s = StyleSheet.create({
   card: { borderWidth: 1, borderColor: LINE, borderRadius: RADIUS, padding: 16, marginTop: 12, gap: 6 },
   cardSub: { color: MUTED, lineHeight: 19 },
 
-  actions: { marginTop: 40, gap: 12 },
-  primary: { height: 52, borderRadius: RADIUS, backgroundColor: INK, alignItems: 'center', justifyContent: 'center' },
+  // Pinned to the foot of the page, as in the Lotus screens, with room
+  // above it when the question runs long.
+  actions: { marginTop: 'auto', paddingTop: 40, gap: 14 },
+  nameInput: { flex: 0, marginTop: 24 },
+  primaryOff: { backgroundColor: G.fillSelected },
+  skip: { alignSelf: 'center', minHeight: 32, justifyContent: 'center' },
+  sub: { color: MUTED, marginTop: 10, lineHeight: 21 },
+  progress: { flex: 1, height: 4, borderRadius: 2, backgroundColor: G.fillSelected, overflow: 'hidden', marginHorizontal: 8 },
+  progressFill: { height: 4, borderRadius: 2, backgroundColor: INK },
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 24 },
+  tile: {
+    width: '47%',
+    flexGrow: 1,
+    minHeight: 132,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: LINE,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  tileOn: { borderColor: INK, borderWidth: 2 },
+  tileText: { color: INK, textAlign: 'center' },
+  badge: { position: 'absolute', top: 10, right: 10, width: 24, height: 24, borderRadius: 12, backgroundColor: INK, alignItems: 'center', justifyContent: 'center' },
+  primary: { height: 56, borderRadius: 999, backgroundColor: INK, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.6 },
   error: { color: '#B3261E', marginTop: 14 },
 });

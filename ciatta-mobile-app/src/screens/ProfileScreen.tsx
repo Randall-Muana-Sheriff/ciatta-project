@@ -35,7 +35,7 @@ import { registerForFindings } from '../state/notifications';
 import { C, font, GUTTER } from '../theme';
 import { NAV_CLEARANCE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow, Panel } from '../ui/chrome';
-import { ScreenHeader } from '../ui/kit';
+import { PrimaryButton, ScreenHeader } from '../ui/kit';
 import { Icon, type IconName } from '../ui/icons';
 import { Sheet } from '../ui/Sheet';
 import { images } from '../ui/images';
@@ -47,6 +47,7 @@ import { DETAIL_KINDS, type DetailKind, DETAILS, detailSummary } from '../lib/he
 import { type Situation, SITUATIONS, toggleSituation } from '../lib/cycleProfile';
 import { PickListSheet } from '../ui/PickListSheet';
 import { faceIdAvailable, faceIdIsOn, setFaceId } from '../state/faceId';
+import { bumpProfile, useProfileRevision } from '../state/profileRevision';
 
 
 
@@ -73,6 +74,7 @@ function ProfileCard({
   paragraph: string;
 }) {
   const nav = useNav();
+  const revision = useProfileRevision();
   // Her insurance, as she entered it. Read again when Profile is back in
   // view, so what she just saved shows.
   const [insurance, setInsurance] = useState<Insurance | null>(null);
@@ -108,7 +110,7 @@ function ProfileCard({
     return () => {
       ignore = true;
     };
-  }, [repo, fromHealth, nav.depth]);
+  }, [repo, fromHealth, nav.depth, revision]);
   const facts = useMemo(() => {
     const now = new Date();
     const sampleAge = stats.find((x) => x.label === 'Age');
@@ -135,6 +137,9 @@ function ProfileCard({
   const [sheet, setSheet] = useState<BodyField | null>(null);
   return (
     <Panel flat>
+      <Text style={[font('headline'), { color: G.ink }]} accessibilityRole="header">
+        Overview
+      </Text>
       <View style={p.facts}>
         {facts.map((f) => (
           <Pressable
@@ -351,7 +356,7 @@ function HealthDetails() {
   }, [repo]);
   const change = (k: DetailKind, next: string[]) => {
     setLists((l) => ({ ...l, [k]: next }));
-    void repo.saveDetails(k, next).catch(() => {});
+    void repo.saveDetails(k, next).then(bumpProfile).catch(() => {});
   };
   // Cycle conditions are a closed set with rules (some replace each other),
   // so a change goes through the same toggle the cycle screens use.
@@ -359,7 +364,7 @@ function HealthDetails() {
     const added = next.find((x) => !cycle.situations.includes(x as Situation));
     const removed = cycle.situations.find((x) => !next.includes(x));
     const s = (added ?? removed) as Situation | undefined;
-    if (s) setProfile(toggleSituation(cycle, s));
+    if (s) setProfile(toggleSituation(cycle, s), () => bumpProfile());
   };
   return (
     <View style={p.stack}>
@@ -420,7 +425,7 @@ function Goals() {
   }, [repo]);
   const save = (next: string[]) => {
     setGoals(next);
-    void repo.saveGoals(next).catch(() => setGoals(goals));
+    void repo.saveGoals(next).then(bumpProfile).catch(() => setGoals(goals));
   };
   const add = () => {
     const g = draft.trim();
@@ -485,6 +490,56 @@ function PersonalDetails() {
         <ListRow title="Weight" value={body?.weight_kg != null ? formatWeight(body.weight_kg, units).value : add} onPress={() => setOpen('weight')} />
       </ListGroup>
       <BodySheet field={open} onClose={() => setOpen(null)} onSaved={setBody} />
+    </View>
+  );
+}
+
+// Edit Profile: the name she goes by, then her personal details, each in
+// its own sheet. A save is announced, so the Overview paragraph and the
+// greeting on Today change with it.
+function EditProfile() {
+  const repo = useRepo();
+  const { firstName, reloadFirstName } = useSession();
+  const [draft, setDraft] = useState(firstName ?? '');
+  const [note, setNote] = useState<string | null>(null);
+  const changed = draft.trim() && draft.trim() !== (firstName ?? '');
+  const save = async () => {
+    if (!changed) return;
+    try {
+      await repo.saveFirstName(draft.trim());
+      await reloadFirstName();
+      bumpProfile();
+      setNote('Saved.');
+    } catch (e) {
+      setNote(userFacingError(e, 'That did not save. Try again.'));
+    }
+  };
+  return (
+    <View style={p.stack}>
+      <View>
+        <Text style={[font('footnote', 'semibold'), p.label]}>Name</Text>
+        <TextInput
+          value={draft}
+          onChangeText={(t) => {
+            setDraft(t);
+            setNote(null);
+          }}
+          placeholder="What Ciatta calls you"
+          placeholderTextColor={G.meta}
+          autoCapitalize="words"
+          returnKeyType="done"
+          onSubmitEditing={() => void save()}
+          style={[font('body'), p.nameInput]}
+          accessibilityLabel="Name"
+        />
+        {changed ? (
+          <View style={{ marginTop: 12 }}>
+            <PrimaryButton label="Save" onPress={() => void save()} />
+          </View>
+        ) : null}
+        {note ? <Text style={[font('footnote'), { color: G.meta, marginTop: 8 }]}>{note}</Text> : null}
+      </View>
+      <PersonalDetails />
     </View>
   );
 }
@@ -569,9 +624,10 @@ function PrivacyData({ onOpen }: { onOpen: (screen: Screen) => void }) {
   );
 }
 
-type SheetKey = 'personal' | 'sources' | 'details' | 'bookmarks' | 'appearance' | 'notifications' | 'privacy';
+type SheetKey = 'edit' | 'personal' | 'sources' | 'details' | 'bookmarks' | 'appearance' | 'notifications' | 'privacy';
 const SHEET_TITLE: Record<SheetKey, string> = {
   sources: 'Data Sources',
+  edit: 'Edit Profile',
   personal: 'Personal Details',
   details: 'Health Details',
   bookmarks: 'Bookmarks',
@@ -611,14 +667,23 @@ export function ProfileScreen() {
   const saved = savedInsights(library, reactions).length;
   const [reported, setReported] = useState<Reported | null>(null);
   const [onboardedAt, setOnboardedAt] = useState<Date | null>(null);
+  const [allergies, setAllergies] = useState<string[]>([]);
+  const [goals, setGoals] = useState<string[]>([]);
+  const [language, setLanguage] = useState<string | null>(null);
+  // Read again whenever anything in Profile is saved, so the Overview
+  // paragraph says what her record says now.
+  const revision = useProfileRevision();
 
   useEffect(() => {
     let ignore = false;
-    void Promise.all([repo.loadReported(), repo.loadOnboardedAt()])
-      .then(([r, at]) => {
+    void Promise.all([repo.loadReported(), repo.loadOnboardedAt(), repo.loadDetails('allergies'), repo.loadGoals(), repo.loadBody()])
+      .then(([r, at, al, g, b]) => {
         if (ignore) return;
         setReported(r);
         setOnboardedAt(at ? new Date(at) : null);
+        setAllergies(al);
+        setGoals(g);
+        setLanguage(b?.language ?? null);
       })
       .catch(() => {
         // The paragraph says the record is empty rather than guessing.
@@ -626,7 +691,7 @@ export function ProfileScreen() {
     return () => {
       ignore = true;
     };
-  }, [repo]);
+  }, [repo, revision]);
 
   const overview = useMemo(
     () =>
@@ -638,15 +703,20 @@ export function ProfileScreen() {
         medications: reported?.medications ?? [],
         supplements: reported?.supplements ?? [],
         symptoms: [],
+        allergies,
+        goals,
+        language,
         observationCount: days.reduce((n, d) => n + (d.steps != null ? 1 : 0) + (d.sleepHours != null ? 1 : 0), 0),
         daysWithData: days.length,
         sources: sources.filter((x) => x.status === 'active').map((x) => x.name),
         now: new Date(),
       }),
-    [person, onboardedAt, reported, days, sources],
+    [person, onboardedAt, reported, allergies, goals, language, days, sources],
   );
-  // Her own first name until her record holds a full profile.
-  const name = profile?.name ?? person?.firstName ?? null;
+  // Her full name where the record holds one and it still starts with the
+  // first name she uses; otherwise the name she gave, as she last edited it.
+  const first = person?.firstName ?? null;
+  const name = profile?.name && (!first || profile.name.split(' ')[0] === first) ? profile.name : (first ?? profile?.name ?? null);
   // The sample portrait is a photograph of one particular woman. It belongs
   // to the example person and nobody else: her own circle is her initial.
   const initial = avatarInitial(name);
@@ -697,6 +767,9 @@ export function ProfileScreen() {
         )}
         {name ? <Text style={[font('title2', 'semibold'), { color: G.ink, marginTop: 12 }]}>{displayCopy(name)}</Text> : null}
         {profile ? <Text style={[font('subhead'), { color: G.meta, marginTop: 2 }]}>{`${profile.age} · ${profile.born}`}</Text> : null}
+        <Pressable onPress={() => setSheet('edit')} accessibilityRole="button" style={({ pressed }) => [p.editPill, pressed && { opacity: 0.7 }]}>
+          <Text style={[font('subhead', 'semibold'), { color: G.ink }]}>Edit Profile</Text>
+        </Pressable>
       </View>
 
       <View style={p.pad}>
@@ -737,6 +810,7 @@ export function ProfileScreen() {
 
       <BodySheet field={bodySheet} onClose={() => setBodySheet(null)} />
       <Sheet visible={sheet !== null} title={sheet ? SHEET_TITLE[sheet] : ''} onDone={() => setSheet(null)}>
+        {sheet === 'edit' ? <EditProfile /> : null}
         {sheet === 'personal' ? <PersonalDetails /> : null}
         {sheet === 'sources' ? <DataSources onOpen={openFromSheet} /> : null}
         {sheet === 'details' ? <HealthDetails /> : null}
@@ -767,6 +841,8 @@ const p = StyleSheet.create({
   avatar: { width: 84, height: 84, borderRadius: 42 },
   label: { color: G.meta, marginTop: 24, marginBottom: 8, marginLeft: 4 },
   paragraph: { color: G.body, lineHeight: 21, marginTop: 16 },
+  editPill: { marginTop: 12, paddingHorizontal: 18, minHeight: 36, borderRadius: 999, borderWidth: 1, borderColor: G.rule, justifyContent: 'center' },
+  nameInput: { color: G.ink, backgroundColor: G.card, borderRadius: 999, paddingHorizontal: 18, height: 50 },
   goalAdd: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 16, paddingRight: 10, minHeight: 50 },
   goalRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: G.rule },
   goalButton: { backgroundColor: G.pill, borderRadius: 999, minHeight: 32, paddingHorizontal: 14, justifyContent: 'center' },
@@ -798,7 +874,7 @@ const p = StyleSheet.create({
   overviewTop: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   ring: { width: 88, height: 88, alignItems: 'center', justifyContent: 'center' },
   // Each fact in a card of its own, three to a row.
-  facts: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 16, gap: 8 },
+  facts: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 8 },
   // Three to a row that share the width evenly whatever the gaps take,
   // and one height for all, so the six line up as a grid.
   fact: {

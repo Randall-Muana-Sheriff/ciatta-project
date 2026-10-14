@@ -19,6 +19,7 @@ import { useNav } from '../navigation';
 import { useCycleInsights } from './cycleStore';
 import { useLabs } from './labs';
 import { useData, useRepo } from './session';
+import { useProfileRevision } from './profileRevision';
 
 export function useAgentContext(): { context: AgentContext; referrals: Referral[] } {
   const repo = useRepo();
@@ -41,6 +42,8 @@ export function useAgentContext(): { context: AgentContext; referrals: Referral[
   const [insurance, setInsurance] = useState<Insurance | null>(null);
   const [referrals, setReferrals] = useState<Referral[]>([]);
 
+  // Read again whenever Profile changes, so the concierge sees her edits.
+  const revision = useProfileRevision();
   useEffect(() => {
     let ignore = false;
     const keep = <T,>(set: (v: T) => void) => (v: T) => {
@@ -58,7 +61,7 @@ export function useAgentContext(): { context: AgentContext; referrals: Referral[
     return () => {
       ignore = true;
     };
-  }, [repo, nav.depth]);
+  }, [repo, nav.depth, revision]);
 
   const context = useMemo(
     () =>

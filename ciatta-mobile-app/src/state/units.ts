@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 
 import { activeUnits, defaultUnits, setActiveUnits, type Units, unitsOf } from '../lib/units';
 import { useRepo } from './session';
+import { bumpProfile } from './profileRevision';
 
 export const regionUnits = () => defaultUnits(Intl.DateTimeFormat().resolvedOptions().locale);
 
@@ -30,6 +31,7 @@ export function useUnits() {
     setUnits(u);
     const b = await repo.loadBody().catch(() => null);
     await repo.saveBody({ ...(b ?? {}), units: u });
+    bumpProfile();
   };
   return { units, choose };
 }

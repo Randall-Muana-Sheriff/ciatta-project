@@ -162,6 +162,8 @@ export type Repo = {
   // stored there untouched, rather than clearing it.
   saveSourceStatus(kind: DbSourceKind, status: DbSourceStatus, lastSyncedAt?: string): Promise<void>;
   firstName(): Promise<string | null>;
+  // Her first name, as she changes it in Profile.
+  saveFirstName(name: string): Promise<void>;
   // Today's measured readings, by the hour they happened.
   //
   // daily_metrics holds one row per day, which is the wrong shape for a
@@ -337,6 +339,7 @@ export function demoRepo(): Repo {
   // has a usual day to fill toward. Figures are sample estimates, marked as
   // estimates like any scan.
   let notifyFindings = true;
+  let firstNameNow = person.firstName;
   // What the example person said she wants to understand.
   let goals: string[] = ['Why I am so tired', 'What sets off my flares', 'Whether my cycle is changing'];
   // The example person's Health Details.
@@ -490,17 +493,25 @@ export function demoRepo(): Repo {
     reportOutcome: async () => {},
     dismissRecommendation: async () => {},
     saveSourceStatus: async () => {},
-    firstName: async () => person.firstName,
+    firstName: async () => firstNameNow,
+    saveFirstName: async (n) => {
+      firstNameNow = n.trim() || firstNameNow;
+    },
     // The example person's day. Demo is explicitly not her record, so a
     // drawn day here is an illustration rather than a claim.
     loadIntraday: async (_since, metrics) =>
       metrics ? [...sampleIntraday().filter((r) => metrics.includes(r.metric)), ...demoIntraday(metrics)] : sampleIntraday(),
-    loadReported: async () => ({
-      conditions: ['Endometriosis'],
-      surgeries: [],
-      medications: ['Levothyroxine'],
-      supplements: ['Magnesium'],
-    }),
+    // What she reported, read from her Health Details lists, so the
+    // concierge, insights and Profile all see the same record she keeps.
+    loadReported: async () => {
+      const meds = details.medications ?? [];
+      return {
+        conditions: [...(details.conditions ?? [])],
+        surgeries: [],
+        medications: meds.filter((m) => !isSupplement(m)),
+        supplements: meds.filter(isSupplement),
+      };
+    },
     // The example person's last week of cuff and watch readings, newest
     // first as the real read returns them, so her cards have a line.
     loadVitals: async () => {
@@ -1087,6 +1098,10 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       const payload: Record<string, unknown> = { user_id: userId, kind, name: SOURCE_NAME[kind], status };
       if (lastSyncedAt) payload.last_synced_at = lastSyncedAt;
       must(await db.from('health_sources').upsert(payload, { onConflict: 'user_id,kind,name' }));
+    },
+    async saveFirstName(name) {
+      const clean = name.trim();
+      if (clean) must(await db.from('profiles').update({ first_name: clean }).eq('id', userId));
     },
     async firstName() {
       const row = must(await db.from('profiles').select('first_name').eq('id', userId).maybeSingle()) as { first_name: string | null } | null;

@@ -331,3 +331,19 @@ test('each health detail list reads back and can be changed, in memory for the e
   assert.deepEqual(await repo.loadDetails('allergies'), ['Penicillin', 'Latex']);
   assert.deepEqual(await repo.loadDetails('genetics'), (await demoRepo().loadDetails('genetics')), 'other lists untouched');
 });
+
+test('what she keeps in Health Details is what the rest of the app reads, for the example person too', async () => {
+  const repo = demoRepo();
+  await repo.saveDetails('conditions', ['PCOS', 'Migraine']);
+  await repo.saveDetails('medications', ['Metformin', 'Magnesium']);
+  const r = await repo.loadReported();
+  assert.deepEqual(r.conditions, ['PCOS', 'Migraine']);
+  assert.deepEqual(r.medications, ['Metformin']);
+  assert.deepEqual(r.supplements, ['Magnesium']);
+});
+
+test('her first name can be changed and reads back', async () => {
+  const repo = demoRepo();
+  await repo.saveFirstName('Maya Rose');
+  assert.equal(await repo.firstName(), 'Maya Rose');
+});

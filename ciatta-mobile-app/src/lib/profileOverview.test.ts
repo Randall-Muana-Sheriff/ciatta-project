@@ -99,3 +99,16 @@ test('it claims nothing about what any of it means', () => {
     assert.ok(!p.includes(claim), `the overview reads as a finding: ${claim}`);
   }
 });
+
+test('it names what she listed as allergies and what she wants to understand', () => {
+  const p = profileOverview({ ...input(), allergies: ['Penicillin', 'Latex'], goals: ['why I am so tired'] });
+  assert.match(p, /allergies to Penicillin and Latex/);
+  assert.match(p, /you want to understand why I am so tired|understand why I am so tired/);
+  assert.ok(!/you have/i.test(p));
+  assert.ok(!/[-–—]/.test(p));
+});
+
+test('her preferred language is part of what she told Ciatta, and English is not remarked on', () => {
+  assert.match(profileOverview({ ...input(), language: 'Yoruba' }), /you prefer to read in Yoruba/);
+  assert.ok(!/prefer to read/.test(profileOverview({ ...input(), language: 'English' })));
+});
