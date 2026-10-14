@@ -11,9 +11,12 @@
 // to refuse it. openAuthSessionAsync hands the login to Safari and gets
 // back only the redirect.
 
+import { Asset } from 'expo-asset';
 import * as Crypto from 'expo-crypto';
+import { File } from 'expo-file-system';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../lib/supabase';
+import { parseCompact } from '../lib/providers/brandsDirectory';
 import type { Endpoint } from '../lib/providers/directory';
 import type { ClinicalRecord } from '../lib/providers/fhirMap';
 import { parseEndpointBundle, SANDBOX } from '../lib/providers/epicDirectory';
@@ -49,9 +52,28 @@ function base64url(bytes: Uint8Array): string {
   return out;
 }
 
-// The directory she searches. Epic's list, with the sandbox at the front
-// so the flow is reachable before any production registration exists.
+// The directory she searches: every hospital and clinic on Epic with its
+// town and state, carried with the app (see lib/providers/brandsDirectory),
+// with the sandbox at the front so the flow is reachable before any
+// production registration exists. Parsed once and kept, because ninety
+// thousand rows is worth reading only once a session.
+let carried: Promise<Endpoint[]> | null = null;
+
+async function readCarried(): Promise<Endpoint[]> {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const asset = Asset.fromModule(require('../../assets/providers/epic-brands.dir'));
+  await asset.downloadAsync();
+  if (!asset.localUri) return [];
+  return parseCompact(await new File(asset.localUri).text());
+}
+
 export async function loadDirectory(): Promise<Endpoint[]> {
+  carried ??= readCarried().catch(() => []);
+  const rows = await carried;
+  if (rows.length) return [SANDBOX, ...rows];
+  // The carried file could not be read: fall back to Epic's live list of
+  // health systems, which has no locations but is still every system.
+  carried = null;
   try {
     const res = await fetch(EPIC_DIRECTORY, { headers: { Accept: 'application/json' } });
     if (!res.ok) return [SANDBOX];

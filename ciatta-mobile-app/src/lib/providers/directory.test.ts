@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { type Endpoint, fold, groupLine, hasMore, noResults, PREVIEW, search } from './directory';
+import { type Endpoint, fold, groupLine, hasMore, MAX_SHOWN, noResults, PREVIEW, search } from './directory';
 
 const e = (id: string, name: string, organization: string | null = null): Endpoint => ({
   id,
@@ -75,7 +75,7 @@ test('a clinic with no parent is its own group and says nothing about a count', 
 
 test('a group of several says how many there are', () => {
   const group = search(DIR, 'St lukes').find((g) => g.title === "St Luke's");
-  assert.equal(groupLine(group!), '4 results under this organization');
+  assert.equal(groupLine(group!), '4 places under this organization');
 });
 
 test('view all appears only when there is more than the preview', () => {
@@ -103,4 +103,23 @@ test('the empty line quotes her words and does not blame her provider', () => {
   for (const w of ['cause', 'because', 'diagnos', 'you have', 'condition']) {
     assert.ok(!line.toLowerCase().includes(w), w);
   }
+});
+
+// ── Location ─────────────────────────────────────────────────────────
+
+test('a row is found by its town as well as its name', () => {
+  const placed: Endpoint[] = [
+    { ...e('9', 'Family Medicine', 'Valley Health'), location: 'Allentown, PA' },
+    { ...e('10', 'Family Medicine', 'Valley Health'), location: 'Easton, PA' },
+  ];
+  const names = search(placed, 'family easton').flatMap((g) => g.endpoints.map((x) => x.location));
+  assert.deepEqual(names, ['Easton, PA']);
+});
+
+test('an enormous group shows a bounded list and says how to narrow it', () => {
+  const many: Endpoint[] = Array.from({ length: 500 }, (_, i) => e(`m${i}`, `Clinic ${i}`, 'Big System'));
+  const [group] = search(many, 'clinic');
+  assert.equal(group.endpoints.length, 500);
+  assert.equal(groupLine(group), '500 places under this organization');
+  assert.ok(MAX_SHOWN < 500);
 });

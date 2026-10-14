@@ -17,7 +17,7 @@ import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, Text
 import { connectProvider, loadConnections, loadDirectory } from '../data/providers';
 import { clientId as readClientId, setClientId } from '../data/providerAccess';
 import type { Endpoint } from '../lib/providers/directory';
-import { groupLine, hasMore, noResults, PREVIEW, type ResultGroup, search } from '../lib/providers/directory';
+import { groupLine, hasMore, MAX_SHOWN, noResults, PREVIEW, type ResultGroup, search } from '../lib/providers/directory';
 import { isSandbox } from '../lib/providers/epicDirectory';
 import { displayCopy } from '../lib/displayCopy';
 import { useNav } from '../navigation';
@@ -128,12 +128,21 @@ export function ProviderConnectScreen() {
         <Text style={[font('subhead'), s.empty]}>{displayCopy(noResults(query))}</Text>
       ) : null}
 
-      {groups.map((group) => (
+      {groups.length > MAX_GROUPS ? (
+        <Text style={[font('caption1'), s.note]}>
+          {`Showing ${MAX_GROUPS} of ${groups.length} health systems. Add your town or state to narrow it.`}
+        </Text>
+      ) : null}
+
+      {groups.slice(0, MAX_GROUPS).map((group) => (
         <Group
-          key={group.title}
+          key={`${group.title}|${group.area ?? ''}`}
           group={group}
-          open={expanded === group.title}
-          onToggle={() => setExpanded(expanded === group.title ? null : group.title)}
+          open={expanded === `${group.title}|${group.area ?? ''}`}
+          onToggle={() => {
+            const key = `${group.title}|${group.area ?? ''}`;
+            setExpanded(expanded === key ? null : key);
+          }}
           onPick={setPicked}
         />
       ))}
@@ -189,7 +198,7 @@ function Group({
   onToggle: () => void;
   onPick: (e: Endpoint) => void;
 }) {
-  const shown = open ? group.endpoints : group.endpoints.slice(0, PREVIEW);
+  const shown = group.endpoints.slice(0, open ? MAX_SHOWN : PREVIEW);
   const line = groupLine(group);
 
   // A group of one is a row, not a heading with a single child under it.
@@ -206,10 +215,15 @@ function Group({
           <EndpointRow key={e.id} endpoint={e} onPick={onPick} />
         ))}
       </View>
+      {open && group.endpoints.length > MAX_SHOWN ? (
+        <Text style={[font('caption1'), s.groupLine, { marginTop: 10 }]}>
+          {`Showing ${MAX_SHOWN} of ${group.endpoints.length.toLocaleString('en-US')}. Add your town or street to the search to find yours.`}
+        </Text>
+      ) : null}
       {hasMore(group) ? (
         <Pressable onPress={onToggle} accessibilityRole="button" style={({ pressed }) => [pressed && s.pressed]}>
           <Text style={[font('subhead', 'semibold'), s.viewAll]}>
-            {open ? 'Show fewer' : `View all ${group.endpoints.length}`}
+            {open ? 'Show fewer' : group.endpoints.length > MAX_SHOWN ? 'Show more' : `View all ${group.endpoints.length}`}
           </Text>
         </Pressable>
       ) : null}
@@ -230,17 +244,33 @@ function EndpointRow({
     <Pressable
       onPress={() => onPick(endpoint)}
       accessibilityRole="button"
-      accessibilityLabel={endpoint.name}
+      accessibilityLabel={[endpoint.name, endpoint.location].filter(Boolean).join(', ')}
       style={({ pressed }) => [s.row, standalone && s.rowAlone, pressed && s.pressed]}
     >
       <View style={{ flex: 1 }}>
         <Text style={[font('subhead'), s.rowName]}>{displayCopy(endpoint.name)}</Text>
-        {isSandbox(endpoint) ? <Text style={[font('caption1'), s.sandbox]}>Test server, not a hospital</Text> : null}
+        {isSandbox(endpoint) ? (
+          <Text style={[font('caption1'), s.sandbox]}>Test server, not a hospital</Text>
+        ) : placeLine(endpoint, standalone) ? (
+          <Text style={[font('caption1'), s.place]}>{displayCopy(placeLine(endpoint, standalone)!)}</Text>
+        ) : null}
       </View>
       <Icon name="chevronRight" size={15} color={G.meta} />
     </Pressable>
   );
 }
+
+// Where a row is. Under a heading the system is already named, so only the
+// town; standing alone it says whose it is as well.
+function placeLine(endpoint: Endpoint, standalone: boolean): string | null {
+  const parts = standalone && endpoint.organization ? [endpoint.organization, endpoint.location] : [endpoint.location];
+  const line = parts.filter(Boolean).join(', ');
+  return line || null;
+}
+
+// A broad word like "clinic" matches most of the country. Past this many
+// systems the list asks for a town instead of drawing them all.
+const MAX_GROUPS = 40;
 
 // What happens next, before it happens.
 function ProviderSheet({
@@ -283,6 +313,9 @@ function ProviderSheet({
         <Text style={[font('title2'), s.sheetTitle]} accessibilityRole="header">
           {displayCopy(endpoint.name)}
         </Text>
+        {placeLine(endpoint, true) ? (
+          <Text style={[font('subhead'), s.sheetPlace]}>{displayCopy(placeLine(endpoint, true)!)}</Text>
+        ) : null}
         <Text style={[font('body'), s.sheetLede]}>
           Connect to your provider's portal to securely share your health data with Ciatta. Choosing 6 or 12 month
           access keeps your records up to date without connecting again.
@@ -408,6 +441,7 @@ const s = StyleSheet.create({
   group: { marginTop: SPACE.block, marginHorizontal: GUTTER },
   groupTitle: { color: G.ink },
   groupLine: { color: G.meta, marginTop: 2 },
+  place: { color: G.meta, marginTop: 2 },
   groupBody: { marginTop: 10, gap: 1 },
   viewAll: { color: HUE.measured, marginTop: 12 },
 
@@ -454,6 +488,7 @@ const s = StyleSheet.create({
     height: 48,
   },
   sheetTitle: { color: G.ink, letterSpacing: -0.4 },
+  sheetPlace: { color: G.meta, marginTop: 6 },
   sheetLede: { color: G.body, lineHeight: 24, marginTop: 12, marginBottom: SPACE.block },
   bullets: { marginTop: SPACE.tight, gap: SPACE.near },
   bullet: {
