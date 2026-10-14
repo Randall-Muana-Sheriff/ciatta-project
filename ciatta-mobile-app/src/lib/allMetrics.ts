@@ -170,7 +170,7 @@ export function recordedLine(counts: { recorded: number; total: number }): strin
 // folded into a daily row, so they arrive separately and lib/vitals says
 // what may be shown of them and when.
 //
-// Labels stay short: "Resting HR" fits a third of a row and "Resting
+// Labels stay short: "RHR" fits a third of a row and "Resting
 // heart rate" does not. The All screen keeps the full names.
 export type HeadlineMetric = {
   key: string;

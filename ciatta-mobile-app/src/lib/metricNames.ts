@@ -36,7 +36,7 @@ export const NAME = {
 
 export const SHORT = {
   hrv: 'HRV',
-  rhr: 'Resting HR',
+  rhr: 'RHR',
   bp: 'BP',
   spo2: 'SpO2',
   temp: 'Skin Temp',

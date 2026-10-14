@@ -179,7 +179,7 @@ test('heart rate variability carries its unit', () => {
 test('resting heart rate is on Today, beside HRV; skin temperature is on All only', () => {
   const rhr = headlineMetrics([{ ...empty, restingHR: 58.6 }], [], ON).find((m) => m.key === 'rhr')!;
   assert.equal(rhr.value, '59 bpm');
-  assert.equal(rhr.label, 'Resting HR');
+  assert.equal(rhr.label, 'RHR');
   assert.ok(!headlineMetrics([]).some((m) => m.key === 'temp'));
   assert.ok(find({ ...empty, restingHR: 58.6 }, 'Resting Heart Rate')?.value === '59 bpm');
 });
