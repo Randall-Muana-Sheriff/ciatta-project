@@ -10,13 +10,20 @@
 import { isOutside, type LabResult, labStatus } from './labs';
 import { type AgentContext, bpBand, bpLine } from './agent/proactive';
 
-export type InsightSource = { title: string; publisher: string; year: number };
+// The publishers whose logos Ciatta shows beside a source, named for
+// attribution only. AHA and De Gruyter are set as lettered badges.
+export const PUBLISHER_LOGOS = ['nice', 'nih', 'cmaj', 'jmir', 'elsevier', 'tandf', 'ata', 'nhs', 'aha', 'degruyter'] as const;
+export type PublisherLogo = (typeof PUBLISHER_LOGOS)[number];
+export type InsightSource = { title: string; publisher: string; year: number; logo: PublisherLogo };
 export type ResearchInsight = {
   id: string;
   title: string;
   // Its heading image, generated for Ciatta in one style; named by the
   // insight it heads (assets/images/insights).
   image: string;
+  // What it is about, so what she likes or saves tells Ciatta what to show
+  // more of.
+  topics: string[];
   highlights: string[];
   body: string;
   sources: InsightSource[];
@@ -27,6 +34,7 @@ export const INSIGHTS: ResearchInsight[] = [
     id: 'iron-fatigue',
     title: 'Low iron stores can drain your energy, even when your blood count looks normal.',
     image: 'iron-fatigue',
+    topics: ['energy', 'labs', 'blood'],
     highlights: [
       'Ferritin shows how much iron your body has stored',
       'Stores can run low before anemia shows on a blood count',
@@ -36,14 +44,15 @@ export const INSIGHTS: ResearchInsight[] = [
     body:
       'Ferritin measures the iron your body keeps in reserve. It can be low while hemoglobin is still in range, which is why a normal blood count does not always explain tiredness. In a randomized trial of menstruating women with fatigue, low ferritin and no anemia, iron eased fatigue compared with placebo. Whether iron is right for you is a question for your clinician, ideally with a recent ferritin result in hand.',
     sources: [
-      { title: 'Effect of iron supplementation on fatigue in nonanemic menstruating women with low ferritin: a randomized controlled trial', publisher: 'CMAJ (Vaucher et al.)', year: 2012 },
-      { title: 'Iron: Fact Sheet for Health Professionals', publisher: 'NIH Office of Dietary Supplements', year: 2024 },
+      { title: 'Effect of iron supplementation on fatigue in nonanemic menstruating women with low ferritin: a randomized controlled trial', publisher: 'CMAJ (Vaucher et al.)', year: 2012, logo: 'cmaj' },
+      { title: 'Iron: Fact Sheet for Health Professionals', publisher: 'NIH Office of Dietary Supplements', year: 2024, logo: 'nih' },
     ],
   },
   {
     id: 'cycle-physiology',
     title: 'Your resting heart rate and skin temperature shift with your cycle.',
     image: 'cycle-physiology',
+    topics: ['cycle', 'wearables', 'heart'],
     highlights: [
       'Resting heart rate tends to rise after ovulation',
       'Skin temperature runs higher in the luteal phase',
@@ -53,13 +62,14 @@ export const INSIGHTS: ResearchInsight[] = [
     body:
       'Wearable studies that followed women through their cycles found that wrist temperature, resting heart rate and heart rate variability move in step with the phases: higher temperature and heart rate, and lower variability, after ovulation. A reading that looks off your usual may simply be your cycle. Ciatta reads your readings against your own cycle for that reason.',
     sources: [
-      { title: 'Wearable sensors reveal menses driven changes in physiology and enable prediction of the fertile window', publisher: 'Journal of Medical Internet Research (Goodale et al.)', year: 2019 },
+      { title: 'Wearable sensors reveal menses driven changes in physiology and enable prediction of the fertile window', publisher: 'Journal of Medical Internet Research (Goodale et al.)', year: 2019, logo: 'jmir' },
     ],
   },
   {
     id: 'sleep-cycle',
     title: 'Sleep often gets lighter and more broken in the days before a period.',
     image: 'sleep-cycle',
+    topics: ['sleep', 'cycle'],
     highlights: [
       'Many women report poorer sleep before and during their period',
       'Body temperature runs higher after ovulation',
@@ -68,12 +78,13 @@ export const INSIGHTS: ResearchInsight[] = [
     ],
     body:
       'Research on sleep across the menstrual cycle finds that sleep quality is often reported as worse in the late luteal phase and during menstruation, alongside the higher body temperature that follows ovulation and symptoms like cramps or low mood. Seeing your own nights against your cycle is the clearest way to know whether it applies to you.',
-    sources: [{ title: 'Circadian rhythms, sleep, and the menstrual cycle', publisher: 'Sleep Medicine (Baker and Driver)', year: 2007 }],
+    sources: [{ title: 'Circadian rhythms, sleep, and the menstrual cycle', publisher: 'Sleep Medicine (Baker and Driver)', year: 2007, logo: 'elsevier' }],
   },
   {
     id: 'bp-categories',
     title: 'Blood pressure falls into four categories, and several readings tell more than one.',
     image: 'bp-categories',
+    topics: ['heart', 'vitals'],
     highlights: [
       'Normal is under 120 over 80',
       'Stage 1 starts at 130 over 80',
@@ -87,6 +98,7 @@ export const INSIGHTS: ResearchInsight[] = [
         title: 'Guideline for the Prevention, Detection, Evaluation, and Management of High Blood Pressure in Adults',
         publisher: 'Hypertension (Whelton et al., ACC/AHA)',
         year: 2018,
+        logo: 'aha',
       },
     ],
   },
@@ -94,6 +106,7 @@ export const INSIGHTS: ResearchInsight[] = [
     id: 'bristol',
     title: 'The form of your stool is a window into how fast your gut moves.',
     image: 'bristol',
+    topics: ['gut'],
     highlights: [
       'Types 1 and 2 are hard, and go with slow transit',
       'Types 3 and 4 are the typical range',
@@ -102,12 +115,13 @@ export const INSIGHTS: ResearchInsight[] = [
     ],
     body:
       'The Bristol Stool Form Scale was shown to track intestinal transit time: harder forms with slower transit, looser forms with faster. It is the scale clinicians use, which makes your logs easy to share. Blood with a bowel movement is always worth raising with a clinician.',
-    sources: [{ title: 'Stool form scale as a useful guide to intestinal transit time', publisher: 'Scandinavian Journal of Gastroenterology (Lewis and Heaton)', year: 1997 }],
+    sources: [{ title: 'Stool form scale as a useful guide to intestinal transit time', publisher: 'Scandinavian Journal of Gastroenterology (Lewis and Heaton)', year: 1997, logo: 'tandf' }],
   },
   {
     id: 'endo-gut',
     title: 'Endometriosis can show up in your bowel and bladder, not only as pelvic pain.',
     image: 'endo-gut',
+    topics: ['endometriosis', 'gut', 'pain', 'cycle'],
     highlights: [
       'Pain with bowel movements is a recognised symptom',
       'So is pain when passing urine',
@@ -116,12 +130,13 @@ export const INSIGHTS: ResearchInsight[] = [
     ],
     body:
       'National guidance on endometriosis lists cyclical bowel and urinary symptoms, including pain with bowel movements or passing urine, alongside pelvic pain and painful periods. Symptoms that come and go with your cycle are worth logging with their timing, so your clinician can see the pattern rather than a single day.',
-    sources: [{ title: 'Endometriosis: diagnosis and management (NG73)', publisher: 'National Institute for Health and Care Excellence', year: 2017 }],
+    sources: [{ title: 'Endometriosis: diagnosis and management (NG73)', publisher: 'National Institute for Health and Care Excellence', year: 2017, logo: 'nice' }],
   },
   {
     id: 'thyroid',
     title: 'Fatigue, hair shedding and dry skin can trace back to the thyroid.',
     image: 'thyroid',
+    topics: ['labs', 'energy', 'hormones'],
     highlights: [
       'An underactive thyroid can bring tiredness, dry skin and hair loss',
       'These symptoms are common and overlap with many other things',
@@ -130,12 +145,13 @@ export const INSIGHTS: ResearchInsight[] = [
     ],
     body:
       'Hypothyroidism, an underactive thyroid, can cause fatigue, dry skin, hair thinning, constipation and feeling cold. Because these symptoms are common, a blood test, usually TSH first, is how it is checked. If you have logged several of them, asking your clinician whether a thyroid test fits is reasonable.',
-    sources: [{ title: 'Hypothyroidism (underactive)', publisher: 'American Thyroid Association', year: 2023 }],
+    sources: [{ title: 'Hypothyroidism (underactive)', publisher: 'American Thyroid Association', year: 2023, logo: 'ata' }],
   },
   {
     id: 'headache-red-flags',
     title: 'Most headaches are not dangerous, but a few signs need care right away.',
     image: 'headache-red-flags',
+    topics: ['headache', 'safety'],
     highlights: [
       'A sudden, severe headache, the worst of your life',
       'Headache with fever and a stiff neck',
@@ -144,12 +160,13 @@ export const INSIGHTS: ResearchInsight[] = [
     ],
     body:
       'Guidance for clinicians on headaches lists the warning signs that call for urgent assessment, including a sudden severe headache, headache with fever and neck stiffness, and new neurological symptoms. Most headaches are not these. Logging when yours happen, how strong they are and what came with them helps your clinician most.',
-    sources: [{ title: 'Headaches in over 12s: diagnosis and management (CG150)', publisher: 'National Institute for Health and Care Excellence', year: 2012 }],
+    sources: [{ title: 'Headaches in over 12s: diagnosis and management (CG150)', publisher: 'National Institute for Health and Care Excellence', year: 2012, logo: 'nice' }],
   },
   {
     id: 'hormones-cycle',
     title: 'Estrogen and progesterone shape how each phase of your cycle can feel.',
     image: 'hormones-cycle',
+    topics: ['hormones', 'cycle'],
     highlights: [
       'Estrogen rises toward ovulation',
       'Progesterone rises after ovulation and peaks mid luteal',
@@ -163,6 +180,7 @@ export const INSIGHTS: ResearchInsight[] = [
         title: 'Establishment of detailed reference values for luteinizing hormone, follicle stimulating hormone, estradiol, and progesterone during different phases of the menstrual cycle',
         publisher: 'Clinical Chemistry and Laboratory Medicine (Stricker et al.)',
         year: 2006,
+        logo: 'degruyter',
       },
     ],
   },
@@ -217,4 +235,31 @@ export function matchInsights(library: readonly ResearchInsight[], c: AgentConte
     .map((insight) => ({ insight, connections: rules[insight.id]?.() ?? [] }))
     .filter((m) => m.connections.length > 0)
     .sort((a, b) => b.connections.length - a.connections.length);
+}
+
+// What she said about an insight: a thumbs up or down, and whether she
+// saved it.
+export type InsightReaction = { reaction: 'up' | 'down' | null; saved: boolean };
+
+// Her reactions teach the order. A thumbs up or a save raises the topics
+// of that insight, a thumbs down lowers them and hides that insight; what
+// she saved or liked itself rises a little more. With no reactions, the
+// order is by how much in her record each connects to.
+export function rankInsights(matches: readonly InsightMatch[], reactions: Readonly<Record<string, InsightReaction>>): InsightMatch[] {
+  const weight = new Map<string, number>();
+  const by = new Map(INSIGHTS.map((i) => [i.id, i]));
+  for (const [id, r] of Object.entries(reactions)) {
+    const topics = by.get(id)?.topics ?? matches.find((m) => m.insight.id === id)?.insight.topics ?? [];
+    const w = (r.reaction === 'up' ? 1 : r.reaction === 'down' ? -2 : 0) + (r.saved ? 1.5 : 0);
+    for (const t of topics) weight.set(t, (weight.get(t) ?? 0) + w);
+  }
+  const score = (m: InsightMatch) => {
+    const own = reactions[m.insight.id];
+    return m.connections.length + m.insight.topics.reduce((a, t) => a + (weight.get(t) ?? 0), 0) + (own?.reaction === 'up' ? 0.5 : 0) + (own?.saved ? 1 : 0);
+  };
+  return matches
+    .filter((m) => reactions[m.insight.id]?.reaction !== 'down')
+    .map((m, i) => ({ m, i, s: score(m) }))
+    .sort((a, b) => b.s - a.s || a.i - b.i)
+    .map((x) => x.m);
 }

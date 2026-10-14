@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { INSIGHTS, type InsightMatch, matchInsights, type ResearchInsight } from '../lib/insights';
+import { INSIGHTS, type InsightMatch, type InsightReaction, matchInsights, rankInsights, type ResearchInsight } from '../lib/insights';
 import { useAgentContext } from './agentContext';
 import { useRepo } from './session';
 
-export function useResearchInsights(): { matches: InsightMatch[]; library: ResearchInsight[] } {
+// Ranked by her reactions when they are given, so what she likes and saves
+// rises and what she turns down goes.
+export function useResearchInsights(reactions: Record<string, InsightReaction> = {}): { matches: InsightMatch[]; library: ResearchInsight[] } {
   const repo = useRepo();
   const { context } = useAgentContext();
   const [library, setLibrary] = useState<ResearchInsight[]>(INSIGHTS);
@@ -15,6 +17,6 @@ export function useResearchInsights(): { matches: InsightMatch[]; library: Resea
     repo.loadResearchInsights().then(setLibrary).catch(() => {});
     repo.loadReported().then((r) => setConditions(r.conditions)).catch(() => {});
   }, [repo]);
-  const matches = useMemo(() => matchInsights(library, context, conditions, new Date()), [library, context, conditions]);
+  const matches = useMemo(() => rankInsights(matchInsights(library, context, conditions, new Date()), reactions), [library, context, conditions, reactions]);
   return { matches, library };
 }

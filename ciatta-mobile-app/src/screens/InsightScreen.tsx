@@ -10,6 +10,8 @@ import { askCare, discussPrompt, takeInsight } from '../lib/careHandoff';
 import { displayCopy } from '../lib/displayCopy';
 import { useNav } from '../navigation';
 import { useResearchInsights } from '../state/researchInsights';
+import { useInsightReactions } from '../state/insightReactions';
+import { PublisherLogo } from '../ui/PublisherLogo';
 import { font, GUTTER } from '../theme';
 import { Icon } from '../ui/icons';
 import { headingFor } from '../ui/InsightCards';
@@ -20,7 +22,8 @@ import { HUE, L, NAV_CLEARANCE, SPACE } from '../ui/surface';
 export function InsightScreen() {
   const nav = useNav();
   const [id] = useState(() => takeInsight());
-  const { matches, library } = useResearchInsights();
+  const { reactions, react, of } = useInsightReactions();
+  const { matches, library } = useResearchInsights(reactions);
   const insight = useMemo(() => library.find((i) => i.id === id) ?? null, [library, id]);
   const connections = matches.find((m) => m.insight.id === id)?.connections ?? [];
   const [sourcesOpen, setSourcesOpen] = useState(false);
@@ -49,13 +52,57 @@ export function InsightScreen() {
             {displayCopy(insight.title)}
           </Text>
           <Pressable onPress={() => setSourcesOpen(true)} accessibilityRole="button" style={s.sourcesPill}>
-            <Icon name="doc" size={14} color="#FFFFFF" />
+            <View style={s.logos}>
+              {[...new Set(insight.sources.map((x) => x.logo))].map((l, n) => (
+                <View key={l} style={{ marginLeft: n ? -6 : 0 }}>
+                  <PublisherLogo logo={l} size={22} />
+                </View>
+              ))}
+            </View>
             <Text style={[font('subhead', 'semibold'), s.white]}>{`${insight.sources.length} ${insight.sources.length === 1 ? 'Source' : 'Sources'}`}</Text>
             <Icon name="chevronRight" size={13} color="#FFFFFF" />
           </Pressable>
         </PhotoCard>
 
         <View style={s.body}>
+          {/* Her say on it, so Ciatta shows more of what she finds useful. */}
+          <View style={s.reactions}>
+            <Pressable
+              onPress={() => react(insight.id, { reaction: of(insight.id).reaction === 'up' ? null : 'up' })}
+              accessibilityRole="button"
+              accessibilityLabel="Helpful"
+              accessibilityState={{ selected: of(insight.id).reaction === 'up' }}
+              hitSlop={8}
+              style={[s.reaction, of(insight.id).reaction === 'up' && s.reactionOn]}
+            >
+              <Icon name="thumbUp" size={18} color={of(insight.id).reaction === 'up' ? L.canvas : L.body} />
+            </Pressable>
+            <Pressable
+              onPress={() => react(insight.id, { reaction: of(insight.id).reaction === 'down' ? null : 'down' })}
+              accessibilityRole="button"
+              accessibilityLabel="Not for me"
+              accessibilityState={{ selected: of(insight.id).reaction === 'down' }}
+              hitSlop={8}
+              style={[s.reaction, of(insight.id).reaction === 'down' && s.reactionOn]}
+            >
+              <Icon name="thumbDown" size={18} color={of(insight.id).reaction === 'down' ? L.canvas : L.body} />
+            </Pressable>
+            <Pressable
+              onPress={() => react(insight.id, { saved: !of(insight.id).saved })}
+              accessibilityRole="button"
+              accessibilityLabel={of(insight.id).saved ? 'Remove from saved' : 'Save'}
+              accessibilityState={{ selected: of(insight.id).saved }}
+              hitSlop={8}
+              style={[s.reaction, of(insight.id).saved && s.reactionOn]}
+            >
+              <Icon name="bookmark" size={18} color={of(insight.id).saved ? L.canvas : L.body} filled={of(insight.id).saved} />
+            </Pressable>
+            {of(insight.id).reaction === 'down' ? (
+              <Text style={[font('footnote'), s.meta, { flex: 1 }]}>Got it. Ciatta will show fewer like this.</Text>
+            ) : of(insight.id).reaction === 'up' || of(insight.id).saved ? (
+              <Text style={[font('footnote'), s.meta, { flex: 1 }]}>Ciatta will show more like this.</Text>
+            ) : null}
+          </View>
           <Text style={[font('title2', 'semibold'), s.ink]}>Highlights</Text>
           {insight.highlights.map((h) => (
             <View key={h} style={s.bullet}>
@@ -94,8 +141,11 @@ export function InsightScreen() {
       <Sheet visible={sourcesOpen} title="Sources" onDone={() => setSourcesOpen(false)}>
         {insight.sources.map((src, n) => (
           <View key={src.title} style={[s.source, n > 0 && s.rule]}>
-            <Text style={[font('subhead', 'semibold'), s.ink]}>{displayCopy(src.title)}</Text>
-            <Text style={[font('footnote'), s.meta]}>{displayCopy(`${src.publisher}, ${src.year}`)}</Text>
+            <PublisherLogo logo={src.logo} size={32} />
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text style={[font('subhead', 'semibold'), s.ink]}>{displayCopy(src.title)}</Text>
+              <Text style={[font('footnote'), s.meta]}>{displayCopy(`${src.publisher}, ${src.year}`)}</Text>
+            </View>
           </View>
         ))}
         <Text style={[font('footnote'), s.meta, { marginTop: SPACE.near, lineHeight: 18 }]}>
@@ -146,6 +196,10 @@ const s = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: '#FFFFFF',
   },
-  source: { paddingVertical: 14, gap: 4 },
+  source: { paddingVertical: 14, flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  logos: { flexDirection: 'row' },
+  reactions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  reaction: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: L.recessed, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
+  reactionOn: { backgroundColor: L.ink, borderColor: L.ink },
   rule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },
 });

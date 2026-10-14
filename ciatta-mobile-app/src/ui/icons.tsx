@@ -41,6 +41,10 @@ const ICONS = {
   chevronDown: [p('M5 9l7 7 7-7')],
   arrowRight: [p('M4 12h16M14 6l6 6-6 6')],
   moon: [p('M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z')],
+  // Reactions on content, as a chat shows them under a reply.
+  thumbUp: [p('M7 10.5V20H4v-9.5z'), p('M7 10.5 11 3.5c1.5 0 2.5 1.1 2.2 2.6l-.7 3.4H19a2 2 0 0 1 2 2.3l-1.2 6.4A2 2 0 0 1 17.8 20H7')],
+  thumbDown: [p('M7 13.5V4H4v9.5z'), p('M7 13.5l4 7c1.5 0 2.5-1.1 2.2-2.6l-.7-3.4H19a2 2 0 0 0 2-2.3l-1.2-6.4A2 2 0 0 0 17.8 4H7')],
+  bookmark: [p('M6.5 3.5h11v17L12 16.5l-5.5 4z')],
   // Pictures for the Log screen's quick chips, on the same grid.
   cup: [p('M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z'), p('M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16'), p('M8.5 3.5c-.8 1 .8 2 0 3M12 3.5c-.8 1 .8 2 0 3')],
   glass: [p('M7 3.5h10l-1 6.5a4 4 0 0 1-8 0z'), p('M12 14v6M8.5 20.5h7'), p('M7.6 7.5h8.8')],

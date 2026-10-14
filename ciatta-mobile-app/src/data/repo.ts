@@ -43,7 +43,7 @@ import type { SleepSample } from '../lib/hypnogram';
 import { type LabFlag, type LabResult, type LabScan, parseRange, readLabScan, type ScannedTest } from '../lib/labs';
 import { records as sampleRecords } from './sample';
 import type { CareRequest, ClinicianRow } from '../lib/care';
-import { INSIGHTS, type ResearchInsight } from '../lib/insights';
+import { INSIGHTS, type InsightReaction, type ResearchInsight } from '../lib/insights';
 
 // Every daily_metrics column daysFromRows/rowToDay actually reads. Named
 // explicitly, like every other realRepo method, rather than select('*'),
@@ -196,6 +196,9 @@ export type Repo = {
   loadCareTeam(): Promise<ClinicianRow[]>;
   // The research library, as reviewed and served from research_insights.
   loadResearchInsights(): Promise<ResearchInsight[]>;
+  // Her thumbs up, thumbs down and saves, by insight.
+  loadInsightReactions(): Promise<Record<string, InsightReaction>>;
+  saveInsightReaction(insightId: string, r: InsightReaction): Promise<void>;
   saveClinician(c: ClinicianRow): Promise<void>;
   deleteClinician(id: string): Promise<void>;
   // Her health insurance, as she entered it. Null when she has not.
@@ -296,6 +299,7 @@ export function demoRepo(): Repo {
       createdAt: daysAgo(1),
     },
   ];
+  let reactions: Record<string, InsightReaction> = {};
   let team: ClinicianRow[] = [
     { id: 'demo-rivera', name: 'Dr Rivera', role: 'Gynecologist', organization: 'Riverside Health', phone: null, email: null, notes: null },
   ];
@@ -521,6 +525,10 @@ export function demoRepo(): Repo {
     },
     loadCareTeam: async () => team,
     loadResearchInsights: async () => INSIGHTS,
+    loadInsightReactions: async () => reactions,
+    saveInsightReaction: async (id, r) => {
+      reactions = { ...reactions, [id]: r };
+    },
     saveClinician: async (c) => {
       team = [...team.filter((x) => x.id !== c.id), c];
     },
@@ -1203,10 +1211,23 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       must(await db.from('care_requests').delete().eq('client_id', id));
     },
     async loadResearchInsights() {
-      const rows = must(await db.from('research_insights').select('id, title, image, highlights, body, sources').order('sort')) as ResearchInsight[] | null;
+      const rows = must(await db.from('research_insights').select('id, title, image, topics, highlights, body, sources').order('sort')) as ResearchInsight[] | null;
       // The library ships with the app too, so an empty or unreachable
       // table still shows the research rather than nothing.
       return rows?.length ? rows : INSIGHTS;
+    },
+    async loadInsightReactions() {
+      const rows = must(await db.from('insight_reactions').select('insight_id, reaction, saved')) as
+        | { insight_id: string; reaction: InsightReaction['reaction']; saved: boolean }[]
+        | null;
+      return Object.fromEntries((rows ?? []).map((r) => [r.insight_id, { reaction: r.reaction, saved: r.saved }]));
+    },
+    async saveInsightReaction(id, r) {
+      must(
+        await db
+          .from('insight_reactions')
+          .upsert({ user_id: userId, client_id: id, insight_id: id, reaction: r.reaction, saved: r.saved }, { onConflict: 'user_id,client_id' }),
+      );
     },
     async loadCareTeam() {
       const rows = must(

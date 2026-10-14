@@ -9,6 +9,9 @@ import { openInsight } from '../lib/careHandoff';
 import { displayCopy } from '../lib/displayCopy';
 import { useNav } from '../navigation';
 import { useResearchInsights } from '../state/researchInsights';
+import { useInsightReactions } from '../state/insightReactions';
+import { PublisherLogo } from './PublisherLogo';
+import { useState } from 'react';
 import { font } from '../theme';
 import { Icon } from './icons';
 import { PhotoCard } from './PhotoCard';
@@ -33,18 +36,34 @@ export const headingFor = (image: string) => HEADINGS[image] ?? HEADINGS['cycle-
 
 export function InsightCards() {
   const nav = useNav();
-  const { matches } = useResearchInsights();
-  if (!matches.length) return null;
+  const { reactions, react, of } = useInsightReactions();
+  const { matches, library } = useResearchInsights(reactions);
+  const [savedOnly, setSavedOnly] = useState(false);
+  const saved = library.filter((i) => of(i.id).saved);
+  // Saved shows what she kept, connected or not; otherwise what connects.
+  const shown = savedOnly ? saved.map((insight) => ({ insight, connections: matches.find((m) => m.insight.id === insight.id)?.connections ?? [] })) : matches;
+  if (!matches.length && !saved.length) return null;
   return (
     <View>
       <View style={s.head}>
         <Icon name="sparkle" size={20} color={L.ink} />
-        <Text style={[font('title2', 'semibold'), s.ink]} accessibilityRole="header">
+        <Text style={[font('title2', 'semibold'), s.ink, { flex: 1 }]} accessibilityRole="header">
           Insights
         </Text>
+        {saved.length ? (
+          <Pressable
+            onPress={() => setSavedOnly((v) => !v)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: savedOnly }}
+            style={[s.savedChip, savedOnly && s.savedChipOn]}
+          >
+            <Icon name="bookmark" size={13} color={savedOnly ? L.canvas : L.body} filled={savedOnly} />
+            <Text style={[font('footnote', 'semibold'), { color: savedOnly ? L.canvas : L.body }]}>{`Saved ${saved.length}`}</Text>
+          </Pressable>
+        ) : null}
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.row}>
-        {matches.map(({ insight, connections }) => (
+        {shown.map(({ insight, connections }) => (
           <Pressable
             key={insight.id}
             onPress={() => {
@@ -56,15 +75,34 @@ export function InsightCards() {
             style={({ pressed }) => [pressed && s.pressed]}
           >
             <PhotoCard source={headingFor(insight.image)} style={s.card} shade={0.7}>
-              <Icon name="sparkle" size={18} color="#FFFFFF" />
+              <View style={s.cardTop}>
+                <Icon name="sparkle" size={18} color="#FFFFFF" />
+                <Pressable
+                  onPress={() => react(insight.id, { saved: !of(insight.id).saved })}
+                  accessibilityRole="button"
+                  accessibilityLabel={of(insight.id).saved ? 'Remove from saved' : 'Save'}
+                  hitSlop={10}
+                >
+                  <Icon name="bookmark" size={20} color="#FFFFFF" filled={of(insight.id).saved} />
+                </Pressable>
+              </View>
               <View style={{ flex: 1 }} />
               <Text style={[font('title3', 'semibold'), s.title]} numberOfLines={4}>
                 {displayCopy(insight.title)}
               </Text>
-              <Text style={[font('footnote'), s.connection]} numberOfLines={2}>
-                {displayCopy(connections[0])}
-              </Text>
+              {connections[0] ? (
+                <Text style={[font('footnote'), s.connection]} numberOfLines={2}>
+                  {displayCopy(connections[0])}
+                </Text>
+              ) : null}
               <View style={s.sources}>
+                <View style={s.logos}>
+                  {[...new Set(insight.sources.map((x) => x.logo))].map((l, n) => (
+                    <View key={l} style={{ marginLeft: n ? -6 : 0 }}>
+                      <PublisherLogo logo={l} size={18} />
+                    </View>
+                  ))}
+                </View>
                 <Text style={[font('footnote', 'semibold'), s.white]}>{`${insight.sources.length} ${insight.sources.length === 1 ? 'Source' : 'Sources'}`}</Text>
                 <Icon name="chevronRight" size={12} color="#FFFFFF" />
               </View>
@@ -97,4 +135,8 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.12)',
   },
   pressed: { opacity: 0.7 },
+  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  logos: { flexDirection: 'row', marginRight: 2 },
+  savedChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, backgroundColor: L.recessed },
+  savedChipOn: { backgroundColor: L.ink, borderColor: L.ink },
 });
