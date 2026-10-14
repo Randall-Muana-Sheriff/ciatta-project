@@ -51,6 +51,16 @@ export function Ground({
 }) {
   return (
     <View style={s.fill}>
+      <GroundLayer from={from} to={to} />
+      {children}
+    </View>
+  );
+}
+
+// The wash alone, filling whatever holds it: for a sheet or a card that
+// sits over the screen and must stand on the same ground as the screen.
+export function GroundLayer({ from = 'measured', to = 'timeDepth' }: { from?: GroundHue; to?: GroundHue }) {
+  return (
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" pointerEvents="none">
         <Defs>
           {/* Graphite underneath, so the washes have something to be over
@@ -83,8 +93,6 @@ export function Ground({
         <Rect x="0" y="0" width="100%" height="100%" fill="url(#g-from)" />
         <Rect x="0" y="0" width="100%" height="100%" fill="url(#g-to)" />
       </Svg>
-      {children}
-    </View>
   );
 }
 

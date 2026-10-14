@@ -6,7 +6,7 @@
 // steps, and says what her own days show. See lib/symptomCorrelation.
 
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Day } from '../data/daily';
 import { chipIcon } from '../lib/chipIcons';
@@ -16,6 +16,7 @@ import { COMPARE_METRICS, type CompareMetric, metricCorrelation, symptomCorrelat
 import type { Range, Strip } from '../lib/symptomStrip';
 import { font } from '../theme';
 import { Icon } from './icons';
+import { Sheet } from './Sheet';
 import { HUE, L, TILE_RADIUS } from './surface';
 
 const RANGES: { key: Range; label: string }[] = [
@@ -211,35 +212,30 @@ function SymptomPicker({ visible, chosen, logged, onDone }: { visible: boolean; 
   const groups = [...SYMPTOM_GROUPS.map((g) => ({ label: g.label, items: g.items, category: g.category })), ...(logged.some((x) => !known.has(x)) ? [{ label: 'Others you logged', items: logged.filter((x) => !known.has(x)), category: 'body' as const }] : [])];
   const toggle = (x: string) => setOn((prev) => (prev.includes(x) ? prev.filter((y) => y !== x) : [...prev, x]));
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onShow={() => setOn(chosen)} onRequestClose={() => onDone(on)}>
-      <View style={s.sheet}>
-        <View style={s.sheetHead}>
-          <Text style={[font('headline'), s.ink]}>Symptoms to follow</Text>
-          <Pressable onPress={() => onDone(on)} accessibilityRole="button" hitSlop={10}>
-            <Text style={[font('body', 'semibold'), { color: HUE.measured }]}>Done</Text>
-          </Pressable>
+    <Sheet
+      visible={visible}
+      title="Symptoms to follow"
+      sub={`${on.length} chosen. Logged or not, each lines up on Today to compare.`}
+      onShow={() => setOn(chosen)}
+      onDone={() => onDone(on)}
+    >
+      {groups.map((g) => (
+        <View key={g.label} style={{ marginTop: 16 }}>
+          <Text style={[font('footnote', 'semibold'), s.ink]}>{g.label}</Text>
+          <View style={s.pickChips}>
+            {g.items.map((x) => {
+              const sel = on.includes(x);
+              return (
+                <Pressable key={x} onPress={() => toggle(x)} accessibilityRole="checkbox" accessibilityState={{ checked: sel }} style={[s.pickChip, sel && s.pickChipOn]}>
+                  <Icon name={chipIcon(x, g.category) ?? 'plus'} size={14} color={sel ? L.canvas : L.body} />
+                  <Text style={[font('footnote', sel ? 'semibold' : 'regular'), { color: sel ? L.canvas : L.body }]}>{displayCopy(x)}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
-        <Text style={[font('footnote'), s.meta, { paddingHorizontal: 20 }]}>{`${on.length} chosen. Logged or not, each lines up on Today to compare.`}</Text>
-        <ScrollView contentContainerStyle={s.sheetBody}>
-          {groups.map((g) => (
-            <View key={g.label} style={{ marginTop: 16 }}>
-              <Text style={[font('footnote', 'semibold'), s.ink]}>{g.label}</Text>
-              <View style={s.pickChips}>
-                {g.items.map((x) => {
-                  const sel = on.includes(x);
-                  return (
-                    <Pressable key={x} onPress={() => toggle(x)} accessibilityRole="checkbox" accessibilityState={{ checked: sel }} style={[s.pickChip, sel && s.pickChipOn]}>
-                      <Icon name={chipIcon(x, g.category) ?? 'plus'} size={14} color={sel ? L.canvas : L.body} />
-                      <Text style={[font('footnote', sel ? 'semibold' : 'regular'), { color: sel ? L.canvas : L.body }]}>{displayCopy(x)}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-    </Modal>
+      ))}
+    </Sheet>
   );
 }
 
@@ -270,10 +266,7 @@ const s = StyleSheet.create({
   btn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, minHeight: 40, borderRadius: 999, backgroundColor: L.statement },
   btnOn: { backgroundColor: HUE.measured },
   pressed: { opacity: 0.6 },
-  sheet: { flex: 1, backgroundColor: L.canvas },
-  sheetHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8 },
-  sheetBody: { paddingHorizontal: 20, paddingBottom: 40 },
   pickChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  pickChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
+  pickChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, backgroundColor: L.recessed },
   pickChipOn: { backgroundColor: L.ink, borderColor: L.ink },
 });

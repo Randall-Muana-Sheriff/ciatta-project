@@ -10,6 +10,7 @@
 // Everything that decides anything lives in lib/providers and is tested.
 // This renders, and calls it.
 
+import { GroundLayer } from '../ui/Ground';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -265,6 +266,9 @@ function ProviderSheet({
 
   return (
     <View style={s.sheetWrap}>
+      {/* The same ground as every screen, so the sheet is not a flat dark
+          page of its own. */}
+      <GroundLayer />
       {/* The grabber, which is what says this can be pulled away. */}
       <View style={s.grabber} />
       {/*
@@ -429,6 +433,7 @@ const s = StyleSheet.create({
   sheetWrap: {
     maxHeight: '88%',
     backgroundColor: L.canvas,
+    overflow: 'hidden',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderTopWidth: st,
