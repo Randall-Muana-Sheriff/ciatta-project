@@ -59,6 +59,8 @@ import { onCareAsk, openRequest, takeCareAsk } from '../lib/careHandoff';
 import { CareHub } from '../ui/CareHub';
 import { SegmentedControl } from '../ui/kit';
 import { progressSteps, revealWords } from '../lib/agent/progress';
+import { CONNECT_SYMPTOMS } from '../lib/agent/connect';
+import type { RequestKind } from '../lib/care';
 import { Icon } from '../ui/icons';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 
@@ -222,11 +224,12 @@ export function CareScreen() {
     setDismissed(next);
     AsyncStorage.setItem(DISMISSED, JSON.stringify([...next])).catch(() => {});
   };
-  const openSuggestion = (sug: { screen?: string; lab?: string; referral?: string; referralDraft?: string; requestDraft?: string }) => {
+  const openSuggestion = (sug: { screen?: string; lab?: string; referral?: string; referralDraft?: string; requestDraft?: string; requestKind?: string; requestFor?: string }) => {
     if (!sug.screen) return;
     if (sug.lab) chooseLab(sug.lab);
     if (sug.screen === 'referral') chooseReferral(sug.referral ?? null, sug.referralDraft ?? null);
     if (sug.requestDraft) openRequest({ draft: { kind: 'labs', tests: sug.requestDraft.split('|') } });
+    else if (sug.requestKind) openRequest({ draft: { kind: sug.requestKind as RequestKind, medication: sug.requestFor } });
     nav.push(sug.screen as Screen);
   };
 
@@ -362,7 +365,12 @@ export function CareScreen() {
               one row. The full list of what Ciatta can do stays out of the
               way; asking for anything still works. */}
           <View style={s.suggestions}>
-            {ready.slice(0, 2).map((c) => (
+            {/* The question most worth asking first: how her symptoms may
+                fit together, across her whole record. */}
+            <Pressable onPress={() => send(CONNECT_SYMPTOMS)} accessibilityRole="button" style={({ pressed }) => [s.suggestion, pressed && s.pressed]}>
+              <Text style={[font('footnote', 'semibold'), s.suggestionText]}>How my symptoms may connect</Text>
+            </Pressable>
+            {ready.slice(0, 1).map((c) => (
               <Pressable key={c.id} onPress={() => send(c.ask)} accessibilityRole="button" style={({ pressed }) => [s.suggestion, pressed && s.pressed]}>
                 <Text style={[font('footnote', 'semibold'), s.suggestionText]}>{c.title}</Text>
               </Pressable>

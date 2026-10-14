@@ -13,7 +13,7 @@ import { isOutside, type LabResult, labStatus } from '../labs';
 import { type MedsView, medsView } from '../medsView';
 import type { BaselineRow } from '../metricDetail';
 import { nextAction, type Referral, stalled } from '../referrals';
-import { type SymptomRow, symptomsView } from '../symptomsView';
+import { symptomDays, type SymptomRow, symptomsView } from '../symptomsView';
 import type { Fact } from './types';
 import { type GutOut, gutOut } from '../gut';
 
@@ -47,6 +47,14 @@ export type AgentContext = {
   // The foods she logged in the last 30 days, by her own names, most days
   // first. Her diet as she eats it, not a generic category.
   foods: { name: string; days: number }[];
+  // Each symptom she logged in the last 90 days, by the days she logged
+  // it, and her days, so the agent can set symptoms against each other and
+  // against her readings.
+  symptomDays: Record<string, string[]>;
+  days: Day[];
+  // When this context was read, so every window is measured from the same
+  // moment the record was.
+  asOf: string;
 };
 
 export type Vitals = {
@@ -165,6 +173,11 @@ export function buildContext(input: {
     cycle: input.cycle ?? null,
     visit: input.visit ?? null,
     today: input.today ?? [],
+    symptomDays: Object.fromEntries(
+      [...symptomDays({ signals: input.signals, logs: input.logs, days: input.days, now: input.now }).entries()].map(([k, v]) => [k, [...v.keys()]]),
+    ),
+    days: input.days.slice(-90),
+    asOf: input.now.toISOString(),
     foods: (() => {
       const since = iso(new Date(input.now.getTime() - 30 * 86400000));
       const tally = new Map<string, number>();

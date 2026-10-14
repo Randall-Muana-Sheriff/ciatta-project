@@ -47,6 +47,9 @@ const ctx = (over: Partial<AgentContext> = {}): AgentContext => ({
   visit: null,
   today: [],
   foods: [],
+  symptomDays: {},
+  days: [],
+  asOf: '2026-10-20T09:00:00.000Z',
   ...over,
 });
 

@@ -30,6 +30,9 @@ const ctx: AgentContext = {
   visit: null,
   today: [],
   foods: [],
+  symptomDays: {},
+  days: [],
+  asOf: '2026-10-20T09:00:00.000Z',
 };
 
 test('a visit prep summary: what changed, labs outside range, what she takes, referrals', () => {

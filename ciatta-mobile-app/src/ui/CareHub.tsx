@@ -10,6 +10,7 @@ import { askCare, openClinician, openRequest } from '../lib/careHandoff';
 import { type RequestKind, STATUS_LABEL } from '../lib/care';
 import { displayCopy } from '../lib/displayCopy';
 import { SUGGEST_LABS } from '../lib/agent/labSuggest';
+import { REFILL } from '../lib/agent/connect';
 import { labDay } from '../lib/labs';
 import { chooseLab } from '../lib/labHandoff';
 import { chooseReferral } from '../lib/agent/handoff';
@@ -114,7 +115,7 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
           <AskLine
             text="Refill an existing prescription or ask about a new one"
             onPress={() => {
-              askCare(REFILL_PROMPT);
+              askCare(REFILL);
               onAsk();
             }}
           />
@@ -214,7 +215,6 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
   );
 }
 
-const REFILL_PROMPT = 'I would like to refill a prescription or ask about a new one. Review my medications and help me prepare the request for my clinician.';
 const TEAM_PHOTOS = [images.horizon, images.journal, images.cycle, images.sleep];
 const listNames = (xs: string[]) => (xs.length < 2 ? xs.join('') : xs.length === 2 ? `${xs[0]} and ${xs[1]}` : `${xs[0]}, ${xs[1]} and ${xs.length - 2} more`);
 

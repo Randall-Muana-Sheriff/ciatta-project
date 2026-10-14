@@ -23,6 +23,7 @@
 import { NAME } from '../metricNames';
 import { systemReview, SYSTEM_TOPICS } from '../systemReview';
 import { labSuggestions } from './labSuggest';
+import { answerConnect, answerMeds } from './connect';
 import type { Day } from '../../data/daily';
 import type { Episode } from '../../data/cycleLog';
 import { buildMetrics, recordedCount } from '../allMetrics';
@@ -199,6 +200,7 @@ export function answerVitals(r: Record): Answer {
 
 export function answerRecord(r: Record, message = ''): Answer {
   const asked = ` ${message.toLowerCase()}`;
+  if (/refill|prescription|my medications/.test(asked)) return answerMeds(r.context);
   if (GUT_WORDS.some((w) => asked.includes(w))) return answerGut(r);
   if (VITAL_WORDS.some((w) => asked.includes(w))) return answerVitals(r);
   const facts: Fact[] = [];
@@ -505,6 +507,8 @@ export function respond(message: string, r: Record, capability: import('./types'
       return answerReferral(r, message);
     case 'system':
       return answerSystem(r, message);
+    case 'connect':
+      return answerConnect(r.context, r.name, r.context?.asOf ? new Date(r.context.asOf) : new Date());
     default:
       return answerDecline();
   }

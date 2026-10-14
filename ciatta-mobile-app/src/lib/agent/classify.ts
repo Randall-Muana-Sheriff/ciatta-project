@@ -63,7 +63,7 @@ const MATCHERS: { id: CapabilityId; any: string[] }[] = [
     any: [
       'how did i', 'how many', 'how much', 'how long', 'when was', 'when did', 'last period', 'my sleep',
       'my steps', 'my hrv', 'heart rate', 'show me', 'what did i', 'my cycle', 'my data', 'my record',
-      'in my record', 'what is in my', 'my gut', 'bowel', 'stool', 'digestion', 'blood pressure', 'oxygen', 'spo2',
+      'in my record', 'what is in my', 'refill', 'prescription', 'my medications', 'my gut', 'bowel', 'stool', 'digestion', 'blood pressure', 'oxygen', 'spo2',
     ],
   },
   // Last, and narrowly. An earlier version matched a bare "what is ",
@@ -88,6 +88,8 @@ export function classify(message: string): CapabilityId {
 
   // Explore on a body system sends a prompt in one known shape.
   if (text.startsWith('i want the bigger picture of my ') && text.includes(' health')) return 'system';
+  // Several symptoms, and how they may fit together.
+  if (/\bsymptoms?\b/.test(text) && /\b(connected|connect|linked|related|fit together)\b/.test(text)) return 'connect';
 
   for (const m of MATCHERS) {
     if (m.any.some((w) => text.includes(w))) return m.id;

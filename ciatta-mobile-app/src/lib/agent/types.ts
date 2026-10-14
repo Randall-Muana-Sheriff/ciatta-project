@@ -49,6 +49,8 @@ export type CapabilityId =
   | 'referral'
   // One body system reviewed from everything in her record, from Explore.
   | 'system'
+  // How several symptoms may connect, across her whole record.
+  | 'connect'
   // None of the above.
   | 'decline';
 
@@ -84,6 +86,9 @@ export type Suggestion = {
   referralDraft?: string;
   // Tests a lab request is drafted for, joined by |.
   requestDraft?: string;
+  // A request of another kind, and what it is for (a refill's medicine).
+  requestKind?: string;
+  requestFor?: string;
 };
 
 export type Answer = {
