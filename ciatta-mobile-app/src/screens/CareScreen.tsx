@@ -62,10 +62,8 @@ import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 
 // Said once, the first time she opens Care. Each line is a promise the
 // code below keeps, which is the only reason it is allowed to be said.
-// Said once, the first time, in one line. The rest of how it works is
-// shown rather than told: sources under every answer, cards that prepare
-// rather than act, and silence where her record is not enough.
-const HOW_I_WORK = 'I work only from your record, show where every answer comes from, and never act without you.';
+// The greeting's second line: an invitation, every time.
+const HOW_I_WORK = 'How may I help you?';
 
 const INTRO_SEEN = 'ciatta.care.introSeen';
 // Action cards she chose Not now on, by id, so each stays put away.
@@ -317,7 +315,7 @@ export function CareScreen() {
                 `${person?.firstName ? `Hi ${person.firstName}, I` : 'Hi, I'}’m ${name}. I keep watch over your record and get things ready for you.`,
               )}
             </Text>
-            {introSeen === false ? <Text style={[font('footnote'), s.howLine]}>{displayCopy(HOW_I_WORK)}</Text> : null}
+            <Text style={[font('body'), s.howLine]}>{displayCopy(HOW_I_WORK)}</Text>
           </View>
 
           {/* What Ciatta noticed in her record on its own, each card with
@@ -415,7 +413,8 @@ export function CareScreen() {
         <Composer
           value={draft}
           onChange={setDraft}
-          placeholder="Or ask in your own words"
+          // An example of what she might ask, in her own voice.
+          placeholder="My labs came back normal, but I still feel off. What stands out?"
           label="Ask Ciatta about your record"
           attachments={files}
           onAttachments={setFiles}
@@ -593,7 +592,7 @@ const s = StyleSheet.create({
   dots: { flexDirection: 'row', gap: 3, width: 13, alignItems: 'center' },
   thinkDot: { width: 3.5, height: 3.5, borderRadius: 2, backgroundColor: L.ink },
   caret: { color: L.meta },
-  howLine: { color: L.meta, marginTop: 8, lineHeight: 19 },
+  howLine: { color: L.ink, marginTop: 8, lineHeight: 22 },
   sourcesToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', minHeight: 32 },
   fill: { flex: 1 },
   body: { paddingBottom: SPACE.block },
