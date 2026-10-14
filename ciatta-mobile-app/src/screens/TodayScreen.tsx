@@ -565,13 +565,12 @@ export function TodayScreen() {
           reachable from the screen it belongs to.
         */}
         <View style={t.section}>
-          <Eyebrow>You can</Eyebrow>
           {/* As the Nutrition card was: the photo across the top, edge to
               edge, with its label on it, and the actions beneath. */}
           <View style={t.youCan}>
             <Image source={images.youCan} style={t.youCanPhoto} resizeMode="cover" accessibilityIgnoresInvertColors accessible={false} />
             <View style={t.youCanPill}>
-              <Text style={[font('caption1', 'semibold'), t.youCanPillText]}>FOR TODAY</Text>
+              <Text style={[font('caption1', 'semibold'), t.youCanPillText]}>YOU CAN LOG</Text>
             </View>
             {/* Logging, one step from here: the topic, then speak, type or
                 take a photo. The Log screen opens already doing it. */}

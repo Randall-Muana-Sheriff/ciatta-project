@@ -109,9 +109,7 @@ export function LogBox({
             })}
           </View>
         </>
-      ) : (
-        <Text style={[font('headline'), s.prompt]}>Nothing missing for today. Anything else on your mind?</Text>
-      )}
+      ) : null}
 
       {/* The box, here: what the buttons below open. */}
       <Composer
