@@ -308,13 +308,11 @@ export function QuickLogScreen() {
           </>
         ) : null}
 
-        {/* Every symptom, grouped as she would look for one, each group
-            naming what Ciatta reads it against. */}
+        {/* Every symptom, grouped as she would look for one. */}
         {key === 'symptoms'
           ? SYMPTOM_GROUPS.map((g) => (
               <View key={g.label} style={q.group}>
                 <Text style={[font('footnote', 'semibold'), q.groupTitle]}>{g.label}</Text>
-                <Text style={[font('caption1'), q.feeds]}>{displayCopy(`Read with ${g.feeds.join(', ').toLowerCase().replace('hrv', 'HRV')}`)}</Text>
                 <View style={q.chips}>
                   {g.items.map((item) => {
                     const on = tapped.includes(item);
@@ -424,7 +422,6 @@ const q = StyleSheet.create({
   orTap: { color: L.meta, marginTop: SPACE.near },
   group: { marginTop: SPACE.near },
   groupTitle: { color: L.ink },
-  feeds: { color: L.meta, marginTop: 2 },
   stools: { flexDirection: 'row', justifyContent: 'space-between', gap: 4, marginTop: 8 },
   stool: {
     flex: 1,
