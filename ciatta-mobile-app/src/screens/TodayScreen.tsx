@@ -18,7 +18,7 @@ import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
 import { useData, useRepo, useSession } from '../state/session';
 import { connectAppleHealth } from '../lib/connectHealth';
-import { chooseLogCategory, chooseLogMode } from '../lib/logHandoff';
+import { chooseLogCategory } from '../lib/logHandoff';
 import { LogBox } from '../ui/LogBox';
 import { todayState } from '../lib/todayState';
 import { userFacingError } from '../lib/userFacingError';
@@ -29,6 +29,10 @@ import { SymptomCompare } from '../ui/SymptomCompare';
 import { symptomStrip, type Range as StripRange } from '../lib/symptomStrip';
 import { symptomDays } from '../lib/symptomsView';
 import { useSymptomChoice } from '../state/symptomChoice';
+import { logNeeds } from '../lib/logNeeds';
+import { useQuickLogSave } from '../state/quickLogSave';
+import { handPhoto } from '../lib/scanHandoff';
+import { BOWEL } from '../lib/logCategories';
 import type { IntradayPoint } from '../data/repo';
 import type { JournalView } from '../data/rows';
 import { actionPlan, type PlanItem, type PlanKey } from '../lib/actionPlan';
@@ -267,9 +271,21 @@ export function TodayScreen() {
 
   // Symptoms side by side, from every place she logs them.
   const [journal, setJournal] = useState<JournalView | null>(null);
+  // Read again after anything is logged from Today, so what is asked for
+  // next reflects it.
+  const [logged, setLogged] = useState(0);
   useEffect(() => {
     repo.loadJournal().then(setJournal).catch(() => {});
-  }, [repo, nav.depth]);
+  }, [repo, nav.depth, logged]);
+  const [mealsToday, setMealsToday] = useState(0);
+  useEffect(() => {
+    const midnight = new Date();
+    midnight.setHours(0, 0, 0, 0);
+    repo
+      .loadMeals(midnight.toISOString())
+      .then((m) => setMealsToday(m.length))
+      .catch(() => {});
+  }, [repo, nav.depth, logged]);
   const [stripRange, setStripRange] = useState<StripRange>('7');
   // The symptoms she chose to follow and compare, and every day each was
   // logged, from every place she logs them.
@@ -279,6 +295,24 @@ export function TodayScreen() {
     [signals, journal, days],
   );
   const strip = useMemo(() => symptomStrip(seen, stripRange, new Date(), 4, chosen), [seen, stripRange, chosen]);
+
+  // What the You can box asks for: only what is not logged yet today.
+  const quickSave = useQuickLogSave();
+  const needs = useMemo(() => {
+    const today = todayKey;
+    const symptomsToday = [...seen.values()].some((d) => d.has(today));
+    const cycleToday = episodes.some((e) => e.date === today && e.kinds.some((k) => k !== 'Pain' && k !== BOWEL));
+    const frequent = [...seen.entries()].sort((a, b) => b[1].size - a[1].size).map(([name]) => name);
+    const usual = lens.predicts ? medianLength(countedWindows(windows, profile)) : null;
+    return logNeeds({
+      symptomsToday,
+      cycleToday,
+      mealsToday: mealsToday + (todayDay?.foods.length ? 1 : 0),
+      cycle: cycleNow ? { day: cycleNow.day, usualLength: usual, bleeding: cycleNow.phase === 'During period' } : null,
+      frequent,
+      now: new Date(),
+    });
+  }, [seen, episodes, mealsToday, todayDay, cycleNow, lens, windows, profile, todayKey]);
 
   return (
     <ScrollView style={t.fill} contentContainerStyle={t.body}>
@@ -542,11 +576,20 @@ export function TodayScreen() {
             {/* Logging, one step from here: the topic, then speak, type or
                 take a photo. The Log screen opens already doing it. */}
             <LogBox
-              onLog={(topic, how) => {
-                chooseLogCategory(topic);
-                chooseLogMode(how);
-                nav.push('quickLog');
+              needs={needs}
+              onSave={async (entry) => {
+                const saved = await quickSave(entry);
+                if (saved) {
+                  setLogged((n) => n + 1);
+                  void reloadDays();
+                }
+                return saved;
               }}
+              onMealPhoto={(uri) => {
+                handPhoto(uri);
+                nav.push('foodScan');
+              }}
+              onMore={() => nav.push('quickLog')}
             />
           </View>
         </View>

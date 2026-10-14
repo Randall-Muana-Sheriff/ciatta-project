@@ -68,6 +68,9 @@ export type ComposerProps = {
   // Opened from a voice, type or camera button: the box starts doing that,
   // once, as it appears, so the tap that chose it was the only step.
   start?: 'voice' | 'type' | 'camera' | null;
+  // The same, on demand: each new n does it again, so buttons beside the
+  // box can open the mic, the keyboard or the camera in place.
+  command?: { mode: 'voice' | 'type' | 'camera'; n: number } | null;
 };
 
 // One size everywhere, the one Care settled on: a single line at rest, so
@@ -106,6 +109,7 @@ export function Composer({
   onAttachments,
   onSend,
   start = null,
+  command = null,
 }: ComposerProps) {
   const field = useRef<TextInput>(null);
   // Why a picker did not open. Permission refused is the common one and is
@@ -210,6 +214,16 @@ export function Composer({
     // Once, as the box appears.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!command) return;
+    if (command.mode === 'voice') {
+      if (!dictation.listening) dictation.start();
+    } else if (command.mode === 'type') field.current?.focus();
+    else if (canAdd) void takePhoto();
+    // Once per command.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [command?.n]);
 
   // Listening always wins: it is the state she needs a way out of, and a
   // send that replaced the only stop would leave a live microphone with no

@@ -21,12 +21,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { emptyForm, formToEpisode, STOOL_TYPES } from '../data/cycleLog';
+import { STOOL_TYPES } from '../data/cycleLog';
 import { chipIcon } from '../lib/chipIcons';
 import type { Attachment } from '../lib/attachments';
 import { displayCopy } from '../lib/displayCopy';
-import { BOWEL, bowelDetail, category, type CategoryKey, LOG_TABS, symptomCategory, SYMPTOM_GROUPS } from '../lib/logCategories';
-import { mergeFound, planSave, readingLine, readQuick, runSave } from '../lib/quickLog';
+import { bowelDetail, category, type CategoryKey, LOG_TABS, SYMPTOM_GROUPS } from '../lib/logCategories';
+import { mergeFound, readingLine, readQuick } from '../lib/quickLog';
 import { userFacingError } from '../lib/userFacingError';
 import { handPhoto } from '../lib/scanHandoff';
 import { openUse, type ProductUse } from '../lib/periodProducts';
@@ -42,12 +42,13 @@ import { ProductLogger } from '../ui/ProductLogger';
 import { Icon } from '../ui/icons';
 import { StoolPicture } from '../ui/stoolScale';
 import { takeLogCategory, takeLogMode } from '../lib/logHandoff';
+import { useQuickLogSave } from '../state/quickLogSave';
 import { L, SPACE } from '../ui/surface';
 
 export function QuickLogScreen() {
   const nav = useNav();
   const repo = useRepo();
-  const { add, startDraft } = useCycle();
+  const { startDraft } = useCycle();
   // A category that now lives under Symptoms opens Symptoms.
   const [key, setKey] = useState<CategoryKey>(() => {
     const k = takeLogCategory() ?? 'symptoms';
@@ -139,69 +140,14 @@ export function QuickLogScreen() {
   const toggle = (item: string) =>
     setTapped((prev) => (prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]));
 
+  const save = useQuickLogSave();
   const send = async () => {
     if (saving) return;
-    const withStool = key === 'gut' && stool != null && !tapped.includes(BOWEL) ? [...tapped, BOWEL] : tapped;
-    // Under Symptoms, each tap is filed under its own category.
-    const byCategory =
-      key === 'symptoms'
-        ? withStool.reduce<Record<string, string[]>>((acc, item) => {
-            const cat = symptomCategory(item);
-            acc[cat] = [...(acc[cat] ?? []), item];
-            return acc;
-          }, {})
-        : undefined;
-    const plan = planSave({ text, selected: key, tapped: withStool, files, byCategory });
-    if (!plan) return;
-    const said = text.trim();
     setSaving(true);
     setError(null);
     try {
-      // The day she said this was: today, yesterday, or a number of days
-      // back. Every part of the entry is filed on it.
-      const day = new Date();
-      day.setDate(day.getDate() - plan.daysAgo);
-      const iso = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
-      const when = plan.daysAgo ? day.toISOString() : undefined;
-      const episode = plan.episode;
-      const daily = plan.daily;
-      const journal = plan.journal;
-      await runSave(
-        {
-          daily: daily
-            ? () =>
-                repo.saveDailyLog({
-                  day: iso,
-                  digestion: daily.digestion,
-                  ...(plan.wordsGoTo === 'daily' && said ? { note: said } : {}),
-                })
-            : undefined,
-          journal: journal
-            ? () => repo.addJournal(said, journal.kind, files, { category: journal.category, items: journal.items }, when)
-            : undefined,
-          episode: episode
-            ? () =>
-                add(
-                  formToEpisode(
-                    {
-                      ...emptyForm(),
-                      kinds: episode.kinds,
-                      stool: key === 'gut' ? stool : null,
-                      flow: episode.flow,
-                      day: episode.daysAgo,
-                      periodStart: episode.daysAgo,
-                      context: episode.context,
-                      note: plan.wordsGoTo === 'episode' ? said : '',
-                      attachments: plan.wordsGoTo === 'episode' ? files : [],
-                    },
-                    false,
-                  ),
-                )
-            : undefined,
-        },
-        done.current,
-      );
-      nav.back();
+      const saved = await save({ text, key, tapped, files, stool }, done.current);
+      if (saved) nav.back();
     } catch (e) {
       setError(userFacingError(e, 'That did not save. Try again.'));
     } finally {
