@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ETHNICITIES } from '../lib/ethnicity';
+import { ALL_LANGUAGES, GENDERS, POPULAR_LANGUAGES } from '../lib/personal';
 import { bloodTypeLabel } from '../lib/healthFacts';
 import { askForCharacteristics } from '../lib/healthKit';
 import type { BodyManual } from '../lib/overviewFacts';
@@ -15,14 +16,15 @@ import { useRepo } from '../state/session';
 import { useUnits } from '../state/units';
 import { font } from '../theme';
 import { ListGroup, ListRow } from './chrome';
+import { Icon } from './icons';
 import { PrimaryButton } from './kit';
 import { G } from './scheme';
 import { Sheet } from './Sheet';
 import { TILE_RADIUS } from './surface';
 
-export type BodyField = 'blood' | 'height' | 'weight' | 'ethnicity' | 'units';
+export type BodyField = 'blood' | 'height' | 'weight' | 'ethnicity' | 'gender' | 'language' | 'units';
 
-const TITLE: Record<BodyField, string> = { blood: 'Blood Type', height: 'Height', weight: 'Weight', ethnicity: 'Ethnicity', units: 'Units' };
+const TITLE: Record<BodyField, string> = { blood: 'Blood Type', height: 'Height', weight: 'Weight', ethnicity: 'Ethnicity', gender: 'Gender', language: 'Language', units: 'Units' };
 const BLOOD_CODES = [1, 2, 3, 4, 5, 6, 7, 8];
 const today = () => {
   const d = new Date();
@@ -37,10 +39,12 @@ export function BodySheet({ field, onClose, onSaved }: { field: BodyField | null
   const [h, setH] = useState({ cm: '', ft: '', in: '' });
   const [w, setW] = useState({ kg: '', lb: '' });
   const [note, setNote] = useState<string | null>(null);
+  const [q, setQ] = useState('');
 
   useEffect(() => {
     if (!field) return;
     setNote(null);
+    setQ('');
     repo
       .loadBody()
       .then((b) => {
@@ -144,6 +148,42 @@ export function BodySheet({ field, onClose, onSaved }: { field: BodyField | null
         </ListGroup>
       ) : null}
 
+      {field === 'gender' ? (
+        <ListGroup footer="Some ranges and risks differ by sex at birth and by hormones taken. Ciatta uses this only for those.">
+          {GENDERS.map((g, n) => (
+            <ListRow key={g.id} first={n === 0} title={g.label} selected={body.gender === g.id} onPress={() => void save({ gender: g.id })} />
+          ))}
+        </ListGroup>
+      ) : null}
+
+      {field === 'language' ? (
+        <View>
+          <View style={s.search}>
+            <Icon name="search" size={18} color={G.meta} />
+            <TextInput
+              value={q}
+              onChangeText={setQ}
+              placeholder="Search languages"
+              placeholderTextColor={G.meta}
+              style={[font('body'), { color: G.ink, flex: 1, paddingVertical: 10 }]}
+              accessibilityLabel="Search languages"
+            />
+          </View>
+          {q.trim() ? null : (
+            <ListGroup header="Popular" style={s.group}>
+              {POPULAR_LANGUAGES.map((l, n) => (
+                <ListRow key={l} first={n === 0} title={l} selected={body.language === l} onPress={() => void save({ language: l })} />
+              ))}
+            </ListGroup>
+          )}
+          <ListGroup header={q.trim() ? 'Matches' : 'All languages'} style={s.group} footer="Ciatta is in English for now. Your language tells Ciatta, and anyone you share your record with, what you would rather read.">
+            {ALL_LANGUAGES.filter((l) => l.toLowerCase().includes(q.trim().toLowerCase())).map((l, n) => (
+              <ListRow key={l} first={n === 0} title={l} selected={body.language === l} onPress={() => void save({ language: l })} />
+            ))}
+          </ListGroup>
+        </View>
+      ) : null}
+
       {field === 'units' ? (
         <ListGroup footer="Every measure in Ciatta follows this: height, weight, temperature and distance.">
           {(['metric', 'imperial'] as Units[]).map((u, n) => (
@@ -171,4 +211,6 @@ const s = StyleSheet.create({
   input: { color: G.ink, backgroundColor: G.card, borderRadius: TILE_RADIUS, paddingVertical: 14, paddingHorizontal: 16 },
   unit: { color: G.meta, marginTop: 6, marginLeft: 4 },
   save: { marginTop: 24 },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: G.card, borderRadius: 999, paddingHorizontal: 16, minHeight: 46, marginTop: 4 },
+  group: { marginTop: 20 },
 });

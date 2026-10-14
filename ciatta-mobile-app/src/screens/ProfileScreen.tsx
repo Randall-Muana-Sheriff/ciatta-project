@@ -9,7 +9,10 @@ import type { Reported } from '../data/repo';
 import { type Connection, loadConnections } from '../data/providers';
 import { type BodyManual, overviewFacts, resolveBody } from '../lib/overviewFacts';
 import { ageFact } from '../lib/healthFacts';
-import { activeUnits, formatDistance, UNIT_LABEL } from '../lib/units';
+import { activeUnits, formatDistance, formatHeight, formatWeight, UNIT_LABEL } from '../lib/units';
+import { ethnicityLabel } from '../lib/ethnicity';
+import { genderLabel } from '../lib/personal';
+import { bloodTypeLabel } from '../lib/healthFacts';
 import { type BodyField, BodySheet } from '../ui/BodySheet';
 import { type Insurance, insuranceFact } from '../lib/insurance';
 import { askForCharacteristics, readCharacteristics } from '../lib/healthKit';
@@ -43,6 +46,7 @@ import { openInsight } from '../lib/careHandoff';
 import { DETAIL_KINDS, type DetailKind, DETAILS, detailSummary } from '../lib/healthLists';
 import { type Situation, SITUATIONS, toggleSituation } from '../lib/cycleProfile';
 import { PickListSheet } from '../ui/PickListSheet';
+import { faceIdAvailable, faceIdIsOn, setFaceId } from '../state/faceId';
 
 
 
@@ -459,6 +463,32 @@ function Goals() {
   );
 }
 
+// Who she is: gender, language, ethnicity, and her body's measures. Each
+// opens its own sheet.
+function PersonalDetails() {
+  const repo = useRepo();
+  const [body, setBody] = useState<BodyManual | null>(null);
+  const [open, setOpen] = useState<BodyField | null>(null);
+  useEffect(() => {
+    repo.loadBody().then(setBody).catch(() => {});
+  }, [repo]);
+  const units = activeUnits();
+  const add = 'Add';
+  return (
+    <View>
+      <ListGroup footer="Only you can see these. Ciatta uses them to read your ranges and readings in context.">
+        <ListRow first title="Gender" value={genderLabel(body?.gender) ?? add} onPress={() => setOpen('gender')} />
+        <ListRow title="Language" value={body?.language ?? add} onPress={() => setOpen('language')} />
+        <ListRow title="Ethnicity" value={ethnicityLabel(body?.ethnicity) ?? add} onPress={() => setOpen('ethnicity')} />
+        <ListRow title="Blood Type" value={bloodTypeLabel(body?.blood_type) ?? add} onPress={() => setOpen('blood')} />
+        <ListRow title="Height" value={body?.height_cm != null ? formatHeight(body.height_cm, units).value : add} onPress={() => setOpen('height')} />
+        <ListRow title="Weight" value={body?.weight_kg != null ? formatWeight(body.weight_kg, units).value : add} onPress={() => setOpen('weight')} />
+      </ListGroup>
+      <BodySheet field={open} onClose={() => setOpen(null)} onSaved={setBody} />
+    </View>
+  );
+}
+
 // Light, Dark, or the phone's own setting.
 function Appearance() {
   const { scheme, choose } = useColorScheme();
@@ -509,18 +539,40 @@ function PrivacyData({ onOpen }: { onOpen: (screen: Screen) => void }) {
       .then(() => setFooter(null))
       .catch((e) => setFooter(userFacingError(e, 'Your data did not download. Try again.')));
   };
+  // Face ID, where the phone has it: asked at every open once it is on.
+  const [faceAvailable, setFaceAvailable] = useState(false);
+  const [faceOn, setFaceOn] = useState(false);
+  useEffect(() => {
+    faceIdAvailable().then(setFaceAvailable);
+    faceIdIsOn().then(setFaceOn);
+  }, []);
+  const toggleFace = async (next: boolean) => {
+    setFaceOn(next);
+    const now = await setFaceId(next);
+    setFaceOn(now);
+    if (next && !now) setFooter('Face ID did not turn on. Check that Face ID is set up for this iPhone.');
+  };
   return (
     <ListGroup footer={footer ?? undefined}>
-      <ListRow first title="Who Can See This" sub="Only you. Nothing is sold or shared." onPress={() => onOpen('privacy')} />
+      {faceAvailable ? (
+        <ListRow
+          first
+          title="Face ID"
+          sub="Ask for Face ID whenever Ciatta opens"
+          right={<Switch value={faceOn} onValueChange={(v) => void toggleFace(v)} trackColor={{ false: G.fill, true: '#34C759' }} ios_backgroundColor={G.fill} accessibilityLabel="Face ID" />}
+        />
+      ) : null}
+      <ListRow first={!faceAvailable} title="Who Can See This" sub="Only you. Nothing is sold or shared." onPress={() => onOpen('privacy')} />
       <ListRow title="Share with a Clinician" sub="A PDF summary, made on this phone" onPress={() => onOpen('shareClinician')} />
       <ListRow title="Download Your Data" sub="Everything Ciatta holds, as one file" onPress={onDownload} />
     </ListGroup>
   );
 }
 
-type SheetKey = 'sources' | 'details' | 'bookmarks' | 'appearance' | 'notifications' | 'privacy';
+type SheetKey = 'personal' | 'sources' | 'details' | 'bookmarks' | 'appearance' | 'notifications' | 'privacy';
 const SHEET_TITLE: Record<SheetKey, string> = {
   sources: 'Data Sources',
+  personal: 'Personal Details',
   details: 'Health Details',
   bookmarks: 'Bookmarks',
   appearance: 'Appearance',
@@ -653,7 +705,8 @@ export function ProfileScreen() {
         {/* One long list. Each row opens its own sheet, or the page it names. */}
         <Text style={[font('footnote', 'semibold'), p.label]}>Your record</Text>
         <ListGroup>
-          <ListRow first light icon="zigzag" title="Data Sources" onPress={() => setSheet('sources')} />
+          <ListRow first light icon="person" title="Personal Details" onPress={() => setSheet('personal')} />
+          <ListRow light icon="zigzag" title="Data Sources" onPress={() => setSheet('sources')} />
           <ListRow light icon="doc" title="Health Details" onPress={() => setSheet('details')} />
           <ListRow light icon="bookmark" title="Bookmarks" value={saved ? String(saved) : undefined} onPress={() => setSheet('bookmarks')} />
         </ListGroup>
@@ -684,6 +737,7 @@ export function ProfileScreen() {
 
       <BodySheet field={bodySheet} onClose={() => setBodySheet(null)} />
       <Sheet visible={sheet !== null} title={sheet ? SHEET_TITLE[sheet] : ''} onDone={() => setSheet(null)}>
+        {sheet === 'personal' ? <PersonalDetails /> : null}
         {sheet === 'sources' ? <DataSources onOpen={openFromSheet} /> : null}
         {sheet === 'details' ? <HealthDetails /> : null}
         {sheet === 'bookmarks' ? (

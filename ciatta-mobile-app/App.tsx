@@ -17,6 +17,7 @@ import { SignInScreen } from './src/screens/SignInScreen';
 import { CycleStoreProvider } from './src/state/cycleStore';
 import { SessionProvider, useSession } from './src/state/session';
 import { C } from './src/theme';
+import { AppLock } from './src/ui/AppLock';
 import { G } from './src/ui/scheme';
 
 // Signed out sees sign in; the example person and her own record each get a
@@ -62,9 +63,11 @@ function Gate() {
   if (mode === 'real' && onboarded === null) return <View style={{ flex: 1, backgroundColor: C.bg }} />;
   if (mode === 'real' && onboarded === false) return <OnboardingScreen onDone={() => setOnboarded(true)} />;
   return (
-    <CycleStoreProvider key={`${mode}:${userId ?? ''}`}>
-      <Root />
-    </CycleStoreProvider>
+    <AppLock>
+      <CycleStoreProvider key={`${mode}:${userId ?? ''}`}>
+        <Root />
+      </CycleStoreProvider>
+    </AppLock>
   );
 }
 

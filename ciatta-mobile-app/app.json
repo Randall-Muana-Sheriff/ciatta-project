@@ -229,7 +229,13 @@
           "microphonePermission": "Ciatta uses the microphone only while you are dictating, and stops as soon as you do."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Ciatta uses Face ID to keep your health record private on this iPhone."
+        }
+      ]
     ],
     "extra": {
       "eas": {
