@@ -12,7 +12,7 @@ import { userFacingError } from '../lib/userFacingError';
 import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
 import { font } from '../theme';
-import { DetailScreen, PrimaryButton, SecondaryButton } from '../ui/kit';
+import { DetailScreen, SecondaryButton, SaveBar } from '../ui/kit';
 import { L, SPACE } from '../ui/surface';
 
 export function InsuranceScreen() {
@@ -71,7 +71,7 @@ export function InsuranceScreen() {
   const masked = maskedMemberId(memberId.trim() || undefined);
 
   return (
-    <DetailScreen title="Insurance" onBack={nav.back}>
+    <DetailScreen title="Insurance" onBack={nav.back} footer={<SaveBar label={saving ? 'Saving' : 'Save'} disabled={saving || !provider.trim()} onPress={() => void save()} />}>
       <Text style={[font('caption1'), s.label]}>Insurer</Text>
       <TextInput value={provider} onChangeText={setProvider} placeholder="For example, Anthem" placeholderTextColor={L.meta} style={[font('body'), s.input]} accessibilityLabel="Insurer" autoCapitalize="words" />
       <Text style={[font('caption1'), s.label]}>Plan</Text>
@@ -93,7 +93,6 @@ export function InsuranceScreen() {
         )}
       </Text>
       <View style={{ marginTop: SPACE.block, gap: 12 }}>
-        <PrimaryButton label={saving ? 'Saving' : 'Save'} disabled={saving || !provider.trim()} onPress={() => void save()} />
         {had ? <SecondaryButton label="Remove Insurance" onPress={() => void remove()} /> : null}
       </View>
       {note ? <Text style={[font('footnote'), s.note]}>{displayCopy(note)}</Text> : null}

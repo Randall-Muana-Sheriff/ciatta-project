@@ -16,7 +16,7 @@ import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
 import { font } from '../theme';
 import { Eyebrow } from '../ui/bento';
-import { DetailScreen, PrimaryButton, SecondaryButton, SegmentedControl } from '../ui/kit';
+import { DetailScreen, SecondaryButton, SegmentedControl, SaveBar } from '../ui/kit';
 import { L, SPACE } from '../ui/surface';
 
 const UNIT_SEGMENTS = ['Metric', 'US', 'UK'] as const;
@@ -112,7 +112,7 @@ export function BodyMeasurementsScreen() {
   );
 
   return (
-    <DetailScreen title="Body Measurements" onBack={nav.back}>
+    <DetailScreen title="Body Measurements" onBack={nav.back} footer={<SaveBar label={saving ? 'Saving' : 'Save'} disabled={saving || (heightTyped && heightCm == null) || (weightTyped && weightKg == null)} onPress={() => void save()} />}>
       <Eyebrow>Units</Eyebrow>
       <View style={{ marginTop: SPACE.tight }}>
         <SegmentedControl segments={UNIT_SEGMENTS} active={UNIT_SEGMENTS.find((x) => SEG_UNITS[x] === units)!} onChange={(x) => switchUnits(SEG_UNITS[x])} />
@@ -173,13 +173,6 @@ export function BodyMeasurementsScreen() {
         Height and blood type you enter are used over Apple Health. For weight, the newer of the two is used.
       </Text>
 
-      <View style={{ marginTop: SPACE.block }}>
-        <PrimaryButton
-          label={saving ? 'Saving' : 'Save'}
-          disabled={saving || (heightTyped && heightCm == null) || (weightTyped && weightKg == null)}
-          onPress={() => void save()}
-        />
-      </View>
       {note ? <Text style={[font('footnote'), s.meta]}>{displayCopy(note)}</Text> : null}
     </DetailScreen>
   );

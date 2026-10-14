@@ -11,7 +11,7 @@ import { userFacingError } from '../lib/userFacingError';
 import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
 import { font } from '../theme';
-import { DetailScreen, PrimaryButton } from '../ui/kit';
+import { DetailScreen, SaveBar } from '../ui/kit';
 import { L, SPACE } from '../ui/surface';
 
 export function AddProcedureScreen() {
@@ -40,7 +40,7 @@ export function AddProcedureScreen() {
   };
 
   return (
-    <DetailScreen title="Add a Procedure" onBack={nav.back}>
+    <DetailScreen title="Add a Procedure" onBack={nav.back} footer={<SaveBar label={saving ? 'Saving' : 'Save'} disabled={!name.trim() || !date || saving} onPress={save} />}>
       <Text style={[font('caption1'), a.label]}>What was done</Text>
       <TextInput value={name} onChangeText={setName} placeholder="For example, Laparoscopy" placeholderTextColor={L.meta} style={[font('body'), a.input]} accessibilityLabel="Procedure name" />
       <Text style={[font('caption1'), a.label]}>When</Text>
@@ -52,9 +52,6 @@ export function AddProcedureScreen() {
       {day && month && year.length === 4 && !date ? (
         <Text style={[font('footnote'), a.note]}>That is not a date in the past. Check the day and month.</Text>
       ) : null}
-      <View style={{ marginTop: SPACE.block }}>
-        <PrimaryButton label={saving ? 'Saving' : 'Save'} disabled={!name.trim() || !date || saving} onPress={save} />
-      </View>
       {error ? <Text style={[font('footnote'), a.note]}>{displayCopy(error)}</Text> : null}
     </DetailScreen>
   );

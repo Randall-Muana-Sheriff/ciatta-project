@@ -20,7 +20,7 @@ import { userFacingError } from '../lib/userFacingError';
 import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
 import { C, font } from '../theme';
-import { DetailScreen, PrimaryButton, SecondaryButton } from '../ui/kit';
+import { DetailScreen, PrimaryButton, SecondaryButton, SaveBar } from '../ui/kit';
 import { LabStatusTag } from '../ui/labs';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 
@@ -130,7 +130,19 @@ export function AddLabsScreen() {
   };
 
   return (
-    <DetailScreen title="Add a Lab Report" onBack={nav.back}>
+    <DetailScreen
+      title="Add a Lab Report"
+      onBack={nav.back}
+      footer={
+        stage === 'review' ? (
+          <SaveBar
+            label={saving ? 'Saving' : `Save ${kept.length} ${kept.length === 1 ? 'Result' : 'Results'}`}
+            disabled={!on || !kept.length || saving}
+            onPress={() => void save()}
+          />
+        ) : undefined
+      }
+    >
       {stage === 'pick' ? (
         <>
           <Text style={[font('body'), s.lede]}>
@@ -198,11 +210,6 @@ export function AddLabsScreen() {
           })}
 
           <View style={{ marginTop: SPACE.block, gap: 12 }}>
-            <PrimaryButton
-              label={saving ? 'Saving' : `Save ${kept.length} ${kept.length === 1 ? 'Result' : 'Results'}`}
-              disabled={!on || !kept.length || saving}
-              onPress={() => void save()}
-            />
             <SecondaryButton label="Read a Different Report" onPress={() => setStage('pick')} />
           </View>
         </>

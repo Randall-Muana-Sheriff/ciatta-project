@@ -27,7 +27,7 @@ import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
 import { font, numeral } from '../theme';
 import { GLASS } from '../ui/glass';
-import { DetailScreen, PrimaryButton, SecondaryButton, Tag } from '../ui/kit';
+import { DetailScreen, SecondaryButton, Tag, SaveBar } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 
 type Phase = 'reading' | 'ready' | 'failed';
@@ -131,7 +131,15 @@ export function FoodScanScreen() {
   const H = width / ratio;
 
   return (
-    <DetailScreen title="Your Meal" onBack={nav.back}>
+    <DetailScreen
+      title="Your Meal"
+      onBack={nav.back}
+      footer={
+        phase === 'ready' ? (
+          <SaveBar label={saving ? 'Saving' : 'Save Meal'} disabled={saving || !items.some((i) => i.name.trim())} onPress={save} />
+        ) : undefined
+      }
+    >
       <View style={f.photoWrap} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
         {uri ? <Image source={{ uri }} style={{ width: W, height: H }} resizeMode="cover" accessibilityIgnoresInvertColors accessible={false} /> : null}
 
@@ -260,7 +268,6 @@ export function FoodScanScreen() {
                 setOpen(items.length);
               }}
             />
-            <PrimaryButton label={saving ? 'Saving' : 'Save Meal'} disabled={saving || !items.some((i) => i.name.trim())} onPress={save} />
             {error ? <Text style={[font('footnote'), f.body]}>{displayCopy(error)}</Text> : null}
             <Text style={[font('caption1'), f.meta]}>
               Your photo was read to find the foods and was not kept anywhere but this phone.

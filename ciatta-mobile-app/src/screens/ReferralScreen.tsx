@@ -13,7 +13,7 @@ import { useRepo } from '../state/session';
 import { C, font } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { Icon } from '../ui/icons';
-import { DetailScreen, PrimaryButton, SecondaryButton } from '../ui/kit';
+import { DetailScreen, SecondaryButton, SaveBar } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 
 const today = () => {
@@ -112,7 +112,7 @@ export function ReferralScreen() {
   );
 
   return (
-    <DetailScreen title={existing ? r.specialty || 'Referral' : 'Track a Referral'} onBack={nav.back}>
+    <DetailScreen title={existing ? r.specialty || 'Referral' : 'Track a Referral'} onBack={nav.back} footer={<SaveBar label={saving ? 'Saving' : 'Save'} disabled={!r.specialty.trim() || saving} onPress={() => void save()} />}>
       {field('Referred to', r.specialty, (v) => set({ specialty: v }), 'For example, Gynecology')}
       {field('Clinician or clinic', r.clinician, (v) => set({ clinician: v || null }), 'Optional')}
       {field('Why', r.reason, (v) => set({ reason: v || null }), 'For example, pelvic pain')}
@@ -171,7 +171,6 @@ export function ReferralScreen() {
       {field('Notes', r.notes, (v) => set({ notes: v || null }), 'What they said, what to bring')}
 
       <View style={{ marginTop: SPACE.block, gap: 12 }}>
-        <PrimaryButton label={saving ? 'Saving' : 'Save'} disabled={!r.specialty.trim() || saving} onPress={() => void save()} />
         {existing ? <SecondaryButton label="Remove Referral" onPress={() => void remove()} /> : null}
       </View>
       {note ? <Text style={[font('footnote'), { color: L.meta, marginTop: 10 }]}>{displayCopy(note)}</Text> : null}

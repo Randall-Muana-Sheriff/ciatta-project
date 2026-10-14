@@ -11,7 +11,7 @@ import { userFacingError } from '../lib/userFacingError';
 import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
 import { font } from '../theme';
-import { DetailScreen, PrimaryButton } from '../ui/kit';
+import { DetailScreen, SaveBar } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 
 const FIELDS: { key: keyof NutritionTargets; label: string; unit: string }[] = [
@@ -54,7 +54,7 @@ export function NutritionTargetsScreen() {
   };
 
   return (
-    <DetailScreen title="Nutrition Targets" onBack={nav.back}>
+    <DetailScreen title="Nutrition Targets" onBack={nav.back} footer={<SaveBar label={saving ? 'Saving' : 'Save'} disabled={saving} onPress={save} />}>
       <Text style={[font('subhead'), t.lede]}>
         Optional, and yours. Leave a box empty to see what you ate instead of what is left. A clinician or dietitian can help you choose.
       </Text>
@@ -73,9 +73,6 @@ export function NutritionTargetsScreen() {
           <Text style={[font('footnote'), t.unit]}>{f.unit} a day</Text>
         </View>
       ))}
-      <View style={{ marginTop: SPACE.block }}>
-        <PrimaryButton label={saving ? 'Saving' : 'Save'} disabled={saving} onPress={save} />
-      </View>
       {error ? <Text style={[font('footnote'), t.error]}>{displayCopy(error)}</Text> : null}
     </DetailScreen>
   );

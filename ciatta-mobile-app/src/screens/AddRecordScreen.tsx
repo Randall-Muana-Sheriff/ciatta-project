@@ -7,7 +7,7 @@
 // read off a page.
 
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
 import type { Attachment } from '../lib/attachments';
 import { displayCopy } from '../lib/displayCopy';
@@ -17,7 +17,7 @@ import { useRepo } from '../state/session';
 import { font } from '../theme';
 import { Composer } from '../ui/composer';
 import { ListGroup, ListRow } from '../ui/chrome';
-import { DetailScreen, PrimaryButton } from '../ui/kit';
+import { DetailScreen, SaveBar } from '../ui/kit';
 import { L, SPACE } from '../ui/surface';
 
 export function AddRecordScreen() {
@@ -44,7 +44,7 @@ export function AddRecordScreen() {
   };
 
   return (
-    <DetailScreen title="Add to Your Records" onBack={nav.back}>
+    <DetailScreen title="Add to Your Records" onBack={nav.back} footer={<SaveBar label={saving ? 'Saving' : 'Save'} disabled={!ready || saving} onPress={() => void save()} />}>
       <Text style={[font('subhead'), a.lead]}>Say it, type it, take a photo, or add a PDF.</Text>
       <Text style={[font('caption1'), a.hint]}>Tap the microphone to speak. Tap the plus for the camera, an image, a PDF or a video.</Text>
       <Composer
@@ -56,9 +56,6 @@ export function AddRecordScreen() {
         onAttachments={setFiles}
         onSend={() => void save()}
       />
-      <View style={{ marginTop: SPACE.block }}>
-        <PrimaryButton label={saving ? 'Saving' : 'Save'} disabled={!ready || saving} onPress={() => void save()} />
-      </View>
       <Text style={[font('footnote'), a.note]}>Files stay on this phone. Ciatta does not read inside them.</Text>
 
       {/* A procedure needs its date, so it has its own short form. */}

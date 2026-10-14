@@ -37,7 +37,7 @@ import { useCycle } from '../state/cycleStore';
 import { useRepo } from '../state/session';
 import { font, GUTTER } from '../theme';
 import { Composer } from '../ui/composer';
-import { DetailScreen, PrimaryButton } from '../ui/kit';
+import { DetailScreen, PrimaryButton, SaveBar } from '../ui/kit';
 import { ProductLogger } from '../ui/ProductLogger';
 import { Icon } from '../ui/icons';
 import { StoolPicture } from '../ui/stoolScale';
@@ -210,7 +210,19 @@ export function QuickLogScreen() {
   };
 
   return (
-    <DetailScreen title="Log" onBack={nav.back}>
+    <DetailScreen
+      title="Log"
+      onBack={nav.back}
+      // Save, always in reach: under the screen, above the keyboard. It
+      // saves words, taps, a stool type or files, whichever she gave.
+      footer={
+        <SaveBar
+          label={saving ? 'Saving' : 'Save'}
+          disabled={saving || !(text.trim() || tapped.length || stool != null || files.length)}
+          onPress={() => void send()}
+        />
+      }
+    >
       {/* The subjects, one row, scrolled sideways: the label is the choice.
           Every symptom is under Symptoms. */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={q.cats}>
@@ -355,13 +367,6 @@ export function QuickLogScreen() {
           </View>
         ) : null}
 
-        {/* Taps alone are a log too: the send in the box needs words, so
-            a tap gets its own Save. */}
-        {tapped.length || stool != null ? (
-          <View style={{ marginTop: SPACE.near }}>
-            <PrimaryButton label={saving ? 'Saving' : 'Save'} disabled={saving} onPress={() => void send()} />
-          </View>
-        ) : null}
 
         {/* Products are logged by tap and saved at once, under Cycle only. */}
         {key === 'cycle' ? <ProductLogger /> : null}

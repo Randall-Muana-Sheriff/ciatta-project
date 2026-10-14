@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import type { SourceKind } from '../data/sample';
@@ -67,7 +67,12 @@ export function ScreenHeader({ title, onBack }: { title: string; onBack: () => v
   );
 }
 
-// A pushed screen: navigation bar, scrolling body, optional provenance footer.
+// A pushed screen: navigation bar, scrolling body, optional footer.
+//
+// The keyboard never hides what she is typing or how she saves it: the
+// screen rises with the keyboard, so the footer (where Save lives) stays
+// above it, and the body scrolls the field she is in into view. A tap on a
+// button with the keyboard up acts at once rather than only closing it.
 export function DetailScreen({
   title,
   onBack,
@@ -80,12 +85,28 @@ export function DetailScreen({
   children: ReactNode;
 }) {
   return (
-    <View style={s.fill}>
+    <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScreenHeader title={title} onBack={onBack} />
-      <ScrollView style={s.fill} contentContainerStyle={s.detailBody}>
+      <ScrollView
+        style={s.fill}
+        contentContainerStyle={s.detailBody}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets
+      >
         {children}
       </ScrollView>
       {footer}
+    </KeyboardAvoidingView>
+  );
+}
+
+// The Save bar: fixed under a screen's body, above the keyboard when it
+// is up, so saving is always one tap away and never scrolled out of reach.
+export function SaveBar({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) {
+  return (
+    <View style={s.saveBar}>
+      <PrimaryButton label={label} onPress={onPress} disabled={disabled} />
     </View>
   );
 }
@@ -352,6 +373,13 @@ export function Facts({ rows }: { rows: { label: string; value: string }[] }) {
 }
 
 export const s = StyleSheet.create({
+  saveBar: {
+    paddingHorizontal: GUTTER,
+    paddingTop: 10,
+    paddingBottom: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: L.rule,
+  },
   fill: { flex: 1 },
   pressed: { opacity: 0.55 },
 
