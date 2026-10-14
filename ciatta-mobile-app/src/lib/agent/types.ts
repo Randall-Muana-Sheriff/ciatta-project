@@ -82,6 +82,8 @@ export type Suggestion = {
   // A referral to open, or a specialty to start one with.
   referral?: string;
   referralDraft?: string;
+  // Tests a lab request is drafted for, joined by |.
+  requestDraft?: string;
 };
 
 export type Answer = {

@@ -22,6 +22,7 @@
 
 import { NAME } from '../metricNames';
 import { systemReview, SYSTEM_TOPICS } from '../systemReview';
+import { labSuggestions } from './labSuggest';
 import type { Day } from '../../data/daily';
 import type { Episode } from '../../data/cycleLog';
 import { buildMetrics, recordedCount } from '../allMetrics';
@@ -555,6 +556,7 @@ function answerPrepareFull(c: AgentContext): Answer {
 // Her labs: a test she named, against the range its lab printed, with its
 // trend; or her latest visit. Never what a result means.
 export function answerLabs(r: Record, message: string): Answer {
+  if (/\bsuggest\b|which labs|what labs|next labs|next best lab/i.test(message)) return answerLabSuggestions(r);
   const labs = r.context?.labs ?? [];
   if (!labs.length) {
     return {
@@ -699,5 +701,26 @@ export function answerSystem(r: Record, message: string): Answer {
     } For your next visit, your visit prep gathers what to raise.`,
     facts: review.facts,
     suggestions: [VISIT_PREP, ...(screen ? [screen] : [])],
+  };
+}
+
+// ── Labs worth asking about ──────────────────────────────────────────
+
+export function answerLabSuggestions(r: Record): Answer {
+  const picks = labSuggestions({ symptoms: r.context?.symptoms ?? [], labs: r.context?.labs ?? [], now: new Date() });
+  if (!picks.length) {
+    return {
+      capability: 'labs',
+      text: 'Nothing you have logged points to a test worth asking about yet. Logging symptoms over a few weeks is what makes a suggestion here.',
+      facts: [],
+      suggestions: [{ label: 'Log symptoms', screen: 'quickLog' }],
+      abstained: 'no_data',
+    };
+  }
+  return {
+    capability: 'labs',
+    text: `Worth asking your clinician about: ${picks.map((p) => `${p.test}, since you logged ${p.reasons.slice(0, 2).join(' and ')}`).join('; ')}. None has a result in your record from the last year. I can draft the request for you to send.`,
+    facts: picks.map((p) => ({ label: p.test, value: p.reasons.join(', '), from: 'reported' as const })),
+    suggestions: [{ label: 'Draft the request', screen: 'careRequest', requestDraft: picks.map((p) => p.test).join('|') }],
   };
 }

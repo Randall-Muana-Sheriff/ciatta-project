@@ -42,6 +42,7 @@ import type { BodyManual } from '../lib/overviewFacts';
 import type { SleepSample } from '../lib/hypnogram';
 import { type LabFlag, type LabResult, type LabScan, parseRange, readLabScan, type ScannedTest } from '../lib/labs';
 import { records as sampleRecords } from './sample';
+import type { CareRequest, ClinicianRow } from '../lib/care';
 
 // Every daily_metrics column daysFromRows/rowToDay actually reads. Named
 // explicitly, like every other realRepo method, rather than select('*'),
@@ -187,6 +188,13 @@ export type Repo = {
   loadReferrals(): Promise<Referral[]>;
   saveReferral(r: Referral): Promise<void>;
   deleteReferral(id: string): Promise<void>;
+  // Requests she is making of her own clinicians, and her care team.
+  loadRequests(): Promise<CareRequest[]>;
+  saveRequest(r: CareRequest): Promise<void>;
+  deleteRequest(id: string): Promise<void>;
+  loadCareTeam(): Promise<ClinicianRow[]>;
+  saveClinician(c: ClinicianRow): Promise<void>;
+  deleteClinician(id: string): Promise<void>;
   // Her health insurance, as she entered it. Null when she has not.
   loadInsurance(): Promise<Insurance | null>;
   saveInsurance(ins: Insurance | null): Promise<void>;
@@ -258,6 +266,36 @@ export function demoRepo(): Repo {
   let body: BodyManual | null = { blood_type: 1, height_cm: 173, weight_kg: 64.2 };
   // Referrals the example person tracks in this session.
   let referrals: Referral[] = [];
+  // The example person's requests and care team, so Your Care has
+  // something to show: one sent, one still a draft, and her gynecologist.
+  const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
+  let requests: CareRequest[] = [
+    {
+      id: 'demo-refill',
+      kind: 'refill',
+      title: 'Refill: Levothyroxine',
+      body: 'Hello Dr Rivera,\n\nI would like to request a refill of Levothyroxine.\n\nThank you,\nAlex',
+      clinician: 'Dr Rivera',
+      status: 'sent',
+      sentOn: daysAgo(2).slice(0, 10),
+      answeredOn: null,
+      createdAt: daysAgo(3),
+    },
+    {
+      id: 'demo-records',
+      kind: 'records',
+      title: 'Records request: Riverside Health',
+      body: 'Hello,\n\nI would like a copy of my recent visit notes and test results, sent to my patient portal if possible.\n\nThank you,\nAlex',
+      clinician: 'Riverside Health',
+      status: 'draft',
+      sentOn: null,
+      answeredOn: null,
+      createdAt: daysAgo(1),
+    },
+  ];
+  let team: ClinicianRow[] = [
+    { id: 'demo-rivera', name: 'Dr Rivera', role: 'Gynecologist', organization: 'Riverside Health', phone: null, email: null, notes: null },
+  ];
   // The example person's labs, from the sample's draws.
   let labs: LabResult[] = sampleLabs();
   // The example person's insurance, as the sample shows it.
@@ -470,6 +508,20 @@ export function demoRepo(): Repo {
     },
     deleteReferral: async (id) => {
       referrals = referrals.filter((x) => x.id !== id);
+    },
+    loadRequests: async () => requests,
+    saveRequest: async (r) => {
+      requests = [...requests.filter((x) => x.id !== r.id), r];
+    },
+    deleteRequest: async (id) => {
+      requests = requests.filter((x) => x.id !== id);
+    },
+    loadCareTeam: async () => team,
+    saveClinician: async (c) => {
+      team = [...team.filter((x) => x.id !== c.id), c];
+    },
+    deleteClinician: async (id) => {
+      team = team.filter((x) => x.id !== id);
     },
     loadInsurance: async () => insurance,
     saveInsurance: async (next) => {
@@ -1093,6 +1145,84 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
     },
     async deleteReferral(id) {
       must(await db.from('referrals').delete().eq('client_id', id));
+    },
+    async loadRequests() {
+      const rows = must(
+        await db
+          .from('care_requests')
+          .select('client_id, kind, title, body, clinician, status, sent_on, answered_on, created_at')
+          .order('created_at', { ascending: false }),
+      ) as
+        | {
+            client_id: string;
+            kind: CareRequest['kind'];
+            title: string;
+            body: string;
+            clinician: string | null;
+            status: CareRequest['status'];
+            sent_on: string | null;
+            answered_on: string | null;
+            created_at: string;
+          }[]
+        | null;
+      return (rows ?? []).map((r) => ({
+        id: r.client_id,
+        kind: r.kind,
+        title: r.title,
+        body: r.body,
+        clinician: r.clinician,
+        status: r.status,
+        sentOn: r.sent_on,
+        answeredOn: r.answered_on,
+        createdAt: r.created_at,
+      }));
+    },
+    async saveRequest(r) {
+      must(
+        await db.from('care_requests').upsert(
+          {
+            user_id: userId,
+            client_id: r.id,
+            kind: r.kind,
+            title: r.title.trim(),
+            body: r.body,
+            clinician: r.clinician,
+            status: r.status,
+            sent_on: r.sentOn,
+            answered_on: r.answeredOn,
+          },
+          { onConflict: 'user_id,client_id' },
+        ),
+      );
+    },
+    async deleteRequest(id) {
+      must(await db.from('care_requests').delete().eq('client_id', id));
+    },
+    async loadCareTeam() {
+      const rows = must(
+        await db.from('care_team').select('client_id, name, role, organization, phone, email, notes').order('created_at'),
+      ) as { client_id: string; name: string; role: string | null; organization: string | null; phone: string | null; email: string | null; notes: string | null }[] | null;
+      return (rows ?? []).map((r) => ({ id: r.client_id, name: r.name, role: r.role, organization: r.organization, phone: r.phone, email: r.email, notes: r.notes }));
+    },
+    async saveClinician(c) {
+      must(
+        await db.from('care_team').upsert(
+          {
+            user_id: userId,
+            client_id: c.id,
+            name: c.name.trim(),
+            role: c.role,
+            organization: c.organization,
+            phone: c.phone,
+            email: c.email,
+            notes: c.notes,
+          },
+          { onConflict: 'user_id,client_id' },
+        ),
+      );
+    },
+    async deleteClinician(id) {
+      must(await db.from('care_team').delete().eq('client_id', id));
     },
     async loadInsurance() {
       const row = must(await db.from('profiles').select('insurance').eq('id', userId).maybeSingle()) as { insurance: unknown } | null;

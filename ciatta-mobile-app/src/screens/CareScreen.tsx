@@ -55,7 +55,9 @@ import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { Composer } from '../ui/composer';
 import { AgentAvatar } from '../ui/AgentAvatar';
-import { onCareAsk, takeCareAsk } from '../lib/careHandoff';
+import { onCareAsk, openRequest, takeCareAsk } from '../lib/careHandoff';
+import { CareHub } from '../ui/CareHub';
+import { SegmentedControl } from '../ui/kit';
 import { progressSteps, revealWords } from '../lib/agent/progress';
 import { Icon } from '../ui/icons';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
@@ -64,6 +66,7 @@ import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 // code below keeps, which is the only reason it is allowed to be said.
 
 const INTRO_SEEN = 'ciatta.care.introSeen';
+const MODES = ['Ask Ciatta', 'Your Care'] as const;
 // Action cards she chose Not now on, by id, so each stays put away.
 const DISMISSED = 'ciatta.care.dismissed';
 
@@ -219,10 +222,11 @@ export function CareScreen() {
     setDismissed(next);
     AsyncStorage.setItem(DISMISSED, JSON.stringify([...next])).catch(() => {});
   };
-  const openSuggestion = (sug: { screen?: string; lab?: string; referral?: string; referralDraft?: string }) => {
+  const openSuggestion = (sug: { screen?: string; lab?: string; referral?: string; referralDraft?: string; requestDraft?: string }) => {
     if (!sug.screen) return;
     if (sug.lab) chooseLab(sug.lab);
     if (sug.screen === 'referral') chooseReferral(sug.referral ?? null, sug.referralDraft ?? null);
+    if (sug.requestDraft) openRequest({ draft: { kind: 'labs', tests: sug.requestDraft.split('|') } });
     nav.push(sug.screen as Screen);
   };
 
@@ -231,6 +235,8 @@ export function CareScreen() {
   const cards = useMemo(() => capabilityCards(record), [record]);
   const ready = useMemo(() => cards.filter((c) => c.ready), [cards]);
 
+  const [mode, setMode] = useState<(typeof MODES)[number]>('Ask Ciatta');
+  // A question handed over from Your Care is asked in Ask Ciatta.
   // Keeps the newest words in view while an answer is written out.
   const grow = useCallback(() => scroller.current?.scrollToEnd({ animated: true }), []);
 
@@ -273,8 +279,14 @@ export function CareScreen() {
   // system: asked as if she had typed it.
   useEffect(() => {
     const waiting = takeCareAsk();
-    if (waiting) send(waiting);
-    return onCareAsk((prompt) => send(prompt));
+    if (waiting) {
+      setMode('Ask Ciatta');
+      send(waiting);
+    }
+    return onCareAsk((prompt) => {
+      setMode('Ask Ciatta');
+      send(prompt);
+    });
   }, [send]);
 
   return (
@@ -298,6 +310,18 @@ export function CareScreen() {
             </Text>
           </Pressable>
         </View>
+
+        {/* Two sides of Care: asking Ciatta, and her care itself. */}
+        <View style={s.switch}>
+          <SegmentedControl segments={MODES} active={mode} onChange={setMode} />
+        </View>
+
+        {mode === 'Your Care' ? (
+          <View style={s.hub}>
+            <CareHub onAsk={() => setMode('Ask Ciatta')} />
+          </View>
+        ) : (
+        <>
 
         {/*
           The opening, as Ciatta speaking rather than a page about Ciatta.
@@ -404,8 +428,11 @@ export function CareScreen() {
             )}
           </View>
         ) : null}
+        </>
+        )}
       </ScrollView>
 
+      {mode === 'Ask Ciatta' ? (
       <View style={s.composer}>
         <Composer
           value={draft}
@@ -426,6 +453,7 @@ export function CareScreen() {
           Not medical advice. Ciatta can make mistakes.
         </Text>
       </View>
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
@@ -592,6 +620,8 @@ const s = StyleSheet.create({
   sourcesToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', minHeight: 32 },
   fill: { flex: 1 },
   body: { paddingBottom: SPACE.block },
+  switch: { paddingHorizontal: GUTTER, marginTop: SPACE.near },
+  hub: { paddingHorizontal: GUTTER, paddingBottom: NAV_CLEARANCE },
   // The wordmark used to open this screen and its clear space was doing
   // the work of a top margin. Taken out, the title needs its own.
   intro: { alignItems: 'center', paddingHorizontal: GUTTER, paddingTop: SPACE.near },

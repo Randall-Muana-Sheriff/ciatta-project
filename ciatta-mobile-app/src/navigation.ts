@@ -47,7 +47,9 @@ export type Screen =
   | 'bodyMeasurements'
   | 'shareClinician'
   | 'productSafety'
-  | 'gut';
+  | 'gut'
+  | 'careRequest'
+  | 'clinician';
 
 export type Nav = {
   tab: Tab;
