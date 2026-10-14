@@ -53,3 +53,27 @@ test('one line on how the two moved together, only when both say enough', () => 
   const thin = dayPatterns([{ metric: 'heart_rate', value: 60, at: at(8) }, { metric: 'hrv', value: 50, at: at(8) }], NOW);
   assert.equal(pairLine(thin.series[0], thin.series[1]), null);
 });
+
+test('two lines for the pair: how they moved together, then each against her usual or today\'s range', async () => {
+  const { pairInsight, rotatePair } = await import('./dayPatterns');
+  const v = dayPatterns(
+    [
+      ...[8, 10, 12, 14, 16].map((h, i) => ({ metric: 'heart_rate', value: [60, 70, 80, 120, 75][i], at: at(h) })),
+      ...[8, 10, 12, 14, 16].map((h, i) => ({ metric: 'hrv', value: [55, 50, 45, 28, 48][i], at: at(h) })),
+      { metric: 'steps', value: 900, at: at(9) },
+      { metric: 'steps', value: 400, at: at(15) },
+    ],
+    NOW,
+  );
+  const [hr, hrv, steps] = v.series;
+  assert.deepEqual(pairInsight(hr, hrv, { hrv: 50 }), [
+    'HRV dipped as heart rate peaked, around 2p.',
+    'Heart rate 60 to 120 bpm today · HRV 10% below your usual',
+  ]);
+  // Too few hours together: today's ranges, and what more readings will show.
+  assert.deepEqual(pairInsight(steps, hr, {}), ['Steps 1,300 so far today · Heart rate 60 to 120 bpm today', 'More readings through the day will show how they move together.']);
+  // Rotation: a new metric replaces the older of the two; a selected one swaps the order.
+  assert.deepEqual(rotatePair(['heart_rate', 'hrv'], 'steps'), ['hrv', 'steps']);
+  assert.deepEqual(rotatePair(['heart_rate', 'hrv'], 'hrv'), ['hrv', 'heart_rate']);
+  assert.deepEqual(rotatePair(['heart_rate'], 'steps'), ['heart_rate', 'steps']);
+});

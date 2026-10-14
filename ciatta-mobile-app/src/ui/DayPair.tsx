@@ -8,7 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Path, Rect } from 'react-native-svg';
 
 import { smooth } from '../lib/curve';
-import { type DayMetricKey, type DayView, defaultPair, pairLine } from '../lib/dayPatterns';
+import { type DayMetricKey, type DayView, defaultPair, pairInsight, rotatePair } from '../lib/dayPatterns';
 import { displayCopy } from '../lib/displayCopy';
 import { font } from '../theme';
 import { L } from './surface';
@@ -18,7 +18,7 @@ const HEIGHT = 120;
 const PAD = 10;
 const TICKS = ['12a', '6a', '12p', '6p', '12a'];
 
-export function DayPair({ view }: { view: DayView }) {
+export function DayPair({ view, usual = {} }: { view: DayView; usual?: Partial<Record<DayMetricKey, number>> }) {
   const [width, setWidth] = useState(0);
   const [pair, setPair] = useState<DayMetricKey[]>(() => defaultPair(view.series));
   // A metric that has gone (a new day, a new sync) leaves the pair.
@@ -30,11 +30,12 @@ export function DayPair({ view }: { view: DayView }) {
   }, [view.series]);
 
   const shown = pair.map((k) => view.series.find((s) => s.key === k)!).filter(Boolean);
-  const line = shown.length === 2 ? pairLine(shown[0], shown[1]) : null;
+  // The card's two lines, from the pair she has chosen, rewritten the
+  // moment she changes it.
+  const [lead, state] = shown.length ? pairInsight(shown[0], shown[1], usual) : ['', ''];
   const x = (h: number) => (h / 24) * width;
 
-  const toggle = (k: DayMetricKey) =>
-    setPair((p) => (p.includes(k) ? (p.length > 1 ? p.filter((x) => x !== k) : p) : [...p, k].slice(-2)));
+  const toggle = (k: DayMetricKey) => setPair((p) => rotatePair(p, k));
 
   const paths = useMemo(
     () =>
@@ -50,6 +51,17 @@ export function DayPair({ view }: { view: DayView }) {
 
   return (
     <View>
+      {/* Two lines, no more: how the pair moved, and where each stands. */}
+      {lead ? (
+        <View style={s.insight} accessibilityLiveRegion="polite">
+          <Text style={[font('subhead', 'semibold'), s.lead]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+            {displayCopy(lead)}
+          </Text>
+          <Text style={[font('footnote'), s.state]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+            {displayCopy(state)}
+          </Text>
+        </View>
+      ) : null}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>
         {view.series.map((m) => {
           const i = pair.indexOf(m.key);
@@ -107,20 +119,14 @@ export function DayPair({ view }: { view: DayView }) {
         ))}
       </View>
 
-      <View style={s.legend}>
-        {shown.map((m, i) => (
-          <View key={m.key} style={s.legendItem}>
-            <View style={[s.swatch, { backgroundColor: COLORS[i] }]} />
-            <Text style={[font('caption1'), { color: L.body }]}>{displayCopy(`${m.label} ${m.range}`)}</Text>
-          </View>
-        ))}
-      </View>
-      {line ? <Text style={[font('subhead'), s.line]}>{displayCopy(line)}</Text> : null}
     </View>
   );
 }
 
 const s = StyleSheet.create({
+  insight: { gap: 2, marginBottom: 12 },
+  lead: { color: L.ink },
+  state: { color: L.body },
   chips: { gap: 6 },
   chip: {
     flexDirection: 'row',
@@ -135,7 +141,4 @@ const s = StyleSheet.create({
   swatch: { width: 8, height: 8, borderRadius: 4 },
   axis: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
   tick: { color: L.meta },
-  legend: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 14, rowGap: 4, marginTop: 10 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  line: { color: L.ink, lineHeight: 21, marginTop: 10 },
 });

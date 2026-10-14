@@ -16,8 +16,6 @@ import {
 import { type Screen, useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
-import { intelligenceLine, patternReadiness } from '../lib/patternReadiness';
-import { todayInsight } from '../lib/todayInsight';
 import { useData, useRepo, useSession } from '../state/session';
 import { connectAppleHealth } from '../lib/connectHealth';
 import { chooseLogCategory, chooseLogMode } from '../lib/logHandoff';
@@ -36,10 +34,10 @@ import { actionPlan, type PlanItem, type PlanKey } from '../lib/actionPlan';
 import { usePlanDone } from '../state/planDone';
 import { upcomingVisits, visitWhen } from '../lib/calendarEvents';
 import { useDeviceCalendar } from '../state/deviceCalendar';
-import { font, fonts, GUTTER } from '../theme';
-import { Eyebrow, Tile } from '../ui/bento';
+import { font, GUTTER } from '../theme';
+import { Eyebrow } from '../ui/bento';
 import { Wordmark } from '../ui/Wordmark';
-import { ground, HUE, L, mark, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
+import { ground, HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow } from '../ui/chrome';
 import { images } from '../ui/images';
 import { MetricCard, METRIC_CARD_GAP } from '../ui/metricCard';
@@ -56,21 +54,13 @@ function greeting(now: Date): string {
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
 }
 
-type Action = { key: string; icon: IconName; title: string; sub?: string; onPress?: () => void };
 
 export function TodayScreen() {
   const nav = useNav();
   const { accept, watching, setWatching, episodes } = useCycle();
   const { today: brief, ranked } = useInsights();
   const { windows, signals, lens, profile, fertility } = useCycleInsights();
-  const { person, today, days, todayIsPlaceholder } = useData();
-  const { setFocus } = useCycle();
-  const insightCard = useMemo(() => {
-    const ready = patternReadiness(days);
-    const found = ranked.filter((i) => i.triage === 'Surface' || i.triage === 'Investigate').length;
-    const watching = ranked.filter((i) => i.triage === 'Watch').length;
-    return todayInsight({ leadId: brief.lead?.id ?? null, leadText: brief.text, fallback: intelligenceLine(days, ready, found, watching) });
-  }, [brief, ranked, days]);
+  const { person, days } = useData();
   const repo = useRepo();
   const { mode, userId, reloadDays } = useSession();
   const week = useMemo(() => {
@@ -355,7 +345,13 @@ export function TodayScreen() {
             day's hours, so one can be read against the other.
           */}
           {dayView.series.length ? (
-            <DayPair view={dayView} />
+            <DayPair
+              view={dayView}
+              usual={{
+                hrv: usualFor('hrv', baselines)?.median,
+                oxygen_saturation: usualFor('spo2', baselines)?.median,
+              }}
+            />
           ) : (
             <Text style={[font('subhead'), t.dayEmpty]}>
               Your day appears here as your watch or ring sends heart rate, HRV and steps.
@@ -467,41 +463,6 @@ export function TodayScreen() {
             />
           </ListGroup>
         )}
-
-        {/*
-          The one tile that is the point of the screen: the sentence written
-          from whatever ranks highest today. Daylight, which the system
-          keeps for a single sentence, and never two of them.
-
-          Absent until there is something to say. The standing text was a
-          card reading "nothing to compare yet" sitting above a chart that
-          had already said so, which is two ways of saying nothing where one
-          is plenty.
-        */}
-        {/*
-          Named once, like Metrics above it. Her lead insight, from the
-          engine reading her own record, opening its evidence; until there
-          is one, what Ciatta is doing with her record. Shown for a live
-          record as well as the example one.
-        */}
-        <View style={t.sectionHead}>
-          <Eyebrow>Insights</Eyebrow>
-        </View>
-        <Pressable
-          disabled={!insightCard.evidence}
-          onPress={() => {
-            if (!insightCard.evidence) return;
-            setFocus(insightCard.evidence);
-            nav.push('evidence');
-          }}
-          accessibilityRole={insightCard.evidence ? 'button' : undefined}
-          accessibilityHint={insightCard.evidence ? 'Opens the evidence behind it' : undefined}
-          style={({ pressed }) => [pressed && insightCard.evidence ? t.pressed : null]}
-        >
-          <Tile span={2} emphasis style={t.lead}>
-            <Text style={[font('body'), t.leadText]}>{displayCopy(insightCard.text)}</Text>
-          </Tile>
-        </Pressable>
 
         {/*
           What today's pattern suggests trying, which only exists when the
@@ -677,8 +638,6 @@ const t = StyleSheet.create({
   cycleValue: { color: L.ink },
   // A figure she has not produced today reads as absent, not as zero.
   cycleNone: { color: L.meta },
-  lead: { marginTop: SPACE.tight },
-  leadText: { color: L.ink, lineHeight: 25 },
 
   // The heading row: a section's worth of air above it, almost none below,
   // so it reads down onto the card it names rather than up at the chart.

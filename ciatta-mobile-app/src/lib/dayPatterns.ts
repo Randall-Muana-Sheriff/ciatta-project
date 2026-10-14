@@ -79,3 +79,53 @@ export function pairLine(a: DaySeries, b: DaySeries): string | null {
   const name = (s: DaySeries) => (s.key === 'hrv' ? 'HRV' : s.label.toLowerCase());
   return `When your ${name(a)} peaked, around ${hourLabel(peak)}, your ${name(b)} was ${where} for today.`;
 }
+
+// Names as they sit inside a sentence.
+const PROSE: Record<DayMetricKey, string> = {
+  heart_rate: 'Heart rate',
+  hrv: 'HRV',
+  steps: 'Steps',
+  oxygen_saturation: 'Blood oxygen',
+  respiratory_rate: 'Respiratory rate',
+};
+const inSentence = (k: DayMetricKey) => (k === 'hrv' ? 'HRV' : PROSE[k].toLowerCase());
+
+// Each metric in a few words: against her usual where it is known, or
+// today's range. Steps add up through the day, so they are said as a total
+// so far, never against a full day's usual at noon.
+function stateOf(s: DaySeries, usual: number | undefined): string {
+  if (s.key === 'steps') {
+    const total = s.values.reduce<number>((a, v) => a + (v ?? 0), 0);
+    return `Steps ${Math.round(total).toLocaleString('en-US')} so far today`;
+  }
+  if (usual) {
+    const got = s.values.filter((v): v is number => v != null);
+    const pct = Math.round(((got.reduce((a, b) => a + b, 0) / got.length - usual) / usual) * 100);
+    if (Math.abs(pct) < 5) return `${PROSE[s.key]} near your usual`;
+    return `${PROSE[s.key]} ${Math.abs(pct)}% ${pct < 0 ? 'below' : 'above'} your usual`;
+  }
+  return `${PROSE[s.key]} ${s.range} today`;
+}
+
+// The card's two lines for the pair she has chosen: how the two moved
+// together, when both have enough hours to say; then where each stands.
+export function pairInsight(a: DaySeries, b: DaySeries | undefined, usual: Partial<Record<DayMetricKey, number>>): [string, string] {
+  const state = [a, ...(b ? [b] : [])].map((s) => stateOf(s, usual[s.key])).join(' · ');
+  if (b && a.count >= 4 && b.count >= 4 && a.high !== a.low && b.high !== b.low) {
+    const peak = a.values.indexOf(a.high);
+    const other = b.values[peak];
+    if (other != null) {
+      const at = (other - b.low) / (b.high - b.low);
+      const verb = at <= 1 / 3 ? 'dipped' : at >= 2 / 3 ? 'rose' : 'held steady';
+      return [`${PROSE[b.key]} ${verb} as ${inSentence(a.key)} peaked, around ${hourLabel(peak)}.`, state];
+    }
+  }
+  return [state, b ? 'More readings through the day will show how they move together.' : 'Choose a second metric to see how the two move together.'];
+}
+
+// Choosing a metric: a new one replaces the older of the two; one already
+// chosen swaps the order, so either can lead.
+export function rotatePair(pair: readonly DayMetricKey[], k: DayMetricKey): DayMetricKey[] {
+  if (pair.includes(k)) return pair.length === 2 ? [pair[1], pair[0]] : [...pair];
+  return pair.length < 2 ? [...pair, k] : [pair[1], k];
+}
