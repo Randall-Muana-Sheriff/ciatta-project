@@ -24,21 +24,18 @@
 //   palette is a ground competing with the marks drawn on it.
 
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
-import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { Image, StyleSheet, View } from 'react-native';
 
 import { G } from './scheme';
-import { BASE, type Meaning } from './surface';
+import type { Meaning } from './surface';
 
 // The ground is named by meaning now, because the hue is the semantic
 // colour rather than its pale print.
 export type GroundHue = Meaning;
 
-// Graphite on dark, warm paper on light, which every wash sits over. Read
-// from the resolved scheme, which is set before this module loads.
-const TOP = G.top;
+// What shows for the instant before the image paints: the ground's own
+// middle tone, read from the resolved scheme.
 const MID = G.mid;
-const FOOT = G.foot;
 
 export function Ground({
   children,
@@ -59,42 +56,42 @@ export function Ground({
   );
 }
 
-// The wash alone, filling whatever holds it: for a sheet or a card that
+// The rendered grounds: the insight headings' room, lit in the screen's two
+// hues, black for dark and daylight paper for light. Generated for Ciatta,
+// one per pair a screen uses; any other pair takes Sky into Lavender.
+const IMAGES: Record<string, { dark: number; light: number }> = {
+  'measured-timeDepth': {
+    dark: require('../../assets/images/grounds/measured-timeDepth-dark.jpg'),
+    light: require('../../assets/images/grounds/measured-timeDepth-light.jpg'),
+  },
+  'reported-change': {
+    dark: require('../../assets/images/grounds/reported-change-dark.jpg'),
+    light: require('../../assets/images/grounds/reported-change-light.jpg'),
+  },
+  'timeDepth-measured': {
+    dark: require('../../assets/images/grounds/timeDepth-measured-dark.jpg'),
+    light: require('../../assets/images/grounds/timeDepth-measured-light.jpg'),
+  },
+  'timeDepth-reported': {
+    dark: require('../../assets/images/grounds/timeDepth-reported-dark.jpg'),
+    light: require('../../assets/images/grounds/timeDepth-reported-light.jpg'),
+  },
+};
+
+export const groundImage = (from: GroundHue, to: GroundHue, mode: 'dark' | 'light') =>
+  (IMAGES[`${from}-${to}`] ?? IMAGES['measured-timeDepth'])[mode];
+
+// The ground alone, filling whatever holds it: for a sheet or a card that
 // sits over the screen and must stand on the same ground as the screen.
 export function GroundLayer({ from = 'measured', to = 'timeDepth' }: { from?: GroundHue; to?: GroundHue }) {
   return (
-      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" pointerEvents="none">
-        <Defs>
-          {/* Graphite underneath, so the washes have something to be over
-              rather than something to replace. */}
-          <LinearGradient id="g-base" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={TOP} />
-            <Stop offset="0.45" stopColor={MID} />
-            <Stop offset="0.88" stopColor={MID} />
-            <Stop offset="1" stopColor={FOOT} />
-          </LinearGradient>
-
-          {/* The first hue, pooled behind the top of the screen where the
-              eye enters it. */}
-          <RadialGradient id="g-from" cx="18%" cy="2%" rx="105%" ry="58%">
-            <Stop offset="0" stopColor={BASE[from]} stopOpacity={G.washFrom} />
-            <Stop offset="0.55" stopColor={BASE[from]} stopOpacity={G.washFrom * 0.35} />
-            <Stop offset="1" stopColor={BASE[from]} stopOpacity={0} />
-          </RadialGradient>
-
-          {/* The second, pooled low and to the other side, so the two meet
-              across the middle of the screen rather than stacking. */}
-          <RadialGradient id="g-to" cx="88%" cy="76%" rx="95%" ry="55%">
-            <Stop offset="0" stopColor={BASE[to]} stopOpacity={G.washTo} />
-            <Stop offset="0.6" stopColor={BASE[to]} stopOpacity={G.washTo * 0.32} />
-            <Stop offset="1" stopColor={BASE[to]} stopOpacity={0} />
-          </RadialGradient>
-        </Defs>
-
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#g-base)" />
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#g-from)" />
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#g-to)" />
-      </Svg>
+    <Image
+      source={groundImage(from, to, G.mode)}
+      style={StyleSheet.absoluteFill}
+      resizeMode="cover"
+      fadeDuration={0}
+      accessible={false}
+    />
   );
 }
 

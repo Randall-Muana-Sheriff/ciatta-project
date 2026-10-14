@@ -77,3 +77,12 @@ test('a mark colour is deepened on light until it reads, and left alone on dark'
   assert.equal(onGround('#3E50C8'), '#3E50C8');
   applyMode('dark');
 });
+
+test('every screen ground has a black and a white rendering on disk', async () => {
+  const { existsSync } = await import('node:fs');
+  for (const pair of ['measured-timeDepth', 'reported-change', 'timeDepth-measured', 'timeDepth-reported']) {
+    for (const mode of ['dark', 'light']) {
+      assert.ok(existsSync(new URL(`../../assets/images/grounds/${pair}-${mode}.jpg`, import.meta.url)), `${pair} ${mode}`);
+    }
+  }
+});
