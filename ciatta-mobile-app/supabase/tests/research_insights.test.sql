@@ -16,8 +16,8 @@ select throws_ok($$ update public.research_insights set title = 'changed' where 
 
 reset role;
 select throws_ok($$
-  insert into public.research_insights (id, sort, title, image, highlights, body, sources) values ('y', 99, 'y', 'unknown', '["a"]', 'b', '[{"title":"t"}]')
-$$, '23514', null, 'only the known heading images');
+  insert into public.research_insights (id, sort, title, image, highlights, body, sources) values ('y', 99, 'y', 'Not A Name!', '["a"]', 'b', '[{"title":"t"}]')
+$$, '23514', null, 'a heading image is named, never free text');
 
 select * from finish();
 rollback;

@@ -12,7 +12,7 @@ import { useNav } from '../navigation';
 import { useResearchInsights } from '../state/researchInsights';
 import { font, GUTTER } from '../theme';
 import { Icon } from '../ui/icons';
-import { INSIGHT_IMAGE } from '../ui/InsightCards';
+import { headingFor } from '../ui/InsightCards';
 import { PhotoCard } from '../ui/PhotoCard';
 import { Sheet } from '../ui/Sheet';
 import { HUE, L, NAV_CLEARANCE, SPACE } from '../ui/surface';
@@ -29,7 +29,7 @@ export function InsightScreen() {
   return (
     <View style={s.fill}>
       <ScrollView contentContainerStyle={{ paddingBottom: NAV_CLEARANCE + 60 }}>
-        <PhotoCard source={INSIGHT_IMAGE[insight.image]} style={s.hero} shade={0.75}>
+        <PhotoCard source={headingFor(insight.image)} style={s.hero} shade={0.75}>
           <View style={s.bar}>
             <Pressable onPress={nav.back} accessibilityRole="button" accessibilityLabel="Back" hitSlop={8} style={s.circle}>
               <Icon name="chevronLeft" size={20} color="#FFFFFF" />

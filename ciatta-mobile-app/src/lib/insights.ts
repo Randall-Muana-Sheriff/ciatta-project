@@ -10,12 +10,13 @@
 import { isOutside, type LabResult, labStatus } from './labs';
 import { type AgentContext, bpBand, bpLine } from './agent/proactive';
 
-export type InsightImage = 'symptoms' | 'cycle' | 'sleep' | 'horizon' | 'journal' | 'records' | 'movement';
 export type InsightSource = { title: string; publisher: string; year: number };
 export type ResearchInsight = {
   id: string;
   title: string;
-  image: InsightImage;
+  // Its heading image, generated for Ciatta in one style; named by the
+  // insight it heads (assets/images/insights).
+  image: string;
   highlights: string[];
   body: string;
   sources: InsightSource[];
@@ -25,7 +26,7 @@ export const INSIGHTS: ResearchInsight[] = [
   {
     id: 'iron-fatigue',
     title: 'Low iron stores can drain your energy, even when your blood count looks normal.',
-    image: 'symptoms',
+    image: 'iron-fatigue',
     highlights: [
       'Ferritin shows how much iron your body has stored',
       'Stores can run low before anemia shows on a blood count',
@@ -42,7 +43,7 @@ export const INSIGHTS: ResearchInsight[] = [
   {
     id: 'cycle-physiology',
     title: 'Your resting heart rate and skin temperature shift with your cycle.',
-    image: 'cycle',
+    image: 'cycle-physiology',
     highlights: [
       'Resting heart rate tends to rise after ovulation',
       'Skin temperature runs higher in the luteal phase',
@@ -58,7 +59,7 @@ export const INSIGHTS: ResearchInsight[] = [
   {
     id: 'sleep-cycle',
     title: 'Sleep often gets lighter and more broken in the days before a period.',
-    image: 'sleep',
+    image: 'sleep-cycle',
     highlights: [
       'Many women report poorer sleep before and during their period',
       'Body temperature runs higher after ovulation',
@@ -72,7 +73,7 @@ export const INSIGHTS: ResearchInsight[] = [
   {
     id: 'bp-categories',
     title: 'Blood pressure falls into four categories, and several readings tell more than one.',
-    image: 'horizon',
+    image: 'bp-categories',
     highlights: [
       'Normal is under 120 over 80',
       'Stage 1 starts at 130 over 80',
@@ -92,7 +93,7 @@ export const INSIGHTS: ResearchInsight[] = [
   {
     id: 'bristol',
     title: 'The form of your stool is a window into how fast your gut moves.',
-    image: 'journal',
+    image: 'bristol',
     highlights: [
       'Types 1 and 2 are hard, and go with slow transit',
       'Types 3 and 4 are the typical range',
@@ -106,7 +107,7 @@ export const INSIGHTS: ResearchInsight[] = [
   {
     id: 'endo-gut',
     title: 'Endometriosis can show up in your bowel and bladder, not only as pelvic pain.',
-    image: 'symptoms',
+    image: 'endo-gut',
     highlights: [
       'Pain with bowel movements is a recognised symptom',
       'So is pain when passing urine',
@@ -120,7 +121,7 @@ export const INSIGHTS: ResearchInsight[] = [
   {
     id: 'thyroid',
     title: 'Fatigue, hair shedding and dry skin can trace back to the thyroid.',
-    image: 'records',
+    image: 'thyroid',
     highlights: [
       'An underactive thyroid can bring tiredness, dry skin and hair loss',
       'These symptoms are common and overlap with many other things',
@@ -134,7 +135,7 @@ export const INSIGHTS: ResearchInsight[] = [
   {
     id: 'headache-red-flags',
     title: 'Most headaches are not dangerous, but a few signs need care right away.',
-    image: 'horizon',
+    image: 'headache-red-flags',
     highlights: [
       'A sudden, severe headache, the worst of your life',
       'Headache with fever and a stiff neck',
@@ -148,7 +149,7 @@ export const INSIGHTS: ResearchInsight[] = [
   {
     id: 'hormones-cycle',
     title: 'Estrogen and progesterone shape how each phase of your cycle can feel.',
-    image: 'cycle',
+    image: 'hormones-cycle',
     highlights: [
       'Estrogen rises toward ovulation',
       'Progesterone rises after ovulation and peaks mid luteal',

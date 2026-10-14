@@ -7,24 +7,29 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { openInsight } from '../lib/careHandoff';
 import { displayCopy } from '../lib/displayCopy';
-import type { InsightImage } from '../lib/insights';
 import { useNav } from '../navigation';
 import { useResearchInsights } from '../state/researchInsights';
 import { font } from '../theme';
 import { Icon } from './icons';
-import { images } from './images';
 import { PhotoCard } from './PhotoCard';
 import { L } from './surface';
 
-export const INSIGHT_IMAGE: Record<InsightImage, number> = {
-  symptoms: images.symptoms,
-  cycle: images.cycle,
-  sleep: images.sleep,
-  horizon: images.horizon,
-  journal: images.journal,
-  records: images.records,
-  movement: images.movement,
+// The heading images, generated for Ciatta in one style: a dark room,
+// light in two of the design system's hues, a soft figure out of focus.
+const HEADINGS: Record<string, number> = {
+  'iron-fatigue': require('../../assets/images/insights/iron-fatigue.jpg'),
+  'cycle-physiology': require('../../assets/images/insights/cycle-physiology.jpg'),
+  'sleep-cycle': require('../../assets/images/insights/sleep-cycle.jpg'),
+  'bp-categories': require('../../assets/images/insights/bp-categories.jpg'),
+  bristol: require('../../assets/images/insights/bristol.jpg'),
+  'endo-gut': require('../../assets/images/insights/endo-gut.jpg'),
+  thyroid: require('../../assets/images/insights/thyroid.jpg'),
+  'headache-red-flags': require('../../assets/images/insights/headache-red-flags.jpg'),
+  'hormones-cycle': require('../../assets/images/insights/hormones-cycle.jpg'),
 };
+// An insight added to the library before its heading exists takes the
+// first one, so a card is never blank.
+export const headingFor = (image: string) => HEADINGS[image] ?? HEADINGS['cycle-physiology'];
 
 export function InsightCards() {
   const nav = useNav();
@@ -50,7 +55,7 @@ export function InsightCards() {
             accessibilityLabel={`${insight.title}. ${insight.sources.length} sources`}
             style={({ pressed }) => [pressed && s.pressed]}
           >
-            <PhotoCard source={INSIGHT_IMAGE[insight.image]} style={s.card} shade={0.7}>
+            <PhotoCard source={headingFor(insight.image)} style={s.card} shade={0.7}>
               <Icon name="sparkle" size={18} color="#FFFFFF" />
               <View style={{ flex: 1 }} />
               <Text style={[font('title3', 'semibold'), s.title]} numberOfLines={4}>
