@@ -46,3 +46,17 @@ export const takeClinician = (): string | null => {
   clinicianOpen = null;
   return id;
 };
+
+// Which research insight its screen opens on.
+let insightOpen: string | null = null;
+export const openInsight = (id: string) => {
+  insightOpen = id;
+};
+export const takeInsight = (): string | null => {
+  const id = insightOpen;
+  insightOpen = null;
+  return id;
+};
+
+// What Discuss on an insight asks the concierge.
+export const discussPrompt = (title: string) => `I read "${title}" How does it relate to my record?`;

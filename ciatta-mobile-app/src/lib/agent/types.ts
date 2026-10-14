@@ -51,6 +51,8 @@ export type CapabilityId =
   | 'system'
   // How several symptoms may connect, across her whole record.
   | 'connect'
+  // A research insight she read, and how it relates to her record.
+  | 'insight'
   // None of the above.
   | 'decline';
 

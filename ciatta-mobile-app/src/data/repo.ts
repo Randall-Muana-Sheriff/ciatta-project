@@ -43,6 +43,7 @@ import type { SleepSample } from '../lib/hypnogram';
 import { type LabFlag, type LabResult, type LabScan, parseRange, readLabScan, type ScannedTest } from '../lib/labs';
 import { records as sampleRecords } from './sample';
 import type { CareRequest, ClinicianRow } from '../lib/care';
+import { INSIGHTS, type ResearchInsight } from '../lib/insights';
 
 // Every daily_metrics column daysFromRows/rowToDay actually reads. Named
 // explicitly, like every other realRepo method, rather than select('*'),
@@ -193,6 +194,8 @@ export type Repo = {
   saveRequest(r: CareRequest): Promise<void>;
   deleteRequest(id: string): Promise<void>;
   loadCareTeam(): Promise<ClinicianRow[]>;
+  // The research library, as reviewed and served from research_insights.
+  loadResearchInsights(): Promise<ResearchInsight[]>;
   saveClinician(c: ClinicianRow): Promise<void>;
   deleteClinician(id: string): Promise<void>;
   // Her health insurance, as she entered it. Null when she has not.
@@ -517,6 +520,7 @@ export function demoRepo(): Repo {
       requests = requests.filter((x) => x.id !== id);
     },
     loadCareTeam: async () => team,
+    loadResearchInsights: async () => INSIGHTS,
     saveClinician: async (c) => {
       team = [...team.filter((x) => x.id !== c.id), c];
     },
@@ -1197,6 +1201,12 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
     },
     async deleteRequest(id) {
       must(await db.from('care_requests').delete().eq('client_id', id));
+    },
+    async loadResearchInsights() {
+      const rows = must(await db.from('research_insights').select('id, title, image, highlights, body, sources').order('sort')) as ResearchInsight[] | null;
+      // The library ships with the app too, so an empty or unreachable
+      // table still shows the research rather than nothing.
+      return rows?.length ? rows : INSIGHTS;
     },
     async loadCareTeam() {
       const rows = must(

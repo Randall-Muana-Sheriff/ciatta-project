@@ -88,6 +88,8 @@ export function classify(message: string): CapabilityId {
 
   // Explore on a body system sends a prompt in one known shape.
   if (text.startsWith('i want the bigger picture of my ') && text.includes(' health')) return 'system';
+  // Discuss on a research insight.
+  if (text.startsWith('i read "') && text.includes('relate to my record')) return 'insight';
   // Several symptoms, and how they may fit together.
   if (/\bsymptoms?\b/.test(text) && /\b(connected|connect|linked|related|fit together)\b/.test(text)) return 'connect';
 

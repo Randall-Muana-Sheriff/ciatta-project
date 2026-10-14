@@ -49,7 +49,8 @@ export type Screen =
   | 'productSafety'
   | 'gut'
   | 'careRequest'
-  | 'clinician';
+  | 'clinician'
+  | 'insight';
 
 export type Nav = {
   tab: Tab;

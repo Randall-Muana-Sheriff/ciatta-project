@@ -24,6 +24,7 @@ import { NAME } from '../metricNames';
 import { systemReview, SYSTEM_TOPICS } from '../systemReview';
 import { labSuggestions } from './labSuggest';
 import { answerConnect, answerMeds } from './connect';
+import { INSIGHTS, matchInsights } from '../insights';
 import type { Day } from '../../data/daily';
 import type { Episode } from '../../data/cycleLog';
 import { buildMetrics, recordedCount } from '../allMetrics';
@@ -507,6 +508,8 @@ export function respond(message: string, r: Record, capability: import('./types'
       return answerReferral(r, message);
     case 'system':
       return answerSystem(r, message);
+    case 'insight':
+      return answerInsight(r, message);
     case 'connect':
       return answerConnect(r.context, r.name, r.context?.asOf ? new Date(r.context.asOf) : new Date());
     default:
@@ -726,5 +729,31 @@ export function answerLabSuggestions(r: Record): Answer {
     text: `Worth asking your clinician about: ${picks.map((p) => `${p.test}, since you logged ${p.reasons.slice(0, 2).join(' and ')}`).join('; ')}. None has a result in your record from the last year. I can draft the request for you to send.`,
     facts: picks.map((p) => ({ label: p.test, value: p.reasons.join(', '), from: 'reported' as const })),
     suggestions: [{ label: 'Draft the request', screen: 'careRequest', requestDraft: picks.map((p) => p.test).join('|') }],
+  };
+}
+
+// ── A research insight she read ──────────────────────────────────────
+
+export function answerInsight(r: Record, message: string): Answer {
+  const found = INSIGHTS.find((i) => message.includes(i.title));
+  const match = found && r.context ? matchInsights([found], r.context, r.conditions, r.context.asOf ? new Date(r.context.asOf) : new Date())[0] : undefined;
+  if (!found || !match) {
+    return {
+      capability: 'insight',
+      text: 'Nothing in your record connects to that insight yet. As you log, and as your labs and readings arrive, Ciatta shows where it does.',
+      facts: [],
+      suggestions: [{ label: 'Log symptoms', screen: 'quickLog' }],
+      abstained: 'no_data',
+    };
+  }
+  return {
+    capability: 'insight',
+    text: `How it connects to your record:\n${match.connections.map((c) => `• ${c}`).join('\n')}\n\nThe research behind it is in the insight, with its sources. Worth raising with your clinician; your visit prep can carry it.`,
+    facts: [
+      ...match.connections.map((c) => ({ label: found.id, value: c, from: 'derived' as const })),
+      // The research is cited by its named sources, never by the model.
+      ...found.sources.map((src) => ({ label: src.title, value: `${src.publisher}, ${src.year}`, from: 'reference' as const })),
+    ],
+    suggestions: [VISIT_PREP],
   };
 }

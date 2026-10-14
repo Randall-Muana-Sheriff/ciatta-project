@@ -21,6 +21,7 @@ import { connectAppleHealth } from '../lib/connectHealth';
 import { chooseLogCategory } from '../lib/logHandoff';
 import { LogBox } from '../ui/LogBox';
 import { LatestActivity } from '../ui/LatestActivity';
+import { InsightCards } from '../ui/InsightCards';
 import { todayState } from '../lib/todayState';
 import { userFacingError } from '../lib/userFacingError';
 import { TodayStart } from '../ui/TodayStart';
@@ -606,6 +607,13 @@ export function TodayScreen() {
               onChoose={setChosen}
               onAll={go('symptoms')}
             />
+          </View>
+        ) : null}
+
+        {/* Research that connects to her own record. */}
+        {state.state === 'content' ? (
+          <View style={t.section}>
+            <InsightCards />
           </View>
         ) : null}
 
