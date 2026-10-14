@@ -5,14 +5,13 @@ import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-
 
 import { type Data, journeyAxis } from '../data/adapter';
 import type { Day } from '../data/daily';
-import { addDays, shortDate } from '../data/cycleLog';
+import { addDays } from '../data/cycleLog';
 import { countedWindows, type CycleWindow, medianLength } from '../lib/cycleModel';
 import { displayCopy } from '../lib/displayCopy';
-import { monthSummary, type Signal } from '../lib/cyclePatterns';
-import type { Ovulation } from '../lib/fertility';
+import type { Signal } from '../lib/cyclePatterns';
 import { useCycleInsights } from '../state/cycleStore';
 import { useData, useRepo } from '../state/session';
-import { C, font, fonts, GUTTER, RADIUS } from '../theme';
+import { C, font, fonts, GUTTER } from '../theme';
 import { NAV_CLEARANCE } from '../ui/surface';
 import { fmtHours } from '../lib/engine';
 import {
@@ -39,11 +38,10 @@ import { useNav } from '../navigation';
 import { METRIC_HUE } from '../ui/metricHue';
 import type { BaselineRow } from '../lib/metricDetail';
 import type { LabResult } from '../lib/labs';
-import { type Axis, axisFor, emptyFor, posIn, type Scale } from '../lib/timeAxis';
+import { axisFor, emptyFor, posIn, type Scale } from '../lib/timeAxis';
 import { ViewByPicker } from '../ui/ViewByPicker';
-import { LargeTitle, Panel } from '../ui/chrome';
+import { LargeTitle } from '../ui/chrome';
 import { Icon, type IconName } from '../ui/icons';
-import { Row } from '../ui/kit';
 
 // The window is chosen now, not assumed. Day reads in hours, year in
 // months, and every lane positions against whichever is picked rather than
@@ -72,7 +70,6 @@ const LANES: { key: Lane; title: string; sub: string; icon: IconName; color: str
 
 const SIDE = 8;
 const LABEL_W = 124;
-const NOW = journeyAxis.now;
 
 // The sample lanes carry month positions rather than dates. This turns one
 // back into a date so every lane, hers and the example's, is placed by the
@@ -100,8 +97,6 @@ function cycleLane(windows: CycleWindow[], current: CycleWindow | null, usual: n
 
 // "cycle, HRV and heart rate": a list as she would say it.
 const listWords = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
-
-const sameMonth = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 
 function Label({
   x,
@@ -554,61 +549,8 @@ function LaneMarks({
   }
 }
 
-const monthName = (d: Date) => d.toLocaleDateString('en-US', { month: 'long' });
-
-// What a month looked like, next to the month before it.
-function MonthDetail({
-  index,
-  signals,
-  windows,
-  ovulations,
-  journey,
-}: {
-  index: number;
-  signals: Signal[];
-  windows: CycleWindow[];
-  ovulations: Ovulation[] | null;
-  journey: Data['journey'];
-}) {
-  const d = journeyAxis.monthDate(index);
-  const prev = journeyAxis.monthDate(index - 1);
-  const ms = monthSummary(signals, d.getFullYear(), d.getMonth());
-  const before = monthSummary(signals, prev.getFullYear(), prev.getMonth());
-  const ended = windows.filter((w) => w.end && w.length != null && sameMonth(w.end, d)).map((w) => w.length!);
-  const sleep = journey?.sleep.find((s) => s.label && Math.round(s.m) === index);
-  const change =
-    ms.maxSeverity != null && before.maxSeverity != null && ms.maxSeverity !== before.maxSeverity
-      ? `, ${ms.maxSeverity > before.maxSeverity ? 'up' : 'down'} from ${before.maxSeverity}/10`
-      : '';
-  const ov = ovulations?.find((o) => o.date.getFullYear() === d.getFullYear() && o.date.getMonth() === d.getMonth());
-
-  return (
-    <Panel style={j.detail}>
-      <Text style={[font('headline'), { color: C.text }]}>
-        {monthName(d)} {d.getFullYear()}
-      </Text>
-      <Text style={[font('footnote'), { color: C.secondary, marginBottom: 4 }]}>Tap a month above to compare.</Text>
-      <Row first title="Cycle" value={ended.length ? `${ended.join(' and ')} days` : 'No cycle ended'} />
-      <Row title="Pain" value={ms.locations.length ? ms.locations.join(' · ') : 'None logged'} />
-      <Row title="Severity" value={ms.maxSeverity != null ? `${ms.maxSeverity}/10${change}` : 'None logged'} />
-      <Row title="Flare up" value={ms.flares ? `Yes, user reported (${ms.flares})` : 'None reported'} />
-      {ms.bowel ? (
-        <Row title="Bowel movements" value={`${ms.bowel} logged${ms.bowelPain ? `, ${ms.bowelPain} with pain` : ''}`} />
-      ) : null}
-      {ovulations ? (
-        <Row
-          title="Ovulation"
-          value={ov ? `${ov.source === 'temperature' ? 'Confirmed by temperature' : 'Positive test'}, around ${shortDate(ov.date)}` : 'Not confirmed'}
-        />
-      ) : null}
-      <Row title="Sleep" value={sleep?.label ?? 'No data'} />
-      <Row title="Stress" value={ms.stress ? `Noted in ${ms.stress} ${ms.stress === 1 ? 'episode' : 'episodes'}` : 'Not logged'} />
-    </Panel>
-  );
-}
-
 export function JourneyScreen() {
-  const { signals, fertility, windows, lens, profile } = useCycleInsights();
+  const { signals, windows, lens, profile } = useCycleInsights();
   const { journey, days } = useData();
   const nav = useNav();
   const repo = useRepo();
@@ -868,28 +810,8 @@ export function JourneyScreen() {
         })}
       </ScrollView>
 
-      <View style={j.pad}>
-        {/*
-          The detail below the chart stays on the current month. Picking a
-          month by tapping its label went with the month axis, and a day or
-          a week does not have a month to pick.
-        */}
-        <MonthDetail
-          index={NOW}
-          signals={signals}
-          windows={windows}
-          ovulations={fertility.show ? fertility.past : null}
-          journey={journey}
-        />
-
-        {/*
-          No "Something changed" card here. A change worth her attention
-          reaches her as a push notification, when it happens, rather than
-          waiting on this tab for her to come and find it.
-        */}
-        {/* Logging lives behind the plus in the bottom navigation, on every
-            screen, so Journey does not carry a second way in. */}
-      </View>
+      {/* The timeline and its categories are the screen; nothing sits
+          under them. Logging lives behind the plus on every screen. */}
     </ScrollView>
   );
 }
