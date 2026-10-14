@@ -44,6 +44,7 @@ import { StoolPicture } from '../ui/stoolScale';
 import { takeLogCategory, takeLogMode } from '../lib/logHandoff';
 import { useQuickLogSave } from '../state/quickLogSave';
 import { L, SPACE } from '../ui/surface';
+import { GlassFill } from '../ui/frosted';
 
 export function QuickLogScreen() {
   const nav = useNav();
@@ -182,6 +183,7 @@ export function QuickLogScreen() {
               accessibilityState={{ selected: on }}
               style={({ pressed }) => [q.cat, on && q.catOn, pressed && q.pressed]}
             >
+              <GlassFill />
               <Text style={[font('subhead', on ? 'semibold' : 'regular'), on ? q.catTextOn : q.catText]}>{displayCopy(c.label)}</Text>
             </Pressable>
           );
@@ -252,6 +254,7 @@ export function QuickLogScreen() {
                     accessibilityLabel={`Type ${type}, ${displayCopy(word)}`}
                     style={({ pressed }) => [q.stool, on && q.chipOn, pressed && q.pressed]}
                   >
+                    <GlassFill />
                     <StoolPicture type={type} color={on ? L.ink : L.body} width={30} />
                     <Text style={[font('caption2', on ? 'semibold' : 'regular'), on ? q.chipTextOn : q.chipText]}>{type}</Text>
                   </Pressable>
@@ -383,6 +386,7 @@ const q = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,
     backgroundColor: L.recessed,
+    overflow: 'hidden',
   },
   cats: { gap: 8, paddingHorizontal: GUTTER, paddingVertical: 4 },
   cat: {
@@ -392,6 +396,7 @@ const q = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,
     backgroundColor: L.recessed,
+    overflow: 'hidden',
   },
   catOn: { backgroundColor: L.ink, borderColor: L.ink },
   catText: { color: L.body },

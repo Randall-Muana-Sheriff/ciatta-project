@@ -24,6 +24,7 @@ import { C, font } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen, PrimaryButton, SecondaryButton, SegmentedControl, Lead } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { GlassFill } from '../ui/frosted';
 
 const SPANS = [
   { label: '3 months', months: 3 },
@@ -128,6 +129,7 @@ export function ShareClinicianScreen() {
         <Eyebrow>What goes in</Eyebrow>
       </View>
       <View style={s.card}>
+        <GlassFill />
         {ORDER.map((id, n) => (
           <View key={id} style={[s.row, n > 0 && s.divided]}>
             <View style={{ flex: 1 }}>
@@ -150,6 +152,7 @@ export function ShareClinicianScreen() {
       </View>
       {sections.map((sec) => (
         <View key={sec.id} style={s.card}>
+          <GlassFill />
           <View style={s.head}>
             <Text style={[font('headline'), s.label]}>{sec.title}</Text>
             <Text style={[font('caption1'), s.meta]}>{sec.source}</Text>
@@ -182,7 +185,7 @@ const st = StyleSheet.hairlineWidth;
 const s = StyleSheet.create({
   lede: { color: L.ink, lineHeight: 24, marginBottom: SPACE.block },
   meta: { color: L.meta, marginTop: 4 },
-  card: { backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: st, borderColor: L.rule, paddingHorizontal: 14, paddingVertical: 6, marginTop: 10 },
+  card: { backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: st, borderColor: L.rule, paddingHorizontal: 14, paddingVertical: 6, marginTop: 10, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
   divided: { borderTopWidth: st, borderTopColor: L.rule },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingVertical: 8 },

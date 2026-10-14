@@ -4,6 +4,7 @@ import Svg, { Circle, Ellipse, Path, Rect } from 'react-native-svg';
 import { STOOL_TYPES } from '../data/cycleLog';
 import { displayCopy } from '../lib/displayCopy';
 import { C, font, RADIUS } from '../theme';
+import { GlassFill } from './frosted';
 
 // Simple line pictures for the seven stool types, drawn in one weight.
 export function StoolPicture({ type, color, width = 44 }: { type: number; color: string; width?: number }) {
@@ -42,6 +43,7 @@ export function StoolScale({ value, onChange }: { value: number | null; onChange
             accessibilityLabel={`Type ${type}, ${displayCopy(word)}`}
             style={[s.row, on && s.on]}
           >
+            <GlassFill />
             <StoolPicture type={type} color={on ? C.text : C.secondary} />
             <Text style={[font('subhead', on ? 'semibold' : 'regular'), { color: on ? C.text : C.secondary, flex: 1 }]}>{displayCopy(word)}</Text>
             <Text style={[font('footnote'), { color: C.secondary }]}>Type {type}</Text>
@@ -54,6 +56,6 @@ export function StoolScale({ value, onChange }: { value: number | null; onChange
 
 const s = StyleSheet.create({
   list: { gap: 6 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44, paddingHorizontal: 12, borderRadius: RADIUS, backgroundColor: C.card },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44, paddingHorizontal: 12, borderRadius: RADIUS, backgroundColor: C.card, overflow: 'hidden' },
   on: { backgroundColor: C.cardHi },
 });

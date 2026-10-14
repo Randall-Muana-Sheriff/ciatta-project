@@ -10,6 +10,7 @@ import { useSession } from '../state/session';
 import { C, font, fonts, RADIUS } from '../theme';
 import { ListGroup, ListRow, Panel } from '../ui/chrome';
 import { DetailScreen, SecLabel, SourceFooter } from '../ui/kit';
+import { GlassFill } from '../ui/frosted';
 
 // Daily steps for four weeks against the usual range. Coral days sit below
 // it. With no baseline days yet (a new real record, or a source that has
@@ -109,6 +110,7 @@ export function MovementScreen() {
       <View style={m.tiles}>
         {tiles.map((t) => (
           <View key={t.label} style={m.tile} accessible accessibilityLabel={`${t.label}, ${t.value}${t.sub ? `, ${t.sub}` : ''}`}>
+            <GlassFill />
             <Text style={[font('footnote'), { color: C.secondary }]}>{t.label}</Text>
             <Text style={[font('title2', 'semibold'), { color: C.text }]}>{t.value}</Text>
             {t.sub ? <Text style={[font('caption1'), { color: C.secondary }]}>{t.sub}</Text> : null}
@@ -151,6 +153,7 @@ const m = StyleSheet.create({
     gap: 2,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.borderSub,
+    overflow: 'hidden',
   },
   section: { marginTop: 28 },
 });

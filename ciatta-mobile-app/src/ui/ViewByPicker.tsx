@@ -8,6 +8,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { type Scale, SCALES } from '../lib/timeAxis';
 import { C, font, RADIUS } from '../theme';
 import { Icon } from './icons';
+import { GlassFill } from './frosted';
 
 export function ViewByPicker({ scale, onChange }: { scale: Scale; onChange: (scale: Scale) => void }) {
   const [open, setOpen] = useState(false);
@@ -21,11 +22,13 @@ export function ViewByPicker({ scale, onChange }: { scale: Scale; onChange: (sca
         accessibilityLabel={`View by ${label}`}
         style={s.picker}
       >
+        <GlassFill />
         <Text style={[font('subhead', 'semibold'), { color: C.text }]}>View by {label}</Text>
         <Icon name={open ? 'chevronDown' : 'chevronRight'} size={16} color={C.secondary} />
       </Pressable>
       {open ? (
         <View style={s.menu}>
+          <GlassFill />
           {SCALES.map((v) => (
             <Pressable
               key={v.key}
@@ -58,6 +61,7 @@ const s = StyleSheet.create({
     backgroundColor: C.card,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.borderSub,
+    overflow: 'hidden',
   },
   menu: {
     marginTop: 6,

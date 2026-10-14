@@ -14,6 +14,7 @@ import { useRepo } from '../state/session';
 import { font } from '../theme';
 import { DetailScreen, SecondaryButton } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { GlassFill } from '../ui/frosted';
 
 export function PrivacyScreen() {
   const nav = useNav();
@@ -49,6 +50,7 @@ export function PrivacyScreen() {
     <DetailScreen title="Who Can See This" onBack={nav.back}>
       {facts.map((f) => (
         <View key={f.title} style={s.card}>
+          <GlassFill />
           <Text style={[font('headline'), s.title]}>{displayCopy(f.title)}</Text>
           <Text style={[font('subhead'), s.body]}>{displayCopy(f.body)}</Text>
         </View>
@@ -61,7 +63,7 @@ export function PrivacyScreen() {
 }
 
 const s = StyleSheet.create({
-  card: { backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 16, marginTop: 12 },
+  card: { backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 16, marginTop: 12, overflow: 'hidden' },
   title: { color: L.ink, marginBottom: 6 },
   body: { color: L.body, lineHeight: 21 },
 });

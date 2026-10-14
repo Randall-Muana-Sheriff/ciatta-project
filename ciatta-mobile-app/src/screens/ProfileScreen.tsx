@@ -44,6 +44,7 @@ import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
 import { avatarInitial } from '../ui/initial';
 import { EmptyNote, Expandable, Facts, LinkButton, SecondaryButton, SegmentedControl, Tag } from '../ui/kit';
+import { GlassFill } from '../ui/frosted';
 
 type Profile = NonNullable<Data['profile']>;
 
@@ -223,6 +224,7 @@ function HealthOverview({
             accessibilityLabel={`${f.label}, ${f.value ?? 'not added'}${f.sub ? `, ${f.sub}` : ''}`}
             accessibilityHint={OPENS[f.key] ? `Opens ${f.label.toLowerCase()}` : fromHealth && !f.value && f.key === 'age' ? 'Adds it from Apple Health' : undefined}
           >
+            <GlassFill />
             <Icon name={f.icon} size={16} color={f.key === 'insurance' ? C.lavender : C.coral} weight={1.8} />
             <Text style={[font('caption1'), { color: C.secondary, marginTop: 6 }]} numberOfLines={1}>{f.label}</Text>
             <Text style={[font('subhead', 'semibold'), { color: f.value ? C.text : C.tertiary }]} numberOfLines={1} adjustsFontSizeToFit>
@@ -314,6 +316,7 @@ function BodySystems() {
       <View style={p.grid}>
         {bodySystems.map((b) => (
           <View key={b.label} style={p.system}>
+            <GlassFill />
             <Icon name={b.icon} size={20} color={SYSTEM_DOTS[b.label]?.color ?? C.secondary} weight={1.8} />
             <Text style={[font('subhead'), { color: C.text, flex: 1 }]}>{displayCopy(b.label)}</Text>
           </View>
@@ -902,7 +905,7 @@ const p = StyleSheet.create({
   segs: { marginTop: 20, paddingHorizontal: GUTTER },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
-  tile: { backgroundColor: C.card, borderRadius: RADIUS, padding: 14 },
+  tile: { backgroundColor: C.card, borderRadius: RADIUS, padding: 14, overflow: 'hidden' },
   sectionHead: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
 
   // The paragraph sits on the statement ground the system keeps for one
@@ -930,6 +933,7 @@ const p = StyleSheet.create({
     borderColor: L.rule,
     paddingVertical: 10,
     paddingHorizontal: 10,
+    overflow: 'hidden',
   },
   measures: { gap: 12, marginTop: 16 },
   measureHead: { flexDirection: 'row', alignItems: 'baseline' },
@@ -946,6 +950,7 @@ const p = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: RADIUS,
     backgroundColor: C.card,
+    overflow: 'hidden',
   },
 
   version: { color: C.secondary, textAlign: 'center' },

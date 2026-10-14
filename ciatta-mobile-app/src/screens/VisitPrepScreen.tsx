@@ -16,6 +16,7 @@ import { C, font } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen, EmptyNote, PrimaryButton, SecondaryButton, Lead } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { GlassFill } from '../ui/frosted';
 
 export function VisitPrepScreen() {
   const nav = useNav();
@@ -47,6 +48,7 @@ export function VisitPrepScreen() {
         <View key={sec.title} style={{ marginTop: SPACE.near }}>
           <Eyebrow>{sec.title}</Eyebrow>
           <View style={s.card}>
+            <GlassFill />
             {sec.lines.map((l) => (
               <Text key={l} style={[font('subhead'), s.line]}>
                 {displayCopy(l)}
@@ -60,6 +62,7 @@ export function VisitPrepScreen() {
         <Eyebrow>Questions to ask</Eyebrow>
       </View>
       <View style={s.card}>
+        <GlassFill />
         {prep.questions.map((q) => (
           <View key={q} style={s.row}>
             <Text style={[font('subhead'), s.line, { flex: 1 }]}>{displayCopy(q)}</Text>
@@ -107,7 +110,7 @@ export function VisitPrepScreen() {
 const s = StyleSheet.create({
   lede: { color: L.ink, lineHeight: 24 },
   meta: { color: L.meta, marginTop: 10 },
-  card: { marginTop: SPACE.tight, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, gap: 10 },
+  card: { marginTop: SPACE.tight, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, gap: 10, overflow: 'hidden' },
   line: { color: L.ink, lineHeight: 21 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   input: { flex: 1, color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10 },

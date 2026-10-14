@@ -24,6 +24,7 @@ import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen, SecondaryButton, Lead } from '../ui/kit';
 import { L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
+import { GlassFill } from '../ui/frosted';
 
 const WINDOWS: { label: string; days: number }[] = [
   { label: '1 month', days: 30 },
@@ -174,6 +175,7 @@ function Section({ section }: { section: BriefSection }) {
       <Text style={[font('headline'), s.title]}>{section.title}</Text>
       <Text style={[font('caption1'), s.what]}>{section.what}</Text>
       <View style={s.card}>
+        <GlassFill />
         {section.empty ? (
           <Text style={[font('subhead'), s.empty]}>{displayCopy(emptyLine(section.id))}</Text>
         ) : (
@@ -214,6 +216,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,
+    overflow: 'hidden',
   },
   line: { paddingVertical: 11 },
   lineDivided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },

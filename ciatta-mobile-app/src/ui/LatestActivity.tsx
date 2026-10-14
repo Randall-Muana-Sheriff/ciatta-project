@@ -9,12 +9,14 @@ import { useCareHub } from '../state/careHub';
 import { font } from '../theme';
 import { Icon, type IconName } from './icons';
 import { L, TILE_RADIUS } from './surface';
+import { GlassFill } from './frosted';
 
 export function LatestActivity() {
   const latest = useCareHub().activity[0];
   if (!latest) return null;
   return (
     <View style={s.row} accessible accessibilityLabel={`Latest activity: ${latest.title}, ${latest.when}`}>
+      <GlassFill />
       <View style={s.icon}>
         <Icon name={latest.icon as IconName} size={15} color={L.ink} />
       </View>
@@ -39,6 +41,7 @@ const s = StyleSheet.create({
     borderRadius: TILE_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,
+    overflow: 'hidden',
   },
   icon: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: L.statement },
   ink: { color: L.ink },

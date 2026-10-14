@@ -10,6 +10,7 @@ import { useRepo } from '../state/session';
 import { C, font } from '../theme';
 import { Composer } from '../ui/composer';
 import { DetailScreen, EmptyNote, SegmentedControl, SecondaryButton, SourceFooter, Tag } from '../ui/kit';
+import { GlassFill } from '../ui/frosted';
 
 const FILTERS = ['All', 'Notes', 'Symptoms', 'Context'] as const;
 
@@ -76,6 +77,7 @@ export function JournalScreen() {
           <Text style={[font('caption2', 'semibold'), { color: C.rose, marginBottom: 8 }]}>{group.month}</Text>
           {group.items.map((item) => (
             <View key={item.date + item.text} style={j.card}>
+              <GlassFill />
               {item.text ? (
                 <Text style={[font('subhead'), { color: C.text, lineHeight: 22, marginBottom: 8 }]}>{displayCopy(item.text)}</Text>
               ) : null}
@@ -139,6 +141,7 @@ const j = StyleSheet.create({
     marginBottom: 8,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.borderSub,
+    overflow: 'hidden',
   },
   cardFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 });

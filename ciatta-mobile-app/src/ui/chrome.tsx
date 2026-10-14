@@ -12,6 +12,7 @@ import { GLASS } from './glass';
 import { G } from './scheme';
 import { L, TILE_RADIUS } from './surface';
 import { ChevronRight } from './kit';
+import { GlassFill } from './frosted';
 
 // ── Navigation bar items ───────────────────────────────────────
 
@@ -69,7 +70,7 @@ export function LargeTitle({ title, eyebrow, trailing }: { title?: string; eyebr
 // ── Content ────────────────────────────────────────────────────
 
 export function Panel({ children, style }: { children: ReactNode; style?: object }) {
-  return <View style={[s.panel, style]}>{children}</View>;
+  return <View style={[s.panel, style]}><GlassFill />{children}</View>;
 }
 
 export function PanelTitle({ icon, children }: { icon: IconName; children: string }) {
@@ -119,7 +120,7 @@ export function ListGroup({
           {header}
         </Text>
       ) : null}
-      <View style={[s.group, light && s.groupLight]}>{children}</View>
+      <View style={[s.group, light && s.groupLight]}><GlassFill />{children}</View>
       {footer ? <Text style={[font('footnote'), s.groupFooter]}>{footer}</Text> : null}
     </View>
   );
@@ -261,7 +262,7 @@ function Card({ children, style, role }: { children: ReactNode; style: ViewStyle
       // clear bar over a washed ground stops being a surface. The scheme
       // is pinned dark because the app is, so the glass cannot resolve
       // light under a system setting the rest of the app ignores.
-      {...(GLASS ? ({ glassEffectStyle: 'regular', colorScheme: 'dark' } as const) : {})}
+      {...(GLASS ? ({ glassEffectStyle: 'regular', colorScheme: G.mode } as const) : {})}
     >
       {children}
     </Surface>
@@ -329,6 +330,7 @@ const s = StyleSheet.create({
     padding: 16,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.borderSub,
+    overflow: 'hidden',
   },
   panelTitle: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
 
@@ -340,6 +342,7 @@ const s = StyleSheet.create({
     borderRadius: TILE_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,
+    overflow: 'hidden',
   },
   rowSepLight: { borderTopColor: L.rule },
   group: {

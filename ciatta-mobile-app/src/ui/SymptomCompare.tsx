@@ -19,6 +19,7 @@ import { Icon } from './icons';
 import { Sheet } from './Sheet';
 import { HUE, L, TILE_RADIUS } from './surface';
 import { onGround } from './scheme';
+import { GlassFill } from './frosted';
 
 const RANGES: { key: Range; label: string }[] = [
   { key: '7', label: '7 day' },
@@ -80,6 +81,7 @@ export function SymptomCompare({
         </Pressable>
       </View>
       <View style={s.card}>
+        <GlassFill />
         <View style={s.ranges}>
           {RANGES.map((r) => (
             <Pressable
@@ -243,7 +245,7 @@ function SymptomPicker({ visible, chosen, logged, onDone }: { visible: boolean; 
 const s = StyleSheet.create({
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   all: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  card: { marginTop: 10, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14 },
+  card: { marginTop: 10, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, overflow: 'hidden' },
   ranges: { flexDirection: 'row', gap: 6, marginBottom: 12 },
   range: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: L.statement },
   rangeOn: { backgroundColor: HUE.measured },

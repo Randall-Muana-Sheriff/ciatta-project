@@ -63,6 +63,7 @@ import { CONNECT_SYMPTOMS } from '../lib/agent/connect';
 import type { RequestKind } from '../lib/care';
 import { Icon } from '../ui/icons';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
+import { GlassFill } from '../ui/frosted';
 
 // Said once, the first time she opens Care. Each line is a promise the
 // code below keeps, which is the only reason it is allowed to be said.
@@ -335,6 +336,7 @@ export function CareScreen() {
         */}
         <View style={s.thread}>
           <View style={s.bubble}>
+            <GlassFill />
             <Text style={[font('body'), s.bubbleText]}>
               {displayCopy(
                 `${person?.firstName ? `Hi ${person.firstName}, I` : 'Hi, I'}’m ${name}, your care concierge. I keep watch over your record and get things ready for you. What would you like help with first?`,
@@ -346,11 +348,13 @@ export function CareScreen() {
               the facts behind it and a next step she can take. */}
           {actionCards.map((card) => (
             <View key={card.id} style={[s.actionCard, card.tone === 'urgent' && s.actionUrgent]}>
+              <GlassFill />
               <Text style={[font('subhead', 'semibold'), s.bubbleText]}>{displayCopy(card.title)}</Text>
               <Text style={[font('footnote'), s.actionDetail]}>{displayCopy(card.detail)}</Text>
               <View style={s.suggestions}>
                 {card.action ? (
                   <Pressable onPress={() => openSuggestion(card.action!)} accessibilityRole="button" style={({ pressed }) => [s.suggestion, pressed && s.pressed]}>
+                    <GlassFill />
                     <Text style={[font('footnote', 'semibold'), s.suggestionText]}>{card.action.label}</Text>
                   </Pressable>
                 ) : null}
@@ -368,20 +372,24 @@ export function CareScreen() {
             {/* The question most worth asking first: how her symptoms may
                 fit together, across her whole record. */}
             <Pressable onPress={() => send(CONNECT_SYMPTOMS)} accessibilityRole="button" style={({ pressed }) => [s.suggestion, pressed && s.pressed]}>
+              <GlassFill />
               <Text style={[font('footnote', 'semibold'), s.suggestionText]}>How my symptoms may connect</Text>
             </Pressable>
             {ready.slice(0, 1).map((c) => (
               <Pressable key={c.id} onPress={() => send(c.ask)} accessibilityRole="button" style={({ pressed }) => [s.suggestion, pressed && s.pressed]}>
+                <GlassFill />
                 <Text style={[font('footnote', 'semibold'), s.suggestionText]}>{c.title}</Text>
               </Pressable>
             ))}
             <Pressable onPress={() => nav.push('visitPrep')} accessibilityRole="button" style={({ pressed }) => [s.suggestion, pressed && s.pressed]}>
+              <GlassFill />
               <Text style={[font('footnote', 'semibold'), s.suggestionText]}>Visit prep</Text>
             </Pressable>
           </View>
 
           {naming ? (
             <View style={s.bubble}>
+              <GlassFill />
               <Text style={[font('body'), s.bubbleText]}>
                 What would you like to call me? You can change this any time by tapping my name.
               </Text>
@@ -607,6 +615,7 @@ function AnswerBlock({ turn, onOpen, onGrow }: { turn: Turn; onOpen: (sug: Sugge
               accessibilityRole="button"
               style={({ pressed }) => [s.suggestion, pressed && s.pressed]}
             >
+              <GlassFill />
               <Text style={[font('footnote', 'semibold'), s.suggestionText]}>{sug.label}</Text>
             </Pressable>
           ))}
@@ -676,6 +685,7 @@ const s = StyleSheet.create({
     borderColor: L.rule,
     paddingVertical: 14,
     paddingHorizontal: 16,
+    overflow: 'hidden',
   },
   bubbleText: { color: L.ink, lineHeight: 24 },
 
@@ -723,6 +733,7 @@ const s = StyleSheet.create({
     borderWidth: st,
     borderColor: L.rule,
     padding: 14,
+    overflow: 'hidden',
   },
   actionUrgent: { borderColor: 'rgba(236, 93, 74, 0.6)', backgroundColor: 'rgba(236, 93, 74, 0.10)' },
   actionDetail: { color: L.meta, marginTop: 4, lineHeight: 18 },
@@ -733,6 +744,7 @@ const s = StyleSheet.create({
     borderColor: L.rule,
     paddingVertical: 9,
     paddingHorizontal: 14,
+    overflow: 'hidden',
   },
   suggestionText: { color: L.body },
   pressed: { opacity: 0.55 },

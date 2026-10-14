@@ -9,14 +9,20 @@ import { displayCopy } from '../lib/displayCopy';
 import { isAppleSignInAvailable, signInWithApple, signInWithGoogle, SocialAuthCancelled } from '../lib/socialAuth';
 import { consentsFor } from '../lib/onboarding';
 import { supabase } from '../lib/supabase';
+import { StatusBar } from 'expo-status-bar';
 import { userFacingError } from '../lib/userFacingError';
 import { useSession } from '../state/session';
-import { C, font, GUTTER, RADIUS } from '../theme';
+import { font, GUTTER, RADIUS } from '../theme';
 import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
 import { Ground } from '../ui/Ground';
-import { L } from '../ui/surface';
+import { PALETTES } from '../ui/scheme';
+
 import { MARK_TOP, Wordmark } from '../ui/Wordmark';
+
+// Set over a dark photograph, so it keeps the dark palette in either mode.
+const L = PALETTES.dark.L;
+const C = PALETTES.dark.C;
 
 // The hero loops silently behind all three panes. It is decorative: nothing
 // here is said by the video alone, so a reader that never sees it loses
@@ -331,6 +337,7 @@ export function SignInScreen() {
 
   return (
     <Ground>
+      <StatusBar style="light" />
       {/*
         The film pane paints its own ground, exactly as it did before the
         shared one existed: the video is what covers this screen, and the

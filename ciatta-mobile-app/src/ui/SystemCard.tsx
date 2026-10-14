@@ -12,6 +12,7 @@ import { topicsFor } from '../lib/systemReview';
 import { C, font, RADIUS } from '../theme';
 import { Icon, type IconName } from './icons';
 import { onGround } from './scheme';
+import { GlassFill } from './frosted';
 
 export function SystemCard({
   label,
@@ -39,6 +40,7 @@ export function SystemCard({
   const kinds = [...new Set(sources.map((s) => s.kind))];
   return (
     <View style={c.card}>
+      <GlassFill />
       <View style={c.head}>
         <Icon name={icon} size={20} color={color} weight={1.8} />
         <Text style={[font('title3', 'semibold'), c.title]} accessibilityRole="header">
@@ -51,6 +53,7 @@ export function SystemCard({
           hitSlop={8}
           style={({ pressed }) => [c.explore, pressed && c.pressed]}
         >
+          <GlassFill />
           <Icon name="sparkle" size={14} color={C.text} />
           <Text style={[font('footnote', 'semibold'), { color: C.text }]}>Explore</Text>
         </Pressable>
@@ -88,6 +91,7 @@ export function SystemCard({
 
       {explore ? (
         <View style={c.worth}>
+          <GlassFill />
           <Text style={[font('footnote', 'semibold'), { color: C.text }]}>Worth exploring</Text>
           <Text style={[font('subhead'), c.worthText]}>{displayCopy(explore)}</Text>
         </View>
@@ -136,7 +140,7 @@ const SOURCE_COLOR: Record<string, string> = {
 };
 
 const c = StyleSheet.create({
-  card: { marginTop: 16, backgroundColor: C.card, borderRadius: RADIUS, padding: 16, gap: 10 },
+  card: { marginTop: 16, backgroundColor: C.card, borderRadius: RADIUS, padding: 16, gap: 10, overflow: 'hidden' },
   head: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   title: { color: C.text, flex: 1 },
   explore: {
@@ -147,6 +151,7 @@ const c = StyleSheet.create({
     minHeight: 32,
     borderRadius: 999,
     backgroundColor: C.cardHi,
+    overflow: 'hidden',
   },
   topics: { gap: 8 },
   topic: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: C.borderSub },
@@ -168,7 +173,7 @@ const c = StyleSheet.create({
   },
   sourceDot: { width: 8, height: 8, borderRadius: 4 },
   sourceLine: { color: C.secondary, lineHeight: 19 },
-  worth: { gap: 4, padding: 12, borderRadius: 12, backgroundColor: C.cardHi },
+  worth: { gap: 4, padding: 12, borderRadius: 12, backgroundColor: C.cardHi, overflow: 'hidden' },
   worthText: { color: C.text, lineHeight: 21 },
   ask: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', marginTop: 4 },
   arrow: { color: C.secondary },

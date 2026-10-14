@@ -34,6 +34,7 @@ import { ListGroup, ListRow } from '../ui/chrome';
 import { DetailScreen, SecondaryButton } from '../ui/kit';
 import { addAppointmentWithForm, useDeviceCalendar } from '../state/deviceCalendar';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
+import { GlassFill } from '../ui/frosted';
 
 export function CalendarScreen() {
   const nav = useNav();
@@ -167,6 +168,7 @@ export function CalendarScreen() {
 
       {picked ? (
         <View style={s.detail}>
+          <GlassFill />
           <Text style={[font('footnote', 'semibold'), s.detailDay]}>{displayCopy(longDay(picked.date))}</Text>
           <Text style={[font('body'), s.detailLine]}>{displayCopy(dayLine(picked))}</Text>
           {eventsOnDay(cal.events, picked.date).map((e) => (
@@ -344,6 +346,7 @@ const s = StyleSheet.create({
     borderWidth: st,
     borderColor: L.rule,
     padding: 16,
+    overflow: 'hidden',
   },
   detailDay: { color: L.meta },
   detailLine: { color: L.ink, lineHeight: 24, marginTop: 4 },

@@ -28,9 +28,14 @@ import { font, GUTTER, RADIUS } from '../theme';
 import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
 import { Ground } from '../ui/Ground';
-import { L } from '../ui/surface';
+import { PALETTES } from '../ui/scheme';
+
 import { MARK_TOP, Wordmark } from '../ui/Wordmark';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import { GlassFill } from '../ui/frosted';
+
+// Set over a dark photograph, so it keeps the dark palette in either mode.
+const L = PALETTES.dark.L;
 
 // The first session: six screens in three phases.
 //
@@ -851,6 +856,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             */}
             <View style={s.sourceCard}>
               <View style={s.appleTile}>
+                <GlassFill />
                 <Icon name="heart" size={22} color="#FA114F" filled />
               </View>
               <View style={s.rowText}>
@@ -1120,6 +1126,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: LINE,
+    overflow: 'hidden',
   },
   rowText: { flex: 1 },
   rowDetail: { color: MUTED, marginTop: 2 },

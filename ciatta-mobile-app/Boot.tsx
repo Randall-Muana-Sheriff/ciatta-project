@@ -20,13 +20,25 @@ export default function Boot() {
 
   useEffect(() => {
     let scheme: Scheme = 'system';
-    loadScheme().then((s) => {
-      scheme = s;
-      setLoadedScheme(s);
-      applyMode(resolveMode(s, Appearance.getColorScheme()));
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      setApp(() => require('./App').default as ComponentType);
-    });
+    loadScheme()
+      .then(async (s) => {
+        scheme = s;
+        setLoadedScheme(s);
+        // Clear any override left by the last run, so System reads the
+        // phone itself; the native side settles a frame later.
+        Appearance.setColorScheme('unspecified');
+        await new Promise((r) => setTimeout(r, 60));
+        const mode = resolveMode(s, Appearance.getColorScheme());
+        applyMode(mode);
+        // iOS draws its own pieces (keyboards, menus, the HealthKit sheet)
+        // in the app's style, so a fixed choice is passed on to them.
+        if (s !== 'system') Appearance.setColorScheme(mode);
+        return s;
+      })
+      .then(() => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        setApp(() => require('./App').default as ComponentType);
+      });
     // iOS reports both appearances while it snapshots the app going to the
     // background, so the phone's setting is only read on coming back.
     const sub = AppState.addEventListener('change', (state) => {

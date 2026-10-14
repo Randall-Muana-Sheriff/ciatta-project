@@ -17,6 +17,7 @@ import { Eyebrow } from '../ui/bento';
 import { DetailScreen, EmptyNote } from '../ui/kit';
 import { LabRangeBar, LabStatusTag, STATUS_COLOR } from '../ui/labs';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { GlassFill } from '../ui/frosted';
 
 const CHART_H = 150;
 
@@ -35,6 +36,7 @@ function History({ results }: { results: LabResult[] }) {
   const x = (on: string) => 12 + (t1 === t0 ? 0.5 : (Date.parse(on) - t0) / (t1 - t0)) * (width - 24);
   return (
     <View style={s.card}>
+      <GlassFill />
       <View style={{ height: CHART_H }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
         {width ? (
           <Svg width={width} height={CHART_H}>
@@ -110,6 +112,7 @@ export function LabDetailScreen() {
         <Eyebrow>Every result</Eyebrow>
       </View>
       <View style={s.card}>
+        <GlassFill />
         {[...history].reverse().map((r, n) => (
           <View key={r.id} style={[s.row, n > 0 && s.divided]}>
             <View style={{ flex: 1 }}>
@@ -143,7 +146,7 @@ const s = StyleSheet.create({
   big: { flexDirection: 'row', alignItems: 'baseline', marginVertical: 6 },
   value: { color: L.ink, letterSpacing: -1.5 },
   unit: { color: L.body, marginLeft: 6 },
-  card: { marginTop: SPACE.tight, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14 },
+  card: { marginTop: SPACE.tight, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, overflow: 'hidden' },
   ends: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },

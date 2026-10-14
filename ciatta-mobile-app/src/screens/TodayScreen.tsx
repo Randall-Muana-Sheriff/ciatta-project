@@ -55,6 +55,7 @@ import { type BaselineRow, type MetricKey, usualFor } from '../lib/metricDetail'
 import { ProductNowCard } from '../ui/ProductNowCard';
 import type { IconName } from '../ui/icons';
 import { Icon } from '../ui/icons';
+import { GlassFill } from '../ui/frosted';
 
 function greeting(now: Date): string {
   const h = now.getHours();
@@ -370,6 +371,7 @@ export function TodayScreen() {
           shape Ciatta chose rather than one she produced.
         */}
         <View style={t.dayCard}>
+          <GlassFill />
           <View style={t.dayHead}>
             <Text style={[font('caption1'), t.dayHeadText]}>TODAY&rsquo;S PATTERNS</Text>
             <Text style={[font('caption1'), t.dayHeadText]}>
@@ -452,6 +454,7 @@ export function TodayScreen() {
         </View>
         {state.measured ? (
         <View style={t.card}>
+          <GlassFill />
           {/*
             Six cards and nothing else. The card holds only metrics now:
             the chart and the cycle moved up into Today's Patterns, where
@@ -516,6 +519,7 @@ export function TodayScreen() {
           </View>
           {plan.length ? (
             <View style={t.plan}>
+              <GlassFill />
               {plan.map((item, n) => {
                 const ticked = done.includes(item.key);
                 return (
@@ -548,6 +552,7 @@ export function TodayScreen() {
           ) : (
             // Nothing earned today: said, with when the plan comes back.
             <View style={[t.plan, t.planEmpty]}>
+              <GlassFill />
               <Icon name="check" size={20} color={L.meta} />
               <Text style={[font('subhead', 'semibold'), t.planTitle]}>Nothing needs doing today</Text>
               <Text style={[font('footnote'), t.planWhy, { textAlign: 'center' }]}>
@@ -569,6 +574,7 @@ export function TodayScreen() {
           {/* As the Nutrition card was: the photo across the top, edge to
               edge, with its label on it, and the actions beneath. */}
           <View style={t.youCan}>
+            <GlassFill />
             <Image source={images.youCan} style={t.youCanPhoto} resizeMode="cover" accessibilityIgnoresInvertColors accessible={false} />
             <View style={t.youCanPill}>
               <Text style={[font('caption1', 'semibold'), t.youCanPillText]}>YOU CAN LOG</Text>
@@ -669,6 +675,7 @@ const t = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 10,
+    overflow: 'hidden',
   },
   dayHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   dayHeadText: { color: L.meta, letterSpacing: 0.9 },
@@ -742,6 +749,7 @@ const t = StyleSheet.create({
     padding: 18,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,
+    overflow: 'hidden',
   },
   chart: { flex: 1, aspectRatio: 190 / 150 },
   planHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -753,6 +761,7 @@ const t = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,
     paddingHorizontal: 14,
+    overflow: 'hidden',
   },
   planRow: { flexDirection: 'row', gap: 12, paddingVertical: 14 },
   planRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },

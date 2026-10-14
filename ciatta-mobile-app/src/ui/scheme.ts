@@ -33,8 +33,8 @@ export const G = {
   mid: '#08090B',
   foot: '#030405',
   // How strongly the two semantic hues wash the ground.
-  washFrom: 0.15,
-  washTo: 0.11,
+  washFrom: 0.22,
+  washTo: 0.17,
   bar: 'rgba(14, 16, 20, 0.94)',
   shadow: '#000000',
   statusBar: 'light' as 'light' | 'dark',
@@ -86,12 +86,14 @@ function build(mode: Mode): Palette {
   const body = dark ? '#D2D5DA' : '#373C44';
   const meta = dark ? '#A9AEB5' : '#59606A';
   const g: typeof G = dark
-    ? { mode, top: '#0F1115', mid: '#08090B', foot: '#030405', washFrom: 0.15, washTo: 0.11, bar: 'rgba(14, 16, 20, 0.94)', shadow: '#000000', statusBar: 'light' }
+    ? { mode, top: '#0F1115', mid: '#08090B', foot: '#030405', washFrom: 0.22, washTo: 0.17, bar: 'rgba(14, 16, 20, 0.94)', shadow: '#000000', statusBar: 'light' }
     : { mode, top: '#F8F6F3', mid: '#F1EEEA', foot: '#E8E4DF', washFrom: 0.13, washTo: 0.1, bar: 'rgba(250, 248, 245, 0.94)', shadow: '#2A2520', statusBar: 'dark' };
   // A card on light is paper lifted toward white rather than darkened, so
   // it still reads as nearer than the ground.
-  const card = dark ? lift(mode, 0.045) : 'rgba(255, 255, 255, 0.62)';
-  const cardHi = dark ? lift(mode, 0.08) : 'rgba(255, 255, 255, 0.82)';
+  // Dark glass: a smoked fill over the blur, so a card is darker than the
+  // glow behind it rather than lighter, and its crisp edge gives it shape.
+  const card = dark ? 'rgba(14, 16, 21, 0.38)' : 'rgba(255, 255, 255, 0.62)';
+  const cardHi = dark ? 'rgba(24, 27, 34, 0.52)' : 'rgba(255, 255, 255, 0.82)';
 
   return {
     HUE: h,
@@ -99,7 +101,7 @@ function build(mode: Mode): Palette {
     L: {
       canvas: g.mid,
       recessed: card,
-      rule: lift(mode, dark ? 0.07 : 0.09),
+      rule: lift(mode, dark ? 0.1 : 0.09),
       statement: dark ? lift(mode, 0.085) : cardHi,
       fillSelected: lift(mode, dark ? 0.14 : 0.08),
       edgeOn: lift(mode, dark ? 0.16 : 0.22),
@@ -121,8 +123,8 @@ function build(mode: Mode): Palette {
       surface: card,
       fill: lift(mode, dark ? 0.08 : 0.05),
       fillSelected: lift(mode, dark ? 0.14 : 0.09),
-      border: lift(mode, dark ? 0.09 : 0.1),
-      borderSub: lift(mode, dark ? 0.06 : 0.07),
+      border: lift(mode, dark ? 0.12 : 0.1),
+      borderSub: lift(mode, dark ? 0.1 : 0.07),
       separator: lift(mode, dark ? 0.07 : 0.08),
       text: ink,
       secondary: body,

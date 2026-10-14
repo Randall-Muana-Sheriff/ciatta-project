@@ -8,7 +8,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Appearance, View } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Root } from './src/Root';
@@ -69,14 +69,6 @@ function Gate() {
 }
 
 export default function App() {
-  // Back on Graphite, so iOS draws its own pieces to match: keyboards,
-  // menus, and Apple's HealthKit sheet, which is drawn by iOS in the app's
-  // interface style and cannot be styled any other way. Info.plist already
-  // declares dark, so this agrees with it rather than overriding it.
-  useEffect(() => {
-    Appearance.setColorScheme('dark');
-  }, []);
-
   const [loaded, error] = useFonts({
     Jost_400Regular,
     Jost_400Regular_Italic,

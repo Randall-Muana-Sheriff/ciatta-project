@@ -37,6 +37,7 @@ import { Composer } from '../ui/composer';
 import { Icon } from '../ui/icons';
 import { DetailScreen, PrimaryButton, Lead } from '../ui/kit';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
+import { GlassFill } from '../ui/frosted';
 
 const today = () => {
   const d = new Date();
@@ -186,6 +187,7 @@ export function DailyLogScreen() {
 
         {log.foods.length ? (
           <View style={s.card}>
+            <GlassFill />
             {log.foods.map((f, n) => {
               // Null rather than a bare number, which is the guarantee.
               const line = kcalLine(f);
@@ -394,6 +396,7 @@ const s = StyleSheet.create({
     borderWidth: st,
     borderColor: L.rule,
     paddingHorizontal: 14,
+    overflow: 'hidden',
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
   divided: { borderTopWidth: st, borderTopColor: L.rule },

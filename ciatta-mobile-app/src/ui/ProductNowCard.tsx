@@ -20,6 +20,7 @@ import { font } from '../theme';
 import { PrimaryButton, SecondaryButton } from './kit';
 import { L, SPACE, TILE_RADIUS } from './surface';
 import { onGround } from './scheme';
+import { GlassFill } from './frosted';
 
 const id = () => `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
@@ -86,6 +87,7 @@ export function ProductNowCard() {
 
   return (
     <View style={[c.card, over && c.over]}>
+      <GlassFill />
       {/* The facts read as one line; the buttons below stay their own. */}
       <View accessible accessibilityLabel={`${productName(current)} in. ${inForLine(current, now)}. ${changeLine(current, now)}`}>
         <Text style={[font('caption1'), c.eyebrow]}>IN NOW</Text>
@@ -124,6 +126,7 @@ const c = StyleSheet.create({
     borderColor: L.rule,
     padding: 16,
     gap: 4,
+    overflow: 'hidden',
   },
   over: { borderColor: onGround('#F27D9B') },
   eyebrow: { color: L.meta, letterSpacing: 0.9 },

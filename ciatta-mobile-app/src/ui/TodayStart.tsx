@@ -14,6 +14,7 @@ import { font } from '../theme';
 import { Icon, type IconName } from './icons';
 import { images } from './images';
 import { L, SPACE, TILE_RADIUS } from './surface';
+import { GlassFill } from './frosted';
 
 export function TodayStart({
   onConnect,
@@ -31,6 +32,7 @@ export function TodayStart({
   return (
     <>
       <View style={s.card}>
+        <GlassFill />
         <View style={s.badge}>
           <Icon name="sparkle" size={22} color={L.ink} />
         </View>
@@ -58,6 +60,7 @@ export function TodayStart({
       </View>
 
       <View style={s.preview}>
+        <GlassFill />
         <Image source={images.youCan} style={s.previewPhoto} resizeMode="cover" accessible={false} accessibilityIgnoresInvertColors />
         <View style={s.fade} />
         <Text style={[font('footnote'), s.previewText]}>
@@ -87,6 +90,7 @@ const s = StyleSheet.create({
     paddingVertical: 28,
     paddingHorizontal: 20,
     alignItems: 'center',
+    overflow: 'hidden',
   },
   badge: {
     width: 48,

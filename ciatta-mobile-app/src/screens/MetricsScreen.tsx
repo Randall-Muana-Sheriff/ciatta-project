@@ -36,6 +36,7 @@ import { HealthDashboard } from '../ui/HealthDashboard';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
 import { HUE, L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { GlassFill } from '../ui/frosted';
 
 const VIEWS = ['Dashboard', 'List'] as const;
 
@@ -130,6 +131,7 @@ export function MetricsScreen() {
         <View key={group.title} style={s.group}>
           <Eyebrow>{group.title}</Eyebrow>
           <View style={s.card}>
+            <GlassFill />
             {group.rows.map((row, n) => (
               <Row
                 key={row.label}
@@ -204,6 +206,7 @@ const s = StyleSheet.create({
     borderWidth: st,
     borderColor: L.rule,
     paddingHorizontal: 14,
+    overflow: 'hidden',
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
   divided: { borderTopWidth: st, borderTopColor: L.rule },

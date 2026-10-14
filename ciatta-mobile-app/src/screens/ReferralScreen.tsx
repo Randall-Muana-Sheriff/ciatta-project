@@ -15,6 +15,7 @@ import { Eyebrow } from '../ui/bento';
 import { Icon } from '../ui/icons';
 import { DetailScreen, SecondaryButton, SaveBar } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { GlassFill } from '../ui/frosted';
 
 const today = () => {
   const d = new Date();
@@ -122,6 +123,7 @@ export function ReferralScreen() {
         <Eyebrow>Steps</Eyebrow>
       </View>
       <View style={s.card}>
+        <GlassFill />
         {REFERRAL_STEPS.map((step, n) => {
           const done = r.steps[step.key];
           return (
@@ -163,6 +165,7 @@ export function ReferralScreen() {
 
       {next ? (
         <View style={[s.card, { marginTop: SPACE.block }]}>
+          <GlassFill />
           <Text style={[font('footnote', 'semibold'), { color: C.blueLink }]}>Next</Text>
           <Text style={[font('subhead'), { color: L.ink, marginTop: 4, lineHeight: 21 }]}>{displayCopy(next.text)}</Text>
         </View>
@@ -181,7 +184,7 @@ export function ReferralScreen() {
 const s = StyleSheet.create({
   label: { color: L.meta, marginTop: SPACE.near, marginBottom: 6 },
   input: { color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
-  card: { marginTop: SPACE.tight, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14 },
+  card: { marginTop: SPACE.tight, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, overflow: 'hidden' },
   step: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },
   tick: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: L.meta, alignItems: 'center', justifyContent: 'center' },

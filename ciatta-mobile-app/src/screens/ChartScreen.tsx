@@ -35,6 +35,7 @@ import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen, SecondaryButton, Lead } from '../ui/kit';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
+import { GlassFill } from '../ui/frosted';
 
 const FLAG_HUE: Record<string, string> = {
   High: HUE.escalation,
@@ -106,6 +107,7 @@ export function ChartScreen() {
               <View key={day.on ?? 'undated'} style={s.day}>
                 <Text style={[font('footnote', 'semibold'), s.dayHead]}>{dayLabel(day.on)}</Text>
                 <View style={s.card}>
+                  <GlassFill />
                   {day.results.map((r, n) => (
                     <Result key={r.sourceId} record={r} first={n === 0} />
                   ))}
@@ -136,6 +138,7 @@ function Standing({ title, records }: { title: string; records: readonly Clinica
     <View style={s.section}>
       <Eyebrow>{title}</Eyebrow>
       <View style={s.card}>
+        <GlassFill />
         {records.map((r, n) => (
           <View key={r.sourceId} style={[s.row, n > 0 && s.divided]}>
             <View style={{ flex: 1 }}>
@@ -198,6 +201,7 @@ const s = StyleSheet.create({
     borderWidth: st,
     borderColor: L.rule,
     paddingHorizontal: 14,
+    overflow: 'hidden',
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
   divided: { borderTopWidth: st, borderTopColor: L.rule },

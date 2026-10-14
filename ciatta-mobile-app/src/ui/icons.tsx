@@ -1,168 +1,182 @@
-import Svg, { Circle, Path } from 'react-native-svg';
+// Lucide, thin stroke, everywhere. One component so every screen moves
+// at once; the names are Ciatta's own, mapped to the nearest Lucide glyph.
+// Lucide has no organ set, so the body systems take the closest symbol:
+// Venus for reproductive, a bean for kidney, a funnel for liver, a bowl for
+// gut, wind for lungs, a spark for thyroid.
+
+import type { ComponentType } from 'react';
+import type { LucideProps } from 'lucide-react-native';
+
+import ActivityIcon from 'lucide-react-native/icons/activity';
+import ArrowRightIcon from 'lucide-react-native/icons/arrow-right';
+import AtomIcon from 'lucide-react-native/icons/atom';
+import AudioWaveformIcon from 'lucide-react-native/icons/audio-waveform';
+import BandageIcon from 'lucide-react-native/icons/bandage';
+import BeanIcon from 'lucide-react-native/icons/bean';
+import BedIcon from 'lucide-react-native/icons/bed';
+import BoneIcon from 'lucide-react-native/icons/bone';
+import BookmarkIcon from 'lucide-react-native/icons/bookmark';
+import BrainIcon from 'lucide-react-native/icons/brain';
+import BugIcon from 'lucide-react-native/icons/bug';
+import CalendarIcon from 'lucide-react-native/icons/calendar';
+import CalendarPlusIcon from 'lucide-react-native/icons/calendar-plus';
+import CameraIcon from 'lucide-react-native/icons/camera';
+import ChartColumnIcon from 'lucide-react-native/icons/chart-column';
+import CheckIcon from 'lucide-react-native/icons/check';
+import ChevronDownIcon from 'lucide-react-native/icons/chevron-down';
+import ChevronLeftIcon from 'lucide-react-native/icons/chevron-left';
+import ChevronRightIcon from 'lucide-react-native/icons/chevron-right';
+import CircleIcon from 'lucide-react-native/icons/circle';
+import CircleDotIcon from 'lucide-react-native/icons/circle-dot';
+import ClockIcon from 'lucide-react-native/icons/clock';
+import CloudIcon from 'lucide-react-native/icons/cloud';
+import CoffeeIcon from 'lucide-react-native/icons/coffee';
+import DropletIcon from 'lucide-react-native/icons/droplet';
+import DropletsIcon from 'lucide-react-native/icons/droplets';
+import DumbbellIcon from 'lucide-react-native/icons/dumbbell';
+import FileTextIcon from 'lucide-react-native/icons/file-text';
+import FunnelIcon from 'lucide-react-native/icons/funnel';
+import FlameIcon from 'lucide-react-native/icons/flame';
+import FlaskConicalIcon from 'lucide-react-native/icons/flask-conical';
+import Flower2Icon from 'lucide-react-native/icons/flower-2';
+import FootprintsIcon from 'lucide-react-native/icons/footprints';
+import GlassWaterIcon from 'lucide-react-native/icons/glass-water';
+import HeartIcon from 'lucide-react-native/icons/heart';
+import HeartPulseIcon from 'lucide-react-native/icons/heart-pulse';
+import HourglassIcon from 'lucide-react-native/icons/hourglass';
+import HouseIcon from 'lucide-react-native/icons/house';
+import ImageIcon from 'lucide-react-native/icons/image';
+import InfoIcon from 'lucide-react-native/icons/info';
+import LayersIcon from 'lucide-react-native/icons/layers';
+import LayoutPanelLeftIcon from 'lucide-react-native/icons/layout-panel-left';
+import LeafIcon from 'lucide-react-native/icons/leaf';
+import MenuIcon from 'lucide-react-native/icons/menu';
+import MessageCircleIcon from 'lucide-react-native/icons/message-circle';
+import MicIcon from 'lucide-react-native/icons/mic';
+import MinusIcon from 'lucide-react-native/icons/minus';
+import MoonIcon from 'lucide-react-native/icons/moon';
+import NotebookPenIcon from 'lucide-react-native/icons/notebook-pen';
+import PersonStandingIcon from 'lucide-react-native/icons/person-standing';
+import PillIcon from 'lucide-react-native/icons/pill';
+import PlaneIcon from 'lucide-react-native/icons/plane';
+import PlusIcon from 'lucide-react-native/icons/plus';
+import RouteIcon from 'lucide-react-native/icons/route';
+import RulerIcon from 'lucide-react-native/icons/ruler';
+import SearchIcon from 'lucide-react-native/icons/search';
+import SendIcon from 'lucide-react-native/icons/send';
+import ShieldIcon from 'lucide-react-native/icons/shield';
+import SoupIcon from 'lucide-react-native/icons/soup';
+import SparklesIcon from 'lucide-react-native/icons/sparkles';
+import SquareIcon from 'lucide-react-native/icons/square';
+import StethoscopeIcon from 'lucide-react-native/icons/stethoscope';
+import SunIcon from 'lucide-react-native/icons/sun';
+import SyringeIcon from 'lucide-react-native/icons/syringe';
+import TargetIcon from 'lucide-react-native/icons/target';
+import ThermometerIcon from 'lucide-react-native/icons/thermometer';
+import ThumbsDownIcon from 'lucide-react-native/icons/thumbs-down';
+import ThumbsUpIcon from 'lucide-react-native/icons/thumbs-up';
+import ToiletIcon from 'lucide-react-native/icons/toilet';
+import TriangleIcon from 'lucide-react-native/icons/triangle';
+import UserIcon from 'lucide-react-native/icons/user';
+import UsersIcon from 'lucide-react-native/icons/users';
+import UtensilsIcon from 'lucide-react-native/icons/utensils';
+import VenusIcon from 'lucide-react-native/icons/venus';
+import VideoIcon from 'lucide-react-native/icons/video';
+import WatchIcon from 'lucide-react-native/icons/watch';
+import WavesHorizontalIcon from 'lucide-react-native/icons/waves-horizontal';
+import WindIcon from 'lucide-react-native/icons/wind';
+import XIcon from 'lucide-react-native/icons/x';
+import ZapIcon from 'lucide-react-native/icons/zap';
 
 import { C } from '../theme';
 
-// Thin line icons drawn on a 24pt grid to match the reference screens.
-type Shape = { d: string } | { c: [number, number, number]; fill?: boolean };
-
-const p = (d: string): Shape => ({ d });
-const o = (x: number, y: number, r: number): Shape => ({ c: [x, y, r] });
-const dot = (x: number, y: number, r: number): Shape => ({ c: [x, y, r], fill: true });
-
 const ICONS = {
-  sparkle: [p('M11 3l1.7 5.3L18 10l-5.3 1.7L11 17l-1.7-5.3L4 10l5.3-1.7z'), p('M18.5 3v4M16.5 5h4'), p('M18 16v4M16 18h4')],
-  target: [o(12, 12, 9), o(12, 12, 5), dot(12, 12, 1.6)],
-  today: [o(12, 12, 9), dot(12, 12, 1.8)],
-  bars: [
-    p('M4.5 20v-5a1.5 1.5 0 0 1 3 0v5'),
-    p('M9 20v-9a1.5 1.5 0 0 1 3 0v9'),
-    p('M13.5 20v-6.5a1.5 1.5 0 0 1 3 0V20'),
-    p('M18 20V5.5a1.5 1.5 0 0 1 3 0V20'),
-    p('M3 20h19'),
-  ],
-  journey: [o(4, 17, 2), o(10, 8, 2), o(15, 15, 2), o(20, 6, 2), p('M5.2 15.4l3.6-5.8M11.3 9.6l2.4 3.8M16.1 13.3l2.8-5.6')],
-  person: [o(12, 8, 4), p('M4.5 21c.8-4 3.8-6.5 7.5-6.5s6.7 2.5 7.5 6.5')],
-  mic: [p('M12 4a3 3 0 0 1 3 3v4a3 3 0 0 1-6 0V7a3 3 0 0 1 3-3z'), p('M6 11a6 6 0 0 0 12 0'), p('M12 17v3M9 20h6')],
-  // A square rather than the usual stop circle: it sits in the same 24pt box
-  // as the mic, and the mic it replaces is already round.
-  stopSquare: [p('M8 8h8v8H8z')],
-  // The tip is at x 20, on the right. It used to sit at x 4, so the mark
-  // flared rightward from a leftward point and the whole glyph read as
-  // pointing back at her rather than away.
-  send: [p('M20 12L4 4l6 8-6 8z')],
-  camera: [p('M3 8.5A1.5 1.5 0 0 1 4.5 7h2L8 5h8l1.5 2h2A1.5 1.5 0 0 1 21 8.5v9A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z'), o(12, 13, 3.4)],
-  // A picture, as its frame with a horizon and a sun in it. Distinct from
-  // camera at a glance, which matters when the two sit in one menu.
-  image: [p('M3 5h18v14H3z'), p('M3 16l5.5 -5 4 3.5 3.5 -3 5 4.5'), o(8.5, 9, 1.6)],
-  // Play, in a frame, for the same reason.
-  video: [p('M3 6h18v12H3z'), p('M10 9.5l5 2.5 -5 2.5z')],
-  chevronLeft: [p('M15 5l-7 7 7 7')],
-  chevronRight: [p('M9 5l7 7-7 7')],
-  chevronDown: [p('M5 9l7 7 7-7')],
-  arrowRight: [p('M4 12h16M14 6l6 6-6 6')],
-  moon: [p('M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z')],
-  // Reactions on content, as a chat shows them under a reply.
-  thumbUp: [p('M7 10.5V20H4v-9.5z'), p('M7 10.5 11 3.5c1.5 0 2.5 1.1 2.2 2.6l-.7 3.4H19a2 2 0 0 1 2 2.3l-1.2 6.4A2 2 0 0 1 17.8 20H7')],
-  thumbDown: [p('M7 13.5V4H4v9.5z'), p('M7 13.5l4 7c1.5 0 2.5-1.1 2.2-2.6l-.7-3.4H19a2 2 0 0 0 2-2.3l-1.2-6.4A2 2 0 0 0 17.8 4H7')],
-  bookmark: [p('M6.5 3.5h11v17L12 16.5l-5.5 4z')],
-  // Pictures for the Log screen's quick chips, on the same grid.
-  cup: [p('M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z'), p('M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16'), p('M8.5 3.5c-.8 1 .8 2 0 3M12 3.5c-.8 1 .8 2 0 3')],
-  glass: [p('M7 3.5h10l-1 6.5a4 4 0 0 1-8 0z'), p('M12 14v6M8.5 20.5h7'), p('M7.6 7.5h8.8')],
-  utensils: [p('M6 3v7a2 2 0 0 0 4 0V3M8 3v18'), p('M17 21V3c-2 1.5-3 4-3 7h3')],
-  plane: [p('M10.5 13.5 3 11l1.5-1.5 7.5 1 4-4.5a1.8 1.8 0 0 1 2.5 2.5l-4.5 4 1 7.5L14 21l-2.5-7.5'), p('M7 17l-2 .5.5-2')],
-  dumbbell: [p('M6.5 7v10M17.5 7v10'), p('M3.5 9.5v5M20.5 9.5v5'), p('M6.5 12h11')],
-  cloud: [p('M7 18.5h10a4 4 0 0 0 .5-8A5.5 5.5 0 0 0 7 9.5a4.5 4.5 0 0 0 0 9z')],
-  zigzag: [p('M3 14l3-6 3 8 3-10 3 10 3-6 3 4')],
-  bubbles: [o(8, 14, 4), o(15.5, 9, 3), o(17, 16.5, 2), dot(9.5, 6, 1)],
-  toilet: [p('M6 4h6v7H6z'), p('M4 11h16a8 6 0 0 1-8 6 8 6 0 0 1-8-6z'), p('M9 17v3.5h6V17')],
-  // The metric marks, one per headline metric, after the references in
-  // ciatta-visual-assets, redrawn on this grid so they sit with the rest.
-  sleep: [p('M18 15.5A7.5 7.5 0 0 1 8.5 6a7.5 7.5 0 1 0 9.5 9.5z'), p('M15 3.5h4l-4 4h4')],
-  steps: [
-    p('M7 8.5c1.7 0 2.5 1.8 2.5 4s-.6 3.5-1 4.5h-3c-.4-1-1-2.5-1-4.5s.8-4 2.5-4z'),
-    p('M5.6 18.5h3v.8a1.5 1.5 0 0 1-3 0z'),
-    p('M17 3c1.7 0 2.5 1.8 2.5 4s-.6 3.5-1 4.5h-3c-.4-1-1-2.5-1-4.5S15.3 3 17 3z'),
-    p('M15.6 13h3v.8a1.5 1.5 0 0 1-3 0z'),
-  ],
-  heartPulse: [
-    p('M12 20s-8-4.8-8-10.8A4.3 4.3 0 0 1 12 6.6a4.3 4.3 0 0 1 8 2.6C20 15.2 12 20 12 20z'),
-    p('M6 12.5h2.5l1.5-3 2.5 5.5 1.8-4 1 1.5H18'),
-  ],
-  dropPulse: [p('M12 3.5s6 6.8 6 11a6 6 0 0 1-12 0c0-4.2 6-11 6-11z'), p('M8.5 15h2l1.2-2.5 1.6 3.5 1.2-2H16')],
-  thermometer: [
-    p('M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z'),
-    p('M12 9v6.5'),
-    dot(12, 17.5, 1.6),
-    p('M16.5 6h2M16.5 9h2M16.5 12h2'),
-  ],
-  oxygen: [
-    p('M12 3.5s6 6.8 6 11a6 6 0 0 1-12 0c0-4.2 6-11 6-11z'),
-    o(10.8, 15, 2.2),
-    p('M14.3 14.3c0-.8 1.6-.9 1.6 0 0 .6-1.6 1.4-1.6 2.1h1.8'),
-  ],
-  triangle: [p('M12 4l9 16H3z'), dot(12, 16.5, 0.8)],
-  pill: [p('M10.5 20.5a4.95 4.95 0 0 1-7-7l6-6a4.95 4.95 0 0 1 7 7z'), p('M7.5 11.5l5 5')],
-  doc: [p('M7 3h7l4 4v14H7z'), p('M14 3v4h4'), p('M10 12h5M10 16h5')],
-  chat: [p('M4 5h16v11H10l-4 4v-4H4z'), dot(9, 10.5, 0.9), dot(12, 10.5, 0.9), dot(15, 10.5, 0.9)],
-  layers: [p('M12 3l9 4.5-9 4.5-9-4.5z'), p('M3 12l9 4.5 9-4.5'), p('M3 16.5L12 21l9-4.5')],
-  plus: [p('M12 5v14M5 12h14')],
-  // Three rules, evenly spaced. The middle one is full width like the
-  // others: a short middle bar is a stylisation that reads as a different
-  // mark at 22pt.
-  menu: [p('M4 7h16M4 12h16M4 17h16')],
-  search: [o(11, 11, 6.5), p('M15.8 15.8L21 21')],
-  calendar: [p('M4 6h16v15H4z'), p('M4 10h16M8 3v5M16 3v5')],
-  calendarPlus: [p('M4 6h16v15H4z'), p('M4 10h16M8 3v5M16 3v5'), p('M12 13v5M9.5 15.5h5')],
-  notebook: [p('M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6z'), p('M3.5 7h4M3.5 12h4M3.5 17h4'), p('M10 8h6M10 12h6M10 16h4')],
-  ringDevice: [p('M12 5c2.8 0 4 1.5 4 4v6c0 2.5-1.2 4-4 4s-4-1.5-4-4V9c0-2.5 1.2-4 4-4z')],
-  ruler: [p('M12 3v18'), p('M9 3h6M9 21h6'), p('M12 8h2.5M12 12h3.5M12 16h2.5')],
-  drop: [p('M12 3.5s6 6.8 6 11a6 6 0 0 1-12 0c0-4.2 6-11 6-11z')],
-  shield: [p('M12 3l7.5 3v5.5c0 4.8-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.7-7.5-9.5V6z'), p('M12 9v6M9 12h6')],
-  stethoscope: [p('M6 3.5H5v5a4 4 0 0 0 8 0v-5h-1'), p('M9 12.5v2.5a4.5 4.5 0 0 0 9 0v-2'), o(18, 11, 2)],
-  people: [
-    o(12, 7.5, 3),
-    o(5.5, 9.5, 2.2),
-    o(18.5, 9.5, 2.2),
-    p('M7 20c0-3 2.2-5.5 5-5.5s5 2.5 5 5.5'),
-    p('M2 18.5c0-2 1.4-3.6 3.5-3.6'),
-    p('M22 18.5c0-2-1.4-3.6-3.5-3.6'),
-  ],
-  bandage: [p('M4.6 14.1l9.5-9.5a3.5 3.5 0 0 1 5 5l-9.5 9.5a3.5 3.5 0 0 1-5-5z'), p('M9.5 9.5l5 5'), dot(11, 13, 0.7), dot(13, 11, 0.7)],
-  flower: [o(8, 6, 2.3), o(16, 6, 2.3), o(12, 10.5, 2.3), p('M12 13v8M8 8.5l4 5M16 8.5l-4 5')],
-  syringe: [p('M17 3l4 4M19 5l-3 3'), p('M16 8l-9 9-3 1 1-3 9-9z'), p('M3 21l2-2'), p('M10 11l1.5 1.5M12.5 8.5L14 10')],
-  hourglass: [p('M6 3h12M6 21h12'), p('M7.5 3c0 4.5 9 5 9 9s-9 4.5-9 9'), p('M16.5 3c0 4.5-9 5-9 9s9 4.5 9 9')],
-  leaf: [p('M20 4C11 4 5 8.5 5 15.5c0 1.8.5 3.5.5 3.5s1.8.2 3.5 0C16.5 18 20 12 20 4z'), p('M4 20c3-5 7.5-9 12-12')],
-  lungs: [
-    p('M12 3.5v7.5M12 11l-2.5 2M12 11l2.5 2'),
-    p('M9.5 7.5C6.5 8 4 12 4 16.5c0 2.2 1.4 3.2 3.2 2.6l2.3-.8z'),
-    p('M14.5 7.5c3 .5 5.5 4.5 5.5 9 0 2.2-1.4 3.2-3.2 2.6l-2.3-.8z'),
-  ],
-  brain: [
-    p('M12 5.5v13'),
-    p('M12 5.5C11 4 8 4 7.2 6 5.2 6.3 4.3 8.4 5.2 10 3.8 11.2 4 13.8 5.6 14.6 5.6 17 7.8 18.8 10 18.2c.8.8 2 .3 2 .3'),
-    p('M12 5.5C13 4 16 4 16.8 6c2 .3 2.9 2.4 2 4 1.4 1.2 1.2 3.8-.4 4.6 0 2.4-2.2 4.2-4.4 3.6-.8.8-2 .3-2 .3'),
-  ],
-  heart: [p('M12 20s-8-4.8-8-10.8A4.3 4.3 0 0 1 12 6.6a4.3 4.3 0 0 1 8 2.6C20 15.2 12 20 12 20z')],
-  kidney: [
-    p('M9.5 4C6 4 4 7 4 11s2 9 5 9c2 0 2.5-2 1.5-4s-1-3 .5-4.5S12 4 9.5 4z'),
-    p('M14.5 4C18 4 20 7 20 11s-2 9-5 9c-2 0-2.5-2-1.5-4s1-3-.5-4.5S12 4 14.5 4z'),
-  ],
-  liver: [p('M3 8.5C6 5 15 4 21 6c0 5.5-4.5 11-9.5 11-2 0-2.2-2.8-4.2-3S3 12 3 8.5z')],
-  gut: [p('M7 4.5h8.5a3 3 0 0 1 0 6h-7a3 3 0 0 0 0 6h7.5a2.5 2.5 0 0 1 0 5H11')],
-  molecule: [o(12, 5, 2), o(5.5, 17, 2), o(18.5, 17, 2), p('M11 6.8l-4.5 8.4M13 6.8l4.5 8.4M7.5 17h9')],
-  uterus: [
-    p('M8 6c0 3 1.5 4.5 3 5.5V15a1 1 0 0 0 2 0v-3.5c1.5-1 3-2.5 3-5.5'),
-    p('M8 6C8 4 6 3.5 4.5 4.5S3.5 8 5 8.5'),
-    p('M16 6c0-2 2-2.5 3.5-1.5S20.5 8 19 8.5'),
-    p('M12 16v4'),
-  ],
-  bone: [p('M8 16l8-8'), p('M8 16a2 2 0 1 1-2.6 1A2 2 0 1 1 7 13.4'), p('M16 8a2 2 0 1 1 2.6-1A2 2 0 1 1 17 10.6')],
-  thyroid: [p('M12 7v11'), p('M12 10C10 5 4 5 4 10s4 8 8 5c4 3 8 0 8-5s-6-5-8 0')],
-  sun: [o(12, 12, 4), p('M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1')],
-  virus: [
-    o(12, 12, 5.5),
-    p('M12 3v3.5M12 17.5V21M3 12h3.5M17.5 12H21M5.6 5.6l2.5 2.5M15.9 15.9l2.5 2.5M5.6 18.4l2.5-2.5M15.9 8.1l2.5-2.5'),
-    dot(10.5, 10.5, 1),
-    dot(13.5, 13.5, 1),
-  ],
-  flask: [p('M9 3h6M10 3v6l-5.4 9.6A1.6 1.6 0 0 0 6 21h12a1.6 1.6 0 0 0 1.4-2.4L14 9V3'), p('M7.5 15h9')],
-  panels: [p('M4 4h16v16H4z'), p('M4 12h16M12 4v8'), p('M8 16h3')],
-  info: [o(12, 12, 9), p('M12 11v5'), dot(12, 8, 0.9)],
-  body: [o(12, 5, 2), p('M5 9.5h14'), p('M12 9.5v5.5'), p('M12 15l-3.5 6M12 15l3.5 6')],
-  wave: [p('M3 15c2-5 4-5 6-1s4 4 6 0 4-5 6-1')],
-  ring: [o(12, 12, 6)],
-  // Outline runs around the door, so the filled version keeps it open.
-  home: [p('M3.5 11L12 3.8l8.5 7.2V20a1 1 0 0 1-1 1H15v-6.2H9V21H4.5a1 1 0 0 1-1-1z')],
-  check: [p('M5 12.5l4.5 4.5L19 7')],
-  xmark: [p('M6.5 6.5l11 11M17.5 6.5l-11 11')],
-  minus: [p('M5 12h14')],
-  clock: [o(12, 12, 9), p('M12 7v5l3.5 2')],
-  flame: [p('M12 21c-3.9 0-7-2.8-7-6.6 0-3 2-5.2 3.6-6.8.5 1.6 1.4 2.6 2.4 3.1C11 6.8 12.8 4.4 15 3c-.3 2.7.8 4.6 2.2 6.3C18.4 10.8 19 12.4 19 14.4 19 18.2 15.9 21 12 21z')],
-} satisfies Record<string, Shape[]>;
+  sparkle: SparklesIcon,
+  target: TargetIcon,
+  today: CircleDotIcon,
+  bars: ChartColumnIcon,
+  journey: RouteIcon,
+  person: UserIcon,
+  mic: MicIcon,
+  stopSquare: SquareIcon,
+  send: SendIcon,
+  camera: CameraIcon,
+  image: ImageIcon,
+  video: VideoIcon,
+  chevronLeft: ChevronLeftIcon,
+  chevronRight: ChevronRightIcon,
+  chevronDown: ChevronDownIcon,
+  arrowRight: ArrowRightIcon,
+  moon: MoonIcon,
+  thumbUp: ThumbsUpIcon,
+  thumbDown: ThumbsDownIcon,
+  bookmark: BookmarkIcon,
+  cup: CoffeeIcon,
+  glass: GlassWaterIcon,
+  utensils: UtensilsIcon,
+  plane: PlaneIcon,
+  dumbbell: DumbbellIcon,
+  cloud: CloudIcon,
+  zigzag: ActivityIcon,
+  bubbles: WavesHorizontalIcon,
+  toilet: ToiletIcon,
+  sleep: BedIcon,
+  steps: FootprintsIcon,
+  heartPulse: HeartPulseIcon,
+  dropPulse: DropletsIcon,
+  thermometer: ThermometerIcon,
+  oxygen: WindIcon,
+  triangle: TriangleIcon,
+  pill: PillIcon,
+  doc: FileTextIcon,
+  chat: MessageCircleIcon,
+  layers: LayersIcon,
+  plus: PlusIcon,
+  menu: MenuIcon,
+  search: SearchIcon,
+  calendar: CalendarIcon,
+  calendarPlus: CalendarPlusIcon,
+  notebook: NotebookPenIcon,
+  ringDevice: WatchIcon,
+  ruler: RulerIcon,
+  drop: DropletIcon,
+  shield: ShieldIcon,
+  stethoscope: StethoscopeIcon,
+  people: UsersIcon,
+  bandage: BandageIcon,
+  flower: Flower2Icon,
+  syringe: SyringeIcon,
+  hourglass: HourglassIcon,
+  leaf: LeafIcon,
+  lungs: WindIcon,
+  brain: BrainIcon,
+  heart: HeartIcon,
+  kidney: BeanIcon,
+  liver: FunnelIcon,
+  gut: SoupIcon,
+  molecule: AtomIcon,
+  uterus: VenusIcon,
+  bone: BoneIcon,
+  thyroid: ZapIcon,
+  sun: SunIcon,
+  virus: BugIcon,
+  flask: FlaskConicalIcon,
+  panels: LayoutPanelLeftIcon,
+  info: InfoIcon,
+  body: PersonStandingIcon,
+  wave: AudioWaveformIcon,
+  ring: CircleIcon,
+  home: HouseIcon,
+  check: CheckIcon,
+  xmark: XIcon,
+  minus: MinusIcon,
+  clock: ClockIcon,
+  flame: FlameIcon,
+} satisfies Record<string, ComponentType<LucideProps>>;
 
 export type IconName = keyof typeof ICONS;
 
-// `filled` fills closed shapes, the HIG's preferred style for tab bar icons.
+// `filled` fills closed shapes, for a selected tab or a saved bookmark.
 export function Icon({
   name,
   size = 22,
@@ -176,31 +190,6 @@ export function Icon({
   weight?: number;
   filled?: boolean;
 }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      {(ICONS[name] as Shape[]).map((s, i) =>
-        'c' in s ? (
-          <Circle
-            key={i}
-            cx={s.c[0]}
-            cy={s.c[1]}
-            r={s.c[2]}
-            fill={s.fill || filled ? color : 'none'}
-            stroke={s.fill ? 'none' : color}
-            strokeWidth={weight}
-          />
-        ) : (
-          <Path
-            key={i}
-            d={s.d}
-            fill={filled ? color : 'none'}
-            stroke={color}
-            strokeWidth={weight}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        ),
-      )}
-    </Svg>
-  );
+  const Glyph = ICONS[name];
+  return <Glyph size={size} color={color} strokeWidth={weight} fill={filled ? color : 'none'} absoluteStrokeWidth={false} />;
 }

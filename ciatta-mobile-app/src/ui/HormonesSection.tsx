@@ -18,6 +18,7 @@ import { HORMONE_LABEL, type HormoneKey, hormoneCurves, type HormoneView, PHASE_
 import { font } from '../theme';
 import { L, TILE_RADIUS } from './surface';
 import { onGround } from './scheme';
+import { GlassFill } from './frosted';
 
 const LAVENDER = onGround('#B188F3');
 const STYLE: Record<HormoneKey, { color: string; dash?: string; width: number }> = {
@@ -44,6 +45,7 @@ export function HormonesSection({ view, effects }: { view: HormoneView; effects:
 
   return (
     <View style={h.card}>
+      <GlassFill />
       <View style={{ height: HEIGHT }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
         {width ? (
           <Svg width={width} height={HEIGHT}>
@@ -127,6 +129,7 @@ export function HormonesSection({ view, effects }: { view: HormoneView; effects:
         <View style={h.rows}>
           {rows.map((r) => (
             <View key={r.key} style={h.tile} accessible accessibilityLabel={`${r.label}, ${r.value}, ${r.compare}`}>
+              <GlassFill />
               <Text style={[font('caption2'), h.meta]} numberOfLines={1}>
                 {r.label}
               </Text>
@@ -153,12 +156,12 @@ export function HormonesSection({ view, effects }: { view: HormoneView; effects:
 }
 
 const h = StyleSheet.create({
-  card: { backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14 },
+  card: { backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, overflow: 'hidden' },
   col: { position: 'absolute', top: 0, bottom: 0, alignItems: 'center', paddingTop: 7 },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 10 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   rows: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  tile: { flexBasis: '47%', flexGrow: 1, backgroundColor: L.recessed, borderRadius: 10, padding: 10, gap: 2 },
+  tile: { flexBasis: '47%', flexGrow: 1, backgroundColor: L.recessed, borderRadius: 10, padding: 10, gap: 2, overflow: 'hidden' },
   ink: { color: L.ink },
   body: { color: L.body, lineHeight: 21 },
   meta: { color: L.meta },

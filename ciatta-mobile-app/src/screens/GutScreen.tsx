@@ -21,6 +21,7 @@ import { Eyebrow } from '../ui/bento';
 import { DetailScreen, PrimaryButton, SegmentedControl, SourceFooter } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { onGround } from '../ui/scheme';
+import { GlassFill } from '../ui/frosted';
 
 const VIEWS = ['Out', 'In'] as const;
 export const GROUP_COLOR: Record<BristolGroup, string> = { hard: onGround('#E8C46A'), typical: onGround('#9BD36A'), loose: onGround('#EC9658') };
@@ -202,7 +203,7 @@ function Card({ title, meta, children }: { title: string; meta: string; children
         <Eyebrow>{title}</Eyebrow>
         <Text style={[font('caption1'), s.meta]}>{displayCopy(meta)}</Text>
       </View>
-      <View style={s.card}>{children}</View>
+      <View style={s.card}><GlassFill />{children}</View>
     </View>
   );
 }
@@ -219,6 +220,7 @@ function Line({ label, value }: { label: string; value: number }) {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <View style={[s.card, s.stat]}>
+      <GlassFill />
       <Text style={[font('caption1'), s.meta]}>{label}</Text>
       <Text style={[font('title3', 'semibold'), s.ink]}>{displayCopy(value)}</Text>
     </View>
@@ -228,6 +230,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 function Empty({ text }: { text: string }) {
   return (
     <View style={[s.card, { marginTop: SPACE.near }]}>
+      <GlassFill />
       <Text style={[font('subhead'), s.body, { lineHeight: 21 }]}>{text}</Text>
     </View>
   );
@@ -237,7 +240,7 @@ const st = StyleSheet.hairlineWidth;
 const s = StyleSheet.create({
   section: { marginTop: SPACE.block },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  card: { marginTop: SPACE.tight, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: st, borderColor: L.rule, padding: 14 },
+  card: { marginTop: SPACE.tight, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: st, borderColor: L.rule, padding: 14, overflow: 'hidden' },
   meta: { color: L.meta },
   note: { color: L.meta, marginTop: 10, lineHeight: 17 },
   body: { color: L.body },

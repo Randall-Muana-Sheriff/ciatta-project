@@ -16,10 +16,12 @@ import { useRepo } from '../state/session';
 import { C, font } from '../theme';
 import { DetailScreen, EmptyNote, SecLabel, SecondaryButton, SourceFooter } from '../ui/kit';
 import { L, TILE_RADIUS } from '../ui/surface';
+import { GlassFill } from '../ui/frosted';
 
 function ItemCard({ item, kind }: { item: NamedItem; kind: string }) {
   return (
     <View style={m.card} accessible accessibilityLabel={`${item.name}, ${kind}, ${item.last ? `last logged ${item.last}` : 'not logged yet'}`}>
+      <GlassFill />
       <View style={m.between}>
         <Text style={[font('callout', 'semibold'), { color: C.text, flex: 1 }]}>{displayCopy(item.name)}</Text>
         <Text style={[font('footnote'), { color: C.secondary }]}>{kind}</Text>
@@ -84,6 +86,7 @@ export function MedicationsScreen() {
         <View style={{ marginTop: 12 }}>
           <SecLabel right="Days logged">Last 30 days</SecLabel>
           <View style={m.card}>
+            <GlassFill />
             {view.month.map((x, n) => (
               <View key={x.label} style={[m.between, n > 0 && m.divided]}>
                 <Text style={[font('subhead'), { color: C.text }]}>{x.label}</Text>
@@ -99,6 +102,7 @@ export function MedicationsScreen() {
           <SecLabel right="As you logged them">Changes</SecLabel>
           {view.changes.map((c, n) => (
             <View key={`${c.label}-${n}`} style={m.card}>
+              <GlassFill />
               <View style={m.between}>
                 <Text style={[font('subhead', 'semibold'), { color: C.text }]}>{c.label}</Text>
                 <Text style={[font('footnote'), { color: C.secondary }]}>{c.on}</Text>
@@ -125,6 +129,7 @@ const m = StyleSheet.create({
     borderColor: L.rule,
     padding: 14,
     marginBottom: 10,
+    overflow: 'hidden',
   },
   between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingVertical: 2 },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule, marginTop: 8, paddingTop: 8 },

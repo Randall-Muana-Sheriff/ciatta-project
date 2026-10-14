@@ -6,6 +6,7 @@ import type { SourceKind } from '../data/sample';
 import { displayCopy } from '../lib/displayCopy';
 import { C, font, GUTTER, RADIUS } from '../theme';
 import { L } from './surface';
+import { GlassFill } from './frosted';
 
 // ── Icons ──────────────────────────────────────────────────────
 
@@ -291,7 +292,7 @@ export function LinkButton({
 // ── Rows ───────────────────────────────────────────────────────
 
 export function Card({ children, style }: { children: ReactNode; style?: object }) {
-  return <View style={[s.card, style]}>{children}</View>;
+  return <View style={[s.card, style]}><GlassFill />{children}</View>;
 }
 
 export function Row({
@@ -355,6 +356,7 @@ export function Expandable({
   }
   return (
     <View style={s.openCard}>
+      <GlassFill />
       <Pressable
         onPress={onToggle}
         accessibilityRole="button"
@@ -452,12 +454,12 @@ export const s = StyleSheet.create({
   secondary: { backgroundColor: C.fill },
   link: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
 
-  card: { backgroundColor: C.card, borderRadius: RADIUS, padding: 16 },
+  card: { backgroundColor: C.card, borderRadius: RADIUS, padding: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, overflow: 'hidden' },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 44, paddingVertical: 11 },
   rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.separator },
   rowText: { flex: 1, paddingRight: 12 },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  openCard: { backgroundColor: C.card, borderRadius: RADIUS, paddingVertical: 12, paddingHorizontal: 16, marginVertical: 4 },
+  openCard: { backgroundColor: C.card, borderRadius: RADIUS, paddingVertical: 12, paddingHorizontal: 16, marginVertical: 4, overflow: 'hidden' },
   openHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 32 },
   fact: {
     flexDirection: 'row',

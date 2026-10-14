@@ -34,6 +34,7 @@ import { Eyebrow } from './bento';
 import { ChoiceChips } from './cycleInputs';
 import { PrimaryButton, SecondaryButton } from './kit';
 import { L, SPACE, TILE_RADIUS } from './surface';
+import { GlassFill } from './frosted';
 
 const id = () => `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
@@ -114,6 +115,7 @@ export function ProductLogger() {
 
       {current ? (
         <View style={p.current}>
+          <GlassFill />
           <View accessible accessibilityLabel={`${productName(current)} in. ${inForLine(current, now)}`}>
             <Text style={[font('headline'), p.currentName]}>{displayCopy(productName(current))}</Text>
             <Text style={[font('subhead'), p.meta]}>{inForLine(current, now)}</Text>
@@ -188,6 +190,7 @@ const p = StyleSheet.create({
     borderColor: L.rule,
     padding: 16,
     gap: 6,
+    overflow: 'hidden',
   },
   currentName: { color: L.ink },
   meta: { color: L.meta },

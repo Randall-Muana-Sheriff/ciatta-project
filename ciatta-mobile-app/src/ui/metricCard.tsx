@@ -20,6 +20,7 @@ import { font } from '../theme';
 import { Icon, type IconName } from './icons';
 import { Sparkline } from './sparkline';
 import { HUE, L, mark } from './surface';
+import { GlassFill } from './frosted';
 
 export type MetricCardProps = {
   label: string;
@@ -68,6 +69,7 @@ export function MetricCard({ label, value, note, from, trend, color, chart, icon
       accessible
       accessibilityLabel={`${label}, ${value ?? 'not recorded today'}${note && !missing ? `, ${note}` : ''}${spokenTrend}`}
     >
+      <GlassFill />
       <View style={s.head}>
         {icon ? (
           <View style={missing && s.iconMissing}>

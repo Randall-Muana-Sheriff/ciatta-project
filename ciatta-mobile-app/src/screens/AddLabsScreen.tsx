@@ -23,6 +23,7 @@ import { C, font } from '../theme';
 import { DetailScreen, PrimaryButton, SecondaryButton, SaveBar, Lead } from '../ui/kit';
 import { LabStatusTag } from '../ui/labs';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { GlassFill } from '../ui/frosted';
 
 type Line = { key: string; keep: boolean; name: string; value: string; unit: string; range: string; flag: LabFlag | null };
 
@@ -176,6 +177,7 @@ export function AddLabsScreen() {
             const p = preview(l);
             return (
               <View key={l.key} style={[s.card, !l.keep && { opacity: 0.45 }]}>
+                <GlassFill />
                 <View style={s.head}>
                   <TextInput value={l.name} onChangeText={(v) => edit(l.key, { name: v })} style={[font('headline'), s.ink, { flex: 1 }]} accessibilityLabel="Test name" />
                   <Switch
@@ -226,7 +228,7 @@ const s = StyleSheet.create({
   input: { color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, marginTop: 4 },
   dateRow: { flexDirection: 'row', gap: 8 },
   part: { flex: 1, textAlign: 'center' },
-  card: { marginTop: 12, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14 },
+  card: { marginTop: 12, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, overflow: 'hidden' },
   head: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   fields: { flexDirection: 'row', gap: 10, marginTop: 8 },
 });

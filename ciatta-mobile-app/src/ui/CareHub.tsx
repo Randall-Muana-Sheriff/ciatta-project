@@ -22,6 +22,7 @@ import { Icon, type IconName } from './icons';
 import { images } from './images';
 import { PhotoCard } from './PhotoCard';
 import { L, SPACE, TILE_RADIUS } from './surface';
+import { GlassFill } from './frosted';
 
 const NEW_KINDS: { kind: RequestKind; label: string }[] = [
   { kind: 'refill', label: 'Refill' },
@@ -228,6 +229,7 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
             accessibilityLabel="Add a clinician"
             style={({ pressed }) => [s.member, s.addMember, pressed && s.pressed]}
           >
+            <GlassFill />
             <Icon name="plus" size={26} color={L.ink} />
             <Text style={[font('headline'), s.ink]}>Add a clinician</Text>
           </Pressable>
@@ -269,7 +271,7 @@ function Section({ title, action, children }: { title: string; action?: { label:
           </Pressable>
         ) : null}
       </View>
-      <View style={s.card}>{children}</View>
+      <View style={s.card}><GlassFill />{children}</View>
     </View>
   );
 }
@@ -325,7 +327,7 @@ const s = StyleSheet.create({
   stack: { gap: 0 },
   section: { marginTop: SPACE.block },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  card: { marginTop: SPACE.tight, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: st, borderColor: L.rule, paddingHorizontal: 14 },
+  card: { marginTop: SPACE.tight, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: st, borderColor: L.rule, paddingHorizontal: 14, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
   rule: { borderTopWidth: st, borderTopColor: L.rule },
   ink: { color: L.ink },
@@ -339,7 +341,7 @@ const s = StyleSheet.create({
   ask: { flexDirection: 'row', gap: 8, paddingVertical: 12, borderTopWidth: st, borderTopColor: L.rule },
   team: { gap: 12, paddingVertical: 14 },
   member: { width: 172, height: 232 },
-  addMember: { borderRadius: 24, borderWidth: 1, borderStyle: 'dashed', borderColor: L.meta, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: L.recessed },
+  addMember: { borderRadius: 24, borderWidth: 1, borderStyle: 'dashed', borderColor: L.meta, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: L.recessed, overflow: 'hidden' },
   pressed: { opacity: 0.6 },
   planStep: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 12, marginTop: 4, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.18)' },
   white: { color: '#FFFFFF' },
