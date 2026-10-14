@@ -14,6 +14,7 @@ import { Icon, type IconName } from './icons';
 import { onGround } from './scheme';
 import { L, TILE_RADIUS } from './surface';
 import { CardFill } from './cardFill';
+import { G } from './scheme';
 
 export function SystemCard({
   label,
@@ -40,11 +41,10 @@ export function SystemCard({
   const topics = topicsFor(label, conditions);
   const kinds = [...new Set(sources.map((s) => s.kind))];
   return (
-    <View style={c.card}>
-      <CardFill />
+    <View style={c.wrap}>
       <View style={c.head}>
         <Icon name={icon} size={20} color={color} weight={1.8} />
-        <Text style={[font('title3', 'semibold'), c.title]} accessibilityRole="header">
+        <Text style={[font('title2', 'semibold'), c.title]} accessibilityRole="header">
           {displayCopy(label)}
         </Text>
         <Pressable
@@ -54,10 +54,12 @@ export function SystemCard({
           hitSlop={8}
           style={({ pressed }) => [c.explore, pressed && c.pressed]}
         >
-          <Icon name="sparkle" size={14} color={C.text} />
-          <Text style={[font('footnote', 'semibold'), { color: C.text }]}>Explore</Text>
+          <Icon name="sparkle" size={14} color={G.ink} />
+          <Text style={[font('footnote', 'semibold'), { color: G.ink }]}>Explore</Text>
         </Pressable>
       </View>
+    <View style={c.card}>
+      <CardFill />
 
       {topics.length ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={c.topics}>
@@ -128,6 +130,7 @@ export function SystemCard({
         </Text>
       </Pressable>
     </View>
+    </View>
   );
 }
 
@@ -139,9 +142,11 @@ const SOURCE_COLOR: Record<string, string> = {
 };
 
 const c = StyleSheet.create({
-  card: { marginTop: 16, backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 16, gap: 10, overflow: 'hidden' },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  title: { color: C.text, flex: 1 },
+  wrap: { marginTop: 28 },
+  card: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 16, gap: 10, overflow: 'hidden' },
+  // The heading sits on the ground above the card, as every section's does.
+  head: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  title: { color: G.ink, flex: 1 },
   explore: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -149,7 +154,7 @@ const c = StyleSheet.create({
     paddingHorizontal: 12,
     minHeight: 32,
     borderRadius: 999,
-    overflow: 'hidden',
+    backgroundColor: G.fill,
   },
   topics: { gap: 8 },
   topic: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: C.borderSub },

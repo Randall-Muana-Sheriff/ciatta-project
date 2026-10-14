@@ -17,6 +17,7 @@ import { Icon } from './icons';
 import { PhotoCard } from './PhotoCard';
 import { L } from './surface';
 import { G } from './scheme';
+import { SectionHeading } from './kit';
 
 // The heading images, generated for Ciatta in one style: a dark room,
 // light in two of the design system's hues, a soft figure out of focus.
@@ -46,11 +47,10 @@ export function InsightCards() {
   if (!matches.length && !saved.length) return null;
   return (
     <View>
-      <View style={s.head}>
-        <Text style={[font('title2', 'semibold'), s.ink, { flex: 1 }]} accessibilityRole="header">
-          Insights
-        </Text>
-        {saved.length ? (
+      <SectionHeading
+        title="Insights"
+        right={
+          saved.length ? (
           <Pressable
             onPress={() => setSavedOnly((v) => !v)}
             accessibilityRole="button"
@@ -60,8 +60,9 @@ export function InsightCards() {
             <Icon name="bookmark" size={13} color={savedOnly ? G.onPill : G.body} filled={savedOnly} />
             <Text style={[font('footnote', 'semibold'), { color: savedOnly ? G.onPill : G.body }]}>{`Saved ${saved.length}`}</Text>
           </Pressable>
-        ) : null}
-      </View>
+          ) : undefined
+        }
+      />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.row}>
         {shown.map(({ insight, connections }) => (
           <Pressable
@@ -136,9 +137,8 @@ export function InsightCards() {
 }
 
 const s = StyleSheet.create({
-  head: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   ink: { color: G.ink },
-  row: { gap: 12, paddingTop: 12 },
+  row: { gap: 12 },
   card: { width: 272, height: 340 },
   title: { color: '#FFFFFF', lineHeight: 28 },
   connection: { color: 'rgba(255,255,255,0.78)', lineHeight: 18 },

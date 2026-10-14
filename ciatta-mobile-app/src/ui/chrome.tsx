@@ -114,7 +114,7 @@ export function ListGroup({
     <View style={style}>
       {header ? (
         <Text
-          style={[font('title3', 'semibold'), s.groupHeader, light && s.groupHeaderLight]}
+          style={[font('title2', 'semibold'), s.groupHeader, light && s.groupHeaderLight]}
           accessibilityRole="header"
         >
           {header}
@@ -333,7 +333,8 @@ const s = StyleSheet.create({
   panelTitle: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
 
   iconSquare: { width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
-  groupHeader: { color: G.ink, marginBottom: 8 },
+  // Set as every section heading is: outside the card, Title 2.
+  groupHeader: { color: G.ink, marginBottom: 12 },
   groupHeaderLight: { color: G.ink },
   groupLight: {
     backgroundColor: L.field,

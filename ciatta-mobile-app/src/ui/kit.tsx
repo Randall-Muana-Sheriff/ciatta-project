@@ -392,6 +392,7 @@ export function Facts({ rows }: { rows: { label: string; value: string }[] }) {
 }
 
 export const s = StyleSheet.create({
+  sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
   saveBar: {
     paddingHorizontal: GUTTER,
     paddingTop: 10,
@@ -474,4 +475,19 @@ export const s = StyleSheet.create({
 // What a screen shows while her record has nothing for it yet.
 export function EmptyNote({ text }: { text: string }) {
   return <Text style={[font('body'), { color: G.body, lineHeight: 25 }]}>{displayCopy(text)}</Text>;
+}
+
+// A section's heading, set as Insights sets its own: Title 2, semibold, on
+// the ground above the cards it names rather than inside them. Today,
+// Health and Journey use it; Care keeps its headings inside its cards.
+// `right` holds the one thing that goes with it: All, a date, a count.
+export function SectionHeading({ title, right }: { title: string; right?: ReactNode }) {
+  return (
+    <View style={s.sectionHeading}>
+      <Text style={[font('title2', 'semibold'), { color: G.ink, flex: 1 }]} accessibilityRole="header">
+        {displayCopy(title)}
+      </Text>
+      {right}
+    </View>
+  );
 }

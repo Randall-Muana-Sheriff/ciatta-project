@@ -42,7 +42,7 @@ import { usePlanDone } from '../state/planDone';
 import { upcomingVisits, visitWhen } from '../lib/calendarEvents';
 import { useDeviceCalendar } from '../state/deviceCalendar';
 import { font, GUTTER } from '../theme';
-import { Eyebrow } from '../ui/bento';
+import { SectionHeading } from '../ui/kit';
 import { Wordmark } from '../ui/Wordmark';
 import { ground, HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow } from '../ui/chrome';
@@ -371,14 +371,14 @@ export function TodayScreen() {
           not enough of it yet. A chart drawn from one reading would be a
           shape Ciatta chose rather than one she produced.
         */}
+        <View style={t.headed}>
+          <SectionHeading
+            title="Today's Patterns"
+            right={<Text style={[font('subhead'), t.headRight]}>{now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>}
+          />
+        </View>
         <View style={t.dayCard}>
           <CardFill />
-          <View style={t.dayHead}>
-            <Text style={[font('caption1'), t.dayHeadText]}>TODAY&rsquo;S PATTERNS</Text>
-            <Text style={[font('caption1'), t.dayHeadText]}>
-              {now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
-            </Text>
-          </View>
           {/*
             The day itself, from her wearable: two metrics at a time on the
             day's hours, so one can be read against the other.
@@ -440,8 +440,10 @@ export function TodayScreen() {
         {/* The period product she has in, only while one is in. */}
         <ProductNowCard />
 
-        <View style={t.sectionHead}>
-          <Eyebrow>Metrics</Eyebrow>
+        <View style={t.section}>
+          <SectionHeading
+            title="Metrics"
+            right={
           <Pressable
             onPress={go('metrics')}
             accessibilityRole="button"
@@ -452,10 +454,11 @@ export function TodayScreen() {
             <Text style={[font('footnote', 'semibold'), t.allText]}>All</Text>
             <Icon name="chevronRight" size={14} color={G.body} />
           </Pressable>
+            }
+          />
         </View>
         {state.measured ? (
-        <View style={t.card}>
-          <CardFill />
+        <View>
           {/*
             Six cards and nothing else. The card holds only metrics now:
             the chart and the cycle moved up into Today's Patterns, where
@@ -475,6 +478,7 @@ export function TodayScreen() {
                 accessibilityLabel={`${m.label}, ${m.value ?? 'not recorded today'}${m.note && m.value ? `, ${m.note}` : ''}`}
                 accessibilityHint="Opens this metric over time"
               >
+                <CardFill />
                 <MetricCard
                   label={m.label}
                   value={m.value}
@@ -513,14 +517,12 @@ export function TodayScreen() {
           reachable from the screen it belongs to.
         */}
         <View style={t.section}>
-          {/* As the Nutrition card was: the photo across the top, edge to
-              edge, with its label on it, and the actions beneath. */}
+          <SectionHeading title="You can log" />
+          {/* The photo across the top, edge to edge, and the actions
+              beneath. */}
           <View style={t.youCan}>
             <CardFill />
             <Image source={images.youCan} style={t.youCanPhoto} resizeMode="cover" accessibilityIgnoresInvertColors accessible={false} />
-            <View style={t.youCanPill}>
-              <Text style={[font('caption1', 'semibold'), t.youCanPillText]}>YOU CAN LOG</Text>
-            </View>
             {/* Logging, one step from here: the topic, then speak, type or
                 take a photo. The Log screen opens already doing it. */}
             <LogBox
@@ -557,14 +559,16 @@ export function TodayScreen() {
           one job: the thing she might do about what she just read.
         */}
         <View style={t.section}>
-          <View style={t.planHead}>
-            <Eyebrow>What you could try</Eyebrow>
-            {plan.length ? (
-              <Text style={[font('caption1'), t.planCount]}>
-                {`${plan.filter((p) => done.includes(p.key)).length} of ${plan.length} done`}
-              </Text>
-            ) : null}
-          </View>
+          <SectionHeading
+            title="What you could try"
+            right={
+              plan.length ? (
+                <Text style={[font('subhead'), t.headRight]}>
+                  {`${plan.filter((p) => done.includes(p.key)).length} of ${plan.length} done`}
+                </Text>
+              ) : undefined
+            }
+          />
           {plan.length ? (
             <View style={t.plan}>
               <CardFill />
@@ -650,6 +654,8 @@ const t = StyleSheet.create({
   pad: { paddingHorizontal: GUTTER },
   pressed: { opacity: 0.6 },
   section: { marginTop: SPACE.section },
+  headed: { marginTop: SPACE.near },
+  headRight: { color: G.meta },
   // The mark alone at the top, as the concept has it.
   // Centred and as high as the mark is allowed to sit, which is the way
   // Oura's own wordmark opens its home screen: the mark first, tight under
@@ -672,7 +678,6 @@ const t = StyleSheet.create({
   hello: { color: G.ink, letterSpacing: -0.4 },
 
   dayCard: {
-    marginTop: SPACE.near,
     backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
     paddingHorizontal: 14,
@@ -680,8 +685,6 @@ const t = StyleSheet.create({
     paddingBottom: 10,
     overflow: 'hidden',
   },
-  dayHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  dayHeadText: { color: L.meta, letterSpacing: 0.9 },
   dayEmpty: { color: L.body, lineHeight: 21, paddingVertical: 10 },
 
   // The cycle sits on its own full width row above the three pills, and
@@ -707,42 +710,32 @@ const t = StyleSheet.create({
 
   // Two across, three down. A grid reads as a set of peers, which is what
   // these are: six readings from one day, none ranked above another.
-  grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: METRIC_CARD_GAP, rowGap: 14 },
-  gridCell: { width: '30%', flexGrow: 1 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: METRIC_CARD_GAP },
+  // Each metric its own card, on the same ground as every other card.
+  gridCell: {
+    width: '30%',
+    flexGrow: 1,
+    borderRadius: TILE_RADIUS,
+    overflow: 'hidden',
+    backgroundColor: L.glass,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
 
   cycleKey: { color: L.meta, letterSpacing: 0.9 },
   cycleValue: { color: L.ink },
   // A figure she has not produced today reads as absent, not as zero.
   cycleNone: { color: L.meta },
 
-  // The heading row: a section's worth of air above it, almost none below,
-  // so it reads down onto the card it names rather than up at the chart.
-  sectionHead: {
-    marginTop: SPACE.section,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
   all: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   allText: { color: G.body },
 
   youCan: {
-    marginTop: 10,
     borderRadius: TILE_RADIUS,
     overflow: 'hidden',
     backgroundColor: L.glass,
   },
   youCanPhoto: { width: '100%', height: 160 },
-  youCanPill: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.38)',
-    borderRadius: 999,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-  },
-  youCanPillText: { color: '#FFFFFF', letterSpacing: 0.6 },
   card: {
     marginTop: SPACE.tight,
     backgroundColor: L.glass,
@@ -751,10 +744,7 @@ const t = StyleSheet.create({
     overflow: 'hidden',
   },
   chart: { flex: 1, aspectRatio: 190 / 150 },
-  planHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  planCount: { color: G.meta },
   plan: {
-    marginTop: 10,
     backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
     paddingHorizontal: 14,

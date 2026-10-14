@@ -22,8 +22,7 @@ import { LabRangeBar, LabStatusTag } from './labs';
 import { useData, useRepo } from '../state/session';
 import { C, font } from '../theme';
 import { ListGroup, ListRow } from './chrome';
-import { EmptyNote, PrimaryButton, Row, SecondaryButton } from './kit';
-import { Eyebrow } from './bento';
+import { EmptyNote, PrimaryButton, Row, SecondaryButton, SectionHeading } from './kit';
 import { G } from './scheme';
 
 
@@ -54,7 +53,7 @@ function LabsSection({ onOpen }: { onOpen: (screen: Screen) => void }) {
   return (
     <View>
       <View style={hr.section}>
-        <Eyebrow>Labs</Eyebrow>
+        <SectionHeading title="Labs" />
       </View>
       {summary ? <Text style={[font('subhead'), { color: G.ink, marginBottom: 12 }]}>{displayCopy(summary)}</Text> : null}
       {labs && !labs.length ? (
@@ -164,7 +163,7 @@ export function RecordsView({ onOpen }: { onOpen: (screen: Screen) => void }) {
       {records?.documents.length ? (
         <>
           <View style={hr.section}>
-            <Eyebrow>Documents</Eyebrow>
+            <SectionHeading title="Documents" />
           </View>
           {records.documents.map((d, n) => (
             <Row key={d.sub} first={n === 0} title={d.title} sub={`${d.sub} · ${d.kind}`} onPress={() => onOpen('addRecord')} />

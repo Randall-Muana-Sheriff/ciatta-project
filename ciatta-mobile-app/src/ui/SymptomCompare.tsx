@@ -21,6 +21,7 @@ import { HUE, L, TILE_RADIUS } from './surface';
 import { onGround } from './scheme';
 import { CardFill } from './cardFill';
 import { G } from './scheme';
+import { SectionHeading } from './kit';
 
 const RANGES: { key: Range; label: string }[] = [
   { key: '7', label: '7 day' },
@@ -74,13 +75,15 @@ export function SymptomCompare({
 
   return (
     <View>
-      <View style={s.head}>
-        <Text style={[font('headline'), s.ink]}>Symptoms</Text>
-        <Pressable onPress={onAll} accessibilityRole="button" hitSlop={8} style={s.all}>
-          <Text style={[font('footnote', 'semibold'), { color: G.body }]}>All</Text>
-          <Icon name="chevronRight" size={14} color={G.body} />
-        </Pressable>
-      </View>
+      <SectionHeading
+        title="Symptoms"
+        right={
+          <Pressable onPress={onAll} accessibilityRole="button" hitSlop={8} style={s.all}>
+            <Text style={[font('footnote', 'semibold'), { color: G.body }]}>All</Text>
+            <Icon name="chevronRight" size={14} color={G.body} />
+          </Pressable>
+        }
+      />
       <View style={s.card}>
         <CardFill />
         <View style={s.ranges}>
@@ -244,9 +247,8 @@ function SymptomPicker({ visible, chosen, logged, onDone }: { visible: boolean; 
 }
 
 const s = StyleSheet.create({
-  head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   all: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  card: { marginTop: 10, backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 14, overflow: 'hidden' },
+  card: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 14, overflow: 'hidden' },
   ranges: { flexDirection: 'row', gap: 6, marginBottom: 12 },
   range: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: L.statement },
   rangeOn: { backgroundColor: HUE.measured },
