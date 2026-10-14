@@ -30,7 +30,15 @@ import {
   smartConfigUrl,
 } from '../lib/providers/smart';
 
-export const REDIRECT_URI = 'ciatta://provider-callback';
+// Where the app's browser session waits for the login to come back.
+export const APP_CALLBACK = 'ciatta://provider-callback';
+
+// The redirect registered with Epic and sent in the request. The same as
+// APP_CALLBACK unless the build names the https forwarding page
+// (supabase/functions/provider-callback), which Epic accepts where it
+// rewrites a ciatta:// address. Must equal the backend's SMART_REDIRECT_URI,
+// since the token exchange repeats it.
+export const REDIRECT_URI = process.env.EXPO_PUBLIC_SMART_REDIRECT_URI?.trim() || APP_CALLBACK;
 
 // Epic's public directory of everyone running its FHIR server. Fetched
 // rather than bundled, because it changes and a stale hospital URL is a
@@ -141,7 +149,7 @@ export async function connectProvider(endpoint: Endpoint, clientId: string): Pro
   }
 
   // Her provider's page, in the system browser. Ciatta cannot read it.
-  const result = await WebBrowser.openAuthSessionAsync(request.url, REDIRECT_URI);
+  const result = await WebBrowser.openAuthSessionAsync(request.url, APP_CALLBACK);
   if (result.type !== 'success') {
     return { ok: false, message: 'The connection was not finished, so nothing was shared.' };
   }

@@ -444,3 +444,11 @@ enabled = true
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# Where a hospital's login sends her browser back, before it reaches the
+# app. Her browser arrives with no Ciatta session, so platform JWT
+# verification has to be off; the function reads and writes nothing and only
+# forwards the OAuth answer to ciatta://provider-callback
+# (supabase/functions/provider-callback/bounce.ts).
+[functions.provider-callback]
+verify_jwt = false
