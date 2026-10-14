@@ -351,8 +351,8 @@ export function CareScreen() {
               <Text style={[font('footnote'), s.actionDetail]}>{displayCopy(card.detail)}</Text>
               <View style={s.suggestions}>
                 {card.action ? (
-                  <Pressable onPress={() => openSuggestion(card.action!)} accessibilityRole="button" style={({ pressed }) => [s.suggestion, pressed && s.pressed]}>
-                    <Text style={[font('footnote', 'semibold'), s.suggestionText]}>{card.action.label}</Text>
+                  <Pressable onPress={() => openSuggestion(card.action!)} accessibilityRole="button" style={({ pressed }) => [s.actionButton, pressed && s.pressed]}>
+                    <Text style={[font('footnote', 'semibold'), s.actionButtonText]}>{card.action.label}</Text>
                   </Pressable>
                 ) : null}
                 <Pressable onPress={() => dismiss(card.id)} accessibilityRole="button" accessibilityLabel={`Dismiss: ${card.title}`} hitSlop={6}>
@@ -619,6 +619,10 @@ function AnswerBlock({ turn, onOpen, onGrow }: { turn: Turn; onOpen: (sug: Sugge
 
 const st = StyleSheet.hairlineWidth;
 
+const WHITE = '#FFFFFF';
+const ON_WHITE = '#0C0E11';
+const ON_WHITE_META = '#59606A';
+
 const s = StyleSheet.create({
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 22 },
   stepNow: { color: G.ink },
@@ -653,11 +657,11 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     borderRadius: TILE_RADIUS,
     borderWidth: st,
-    borderColor: L.rule,
+    borderColor: 'rgba(12, 14, 17, 0.18)',
     paddingVertical: 12,
     paddingHorizontal: 14,
   },
-  nameOptionOn: { borderColor: L.ink, borderWidth: 1.5 },
+  nameOptionOn: { borderColor: ON_WHITE, borderWidth: 1.5 },
   limit: { color: L.meta, lineHeight: 19, marginTop: SPACE.tight, textAlign: 'center' },
 
   // Ciatta's side of the conversation: her messages sit right on the
@@ -665,16 +669,18 @@ const s = StyleSheet.create({
   thread: { paddingHorizontal: GUTTER, marginTop: SPACE.block },
   // One width for every message of Ciatta's, so the opening reads as a
   // column of cards rather than a ragged stack sized to each sentence.
+  // Concierge sets its own side in white, the secondary colour here, with
+  // near black type: the same in light and dark.
   bubble: {
     alignSelf: 'flex-start',
     width: '90%',
     marginTop: SPACE.tight,
-    backgroundColor: L.field,
+    backgroundColor: WHITE,
     borderRadius: TILE_RADIUS,
     paddingVertical: 14,
     paddingHorizontal: 16,
-    overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
-  bubbleText: { color: L.ink, lineHeight: 24 },
+  },
+  bubbleText: { color: ON_WHITE, lineHeight: 24 },
 
   flipped: { transform: [{ rotate: '180deg' }] },
   // Not disabled, only quieter. It still answers, by saying what is
@@ -715,19 +721,25 @@ const s = StyleSheet.create({
 
   suggestions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 14 },
   actionCard: {
-    backgroundColor: L.field,
+    backgroundColor: WHITE,
     borderRadius: TILE_RADIUS,
     padding: 14,
-    overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
-  actionUrgent: { borderColor: 'rgba(236, 93, 74, 0.6)', backgroundColor: 'rgba(236, 93, 74, 0.10)' },
-  actionDetail: { color: L.meta, marginTop: 4, lineHeight: 18 },
+    borderWidth: 1,
+    borderColor: WHITE,
+  },
+  actionUrgent: { borderColor: '#C52D1E' },
+  actionDetail: { color: ON_WHITE_META, marginTop: 4, lineHeight: 18 },
+  // The one action in a white card: a solid pill, the inverse of the card.
+  actionButton: { backgroundColor: '#161616', borderRadius: 999, minHeight: 36, paddingHorizontal: 16, justifyContent: 'center' },
+  actionButtonText: { color: WHITE },
   suggestion: {
-    backgroundColor: L.field,
-    borderRadius: TILE_RADIUS,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
-  suggestionText: { color: L.body },
+    backgroundColor: WHITE,
+    borderRadius: 999,
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  suggestionText: { color: ON_WHITE },
   pressed: { opacity: 0.55 },
 
   composer: { paddingHorizontal: GUTTER, paddingBottom: NAV_CLEARANCE },

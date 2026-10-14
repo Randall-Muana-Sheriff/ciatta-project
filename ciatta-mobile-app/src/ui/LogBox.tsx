@@ -18,7 +18,6 @@ import { font } from '../theme';
 import { Composer } from './composer';
 import { Icon } from './icons';
 import { L, TILE_RADIUS } from './surface';
-import { CardFill } from './cardFill';
 
 
 // A quick chip as an entry: flow words are said as a period with that flow,
@@ -78,7 +77,6 @@ export function LogBox({
                     accessibilityState={{ selected: on }}
                     style={({ pressed }) => [s.topic, on && s.topicOn, pressed && s.pressed]}
                   >
-                    <CardFill />
                     <Text style={[font('footnote', on ? 'semibold' : 'regular'), { color: on ? L.onPill : L.body }]}>{t.label}</Text>
                   </Pressable>
                 );
@@ -141,7 +139,7 @@ export function LogBox({
 const s = StyleSheet.create({
   box: { padding: 16, gap: 12 },
   topics: { flexDirection: 'row', gap: 6 },
-  topic: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: TILE_RADIUS, backgroundColor: L.glass, overflow: 'hidden' },
+  topic: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: TILE_RADIUS, backgroundColor: L.recessed, overflow: 'hidden' },
   topicOn: { backgroundColor: L.ink, borderColor: L.ink },
   // The prompt in statement type, as every screen's lead sentence is.
   prompt: { color: L.ink, lineHeight: 28, letterSpacing: -0.2 },

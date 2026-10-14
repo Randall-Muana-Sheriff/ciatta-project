@@ -143,7 +143,6 @@ export function FoodScanScreen() {
       }
     >
       <View style={f.photoWrap} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
-        <CardFill />
         {uri ? <Image source={{ uri }} style={{ width: W, height: H }} resizeMode="cover" accessibilityIgnoresInvertColors accessible={false} /> : null}
 
         {/* Rings, dots and labels, where the scan saw each food. */}

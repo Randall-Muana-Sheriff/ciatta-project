@@ -8,8 +8,7 @@ import { displayCopy } from '../lib/displayCopy';
 import { useCareHub } from '../state/careHub';
 import { font } from '../theme';
 import { Icon, type IconName } from './icons';
-import { L, TILE_RADIUS } from './surface';
-import { CardFill } from './cardFill';
+import { TILE_RADIUS } from './surface';
 import { SectionHeading } from './kit';
 
 export function LatestActivity() {
@@ -19,9 +18,8 @@ export function LatestActivity() {
     <View>
     <SectionHeading title="Latest activity" />
     <View style={s.row} accessible accessibilityLabel={`Latest activity: ${latest.title}, ${latest.when}`}>
-      <CardFill />
       <View style={s.icon}>
-        <Icon name={latest.icon as IconName} size={15} color={L.ink} />
+        <Icon name={latest.icon as IconName} size={15} color={INK} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[font('subhead'), s.ink]} numberOfLines={2}>
@@ -34,17 +32,19 @@ export function LatestActivity() {
   );
 }
 
+// A plain white card in both modes: one line of news needs no photograph.
+const INK = '#0C0E11';
+
 const s = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     padding: 14,
-    backgroundColor: L.glass,
+    backgroundColor: '#FFFFFF',
     borderRadius: TILE_RADIUS,
-    overflow: 'hidden',
   },
-  icon: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: L.statement },
-  ink: { color: L.ink },
-  meta: { color: L.meta },
+  icon: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F1F0ED' },
+  ink: { color: INK },
+  meta: { color: '#59606A' },
 });

@@ -7,6 +7,7 @@ import { displayCopy } from '../lib/displayCopy';
 import { C, font, GUTTER } from '../theme';
 import { L, TILE_RADIUS } from './surface';
 import { CardFill } from './cardFill';
+import { Icon, type IconName } from './icons';
 import { G } from './scheme';
 
 // ── Icons ──────────────────────────────────────────────────────
@@ -230,16 +231,30 @@ export function SegmentedControl<T extends string>({
 }
 
 // Filled capsule for the one most likely action on a view.
-export function PrimaryButton({ label, onPress, disabled = false }: { label: string; onPress?: () => void; disabled?: boolean }) {
+// Buttons. Two kinds and one shape: a 52 point pill, solid in the ground's
+// ink for the one primary action, a flat fill with a hairline for the
+// rest. Pressing settles the button a little rather than fading it out.
+export function PrimaryButton({
+  label,
+  onPress,
+  disabled = false,
+  icon,
+}: {
+  label: string;
+  onPress?: () => void;
+  disabled?: boolean;
+  icon?: IconName;
+}) {
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
       accessibilityState={{ disabled }}
-      style={({ pressed }) => [s.button, s.primary, disabled && s.disabled, pressed && s.pressed]}
+      style={({ pressed }) => [s.button, s.primary, disabled && s.disabled, pressed && s.buttonPressed]}
     >
-      <Text style={[font('headline'), { color: G.onPill }]}>{label}</Text>
+      {icon ? <Icon name={icon} size={18} color={G.onPill} weight={1.8} /> : null}
+      <Text style={[font('headline', 'semibold'), s.buttonLabel, { color: G.onPill }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -261,10 +276,11 @@ export function Lead({ text, style }: { text: string; style?: StyleProp<ViewStyl
 }
 
 // Gray capsule with an accent label for supporting actions.
-export function SecondaryButton({ label, onPress }: { label: string; onPress?: () => void }) {
+export function SecondaryButton({ label, onPress, icon }: { label: string; onPress?: () => void; icon?: IconName }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [s.button, s.secondary, pressed && s.pressed]}>
-      <Text style={[font('headline'), { color: G.ink }]}>{label}</Text>
+    <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [s.button, s.secondary, pressed && s.buttonPressed]}>
+      {icon ? <Icon name={icon} size={18} color={G.ink} weight={1.8} /> : null}
+      <Text style={[font('headline', 'semibold'), s.buttonLabel, { color: G.ink }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -285,7 +301,7 @@ export function LinkButton({
       accessibilityRole="link"
       style={({ pressed }) => [s.link, center && { alignSelf: 'center' }, pressed && s.pressed]}
     >
-      <Text style={[font('subhead'), { color: G.ink }]}>{label}</Text>
+      <Text style={[font('subhead', 'semibold'), { color: G.ink, textDecorationLine: 'underline' }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -444,14 +460,24 @@ export const s = StyleSheet.create({
   // the same gesture looks the same wherever it happens.
   segOn: { backgroundColor: C.fillSelected, borderWidth: StyleSheet.hairlineWidth, borderColor: L.edgeOn },
 
-  button: { minHeight: 50, borderRadius: 25, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
+  button: {
+    minHeight: 52,
+    borderRadius: 999,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonLabel: { letterSpacing: 0.1 },
+  buttonPressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
   // The white pill, as the Your Care cards set their actions: the one
   // primary action on any screen.
-  primary: { backgroundColor: L.pill, borderRadius: 999 },
+  primary: { backgroundColor: G.pill },
   statement: { color: G.ink, lineHeight: 28, letterSpacing: -0.2 },
   statementRest: { color: G.body, lineHeight: 23, marginTop: 6 },
   disabled: { opacity: 0.4 },
-  secondary: { backgroundColor: C.fill },
+  secondary: { backgroundColor: G.fill, borderWidth: StyleSheet.hairlineWidth, borderColor: G.rule },
   link: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
 
   card: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 16, overflow: 'hidden' },

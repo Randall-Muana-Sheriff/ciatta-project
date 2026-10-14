@@ -83,11 +83,10 @@ test('a mark colour is deepened on light until it reads, and left alone on dark'
   applyMode('dark');
 });
 
-test('every card ground has its rendering on disk', async () => {
+test('every photo in the card pool is on disk, and there are enough for a screen', async () => {
   const { existsSync } = await import('node:fs');
-  for (const pair of ['measured-timeDepth', 'reported-change', 'timeDepth-measured', 'timeDepth-reported']) {
-    assert.ok(existsSync(new URL(`../../assets/images/cards/${pair}.jpg`, import.meta.url)), pair);
-  }
+  const names = [...Array.from({ length: 17 }, (_, n) => String(n).padStart(2, '0')), 'metrics'];
+  for (const n of names) assert.ok(existsSync(new URL(`../../assets/images/cards/${n}.jpg`, import.meta.url)), n);
 });
 
 test('the grounds are flat: #161616 on dark, #F1F0ED on light', () => {

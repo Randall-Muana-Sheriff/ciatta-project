@@ -3,7 +3,7 @@
 // and every content card on it is lit in that pair (see CardFill), so a
 // screen keeps its colour without the ground fighting what sits on it.
 
-import { createContext, type ReactNode, useContext } from 'react';
+import { createContext, type ReactNode, useContext, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { G } from './scheme';
@@ -11,8 +11,9 @@ import type { Meaning } from './surface';
 
 export type GroundHue = Meaning;
 
-type Pair = { from: GroundHue; to: GroundHue };
-const PairContext = createContext<Pair>({ from: 'measured', to: 'timeDepth' });
+type Pair = { from: GroundHue; to: GroundHue; next: () => number };
+let loose = 0;
+const PairContext = createContext<Pair>({ from: 'measured', to: 'timeDepth', next: () => loose++ });
 
 // The hue pair of the screen a card sits on.
 export const useGroundPair = () => useContext(PairContext);
@@ -27,8 +28,13 @@ export function Ground({
   from?: GroundHue;
   to?: GroundHue;
 }) {
+  // Hands each card on this screen its own place in the photo pool, in the
+  // order the cards mount, so no two cards on a screen share a background
+  // and the same screen opens with the same ones.
+  const count = useRef(0);
+  const next = () => count.current++;
   return (
-    <PairContext.Provider value={{ from, to }}>
+    <PairContext.Provider value={{ from, to, next }}>
       <View style={s.fill}>{children}</View>
     </PairContext.Provider>
   );

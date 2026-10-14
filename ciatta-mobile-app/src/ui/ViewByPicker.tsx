@@ -9,7 +9,6 @@ import { type Scale, SCALES } from '../lib/timeAxis';
 import { C, font } from '../theme';
 import { Icon } from './icons';
 import { L, TILE_RADIUS } from './surface';
-import { CardFill } from './cardFill';
 import { G } from './scheme';
 
 export function ViewByPicker({ scale, onChange }: { scale: Scale; onChange: (scale: Scale) => void }) {
@@ -24,13 +23,11 @@ export function ViewByPicker({ scale, onChange }: { scale: Scale; onChange: (sca
         accessibilityLabel={`View by ${label}`}
         style={s.picker}
       >
-        <CardFill />
         <Text style={[font('subhead', 'semibold'), { color: G.ink }]}>View by {label}</Text>
         <Icon name={open ? 'chevronDown' : 'chevronRight'} size={16} color={G.body} />
       </Pressable>
       {open ? (
         <View style={s.menu}>
-          <CardFill />
           {SCALES.map((v) => (
             <Pressable
               key={v.key}
@@ -60,13 +57,13 @@ const s = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: TILE_RADIUS,
-    backgroundColor: L.glass,
+    backgroundColor: G.fill,
     overflow: 'hidden',
   },
   menu: {
     marginTop: 6,
     borderRadius: TILE_RADIUS,
-    backgroundColor: L.glass,
+    backgroundColor: L.field,
     overflow: 'hidden',
   },
   item: {

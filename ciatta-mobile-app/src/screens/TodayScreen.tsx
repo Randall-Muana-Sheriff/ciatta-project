@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { headlineMetrics } from '../lib/allMetrics';
 import { bloodOxygen, bloodPressure, type VitalCard } from '../lib/vitals';
@@ -46,7 +46,6 @@ import { SectionHeading } from '../ui/kit';
 import { Wordmark } from '../ui/Wordmark';
 import { ground, HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow } from '../ui/chrome';
-import { images } from '../ui/images';
 import { MetricCard, METRIC_CARD_GAP } from '../ui/metricCard';
 import { METRIC_HUE } from '../ui/metricHue';
 import { METRIC_ICON } from '../ui/metricIcon';
@@ -55,7 +54,8 @@ import { type BaselineRow, type MetricKey, usualFor } from '../lib/metricDetail'
 import { ProductNowCard } from '../ui/ProductNowCard';
 import type { IconName } from '../ui/icons';
 import { Icon } from '../ui/icons';
-import { CardFill } from '../ui/cardFill';
+import { BlurView } from 'expo-blur';
+import { CardFill, METRICS_GROUND } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
 function greeting(now: Date): string {
@@ -458,7 +458,10 @@ export function TodayScreen() {
           />
         </View>
         {state.measured ? (
-        <View>
+        // One container on a photograph, and the six as frosted glass tiles
+        // over it.
+        <View style={t.metricsCard}>
+          <CardFill source={METRICS_GROUND} wash={[0.3, 0.38, 0.5]} />
           {/*
             Six cards and nothing else. The card holds only metrics now:
             the chart and the cycle moved up into Today's Patterns, where
@@ -478,7 +481,7 @@ export function TodayScreen() {
                 accessibilityLabel={`${m.label}, ${m.value ?? 'not recorded today'}${m.note && m.value ? `, ${m.note}` : ''}`}
                 accessibilityHint="Opens this metric over time"
               >
-                <CardFill />
+                <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
                 <MetricCard
                   label={m.label}
                   value={m.value}
@@ -518,11 +521,8 @@ export function TodayScreen() {
         */}
         <View style={t.section}>
           <SectionHeading title="You can log" />
-          {/* The photo across the top, edge to edge, and the actions
-              beneath. */}
           <View style={t.youCan}>
             <CardFill />
-            <Image source={images.youCan} style={t.youCanPhoto} resizeMode="cover" accessibilityIgnoresInvertColors accessible={false} />
             {/* Logging, one step from here: the topic, then speak, type or
                 take a photo. The Log screen opens already doing it. */}
             <LogBox
@@ -712,12 +712,17 @@ const t = StyleSheet.create({
   // these are: six readings from one day, none ranked above another.
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: METRIC_CARD_GAP },
   // Each metric its own card, on the same ground as every other card.
+  metricsCard: { borderRadius: TILE_RADIUS, overflow: 'hidden', backgroundColor: L.glass, padding: 10 },
+  // Frosted glass over the container's photograph: a blur, a faint white
+  // lift and a bright hairline, as the reference sets its tiles.
   gridCell: {
     width: '30%',
     flexGrow: 1,
-    borderRadius: TILE_RADIUS,
+    borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: L.glass,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255, 255, 255, 0.28)',
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
@@ -735,7 +740,6 @@ const t = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: L.glass,
   },
-  youCanPhoto: { width: '100%', height: 160 },
   card: {
     marginTop: SPACE.tight,
     backgroundColor: L.glass,

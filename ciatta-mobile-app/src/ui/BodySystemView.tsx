@@ -183,7 +183,8 @@ export function BodySystemView({
           {...pan.panHandlers}
         >
           <Animated.View style={{ width: WIDTH, height: HEIGHT, transform: [{ perspective: 1200 }, { rotateY }, { scale }] }}>
-            {wholeBody ? (
+            {/* No glow on the light ground: a haze on paper reads as a stain. */}
+            {wholeBody && G.mode === 'dark' ? (
               <Svg style={StyleSheet.absoluteFill} width={WIDTH} height={HEIGHT}>
                 <Defs>
                   <RadialGradient id="systemic" cx="50%" cy="50%" rx="50%" ry="50%">
@@ -197,7 +198,7 @@ export function BodySystemView({
 
             <Image
               source={images.body}
-              style={[b.silhouette, { width: WIDTH, height: HEIGHT }]}
+              style={[b.silhouette, G.mode === 'light' && b.silhouetteSolid, { width: WIDTH, height: HEIGHT }]}
               resizeMode="contain"
               accessibilityIgnoresInvertColors
               accessible={false}
@@ -233,8 +234,8 @@ export function BodySystemView({
                           borderRadius: size / 2,
                           backgroundColor: dot.color,
                         },
-                        on && { shadowColor: dot.color },
-                        on && b.dotOn,
+                        on && G.mode === 'dark' && { shadowColor: dot.color },
+                        on && G.mode === 'dark' && b.dotOn,
                       ]}
                     />
                   );
@@ -268,6 +269,9 @@ const b = StyleSheet.create({
   rowOn: { backgroundColor: C.card },
 
   silhouette: { ...StyleSheet.absoluteFill, opacity: 0.24 },
+  // On paper a ghost at a quarter opacity disappears, so the figure is
+  // drawn solid, in a warm grey a step down from the ground.
+  silhouetteSolid: { opacity: 1, tintColor: '#D3CEC7' },
   dot: { position: 'absolute' },
   dotOn: { shadowOpacity: 0.8, shadowRadius: 5, shadowOffset: { width: 0, height: 0 } },
   viewLabel: { color: G.body, textAlign: 'center', marginTop: 8 },

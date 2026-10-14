@@ -44,7 +44,6 @@ import { StoolPicture } from '../ui/stoolScale';
 import { takeLogCategory, takeLogMode } from '../lib/logHandoff';
 import { useQuickLogSave } from '../state/quickLogSave';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
-import { CardFill } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
 export function QuickLogScreen() {
@@ -184,7 +183,6 @@ export function QuickLogScreen() {
               accessibilityState={{ selected: on }}
               style={({ pressed }) => [q.cat, on && q.catOn, pressed && q.pressed]}
             >
-              <CardFill />
               <Text style={[font('subhead', on ? 'semibold' : 'regular'), on ? q.catTextOn : q.catText]}>{displayCopy(c.label)}</Text>
             </Pressable>
           );
@@ -255,7 +253,6 @@ export function QuickLogScreen() {
                     accessibilityLabel={`Type ${type}, ${displayCopy(word)}`}
                     style={({ pressed }) => [q.stool, on && q.chipOn, pressed && q.pressed]}
                   >
-                    <CardFill />
                     <StoolPicture type={type} color={on ? L.ink : L.body} width={30} />
                     <Text style={[font('caption2', on ? 'semibold' : 'regular'), on ? q.chipTextOn : q.chipText]}>{type}</Text>
                   </Pressable>
@@ -384,7 +381,7 @@ const q = StyleSheet.create({
     gap: 4,
     paddingVertical: 8,
     borderRadius: TILE_RADIUS,
-    backgroundColor: L.glass,
+    backgroundColor: G.fill,
     overflow: 'hidden',
   },
   cats: { gap: 8, paddingHorizontal: GUTTER, paddingVertical: 4 },
@@ -392,7 +389,7 @@ const q = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 14,
     borderRadius: TILE_RADIUS,
-    backgroundColor: L.glass,
+    backgroundColor: G.fill,
     overflow: 'hidden',
   },
   catOn: { backgroundColor: L.ink, borderColor: L.ink },
