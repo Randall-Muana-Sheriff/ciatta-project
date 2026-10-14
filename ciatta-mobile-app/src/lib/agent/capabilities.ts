@@ -21,6 +21,7 @@
 //   useful; an answer improvised to avoid saying it is neither.
 
 import { NAME } from '../metricNames';
+import { systemReview, SYSTEM_TOPICS } from '../systemReview';
 import type { Day } from '../../data/daily';
 import type { Episode } from '../../data/cycleLog';
 import { buildMetrics, recordedCount } from '../allMetrics';
@@ -501,6 +502,8 @@ export function respond(message: string, r: Record, capability: import('./types'
       return answerLabs(r, message);
     case 'referral':
       return answerReferral(r, message);
+    case 'system':
+      return answerSystem(r, message);
     default:
       return answerDecline();
   }
@@ -643,5 +646,47 @@ export function answerReferral(r: Record, message: string): Answer {
       .join(' ')}${next ? ` ${next.text}` : ''}`,
     facts: open.slice(0, 3).map((x) => ({ label: 'Referral', value: x.specialty, from: 'reported' as const })),
     suggestions: [{ label: 'Open your referrals', screen: 'referrals' }],
+  };
+}
+
+// ── A body system, from Explore ──────────────────────────────────────
+
+const SYSTEM_SCREEN: Partial<globalThis.Record<string, Suggestion>> = {
+  Reproductive: { label: 'Your cycle', screen: 'cycle' },
+  Digestive: { label: 'Your gut', screen: 'gut' },
+  Nervous: { label: 'Your sleep', screen: 'sleep' },
+  Circulatory: { label: 'Your metrics', screen: 'metrics' },
+  Respiratory: { label: 'Your metrics', screen: 'metrics' },
+  Metabolic: { label: 'Your labs', screen: 'healthrecords' },
+  Urinary: { label: 'Your labs', screen: 'healthrecords' },
+  Immune: { label: 'Your labs', screen: 'healthrecords' },
+  Musculoskeletal: { label: 'Your movement', screen: 'movement' },
+  Skin: { label: 'Your symptoms', screen: 'symptoms' },
+  'Whole Body': { label: 'Your symptoms', screen: 'symptoms' },
+};
+
+// One system, brought together from her record: the same highlights the
+// Body card shows, then where to plan what to raise.
+export function answerSystem(r: Record, message: string): Answer {
+  const text = message.toLowerCase();
+  const system = Object.keys(SYSTEM_TOPICS).find((s) => text.startsWith(`review my ${s.toLowerCase()} health`)) ?? 'Whole Body';
+  const review = r.context
+    ? systemReview(system, { context: r.context, points: [], conditions: r.conditions, situations: [], insight: null, now: new Date() })
+    : { highlights: [], facts: [], sources: [] };
+  const screen = SYSTEM_SCREEN[system];
+  if (!review.highlights.length) {
+    return {
+      capability: 'system',
+      text: `Nothing about your ${system.toLowerCase()} health is in your record yet. Logging it, or connecting a device or provider, starts it.`,
+      facts: [],
+      suggestions: [{ label: 'Log', screen: 'quickLog' }, ...(screen ? [screen] : [])],
+      abstained: 'no_data',
+    };
+  }
+  return {
+    capability: 'system',
+    text: `Your ${system.toLowerCase()} health, from your record: ${review.highlights.map((h) => h.charAt(0).toLowerCase() + h.slice(1)).join('; ')}. Your visit prep gathers what to raise, with your questions.`,
+    facts: review.facts,
+    suggestions: [VISIT_PREP, ...(screen ? [screen] : [])],
   };
 }

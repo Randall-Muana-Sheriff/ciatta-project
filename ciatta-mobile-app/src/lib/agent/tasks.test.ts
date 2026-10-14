@@ -29,6 +29,7 @@ const ctx: AgentContext = {
   cycle: null,
   visit: null,
   today: [],
+  foods: [],
 };
 
 test('a visit prep summary: what changed, labs outside range, what she takes, referrals', () => {

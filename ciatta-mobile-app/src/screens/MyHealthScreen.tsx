@@ -1,18 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { type BodyPoint, readBody, WHOLE_BODY } from '../lib/bodyMap';
-import { chooseLogCategory } from '../lib/logHandoff';
+import { type BodyPoint, readBody } from '../lib/bodyMap';
 import { drawsFromLabs } from '../lib/labs';
 import { useLabs } from '../state/labs';
-import { loggedPoints, SYSTEM_CATEGORY } from '../lib/systemLogs';
+import { loggedPoints } from '../lib/systemLogs';
 import { useNav } from '../navigation';
-import { useCycle, useCycleInsights } from '../state/cycleStore';
+import { useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
 import { useData, useRepo } from '../state/session';
 import { C, font, GUTTER } from '../theme';
 import { NAV_CLEARANCE } from '../ui/surface';
 import { BodySystemView } from '../ui/BodySystemView';
+import { askCare } from '../lib/careHandoff';
+import { explorePrompt } from '../lib/systemReview';
+import { useAgentContext } from '../state/agentContext';
 import { LargeTitle } from '../ui/chrome';
 import { RecordsView } from '../ui/RecordsView';
 import { SegmentedControl } from '../ui/kit';
@@ -24,9 +26,10 @@ const VIEWS = ['Body', 'Records'] as const;
 // Health: her body, system by system, and her records.
 export function MyHealthScreen() {
   const nav = useNav();
-  const { setFocus } = useCycle();
-  const { movement, ranked } = useInsights();
-  const { signals, summaries, lens } = useCycleInsights();
+  const { ranked } = useInsights();
+  const { signals, profile } = useCycleInsights();
+  const { context } = useAgentContext();
+  const [conditions, setConditions] = useState<string[]>([]);
   const { days } = useData();
   const labs = useLabs();
   const [view, setView] = useState<(typeof VIEWS)[number]>('Body');
@@ -46,25 +49,13 @@ export function MyHealthScreen() {
       ignore = true;
     };
   }, [repo, view, nav.depth]);
+  useEffect(() => {
+    repo.loadReported().then((r) => setConditions(r.conditions)).catch(() => {});
+  }, [repo]);
   const body = useMemo(() => {
     const read = readBody({ signals, days, ranked, draws: drawsFromLabs(labs) });
     return { ...read, systemic: [...read.systemic, ...logged] };
   }, [signals, days, ranked, labs, logged]);
-
-  const openInsight = (id: string) => {
-    setFocus(id);
-    nav.push('evidence');
-  };
-  const openPoint = (p: BodyPoint) => {
-    if (p.insightId) openInsight(p.insightId);
-    else if (p.screen) nav.push(p.screen);
-  };
-  // Logging from a system opens the Log screen on the category that logs
-  // it: Digestive on Gut, Nervous on Mind, the whole body on Note.
-  const logFor = (system: string) => {
-    chooseLogCategory(system === WHOLE_BODY ? 'note' : (SYSTEM_CATEGORY[system] ?? 'note'));
-    nav.push('quickLog');
-  };
 
   return (
     <ScrollView style={h.fill} contentContainerStyle={h.body}>
@@ -78,7 +69,18 @@ export function MyHealthScreen() {
         <SegmentedControl segments={VIEWS} active={view} onChange={setView} />
 
         {view === 'Body' ? (
-          <BodySystemView reading={body} signals={signals} onOpen={openPoint} onLog={logFor} />
+          <BodySystemView
+            reading={body}
+            signals={signals}
+            context={context}
+            conditions={conditions}
+            situations={profile.situations}
+            onExplore={(system, topic) => {
+              // Care asks it the moment it is in view.
+              askCare(explorePrompt(system, topic));
+              nav.goTab('care');
+            }}
+          />
         ) : (
           <RecordsView onOpen={nav.push} />
         )}

@@ -46,6 +46,7 @@ const ctx = (over: Partial<AgentContext> = {}): AgentContext => ({
   cycle: null,
   visit: null,
   today: [],
+  foods: [],
   ...over,
 });
 

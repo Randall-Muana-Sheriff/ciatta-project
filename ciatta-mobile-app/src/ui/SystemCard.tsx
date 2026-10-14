@@ -1,0 +1,162 @@
+// One body system, one card: its name with Explore in the corner, the
+// topics it covers, the highlights from her record, the sources folded
+// into one line, and the prompt Explore sends to Care. Nothing to page
+// through: the evidence is a tap away inside the card, and the work is
+// one tap away in Care.
+
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+
+import { displayCopy } from '../lib/displayCopy';
+import { SYSTEM_TOPICS } from '../lib/systemReview';
+import { C, font, RADIUS } from '../theme';
+import { Icon, type IconName } from './icons';
+
+export function SystemCard({
+  label,
+  icon,
+  color,
+  highlights,
+  sources,
+  onExplore,
+}: {
+  label: string;
+  icon: IconName;
+  color: string;
+  highlights: string[];
+  // Where the highlights come from, by kind, for the Sources line.
+  sources: { kind: string; label: string }[];
+  onExplore: (topic?: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const topics = SYSTEM_TOPICS[label] ?? [];
+  const kinds = [...new Set(sources.map((s) => s.kind))];
+  return (
+    <View style={c.card}>
+      <View style={c.head}>
+        <Icon name={icon} size={20} color={color} weight={1.8} />
+        <Text style={[font('title3', 'semibold'), c.title]} accessibilityRole="header">
+          {displayCopy(label)}
+        </Text>
+        <Pressable
+          onPress={() => onExplore()}
+          accessibilityRole="button"
+          accessibilityLabel={`Explore ${label} with Ciatta`}
+          hitSlop={8}
+          style={({ pressed }) => [c.explore, pressed && c.pressed]}
+        >
+          <Icon name="sparkle" size={14} color={C.text} />
+          <Text style={[font('footnote', 'semibold'), { color: C.text }]}>Explore</Text>
+        </Pressable>
+      </View>
+
+      {topics.length ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={c.topics}>
+          {topics.map((t) => (
+            <Pressable
+              key={t}
+              onPress={() => onExplore(t)}
+              accessibilityRole="button"
+              accessibilityLabel={`Explore ${t} with Ciatta`}
+              style={({ pressed }) => [c.topic, pressed && c.pressed]}
+            >
+              <Text style={[font('footnote'), { color: C.text }]}>{displayCopy(t)}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
+
+      {highlights.length ? (
+        <>
+          <Text style={[font('headline'), c.highlightsTitle]}>Highlights</Text>
+          {highlights.map((h) => (
+            <View key={h} style={c.bullet}>
+              <View style={[c.dot, { backgroundColor: color }]} />
+              <Text style={[font('body'), c.bulletText]}>{displayCopy(h)}</Text>
+            </View>
+          ))}
+        </>
+      ) : (
+        <Text style={[font('body'), c.empty]}>Nothing recorded for this system yet.</Text>
+      )}
+
+      {sources.length ? (
+        <>
+          <Pressable
+            onPress={() => setOpen((v) => !v)}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: open }}
+            style={({ pressed }) => [c.sources, pressed && c.pressed]}
+          >
+            {kinds.map((k) => (
+              <View key={k} style={[c.sourceDot, { backgroundColor: SOURCE_COLOR[k] ?? C.secondary }]} />
+            ))}
+            <Text style={[font('footnote', 'semibold'), { color: C.text }]}>{`${sources.length} ${sources.length === 1 ? 'source' : 'sources'}`}</Text>
+            <Icon name={open ? 'chevronDown' : 'chevronRight'} size={13} color={C.secondary} />
+          </Pressable>
+          {open
+            ? sources.map((s) => (
+                <Text key={`${s.kind}${s.label}`} style={[font('footnote'), c.sourceLine]}>
+                  {displayCopy(`${s.kind}: ${s.label}`)}
+                </Text>
+              ))
+            : null}
+        </>
+      ) : null}
+
+      {/* What Explore asks, said as a line she can tap. */}
+      <Pressable onPress={() => onExplore()} accessibilityRole="button" style={({ pressed }) => [c.ask, pressed && c.pressed]}>
+        <Text style={[font('subhead'), c.arrow]}>{'↳'}</Text>
+        <Text style={[font('subhead', 'semibold'), c.askText]}>
+          {displayCopy(`Bring my ${label.toLowerCase()} health together and plan what to raise`)}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const SOURCE_COLOR: Record<string, string> = {
+  Measured: '#789AF3',
+  'You logged': '#F46EB4',
+  Lab: '#F2B863',
+  Provider: '#B188F3',
+};
+
+const c = StyleSheet.create({
+  card: { marginTop: 16, backgroundColor: C.card, borderRadius: RADIUS, padding: 16, gap: 10 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  title: { color: C.text, flex: 1 },
+  explore: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    minHeight: 32,
+    borderRadius: 999,
+    backgroundColor: C.cardHi,
+  },
+  topics: { gap: 8 },
+  topic: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: C.borderSub },
+  highlightsTitle: { color: C.text, marginTop: 4 },
+  bullet: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  dot: { width: 7, height: 7, borderRadius: 3.5, marginTop: 9 },
+  bulletText: { color: C.text, flex: 1, lineHeight: 24 },
+  empty: { color: C.secondary },
+  sources: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    minHeight: 30,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.borderSub,
+  },
+  sourceDot: { width: 8, height: 8, borderRadius: 4 },
+  sourceLine: { color: C.secondary, lineHeight: 19 },
+  ask: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', marginTop: 4 },
+  arrow: { color: C.secondary },
+  askText: { color: C.text, flex: 1, lineHeight: 21 },
+  pressed: { opacity: 0.6 },
+});

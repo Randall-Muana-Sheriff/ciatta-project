@@ -86,6 +86,9 @@ export function classify(message: string): CapabilityId {
   // one is not the same as the cost of a false positive.
   if (RED_FLAGS.some((w) => text.includes(w))) return 'escalate';
 
+  // Explore on a body system sends a prompt in one known shape.
+  if (text.startsWith('review my ') && text.includes(' health')) return 'system';
+
   for (const m of MATCHERS) {
     if (m.any.some((w) => text.includes(w))) return m.id;
   }

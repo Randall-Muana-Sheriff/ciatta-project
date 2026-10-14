@@ -55,6 +55,7 @@ import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { Composer } from '../ui/composer';
 import { AgentAvatar } from '../ui/AgentAvatar';
+import { onCareAsk, takeCareAsk } from '../lib/careHandoff';
 import { Icon } from '../ui/icons';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 
@@ -267,6 +268,14 @@ export function CareScreen() {
     },
     [record, files, introSeen, context],
   );
+
+  // A question handed over from elsewhere, such as Explore on a body
+  // system: asked as if she had typed it.
+  useEffect(() => {
+    const waiting = takeCareAsk();
+    if (waiting) send(waiting);
+    return onCareAsk((prompt) => send(prompt));
+  }, [send]);
 
   return (
     <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

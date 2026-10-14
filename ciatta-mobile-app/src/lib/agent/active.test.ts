@@ -25,6 +25,7 @@ const ctx: AgentContext = {
   cycle: null,
   visit: null,
   today: [],
+  foods: [],
 };
 
 const record = (context: AgentContext | undefined): Record => ({

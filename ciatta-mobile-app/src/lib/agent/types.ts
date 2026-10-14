@@ -47,6 +47,8 @@ export type CapabilityId =
   | 'labs'
   // Referrals she is tracking, or one she mentions, drafted for her.
   | 'referral'
+  // One body system reviewed from everything in her record, from Explore.
+  | 'system'
   // None of the above.
   | 'decline';
 

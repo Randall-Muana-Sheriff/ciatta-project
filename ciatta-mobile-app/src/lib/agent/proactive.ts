@@ -44,6 +44,9 @@ export type AgentContext = {
   cycle: { day: number; phase: string | null } | null;
   visit: { title: string; when: string; location: string | null } | null;
   today: { label: string; range: string }[];
+  // The foods she logged in the last 30 days, by her own names, most days
+  // first. Her diet as she eats it, not a generic category.
+  foods: { name: string; days: number }[];
 };
 
 export type Vitals = {
@@ -162,6 +165,12 @@ export function buildContext(input: {
     cycle: input.cycle ?? null,
     visit: input.visit ?? null,
     today: input.today ?? [],
+    foods: (() => {
+      const since = iso(new Date(input.now.getTime() - 30 * 86400000));
+      const tally = new Map<string, number>();
+      for (const d of input.days) if (d.date >= since) for (const f of new Set(d.foods)) tally.set(f, (tally.get(f) ?? 0) + 1);
+      return [...tally].map(([name, days]) => ({ name, days })).sort((a, b) => b.days - a.days);
+    })(),
   };
 }
 

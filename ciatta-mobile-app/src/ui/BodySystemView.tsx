@@ -4,23 +4,20 @@ import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 
 import { bodySystems } from '../data/adapter';
 import {
-  type BodyPoint,
   type BodyReading,
   readSystems,
-  REGION_BY_ID,
   stateWords,
   SYSTEM_DOTS,
   WHOLE_BODY,
 } from '../lib/bodyMap';
 import { displayCopy } from '../lib/displayCopy';
-import { category } from '../lib/logCategories';
-import { SYSTEM_CATEGORY } from '../lib/systemLogs';
 import { C, font, GUTTER, M, RADIUS } from '../theme';
-import { Panel } from './chrome';
 import { Icon } from './icons';
 import { images } from './images';
-import { SecondaryButton } from './kit';
 import { systemInsight } from '../lib/systemInsight';
+import { systemReview } from '../lib/systemReview';
+import type { AgentContext } from '../lib/agent/proactive';
+import { SystemCard } from './SystemCard';
 
 // The body view: the body systems from Profile on the left, a neutral
 // silhouette on the right, and what is recorded for the chosen system in
@@ -56,13 +53,17 @@ function useReduceMotion(): boolean {
 export function BodySystemView({
   reading,
   signals,
-  onOpen,
-  onLog,
+  context,
+  conditions,
+  situations,
+  onExplore,
 }: {
   reading: BodyReading;
   signals: Parameters<typeof systemInsight>[0]['signals'];
-  onOpen: (point: BodyPoint) => void;
-  onLog: (system: string) => void;
+  context: AgentContext;
+  conditions: readonly string[];
+  situations: readonly string[];
+  onExplore: (system: string, topic?: string) => void;
 }) {
   const reduce = useReduceMotion();
   const { width } = useWindowDimensions();
@@ -83,6 +84,10 @@ export function BodySystemView({
   const insight = useMemo(
     () => systemInsight({ regions: system.regions, whole: system.label === WHOLE_BODY, points: system.points, signals, now: new Date() }),
     [system, signals],
+  );
+  const review = useMemo(
+    () => systemReview(system.label, { context, points: system.points, conditions, situations, insight, now: new Date() }),
+    [system, context, conditions, situations, insight],
   );
 
   const breath = useRef(new Animated.Value(0)).current;
@@ -240,48 +245,16 @@ export function BodySystemView({
         </View>
       </View>
 
-      <Panel style={b.detail}>
-        <Text style={[font('title3', 'semibold'), { color: C.text }]}>{displayCopy(system.label)}</Text>
-        {/*
-          One sentence of its own, counted from her logs: how often this
-          month, against the last, and when in her cycle. It never repeats
-          Today's insight; the evidence is a tap away on each row below.
-        */}
-        {insight ? <Text style={[font('body'), b.insight]}>{displayCopy(insight)}</Text> : null}
-        {system.points.length ? (
-          system.points.map((p, n) => {
-            const opens = !!(p.insightId || p.screen);
-            const where = p.region === 'systemic' ? 'Whole body' : REGION_BY_ID[p.region].label;
-            return (
-              <Pressable
-                key={`${p.region}-${p.title}`}
-                disabled={!opens}
-                onPress={() => onOpen(p)}
-                accessibilityRole={opens ? 'button' : undefined}
-                accessibilityLabel={`${p.title}, ${where}${p.source !== 'Synced' ? `, ${p.source}` : ''}`}
-                style={({ pressed }) => [b.item, n > 0 && b.itemSep, pressed && opens && { opacity: 0.6 }]}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={[font('subhead', 'semibold'), { color: C.text }]}>{displayCopy(p.title)}</Text>
-                  <Text style={[font('footnote'), { color: C.secondary }]}>
-                    {displayCopy(p.source !== 'Synced' ? `${where} · ${p.source}` : where)}
-                  </Text>
-                </View>
-                {opens ? <Icon name="chevronRight" size={16} color={C.secondary} /> : null}
-              </Pressable>
-            );
-          })
-        ) : (
-          <Text style={[font('body'), { color: C.secondary, marginTop: 6 }]}>Nothing recorded for this system yet.</Text>
-        )}
-        {/* Every system can be logged, on the Log category that logs it. */}
-        <View style={{ marginTop: 12 }}>
-          <SecondaryButton
-            label={`Log ${system.label === WHOLE_BODY ? 'a Note' : `in ${category(SYSTEM_CATEGORY[system.label] ?? 'note').label}`}`}
-            onPress={() => onLog(system.label)}
-          />
-        </View>
-      </Panel>
+      {/* The system, as one card: highlights from her whole record, the
+          sources folded in, and Explore, which hands it to Care. */}
+      <SystemCard
+        label={system.label}
+        icon={icons.get(system.label) ?? 'body'}
+        color={SYSTEM_DOTS[system.label]?.color ?? C.text}
+        highlights={review.highlights}
+        sources={review.sources}
+        onExplore={(topic) => onExplore(system.label, topic)}
+      />
     </View>
   );
 }
