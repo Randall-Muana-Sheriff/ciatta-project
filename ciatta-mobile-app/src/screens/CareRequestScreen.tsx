@@ -15,7 +15,7 @@ import { useNav } from '../navigation';
 import { useAgentContext } from '../state/agentContext';
 import { useData, useRepo } from '../state/session';
 import { font } from '../theme';
-import { DetailScreen, SaveBar, SecondaryButton, SegmentedControl } from '../ui/kit';
+import { DetailScreen, SaveBar, SecondaryButton, SegmentedControl, Lead } from '../ui/kit';
 import { L, SPACE } from '../ui/surface';
 
 const STATUSES: RequestStatus[] = ['draft', 'sent', 'answered', 'closed'];
@@ -137,9 +137,7 @@ export function CareRequestScreen() {
       onBack={nav.back}
       footer={<SaveBar label={saving ? 'Saving' : 'Save'} disabled={saving || !request.title.trim()} onPress={() => void save()} />}
     >
-      <Text style={[font('subhead'), s.lede]}>
-        Ciatta drafted this from your record. Read it, change anything, and send it yourself. Ciatta never sends it for you.
-      </Text>
+      <Lead style={s.lede} text={"Ciatta drafted this from your record. Read it, change anything, and send it yourself. Ciatta never sends it for you."} />
 
       <Text style={[font('footnote'), s.label]}>To</Text>
       <TextInput

@@ -22,7 +22,7 @@ import { useCycleInsights } from '../state/cycleStore';
 import { useData, useRepo } from '../state/session';
 import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
-import { DetailScreen, SecondaryButton } from '../ui/kit';
+import { DetailScreen, SecondaryButton, Lead } from '../ui/kit';
 import { L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 
 const WINDOWS: { label: string; days: number }[] = [
@@ -124,9 +124,7 @@ export function AppointmentScreen() {
   return (
     <DetailScreen title="Prepare for an Appointment" onBack={nav.back}>
       <ScrollView style={s.fill} contentContainerStyle={s.body}>
-        <Text style={[font('body'), s.lede]}>
-          Everything here is already in your record. Ciatta gathers it so you are not remembering it in the room.
-        </Text>
+        <Lead style={s.lede} text={"Everything here is already in your record. Ciatta gathers it so you are not remembering it in the room."} />
 
         <Eyebrow>How far back</Eyebrow>
         <View style={s.spans}>

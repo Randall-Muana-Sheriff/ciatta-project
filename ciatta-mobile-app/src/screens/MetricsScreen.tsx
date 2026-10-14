@@ -31,7 +31,7 @@ import { useData, useRepo } from '../state/session';
 import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { Icon } from '../ui/icons';
-import { DetailScreen, SegmentedControl } from '../ui/kit';
+import { DetailScreen, SegmentedControl, Lead } from '../ui/kit';
 import { HealthDashboard } from '../ui/HealthDashboard';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
@@ -115,7 +115,7 @@ export function MetricsScreen() {
         </View>
       ) : (
       <>
-      <Text style={[font('body'), s.lede]}>{displayCopy(recordedLine(counts))}</Text>
+      <Lead style={s.lede} text={displayCopy(recordedLine(counts))} />
       <Text style={[font('caption1'), s.note]}>
         A figure that is not here was not recorded. Ciatta leaves it blank rather than filling it with a zero.
       </Text>

@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { askCare, openClinician, openRequest } from '../lib/careHandoff';
-import { type RequestKind, STATUS_LABEL } from '../lib/care';
+import { type PlanStep, type RequestKind, STATUS_LABEL } from '../lib/care';
 import { displayCopy } from '../lib/displayCopy';
 import { SUGGEST_LABS } from '../lib/agent/labSuggest';
 import { REFILL } from '../lib/agent/connect';
@@ -35,6 +35,16 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
   const nav = useNav();
   const hub = useCareHub();
   const [choosing, setChoosing] = useState(false);
+  // Where a plan step is done.
+  const go = (p: PlanStep) => {
+    if (p.id === 'requests' && hub.open[0]) {
+      openRequest({ id: hub.open[0].id });
+      return nav.push('careRequest');
+    }
+    if (p.lab) chooseLab(p.lab);
+    if (p.referral) chooseReferral(p.referral, null);
+    nav.push(p.screen as Screen);
+  };
   const draft = (kind: RequestKind, extra: { medication?: string; clinician?: string | null } = {}) => {
     openRequest({ draft: { kind, ...extra } });
     nav.push('careRequest');
@@ -42,31 +52,36 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
 
   return (
     <View style={s.stack}>
-      {/* Open plan */}
-      <Section title="Open plan">
-        {hub.plan.length ? (
-          hub.plan.map((p, n) => (
-            <Row
-              key={p.id}
-              first={n === 0}
-              icon="target"
-              title={p.title}
-              sub={p.sub}
-              onPress={() => {
-                if (p.id === 'requests' && hub.open[0]) {
-                  openRequest({ id: hub.open[0].id });
-                  return nav.push('careRequest');
-                }
-                if (p.lab) chooseLab(p.lab);
-                if (p.referral) chooseReferral(p.referral, null);
-                nav.push(p.screen as Screen);
-              }}
-            />
-          ))
-        ) : (
-          <Empty text="Nothing open. Ciatta adds the next steps here as your record changes." />
-        )}
-      </Section>
+      {/* Open plan: the hero of Your Care, as Lotus sets its plan. The
+          first step as a statement, the white pill to start it, and the
+          rest beneath; or, with nothing open, all caught up. */}
+      <View style={s.section}>
+        <PhotoCard source={images.carePlan} style={{ minHeight: 300 }}>
+          <Icon name="sparkle" size={20} color="#FFFFFF" />
+          <View style={{ flex: 1, minHeight: 60 }} />
+          {hub.plan.length ? (
+            <>
+              <Text style={[font('footnote', 'semibold'), s.whiteMeta]}>{`Open plan · ${hub.plan.length} ${hub.plan.length === 1 ? 'step' : 'steps'}`}</Text>
+              <Text style={[font('title2', 'semibold'), s.white, s.statement]}>{displayCopy(hub.plan[0].title)}</Text>
+              {hub.plan[0].sub ? <Text style={[font('subhead'), s.whiteMeta]}>{displayCopy(hub.plan[0].sub)}</Text> : null}
+              <WhiteButton label="Open plan" onPress={() => go(hub.plan[0])} />
+              {hub.plan.slice(1).map((p) => (
+                <Pressable key={p.id} onPress={() => go(p)} accessibilityRole="button" style={({ pressed }) => [s.planStep, pressed && s.pressed]}>
+                  <Text style={[font('subhead'), s.white, { flex: 1 }]} numberOfLines={2}>
+                    {displayCopy(p.title)}
+                  </Text>
+                  <Icon name="chevronRight" size={14} color="rgba(255,255,255,0.7)" />
+                </Pressable>
+              ))}
+            </>
+          ) : (
+            <>
+              <Text style={[font('title2', 'semibold'), s.white, s.statement]}>You are all caught up</Text>
+              <Text style={[font('subhead'), s.whiteMeta]}>Next steps needing your attention will appear here as your record changes.</Text>
+            </>
+          )}
+        </PhotoCard>
+      </View>
 
       {/* Open requests */}
       <Section title="Open requests" action={{ label: choosing ? 'Close' : 'New', onPress: () => setChoosing((v) => !v) }}>
@@ -326,6 +341,7 @@ const s = StyleSheet.create({
   member: { width: 172, height: 232 },
   addMember: { borderRadius: 24, borderWidth: 1, borderStyle: 'dashed', borderColor: L.meta, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: L.recessed },
   pressed: { opacity: 0.6 },
+  planStep: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 12, marginTop: 4, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.18)' },
   white: { color: '#FFFFFF' },
   whiteMeta: { color: 'rgba(255,255,255,0.72)' },
   statement: { marginTop: 6, lineHeight: 28 },

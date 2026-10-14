@@ -83,7 +83,7 @@ export function LogBox({
               })}
             </View>
           ) : null}
-          <Text style={[font('headline'), s.prompt]}>{displayCopy(need?.prompt ?? '')}</Text>
+          <Text style={[font('title3', 'semibold'), s.prompt]}>{displayCopy(need?.prompt ?? '')}</Text>
           <View style={s.chips}>
             {(need?.chips ?? []).map((c) => {
               const done = logged.includes(c);
@@ -140,7 +140,8 @@ const s = StyleSheet.create({
   topics: { flexDirection: 'row', gap: 6 },
   topic: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, backgroundColor: L.recessed },
   topicOn: { backgroundColor: L.ink, borderColor: L.ink },
-  prompt: { color: L.ink },
+  // The prompt in statement type, as every screen's lead sentence is.
+  prompt: { color: L.ink, lineHeight: 28, letterSpacing: -0.2 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
   chipDone: { backgroundColor: L.ink, borderColor: L.ink },

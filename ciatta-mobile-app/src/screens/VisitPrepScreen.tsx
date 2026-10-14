@@ -14,7 +14,7 @@ import { useAgentContext } from '../state/agentContext';
 import { useData } from '../state/session';
 import { C, font } from '../theme';
 import { Eyebrow } from '../ui/bento';
-import { DetailScreen, EmptyNote, PrimaryButton, SecondaryButton } from '../ui/kit';
+import { DetailScreen, EmptyNote, PrimaryButton, SecondaryButton, Lead } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 
 export function VisitPrepScreen() {
@@ -41,7 +41,7 @@ export function VisitPrepScreen() {
 
   return (
     <DetailScreen title="Visit Prep" onBack={nav.back}>
-      <Text style={[font('body'), s.lede]}>From your own record. Keep the questions you want, add your own, and take it with you.</Text>
+      <Lead style={s.lede} text={"From your own record. Keep the questions you want, add your own, and take it with you."} />
       {!prep.sections.length ? <EmptyNote text="Nothing in your record stands out for a visit yet. You can still add your own questions." /> : null}
       {prep.sections.map((sec) => (
         <View key={sec.title} style={{ marginTop: SPACE.near }}>

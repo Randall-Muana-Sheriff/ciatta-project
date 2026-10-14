@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { type BodyPoint, readBody } from '../lib/bodyMap';
 import { drawsFromLabs } from '../lib/labs';
@@ -9,7 +9,7 @@ import { useNav } from '../navigation';
 import { useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
 import { useData, useRepo } from '../state/session';
-import { C, font, GUTTER } from '../theme';
+import { GUTTER } from '../theme';
 import { NAV_CLEARANCE } from '../ui/surface';
 import { BodySystemView } from '../ui/BodySystemView';
 import { askCare } from '../lib/careHandoff';
@@ -17,7 +17,7 @@ import { defaultTopic, explorePrompt } from '../lib/systemReview';
 import { useAgentContext } from '../state/agentContext';
 import { LargeTitle } from '../ui/chrome';
 import { RecordsView } from '../ui/RecordsView';
-import { SegmentedControl } from '../ui/kit';
+import { Lead, SegmentedControl } from '../ui/kit';
 
 // The dashboard of every chart lives behind All on Today now; Health is
 // her body and her records.
@@ -65,7 +65,7 @@ export function MyHealthScreen() {
       <LargeTitle title="Health" />
 
       <View style={h.pad}>
-        <Text style={[font('subhead'), { color: C.secondary, marginBottom: 16 }]}>Everything about your health, in one place.</Text>
+        <Lead style={{ marginBottom: 16 }} text="Everything about your health, in one place." />
         <SegmentedControl segments={VIEWS} active={view} onChange={setView} />
 
         {view === 'Body' ? (

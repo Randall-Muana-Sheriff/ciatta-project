@@ -228,7 +228,6 @@ export function headlineMetrics(
     const b = baselines.find((x) => x.metric === metric);
     return b?.sufficient && b.median != null ? b.median : null;
   };
-  const one = (n: number) => (Math.round(n * 10) / 10).toFixed(1);
   const read = (get: (d: Day) => number | null) => latest(days, get, now);
   // The grid abbreviates. A third of a row does not hold "Blood
   // pressure", and BP and SpO2 are what she reads on the cuff and the

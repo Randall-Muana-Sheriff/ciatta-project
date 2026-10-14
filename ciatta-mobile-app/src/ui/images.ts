@@ -12,6 +12,7 @@ export const images = {
   youCan: require('../../assets/images/heads/you-can.jpg'),
   careRx: require('../../assets/images/heads/prescriptions.jpg'),
   careLabs: require('../../assets/images/heads/labs.jpg'),
+  carePlan: require('../../assets/images/heads/plan.jpg'),
   team1: require('../../assets/images/heads/team-1.jpg'),
   team2: require('../../assets/images/heads/team-2.jpg'),
   team3: require('../../assets/images/heads/team-3.jpg'),

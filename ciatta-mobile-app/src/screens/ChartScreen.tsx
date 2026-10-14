@@ -33,7 +33,7 @@ import type { ClinicalRecord } from '../lib/providers/fhirMap';
 import { type Screen, useNav } from '../navigation';
 import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
-import { DetailScreen, SecondaryButton } from '../ui/kit';
+import { DetailScreen, SecondaryButton, Lead } from '../ui/kit';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 
 const FLAG_HUE: Record<string, string> = {
@@ -74,10 +74,7 @@ export function ChartScreen() {
     return (
       <DetailScreen title="From your providers" onBack={nav.back}>
         <View style={s.pad}>
-          <Text style={[font('body'), s.lede]}>
-            Nothing has arrived from a provider yet. Connecting a hospital or clinic brings your results, conditions
-            and medications here.
-          </Text>
+          <Lead style={s.lede} text={"Nothing has arrived from a provider yet. Connecting a hospital or clinic brings your results, conditions and medications here."} />
           <View style={{ marginTop: SPACE.block }}>
             <SecondaryButton label="Connect a Provider" onPress={() => nav.push('providerConnect' as Screen)} />
           </View>
@@ -93,7 +90,7 @@ export function ChartScreen() {
         contentContainerStyle={s.body}
         refreshControl={<RefreshControl refreshing={busy} onRefresh={read} tintColor={L.meta} />}
       >
-        <Text style={[font('body'), s.lede]}>{displayCopy(chartLine(view))}</Text>
+        <Lead style={s.lede} text={displayCopy(chartLine(view))} />
         <Text style={[font('caption1'), s.note]}>
           Everything here came from your provider, in their words. Ciatta has not changed any of it.
         </Text>

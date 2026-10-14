@@ -35,7 +35,7 @@ import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { Composer } from '../ui/composer';
 import { Icon } from '../ui/icons';
-import { DetailScreen, PrimaryButton } from '../ui/kit';
+import { DetailScreen, PrimaryButton, Lead } from '../ui/kit';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 
 const today = () => {
@@ -121,7 +121,7 @@ export function DailyLogScreen() {
         </View>
       }
     >
-      <Text style={[font('body'), s.lede]}>{displayCopy(logLine(log))}</Text>
+      <Lead style={s.lede} text={displayCopy(logLine(log))} />
 
       {/* ── In her own words, first ──────────────────────────
           The day starts where she would start: saying it. The same box

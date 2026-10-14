@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, type StyleProp, StyleSheet, Text, type TextStyle, View, type ViewStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import type { SourceKind } from '../data/sample';
@@ -237,8 +237,24 @@ export function PrimaryButton({ label, onPress, disabled = false }: { label: str
       accessibilityState={{ disabled }}
       style={({ pressed }) => [s.button, s.primary, disabled && s.disabled, pressed && s.pressed]}
     >
-      <Text style={[font('headline'), { color: C.bg }]}>{label}</Text>
+      <Text style={[font('headline'), { color: '#0C0E11' }]}>{label}</Text>
     </Pressable>
+  );
+}
+
+// A screen's lead sentence, set as a statement: the first sentence large
+// and in Jost semibold, the rest quieter beneath it. The editorial type of
+// the Your Care cards, used for every screen's opening line.
+export function Lead({ text, style }: { text: string; style?: StyleProp<ViewStyle | TextStyle> }) {
+  const said = displayCopy(text.replace(/\s+/g, ' ').trim());
+  const cut = said.search(/[.?!](\s|$)/);
+  const first = cut >= 0 ? said.slice(0, cut + 1) : said;
+  const rest = cut >= 0 ? said.slice(cut + 1).trim() : '';
+  return (
+    <View style={style as StyleProp<ViewStyle>}>
+      <Text style={[font('title3', 'semibold'), s.statement]}>{first}</Text>
+      {rest ? <Text style={[font('body'), s.statementRest]}>{rest}</Text> : null}
+    </View>
   );
 }
 
@@ -427,7 +443,11 @@ export const s = StyleSheet.create({
   segOn: { backgroundColor: C.fillSelected, borderWidth: StyleSheet.hairlineWidth, borderColor: L.edgeOn },
 
   button: { minHeight: 50, borderRadius: 25, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
-  primary: { backgroundColor: C.tint },
+  // The white pill, as the Your Care cards set their actions: the one
+  // primary action on any screen.
+  primary: { backgroundColor: '#FFFFFF', borderRadius: 999 },
+  statement: { color: L.ink, lineHeight: 28, letterSpacing: -0.2 },
+  statementRest: { color: L.body, lineHeight: 23, marginTop: 6 },
   disabled: { opacity: 0.4 },
   secondary: { backgroundColor: C.fill },
   link: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },

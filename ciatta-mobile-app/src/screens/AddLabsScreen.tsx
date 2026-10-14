@@ -20,7 +20,7 @@ import { userFacingError } from '../lib/userFacingError';
 import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
 import { C, font } from '../theme';
-import { DetailScreen, PrimaryButton, SecondaryButton, SaveBar } from '../ui/kit';
+import { DetailScreen, PrimaryButton, SecondaryButton, SaveBar, Lead } from '../ui/kit';
 import { LabStatusTag } from '../ui/labs';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 
@@ -145,9 +145,7 @@ export function AddLabsScreen() {
     >
       {stage === 'pick' ? (
         <>
-          <Text style={[font('body'), s.lede]}>
-            A photo of your report, or the PDF your clinic sent. Ciatta reads each result, then you check every line before anything is saved.
-          </Text>
+          <Lead style={s.lede} text={"A photo of your report, or the PDF your clinic sent. Ciatta reads each result, then you check every line before anything is saved."} />
           <View style={{ gap: 12 }}>
             <PrimaryButton label="Take a Photo of a Report" onPress={() => void fromCamera(true)} />
             <SecondaryButton label="Choose a Photo" onPress={() => void fromCamera(false)} />
@@ -159,11 +157,11 @@ export function AddLabsScreen() {
         </>
       ) : null}
 
-      {stage === 'reading' ? <Text style={[font('body'), s.lede]}>Reading your report.</Text> : null}
+      {stage === 'reading' ? <Lead style={s.lede} text={"Reading your report."} /> : null}
 
       {stage === 'review' ? (
         <>
-          <Text style={[font('body'), s.lede]}>Check each line against your report. Correct anything that was read wrong, or switch it off.</Text>
+          <Lead style={s.lede} text={"Check each line against your report. Correct anything that was read wrong, or switch it off."} />
           <Text style={[font('caption1'), s.label]}>Lab</Text>
           <TextInput value={lab} onChangeText={setLab} placeholder="For example, Quest Diagnostics" placeholderTextColor={L.meta} style={[font('body'), s.input]} accessibilityLabel="Lab" />
           <Text style={[font('caption1'), s.label]}>Collected on</Text>

@@ -22,7 +22,7 @@ import { useCycleInsights } from '../state/cycleStore';
 import { useData, useRepo } from '../state/session';
 import { C, font } from '../theme';
 import { Eyebrow } from '../ui/bento';
-import { DetailScreen, PrimaryButton, SecondaryButton, SegmentedControl } from '../ui/kit';
+import { DetailScreen, PrimaryButton, SecondaryButton, SegmentedControl, Lead } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 
 const SPANS = [
@@ -116,9 +116,7 @@ export function ShareClinicianScreen() {
 
   return (
     <DetailScreen title="Share with a Clinician" onBack={nav.back}>
-      <Text style={[font('body'), s.lede]}>
-        A summary of your record as a PDF, made on this phone. It goes only where you send it, and Ciatta keeps no copy.
-      </Text>
+      <Lead style={s.lede} text={"A summary of your record as a PDF, made on this phone. It goes only where you send it, and Ciatta keeps no copy."} />
 
       <Eyebrow>How far back</Eyebrow>
       <View style={{ marginTop: SPACE.tight }}>
