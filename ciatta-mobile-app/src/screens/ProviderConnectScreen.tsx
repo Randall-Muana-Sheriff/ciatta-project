@@ -26,7 +26,7 @@ import { Eyebrow } from '../ui/bento';
 import { Icon } from '../ui/icons';
 import { DetailScreen, PrimaryButton, SecondaryButton } from '../ui/kit';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
-import { GlassFill } from '../ui/frosted';
+import { CardFill } from '../ui/cardFill';
 
 export function ProviderConnectScreen() {
   const nav = useNav();
@@ -86,7 +86,7 @@ export function ProviderConnectScreen() {
     <>
       <DetailScreen title="Find your health institution" onBack={nav.back}>
       <View style={s.searchWrap}>
-        <GlassFill />
+        <CardFill />
         <Icon name="search" size={18} color={L.meta} />
         <TextInput
           value={query}
@@ -234,7 +234,7 @@ function EndpointRow({
       accessibilityLabel={endpoint.name}
       style={({ pressed }) => [s.row, standalone && s.rowAlone, pressed && s.pressed]}
     >
-      <GlassFill />
+      <CardFill />
       <View style={{ flex: 1 }}>
         <Text style={[font('subhead'), s.rowName]}>{displayCopy(endpoint.name)}</Text>
         {isSandbox(endpoint) ? <Text style={[font('caption1'), s.sandbox]}>Test server, not a hospital</Text> : null}

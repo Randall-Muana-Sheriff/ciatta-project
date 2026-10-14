@@ -86,14 +86,19 @@ function build(mode: Mode): Palette {
   const body = dark ? '#D2D5DA' : '#373C44';
   const meta = dark ? '#A9AEB5' : '#59606A';
   const g: typeof G = dark
-    ? { mode, top: '#0F1115', mid: '#08090B', foot: '#030405', washFrom: 0.22, washTo: 0.17, bar: 'rgba(14, 16, 20, 0.94)', shadow: '#000000', statusBar: 'light' }
-    : { mode, top: '#F8F6F3', mid: '#F1EEEA', foot: '#E8E4DF', washFrom: 0.13, washTo: 0.1, bar: 'rgba(250, 248, 245, 0.94)', shadow: '#2A2520', statusBar: 'dark' };
+    ? { mode, top: '#161616', mid: '#161616', foot: '#161616', washFrom: 0.22, washTo: 0.17, bar: 'rgba(14, 16, 20, 0.94)', shadow: '#000000', statusBar: 'light' }
+    : { mode, top: '#F1F0ED', mid: '#F1F0ED', foot: '#F1F0ED', washFrom: 0.13, washTo: 0.1, bar: 'rgba(250, 248, 245, 0.94)', shadow: '#2A2520', statusBar: 'dark' };
   // A card on light is paper lifted toward white rather than darkened, so
   // it still reads as nearer than the ground.
   // Dark glass: a smoked fill over the blur, so a card is darker than the
   // glow behind it rather than lighter, and its crisp edge gives it shape.
-  const card = dark ? 'rgba(14, 16, 21, 0.38)' : 'rgba(255, 255, 255, 0.62)';
-  const cardHi = dark ? 'rgba(24, 27, 34, 0.52)' : 'rgba(255, 255, 255, 0.82)';
+  // Chips and the small cards inside a card: a flat lift, as the Add a
+  // Lab Report button is drawn. No edge, no blur.
+  const card = lift(mode, dark ? 0.08 : 0.05);
+  const cardHi = lift(mode, dark ? 0.12 : 0.08);
+  // The text box's field: darker than the ground on dark, whiter on light,
+  // with a hairline. Lists and conversation take it.
+  const field = dark ? 'rgba(0, 0, 0, 0.32)' : 'rgba(255, 255, 255, 0.72)';
 
   return {
     HUE: h,
@@ -101,7 +106,10 @@ function build(mode: Mode): Palette {
     L: {
       canvas: g.mid,
       recessed: card,
-      glass: card,
+      // Under a content card's rendered ground, for the moment before it
+      // paints.
+      glass: dark ? '#0B0B0C' : '#FBFAF8',
+      field,
       rule: lift(mode, dark ? 0.1 : 0.09),
       statement: dark ? lift(mode, 0.085) : cardHi,
       fillSelected: lift(mode, dark ? 0.14 : 0.08),
@@ -173,16 +181,13 @@ export const PALETTES: Record<Mode, Palette> = { light: build('light'), dark: bu
 
 // Writes a palette into the live token objects. Must run before any screen
 // module loads; Boot.tsx does that.
-export function applyMode(mode: Mode, liquidGlass = false) {
+export function applyMode(mode: Mode) {
   const p = PALETTES[mode];
   Object.assign(C as Record<string, string>, p.C);
   Object.assign(M as Record<string, string>, p.M);
   Object.assign(L as Record<string, string>, p.L);
   Object.assign(HUE, p.HUE);
   Object.assign(G, p.G);
-  // Liquid Glass brings its own material, as the tab bar does, so a card
-  // drawn in it adds no fill of its own.
-  if (liquidGlass) (L as Record<string, string>).glass = 'transparent';
 }
 
 // WCAG contrast ratio between two colours, #RRGGBB or rgba() over white.

@@ -198,7 +198,7 @@ const s = StyleSheet.create({
   input: { color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
   body: { minHeight: 180 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
+  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderColor: L.rule, backgroundColor: L.recessed },
   chipOn: { backgroundColor: L.statement, borderColor: L.ink },
   ink: { color: L.ink },
   note: { color: L.meta, marginTop: 10, lineHeight: 18 },

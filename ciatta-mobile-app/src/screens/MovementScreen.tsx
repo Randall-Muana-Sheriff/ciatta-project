@@ -11,7 +11,7 @@ import { C, font, fonts } from '../theme';
 import { ListGroup, ListRow, Panel } from '../ui/chrome';
 import { DetailScreen, SecLabel, SourceFooter } from '../ui/kit';
 import { L, TILE_RADIUS } from '../ui/surface';
-import { GlassFill } from '../ui/frosted';
+import { CardFill } from '../ui/cardFill';
 
 // Daily steps for four weeks against the usual range. Coral days sit below
 // it. With no baseline days yet (a new real record, or a source that has
@@ -111,7 +111,7 @@ export function MovementScreen() {
       <View style={m.tiles}>
         {tiles.map((t) => (
           <View key={t.label} style={m.tile} accessible accessibilityLabel={`${t.label}, ${t.value}${t.sub ? `, ${t.sub}` : ''}`}>
-            <GlassFill />
+            <CardFill />
             <Text style={[font('footnote'), { color: C.secondary }]}>{t.label}</Text>
             <Text style={[font('title2', 'semibold'), { color: C.text }]}>{t.value}</Text>
             {t.sub ? <Text style={[font('caption1'), { color: C.secondary }]}>{t.sub}</Text> : null}

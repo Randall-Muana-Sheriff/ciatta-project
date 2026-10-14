@@ -12,7 +12,7 @@ import type { Signal } from '../lib/cyclePatterns';
 import { useCycleInsights } from '../state/cycleStore';
 import { useData, useRepo } from '../state/session';
 import { C, font, fonts, GUTTER } from '../theme';
-import { NAV_CLEARANCE } from '../ui/surface';
+import { L, NAV_CLEARANCE } from '../ui/surface';
 import { fmtHours } from '../lib/engine';
 import {
   type Bin,
@@ -852,10 +852,10 @@ const j = StyleSheet.create({
     minHeight: 32,
     paddingHorizontal: 14,
     borderRadius: 16,
-    backgroundColor: C.fill,
+    backgroundColor: L.recessed,
   },
-  chipOff: { backgroundColor: C.card },
-  chipDot: { width: 10, height: 10, borderRadius: 5 },
+  chipOff: { backgroundColor: L.recessed},
+  chipDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: L.recessed },
 
   detail: { marginBottom: 16 },
 });

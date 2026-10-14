@@ -11,7 +11,7 @@ import { C, font } from '../theme';
 import { Composer } from '../ui/composer';
 import { DetailScreen, EmptyNote, SegmentedControl, SecondaryButton, SourceFooter, Tag } from '../ui/kit';
 import { L, TILE_RADIUS } from '../ui/surface';
-import { GlassFill } from '../ui/frosted';
+import { CardFill } from '../ui/cardFill';
 
 const FILTERS = ['All', 'Notes', 'Symptoms', 'Context'] as const;
 
@@ -78,7 +78,7 @@ export function JournalScreen() {
           <Text style={[font('caption2', 'semibold'), { color: C.rose, marginBottom: 8 }]}>{group.month}</Text>
           {group.items.map((item) => (
             <View key={item.date + item.text} style={j.card}>
-              <GlassFill />
+              <CardFill />
               {item.text ? (
                 <Text style={[font('subhead'), { color: C.text, lineHeight: 22, marginBottom: 8 }]}>{displayCopy(item.text)}</Text>
               ) : null}

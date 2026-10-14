@@ -13,7 +13,7 @@ import { C, font } from '../theme';
 import { Icon, type IconName } from './icons';
 import { onGround } from './scheme';
 import { L, TILE_RADIUS } from './surface';
-import { GlassFill } from './frosted';
+import { CardFill } from './cardFill';
 
 export function SystemCard({
   label,
@@ -41,7 +41,7 @@ export function SystemCard({
   const kinds = [...new Set(sources.map((s) => s.kind))];
   return (
     <View style={c.card}>
-      <GlassFill />
+      <CardFill />
       <View style={c.head}>
         <Icon name={icon} size={20} color={color} weight={1.8} />
         <Text style={[font('title3', 'semibold'), c.title]} accessibilityRole="header">

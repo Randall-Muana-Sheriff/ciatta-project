@@ -17,7 +17,6 @@ import { Icon } from '../ui/icons';
 import { DetailScreen, EmptyNote, Lead } from '../ui/kit';
 import { PublisherLogo } from '../ui/PublisherLogo';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
-import { GlassFill } from '../ui/frosted';
 
 export function BookmarksScreen() {
   const nav = useNav();
@@ -44,7 +43,6 @@ export function BookmarksScreen() {
                 accessibilityLabel={insight.title}
                 style={({ pressed }) => [s.row, pressed && s.pressed]}
               >
-                <GlassFill />
                 <Image source={headingFor(insight.image)} style={s.thumb} resizeMode="cover" accessible={false} />
                 <View style={s.text}>
                   <Text style={[font('subhead', 'semibold'), s.ink]} numberOfLines={3}>
@@ -92,9 +90,8 @@ const s = StyleSheet.create({
     gap: 12,
     padding: 10,
     borderRadius: TILE_RADIUS,
-    backgroundColor: L.glass,
-    overflow: 'hidden',
-  },
+    backgroundColor: L.field,
+    overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
   pressed: { opacity: 0.7 },
   thumb: { width: 72, height: 88, borderRadius: 12 },
   text: { flex: 1, gap: 8 },

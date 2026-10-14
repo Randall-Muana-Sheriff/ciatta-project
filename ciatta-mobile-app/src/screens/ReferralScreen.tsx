@@ -15,7 +15,7 @@ import { Eyebrow } from '../ui/bento';
 import { Icon } from '../ui/icons';
 import { DetailScreen, SecondaryButton, SaveBar } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
-import { GlassFill } from '../ui/frosted';
+import { CardFill } from '../ui/cardFill';
 
 const today = () => {
   const d = new Date();
@@ -123,7 +123,7 @@ export function ReferralScreen() {
         <Eyebrow>Steps</Eyebrow>
       </View>
       <View style={s.card}>
-        <GlassFill />
+        <CardFill />
         {REFERRAL_STEPS.map((step, n) => {
           const done = r.steps[step.key];
           return (
@@ -165,7 +165,7 @@ export function ReferralScreen() {
 
       {next ? (
         <View style={[s.card, { marginTop: SPACE.block }]}>
-          <GlassFill />
+          <CardFill />
           <Text style={[font('footnote', 'semibold'), { color: C.blueLink }]}>Next</Text>
           <Text style={[font('subhead'), { color: L.ink, marginTop: 4, lineHeight: 21 }]}>{displayCopy(next.text)}</Text>
         </View>

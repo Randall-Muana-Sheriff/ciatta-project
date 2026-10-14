@@ -40,11 +40,6 @@ test('type clears contrast on its ground in both modes', () => {
   }
 });
 
-test('dark is moodier than it was', () => {
-  const g = PALETTES.dark.G;
-  assert.ok(contrast('#FFFFFF', g.mid) > contrast('#FFFFFF', '#0C0E11'));
-});
-
 test('applying a mode moves every token at once', () => {
   applyMode('light');
   assert.equal(L.ink, PALETTES.light.L.ink);
@@ -78,18 +73,17 @@ test('a mark colour is deepened on light until it reads, and left alone on dark'
   applyMode('dark');
 });
 
-test('every screen ground has a black and a white rendering on disk', async () => {
+test('every card ground has a black and a white rendering on disk', async () => {
   const { existsSync } = await import('node:fs');
   for (const pair of ['measured-timeDepth', 'reported-change', 'timeDepth-measured', 'timeDepth-reported']) {
     for (const mode of ['dark', 'light']) {
-      assert.ok(existsSync(new URL(`../../assets/images/grounds/${pair}-${mode}.jpg`, import.meta.url)), `${pair} ${mode}`);
+      assert.ok(existsSync(new URL(`../../assets/images/cards/${pair}-${mode}.jpg`, import.meta.url)), `${pair} ${mode}`);
     }
   }
 });
 
-test('with Liquid Glass a card adds no fill of its own', () => {
-  applyMode('dark', true);
-  assert.equal(L.glass, 'transparent');
-  applyMode('dark');
-  assert.equal(L.glass, PALETTES.dark.L.recessed);
+test('the grounds are flat: #161616 on dark, #F1F0ED on light', () => {
+  assert.equal(PALETTES.dark.G.mid, '#161616');
+  assert.equal(PALETTES.light.G.mid, '#F1F0ED');
+  assert.equal(PALETTES.dark.L.canvas, '#161616');
 });

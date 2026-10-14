@@ -5,7 +5,7 @@ import { STOOL_TYPES } from '../data/cycleLog';
 import { displayCopy } from '../lib/displayCopy';
 import { C, font } from '../theme';
 import { L, TILE_RADIUS } from './surface';
-import { GlassFill } from './frosted';
+import { CardFill } from './cardFill';
 
 // Simple line pictures for the seven stool types, drawn in one weight.
 export function StoolPicture({ type, color, width = 44 }: { type: number; color: string; width?: number }) {
@@ -44,7 +44,7 @@ export function StoolScale({ value, onChange }: { value: number | null; onChange
             accessibilityLabel={`Type ${type}, ${displayCopy(word)}`}
             style={[s.row, on && s.on]}
           >
-            <GlassFill />
+            <CardFill />
             <StoolPicture type={type} color={on ? C.text : C.secondary} />
             <Text style={[font('subhead', on ? 'semibold' : 'regular'), { color: on ? C.text : C.secondary, flex: 1 }]}>{displayCopy(word)}</Text>
             <Text style={[font('footnote'), { color: C.secondary }]}>Type {type}</Text>

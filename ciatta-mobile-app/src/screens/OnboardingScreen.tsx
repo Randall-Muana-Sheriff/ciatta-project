@@ -33,7 +33,7 @@ import { PALETTES } from '../ui/scheme';
 import { MARK_TOP, Wordmark } from '../ui/Wordmark';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { TILE_RADIUS } from '../ui/surface';
-import { GlassFill } from '../ui/frosted';
+import { CardFill } from '../ui/cardFill';
 
 // Set over a dark photograph, so it keeps the dark palette in either mode.
 const L = PALETTES.dark.L;
@@ -857,7 +857,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             */}
             <View style={s.sourceCard}>
               <View style={s.appleTile}>
-                <GlassFill />
+                <CardFill />
                 <Icon name="heart" size={22} color="#FA114F" filled />
               </View>
               <View style={s.rowText}>

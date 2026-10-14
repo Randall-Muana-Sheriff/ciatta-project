@@ -16,7 +16,7 @@ import { font } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen, EmptyNote, PrimaryButton, SecondaryButton } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
-import { GlassFill } from '../ui/frosted';
+import { CardFill } from '../ui/cardFill';
 
 export function LabBriefScreen() {
   const nav = useNav();
@@ -45,7 +45,7 @@ export function LabBriefScreen() {
   return (
     <DetailScreen title={brief.title} onBack={nav.back}>
       <View style={s.card}>
-        <GlassFill />
+        <CardFill />
         {brief.rows.map((r, n) => (
           <View key={r.label} style={[s.row, n > 0 && s.divided]}>
             <Text style={[font('subhead'), s.body, { flex: 1 }]}>{r.label}</Text>
@@ -62,7 +62,7 @@ export function LabBriefScreen() {
         <Eyebrow>Questions to ask</Eyebrow>
       </View>
       <View style={[s.card, { gap: 10 }]}>
-        <GlassFill />
+        <CardFill />
         {brief.questions.map((q) => (
           <Text key={q} style={[font('subhead'), s.ink]}>
             {displayCopy(q)}

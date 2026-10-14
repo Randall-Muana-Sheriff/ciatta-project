@@ -18,7 +18,7 @@ import { HORMONE_LABEL, type HormoneKey, hormoneCurves, type HormoneView, PHASE_
 import { font } from '../theme';
 import { L, TILE_RADIUS } from './surface';
 import { onGround } from './scheme';
-import { GlassFill } from './frosted';
+import { CardFill } from './cardFill';
 
 const LAVENDER = onGround('#B188F3');
 const STYLE: Record<HormoneKey, { color: string; dash?: string; width: number }> = {
@@ -45,7 +45,7 @@ export function HormonesSection({ view, effects }: { view: HormoneView; effects:
 
   return (
     <View style={h.card}>
-      <GlassFill />
+      <CardFill />
       <View style={{ height: HEIGHT }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
         {width ? (
           <Svg width={width} height={HEIGHT}>

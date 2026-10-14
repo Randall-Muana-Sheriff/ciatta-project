@@ -183,6 +183,6 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', gap: 10, marginTop: SPACE.tight },
   input: { color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: SPACE.tight },
-  chip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, backgroundColor: L.recessed, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
+  chip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, backgroundColor: L.recessed, borderColor: L.rule },
   chipOn: { backgroundColor: L.fillSelected, borderColor: L.edgeOn },
 });

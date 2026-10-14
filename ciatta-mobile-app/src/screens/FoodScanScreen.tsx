@@ -29,7 +29,7 @@ import { font, numeral } from '../theme';
 import { GLASS } from '../ui/glass';
 import { DetailScreen, SecondaryButton, Tag, SaveBar } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
-import { GlassFill } from '../ui/frosted';
+import { CardFill } from '../ui/cardFill';
 
 type Phase = 'reading' | 'ready' | 'failed';
 
@@ -142,7 +142,7 @@ export function FoodScanScreen() {
       }
     >
       <View style={f.photoWrap} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
-        <GlassFill />
+        <CardFill />
         {uri ? <Image source={{ uri }} style={{ width: W, height: H }} resizeMode="cover" accessibilityIgnoresInvertColors accessible={false} /> : null}
 
         {/* Rings, dots and labels, where the scan saw each food. */}
@@ -215,7 +215,7 @@ export function FoodScanScreen() {
           <View style={f.cards}>
             {gauges.map((g) => (
               <View key={g.caption} style={f.card} accessible accessibilityLabel={`${g.figure} ${g.caption}, estimated`}>
-                <GlassFill />
+                <CardFill />
                 <Text style={[numeral(22), f.cardFigure]}>{g.figure}</Text>
                 <Text style={[font('caption1'), f.cardCaption]} numberOfLines={1}>
                   {g.caption}

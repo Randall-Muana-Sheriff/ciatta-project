@@ -9,14 +9,14 @@ import { useCareHub } from '../state/careHub';
 import { font } from '../theme';
 import { Icon, type IconName } from './icons';
 import { L, TILE_RADIUS } from './surface';
-import { GlassFill } from './frosted';
+import { CardFill } from './cardFill';
 
 export function LatestActivity() {
   const latest = useCareHub().activity[0];
   if (!latest) return null;
   return (
     <View style={s.row} accessible accessibilityLabel={`Latest activity: ${latest.title}, ${latest.when}`}>
-      <GlassFill />
+      <CardFill />
       <View style={s.icon}>
         <Icon name={latest.icon as IconName} size={15} color={L.ink} />
       </View>

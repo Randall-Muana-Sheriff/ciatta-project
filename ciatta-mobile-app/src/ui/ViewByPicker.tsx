@@ -9,7 +9,7 @@ import { type Scale, SCALES } from '../lib/timeAxis';
 import { C, font } from '../theme';
 import { Icon } from './icons';
 import { L, TILE_RADIUS } from './surface';
-import { GlassFill } from './frosted';
+import { CardFill } from './cardFill';
 
 export function ViewByPicker({ scale, onChange }: { scale: Scale; onChange: (scale: Scale) => void }) {
   const [open, setOpen] = useState(false);
@@ -23,13 +23,13 @@ export function ViewByPicker({ scale, onChange }: { scale: Scale; onChange: (sca
         accessibilityLabel={`View by ${label}`}
         style={s.picker}
       >
-        <GlassFill />
+        <CardFill />
         <Text style={[font('subhead', 'semibold'), { color: C.text }]}>View by {label}</Text>
         <Icon name={open ? 'chevronDown' : 'chevronRight'} size={16} color={C.secondary} />
       </Pressable>
       {open ? (
         <View style={s.menu}>
-          <GlassFill />
+          <CardFill />
           {SCALES.map((v) => (
             <Pressable
               key={v.key}

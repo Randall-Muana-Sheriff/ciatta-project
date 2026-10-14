@@ -22,7 +22,7 @@ import { Icon, type IconName } from './icons';
 import { images } from './images';
 import { PhotoCard } from './PhotoCard';
 import { L, SPACE, TILE_RADIUS } from './surface';
-import { GlassFill } from './frosted';
+import { CardFill } from './cardFill';
 
 const NEW_KINDS: { kind: RequestKind; label: string }[] = [
   { kind: 'refill', label: 'Refill' },
@@ -229,7 +229,7 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
             accessibilityLabel="Add a clinician"
             style={({ pressed }) => [s.member, s.addMember, pressed && s.pressed]}
           >
-            <GlassFill />
+            <CardFill />
             <Icon name="plus" size={26} color={L.ink} />
             <Text style={[font('headline'), s.ink]}>Add a clinician</Text>
           </Pressable>
@@ -271,7 +271,7 @@ function Section({ title, action, children }: { title: string; action?: { label:
           </Pressable>
         ) : null}
       </View>
-      <View style={s.card}><GlassFill />{children}</View>
+      <View style={s.card}><CardFill />{children}</View>
     </View>
   );
 }
@@ -335,7 +335,7 @@ const s = StyleSheet.create({
   meta: { color: L.meta },
   note: { color: L.meta, paddingBottom: 12 },
   empty: { color: L.body, lineHeight: 21, paddingVertical: 14 },
-  pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: L.statement },
+  pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: L.recessed},
   kinds: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 12 },
   kind: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: st, borderColor: L.rule, backgroundColor: L.statement },
   ask: { flexDirection: 'row', gap: 8, paddingVertical: 12, borderTopWidth: st, borderTopColor: L.rule },

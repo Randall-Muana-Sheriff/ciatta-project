@@ -373,7 +373,7 @@ const s = StyleSheet.create({
   wrap: { position: 'relative' },
   field: {
     color: L.ink,
-    backgroundColor: L.recessed,
+    backgroundColor: L.field,
     borderRadius: TILE_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,

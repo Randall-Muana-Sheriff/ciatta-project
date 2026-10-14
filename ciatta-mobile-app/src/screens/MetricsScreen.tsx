@@ -36,7 +36,7 @@ import { HealthDashboard } from '../ui/HealthDashboard';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
 import { HUE, L, SPACE, TILE_RADIUS } from '../ui/surface';
-import { GlassFill } from '../ui/frosted';
+import { CardFill } from '../ui/cardFill';
 
 const VIEWS = ['Dashboard', 'List'] as const;
 
@@ -131,7 +131,7 @@ export function MetricsScreen() {
         <View key={group.title} style={s.group}>
           <Eyebrow>{group.title}</Eyebrow>
           <View style={s.card}>
-            <GlassFill />
+            <CardFill />
             {group.rows.map((row, n) => (
               <Row
                 key={row.label}

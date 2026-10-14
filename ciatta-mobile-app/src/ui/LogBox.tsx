@@ -18,7 +18,7 @@ import { font } from '../theme';
 import { Composer } from './composer';
 import { Icon } from './icons';
 import { L, TILE_RADIUS } from './surface';
-import { GlassFill } from './frosted';
+import { CardFill } from './cardFill';
 
 
 // A quick chip as an entry: flow words are said as a period with that flow,
@@ -78,7 +78,7 @@ export function LogBox({
                     accessibilityState={{ selected: on }}
                     style={({ pressed }) => [s.topic, on && s.topicOn, pressed && s.pressed]}
                   >
-                    <GlassFill />
+                    <CardFill />
                     <Text style={[font('footnote', on ? 'semibold' : 'regular'), { color: on ? L.canvas : L.body }]}>{t.label}</Text>
                   </Pressable>
                 );
@@ -146,7 +146,7 @@ const s = StyleSheet.create({
   // The prompt in statement type, as every screen's lead sentence is.
   prompt: { color: L.ink, lineHeight: 28, letterSpacing: -0.2 },
   chips: { flexDirection: 'row', gap: 8 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderColor: L.rule, backgroundColor: L.recessed },
   chipDone: { backgroundColor: L.ink, borderColor: L.ink },
   note: { color: L.meta },
   more: { flexDirection: 'row', alignItems: 'center', gap: 2, alignSelf: 'center' },

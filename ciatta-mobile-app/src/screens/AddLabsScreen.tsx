@@ -23,7 +23,7 @@ import { C, font } from '../theme';
 import { DetailScreen, PrimaryButton, SecondaryButton, SaveBar, Lead } from '../ui/kit';
 import { LabStatusTag } from '../ui/labs';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
-import { GlassFill } from '../ui/frosted';
+import { CardFill } from '../ui/cardFill';
 
 type Line = { key: string; keep: boolean; name: string; value: string; unit: string; range: string; flag: LabFlag | null };
 
@@ -177,7 +177,7 @@ export function AddLabsScreen() {
             const p = preview(l);
             return (
               <View key={l.key} style={[s.card, !l.keep && { opacity: 0.45 }]}>
-                <GlassFill />
+                <CardFill />
                 <View style={s.head}>
                   <TextInput value={l.name} onChangeText={(v) => edit(l.key, { name: v })} style={[font('headline'), s.ink, { flex: 1 }]} accessibilityLabel="Test name" />
                   <Switch

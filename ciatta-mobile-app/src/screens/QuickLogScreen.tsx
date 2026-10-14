@@ -44,7 +44,7 @@ import { StoolPicture } from '../ui/stoolScale';
 import { takeLogCategory, takeLogMode } from '../lib/logHandoff';
 import { useQuickLogSave } from '../state/quickLogSave';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
-import { GlassFill } from '../ui/frosted';
+import { CardFill } from '../ui/cardFill';
 
 export function QuickLogScreen() {
   const nav = useNav();
@@ -183,7 +183,7 @@ export function QuickLogScreen() {
               accessibilityState={{ selected: on }}
               style={({ pressed }) => [q.cat, on && q.catOn, pressed && q.pressed]}
             >
-              <GlassFill />
+              <CardFill />
               <Text style={[font('subhead', on ? 'semibold' : 'regular'), on ? q.catTextOn : q.catText]}>{displayCopy(c.label)}</Text>
             </Pressable>
           );
@@ -254,7 +254,7 @@ export function QuickLogScreen() {
                     accessibilityLabel={`Type ${type}, ${displayCopy(word)}`}
                     style={({ pressed }) => [q.stool, on && q.chipOn, pressed && q.pressed]}
                   >
-                    <GlassFill />
+                    <CardFill />
                     <StoolPicture type={type} color={on ? L.ink : L.body} width={30} />
                     <Text style={[font('caption2', on ? 'semibold' : 'regular'), on ? q.chipTextOn : q.chipText]}>{type}</Text>
                   </Pressable>
@@ -404,10 +404,7 @@ const q = StyleSheet.create({
     gap: 6,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
-  },
+    borderRadius: 999, backgroundColor: L.recessed },
   chipOn: { backgroundColor: L.statement, borderColor: L.ink },
   chipText: { color: L.body },
   chipTextOn: { color: L.ink },

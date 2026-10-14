@@ -18,7 +18,7 @@ import { experienceRows } from '../lib/experienceRows';
 import { hormoneView, phaseEffects } from '../lib/hormones';
 import { HormonesSection } from '../ui/HormonesSection';
 import { L, TILE_RADIUS } from '../ui/surface';
-import { GlassFill } from '../ui/frosted';
+import { CardFill } from '../ui/cardFill';
 
 // Cycle home: timing, then what the cycle felt like, then how it's changing.
 export function CycleScreen() {
@@ -96,13 +96,13 @@ export function CycleScreen() {
 
       <View style={cy.tiles}>
         <View style={cy.tile}>
-          <GlassFill />
+          <CardFill />
           <Text style={[font('footnote'), { color: C.secondary }]}>{displayCopy(lens.header.label)}</Text>
           <Text style={[font('title2', 'semibold'), { color: C.text }]}>{displayCopy(lens.header.value)}</Text>
         </View>
         {lens.secondary ? (
           <View style={cy.tile}>
-            <GlassFill />
+            <CardFill />
             <Text style={[font('footnote'), { color: C.secondary }]}>{displayCopy(lens.secondary.label)}</Text>
             <Text style={[font('title2', 'semibold'), { color: C.text }]}>{displayCopy(lens.secondary.value)}</Text>
           </View>

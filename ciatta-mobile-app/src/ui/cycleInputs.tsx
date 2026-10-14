@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import type { Observation } from '../lib/cyclePatterns';
 import { useCycle } from '../state/cycleStore';
 import { C, font, RADIUS } from '../theme';
+import { L } from './surface';
 import { Panel } from './chrome';
 import { Icon } from './icons';
 
@@ -211,9 +212,7 @@ const s = StyleSheet.create({
     minHeight: 36,
     paddingHorizontal: 14,
     borderRadius: 18,
-    backgroundColor: C.fill,
-    borderWidth: 1,
-    borderColor: C.fill,
+    backgroundColor: L.recessed,
   },
   chipOn: { backgroundColor: 'rgba(242,149,122,0.16)', borderColor: C.tint },
 

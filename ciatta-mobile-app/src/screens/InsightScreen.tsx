@@ -18,7 +18,7 @@ import { headingFor } from '../ui/InsightCards';
 import { PhotoCard } from '../ui/PhotoCard';
 import { Sheet } from '../ui/Sheet';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
-import { GlassFill } from '../ui/frosted';
+import { CardFill } from '../ui/cardFill';
 
 export function InsightScreen() {
   const nav = useNav();
@@ -115,7 +115,7 @@ export function InsightScreen() {
 
           {connections.length ? (
             <View style={s.record}>
-              <GlassFill />
+              <CardFill />
               <Text style={[font('headline'), s.ink]}>In your record</Text>
               {connections.map((c) => (
                 <Text key={c} style={[font('subhead'), s.recordLine]}>

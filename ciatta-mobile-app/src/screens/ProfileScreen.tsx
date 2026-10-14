@@ -44,7 +44,7 @@ import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
 import { avatarInitial } from '../ui/initial';
 import { EmptyNote, Expandable, Facts, LinkButton, SecondaryButton, SegmentedControl, Tag } from '../ui/kit';
-import { GlassFill } from '../ui/frosted';
+import { CardFill } from '../ui/cardFill';
 
 type Profile = NonNullable<Data['profile']>;
 
@@ -315,7 +315,7 @@ function BodySystems() {
       <View style={p.grid}>
         {bodySystems.map((b) => (
           <View key={b.label} style={p.system}>
-            <GlassFill />
+            <CardFill />
             <Icon name={b.icon} size={20} color={SYSTEM_DOTS[b.label]?.color ?? C.secondary} weight={1.8} />
             <Text style={[font('subhead'), { color: C.text, flex: 1 }]}>{displayCopy(b.label)}</Text>
           </View>

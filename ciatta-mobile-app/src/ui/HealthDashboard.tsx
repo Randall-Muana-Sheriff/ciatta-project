@@ -40,7 +40,7 @@ import { MetricChart } from './MetricChart';
 import { METRIC_HUE } from './metricHue';
 import { ChevronRight } from './kit';
 import { L, TILE_RADIUS } from './surface';
-import { GlassFill } from './frosted';
+import { CardFill } from './cardFill';
 
 // Every metric on one organised page, drawn in hairlines. Colours follow the
 // design system's meanings: Sky for measured, Rose for what she reported,
@@ -81,7 +81,7 @@ function Card({
 }) {
   return (
     <View style={d.card}>
-      <GlassFill />
+      <CardFill />
       <Pressable
         onPress={onPress}
         disabled={!onPress}
@@ -504,7 +504,7 @@ export function HealthDashboard({
         if (key === 'nutrition') {
           return (
             <View key={key} style={[d.card, d.mealCard]}>
-              <GlassFill />
+              <CardFill />
               <View style={d.mealBody}>
                 {/* The card's name first, as every other card has it. */}
                 <View style={d.cardHead}>
@@ -603,7 +603,7 @@ export function HealthDashboard({
         if (key === 'nutrition') {
           return (
             <View key={key} style={[d.card, d.mealCard]}>
-              <GlassFill />
+              <CardFill />
               <View style={d.mealBody}>
                 {/* The card's name first, as every other card has it. */}
                 <View style={d.cardHead}>

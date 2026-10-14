@@ -70,7 +70,9 @@ export const L = {
   // and near black on light, and the label is the ground's own colour.
   // A glass card's own fill: the smoked fill under a blur, or nothing at
   // all where Liquid Glass is the material, so a card is the tab bar's glass.
-  glass: 'rgba(14, 16, 21, 0.38)',
+  glass: '#0B0B0C',
+  // The text box's field, and the cards drawn like it.
+  field: 'rgba(0, 0, 0, 0.32)',
   pill: '#FFFFFF',
   onPill: '#0C0E11',
 } as const;

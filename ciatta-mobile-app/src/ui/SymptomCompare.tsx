@@ -19,7 +19,7 @@ import { Icon } from './icons';
 import { Sheet } from './Sheet';
 import { HUE, L, TILE_RADIUS } from './surface';
 import { onGround } from './scheme';
-import { GlassFill } from './frosted';
+import { CardFill } from './cardFill';
 
 const RANGES: { key: Range; label: string }[] = [
   { key: '7', label: '7 day' },
@@ -81,7 +81,7 @@ export function SymptomCompare({
         </Pressable>
       </View>
       <View style={s.card}>
-        <GlassFill />
+        <CardFill />
         <View style={s.ranges}>
           {RANGES.map((r) => (
             <Pressable
@@ -270,6 +270,6 @@ const s = StyleSheet.create({
   btnOn: { backgroundColor: HUE.measured },
   pressed: { opacity: 0.6 },
   pickChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  pickChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, backgroundColor: L.recessed },
+  pickChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: L.recessed},
   pickChipOn: { backgroundColor: L.ink, borderColor: L.ink },
 });

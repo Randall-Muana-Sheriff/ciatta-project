@@ -17,7 +17,7 @@ import { useData, useRepo } from '../state/session';
 import { font } from '../theme';
 import { DetailScreen, EmptyNote, Tag } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
-import { GlassFill } from '../ui/frosted';
+import { CardFill } from '../ui/cardFill';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const longDate = (iso: string) => {
@@ -79,7 +79,7 @@ export function ProcedureScreen() {
       </Text>
 
       <View style={p.block}>
-        <GlassFill />
+        <CardFill />
         <Text style={[font('caption1'), p.meta]}>{rangeLine(effect.before.from, effect.before.to)}</Text>
         <Text style={[font('headline'), p.ink]}>
           {effect.before.enough ? `Symptom days ${effect.before.symptomDays}` : displayCopy(thin)}
@@ -88,7 +88,7 @@ export function ProcedureScreen() {
       </View>
 
       <View style={[p.block, p.procedure]}>
-        <GlassFill />
+        <CardFill />
         <Text style={[font('caption1'), p.meta]}>{longDate(procedure.date)}</Text>
         <Text style={[font('headline'), p.ink]}>Procedure</Text>
         <View style={{ flexDirection: 'row' }}>
@@ -97,7 +97,7 @@ export function ProcedureScreen() {
       </View>
 
       <View style={p.block}>
-        <GlassFill />
+        <CardFill />
         <Text style={[font('caption1'), p.meta]}>{rangeLine(effect.after.from, effect.after.to)}</Text>
         <Text style={[font('headline'), p.ink]}>
           {effect.weeksAfter < 6

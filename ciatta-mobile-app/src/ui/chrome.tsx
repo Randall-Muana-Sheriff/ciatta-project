@@ -12,7 +12,7 @@ import { GLASS } from './glass';
 import { G } from './scheme';
 import { L, TILE_RADIUS } from './surface';
 import { ChevronRight } from './kit';
-import { GlassFill } from './frosted';
+import { CardFill } from './cardFill';
 
 // ── Navigation bar items ───────────────────────────────────────
 
@@ -70,7 +70,7 @@ export function LargeTitle({ title, eyebrow, trailing }: { title?: string; eyebr
 // ── Content ────────────────────────────────────────────────────
 
 export function Panel({ children, style }: { children: ReactNode; style?: object }) {
-  return <View style={[s.panel, style]}><GlassFill />{children}</View>;
+  return <View style={[s.panel, style]}><CardFill />{children}</View>;
 }
 
 export function PanelTitle({ icon, children }: { icon: IconName; children: string }) {
@@ -120,7 +120,7 @@ export function ListGroup({
           {header}
         </Text>
       ) : null}
-      <View style={[s.group, light && s.groupLight]}><GlassFill />{children}</View>
+      <View style={[s.group, light && s.groupLight]}>{children}</View>
       {footer ? <Text style={[font('footnote'), s.groupFooter]}>{footer}</Text> : null}
     </View>
   );
@@ -336,16 +336,14 @@ const s = StyleSheet.create({
   groupHeader: { color: C.text, marginBottom: 8 },
   groupHeaderLight: { color: L.ink },
   groupLight: {
-    backgroundColor: L.glass,
+    backgroundColor: L.field,
     borderRadius: TILE_RADIUS,
-    overflow: 'hidden',
-  },
+    overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
   rowSepLight: { borderTopColor: L.rule },
   group: {
-    backgroundColor: L.glass,
+    backgroundColor: L.field,
     borderRadius: TILE_RADIUS,
-    overflow: 'hidden',
-  },
+    overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
   groupFooter: { color: C.secondary, marginTop: 6, paddingHorizontal: 16 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 16, minHeight: 44 },
   checkBlank: { width: 20 },

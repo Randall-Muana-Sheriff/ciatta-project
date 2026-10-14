@@ -6,7 +6,7 @@ import type { SourceKind } from '../data/sample';
 import { displayCopy } from '../lib/displayCopy';
 import { C, font, GUTTER } from '../theme';
 import { L, TILE_RADIUS } from './surface';
-import { GlassFill } from './frosted';
+import { CardFill } from './cardFill';
 
 // ── Icons ──────────────────────────────────────────────────────
 
@@ -292,7 +292,7 @@ export function LinkButton({
 // ── Rows ───────────────────────────────────────────────────────
 
 export function Card({ children, style }: { children: ReactNode; style?: object }) {
-  return <View style={[s.card, style]}><GlassFill />{children}</View>;
+  return <View style={[s.card, style]}><CardFill />{children}</View>;
 }
 
 export function Row({
@@ -356,7 +356,7 @@ export function Expandable({
   }
   return (
     <View style={s.openCard}>
-      <GlassFill />
+      <CardFill />
       <Pressable
         onPress={onToggle}
         accessibilityRole="button"

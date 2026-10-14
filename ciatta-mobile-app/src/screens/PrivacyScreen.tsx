@@ -14,7 +14,7 @@ import { useRepo } from '../state/session';
 import { font } from '../theme';
 import { DetailScreen, SecondaryButton } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
-import { GlassFill } from '../ui/frosted';
+import { CardFill } from '../ui/cardFill';
 
 export function PrivacyScreen() {
   const nav = useNav();
@@ -50,7 +50,7 @@ export function PrivacyScreen() {
     <DetailScreen title="Who Can See This" onBack={nav.back}>
       {facts.map((f) => (
         <View key={f.title} style={s.card}>
-          <GlassFill />
+          <CardFill />
           <Text style={[font('headline'), s.title]}>{displayCopy(f.title)}</Text>
           <Text style={[font('subhead'), s.body]}>{displayCopy(f.body)}</Text>
         </View>

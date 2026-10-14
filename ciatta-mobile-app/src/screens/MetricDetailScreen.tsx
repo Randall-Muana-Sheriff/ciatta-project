@@ -40,7 +40,7 @@ import { Hypnogram } from '../ui/Hypnogram';
 import { lastNight, type Night } from '../lib/hypnogram';
 import { METRIC_HUE } from '../ui/metricHue';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
-import { GlassFill } from '../ui/frosted';
+import { CardFill } from '../ui/cardFill';
 
 const NEEDS_VITALS: MetricKey[] = ['bp', 'spo2'];
 
@@ -140,13 +140,13 @@ export function MetricDetailScreen({ metric: given }: { metric?: MetricKey } = {
         // Sleep's day is last night, stage by stage: the same hypnogram the
         // Health dashboard draws.
         <View style={d.card}>
-          <GlassFill />
+          <CardFill />
           <Text style={[font('footnote', 'semibold'), { color: L.ink, marginBottom: 10 }]}>Last night</Text>
           {night ? <Hypnogram night={night} size="full" /> : <Text style={[font('subhead'), d.legend]}>No sleep recorded last night.</Text>}
         </View>
       ) : range === 'day' && metric === 'temp' ? (
         <View style={d.card}>
-          <GlassFill />
+          <CardFill />
           <Text style={[font('subhead'), { color: L.body, lineHeight: 21 }]}>
             {displayCopy(
               `Skin temperature is read once a night${dayPoints[0]?.value != null ? '' : ', and there is no reading for last night yet'}. Week, Month and Year show how it moves.`,
@@ -155,7 +155,7 @@ export function MetricDetailScreen({ metric: given }: { metric?: MetricKey } = {
         </View>
       ) : (
         <View style={d.card}>
-          <GlassFill />
+          <CardFill />
           {byHour && !recorded ? (
             <Text style={[font('subhead'), { color: L.body }]}>No readings yet today.</Text>
           ) : (
@@ -180,7 +180,7 @@ function Group({ title, rows }: { title: string; rows: Row[] }) {
     <View style={d.group}>
       <Eyebrow>{displayCopy(title)}</Eyebrow>
       <View style={d.list}>
-        <GlassFill />
+        <CardFill />
         {rows.map((r, n) => (
           <View key={`${r.label}-${n}`} style={[d.row, n > 0 && d.divided]} accessible accessibilityLabel={`${r.label}, ${r.value}${r.note ? `, ${r.note}` : ''}`}>
             <Text style={[font('subhead'), d.label]}>{displayCopy(r.label)}</Text>

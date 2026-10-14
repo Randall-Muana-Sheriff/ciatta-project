@@ -55,7 +55,7 @@ import { type BaselineRow, type MetricKey, usualFor } from '../lib/metricDetail'
 import { ProductNowCard } from '../ui/ProductNowCard';
 import type { IconName } from '../ui/icons';
 import { Icon } from '../ui/icons';
-import { GlassFill } from '../ui/frosted';
+import { CardFill } from '../ui/cardFill';
 
 function greeting(now: Date): string {
   const h = now.getHours();
@@ -371,7 +371,7 @@ export function TodayScreen() {
           shape Ciatta chose rather than one she produced.
         */}
         <View style={t.dayCard}>
-          <GlassFill />
+          <CardFill />
           <View style={t.dayHead}>
             <Text style={[font('caption1'), t.dayHeadText]}>TODAY&rsquo;S PATTERNS</Text>
             <Text style={[font('caption1'), t.dayHeadText]}>
@@ -454,7 +454,7 @@ export function TodayScreen() {
         </View>
         {state.measured ? (
         <View style={t.card}>
-          <GlassFill />
+          <CardFill />
           {/*
             Six cards and nothing else. The card holds only metrics now:
             the chart and the cycle moved up into Today's Patterns, where
@@ -515,7 +515,7 @@ export function TodayScreen() {
           {/* As the Nutrition card was: the photo across the top, edge to
               edge, with its label on it, and the actions beneath. */}
           <View style={t.youCan}>
-            <GlassFill />
+            <CardFill />
             <Image source={images.youCan} style={t.youCanPhoto} resizeMode="cover" accessibilityIgnoresInvertColors accessible={false} />
             <View style={t.youCanPill}>
               <Text style={[font('caption1', 'semibold'), t.youCanPillText]}>YOU CAN LOG</Text>
@@ -566,7 +566,7 @@ export function TodayScreen() {
           </View>
           {plan.length ? (
             <View style={t.plan}>
-              <GlassFill />
+              <CardFill />
               {plan.map((item, n) => {
                 const ticked = done.includes(item.key);
                 return (
@@ -599,7 +599,7 @@ export function TodayScreen() {
           ) : (
             // Nothing earned today: said, with when the plan comes back.
             <View style={[t.plan, t.planEmpty]}>
-              <GlassFill />
+              <CardFill />
               <Icon name="check" size={20} color={L.meta} />
               <Text style={[font('subhead', 'semibold'), t.planTitle]}>Nothing needs doing today</Text>
               <Text style={[font('footnote'), t.planWhy, { textAlign: 'center' }]}>
