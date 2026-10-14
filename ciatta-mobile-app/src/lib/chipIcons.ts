@@ -24,6 +24,8 @@ const CHIP: Record<string, IconName> = {
   Constipation: 'gut',
   Loose: 'drop',
   'Bowel movement': 'toilet',
+  'Appetite change': 'utensils',
+  'Food cravings': 'utensils',
   // Body
   Pain: 'bandage',
   'Breast tenderness': 'body',
@@ -33,6 +35,15 @@ const CHIP: Record<string, IconName> = {
   Chills: 'thermometer',
   Swelling: 'drop',
   'Joint pain': 'bone',
+  'Pelvic pain': 'uterus',
+  'Lower back pain': 'bone',
+  'Muscle aches': 'dumbbell',
+  Insomnia: 'moon',
+  'Waking at night': 'clock',
+  'Daytime sleepiness': 'sleep',
+  Palpitations: 'heartPulse',
+  'Racing heart': 'heartPulse',
+  'Shortness of breath': 'lungs',
   // Mind
   'Brain fog': 'cloud',
   'Memory lapses': 'brain',
@@ -45,6 +56,7 @@ const CHIP: Record<string, IconName> = {
   Anxiety: 'zigzag',
   Irritability: 'flame',
   'Mood swings': 'wave',
+  Tearful: 'drop',
   // Skin and hair
   Acne: 'sparkle',
   'Oily skin': 'drop',
@@ -85,6 +97,7 @@ const CHIP: Record<string, IconName> = {
 
 const CATEGORY: Record<CategoryKey, IconName> = {
   cycle: 'drop',
+  symptoms: 'body',
   nutrition: 'utensils',
   gut: 'gut',
   body: 'body',

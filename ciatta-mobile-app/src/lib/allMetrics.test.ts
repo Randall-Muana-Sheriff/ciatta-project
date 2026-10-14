@@ -130,7 +130,7 @@ test('six headline metrics, chosen by what her devices report', () => {
   // Not by what the schema happens to hold. Three come from the wearable
   // and three from the cuff, the ring and the watch.
   const keys = headlineMetrics([]).map((m) => m.key);
-  assert.deepEqual(keys, ['sleep', 'hrv', 'steps', 'bp', 'temp', 'spo2']);
+  assert.deepEqual(keys, ['sleep', 'hrv', 'rhr', 'steps', 'bp', 'spo2']);
 });
 
 test('a vital with no reading is still a card, absent rather than missing', () => {
@@ -176,8 +176,11 @@ test('heart rate variability carries its unit', () => {
   assert.equal(by.hrv, '42 ms');
 });
 
-test('resting heart rate moved to All, where there is room for every reading', () => {
-  assert.ok(!headlineMetrics([]).some((m) => m.key === 'restingHR'));
+test('resting heart rate is on Today, beside HRV; skin temperature is on All only', () => {
+  const rhr = headlineMetrics([{ ...empty, restingHR: 58.6 }], [], ON).find((m) => m.key === 'rhr')!;
+  assert.equal(rhr.value, '59 bpm');
+  assert.equal(rhr.label, 'Resting HR');
+  assert.ok(!headlineMetrics([]).some((m) => m.key === 'temp'));
   assert.ok(find({ ...empty, restingHR: 58.6 }, 'Resting Heart Rate')?.value === '59 bpm');
 });
 
@@ -187,21 +190,11 @@ test('a measured zero still shows, unlike a missing figure', () => {
   assert.equal(Object.fromEntries(headlineMetrics([empty]).map((m) => [m.key, m.value])).steps, null);
 });
 
-test('the skin temperature card gives the size, and says above or below usual in words', () => {
-  const m = headlineMetrics([{ ...empty, tempDeviation: 0.42 }], [], ON).find((x) => x.key === 'temp')!;
-  assert.equal(m.value, '0.4 °C');
-  assert.equal(m.note, 'Above usual');
-  const cool = headlineMetrics([{ ...empty, tempDeviation: -0.3 }], [], ON).find((x) => x.key === 'temp')!;
-  assert.equal(cool.value, '0.3 °C');
-  assert.equal(cool.note, 'Below usual');
-  for (const v of [m.value!, cool.value!]) assert.ok(!/[-–—−]/.test(v), v);
-});
-
 test('Today is daily: an older reading is not shown, and no card says how old', () => {
   // A card on Today holds today. Last week's figure labelled "3 weeks ago"
   // read as a status; the week is on the card's chart instead.
   const days = [
-    { ...empty, date: '2026-10-09', hrv: 44, tempDeviation: -0.42 },
+    { ...empty, date: '2026-10-09', hrv: 44, restingHR: 61 },
     { ...empty, date: '2026-10-10', hrv: 51, steps: 3000 },
   ];
   for (const m of headlineMetrics(days, [], new Date(2026, 9, 11, 12))) {
@@ -231,10 +224,6 @@ test('nothing anywhere in the series is still absent', () => {
   assert.equal(m.value, null);
 });
 
-test('an absent skin temperature carries no note either', () => {
-  assert.equal(headlineMetrics([empty]).find((x) => x.key === 'temp')!.note, undefined);
-});
-
 test('every headline is measured, so none is confused with what she reported', () => {
   for (const m of headlineMetrics([empty])) assert.equal(m.from, 'measured', m.key);
 });
@@ -244,12 +233,6 @@ test('each daily card carries the trend of her own readings', () => {
   const m = headlineMetrics(days, [], new Date(2026, 9, 7, 12)).find((x) => x.key === 'hrv')!;
   assert.deepEqual(m.trend?.points, [48, 50, 52, 49, 51, 50, 56]);
   assert.equal(m.trend?.change, '↑ 12%');
-});
-
-test('skin temperature trends in degrees', () => {
-  const days = [0.1, 0.0, -0.1, 0.4].map((t, i) => ({ ...empty, date: `2026-10-0${i + 1}`, tempDeviation: t }));
-  const m = headlineMetrics(days, [], new Date(2026, 9, 4, 12)).find((x) => x.key === 'temp')!;
-  assert.equal(m.trend?.change, '↑ 0.4 °C');
 });
 
 test('a card with too little history has no trend rather than an invented one', () => {

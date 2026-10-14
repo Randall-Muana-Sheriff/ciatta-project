@@ -270,24 +270,14 @@ export function headlineMetrics(
     const t = trendOf(days.map(get), unit, metric ? usualOf(metric) : null);
     return t ? { ...m, trend: t } : m;
   };
-  // Skin temperature is a difference from her usual. The figure carries no
-  // sign, because a minus is a dash to display copy; the note says which
-  // way, in words, and how old the reading is when it is not today's.
-  const skinTemp = (found: { value: number; note?: string } | null): HeadlineMetric => {
-    if (!found) return { key: 'temp', label: SHORT.temp, value: null, from: 'measured' };
-    const size = one(Math.abs(found.value));
-    const way = size === '0.0' ? 'At usual' : found.value > 0 ? 'Above usual' : 'Below usual';
-    return {
-      key: 'temp',
-      label: SHORT.temp,
-      value: `${size} °C`,
-      note: found.note ? `${way}, ${found.note.charAt(0).toLowerCase()}${found.note.slice(1)}` : way,
-      from: 'measured',
-    };
-  };
   return [
     trended(card('sleep', NAME.sleep, read((d) => d.sleepHours), (v) => fmtHours(v)), (d) => d.sleepHours, 'percent', 'sleep_hours'),
     trended(card('hrv', SHORT.hrv, read((d) => d.hrv), (v) => `${Math.round(v)} ms`), (d) => d.hrv, 'percent', 'hrv'),
+    // Resting heart rate rather than heart rate: one steady figure a day,
+    // measured at rest, that moves with illness, stress, sleep and her
+    // cycle, and that her usual is worked out for. Heart rate swings with
+    // every flight of stairs. Skin temperature lives on All.
+    trended(card('rhr', SHORT.rhr, read((d) => d.restingHR), (v) => `${Math.round(v)} bpm`), (d) => d.restingHR, 'percent', 'resting_hr'),
     trended(
       card('steps', NAME.steps, read((d) => d.steps), (v) => Math.round(v).toLocaleString('en-US')),
       (d) => d.steps,
@@ -295,7 +285,6 @@ export function headlineMetrics(
       'steps',
     ),
     vital('bp'),
-    trended(skinTemp(read((d) => d.tempDeviation)), (d) => d.tempDeviation, 'degrees'),
     vital('spo2'),
   ];
 }

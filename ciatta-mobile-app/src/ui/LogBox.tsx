@@ -13,7 +13,7 @@ import { Icon, type IconName } from './icons';
 import { L } from './surface';
 
 const TOPICS: { key: CategoryKey; label: string; prompt: string }[] = [
-  { key: 'body', label: 'Symptoms', prompt: 'How are you feeling today?' },
+  { key: 'symptoms', label: 'Symptoms', prompt: 'How are you feeling today?' },
   { key: 'cycle', label: 'Cycle', prompt: 'Bleeding, pain or anything about your cycle?' },
   { key: 'nutrition', label: 'Food', prompt: 'What did you eat or drink?' },
 ];
@@ -24,7 +24,7 @@ const MODES: { key: LogMode; label: string; icon: IconName }[] = [
 ];
 
 export function LogBox({ onLog }: { onLog: (topic: CategoryKey, mode: LogMode) => void }) {
-  const [topic, setTopic] = useState<CategoryKey>('body');
+  const [topic, setTopic] = useState<CategoryKey>('symptoms');
   const prompt = TOPICS.find((t) => t.key === topic)!.prompt;
   return (
     <View style={s.box}>

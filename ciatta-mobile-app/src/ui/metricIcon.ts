@@ -6,7 +6,7 @@ export const METRIC_ICON: Record<string, IconName> = {
   sleep: 'sleep',
   steps: 'steps',
   hrv: 'heartPulse',
-  rhr: 'heartPulse',
+  rhr: 'heart',
   bp: 'dropPulse',
   temp: 'thermometer',
   spo2: 'oxygen',

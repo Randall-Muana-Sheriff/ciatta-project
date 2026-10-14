@@ -10,7 +10,7 @@ import type { EntryKind } from '../data/sample';
 import type { Screen } from '../navigation';
 import { DIGESTION_FLAGS } from './dailyLog';
 
-export type CategoryKey = 'cycle' | 'nutrition' | 'gut' | 'body' | 'mind' | 'skin' | 'sexual' | 'meds' | 'supplements' | 'context' | 'note';
+export type CategoryKey = 'cycle' | 'symptoms' | 'nutrition' | 'gut' | 'body' | 'mind' | 'skin' | 'sexual' | 'meds' | 'supplements' | 'context' | 'note';
 
 export type LogCategory = {
   key: CategoryKey;
@@ -42,6 +42,19 @@ export const CATEGORIES: readonly LogCategory[] = [
     detailLabel: 'Describe it step by step',
     journalKind: 'Symptoms',
   },
+  // Every symptom, in one place on the Log screen, grouped below in
+  // SYMPTOM_GROUPS. Each is filed under the category the rest of the app
+  // reads it from (Body, Mind, Gut, Skin, Sexual and urinary), so the
+  // Symptoms screen, the body systems and the agent all keep working.
+  {
+    key: 'symptoms',
+    label: 'Symptoms',
+    example: 'Headache since lunch, bloated, and more tired than usual',
+    quick: [],
+    detail: null,
+    detailLabel: null,
+    journalKind: 'Symptoms',
+  },
   // Nutrition and Gut were one category and are two different things:
   // what she ate and drank, against any goals she set, and how her gut was.
   {
@@ -57,7 +70,7 @@ export const CATEGORIES: readonly LogCategory[] = [
     key: 'gut',
     label: 'Gut',
     example: 'Bloated after lunch, and a loose stool this morning',
-    quick: [...DIGESTION_FLAGS, BOWEL],
+    quick: [...DIGESTION_FLAGS, 'Appetite change', 'Food cravings', BOWEL],
     detail: null,
     detailLabel: null,
     journalKind: 'Symptoms',
@@ -66,7 +79,11 @@ export const CATEGORIES: readonly LogCategory[] = [
     key: 'body',
     label: 'Body',
     example: 'Sore lower back and hot flashes all evening',
-    quick: ['Pain', 'Breast tenderness', 'Hot flashes', 'Night sweats', 'Fatigue', 'Chills', 'Swelling', 'Joint pain'],
+    quick: [
+      'Pain', 'Pelvic pain', 'Lower back pain', 'Joint pain', 'Muscle aches', 'Breast tenderness', 'Swelling',
+      'Fatigue', 'Insomnia', 'Waking at night', 'Daytime sleepiness', 'Hot flashes', 'Night sweats', 'Chills',
+      'Palpitations', 'Racing heart', 'Shortness of breath', 'Dizziness',
+    ],
     detail: null,
     detailLabel: null,
     journalKind: 'Symptoms',
@@ -76,8 +93,8 @@ export const CATEGORIES: readonly LogCategory[] = [
     label: 'Mind',
     example: 'Foggy all afternoon, could not focus, a bit anxious',
     quick: [
-      'Brain fog', 'Memory lapses', 'Hard to focus', 'Headache', 'Migraine', 'Dizziness',
-      'Tingling or numbness', 'Low mood', 'Anxiety', 'Irritability', 'Mood swings',
+      'Brain fog', 'Memory lapses', 'Hard to focus', 'Headache', 'Migraine',
+      'Tingling or numbness', 'Low mood', 'Anxiety', 'Irritability', 'Mood swings', 'Tearful',
     ],
     detail: null,
     detailLabel: null,
@@ -144,6 +161,81 @@ export const CATEGORIES: readonly LogCategory[] = [
     journalKind: 'Notes',
   },
 ];
+
+// The tabs along the top of the Log screen. Body, Mind, Skin and hair, and
+// Sexual and urinary are under Symptoms now; they remain categories, because
+// that is where each symptom is filed and read from.
+export const LOG_TABS: CategoryKey[] = ['cycle', 'symptoms', 'gut', 'nutrition', 'meds', 'supplements', 'context', 'note'];
+
+// The symptoms worth logging, grouped as she would look for them, each
+// group saying what Ciatta reads it against: her wearables, her labs, her
+// cycle and her medications. That is what makes a logged symptom worth more
+// than a note: it can be set beside something measured.
+export type SymptomGroup = { label: string; category: CategoryKey; items: string[]; feeds: string[] };
+export const SYMPTOM_GROUPS: SymptomGroup[] = [
+  {
+    label: 'Pain',
+    category: 'body',
+    items: ['Pain', 'Pelvic pain', 'Lower back pain', 'Joint pain', 'Muscle aches', 'Breast tenderness', 'Swelling'],
+    feeds: ['Cycle phase', 'Sleep', 'HRV', 'Medications'],
+  },
+  {
+    label: 'Energy and sleep',
+    category: 'body',
+    items: ['Fatigue', 'Insomnia', 'Waking at night', 'Daytime sleepiness'],
+    feeds: ['Sleep', 'HRV', 'Resting heart rate', 'Iron and thyroid labs'],
+  },
+  {
+    label: 'Temperature',
+    category: 'body',
+    items: ['Hot flashes', 'Night sweats', 'Chills'],
+    feeds: ['Skin temperature', 'Sleep', 'Cycle phase', 'Hormone labs'],
+  },
+  {
+    label: 'Heart and breathing',
+    category: 'body',
+    items: ['Palpitations', 'Racing heart', 'Shortness of breath', 'Dizziness'],
+    feeds: ['Heart rate', 'HRV', 'Blood pressure', 'Blood oxygen', 'Iron labs'],
+  },
+  {
+    label: 'Gut',
+    category: 'gut',
+    items: [...DIGESTION_FLAGS, 'Appetite change', 'Food cravings'],
+    feeds: ['Bowel type', 'Meals and foods', 'Cycle phase', 'Medications'],
+  },
+  {
+    label: 'Head and mind',
+    category: 'mind',
+    items: ['Headache', 'Migraine', 'Brain fog', 'Hard to focus', 'Memory lapses', 'Tingling or numbness'],
+    feeds: ['Sleep', 'HRV', 'Blood pressure', 'Cycle phase', 'Medications'],
+  },
+  {
+    label: 'Mood',
+    category: 'mind',
+    items: ['Low mood', 'Anxiety', 'Irritability', 'Mood swings', 'Tearful'],
+    feeds: ['Sleep', 'HRV', 'Cycle phase', 'The stress you log'],
+  },
+  {
+    label: 'Skin and hair',
+    category: 'skin',
+    items: ['Acne', 'Oily skin', 'Dry skin', 'Hair shedding', 'Unwanted hair growth', 'Dark patches', 'Itching'],
+    feeds: ['Thyroid, iron and hormone labs', 'Cycle phase'],
+  },
+  {
+    label: 'Urinary and sexual',
+    category: 'sexual',
+    items: [
+      'Pain with sex', 'Low libido', 'Vaginal dryness', 'Discharge change', 'Urinary urgency', 'Leaking',
+      'Burning when peeing', 'Bleeding after sex',
+    ],
+    feeds: ['Cycle phase', 'Kidney and urine labs'],
+  },
+];
+
+// Where a symptom is filed: the category its group belongs to.
+export function symptomCategory(item: string): CategoryKey {
+  return SYMPTOM_GROUPS.find((g) => g.items.includes(item))?.category ?? 'body';
+}
 
 export const category = (key: CategoryKey): LogCategory => CATEGORIES.find((c) => c.key === key) ?? CATEGORIES[0];
 

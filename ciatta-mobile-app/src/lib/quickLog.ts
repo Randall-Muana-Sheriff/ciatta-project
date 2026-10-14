@@ -150,7 +150,7 @@ const CUES: [RegExp, CategoryKey, string][] = [
   [/\b(focus|concentrat\w*)\b/i, 'mind', 'Hard to focus'],
   [/\bheadache\b/i, 'mind', 'Headache'],
   [/\bmigraine\b/i, 'mind', 'Migraine'],
-  [/\b(dizzy|dizziness|lightheaded)\b/i, 'mind', 'Dizziness'],
+  [/\b(dizzy|dizziness|lightheaded)\b/i, 'body', 'Dizziness'],
   [/\b(tingl\w*|numb\w*|pins and needles)\b/i, 'mind', 'Tingling or numbness'],
   [/\b(low mood|sad|teary|(feeling|feel|felt) (low|down))\b/i, 'mind', 'Low mood'],
   [/\b(anxious|anxiety|panick?y)\b/i, 'mind', 'Anxiety'],
@@ -278,9 +278,17 @@ export type SavePlan = {
 
 const JOURNAL_KEYS: CategoryKey[] = ['nutrition', 'body', 'mind', 'skin', 'sexual', 'meds', 'supplements', 'context'];
 
-export function planSave(input: { text: string; selected: CategoryKey; tapped: string[]; files: Attachment[] }): SavePlan | null {
+export function planSave(input: {
+  text: string;
+  selected: CategoryKey;
+  tapped: string[];
+  files: Attachment[];
+  // Taps under Symptoms, already sorted into the categories they file
+  // under. Every other tab files its taps under itself.
+  byCategory?: Found;
+}): SavePlan | null {
   const text = input.text.trim();
-  const found = mergeFound(readCategories(text), input.tapped.length ? { [input.selected]: input.tapped } : {});
+  const found = mergeFound(readCategories(text), input.byCategory ?? (input.tapped.length ? { [input.selected]: input.tapped } : {}));
   if (!text && !input.files.length && !Object.keys(found).length) return null;
   // Cramps she logs from Cycle or Body are pain where she feels it, not a
   // gut flag, whatever else the sentence says.
@@ -318,7 +326,7 @@ export function planSave(input: { text: string; selected: CategoryKey; tapped: s
   const journalCategory: CategoryKey =
     (JOURNAL_KEYS as CategoryKey[]).includes(input.selected) || input.selected === 'note'
       ? input.selected
-      : ((Object.keys(items)[0] as CategoryKey | undefined) ?? input.selected);
+      : ((Object.keys(items)[0] as CategoryKey | undefined) ?? (input.selected === 'symptoms' ? 'body' : input.selected));
 
   return {
     episode: wantsEpisode

@@ -76,7 +76,7 @@ export function TodayScreen() {
   // The two kinds of logging, apart and named the same everywhere: the
   // daily symptoms log, and the cycle experience.
   const logSymptoms = () => {
-    chooseLogCategory('body');
+    chooseLogCategory('symptoms');
     nav.push('quickLog');
   };
   // The cycle is logged the same way as everything else: the Log screen on

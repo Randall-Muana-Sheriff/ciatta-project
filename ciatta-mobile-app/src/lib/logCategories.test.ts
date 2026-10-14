@@ -4,10 +4,10 @@ import { test } from 'node:test';
 import { WHAT_HAPPENED } from '../data/cycleLog';
 import { BOWEL, CATEGORIES, category } from './logCategories';
 
-test('eleven categories, in the order the Log screen shows them', () => {
+test('twelve categories; Symptoms gathers Body, Mind, Skin and Sexual on the Log screen', () => {
   assert.deepEqual(
     CATEGORIES.map((c) => c.key),
-    ['cycle', 'nutrition', 'gut', 'body', 'mind', 'skin', 'sexual', 'meds', 'supplements', 'context', 'note'],
+    ['cycle', 'symptoms', 'nutrition', 'gut', 'body', 'mind', 'skin', 'sexual', 'meds', 'supplements', 'context', 'note'],
   );
 });
 

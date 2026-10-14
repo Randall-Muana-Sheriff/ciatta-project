@@ -46,7 +46,7 @@ export function SymptomsScreen() {
   const most = Math.max(1, ...view.grid.flatMap((r) => r.counts));
 
   const logOne = () => {
-    chooseLogCategory('body');
+    chooseLogCategory('symptoms');
     nav.push('quickLog');
   };
 

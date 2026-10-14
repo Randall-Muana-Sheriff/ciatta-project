@@ -17,7 +17,7 @@ test('one name per metric: the detail screen, the list and the vitals all use it
 });
 
 test('Today shortens only where a third of a row cannot hold the name', () => {
-  assert.deepEqual(headlineMetrics([]).map((m) => m.label), [NAME.sleep, SHORT.hrv, NAME.steps, SHORT.bp, SHORT.temp, SHORT.spo2]);
+  assert.deepEqual(headlineMetrics([]).map((m) => m.label), [NAME.sleep, SHORT.hrv, SHORT.rhr, NAME.steps, SHORT.bp, SHORT.spo2]);
 });
 
 test('the list groups are the app\'s groups, in its order, named as the Log names them', () => {
