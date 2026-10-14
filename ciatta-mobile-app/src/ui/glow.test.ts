@@ -23,3 +23,11 @@ test('card type reads on the brightest part of every glow', () => {
     assert.ok(contrast('#A9AEB5', top) >= 4.5, `meta on ${g}`);
   }
 });
+
+test('the colour sits in the top fifth; the rest is the dark shade', () => {
+  for (const g of GLOWS) {
+    const dark = contrast(glowAt(g, 1), '#000000');
+    assert.ok(contrast(glowAt(g, 0.2), '#000000') > dark, `still lit at a fifth: ${g}`);
+    for (const t of [0.4, 0.6, 0.8]) assert.ok(contrast(glowAt(g, t), '#000000') - dark < 0.15, `dark by ${t}: ${g}`);
+  }
+});

@@ -33,11 +33,14 @@ export const GLOWS: [string, string][] = [
 // The dark the light fades into.
 export const FOOT = '#0A0A0C';
 // How much of the hue reaches the top edge at most, and how much is left
-// at the middle. A bright hue like Amber is held lower than Sky, so every
+// where the light ends, a fifth of the way down: the top fifth is colour,
+// the other four fifths the dark shade. A bright hue like Amber is held lower than Sky, so every
 // glow is as bright as muted type allows (4.6:1) and they read as one
 // family rather than some glaring.
 export const TOP = 0.5;
-export const MID = 0.12;
+export const MID = 0.07;
+// Where the light ends.
+export const LIGHT_END = 0.2;
 // The second hue's pool, at its centre.
 export const POOL = 0.3;
 
@@ -51,7 +54,7 @@ export const mix = (a: string, b: string, t: number) => hex(rgb(a).map((v, i) =>
 // pool at full strength on top of it: the brightest the card gets there.
 export function glowAt(pair: [string, string], t: number, top = topFor(pair)): string {
   const [first, second] = pair;
-  const strength = t <= 0.5 ? top + (MID - top) * (t / 0.5) : MID * (1 - (t - 0.5) / 0.5);
+  const strength = t <= LIGHT_END ? top + (MID - top) * (t / LIGHT_END) : Math.max(0, MID * (1 - (t - LIGHT_END) / 0.25));
   const base = mix(first, FOOT, strength);
   return t === 0 ? mix(second, base, POOL * top) : base;
 }

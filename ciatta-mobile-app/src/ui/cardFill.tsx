@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { Image, StyleSheet } from 'react-native';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
-import { FOOT, glowFor, MID, mix, POOL, topFor } from './glow';
+import { FOOT, glowFor, LIGHT_END, MID, mix, POOL, topFor } from './glow';
 import { useGroundPair } from './Ground';
 import { CardWash } from './PhotoCard';
 
@@ -53,12 +53,13 @@ export function CardFill() {
           {/* The light falling from the top edge into the dark. */}
           <LinearGradient id={`${id}l`} x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor={mix(pair[0], FOOT, top)} />
-            <Stop offset="0.5" stopColor={mix(pair[0], FOOT, MID)} />
+            <Stop offset={LIGHT_END} stopColor={mix(pair[0], FOOT, MID)} />
+            <Stop offset={LIGHT_END + 0.25} stopColor={FOOT} />
             <Stop offset="1" stopColor={FOOT} />
           </LinearGradient>
           {/* The second hue, pooled at the top to one side, so the light
               has a shape and blurs into the first. */}
-          <RadialGradient id={`${id}r`} cx="0.82" cy="0" rx="0.75" ry="0.6" fx="0.82" fy="0">
+          <RadialGradient id={`${id}r`} cx="0.82" cy="0" rx="0.7" ry="0.32" fx="0.82" fy="0">
             <Stop offset="0" stopColor={pair[1]} stopOpacity={POOL * top} />
             <Stop offset="1" stopColor={pair[1]} stopOpacity={0} />
           </RadialGradient>
@@ -66,7 +67,9 @@ export function CardFill() {
         <Rect x="0" y="0" width="1" height="1" fill={`url(#${id}l)`} />
         <Rect x="0" y="0" width="1" height="1" fill={`url(#${id}r)`} />
       </Svg>
-      <Image source={GRAIN} resizeMode="repeat" style={StyleSheet.absoluteFill} accessible={false} />
+      {/* One grain image across the whole card. A repeating tile drew only
+          a single square in the corner. */}
+      <Image source={GRAIN} resizeMode="cover" style={StyleSheet.absoluteFill} accessible={false} />
     </>
   );
 }
