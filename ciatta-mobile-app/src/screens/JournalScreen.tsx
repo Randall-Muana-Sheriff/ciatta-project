@@ -10,7 +10,7 @@ import { useRepo } from '../state/session';
 import { C, font } from '../theme';
 import { Composer } from '../ui/composer';
 import { DetailScreen, EmptyNote, SegmentedControl, SecondaryButton, SourceFooter, Tag } from '../ui/kit';
-import { L } from '../ui/surface';
+import { L, TILE_RADIUS } from '../ui/surface';
 import { GlassFill } from '../ui/frosted';
 
 const FILTERS = ['All', 'Notes', 'Symptoms', 'Context'] as const;
@@ -136,12 +136,10 @@ const j = StyleSheet.create({
   between: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
   card: {
     backgroundColor: L.glass,
-    borderRadius: 10,
+    borderRadius: TILE_RADIUS,
     paddingVertical: 12,
     paddingHorizontal: 14,
     marginBottom: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.borderSub,
     overflow: 'hidden',
   },
   cardFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

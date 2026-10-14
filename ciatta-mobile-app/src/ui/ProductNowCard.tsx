@@ -122,8 +122,6 @@ const c = StyleSheet.create({
     marginTop: SPACE.block,
     backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
     padding: 16,
     gap: 4,
     overflow: 'hidden',

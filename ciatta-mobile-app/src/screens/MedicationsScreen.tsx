@@ -125,8 +125,6 @@ const m = StyleSheet.create({
   card: {
     backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
     padding: 14,
     marginBottom: 10,
     overflow: 'hidden',

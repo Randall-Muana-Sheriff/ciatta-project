@@ -17,7 +17,7 @@ import { Icon } from '../ui/icons';
 import { headingFor } from '../ui/InsightCards';
 import { PhotoCard } from '../ui/PhotoCard';
 import { Sheet } from '../ui/Sheet';
-import { HUE, L, NAV_CLEARANCE, SPACE } from '../ui/surface';
+import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { GlassFill } from '../ui/frosted';
 
 export function InsightScreen() {
@@ -184,7 +184,7 @@ const s = StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: HUE.reported, marginTop: 9 },
   bulletText: { color: L.ink, flex: 1, lineHeight: 26 },
   paragraph: { color: L.ink, lineHeight: 27, marginTop: 6 },
-  record: { marginTop: 8, padding: 16, gap: 6, borderRadius: 18, backgroundColor: L.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, overflow: 'hidden' },
+  record: { marginTop: 8, padding: 16, gap: 6, borderRadius: TILE_RADIUS, backgroundColor: L.glass, overflow: 'hidden' },
   recordLine: { color: L.body, lineHeight: 21 },
   discuss: {
     position: 'absolute',

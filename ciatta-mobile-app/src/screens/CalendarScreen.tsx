@@ -343,8 +343,6 @@ const s = StyleSheet.create({
     marginHorizontal: GUTTER,
     backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
-    borderWidth: st,
-    borderColor: L.rule,
     padding: 16,
     overflow: 'hidden',
   },

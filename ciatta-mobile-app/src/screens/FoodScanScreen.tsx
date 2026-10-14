@@ -355,8 +355,6 @@ const f = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
     paddingTop: 14,
     gap: 2,
     overflow: 'hidden',

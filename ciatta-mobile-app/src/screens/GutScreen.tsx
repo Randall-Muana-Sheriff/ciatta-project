@@ -240,7 +240,7 @@ const st = StyleSheet.hairlineWidth;
 const s = StyleSheet.create({
   section: { marginTop: SPACE.block },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  card: { marginTop: SPACE.tight, backgroundColor: L.glass, borderRadius: TILE_RADIUS, borderWidth: st, borderColor: L.rule, padding: 14, overflow: 'hidden' },
+  card: { marginTop: SPACE.tight, backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 14, overflow: 'hidden' },
   meta: { color: L.meta },
   note: { color: L.meta, marginTop: 10, lineHeight: 17 },
   body: { color: L.body },

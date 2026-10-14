@@ -7,10 +7,10 @@ import { useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
 import { useSession } from '../state/session';
-import { C, font, fonts, RADIUS } from '../theme';
+import { C, font, fonts } from '../theme';
 import { ListGroup, ListRow, Panel } from '../ui/chrome';
 import { DetailScreen, SecLabel, SourceFooter } from '../ui/kit';
-import { L } from '../ui/surface';
+import { L, TILE_RADIUS } from '../ui/surface';
 import { GlassFill } from '../ui/frosted';
 
 // Daily steps for four weeks against the usual range. Coral days sit below
@@ -149,11 +149,9 @@ const m = StyleSheet.create({
   tile: {
     flex: 1,
     backgroundColor: L.glass,
-    borderRadius: RADIUS,
+    borderRadius: TILE_RADIUS,
     padding: 12,
     gap: 2,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.borderSub,
     overflow: 'hidden',
   },
   section: { marginTop: 28 },

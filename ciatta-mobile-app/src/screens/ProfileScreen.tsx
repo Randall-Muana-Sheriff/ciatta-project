@@ -36,7 +36,7 @@ import { useInsights } from '../state/insights';
 import { useData, useRepo, useSession } from '../state/session';
 import { askForWeather, weatherIsOn } from '../state/environmentRun';
 import { registerForFindings } from '../state/notifications';
-import { C, font, GUTTER, numeral, RADIUS } from '../theme';
+import { C, font, GUTTER, numeral } from '../theme';
 import { L, NAV_CLEARANCE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow, Panel, TextButton } from '../ui/chrome';
 import { ScreenHeader } from '../ui/kit';
@@ -224,7 +224,6 @@ function HealthOverview({
             accessibilityLabel={`${f.label}, ${f.value ?? 'not added'}${f.sub ? `, ${f.sub}` : ''}`}
             accessibilityHint={OPENS[f.key] ? `Opens ${f.label.toLowerCase()}` : fromHealth && !f.value && f.key === 'age' ? 'Adds it from Apple Health' : undefined}
           >
-            <GlassFill />
             <Icon name={f.icon} size={16} color={f.key === 'insurance' ? C.lavender : C.coral} weight={1.8} />
             <Text style={[font('caption1'), { color: C.secondary, marginTop: 6 }]} numberOfLines={1}>{f.label}</Text>
             <Text style={[font('subhead', 'semibold'), { color: f.value ? C.text : C.tertiary }]} numberOfLines={1} adjustsFontSizeToFit>
@@ -905,7 +904,7 @@ const p = StyleSheet.create({
   segs: { marginTop: 20, paddingHorizontal: GUTTER },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
-  tile: { backgroundColor: L.glass, borderRadius: RADIUS, padding: 14, overflow: 'hidden' },
+  tile: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 14, overflow: 'hidden' },
   sectionHead: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
 
   // The paragraph sits on the statement ground the system keeps for one
@@ -927,10 +926,7 @@ const p = StyleSheet.create({
     flexBasis: '30%',
     flexGrow: 1,
     minHeight: 96,
-    backgroundColor: L.glass,
     borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
     paddingVertical: 10,
     paddingHorizontal: 10,
     overflow: 'hidden',
@@ -948,7 +944,7 @@ const p = StyleSheet.create({
     gap: 10,
     minHeight: 52,
     paddingHorizontal: 12,
-    borderRadius: RADIUS,
+    borderRadius: TILE_RADIUS,
     backgroundColor: L.glass,
     overflow: 'hidden',
   },

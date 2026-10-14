@@ -6,9 +6,9 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { type Scale, SCALES } from '../lib/timeAxis';
-import { C, font, RADIUS } from '../theme';
+import { C, font } from '../theme';
 import { Icon } from './icons';
-import { L } from './surface';
+import { L, TILE_RADIUS } from './surface';
 import { GlassFill } from './frosted';
 
 export function ViewByPicker({ scale, onChange }: { scale: Scale; onChange: (scale: Scale) => void }) {
@@ -58,19 +58,15 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 14,
-    borderRadius: RADIUS,
+    borderRadius: TILE_RADIUS,
     backgroundColor: L.glass,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.borderSub,
     overflow: 'hidden',
   },
   menu: {
     marginTop: 6,
-    borderRadius: RADIUS,
+    borderRadius: TILE_RADIUS,
     backgroundColor: L.glass,
     overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.borderSub,
   },
   item: {
     flexDirection: 'row',

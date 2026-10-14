@@ -503,6 +503,53 @@ export function TodayScreen() {
           </ListGroup>
         )}
 
+          </>
+        )}
+
+        {/*
+          Two ways in, and only two. One adds to the record, the other
+          takes the record somewhere, and everything else she might do is
+          reachable from the screen it belongs to.
+        */}
+        <View style={t.section}>
+          {/* As the Nutrition card was: the photo across the top, edge to
+              edge, with its label on it, and the actions beneath. */}
+          <View style={t.youCan}>
+            <GlassFill />
+            <Image source={images.youCan} style={t.youCanPhoto} resizeMode="cover" accessibilityIgnoresInvertColors accessible={false} />
+            <View style={t.youCanPill}>
+              <Text style={[font('caption1', 'semibold'), t.youCanPillText]}>YOU CAN LOG</Text>
+            </View>
+            {/* Logging, one step from here: the topic, then speak, type or
+                take a photo. The Log screen opens already doing it. */}
+            <LogBox
+              needs={needs}
+              onSave={async (entry) => {
+                const saved = await quickSave(entry);
+                if (saved) {
+                  setLogged((n) => n + 1);
+                  void reloadDays();
+                }
+                return saved;
+              }}
+              onMealPhoto={(uri) => {
+                handPhoto(uri);
+                nav.push('foodScan');
+              }}
+              onMore={() => nav.push('quickLog')}
+            />
+          </View>
+        </View>
+
+        {/* Research that connects to her own record. */}
+        {state.state === 'content' ? (
+          <View style={t.section}>
+            <InsightCards />
+          </View>
+        ) : null}
+
+        {state.state !== 'empty' ? (
+          <>
         {/*
           What today's pattern suggests trying, which only exists when the
           pattern does. The concept calls this the try block and gives it
@@ -562,44 +609,8 @@ export function TodayScreen() {
           )}
         </View>
 
-          </>
-        )}
-
-        {/*
-          Two ways in, and only two. One adds to the record, the other
-          takes the record somewhere, and everything else she might do is
-          reachable from the screen it belongs to.
-        */}
-        <View style={t.section}>
-          {/* As the Nutrition card was: the photo across the top, edge to
-              edge, with its label on it, and the actions beneath. */}
-          <View style={t.youCan}>
-            <GlassFill />
-            <Image source={images.youCan} style={t.youCanPhoto} resizeMode="cover" accessibilityIgnoresInvertColors accessible={false} />
-            <View style={t.youCanPill}>
-              <Text style={[font('caption1', 'semibold'), t.youCanPillText]}>YOU CAN LOG</Text>
-            </View>
-            {/* Logging, one step from here: the topic, then speak, type or
-                take a photo. The Log screen opens already doing it. */}
-            <LogBox
-              needs={needs}
-              onSave={async (entry) => {
-                const saved = await quickSave(entry);
-                if (saved) {
-                  setLogged((n) => n + 1);
-                  void reloadDays();
-                }
-                return saved;
-              }}
-              onMealPhoto={(uri) => {
-                handPhoto(uri);
-                nav.push('foodScan');
-              }}
-              onMore={() => nav.push('quickLog')}
-            />
-          </View>
-        </View>
-
+        </>
+        ) : null}
         {/* Symptoms side by side, below the ways in. */}
         {state.state === 'content' ? (
           <View style={t.section}>
@@ -613,13 +624,6 @@ export function TodayScreen() {
               onChoose={setChosen}
               onAll={go('symptoms')}
             />
-          </View>
-        ) : null}
-
-        {/* Research that connects to her own record. */}
-        {state.state === 'content' ? (
-          <View style={t.section}>
-            <InsightCards />
           </View>
         ) : null}
 
@@ -644,7 +648,7 @@ const t = StyleSheet.create({
   body: { paddingBottom: NAV_CLEARANCE, paddingTop: 0 },
   pad: { paddingHorizontal: GUTTER },
   pressed: { opacity: 0.6 },
-  section: { marginTop: 28 },
+  section: { marginTop: SPACE.section },
   // The mark alone at the top, as the concept has it.
   // Centred and as high as the mark is allowed to sit, which is the way
   // Oura's own wordmark opens its home screen: the mark first, tight under
@@ -667,8 +671,6 @@ const t = StyleSheet.create({
   hello: { color: L.ink, letterSpacing: -0.4 },
 
   dayCard: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
     marginTop: SPACE.near,
     backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
@@ -704,7 +706,7 @@ const t = StyleSheet.create({
 
   // Two across, three down. A grid reads as a set of peers, which is what
   // these are: six readings from one day, none ranked above another.
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: METRIC_CARD_GAP },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: METRIC_CARD_GAP, rowGap: 14 },
   gridCell: { width: '30%', flexGrow: 1 },
 
   cycleKey: { color: L.meta, letterSpacing: 0.9 },
@@ -728,8 +730,6 @@ const t = StyleSheet.create({
     borderRadius: TILE_RADIUS,
     overflow: 'hidden',
     backgroundColor: L.glass,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
   },
   youCanPhoto: { width: '100%', height: 160 },
   youCanPill: {
@@ -747,8 +747,6 @@ const t = StyleSheet.create({
     backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
     padding: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
     overflow: 'hidden',
   },
   chart: { flex: 1, aspectRatio: 190 / 150 },
@@ -758,8 +756,6 @@ const t = StyleSheet.create({
     marginTop: 10,
     backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
     paddingHorizontal: 14,
     overflow: 'hidden',
   },

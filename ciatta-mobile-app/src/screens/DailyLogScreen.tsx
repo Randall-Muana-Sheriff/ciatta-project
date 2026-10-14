@@ -393,8 +393,6 @@ const s = StyleSheet.create({
     marginTop: 12,
     backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
-    borderWidth: st,
-    borderColor: L.rule,
     paddingHorizontal: 14,
     overflow: 'hidden',
   },

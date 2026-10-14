@@ -4,8 +4,8 @@ import Svg, { Path } from 'react-native-svg';
 
 import type { SourceKind } from '../data/sample';
 import { displayCopy } from '../lib/displayCopy';
-import { C, font, GUTTER, RADIUS } from '../theme';
-import { L } from './surface';
+import { C, font, GUTTER } from '../theme';
+import { L, TILE_RADIUS } from './surface';
 import { GlassFill } from './frosted';
 
 // ── Icons ──────────────────────────────────────────────────────
@@ -412,7 +412,7 @@ export const s = StyleSheet.create({
   detailBody: { paddingHorizontal: GUTTER, paddingTop: 12, paddingBottom: 32 },
 
   secLabel: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 10 },
-  tag: { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
+  tag: { alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
   sourceFooter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -432,13 +432,11 @@ export const s = StyleSheet.create({
   segBar: {
     flexDirection: 'row',
     backgroundColor: C.fill,
-    borderRadius: 12,
+    borderRadius: 999,
     padding: 3,
     minHeight: 44,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.borderSub,
   },
-  seg: { minHeight: 38, paddingHorizontal: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  seg: { minHeight: 38, paddingHorizontal: 14, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   segFlex: { flex: 1 },
   // Selected the way a tile and a tab are selected: the shared tokens, so
   // the same gesture looks the same wherever it happens.
@@ -454,12 +452,12 @@ export const s = StyleSheet.create({
   secondary: { backgroundColor: C.fill },
   link: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
 
-  card: { backgroundColor: L.glass, borderRadius: RADIUS, padding: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, overflow: 'hidden' },
+  card: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 16, overflow: 'hidden' },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 44, paddingVertical: 11 },
   rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.separator },
   rowText: { flex: 1, paddingRight: 12 },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  openCard: { backgroundColor: L.glass, borderRadius: RADIUS, paddingVertical: 12, paddingHorizontal: 16, marginVertical: 4, overflow: 'hidden' },
+  openCard: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, paddingVertical: 12, paddingHorizontal: 16, marginVertical: 4, overflow: 'hidden' },
   openHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 32 },
   fact: {
     flexDirection: 'row',

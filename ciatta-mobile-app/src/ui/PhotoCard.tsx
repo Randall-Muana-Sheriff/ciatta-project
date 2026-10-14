@@ -36,7 +36,7 @@ export function PhotoCard({
 }
 
 const s = StyleSheet.create({
-  card: { borderRadius: 24, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.08)' },
-  image: { borderRadius: 24 },
+  card: { borderRadius: 22, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.08)' },
+  image: { borderRadius: 22 },
   body: { padding: 18, gap: 10, flexGrow: 1 },
 });

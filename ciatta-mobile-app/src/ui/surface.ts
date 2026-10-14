@@ -150,7 +150,7 @@ export function onTint(meaning: Meaning): string {
 
 // One corner radius for tiles. Bento only reads as bento when every tile
 // shares an edge treatment.
-export const TILE_RADIUS = 18;
+export const TILE_RADIUS = 22;
 
 // Editorial spacing. Whitespace is the only thing carrying hierarchy once
 // the palette is this quiet, so the steps are few and far apart rather than

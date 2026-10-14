@@ -93,8 +93,6 @@ const s = StyleSheet.create({
     padding: 10,
     borderRadius: TILE_RADIUS,
     backgroundColor: L.glass,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
     overflow: 'hidden',
   },
   pressed: { opacity: 0.7 },

@@ -9,7 +9,7 @@ import { chooseLogCategory } from '../lib/logHandoff';
 import { useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useData } from '../state/session';
-import { C, font, RADIUS } from '../theme';
+import { C, font } from '../theme';
 import { ListGroup, ListRow, Panel } from '../ui/chrome';
 import { ObservationCard } from '../ui/cycleInputs';
 import { DetailScreen, PrimaryButton, SecLabel, SecondaryButton, SourceFooter, Tag } from '../ui/kit';
@@ -17,7 +17,7 @@ import { FertilityStrip, LengthDots, MonthsSince, PostpartumTimeline } from '../
 import { experienceRows } from '../lib/experienceRows';
 import { hormoneView, phaseEffects } from '../lib/hormones';
 import { HormonesSection } from '../ui/HormonesSection';
-import { L } from '../ui/surface';
+import { L, TILE_RADIUS } from '../ui/surface';
 import { GlassFill } from '../ui/frosted';
 
 // Cycle home: timing, then what the cycle felt like, then how it's changing.
@@ -260,11 +260,9 @@ const cy = StyleSheet.create({
   tile: {
     flex: 1,
     backgroundColor: L.glass,
-    borderRadius: RADIUS,
+    borderRadius: TILE_RADIUS,
     padding: 14,
     gap: 2,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.borderSub,
     overflow: 'hidden',
   },
   gap: { marginTop: 16 },

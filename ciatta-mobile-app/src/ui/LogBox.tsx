@@ -6,7 +6,7 @@
 // opens another screen unless she asks for more.
 
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { Attachment } from '../lib/attachments';
 import { chipIcon } from '../lib/chipIcons';
@@ -17,7 +17,7 @@ import type { QuickEntry } from '../state/quickLogSave';
 import { font } from '../theme';
 import { Composer } from './composer';
 import { Icon } from './icons';
-import { L } from './surface';
+import { L, TILE_RADIUS } from './surface';
 import { GlassFill } from './frosted';
 
 
@@ -86,7 +86,8 @@ export function LogBox({
             </View>
           ) : null}
           <Text style={[font('title3', 'semibold'), s.prompt]}>{displayCopy(need?.prompt ?? '')}</Text>
-          <View style={s.chips}>
+          {/* One row, scrolled sideways when there are more than fit. */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips} keyboardShouldPersistTaps="handled">
             {(need?.chips ?? []).map((c) => {
               const done = logged.includes(c);
               return (
@@ -103,7 +104,7 @@ export function LogBox({
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
         </>
       ) : null}
 
@@ -140,11 +141,11 @@ export function LogBox({
 const s = StyleSheet.create({
   box: { padding: 16, gap: 12 },
   topics: { flexDirection: 'row', gap: 6 },
-  topic: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, backgroundColor: L.glass, overflow: 'hidden' },
+  topic: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: TILE_RADIUS, backgroundColor: L.glass, overflow: 'hidden' },
   topicOn: { backgroundColor: L.ink, borderColor: L.ink },
   // The prompt in statement type, as every screen's lead sentence is.
   prompt: { color: L.ink, lineHeight: 28, letterSpacing: -0.2 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chips: { flexDirection: 'row', gap: 8 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
   chipDone: { backgroundColor: L.ink, borderColor: L.ink },
   note: { color: L.meta },

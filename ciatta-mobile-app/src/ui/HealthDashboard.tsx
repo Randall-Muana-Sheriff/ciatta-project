@@ -26,7 +26,7 @@ import { CaloriesDial } from './CaloriesDial';
 import { runEnvironmentSync } from '../state/environmentRun';
 import { images } from './images';
 import type { JournalView } from '../data/rows';
-import { C, font, M, numeral, RADIUS } from '../theme';
+import { C, font, M, numeral } from '../theme';
 import { BarRow } from './cycleInputs';
 import { HairlineChart, LengthDots } from './lineCharts';
 import { Hypnogram } from './Hypnogram';
@@ -39,7 +39,7 @@ import { bloodOxygen, bloodPressure, type VitalCard } from '../lib/vitals';
 import { MetricChart } from './MetricChart';
 import { METRIC_HUE } from './metricHue';
 import { ChevronRight } from './kit';
-import { L } from './surface';
+import { L, TILE_RADIUS } from './surface';
 import { GlassFill } from './frosted';
 
 // Every metric on one organised page, drawn in hairlines. Colours follow the
@@ -307,14 +307,12 @@ export function HealthDashboard({
         {night ? <Hypnogram night={night} /> : null}
         <View style={d.tiles}>
           <View style={d.tile} accessible accessibilityLabel={`Total sleep ${fmtHours(sleepEntry.value)}${usual.sleep != null ? `, usual ${fmtHours(usual.sleep)}` : ''}`}>
-            <GlassFill />
             <Text style={[font('footnote'), { color: C.secondary }]}>{NAME.timeAsleep}</Text>
             <Text style={[numeral(20, 'medium'), { color: C.text }]}>{fmtHours(sleepEntry.value)}</Text>
             {usual.sleep != null ? <Text style={[font('caption1'), { color: C.secondary }]}>Usual {fmtHours(usual.sleep)}</Text> : null}
           </View>
           {timeInBed != null ? (
             <View style={d.tile} accessible accessibilityLabel={`Time in bed ${fmtHours(timeInBed)}, asleep ${Math.round((sleepEntry.value / timeInBed) * 100)} percent of it`}>
-              <GlassFill />
               <Text style={[font('footnote'), { color: C.secondary }]}>{NAME.timeInBed}</Text>
               <Text style={[numeral(20, 'medium'), { color: C.text }]}>{fmtHours(timeInBed)}</Text>
               <Text style={[font('caption1'), { color: C.secondary }]}>Asleep {Math.round((sleepEntry.value / timeInBed) * 100)}% of it</Text>
@@ -341,7 +339,6 @@ export function HealthDashboard({
         <View style={d.tiles}>
           {rhrEntry ? (
           <View style={d.tile}>
-            <GlassFill />
             <Stat
               label={NAME.rhr}
               value={`${Math.round(rhrEntry.value)} bpm`}
@@ -352,7 +349,6 @@ export function HealthDashboard({
           ) : null}
           {hrvEntry ? (
           <View style={d.tile}>
-            <GlassFill />
             <Stat
               label={NAME.hrv}
               value={`${Math.round(hrvEntry.value)} ms`}
@@ -745,11 +741,11 @@ const d = StyleSheet.create({
   calNote: { alignItems: 'center', gap: 2, marginTop: 6 },
   stack: { gap: 16, marginTop: 4 },
   pressed: { opacity: 0.55 },
-  card: { backgroundColor: L.glass, borderRadius: RADIUS, padding: 16, gap: 10, overflow: 'hidden' },
+  card: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 16, gap: 10, overflow: 'hidden' },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 32 },
   sleepTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   tiles: { flexDirection: 'row', gap: 10 },
-  tile: { flex: 1, backgroundColor: L.glass, borderRadius: 10, padding: 12, gap: 4, overflow: 'hidden' },
+  tile: { flex: 1, borderRadius: 10, padding: 12, gap: 4, overflow: 'hidden' },
   row3: { flexDirection: 'row', gap: 10 },
   stat: { flex: 1, gap: 1 },
   chartLabel: { color: C.secondary, marginTop: 4 },

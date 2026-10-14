@@ -32,6 +32,7 @@ import { PALETTES } from '../ui/scheme';
 
 import { MARK_TOP, Wordmark } from '../ui/Wordmark';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import { TILE_RADIUS } from '../ui/surface';
 import { GlassFill } from '../ui/frosted';
 
 // Set over a dark photograph, so it keeps the dark palette in either mode.
@@ -1120,12 +1121,10 @@ const s = StyleSheet.create({
   appleTile: {
     width: 38,
     height: 38,
-    borderRadius: 9,
+    borderRadius: TILE_RADIUS,
     backgroundColor: L.glass,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: LINE,
     overflow: 'hidden',
   },
   rowText: { flex: 1 },

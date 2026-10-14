@@ -39,8 +39,6 @@ const s = StyleSheet.create({
     padding: 14,
     backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
     overflow: 'hidden',
   },
   icon: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: L.statement },

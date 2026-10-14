@@ -43,7 +43,7 @@ import { Icon } from '../ui/icons';
 import { StoolPicture } from '../ui/stoolScale';
 import { takeLogCategory, takeLogMode } from '../lib/logHandoff';
 import { useQuickLogSave } from '../state/quickLogSave';
-import { L, SPACE } from '../ui/surface';
+import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { GlassFill } from '../ui/frosted';
 
 export function QuickLogScreen() {
@@ -382,9 +382,7 @@ const q = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
+    borderRadius: TILE_RADIUS,
     backgroundColor: L.glass,
     overflow: 'hidden',
   },
@@ -392,9 +390,7 @@ const q = StyleSheet.create({
   cat: {
     paddingVertical: 9,
     paddingHorizontal: 14,
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
+    borderRadius: TILE_RADIUS,
     backgroundColor: L.glass,
     overflow: 'hidden',
   },

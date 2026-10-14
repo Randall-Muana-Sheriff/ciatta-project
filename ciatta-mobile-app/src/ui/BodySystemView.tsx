@@ -158,9 +158,9 @@ export function BodySystemView({
                 accessibilityLabel={`${displayCopy(s.label)}. ${stateWords(s.lead ?? undefined)}${s.lead ? `. ${s.lead.title}` : ''}`}
                 style={[b.row, on && b.rowOn]}
               >
-                {/* The icon carries the system's colour, the same as its dot
-                    on the figure; the name stays white. */}
-                <Icon name={icons.get(s.label) ?? 'body'} size={18} color={SYSTEM_DOTS[s.label]?.color ?? C.text} weight={1.8} />
+                {/* Muted white at rest; the chosen system alone takes its
+                    colour, the same as its dot on the figure. One accent. */}
+                <Icon name={icons.get(s.label) ?? 'body'} size={18} color={on ? (SYSTEM_DOTS[s.label]?.color ?? C.text) : C.muted} weight={1.5} />
                 <Text
                   style={[font('footnote', on ? 'medium' : 'regular'), { color: C.text, flex: 1 }]}
                   numberOfLines={2}

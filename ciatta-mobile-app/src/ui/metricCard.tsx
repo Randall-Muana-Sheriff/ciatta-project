@@ -16,11 +16,10 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { displayCopy } from '../lib/displayCopy';
 import type { Trend } from '../lib/trend';
-import { font } from '../theme';
+import { font, numeral } from '../theme';
 import { Icon, type IconName } from './icons';
 import { Sparkline } from './sparkline';
 import { HUE, L, mark } from './surface';
-import { GlassFill } from './frosted';
 
 export type MetricCardProps = {
   label: string;
@@ -69,20 +68,19 @@ export function MetricCard({ label, value, note, from, trend, color, chart, icon
       accessible
       accessibilityLabel={`${label}, ${value ?? 'not recorded today'}${note && !missing ? `, ${note}` : ''}${spokenTrend}`}
     >
-      <GlassFill />
       <View style={s.head}>
         {icon ? (
           <View style={missing && s.iconMissing}>
-            <Icon name={icon} size={18} color={color ?? DOT[from]} weight={1.6} />
+            <Icon name={icon} size={14} color={L.meta} weight={1.5} />
           </View>
         ) : (
           <View style={[s.dot, { backgroundColor: color ?? DOT[from] }, missing && s.dotMissing]} />
         )}
-        <Text style={[font('caption1'), s.label]} numberOfLines={1}>
-          {displayCopy(label)}
+        <Text style={[font('caption2', 'medium'), s.label]} numberOfLines={1}>
+          {displayCopy(label).toUpperCase()}
         </Text>
       </View>
-      <Text style={[font('headline'), missing ? s.absent : s.value]} numberOfLines={1} adjustsFontSizeToFit>
+      <Text style={[missing ? font('subhead') : numeral(26, 'regular'), missing ? s.absent : s.value]} numberOfLines={1} adjustsFontSizeToFit>
         {value ?? 'Not yet'}
       </Text>
       {/* A note qualifies a figure, so with no figure there is nothing to
@@ -134,8 +132,6 @@ export function MetricCard({ label, value, note, from, trend, color, chart, icon
   );
 }
 
-const st = StyleSheet.hairlineWidth;
-
 export const METRIC_CARD_GAP = 10;
 
 const s = StyleSheet.create({
@@ -143,15 +139,12 @@ const s = StyleSheet.create({
   // enough that three sit in a row without the value shrinking to fit.
   card: {
     flex: 1,
+    // Plain, inside the one glass card that holds the grid: the figure
+    // carries the tile, not a box around it.
     minHeight: 74,
     justifyContent: 'center',
-    gap: 3,
-    backgroundColor: L.glass,
-    borderRadius: 14,
-    borderWidth: st,
-    borderColor: L.rule,
-    paddingVertical: 10,
-    paddingHorizontal: 11,
+    gap: 4,
+    paddingVertical: 8,
     // Nothing drawn inside a card leaves it.
     overflow: 'hidden',
   },
@@ -162,12 +155,12 @@ const s = StyleSheet.create({
   dot: { width: 4, height: 4, borderRadius: 2 },
   dotMissing: { backgroundColor: L.rule },
   iconMissing: { opacity: 0.35 },
-  label: { color: L.meta, flex: 1 },
-  value: { color: L.ink },
+  label: { color: L.meta, flex: 1, letterSpacing: 0.8 },
+  value: { color: L.ink, letterSpacing: -0.4 },
   absent: { color: L.meta },
   note: { color: L.meta },
   trend: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   // The figure keeps its full width; the line takes what is left.
-  change: { color: L.body, flexShrink: 0 },
+  change: { color: L.meta, flexShrink: 0 },
   line: { flex: 1, minWidth: 0, height: 16, alignItems: 'flex-end' },
 });

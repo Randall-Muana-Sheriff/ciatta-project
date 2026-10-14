@@ -228,7 +228,7 @@ const s = StyleSheet.create({
   input: { color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, marginTop: 4 },
   dateRow: { flexDirection: 'row', gap: 8 },
   part: { flex: 1, textAlign: 'center' },
-  card: { marginTop: 12, backgroundColor: L.glass, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, overflow: 'hidden' },
+  card: { marginTop: 12, backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 14, overflow: 'hidden' },
   head: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   fields: { flexDirection: 'row', gap: 10, marginTop: 8 },
 });

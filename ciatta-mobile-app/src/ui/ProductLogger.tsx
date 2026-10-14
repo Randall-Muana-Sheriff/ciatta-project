@@ -186,8 +186,6 @@ const p = StyleSheet.create({
   current: {
     backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
     padding: 16,
     gap: 6,
     overflow: 'hidden',

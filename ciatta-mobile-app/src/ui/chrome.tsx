@@ -6,7 +6,7 @@ import { GlassView } from 'expo-glass-effect';
 
 import { displayCopy } from '../lib/displayCopy';
 import type { Tab } from '../navigation';
-import { C, font, fonts, GUTTER, RADIUS } from '../theme';
+import { C, font, fonts, GUTTER } from '../theme';
 import { Icon, type IconName } from './icons';
 import { GLASS } from './glass';
 import { G } from './scheme';
@@ -326,10 +326,8 @@ const s = StyleSheet.create({
 
   panel: {
     backgroundColor: L.glass,
-    borderRadius: RADIUS,
+    borderRadius: TILE_RADIUS,
     padding: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.borderSub,
     overflow: 'hidden',
   },
   panelTitle: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
@@ -340,17 +338,13 @@ const s = StyleSheet.create({
   groupLight: {
     backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
     overflow: 'hidden',
   },
   rowSepLight: { borderTopColor: L.rule },
   group: {
     backgroundColor: L.glass,
-    borderRadius: RADIUS,
+    borderRadius: TILE_RADIUS,
     overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.borderSub,
   },
   groupFooter: { color: C.secondary, marginTop: 6, paddingHorizontal: 16 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 16, minHeight: 44 },
