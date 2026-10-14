@@ -18,7 +18,7 @@ import { headingFor } from '../ui/InsightCards';
 import { PhotoCard } from '../ui/PhotoCard';
 import { Sheet } from '../ui/Sheet';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
-import { CardFill } from '../ui/cardFill';
+import { CardPhoto } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
 export function InsightScreen() {
@@ -116,7 +116,7 @@ export function InsightScreen() {
 
           {connections.length ? (
             <View style={s.record}>
-              <CardFill />
+              <CardPhoto />
               <Text style={[font('headline'), s.ink]}>In your record</Text>
               {connections.map((c) => (
                 <Text key={c} style={[font('subhead'), s.recordLine]}>

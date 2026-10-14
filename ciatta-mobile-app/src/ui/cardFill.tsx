@@ -1,12 +1,22 @@
-// A content card's ground, drawn exactly as an insight card is: an image
-// from the same generator under the same wash (CardWash). Every card on a
-// screen takes a different image from the pool, in the order it mounts.
+// A card's ground.
+//
+// CardFill is the glow: coloured light at the top of the card fading into a
+// dark foot, soft rather than flat, with a fine grain over it (see glow.ts).
+// Each card on a screen takes a different pair of hues.
+//
+// CardPhoto is the photograph under the insight wash, kept for the screens
+// set that way on purpose: Care and the Visit prep it opens.
 
 import { useState } from 'react';
 import { Image, StyleSheet } from 'react-native';
+import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
+import { FOOT, glowFor, MID, mix, POOL, topFor } from './glow';
 import { useGroundPair } from './Ground';
 import { CardWash } from './PhotoCard';
+
+const GRAIN = require('../../assets/images/grain.png');
+let ids = 0;
 
 export const CARD_POOL: number[] = [
   require('../../assets/images/cards/00.jpg'),
@@ -31,6 +41,38 @@ export const CARD_POOL: number[] = [
 export const poolIndex = (n: number) => n % CARD_POOL.length;
 
 export function CardFill() {
+  const { next } = useGroundPair();
+  const [n] = useState(next);
+  const [id] = useState(() => `glow${ids++}`);
+  const pair = glowFor(n);
+  const top = topFor(pair);
+  return (
+    <>
+      <Svg style={StyleSheet.absoluteFill} viewBox="0 0 1 1" preserveAspectRatio="none" pointerEvents="none">
+        <Defs>
+          {/* The light falling from the top edge into the dark. */}
+          <LinearGradient id={`${id}l`} x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={mix(pair[0], FOOT, top)} />
+            <Stop offset="0.5" stopColor={mix(pair[0], FOOT, MID)} />
+            <Stop offset="1" stopColor={FOOT} />
+          </LinearGradient>
+          {/* The second hue, pooled at the top to one side, so the light
+              has a shape and blurs into the first. */}
+          <RadialGradient id={`${id}r`} cx="0.82" cy="0" rx="0.75" ry="0.6" fx="0.82" fy="0">
+            <Stop offset="0" stopColor={pair[1]} stopOpacity={POOL * top} />
+            <Stop offset="1" stopColor={pair[1]} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Rect x="0" y="0" width="1" height="1" fill={`url(#${id}l)`} />
+        <Rect x="0" y="0" width="1" height="1" fill={`url(#${id}r)`} />
+      </Svg>
+      <Image source={GRAIN} resizeMode="repeat" style={StyleSheet.absoluteFill} accessible={false} />
+    </>
+  );
+}
+
+// The photograph under the insight wash.
+export function CardPhoto() {
   const { next } = useGroundPair();
   const [n] = useState(next);
   return (

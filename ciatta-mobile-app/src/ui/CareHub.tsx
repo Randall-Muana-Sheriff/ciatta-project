@@ -21,7 +21,7 @@ import { Icon, type IconName } from './icons';
 import { images } from './images';
 import { PhotoCard } from './PhotoCard';
 import { L, SPACE, TILE_RADIUS } from './surface';
-import { CardFill } from './cardFill';
+import { CardPhoto } from './cardFill';
 import { G } from './scheme';
 
 const NEW_KINDS: { kind: RequestKind; label: string }[] = [
@@ -240,7 +240,7 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
             accessibilityLabel="Add a clinician"
             style={({ pressed }) => [s.member, s.addMember, pressed && s.pressed]}
           >
-            <CardFill />
+            <CardPhoto />
             <Icon name="plus" size={26} color={G.ink} />
             <Text style={[font('headline'), s.ink]}>Add a clinician</Text>
           </Pressable>
