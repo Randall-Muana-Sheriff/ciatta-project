@@ -17,7 +17,15 @@ const parse = (k: string) => {
   return new Date(y, m - 1, d);
 };
 
-export function symptomStrip(seen: ReadonlyMap<string, ReadonlyMap<string, number | null>>, range: Range, now: Date, max = 4): Strip {
+// With names, the rows are those symptoms in that order, logged or not:
+// the ones she chose to compare. Without, the ones she logged most.
+export function symptomStrip(
+  seen: ReadonlyMap<string, ReadonlyMap<string, number | null>>,
+  range: Range,
+  now: Date,
+  max = 4,
+  names?: readonly string[],
+): Strip {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekly = range === '90';
   const n = weekly ? 13 : Number(range);
@@ -38,6 +46,17 @@ export function symptomStrip(seen: ReadonlyMap<string, ReadonlyMap<string, numbe
     if (!hits) continue;
     const latest = [...days.entries()].filter(([, v]) => v != null).sort((a, b) => b[0].localeCompare(a[0]))[0];
     rows.push({ name, severity: latest ? (latest[1] as number) : null, cells, hits });
+  }
+  if (names?.length) {
+    return {
+      range,
+      cols,
+      labels,
+      rows: names.map((n) => {
+        const found = rows.find((r) => r.name === n);
+        return found ? { name: found.name, severity: found.severity, cells: found.cells } : { name: n, severity: null, cells: cols.map(() => null) };
+      }),
+    };
   }
   rows.sort((a, b) => b.hits - a.hits);
   return { range, cols, labels, rows: rows.slice(0, max).map(({ hits: _h, ...r }) => r) };

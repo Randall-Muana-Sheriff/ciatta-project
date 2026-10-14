@@ -28,6 +28,7 @@ import { DAY_READ, dayPatterns } from '../lib/dayPatterns';
 import { SymptomCompare } from '../ui/SymptomCompare';
 import { symptomStrip, type Range as StripRange } from '../lib/symptomStrip';
 import { symptomDays } from '../lib/symptomsView';
+import { useSymptomChoice } from '../state/symptomChoice';
 import type { IntradayPoint } from '../data/repo';
 import type { JournalView } from '../data/rows';
 import { actionPlan, type PlanItem, type PlanKey } from '../lib/actionPlan';
@@ -270,15 +271,14 @@ export function TodayScreen() {
     repo.loadJournal().then(setJournal).catch(() => {});
   }, [repo, nav.depth]);
   const [stripRange, setStripRange] = useState<StripRange>('7');
-  const strip = useMemo(
-    () =>
-      symptomStrip(
-        symptomDays({ signals, logs: (journal?.months ?? []).flatMap((m) => m.items), days, now: new Date() }),
-        stripRange,
-        new Date(),
-      ),
-    [signals, journal, days, stripRange],
+  // The symptoms she chose to follow and compare, and every day each was
+  // logged, from every place she logs them.
+  const [chosen, setChosen] = useSymptomChoice();
+  const seen = useMemo(
+    () => symptomDays({ signals, logs: (journal?.months ?? []).flatMap((m) => m.items), days, now: new Date() }),
+    [signals, journal, days],
   );
+  const strip = useMemo(() => symptomStrip(seen, stripRange, new Date(), 4, chosen), [seen, stripRange, chosen]);
 
   return (
     <ScrollView style={t.fill} contentContainerStyle={t.body}>
@@ -554,7 +554,16 @@ export function TodayScreen() {
         {/* Symptoms side by side, below the ways in. */}
         {state.state === 'content' ? (
           <View style={t.section}>
-            <SymptomCompare strip={strip} range={stripRange} onRange={setStripRange} onLog={logSymptoms} onAll={go('symptoms')} />
+            <SymptomCompare
+              strip={strip}
+              range={stripRange}
+              onRange={setStripRange}
+              seen={seen}
+              days={days}
+              chosen={chosen}
+              onChoose={setChosen}
+              onAll={go('symptoms')}
+            />
           </View>
         ) : null}
       </View>
