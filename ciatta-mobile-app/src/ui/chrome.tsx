@@ -2,13 +2,11 @@ import type { ReactNode } from 'react';
 import type { ViewStyle } from 'react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { GlassView } from 'expo-glass-effect';
 
 import { displayCopy } from '../lib/displayCopy';
 import type { Tab } from '../navigation';
 import { C, font, fonts, GUTTER } from '../theme';
 import { Icon, type IconName } from './icons';
-import { GLASS } from './glass';
 import { G } from './scheme';
 import { L, TILE_RADIUS } from './surface';
 import { ChevronRight } from './kit';
@@ -213,13 +211,9 @@ const TABS: { key: Tab; label: string; icon: IconName }[] = [
 // meet it, so the rounded edge stays a rounded edge instead of becoming a
 // shelf attached to the bottom of the screen.
 //
-// The bar is the one surface in the app that is glass rather than merely
-// translucent, and it is glass for a reason the cards do not have: her own
-// content scrolls underneath it. A card sits still over a still ground and
-// can transmit it; a bar that transmitted would have her sentences sliding
-// through it. Glass diffuses instead. Where there is no glass to be had, it
-// falls back to the near opaque fill it has always used, which solves the
-// same problem with less grace.
+// Drawn as the rest of the app now is: a plain surface that follows the
+// mode, with the selected tab on a soft fill and the plus as the one solid
+// pill.
 export function BottomNav({
   active,
   onTab,
@@ -250,7 +244,7 @@ export function BottomNav({
         accessibilityLabel="Track something"
         style={({ pressed }) => [s.track, pressed && s.pressed]}
       >
-        <Icon name="plus" size={26} color={L.onPill} weight={2} />
+        <Icon name="plus" size={26} color={G.onPill} weight={2} />
       </Pressable>
     </View>
   );
@@ -258,20 +252,14 @@ export function BottomNav({
 
 // The shared surface of both cards. Glass where there is glass, the old
 // near opaque fill where there is not.
+// The bar's surface: the same plain card the lists and the text box use,
+// white on light and a step below the ground on dark, with a hairline and
+// a soft lift so it reads as floating over what scrolls beneath it.
 function Card({ children, style, role }: { children: ReactNode; style: ViewStyle; role?: 'tablist' }) {
-  const Surface = GLASS ? GlassView : View;
   return (
-    <Surface
-      style={[s.card, GLASS ? s.cardGlass : s.cardPainted, style]}
-      accessibilityRole={role}
-      // Ignored by the plain View fallback. Regular rather than clear: a
-      // clear bar over a washed ground stops being a surface. The scheme
-      // is pinned dark because the app is, so the glass cannot resolve
-      // light under a system setting the rest of the app ignores.
-      {...(GLASS ? ({ glassEffectStyle: 'regular', colorScheme: 'dark' } as const) : {})}
-    >
+    <View style={[s.card, s.cardPlain, style]} accessibilityRole={role}>
       {children}
-    </Surface>
+    </View>
   );
 }
 
@@ -289,7 +277,7 @@ function TabButton({
   // Ink when selected, meta when not. The selected tab is also the only one
   // sitting on the lifted ground, so the state is carried by the ground
   // rather than by a colour spent on it.
-  const color = on ? C.text : C.muted;
+  const color = on ? G.ink : G.meta;
   return (
     <Pressable
       onPress={onPress}
@@ -383,9 +371,9 @@ const s = StyleSheet.create({
     borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: L.ink,
+    backgroundColor: G.pill,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
+    borderColor: G.pill,
     shadowColor: G.shadow,
     shadowOpacity: 0.1,
     shadowRadius: 18,
@@ -418,6 +406,7 @@ const s = StyleSheet.create({
   // No glass: the old fill, which is nearly opaque because it has to stop
   // the content by itself rather than diffusing it.
   cardPainted: { backgroundColor: G.bar },
+  cardPlain: { backgroundColor: G.card, borderColor: G.rule },
 
   tab: { flex: 1, height: 54, alignItems: 'center', justifyContent: 'center', gap: 3, borderRadius: 25 },
   // Alone in its card, Care has no siblings to divide width with, so it

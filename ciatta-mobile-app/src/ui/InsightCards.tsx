@@ -3,11 +3,9 @@
 // record, with how many sources stand behind it. Only the ones that
 // connect are shown.
 
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { openInsight } from '../lib/careHandoff';
 import { displayCopy } from '../lib/displayCopy';
-import { useNav } from '../navigation';
 import { useResearchInsights } from '../state/researchInsights';
 import { useInsightReactions } from '../state/insightReactions';
 import { PublisherLogo } from './PublisherLogo';
@@ -19,6 +17,8 @@ import { L } from './surface';
 import { G } from './scheme';
 import { SectionHeading } from './kit';
 import { chip } from './chip';
+import { InsightView } from '../screens/InsightScreen';
+import { Ground } from './Ground';
 
 // The heading images, generated for Ciatta in one style: a dark room,
 // light in two of the design system's hues, a soft figure out of focus.
@@ -38,10 +38,11 @@ const HEADINGS: Record<string, number> = {
 export const headingFor = (image: string) => HEADINGS[image] ?? HEADINGS['cycle-physiology'];
 
 export function InsightCards() {
-  const nav = useNav();
   const { reactions, react, of } = useInsightReactions();
   const { matches, library } = useResearchInsights(reactions);
   const [savedOnly, setSavedOnly] = useState(false);
+  // The insight she tapped, open in a sheet that slides up over Today.
+  const [open, setOpen] = useState<string | null>(null);
   const saved = library.filter((i) => of(i.id).saved);
   // Saved shows what she kept, connected or not; otherwise what connects.
   const shown = savedOnly ? saved.map((insight) => ({ insight, connections: matches.find((m) => m.insight.id === insight.id)?.connections ?? [] })) : matches;
@@ -68,10 +69,7 @@ export function InsightCards() {
         {shown.map(({ insight, connections }) => (
           <Pressable
             key={insight.id}
-            onPress={() => {
-              openInsight(insight.id);
-              nav.push('insight');
-            }}
+            onPress={() => setOpen(insight.id)}
             accessibilityRole="button"
             accessibilityLabel={`${insight.title}. ${insight.sources.length} sources`}
             style={({ pressed }) => [pressed && s.pressed]}
@@ -133,6 +131,11 @@ export function InsightCards() {
           </Pressable>
         ))}
       </ScrollView>
+      <Modal visible={open !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setOpen(null)}>
+        <Ground>
+          <InsightView id={open} onClose={() => setOpen(null)} sheet />
+        </Ground>
+      </Modal>
     </View>
   );
 }

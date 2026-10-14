@@ -24,6 +24,14 @@ import { G } from '../ui/scheme';
 export function InsightScreen() {
   const nav = useNav();
   const [id] = useState(() => takeInsight());
+  return <InsightView id={id} onClose={nav.back} />;
+}
+
+// One insight, whole. A page when opened from Bookmarks; a sheet sliding
+// up over Today when opened from the Insights section, where `sheet` turns
+// the back chevron into a close and drops the room kept for the tab bar.
+export function InsightView({ id, onClose, sheet = false }: { id: string | null; onClose: () => void; sheet?: boolean }) {
+  const nav = useNav();
   const { reactions, react, of } = useInsightReactions();
   const { matches, library } = useResearchInsights(reactions);
   const insight = useMemo(() => library.find((i) => i.id === id) ?? null, [library, id]);
@@ -33,11 +41,11 @@ export function InsightScreen() {
 
   return (
     <View style={s.fill}>
-      <ScrollView contentContainerStyle={{ paddingBottom: NAV_CLEARANCE + 60 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: (sheet ? 40 : NAV_CLEARANCE) + 60 }}>
         <PhotoCard source={headingFor(insight.image)} style={s.hero}>
           <View style={s.bar}>
-            <Pressable onPress={nav.back} accessibilityRole="button" accessibilityLabel="Back" hitSlop={8} style={s.circle}>
-              <Icon name="chevronLeft" size={20} color="#FFFFFF" />
+            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={sheet ? 'Close' : 'Back'} hitSlop={8} style={s.circle}>
+              <Icon name={sheet ? 'chevronDown' : 'chevronLeft'} size={20} color="#FFFFFF" />
             </Pressable>
             <Pressable
               onPress={() => void Share.share({ message: `${insight.title}\n\n${insight.highlights.map((h) => `• ${h}`).join('\n')}` })}
@@ -132,10 +140,11 @@ export function InsightScreen() {
       <Pressable
         onPress={() => {
           askCare(discussPrompt(insight.title));
+          if (sheet) onClose();
           nav.goTab('care');
         }}
         accessibilityRole="button"
-        style={({ pressed }) => [s.discuss, pressed && { opacity: 0.8 }]}
+        style={({ pressed }) => [s.discuss, sheet && s.discussInSheet, pressed && { opacity: 0.8 }]}
       >
         <Icon name="chat" size={16} color={G.onPill} />
         <Text style={[font('subhead', 'semibold'), { color: G.onPill }]}>Discuss</Text>
@@ -199,6 +208,7 @@ const s = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: G.pill,
   },
+  discussInSheet: { bottom: 40 },
   source: { paddingVertical: 14, flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   logos: { flexDirection: 'row' },
   reactions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
