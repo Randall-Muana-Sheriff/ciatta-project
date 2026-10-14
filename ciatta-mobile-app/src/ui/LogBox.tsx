@@ -1,9 +1,9 @@
 // Logging from Today, asking only for what Ciatta does not have yet: the
 // cycle during a period or when one is due, how she feels if nothing is
 // logged today, food when meals look missing for the hour. Each with quick
-// chips that log in one tap, and the box itself, right here: Speak opens
-// the mic, Type opens the keyboard, Photo opens the camera (a meal photo
-// goes to the scan). Nothing opens another screen unless she asks for more.
+// chips that log in one tap, and the box itself, right here, with its own
+// mic and its plus for a photo (a meal photo goes to the scan). Nothing
+// opens another screen unless she asks for more.
 
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -16,14 +16,9 @@ import { FLOW_CHIPS, type LogNeed } from '../lib/logNeeds';
 import type { QuickEntry } from '../state/quickLogSave';
 import { font } from '../theme';
 import { Composer } from './composer';
-import { Icon, type IconName } from './icons';
+import { Icon } from './icons';
 import { L } from './surface';
 
-const MODES: { key: 'voice' | 'type' | 'camera'; label: string; icon: IconName }[] = [
-  { key: 'voice', label: 'Speak', icon: 'mic' },
-  { key: 'type', label: 'Type', icon: 'chat' },
-  { key: 'camera', label: 'Photo', icon: 'camera' },
-];
 
 // A quick chip as an entry: flow words are said as a period with that flow,
 // so the record reads both.
@@ -48,7 +43,6 @@ export function LogBox({
   const [files, setFiles] = useState<Attachment[]>([]);
   const [logged, setLogged] = useState<string[]>([]);
   const [note, setNote] = useState<string | null>(null);
-  const [command, setCommand] = useState<{ mode: 'voice' | 'type' | 'camera'; n: number } | null>(null);
   // When what is missing changes (she logged it), lead with what is left.
   useEffect(() => {
     if (!needs.some((n) => n.key === topic)) setTopic(needs[0]?.key ?? 'symptoms');
@@ -130,26 +124,9 @@ export function LogBox({
             setFiles([]);
           });
         }}
-        command={command}
       />
       {note ? <Text style={[font('footnote'), s.note]}>{displayCopy(note)}</Text> : null}
 
-      <View style={s.modes}>
-        {MODES.map((m) => (
-          <Pressable
-            key={m.key}
-            onPress={() => setCommand((c) => ({ mode: m.key, n: (c?.n ?? 0) + 1 }))}
-            accessibilityRole="button"
-            accessibilityLabel={m.label}
-            style={({ pressed }) => [s.mode, pressed && s.pressed]}
-          >
-            <View style={[s.modeIcon, m.key === 'voice' && s.modeIconLead]}>
-              <Icon name={m.icon} size={22} color={m.key === 'voice' ? L.canvas : L.ink} />
-            </View>
-            <Text style={[font('caption1', 'semibold'), { color: L.body }]}>{m.label}</Text>
-          </Pressable>
-        ))}
-      </View>
       <Pressable onPress={onMore} accessibilityRole="button" hitSlop={8} style={s.more}>
         <Text style={[font('footnote', 'semibold'), { color: L.body }]}>More ways to log</Text>
         <Icon name="chevronRight" size={13} color={L.body} />
@@ -168,10 +145,6 @@ const s = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
   chipDone: { backgroundColor: L.ink, borderColor: L.ink },
   note: { color: L.meta },
-  modes: { flexDirection: 'row', justifyContent: 'space-around' },
-  mode: { alignItems: 'center', gap: 6, minWidth: 72 },
-  modeIcon: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: L.statement, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
-  modeIconLead: { backgroundColor: L.ink, borderColor: L.ink },
   more: { flexDirection: 'row', alignItems: 'center', gap: 2, alignSelf: 'center' },
   pressed: { opacity: 0.6 },
 });
