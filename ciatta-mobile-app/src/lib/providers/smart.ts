@@ -51,6 +51,18 @@ export const SCOPES = [
   'patient/Procedure.read',
   'patient/DiagnosticReport.read',
   'patient/DocumentReference.read',
+  'patient/Binary.read',
+  'patient/Medication.read',
+  'patient/Encounter.read',
+  'patient/Appointment.read',
+  'patient/Practitioner.read',
+  'patient/Organization.read',
+  'patient/Location.read',
+  'patient/Device.read',
+  'patient/FamilyMemberHistory.read',
+  'patient/Goal.read',
+  'patient/CarePlan.read',
+  'patient/Coverage.read',
 ] as const;
 
 // Keeping the connection alive past one session. Epic offers 6 and 12

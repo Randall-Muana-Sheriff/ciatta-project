@@ -26,7 +26,23 @@
 //   An unparseable resource is skipped, never half built. A record with
 //   a date and no value, or a value and no name, is not a record.
 
-export type ClinicalKind = 'lab' | 'condition' | 'medication' | 'allergy' | 'immunization' | 'procedure' | 'vital';
+export type ClinicalKind =
+  | 'lab'
+  | 'condition'
+  | 'medication'
+  | 'allergy'
+  | 'immunization'
+  | 'procedure'
+  | 'vital'
+  | 'report'
+  | 'note'
+  | 'encounter'
+  | 'appointment'
+  | 'device'
+  | 'family_history'
+  | 'goal'
+  | 'care_plan'
+  | 'coverage';
 
 export type ClinicalRecord = {
   // The resource id at the provider, so a re sync updates rather than
@@ -112,6 +128,10 @@ export function effectiveDay(r: Json): string | null {
     r.performedDateTime,
     obj(r.effectivePeriod)?.start,
     obj(r.performedPeriod)?.start,
+    r.date,
+    r.start,
+    r.startDate,
+    obj(r.period)?.start,
   ];
   for (const c of candidates) {
     const s = str(c);
@@ -130,6 +150,15 @@ const KIND: Record<string, ClinicalKind> = {
   AllergyIntolerance: 'allergy',
   Immunization: 'immunization',
   Procedure: 'procedure',
+  DiagnosticReport: 'report',
+  DocumentReference: 'note',
+  Encounter: 'encounter',
+  Appointment: 'appointment',
+  Device: 'device',
+  FamilyMemberHistory: 'family_history',
+  Goal: 'goal',
+  CarePlan: 'care_plan',
+  Coverage: 'coverage',
 };
 
 // Which vital signs are vitals rather than labs. FHIR marks them with a
@@ -146,6 +175,28 @@ function isVital(r: Json): boolean {
 // The name field differs per resource type. medicationCodeableConcept for
 // a medication, vaccineCode for an immunization, code for the rest.
 function nameOf(r: Json): string | null {
+  // Resources whose name lives somewhere of their own.
+  switch (str(r.resourceType)) {
+    case 'DocumentReference':
+      return codeableName(r.type) ?? str(r.description);
+    case 'Encounter':
+      return codeableName(arr(r.type)[0]) ?? codeableName(arr(r.serviceType)[0]) ?? str(obj(r.class)?.display);
+    case 'Appointment':
+      return codeableName(arr(r.serviceType)[0]) ?? str(r.description) ?? codeableName(r.appointmentType);
+    case 'Device':
+      return codeableName(r.type) ?? str(obj(arr(r.deviceName)[0])?.name);
+    case 'FamilyMemberHistory': {
+      const who = codeableName(r.relationship);
+      const what = codeableName(obj(arr(r.condition)[0])?.code);
+      return who && what ? `${who}: ${what}` : (what ?? who);
+    }
+    case 'Goal':
+      return codeableName(r.description);
+    case 'CarePlan':
+      return str(r.title) ?? codeableName(arr(r.category)[0]);
+    case 'Coverage':
+      return str(obj(arr(r.payor)[0])?.display) ?? codeableName(r.type);
+  }
   return (
     codeableName(r.code) ??
     codeableName(r.medicationCodeableConcept) ??
@@ -177,7 +228,7 @@ export function mapResource(resource: unknown): ClinicalRecord | null {
     value: quantity(r.valueQuantity) ?? codeableName(r.valueCodeableConcept),
     flag: interpretation(r.interpretation),
     effectiveOn: effectiveDay(r),
-    status: str(r.status) ?? str(r.clinicalStatus) ?? codeableName(r.clinicalStatus),
+    status: str(r.status) ?? str(r.lifecycleStatus) ?? str(r.clinicalStatus) ?? codeableName(r.clinicalStatus),
   };
 }
 

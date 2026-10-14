@@ -96,6 +96,40 @@ export const FETCH_ORDER = [
   'Procedure',
 ] as const;
 
+// The whole chart, as Epic's patient API answers it: each resource type
+// with the category it requires. Conditions live on four lists in Epic
+// (her problem list, health concerns, visit diagnoses and history), so
+// each is read. Appointments, longitudinal care plans and clinical notes
+// are only returned when asked for by category. A type a provider does
+// not publish answers 403 or 404, and the rest of the chart still comes.
+export type PlanEntry = { type: string; params?: Record<string, string> };
+export const FETCH_PLAN: readonly PlanEntry[] = [
+  { type: 'Condition', params: { category: 'problem-list-item' } },
+  { type: 'Condition', params: { category: 'health-concern' } },
+  { type: 'Condition', params: { category: 'encounter-diagnosis' } },
+  { type: 'Condition', params: { category: 'medical-history' } },
+  { type: 'MedicationRequest' },
+  { type: 'AllergyIntolerance' },
+  { type: 'Observation' },
+  { type: 'Immunization' },
+  { type: 'Procedure' },
+  { type: 'DiagnosticReport' },
+  { type: 'DocumentReference', params: { category: 'clinical-note' } },
+  { type: 'Encounter' },
+  { type: 'Appointment', params: { 'service-category': 'appointment' } },
+  { type: 'Device' },
+  { type: 'FamilyMemberHistory' },
+  { type: 'Goal' },
+  { type: 'CarePlan', params: { category: '38717003' } },
+  { type: 'Coverage' },
+];
+
+export function planQuery(base: string, entry: PlanEntry, patientId: string, count = 100): string {
+  const url = new URL(resourceQuery(base, entry.type, patientId, count));
+  for (const [k, v] of Object.entries(entry.params ?? {})) url.searchParams.set(k, v);
+  return url.toString();
+}
+
 // The query for one resource type, scoped to her patient id and nothing
 // else. The id is required: a query without it asks the server for every
 // patient it has, and a server that honoured that would be a breach.

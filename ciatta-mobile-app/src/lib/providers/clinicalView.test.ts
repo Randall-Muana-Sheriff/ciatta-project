@@ -113,3 +113,11 @@ test('nothing rendered carries a dash', () => {
   assert.ok(!/[—–]/.test(chartLine(view)));
   assert.ok(!/[—–]/.test(dayLabel('2026-03-14')));
 });
+
+test('the rest of her chart is grouped by what it is, newest first', () => {
+  const rec = (kind: string, id: string, on: string | null) =>
+    ({ sourceId: id, kind, name: id, value: null, flag: null, effectiveOn: on, status: null }) as unknown as Parameters<typeof chartView>[0][number];
+  const v = chartView([rec('report', 'r1', '2026-01-01'), rec('report', 'r2', '2026-03-01'), rec('note', 'n1', '2026-02-01'), rec('encounter', 'e1', '2026-02-01'), rec('appointment', 'a1', '2026-11-02'), rec('device', 'd1', null), rec('family_history', 'f1', null), rec('goal', 'g1', null), rec('care_plan', 'c1', null), rec('coverage', 'i1', null)]);
+  assert.deepEqual(v.reports.map((r) => r.sourceId), ['r2', 'r1']);
+  for (const k of ['notes', 'visits', 'appointments', 'devices', 'familyHistory', 'goals', 'carePlans', 'coverage'] as const) assert.equal(v[k].length, 1, k);
+});

@@ -39,6 +39,15 @@ export type ChartView = {
   allergies: ClinicalRecord[];
   immunizations: ClinicalRecord[];
   procedures: ClinicalRecord[];
+  reports: ClinicalRecord[];
+  notes: ClinicalRecord[];
+  visits: ClinicalRecord[];
+  appointments: ClinicalRecord[];
+  devices: ClinicalRecord[];
+  familyHistory: ClinicalRecord[];
+  goals: ClinicalRecord[];
+  carePlans: ClinicalRecord[];
+  coverage: ClinicalRecord[];
   // How many the provider withdrew. Counted rather than hidden entirely,
   // so a chart that looks shorter than she expects has an explanation.
   retracted: number;
@@ -89,6 +98,15 @@ export function chartView(records: readonly ClinicalRecord[]): ChartView {
     allergies: of('allergy'),
     immunizations: of('immunization'),
     procedures: of('procedure'),
+    reports: of('report'),
+    notes: of('note'),
+    visits: of('encounter'),
+    appointments: of('appointment'),
+    devices: of('device'),
+    familyHistory: of('family_history'),
+    goals: of('goal'),
+    carePlans: of('care_plan'),
+    coverage: of('coverage'),
     retracted,
   };
 }

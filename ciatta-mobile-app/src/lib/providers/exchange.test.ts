@@ -5,6 +5,8 @@ import {
   exchangeBody,
   failureLine,
   FETCH_ORDER,
+  FETCH_PLAN,
+  planQuery,
   isFailure,
   needsRefresh,
   readTokens,
@@ -112,4 +114,29 @@ test('every failure says nothing was shared, and leaks no protocol words', () =>
     assert.ok(!line.includes('_'), line);
     assert.ok(!/[—–]/.test(line), line);
   }
+});
+
+// ── The whole chart, in the shape Epic answers ───────────────────────
+
+test('the plan reads every part of her chart Ciatta keeps', () => {
+  const types = new Set(FETCH_PLAN.map((p) => p.type));
+  for (const t of ['Condition', 'MedicationRequest', 'AllergyIntolerance', 'Observation', 'Immunization', 'Procedure', 'DiagnosticReport', 'DocumentReference', 'Encounter', 'Appointment', 'Device', 'FamilyMemberHistory', 'Goal', 'CarePlan', 'Coverage']) {
+    assert.ok(types.has(t), t);
+  }
+});
+
+test('every planned query is scoped to her patient id', () => {
+  for (const p of FETCH_PLAN) assert.ok(planQuery('https://fhir.org/R4', p, 'patient-9').includes('patient=patient-9'), p.type);
+});
+
+test('conditions are read by each list Epic keeps them on', () => {
+  const cats = FETCH_PLAN.filter((p) => p.type === 'Condition').map((p) => p.params?.category);
+  assert.deepEqual(cats.sort(), ['encounter-diagnosis', 'health-concern', 'medical-history', 'problem-list-item']);
+});
+
+test('appointments, care plans and notes carry the category Epic requires', () => {
+  const q = (type: string) => planQuery('https://fhir.org/R4', FETCH_PLAN.find((p) => p.type === type)!, 'p');
+  assert.ok(q('Appointment').includes('service-category=appointment'));
+  assert.ok(q('CarePlan').includes('category=38717003'));
+  assert.ok(q('DocumentReference').includes('category=clinical-note'));
 });

@@ -120,6 +120,15 @@ export function ChartScreen() {
 
         <Standing title="Immunisations" records={view.immunizations} />
         <Standing title="Procedures" records={view.procedures} />
+        <Standing title="Reports and Imaging" records={view.reports} />
+        <Standing title="Clinical Notes" records={view.notes} />
+        <Standing title="Visits" records={view.visits} />
+        <Standing title="Appointments" records={view.appointments} />
+        <Standing title="Devices and Implants" records={view.devices} />
+        <Standing title="Family History" records={view.familyHistory} />
+        <Standing title="Goals" records={view.goals} />
+        <Standing title="Care Plans" records={view.carePlans} />
+        <Standing title="Coverage" records={view.coverage} />
 
         {view.retracted > 0 ? (
           <Text style={[font('caption1'), s.note]}>

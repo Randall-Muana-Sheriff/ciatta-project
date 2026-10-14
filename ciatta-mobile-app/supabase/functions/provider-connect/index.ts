@@ -21,12 +21,12 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import {
   exchangeBody,
   failureLine,
-  FETCH_ORDER,
   isFailure,
   needsRefresh,
   readTokens,
   refreshBody,
-  resourceQuery,
+  FETCH_PLAN,
+  planQuery,
 } from './exchange.ts';
 import { labFromResource, mapBundle } from './fhirMap.ts';
 
@@ -193,8 +193,9 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
   let written = 0;
   let skipped = 0;
 
-  for (const type of FETCH_ORDER) {
-    const res = await fetch(resourceQuery(conn.fhir_base_url, type, patientId), {
+  for (const entry of FETCH_PLAN) {
+    const type = entry.type;
+    const res = await fetch(planQuery(conn.fhir_base_url, entry, patientId), {
       headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/fhir+json' },
     });
     // A provider that does not hold a resource type answers 404 or 403.

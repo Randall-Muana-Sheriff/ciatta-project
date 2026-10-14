@@ -137,3 +137,10 @@ test('the well known document is found at the FHIR base, trailing slash or not',
     'https://fhir.slhs.org/api/FHIR/R4/.well-known/smart-configuration',
   );
 });
+
+test('Ciatta asks to read the whole chart, and to write nothing', () => {
+  for (const r of ['Patient', 'Observation', 'Condition', 'MedicationRequest', 'Medication', 'AllergyIntolerance', 'Immunization', 'Procedure', 'DiagnosticReport', 'DocumentReference', 'Binary', 'Encounter', 'Appointment', 'Practitioner', 'Organization', 'Location', 'Device', 'FamilyMemberHistory', 'Goal', 'CarePlan', 'Coverage']) {
+    assert.ok(SCOPES.includes(`patient/${r}.read` as (typeof SCOPES)[number]), r);
+  }
+  for (const s of SCOPES) assert.ok(!/\.(write|\*)$|\.(c|u|d)$/.test(s), `${s} is not read only`);
+});
