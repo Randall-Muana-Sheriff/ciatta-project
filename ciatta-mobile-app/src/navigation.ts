@@ -50,7 +50,8 @@ export type Screen =
   | 'gut'
   | 'careRequest'
   | 'clinician'
-  | 'insight';
+  | 'insight'
+  | 'bookmarks';
 
 export type Nav = {
   tab: Tab;

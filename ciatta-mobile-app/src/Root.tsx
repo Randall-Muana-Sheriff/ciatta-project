@@ -46,6 +46,7 @@ import { NutritionTargetsScreen } from './screens/NutritionTargetsScreen';
 import { GutScreen } from './screens/GutScreen';
 import { CareRequestScreen } from './screens/CareRequestScreen';
 import { ClinicianScreen } from './screens/ClinicianScreen';
+import { BookmarksScreen } from './screens/BookmarksScreen';
 import { InsightScreen } from './screens/InsightScreen';
 import { QuickLogScreen } from './screens/QuickLogScreen';
 import { SleepScreen } from './screens/SleepScreen';
@@ -99,6 +100,7 @@ const DETAIL_SCREENS: Record<Screen, ComponentType> = {
   careRequest: CareRequestScreen,
   clinician: ClinicianScreen,
   insight: InsightScreen,
+  bookmarks: BookmarksScreen,
   nutritionTargets: NutritionTargetsScreen,
   foodScan: FoodScanScreen,
   procedure: ProcedureScreen,

@@ -22,7 +22,7 @@ const LAVENDER = '#B188F3';
 const STYLE: Record<HormoneKey, { color: string; dash?: string; width: number }> = {
   estradiol: { color: LAVENDER, width: 2 },
   progesterone: { color: '#F2A4B8', dash: '6 4', width: 2 },
-  lh: { color: '#E8E8EE', dash: '2 3', width: 1.5 },
+  lh: { color: L.body, dash: '2 3', width: 1.5 },
   fsh: { color: '#8C93A3', dash: '1 3', width: 1.5 },
 };
 const LETTER: Record<ClinicalPhase, string> = { Menstrual: 'M', Follicular: 'F', Ovulatory: 'O', Luteal: 'L' };
@@ -58,7 +58,7 @@ export function HormonesSection({ view, effects }: { view: HormoneView; effects:
                   width={Math.max(4, x2 - x1)}
                   height={HEIGHT}
                   rx={10}
-                  fill={on ? 'rgba(177, 136, 243, 0.16)' : 'rgba(255, 255, 255, 0.04)'}
+                  fill={on ? 'rgba(177, 136, 243, 0.16)' : L.recessed}
                   stroke={on ? LAVENDER : 'transparent'}
                   strokeWidth={on ? 1.5 : 0}
                 />
@@ -157,7 +157,7 @@ const h = StyleSheet.create({
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 10 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   rows: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  tile: { flexBasis: '47%', flexGrow: 1, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: 10, gap: 2 },
+  tile: { flexBasis: '47%', flexGrow: 1, backgroundColor: L.recessed, borderRadius: 10, padding: 10, gap: 2 },
   ink: { color: L.ink },
   body: { color: L.body, lineHeight: 21 },
   meta: { color: L.meta },

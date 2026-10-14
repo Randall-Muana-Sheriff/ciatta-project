@@ -9,6 +9,7 @@ import type { Tab } from '../navigation';
 import { C, font, fonts, GUTTER, RADIUS } from '../theme';
 import { Icon, type IconName } from './icons';
 import { GLASS } from './glass';
+import { G } from './scheme';
 import { L, TILE_RADIUS } from './surface';
 import { ChevronRight } from './kit';
 
@@ -382,7 +383,7 @@ const s = StyleSheet.create({
     backgroundColor: L.ink,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,
-    shadowColor: '#18191B',
+    shadowColor: G.shadow,
     shadowOpacity: 0.1,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 6 },
@@ -402,7 +403,7 @@ const s = StyleSheet.create({
     // Lifted off the page rather than drawn onto it. Low opacity and a
     // wide spread: a floating bar needs to read as above the content
     // without announcing a shadow.
-    shadowColor: '#18191B',
+    shadowColor: G.shadow,
     shadowOpacity: 0.1,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 6 },
@@ -413,7 +414,7 @@ const s = StyleSheet.create({
   cardGlass: {},
   // No glass: the old fill, which is nearly opaque because it has to stop
   // the content by itself rather than diffusing it.
-  cardPainted: { backgroundColor: 'rgba(20, 23, 28, 0.94)' },
+  cardPainted: { backgroundColor: G.bar },
 
   tab: { flex: 1, height: 54, alignItems: 'center', justifyContent: 'center', gap: 3, borderRadius: 25 },
   // Alone in its card, Care has no siblings to divide width with, so it

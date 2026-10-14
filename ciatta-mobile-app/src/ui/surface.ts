@@ -65,6 +65,11 @@ export const L = {
   // decoration, so it has to clear 4.5:1. It clears about 9:1 here, because
   // the smallest type is the type that needs the contrast most.
   meta: '#B2B7BE',
+
+  // The primary action: a pill in the ink colour, so it is white on dark
+  // and near black on light, and the label is the ground's own colour.
+  pill: '#FFFFFF',
+  onPill: '#0C0E11',
 } as const;
 
 export type Meaning =

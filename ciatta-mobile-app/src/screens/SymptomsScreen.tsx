@@ -78,7 +78,7 @@ export function SymptomsScreen() {
                 </Text>
                 <View style={s.cells}>
                   {row.counts.map((n, i) => (
-                    <View key={i} style={[s.cell, { backgroundColor: n ? C.violet : 'rgba(255,255,255,0.05)', opacity: n ? 0.3 + (n / most) * 0.7 : 1 }]} />
+                    <View key={i} style={[s.cell, { backgroundColor: n ? C.violet : L.recessed, opacity: n ? 0.3 + (n / most) * 0.7 : 1 }]} />
                   ))}
                 </View>
               </View>

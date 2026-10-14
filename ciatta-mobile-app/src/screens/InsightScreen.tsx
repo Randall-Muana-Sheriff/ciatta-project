@@ -134,8 +134,8 @@ export function InsightScreen() {
         accessibilityRole="button"
         style={({ pressed }) => [s.discuss, pressed && { opacity: 0.8 }]}
       >
-        <Icon name="chat" size={16} color="#0C0E11" />
-        <Text style={[font('subhead', 'semibold'), { color: '#0C0E11' }]}>Discuss</Text>
+        <Icon name="chat" size={16} color={L.onPill} />
+        <Text style={[font('subhead', 'semibold'), { color: L.onPill }]}>Discuss</Text>
       </Pressable>
 
       <Sheet visible={sourcesOpen} title="Sources" onDone={() => setSourcesOpen(false)}>
@@ -194,7 +194,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 18,
     minHeight: 46,
     borderRadius: 999,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: L.pill,
   },
   source: { paddingVertical: 14, flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   logos: { flexDirection: 'row' },

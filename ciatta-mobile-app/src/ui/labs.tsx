@@ -70,7 +70,7 @@ export function LabRangeBar({ result, height = 6, labels = false }: { result: La
 
 const t = StyleSheet.create({
   tag: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start' },
-  track: { backgroundColor: 'rgba(255, 255, 255, 0.08)', position: 'relative' },
+  track: { backgroundColor: L.rule, position: 'relative' },
   band: { position: 'absolute', top: 0, bottom: 0, backgroundColor: 'rgba(94, 211, 196, 0.35)' },
   dot: { position: 'absolute', borderWidth: 2, borderColor: L.canvas },
   ends: { height: 16, position: 'relative', marginTop: 2 },

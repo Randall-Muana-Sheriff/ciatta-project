@@ -17,6 +17,7 @@ import { SignInScreen } from './src/screens/SignInScreen';
 import { CycleStoreProvider } from './src/state/cycleStore';
 import { SessionProvider, useSession } from './src/state/session';
 import { C } from './src/theme';
+import { G } from './src/ui/scheme';
 
 // Signed out sees sign in; the example person and her own record each get a
 // fresh store, so nothing carries from one into the other.
@@ -96,7 +97,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       {/* Light content on a dark ground, everywhere. */}
-      <StatusBar style="light" />
+      <StatusBar style={G.statusBar} />
       <SessionProvider>
         <Gate />
       </SessionProvider>

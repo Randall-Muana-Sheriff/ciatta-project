@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buildContext } from './agent/proactive';
-import { INSIGHTS, matchInsights } from './insights';
+import { INSIGHTS, matchInsights, savedInsights } from './insights';
 
 const NOW = new Date(2026, 9, 28, 10);
 const iso = (n: number) => {
@@ -83,4 +83,15 @@ test('Ciatta learns from her reactions: liked and saved topics rise, a thumbs do
   assert.deepEqual(liked.slice(0, 2).map((m) => m.insight.id), ['hormones-cycle', 'sleep-cycle']);
   // A thumbs down hides that insight.
   assert.ok(!rankInsights(matches, { bristol: { reaction: 'down', saved: false } }).some((m) => m.insight.id === 'bristol'));
+});
+
+test('bookmarks list what she saved, in library order, and nothing else', () => {
+  const [a, b, c] = INSIGHTS;
+  const saved = savedInsights([a, b, c], {
+    [c.id]: { reaction: null, saved: true },
+    [a.id]: { reaction: 'down', saved: true },
+    [b.id]: { reaction: 'up', saved: false },
+  });
+  assert.deepEqual(saved.map((i) => i.id), [a.id, c.id]);
+  assert.deepEqual(savedInsights([a, b], {}), []);
 });

@@ -27,6 +27,11 @@ import { displayCopy } from '../lib/displayCopy';
 import { userFacingError } from '../lib/userFacingError';
 import { type Screen, useNav } from '../navigation';
 import { useCycle } from '../state/cycleStore';
+import { useColorScheme } from '../state/colorScheme';
+import { useInsightReactions } from '../state/insightReactions';
+import { useResearchInsights } from '../state/researchInsights';
+import { savedInsights } from '../lib/insights';
+import { SCHEME_LABEL, SCHEMES } from '../ui/scheme';
 import { useInsights } from '../state/insights';
 import { useData, useRepo, useSession } from '../state/session';
 import { askForWeather, weatherIsOn } from '../state/environmentRun';
@@ -568,6 +573,35 @@ function Connections({ onOpen }: { onOpen: (screen: Screen) => void }) {
 
 // ── Settings: sources, notifications, privacy, account ────────
 
+// The landing page's questions, which is where the help lives: one set of
+// answers, kept on the site, rather than a second copy in the app.
+const HELP_URL = 'https://ciatta.io/member/#q-heading';
+
+// Light, Dark, or the phone's own setting. Choosing reloads the app so
+// every surface takes the new colours together.
+function AppearanceGroup() {
+  const { scheme, choose } = useColorScheme();
+  return (
+    <ListGroup header="Appearance" footer="System follows your iPhone. Ciatta restarts briefly to change.">
+      {SCHEMES.map((x, n) => (
+        <ListRow key={x} first={n === 0} title={SCHEME_LABEL[x]} selected={scheme === x} onPress={() => void choose(x)} />
+      ))}
+    </ListGroup>
+  );
+}
+
+function LibraryGroup({ onOpen }: { onOpen: (screen: Screen) => void }) {
+  const { reactions } = useInsightReactions();
+  const { library } = useResearchInsights(reactions);
+  const n = savedInsights(library, reactions).length;
+  return (
+    <ListGroup header="Saved and Help">
+      <ListRow first title="Bookmarks" sub={n ? `${n} saved` : 'Nothing saved yet'} onPress={() => onOpen('bookmarks')} />
+      <ListRow title="Help Center" sub="Answers to common questions" onPress={() => void WebBrowser.openBrowserAsync(HELP_URL)} />
+    </ListGroup>
+  );
+}
+
 // A device source says only its status, Connected or Synced; the kind is
 // shown for labs and her own logs, where it is not obvious.
 const KIND_LABEL: Record<SourceKind, string> = { measured: 'Synced', lab: 'Lab', logged: 'You logged' };
@@ -642,6 +676,9 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
 
   return (
     <View style={p.stack}>
+      <AppearanceGroup />
+      <LibraryGroup onOpen={onOpen} />
+
       <ListGroup header="Notifications" footer="No nudges to log, and no reminders to take anything.">
         <ListRow
           first

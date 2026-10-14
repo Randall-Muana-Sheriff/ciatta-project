@@ -27,16 +27,18 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
+import { G } from './scheme';
 import { BASE, type Meaning } from './surface';
 
 // The ground is named by meaning now, because the hue is the semantic
 // colour rather than its pale print.
 export type GroundHue = Meaning;
 
-// Graphite, which every wash sits over.
-const TOP = '#14171C';
-const MID = '#0C0E11';
-const FOOT = '#07080A';
+// Graphite on dark, warm paper on light, which every wash sits over. Read
+// from the resolved scheme, which is set before this module loads.
+const TOP = G.top;
+const MID = G.mid;
+const FOOT = G.foot;
 
 export function Ground({
   children,
@@ -75,16 +77,16 @@ export function GroundLayer({ from = 'measured', to = 'timeDepth' }: { from?: Gr
           {/* The first hue, pooled behind the top of the screen where the
               eye enters it. */}
           <RadialGradient id="g-from" cx="18%" cy="2%" rx="105%" ry="58%">
-            <Stop offset="0" stopColor={BASE[from]} stopOpacity={0.2} />
-            <Stop offset="0.55" stopColor={BASE[from]} stopOpacity={0.07} />
+            <Stop offset="0" stopColor={BASE[from]} stopOpacity={G.washFrom} />
+            <Stop offset="0.55" stopColor={BASE[from]} stopOpacity={G.washFrom * 0.35} />
             <Stop offset="1" stopColor={BASE[from]} stopOpacity={0} />
           </RadialGradient>
 
           {/* The second, pooled low and to the other side, so the two meet
               across the middle of the screen rather than stacking. */}
           <RadialGradient id="g-to" cx="88%" cy="76%" rx="95%" ry="55%">
-            <Stop offset="0" stopColor={BASE[to]} stopOpacity={0.16} />
-            <Stop offset="0.6" stopColor={BASE[to]} stopOpacity={0.05} />
+            <Stop offset="0" stopColor={BASE[to]} stopOpacity={G.washTo} />
+            <Stop offset="0.6" stopColor={BASE[to]} stopOpacity={G.washTo * 0.32} />
             <Stop offset="1" stopColor={BASE[to]} stopOpacity={0} />
           </RadialGradient>
         </Defs>

@@ -129,7 +129,7 @@ type Tone = 'amber' | 'neutral' | 'orange' | 'in' | 'low' | SourceKind;
 const TONES: Record<Tone, { bg: string; fg: string }> = {
   amber: { bg: C.amberBg, fg: C.amber },
   neutral: { bg: C.fill, fg: C.secondary },
-  orange: { bg: '#3A2410', fg: C.orange },
+  orange: { bg: C.amberBg, fg: C.orange },
   in: { bg: C.inBg, fg: C.inText },
   low: { bg: C.lowBg, fg: C.lowText },
   logged: { bg: C.loggedBg, fg: C.loggedInk },
@@ -237,7 +237,7 @@ export function PrimaryButton({ label, onPress, disabled = false }: { label: str
       accessibilityState={{ disabled }}
       style={({ pressed }) => [s.button, s.primary, disabled && s.disabled, pressed && s.pressed]}
     >
-      <Text style={[font('headline'), { color: '#0C0E11' }]}>{label}</Text>
+      <Text style={[font('headline'), { color: L.onPill }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -445,7 +445,7 @@ export const s = StyleSheet.create({
   button: { minHeight: 50, borderRadius: 25, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
   // The white pill, as the Your Care cards set their actions: the one
   // primary action on any screen.
-  primary: { backgroundColor: '#FFFFFF', borderRadius: 999 },
+  primary: { backgroundColor: L.pill, borderRadius: 999 },
   statement: { color: L.ink, lineHeight: 28, letterSpacing: -0.2 },
   statementRest: { color: L.body, lineHeight: 23, marginTop: 6 },
   disabled: { opacity: 0.4 },

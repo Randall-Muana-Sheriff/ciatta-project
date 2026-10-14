@@ -263,3 +263,9 @@ export function rankInsights(matches: readonly InsightMatch[], reactions: Readon
     .sort((a, b) => b.s - a.s || a.i - b.i)
     .map((x) => x.m);
 }
+
+// What she bookmarked, connected to today or not. A save outlives a thumbs
+// down: keeping something is the stronger signal of the two.
+export function savedInsights(library: ResearchInsight[], reactions: Record<string, InsightReaction>): ResearchInsight[] {
+  return library.filter((i) => reactions[i.id]?.saved);
+}
