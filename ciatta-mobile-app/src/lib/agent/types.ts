@@ -114,4 +114,7 @@ export type Turn = {
   // explicit that Ciatta does not open a file, and the composer says so
   // under the box.
   attachments?: readonly { id: string; kind: string; name: string }[];
+  // Asked in this sitting, so the screen shows it being worked out and
+  // written rather than appearing whole.
+  fresh?: boolean;
 };

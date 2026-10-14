@@ -29,7 +29,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { respond, type Record as AgentRecord } from '../lib/agent/capabilities';
 import { classify, mentionsLab } from '../lib/agent/classify';
@@ -56,6 +56,7 @@ import { Eyebrow } from '../ui/bento';
 import { Composer } from '../ui/composer';
 import { AgentAvatar } from '../ui/AgentAvatar';
 import { onCareAsk, takeCareAsk } from '../lib/careHandoff';
+import { progressSteps, revealWords } from '../lib/agent/progress';
 import { Icon } from '../ui/icons';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 
@@ -234,6 +235,9 @@ export function CareScreen() {
   const cards = useMemo(() => capabilityCards(record), [record]);
   const ready = useMemo(() => cards.filter((c) => c.ready), [cards]);
 
+  // Keeps the newest words in view while an answer is written out.
+  const grow = useCallback(() => scroller.current?.scrollToEnd({ animated: true }), []);
+
   const send = useCallback(
     (text: string) => {
       const message = text.trim();
@@ -254,7 +258,7 @@ export function CareScreen() {
       setTurns((prev) => [
         ...prev,
         { id: `${at}-her`, role: 'her', text: message, at, attachments: files },
-        { id: `${at}-ciatta`, role: 'ciatta', text: said, at, answer, worded },
+        { id: `${at}-ciatta`, role: 'ciatta', text: said, at, answer, worded, fresh: true },
       ]);
       setDraft('');
       setFiles([]);
@@ -395,7 +399,12 @@ export function CareScreen() {
                     : null}
                 </View>
               ) : (
-                <AnswerBlock key={turn.id} turn={turn} onOpen={openSuggestion} />
+                <AnswerBlock
+                  key={turn.id}
+                  turn={turn}
+                  onOpen={openSuggestion}
+                  onGrow={grow}
+                />
               ),
             )}
           </View>
@@ -425,22 +434,100 @@ export function CareScreen() {
   );
 }
 
-function AnswerBlock({ turn, onOpen }: { turn: Turn; onOpen: (sug: Suggestion) => void }) {
+// Three dots breathing in turn: the agent at work.
+function Thinking() {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(Animated.timing(v, { toValue: 3, duration: 900, easing: Easing.linear, useNativeDriver: true }));
+    loop.start();
+    return () => loop.stop();
+  }, [v]);
+  return (
+    <View style={s.dots}>
+      {[0, 1, 2].map((i) => (
+        <Animated.View
+          key={i}
+          style={[
+            s.thinkDot,
+            { opacity: v.interpolate({ inputRange: [0, i, i + 0.5, i + 1, 3], outputRange: [0.25, 0.25, 1, 0.25, 0.25], extrapolate: 'clamp' }) },
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
+
+// How long each step shows, and how fast the answer is written out.
+const STEP_MS = 520;
+const WORDS_PER_TICK = 2;
+const TICK_MS = 45;
+
+function AnswerBlock({ turn, onOpen, onGrow }: { turn: Turn; onOpen: (sug: Suggestion) => void; onGrow: () => void }) {
   const [sources, setSources] = useState(false);
   const a = turn.answer;
+  // Worked, then written: the steps this answer took, one after another,
+  // then its words a few at a time. A turn from earlier, or Reduce
+  // Motion, shows whole.
+  const steps = useMemo(() => (a ? progressSteps(a) : []), [a]);
+  const total = turn.text.split(' ').length;
+  const [step, setStep] = useState(turn.fresh ? 0 : steps.length);
+  const [words, setWords] = useState(turn.fresh ? 0 : total);
+  useEffect(() => {
+    let cancelled = false;
+    AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
+      if (reduce && !cancelled) {
+        setStep(steps.length);
+        setWords(total);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [steps.length, total]);
+  useEffect(() => {
+    if (step < steps.length) {
+      const t = setTimeout(() => setStep((n) => n + 1), STEP_MS);
+      return () => clearTimeout(t);
+    }
+    if (words < total) {
+      const t = setTimeout(() => {
+        setWords((n) => Math.min(total, n + WORDS_PER_TICK));
+        onGrow();
+      }, TICK_MS);
+      return () => clearTimeout(t);
+    }
+    return undefined;
+  }, [step, words, steps.length, total, onGrow]);
+  const working = step < steps.length;
+  const writing = !working && words < total;
   if (!a) return null;
+  if (working) {
+    return (
+      <View style={s.answer} accessibilityLiveRegion="polite" accessibilityLabel={`${steps[step]}`}>
+        {steps.slice(0, step + 1).map((label, n) => (
+          <View key={label} style={s.stepRow}>
+            {n < step ? <Icon name="check" size={13} color={L.meta} /> : <Thinking />}
+            <Text style={[font('footnote', n === step ? 'semibold' : 'regular'), n === step ? s.stepNow : s.stepDone]}>{label}</Text>
+          </View>
+        ))}
+      </View>
+    );
+  }
   const escalating = a.capability === 'escalate';
   return (
     <View style={[s.answer, escalating && s.answerUrgent]}>
       {escalating ? <Eyebrow>Worth getting seen</Eyebrow> : null}
-      <Text style={[font('body'), s.answerText]}>{displayCopy(turn.text)}</Text>
+      <Text style={[font('body'), s.answerText]}>
+        {displayCopy(revealWords(turn.text, words))}
+        {writing ? <Text style={s.caret}>{' ▍'}</Text> : null}
+      </Text>
 
       {/*
         What the sentence was built from, one tap away: a line with a dot
         for each kind of source, opening to the facts themselves. Every
         answer carries them; the screen just does not lead with them.
       */}
-      {a.facts.length ? (
+      {!writing && a.facts.length ? (
         <Pressable
           onPress={() => setSources((v) => !v)}
           accessibilityRole="button"
@@ -469,7 +556,7 @@ function AnswerBlock({ turn, onOpen }: { turn: Turn; onOpen: (sug: Suggestion) =
         </View>
       ) : null}
 
-      {a.abstained ? (
+      {!writing && a.abstained ? (
         <Text style={[font('caption1'), s.abstained]}>
           {a.abstained === 'no_data'
             ? 'Not enough in your record yet.'
@@ -479,7 +566,7 @@ function AnswerBlock({ turn, onOpen }: { turn: Turn; onOpen: (sug: Suggestion) =
         </Text>
       ) : null}
 
-      {a.suggestions.length ? (
+      {!writing && a.suggestions.length ? (
         <View style={s.suggestions}>
           {a.suggestions.map((sug) => (
             <Pressable
@@ -500,6 +587,12 @@ function AnswerBlock({ turn, onOpen }: { turn: Turn; onOpen: (sug: Suggestion) =
 const st = StyleSheet.hairlineWidth;
 
 const s = StyleSheet.create({
+  stepRow: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 22 },
+  stepNow: { color: L.ink },
+  stepDone: { color: L.meta },
+  dots: { flexDirection: 'row', gap: 3, width: 13, alignItems: 'center' },
+  thinkDot: { width: 3.5, height: 3.5, borderRadius: 2, backgroundColor: L.ink },
+  caret: { color: L.meta },
   howLine: { color: L.meta, marginTop: 8, lineHeight: 19 },
   sourcesToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', minHeight: 32 },
   fill: { flex: 1 },
