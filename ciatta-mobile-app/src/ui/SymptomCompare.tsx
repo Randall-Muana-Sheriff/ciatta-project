@@ -245,7 +245,7 @@ function SymptomPicker({ visible, chosen, logged, onDone }: { visible: boolean; 
 const s = StyleSheet.create({
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   all: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  card: { marginTop: 10, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, overflow: 'hidden' },
+  card: { marginTop: 10, backgroundColor: L.glass, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, overflow: 'hidden' },
   ranges: { flexDirection: 'row', gap: 6, marginBottom: 12 },
   range: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: L.statement },
   rangeOn: { backgroundColor: HUE.measured },

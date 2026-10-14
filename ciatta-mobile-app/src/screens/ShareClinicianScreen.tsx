@@ -185,7 +185,7 @@ const st = StyleSheet.hairlineWidth;
 const s = StyleSheet.create({
   lede: { color: L.ink, lineHeight: 24, marginBottom: SPACE.block },
   meta: { color: L.meta, marginTop: 4 },
-  card: { backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: st, borderColor: L.rule, paddingHorizontal: 14, paddingVertical: 6, marginTop: 10, overflow: 'hidden' },
+  card: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, borderWidth: st, borderColor: L.rule, paddingHorizontal: 14, paddingVertical: 6, marginTop: 10, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
   divided: { borderTopWidth: st, borderTopColor: L.rule },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingVertical: 8 },

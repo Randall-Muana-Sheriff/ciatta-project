@@ -201,7 +201,7 @@ const s = StyleSheet.create({
   group: { marginTop: SPACE.block, paddingHorizontal: GUTTER },
   card: {
     marginTop: SPACE.tight,
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
     borderWidth: st,
     borderColor: L.rule,

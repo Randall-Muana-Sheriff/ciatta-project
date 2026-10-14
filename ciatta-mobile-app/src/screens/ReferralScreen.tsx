@@ -184,7 +184,7 @@ export function ReferralScreen() {
 const s = StyleSheet.create({
   label: { color: L.meta, marginTop: SPACE.near, marginBottom: 6 },
   input: { color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
-  card: { marginTop: SPACE.tight, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, overflow: 'hidden' },
+  card: { marginTop: SPACE.tight, backgroundColor: L.glass, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, overflow: 'hidden' },
   step: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },
   tick: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: L.meta, alignItems: 'center', justifyContent: 'center' },

@@ -146,7 +146,7 @@ const s = StyleSheet.create({
   big: { flexDirection: 'row', alignItems: 'baseline', marginVertical: 6 },
   value: { color: L.ink, letterSpacing: -1.5 },
   unit: { color: L.body, marginLeft: 6 },
-  card: { marginTop: SPACE.tight, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, overflow: 'hidden' },
+  card: { marginTop: SPACE.tight, backgroundColor: L.glass, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, overflow: 'hidden' },
   ends: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },

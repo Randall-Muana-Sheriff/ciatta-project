@@ -201,7 +201,7 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 999,
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     overflow: 'hidden',
   },
   spanOn: { color: L.canvas, backgroundColor: L.ink },
@@ -211,7 +211,7 @@ const s = StyleSheet.create({
   what: { color: L.meta, marginTop: 2 },
   card: {
     marginTop: 10,
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
     paddingHorizontal: 14,
     borderWidth: StyleSheet.hairlineWidth,

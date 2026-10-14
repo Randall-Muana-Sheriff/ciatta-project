@@ -10,6 +10,7 @@ import { useRepo } from '../state/session';
 import { C, font } from '../theme';
 import { Composer } from '../ui/composer';
 import { DetailScreen, EmptyNote, SegmentedControl, SecondaryButton, SourceFooter, Tag } from '../ui/kit';
+import { L } from '../ui/surface';
 import { GlassFill } from '../ui/frosted';
 
 const FILTERS = ['All', 'Notes', 'Symptoms', 'Context'] as const;
@@ -134,7 +135,7 @@ export function JournalScreen() {
 const j = StyleSheet.create({
   between: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
   card: {
-    backgroundColor: C.card,
+    backgroundColor: L.glass,
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 14,

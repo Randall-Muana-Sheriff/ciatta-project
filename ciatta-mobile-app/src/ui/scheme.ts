@@ -101,6 +101,7 @@ function build(mode: Mode): Palette {
     L: {
       canvas: g.mid,
       recessed: card,
+      glass: card,
       rule: lift(mode, dark ? 0.1 : 0.09),
       statement: dark ? lift(mode, 0.085) : cardHi,
       fillSelected: lift(mode, dark ? 0.14 : 0.08),
@@ -172,13 +173,16 @@ export const PALETTES: Record<Mode, Palette> = { light: build('light'), dark: bu
 
 // Writes a palette into the live token objects. Must run before any screen
 // module loads; Boot.tsx does that.
-export function applyMode(mode: Mode) {
+export function applyMode(mode: Mode, liquidGlass = false) {
   const p = PALETTES[mode];
   Object.assign(C as Record<string, string>, p.C);
   Object.assign(M as Record<string, string>, p.M);
   Object.assign(L as Record<string, string>, p.L);
   Object.assign(HUE, p.HUE);
   Object.assign(G, p.G);
+  // Liquid Glass brings its own material, as the tab bar does, so a card
+  // drawn in it adds no fill of its own.
+  if (liquidGlass) (L as Record<string, string>).glass = 'transparent';
 }
 
 // WCAG contrast ratio between two colours, #RRGGBB or rgba() over white.

@@ -454,12 +454,12 @@ export const s = StyleSheet.create({
   secondary: { backgroundColor: C.fill },
   link: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
 
-  card: { backgroundColor: C.card, borderRadius: RADIUS, padding: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, overflow: 'hidden' },
+  card: { backgroundColor: L.glass, borderRadius: RADIUS, padding: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, overflow: 'hidden' },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 44, paddingVertical: 11 },
   rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.separator },
   rowText: { flex: 1, paddingRight: 12 },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  openCard: { backgroundColor: C.card, borderRadius: RADIUS, paddingVertical: 12, paddingHorizontal: 16, marginVertical: 4, overflow: 'hidden' },
+  openCard: { backgroundColor: L.glass, borderRadius: RADIUS, paddingVertical: 12, paddingHorizontal: 16, marginVertical: 4, overflow: 'hidden' },
   openHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 32 },
   fact: {
     flexDirection: 'row',

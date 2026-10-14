@@ -37,7 +37,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 14,
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,

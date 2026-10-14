@@ -12,6 +12,7 @@ import { topicsFor } from '../lib/systemReview';
 import { C, font, RADIUS } from '../theme';
 import { Icon, type IconName } from './icons';
 import { onGround } from './scheme';
+import { L } from './surface';
 import { GlassFill } from './frosted';
 
 export function SystemCard({
@@ -140,7 +141,7 @@ const SOURCE_COLOR: Record<string, string> = {
 };
 
 const c = StyleSheet.create({
-  card: { marginTop: 16, backgroundColor: C.card, borderRadius: RADIUS, padding: 16, gap: 10, overflow: 'hidden' },
+  card: { marginTop: 16, backgroundColor: L.glass, borderRadius: RADIUS, padding: 16, gap: 10, overflow: 'hidden' },
   head: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   title: { color: C.text, flex: 1 },
   explore: {
@@ -150,7 +151,7 @@ const c = StyleSheet.create({
     paddingHorizontal: 12,
     minHeight: 32,
     borderRadius: 999,
-    backgroundColor: C.cardHi,
+    backgroundColor: L.glass,
     overflow: 'hidden',
   },
   topics: { gap: 8 },
@@ -173,7 +174,7 @@ const c = StyleSheet.create({
   },
   sourceDot: { width: 8, height: 8, borderRadius: 4 },
   sourceLine: { color: C.secondary, lineHeight: 19 },
-  worth: { gap: 4, padding: 12, borderRadius: 12, backgroundColor: C.cardHi, overflow: 'hidden' },
+  worth: { gap: 4, padding: 12, borderRadius: 12, backgroundColor: L.glass, overflow: 'hidden' },
   worthText: { color: C.text, lineHeight: 21 },
   ask: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', marginTop: 4 },
   arrow: { color: C.secondary },

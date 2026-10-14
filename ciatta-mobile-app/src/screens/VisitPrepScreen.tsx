@@ -110,7 +110,7 @@ export function VisitPrepScreen() {
 const s = StyleSheet.create({
   lede: { color: L.ink, lineHeight: 24 },
   meta: { color: L.meta, marginTop: 10 },
-  card: { marginTop: SPACE.tight, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, gap: 10, overflow: 'hidden' },
+  card: { marginTop: SPACE.tight, backgroundColor: L.glass, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, gap: 10, overflow: 'hidden' },
   line: { color: L.ink, lineHeight: 21 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   input: { flex: 1, color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10 },

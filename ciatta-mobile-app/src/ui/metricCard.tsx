@@ -146,7 +146,7 @@ const s = StyleSheet.create({
     minHeight: 74,
     justifyContent: 'center',
     gap: 3,
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderRadius: 14,
     borderWidth: st,
     borderColor: L.rule,

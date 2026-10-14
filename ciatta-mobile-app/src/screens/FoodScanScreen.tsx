@@ -342,7 +342,7 @@ function NumberField({ label, value, onChange }: { label: string; value: number;
 }
 
 const f = StyleSheet.create({
-  photoWrap: { borderRadius: TILE_RADIUS, overflow: 'hidden', backgroundColor: L.recessed, minHeight: 200 },
+  photoWrap: { borderRadius: TILE_RADIUS, overflow: 'hidden', backgroundColor: L.glass, minHeight: 200 },
   labelSpot: { position: 'absolute', width: 180, alignItems: 'center' },
   label: { borderRadius: 999, paddingVertical: 7, paddingHorizontal: 14, overflow: 'hidden' },
   labelPainted: { backgroundColor: 'rgba(40, 44, 40, 0.55)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.25)' },
@@ -353,7 +353,7 @@ const f = StyleSheet.create({
   card: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,

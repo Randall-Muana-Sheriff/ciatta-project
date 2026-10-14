@@ -905,7 +905,7 @@ const p = StyleSheet.create({
   segs: { marginTop: 20, paddingHorizontal: GUTTER },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
-  tile: { backgroundColor: C.card, borderRadius: RADIUS, padding: 14, overflow: 'hidden' },
+  tile: { backgroundColor: L.glass, borderRadius: RADIUS, padding: 14, overflow: 'hidden' },
   sectionHead: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
 
   // The paragraph sits on the statement ground the system keeps for one
@@ -927,7 +927,7 @@ const p = StyleSheet.create({
     flexBasis: '30%',
     flexGrow: 1,
     minHeight: 96,
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,
@@ -949,7 +949,7 @@ const p = StyleSheet.create({
     minHeight: 52,
     paddingHorizontal: 12,
     borderRadius: RADIUS,
-    backgroundColor: C.card,
+    backgroundColor: L.glass,
     overflow: 'hidden',
   },
 

@@ -120,7 +120,7 @@ export function ProductNowCard() {
 const c = StyleSheet.create({
   card: {
     marginTop: SPACE.block,
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,

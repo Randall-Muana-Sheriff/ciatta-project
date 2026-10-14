@@ -184,7 +184,7 @@ const s = StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: HUE.reported, marginTop: 9 },
   bulletText: { color: L.ink, flex: 1, lineHeight: 26 },
   paragraph: { color: L.ink, lineHeight: 27, marginTop: 6 },
-  record: { marginTop: 8, padding: 16, gap: 6, borderRadius: 18, backgroundColor: L.recessed, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, overflow: 'hidden' },
+  record: { marginTop: 8, padding: 16, gap: 6, borderRadius: 18, backgroundColor: L.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, overflow: 'hidden' },
   recordLine: { color: L.body, lineHeight: 21 },
   discuss: {
     position: 'absolute',

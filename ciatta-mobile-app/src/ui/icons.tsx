@@ -76,6 +76,8 @@ import ThermometerIcon from 'lucide-react-native/icons/thermometer';
 import ThumbsDownIcon from 'lucide-react-native/icons/thumbs-down';
 import ThumbsUpIcon from 'lucide-react-native/icons/thumbs-up';
 import ToiletIcon from 'lucide-react-native/icons/toilet';
+import TimelineIcon from 'lucide-react-native/icons/timeline';
+import ConciergeBellIcon from 'lucide-react-native/icons/concierge-bell';
 import TriangleIcon from 'lucide-react-native/icons/triangle';
 import UserIcon from 'lucide-react-native/icons/user';
 import UsersIcon from 'lucide-react-native/icons/users';
@@ -172,6 +174,8 @@ const ICONS = {
   minus: MinusIcon,
   clock: ClockIcon,
   flame: FlameIcon,
+  timeline: TimelineIcon,
+  concierge: ConciergeBellIcon,
 } satisfies Record<string, ComponentType<LucideProps>>;
 
 export type IconName = keyof typeof ICONS;

@@ -63,7 +63,7 @@ export function PrivacyScreen() {
 }
 
 const s = StyleSheet.create({
-  card: { backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 16, marginTop: 12, overflow: 'hidden' },
+  card: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 16, marginTop: 12, overflow: 'hidden' },
   title: { color: L.ink, marginBottom: 6 },
   body: { color: L.body, lineHeight: 21 },
 });

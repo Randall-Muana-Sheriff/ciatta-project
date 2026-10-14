@@ -156,12 +156,12 @@ export function HormonesSection({ view, effects }: { view: HormoneView; effects:
 }
 
 const h = StyleSheet.create({
-  card: { backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, overflow: 'hidden' },
+  card: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, overflow: 'hidden' },
   col: { position: 'absolute', top: 0, bottom: 0, alignItems: 'center', paddingTop: 7 },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 10 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   rows: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  tile: { flexBasis: '47%', flexGrow: 1, backgroundColor: L.recessed, borderRadius: 10, padding: 10, gap: 2, overflow: 'hidden' },
+  tile: { flexBasis: '47%', flexGrow: 1, backgroundColor: L.glass, borderRadius: 10, padding: 10, gap: 2, overflow: 'hidden' },
   ink: { color: L.ink },
   body: { color: L.body, lineHeight: 21 },
   meta: { color: L.meta },

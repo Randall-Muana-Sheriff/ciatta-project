@@ -121,7 +121,7 @@ const p = StyleSheet.create({
   sentence: { color: L.body, lineHeight: 24, marginTop: SPACE.tight },
   title: { color: L.ink, marginTop: SPACE.block, marginBottom: SPACE.tight },
   block: {
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,

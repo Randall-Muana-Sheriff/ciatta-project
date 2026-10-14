@@ -11,6 +11,7 @@ import { type ComponentType, useEffect, useState } from 'react';
 import { Appearance, AppState } from 'react-native';
 
 import { loadScheme, reloadApp, setLoadedScheme } from './src/state/colorScheme';
+import { GLASS } from './src/ui/glass';
 import { applyMode, G, resolveMode, type Scheme } from './src/ui/scheme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -29,7 +30,7 @@ export default function Boot() {
         Appearance.setColorScheme('unspecified');
         await new Promise((r) => setTimeout(r, 60));
         const mode = resolveMode(s, Appearance.getColorScheme());
-        applyMode(mode);
+        applyMode(mode, GLASS);
         // iOS draws its own pieces (keyboards, menus, the HealthKit sheet)
         // in the app's style, so a fixed choice is passed on to them.
         if (s !== 'system') Appearance.setColorScheme(mode);

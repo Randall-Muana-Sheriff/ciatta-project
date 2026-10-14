@@ -83,7 +83,7 @@ function Pill({ icon, label, onPress }: { icon: IconName; label: string; onPress
 const s = StyleSheet.create({
   card: {
     marginTop: SPACE.near,
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,
@@ -135,7 +135,7 @@ const s = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     minHeight: 180,
     justifyContent: 'flex-end',
   },

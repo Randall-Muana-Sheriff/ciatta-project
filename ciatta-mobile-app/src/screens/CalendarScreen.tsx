@@ -341,7 +341,7 @@ const s = StyleSheet.create({
   detail: {
     marginTop: SPACE.block,
     marginHorizontal: GUTTER,
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
     borderWidth: st,
     borderColor: L.rule,

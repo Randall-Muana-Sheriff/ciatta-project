@@ -184,7 +184,7 @@ export function ProductLogger() {
 const p = StyleSheet.create({
   wrap: { marginTop: SPACE.block, gap: SPACE.tight },
   current: {
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,

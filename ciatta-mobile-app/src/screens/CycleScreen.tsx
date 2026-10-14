@@ -17,6 +17,7 @@ import { FertilityStrip, LengthDots, MonthsSince, PostpartumTimeline } from '../
 import { experienceRows } from '../lib/experienceRows';
 import { hormoneView, phaseEffects } from '../lib/hormones';
 import { HormonesSection } from '../ui/HormonesSection';
+import { L } from '../ui/surface';
 import { GlassFill } from '../ui/frosted';
 
 // Cycle home: timing, then what the cycle felt like, then how it's changing.
@@ -258,7 +259,7 @@ const cy = StyleSheet.create({
   tiles: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   tile: {
     flex: 1,
-    backgroundColor: C.card,
+    backgroundColor: L.glass,
     borderRadius: RADIUS,
     padding: 14,
     gap: 2,

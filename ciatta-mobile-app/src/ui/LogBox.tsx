@@ -140,7 +140,7 @@ export function LogBox({
 const s = StyleSheet.create({
   box: { padding: 16, gap: 12 },
   topics: { flexDirection: 'row', gap: 6 },
-  topic: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, backgroundColor: L.recessed, overflow: 'hidden' },
+  topic: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, backgroundColor: L.glass, overflow: 'hidden' },
   topicOn: { backgroundColor: L.ink, borderColor: L.ink },
   // The prompt in statement type, as every screen's lead sentence is.
   prompt: { color: L.ink, lineHeight: 28, letterSpacing: -0.2 },

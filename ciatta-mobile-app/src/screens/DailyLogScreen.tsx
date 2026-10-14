@@ -391,7 +391,7 @@ const s = StyleSheet.create({
 
   card: {
     marginTop: 12,
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
     borderWidth: st,
     borderColor: L.rule,

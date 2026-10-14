@@ -92,7 +92,7 @@ const s = StyleSheet.create({
     gap: 12,
     padding: 10,
     borderRadius: TILE_RADIUS,
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,
     overflow: 'hidden',

@@ -1,5 +1,5 @@
-// Insights on Today, as Lotus sets them: a sparkle and the word, then
-// cards on photographs, each a research finding that connects to her own
+// Insights on Today: the word, then cards on photographs, each a
+// research finding that connects to her own
 // record, with how many sources stand behind it. Only the ones that
 // connect are shown.
 
@@ -46,7 +46,6 @@ export function InsightCards() {
   return (
     <View>
       <View style={s.head}>
-        <Icon name="sparkle" size={20} color={L.ink} />
         <Text style={[font('title2', 'semibold'), s.ink, { flex: 1 }]} accessibilityRole="header">
           Insights
         </Text>
@@ -76,7 +75,6 @@ export function InsightCards() {
           >
             <PhotoCard source={headingFor(insight.image)} style={s.card} shade={0.7}>
               <View style={s.cardTop}>
-                <Icon name="sparkle" size={18} color="#FFFFFF" />
                 <Pressable
                   onPress={() => react(insight.id, { saved: !of(insight.id).saved })}
                   accessibilityRole="button"
@@ -95,6 +93,7 @@ export function InsightCards() {
                   {displayCopy(connections[0])}
                 </Text>
               ) : null}
+              <View style={s.foot}>
               <View style={s.sources}>
                 <View style={s.logos}>
                   {[...new Set(insight.sources.map((x) => x.logo))].map((l, n) => (
@@ -105,6 +104,27 @@ export function InsightCards() {
                 </View>
                 <Text style={[font('footnote', 'semibold'), s.white]}>{`${insight.sources.length} ${insight.sources.length === 1 ? 'Source' : 'Sources'}`}</Text>
                 <Icon name="chevronRight" size={12} color="#FFFFFF" />
+              </View>
+              {/* What she thinks of it, which is what Ciatta learns from:
+                  up shows more like it, down stops showing it. */}
+              <View style={s.thumbs}>
+                {(['up', 'down'] as const).map((r) => {
+                  const on = of(insight.id).reaction === r;
+                  return (
+                    <Pressable
+                      key={r}
+                      onPress={() => react(insight.id, { reaction: on ? null : r })}
+                      accessibilityRole="button"
+                      accessibilityLabel={r === 'up' ? 'Show more like this' : 'Show less like this'}
+                      accessibilityState={{ selected: on }}
+                      hitSlop={8}
+                      style={[s.thumb, on && s.thumbOn]}
+                    >
+                      <Icon name={r === 'up' ? 'thumbUp' : 'thumbDown'} size={17} color={on ? '#0C0E11' : '#FFFFFF'} />
+                    </Pressable>
+                  );
+                })}
+              </View>
               </View>
             </PhotoCard>
           </Pressable>
@@ -135,7 +155,20 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.12)',
   },
   pressed: { opacity: 0.7 },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardTop: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
+  foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
+  thumbs: { flexDirection: 'row', gap: 8 },
+  thumb: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  thumbOn: { backgroundColor: '#FFFFFF', borderColor: '#FFFFFF' },
   logos: { flexDirection: 'row', marginRight: 2 },
   savedChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, backgroundColor: L.recessed },
   savedChipOn: { backgroundColor: L.ink, borderColor: L.ink },

@@ -10,6 +10,7 @@ import { useSession } from '../state/session';
 import { C, font, fonts, RADIUS } from '../theme';
 import { ListGroup, ListRow, Panel } from '../ui/chrome';
 import { DetailScreen, SecLabel, SourceFooter } from '../ui/kit';
+import { L } from '../ui/surface';
 import { GlassFill } from '../ui/frosted';
 
 // Daily steps for four weeks against the usual range. Coral days sit below
@@ -147,7 +148,7 @@ const m = StyleSheet.create({
   tiles: { flexDirection: 'row', gap: 8 },
   tile: {
     flex: 1,
-    backgroundColor: C.card,
+    backgroundColor: L.glass,
     borderRadius: RADIUS,
     padding: 12,
     gap: 2,

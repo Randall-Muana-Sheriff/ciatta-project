@@ -88,7 +88,7 @@ export function LabBriefScreen() {
 }
 
 const s = StyleSheet.create({
-  card: { marginTop: SPACE.tight, backgroundColor: L.recessed, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, overflow: 'hidden' },
+  card: { marginTop: SPACE.tight, backgroundColor: L.glass, borderRadius: TILE_RADIUS, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule, padding: 14, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 10 },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },
   body: { color: L.body },

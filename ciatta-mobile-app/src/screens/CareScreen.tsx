@@ -679,7 +679,7 @@ const s = StyleSheet.create({
     alignSelf: 'flex-start',
     width: '90%',
     marginTop: SPACE.tight,
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
     borderWidth: st,
     borderColor: L.rule,
@@ -728,7 +728,7 @@ const s = StyleSheet.create({
 
   suggestions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 14 },
   actionCard: {
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderRadius: 16,
     borderWidth: st,
     borderColor: L.rule,
@@ -738,7 +738,7 @@ const s = StyleSheet.create({
   actionUrgent: { borderColor: 'rgba(236, 93, 74, 0.6)', backgroundColor: 'rgba(236, 93, 74, 0.10)' },
   actionDetail: { color: L.meta, marginTop: 4, lineHeight: 18 },
   suggestion: {
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderRadius: 999,
     borderWidth: st,
     borderColor: L.rule,

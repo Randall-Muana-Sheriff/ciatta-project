@@ -123,7 +123,7 @@ export function MedicationsScreen() {
 
 const m = StyleSheet.create({
   card: {
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,

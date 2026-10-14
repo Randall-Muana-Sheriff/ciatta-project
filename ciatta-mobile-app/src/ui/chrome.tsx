@@ -189,8 +189,8 @@ export function ListRow({
 const TABS: { key: Tab; label: string; icon: IconName }[] = [
   { key: 'today', label: 'Today', icon: 'home' },
   { key: 'myhealth', label: 'Health', icon: 'heart' },
-  { key: 'journey', label: 'Journey', icon: 'journey' },
-  { key: 'care', label: 'Care', icon: 'molecule' },
+  { key: 'journey', label: 'Journey', icon: 'timeline' },
+  { key: 'care', label: 'Care', icon: 'concierge' },
 ];
 
 // The card beside them is no longer a destination at all. It is the one
@@ -292,7 +292,7 @@ function TabButton({
       accessibilityLabel={tab.label}
       style={[s.tab, wide && s.tabWide, on && s.tabOn]}
     >
-      <Icon name={tab.icon} size={25} color={color} weight={1.6} filled />
+      <Icon name={tab.icon} size={24} color={color} weight={1.5} />
       <Text style={[s.tabLabel, { color }]} maxFontSizeMultiplier={1.2}>
         {tab.label}
       </Text>
@@ -325,7 +325,7 @@ const s = StyleSheet.create({
   textButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
 
   panel: {
-    backgroundColor: C.card,
+    backgroundColor: L.glass,
     borderRadius: RADIUS,
     padding: 16,
     borderWidth: StyleSheet.hairlineWidth,
@@ -338,7 +338,7 @@ const s = StyleSheet.create({
   groupHeader: { color: C.text, marginBottom: 8 },
   groupHeaderLight: { color: L.ink },
   groupLight: {
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.rule,
@@ -346,7 +346,7 @@ const s = StyleSheet.create({
   },
   rowSepLight: { borderTopColor: L.rule },
   group: {
-    backgroundColor: C.card,
+    backgroundColor: L.glass,
     borderRadius: RADIUS,
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,

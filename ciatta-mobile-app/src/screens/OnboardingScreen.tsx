@@ -1121,7 +1121,7 @@ const s = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 9,
-    backgroundColor: L.recessed,
+    backgroundColor: L.glass,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,

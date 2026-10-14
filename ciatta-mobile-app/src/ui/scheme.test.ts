@@ -86,3 +86,10 @@ test('every screen ground has a black and a white rendering on disk', async () =
     }
   }
 });
+
+test('with Liquid Glass a card adds no fill of its own', () => {
+  applyMode('dark', true);
+  assert.equal(L.glass, 'transparent');
+  applyMode('dark');
+  assert.equal(L.glass, PALETTES.dark.L.recessed);
+});

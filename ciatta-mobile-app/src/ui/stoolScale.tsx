@@ -4,6 +4,7 @@ import Svg, { Circle, Ellipse, Path, Rect } from 'react-native-svg';
 import { STOOL_TYPES } from '../data/cycleLog';
 import { displayCopy } from '../lib/displayCopy';
 import { C, font, RADIUS } from '../theme';
+import { L } from './surface';
 import { GlassFill } from './frosted';
 
 // Simple line pictures for the seven stool types, drawn in one weight.
@@ -56,6 +57,6 @@ export function StoolScale({ value, onChange }: { value: number | null; onChange
 
 const s = StyleSheet.create({
   list: { gap: 6 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44, paddingHorizontal: 12, borderRadius: RADIUS, backgroundColor: C.card, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44, paddingHorizontal: 12, borderRadius: RADIUS, backgroundColor: L.glass, overflow: 'hidden' },
   on: { backgroundColor: C.cardHi },
 });

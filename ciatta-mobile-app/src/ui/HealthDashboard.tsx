@@ -39,6 +39,7 @@ import { bloodOxygen, bloodPressure, type VitalCard } from '../lib/vitals';
 import { MetricChart } from './MetricChart';
 import { METRIC_HUE } from './metricHue';
 import { ChevronRight } from './kit';
+import { L } from './surface';
 import { GlassFill } from './frosted';
 
 // Every metric on one organised page, drawn in hairlines. Colours follow the
@@ -744,11 +745,11 @@ const d = StyleSheet.create({
   calNote: { alignItems: 'center', gap: 2, marginTop: 6 },
   stack: { gap: 16, marginTop: 4 },
   pressed: { opacity: 0.55 },
-  card: { backgroundColor: C.card, borderRadius: RADIUS, padding: 16, gap: 10, overflow: 'hidden' },
+  card: { backgroundColor: L.glass, borderRadius: RADIUS, padding: 16, gap: 10, overflow: 'hidden' },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 32 },
   sleepTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   tiles: { flexDirection: 'row', gap: 10 },
-  tile: { flex: 1, backgroundColor: C.cardHi, borderRadius: 10, padding: 12, gap: 4, overflow: 'hidden' },
+  tile: { flex: 1, backgroundColor: L.glass, borderRadius: 10, padding: 12, gap: 4, overflow: 'hidden' },
   row3: { flexDirection: 'row', gap: 10 },
   stat: { flex: 1, gap: 1 },
   chartLabel: { color: C.secondary, marginTop: 4 },
