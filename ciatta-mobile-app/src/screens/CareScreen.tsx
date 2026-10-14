@@ -62,8 +62,6 @@ import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 
 // Said once, the first time she opens Care. Each line is a promise the
 // code below keeps, which is the only reason it is allowed to be said.
-// The greeting's second line: an invitation, every time.
-const HOW_I_WORK = 'How may I help you?';
 
 const INTRO_SEEN = 'ciatta.care.introSeen';
 // Action cards she chose Not now on, by id, so each stays put away.
@@ -312,10 +310,9 @@ export function CareScreen() {
           <View style={s.bubble}>
             <Text style={[font('body'), s.bubbleText]}>
               {displayCopy(
-                `${person?.firstName ? `Hi ${person.firstName}, I` : 'Hi, I'}’m ${name}. I keep watch over your record and get things ready for you.`,
+                `${person?.firstName ? `Hi ${person.firstName}, I` : 'Hi, I'}’m ${name}. I keep watch over your record and get things ready for you. What would you like help with first?`,
               )}
             </Text>
-            <Text style={[font('body'), s.howLine]}>{displayCopy(HOW_I_WORK)}</Text>
           </View>
 
           {/* What Ciatta noticed in her record on its own, each card with
@@ -592,7 +589,6 @@ const s = StyleSheet.create({
   dots: { flexDirection: 'row', gap: 3, width: 13, alignItems: 'center' },
   thinkDot: { width: 3.5, height: 3.5, borderRadius: 2, backgroundColor: L.ink },
   caret: { color: L.meta },
-  howLine: { color: L.ink, marginTop: 8, lineHeight: 22 },
   sourcesToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', minHeight: 32 },
   fill: { flex: 1 },
   body: { paddingBottom: SPACE.block },
