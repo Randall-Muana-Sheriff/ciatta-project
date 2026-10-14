@@ -17,13 +17,14 @@ import { displayCopy } from '../lib/displayCopy';
 import { HORMONE_LABEL, type HormoneKey, hormoneCurves, type HormoneView, PHASE_NOTE, phaseBounds, type PhaseRow } from '../lib/hormones';
 import { font } from '../theme';
 import { L, TILE_RADIUS } from './surface';
+import { onGround } from './scheme';
 
-const LAVENDER = '#B188F3';
+const LAVENDER = onGround('#B188F3');
 const STYLE: Record<HormoneKey, { color: string; dash?: string; width: number }> = {
   estradiol: { color: LAVENDER, width: 2 },
-  progesterone: { color: '#F2A4B8', dash: '6 4', width: 2 },
+  progesterone: { color: onGround('#F2A4B8'), dash: '6 4', width: 2 },
   lh: { color: L.body, dash: '2 3', width: 1.5 },
-  fsh: { color: '#8C93A3', dash: '1 3', width: 1.5 },
+  fsh: { color: onGround('#8C93A3'), dash: '1 3', width: 1.5 },
 };
 const LETTER: Record<ClinicalPhase, string> = { Menstrual: 'M', Follicular: 'F', Ovulatory: 'O', Luteal: 'L' };
 const HEIGHT = 150;

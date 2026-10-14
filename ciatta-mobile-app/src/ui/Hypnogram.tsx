@@ -11,14 +11,15 @@ import { fmtHours } from '../lib/engine';
 import { type Night, type Stage, STAGE_ORDER } from '../lib/hypnogram';
 import { font } from '../theme';
 import { L } from './surface';
+import { onGround } from './scheme';
 
 // Rose for awake, then the sleep blue, lighter to deeper.
 export const STAGE_COLOR: Record<Stage, string> = {
-  awake: '#F27D9B',
-  rem: '#A9B4FF',
-  light: '#7088F0',
-  deep: '#3E50C8',
-  asleep: '#7088F0',
+  awake: onGround('#F27D9B'),
+  rem: onGround('#A9B4FF'),
+  light: onGround('#7088F0'),
+  deep: onGround('#3E50C8'),
+  asleep: onGround('#7088F0'),
 };
 
 const time = (iso: string) =>

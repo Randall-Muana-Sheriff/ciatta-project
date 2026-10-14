@@ -6,8 +6,9 @@
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 
 import { L } from './surface';
+import { onGround } from './scheme';
 
-const SKY = '#6FB6F5';
+const SKY = onGround('#6FB6F5');
 
 export function CaloriesDial({ fill, width }: { fill: number; width: number }) {
   const h = width * 0.42;

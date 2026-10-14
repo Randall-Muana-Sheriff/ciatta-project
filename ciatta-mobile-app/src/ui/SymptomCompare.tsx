@@ -18,13 +18,14 @@ import { font } from '../theme';
 import { Icon } from './icons';
 import { Sheet } from './Sheet';
 import { HUE, L, TILE_RADIUS } from './surface';
+import { onGround } from './scheme';
 
 const RANGES: { key: Range; label: string }[] = [
   { key: '7', label: '7 day' },
   { key: '28', label: '28 day' },
   { key: '90', label: '3 month' },
 ];
-const ROW_COLORS = ['#7CC6D6', '#F2B863', '#B188F3', '#F27D9B', '#9BD36A', '#EC9658'];
+const ROW_COLORS = [onGround('#7CC6D6'), onGround('#F2B863'), onGround('#B188F3'), onGround('#F27D9B'), onGround('#9BD36A'), onGround('#EC9658')];
 
 type Pick = { kind: 'symptom'; name: string } | { kind: 'metric'; key: CompareMetric };
 const same = (a: Pick, b: Pick) => (a.kind === 'symptom' && b.kind === 'symptom' ? a.name === b.name : a.kind === 'metric' && b.kind === 'metric' && a.key === b.key);

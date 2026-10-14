@@ -8,8 +8,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { type LabResult, labStatus, rangePosition, type StatusKey } from '../lib/labs';
 import { font } from '../theme';
 import { HUE, L } from './surface';
+import { onGround } from './scheme';
 
-const TEAL = '#5ED3C4';
+const TEAL = onGround('#5ED3C4');
 
 export const STATUS_COLOR: Record<StatusKey, string> = {
   inRange: TEAL,

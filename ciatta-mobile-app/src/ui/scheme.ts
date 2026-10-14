@@ -197,3 +197,17 @@ function rgb(c: string): [number, number, number] {
   const [r, g, b] = c.replace(/[^\d.,]/g, '').split(',').map(Number);
   return [r, g, b];
 }
+
+// A chart or icon colour, as it should be drawn on the current ground.
+// Dark keeps the pastel; light deepens it, keeping its hue, until it clears
+// 3:1 against the darkest part of the paper, which is the bar for marks.
+export function onGround(hex: string): string {
+  if (G.mode === 'dark') return hex;
+  let [r, g, b] = rgb(hex);
+  const out = () => `#${[r, g, b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+  for (let i = 0; i < 30 && contrast(out(), G.foot) < 3; i++) [r, g, b] = [r * 0.92, g * 0.92, b * 0.92];
+  return keepGiven(out(), hex);
+}
+
+// Unchanged colours come back exactly as given.
+const keepGiven = (made: string, given: string) => (made === given.toUpperCase() ? given : made);

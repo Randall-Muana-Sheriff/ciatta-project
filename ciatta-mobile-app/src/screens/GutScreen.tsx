@@ -20,11 +20,12 @@ import { font } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen, PrimaryButton, SegmentedControl, SourceFooter } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { onGround } from '../ui/scheme';
 
 const VIEWS = ['Out', 'In'] as const;
-export const GROUP_COLOR: Record<BristolGroup, string> = { hard: '#E8C46A', typical: '#9BD36A', loose: '#EC9658' };
+export const GROUP_COLOR: Record<BristolGroup, string> = { hard: onGround('#E8C46A'), typical: onGround('#9BD36A'), loose: onGround('#EC9658') };
 const GROUP_LABEL: Record<BristolGroup, string> = { hard: 'Hard, types 1 and 2', typical: 'Typical, types 3 and 4', loose: 'Loose, types 5 to 7' };
-const MEAL = '#EC9658';
+const MEAL = onGround('#EC9658');
 const ROW = 15;
 const LABEL_W = 18;
 
@@ -241,7 +242,7 @@ const s = StyleSheet.create({
   note: { color: L.meta, marginTop: 10, lineHeight: 17 },
   body: { color: L.body },
   ink: { color: L.ink },
-  flag: { color: '#EC5D4A', marginTop: 8 },
+  flag: { color: onGround('#EC5D4A'), marginTop: 8 },
   rowLabel: { position: 'absolute', left: 0, width: LABEL_W, color: L.meta, lineHeight: ROW },
   mix: { flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden', gap: 2, marginBottom: 10 },
   mixPart: { height: 12 },

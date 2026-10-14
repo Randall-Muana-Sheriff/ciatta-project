@@ -12,8 +12,9 @@ import { type DayMetricKey, type DayView, defaultPair, pairInsight, rotatePair }
 import { displayCopy } from '../lib/displayCopy';
 import { font } from '../theme';
 import { L } from './surface';
+import { onGround } from './scheme';
 
-const COLORS = ['#789AF3', '#F2A4B8'];
+const COLORS = [onGround('#789AF3'), onGround('#F2A4B8')];
 const HEIGHT = 120;
 const PAD = 10;
 const TICKS = ['12a', '6a', '12p', '6p', '12a'];

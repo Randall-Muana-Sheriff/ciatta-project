@@ -11,6 +11,7 @@ import { displayCopy } from '../lib/displayCopy';
 import { topicsFor } from '../lib/systemReview';
 import { C, font, RADIUS } from '../theme';
 import { Icon, type IconName } from './icons';
+import { onGround } from './scheme';
 
 export function SystemCard({
   label,
@@ -128,10 +129,10 @@ export function SystemCard({
 }
 
 const SOURCE_COLOR: Record<string, string> = {
-  Measured: '#789AF3',
-  'You logged': '#F46EB4',
-  Lab: '#F2B863',
-  Provider: '#B188F3',
+  Measured: onGround('#789AF3'),
+  'You logged': onGround('#F46EB4'),
+  Lab: onGround('#F2B863'),
+  Provider: onGround('#B188F3'),
 };
 
 const c = StyleSheet.create({

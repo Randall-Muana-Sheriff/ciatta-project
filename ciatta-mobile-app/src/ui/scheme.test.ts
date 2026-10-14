@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { C, M } from '../theme';
-import { applyMode, contrast, G, PALETTES, resolveMode } from './scheme';
+import { applyMode, contrast, G, onGround, PALETTES, resolveMode } from './scheme';
 import { HUE, L } from './surface';
 
 test('system follows the phone, and a choice overrides it', () => {
@@ -54,4 +54,26 @@ test('applying a mode moves every token at once', () => {
   applyMode('dark');
   assert.equal(L.ink, '#FFFFFF');
   assert.equal(G.mode, 'dark');
+});
+
+test('metric colours stay visible as marks in both modes', async () => {
+  const { metricHues } = await import('./metricHue');
+  for (const mode of ['light', 'dark'] as const) {
+    for (const [k, v] of Object.entries(metricHues(mode))) {
+      assert.ok(contrast(v, PALETTES[mode].G.mid) >= 3, `${mode} ${k}`);
+    }
+  }
+});
+
+test('a mark colour is deepened on light until it reads, and left alone on dark', () => {
+  applyMode('dark');
+  assert.equal(onGround('#E8C46A'), '#E8C46A');
+  applyMode('light');
+  for (const c of ['#E8C46A', '#9BD36A', '#F2A4B8', '#5ED3C4', '#3E50C8']) {
+    const d = onGround(c);
+    assert.ok(contrast(d, G.foot) >= 3, `${c} -> ${d}`);
+    assert.match(d, /^#[0-9A-F]{6}$/);
+  }
+  assert.equal(onGround('#3E50C8'), '#3E50C8');
+  applyMode('dark');
 });

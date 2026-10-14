@@ -19,6 +19,7 @@ import { heavyBleedingFlag, overnightNote } from '../lib/productSafety';
 import { font } from '../theme';
 import { PrimaryButton, SecondaryButton } from './kit';
 import { L, SPACE, TILE_RADIUS } from './surface';
+import { onGround } from './scheme';
 
 const id = () => `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
@@ -124,11 +125,11 @@ const c = StyleSheet.create({
     padding: 16,
     gap: 4,
   },
-  over: { borderColor: '#F27D9B' },
+  over: { borderColor: onGround('#F27D9B') },
   eyebrow: { color: L.meta, letterSpacing: 0.9 },
   name: { color: L.ink },
   meta: { color: L.meta },
   by: { color: L.body },
-  overText: { color: '#F27D9B' },
+  overText: { color: onGround('#F27D9B') },
   actions: { gap: SPACE.tight, marginTop: SPACE.tight },
 });
