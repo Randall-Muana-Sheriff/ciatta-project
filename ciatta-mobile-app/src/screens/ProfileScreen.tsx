@@ -1,19 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { expo } from '../../app.json';
 import { deleteAccount, exportAndShare } from '../data/account';
 import type { Data } from '../data/adapter';
-import type { SourceKind, Tone } from '../data/sample';
+import type { Tone } from '../data/sample';
 import type { SourceView } from '../data/rows';
 import type { Reported } from '../data/repo';
 import { type Connection, loadConnections } from '../data/providers';
-import { intelligenceLine, metricLine, patternReadiness } from '../lib/patternReadiness';
-import { bodySystems } from '../data/adapter';
 import { type BodyManual, overviewFacts, resolveBody } from '../lib/overviewFacts';
-import { weight } from '../lib/vitals';
 import { ageFact } from '../lib/healthFacts';
 import { defaultUnits } from '../lib/units';
 import { type Insurance, insuranceFact } from '../lib/insurance';
@@ -22,7 +18,6 @@ import { openAppleHealth } from '../lib/openHealth';
 import { useCycleInsights } from '../state/cycleStore';
 import { profileOverview } from '../lib/profileOverview';
 import { connectAppleHealth } from '../lib/connectHealth';
-import { SYSTEM_DOTS } from '../lib/bodyMap';
 import { displayCopy } from '../lib/displayCopy';
 import { userFacingError } from '../lib/userFacingError';
 import { type Screen, useNav } from '../navigation';
@@ -32,28 +27,22 @@ import { useInsightReactions } from '../state/insightReactions';
 import { useResearchInsights } from '../state/researchInsights';
 import { savedInsights } from '../lib/insights';
 import { SCHEME_LABEL, SCHEMES } from '../ui/scheme';
-import { useInsights } from '../state/insights';
 import { useData, useRepo, useSession } from '../state/session';
 import { askForWeather, weatherIsOn } from '../state/environmentRun';
 import { registerForFindings } from '../state/notifications';
-import { C, font, GUTTER, numeral } from '../theme';
+import { C, font, GUTTER } from '../theme';
 import { NAV_CLEARANCE, TILE_RADIUS } from '../ui/surface';
-import { ListGroup, ListRow, Panel, TextButton } from '../ui/chrome';
+import { ListGroup, ListRow, Panel } from '../ui/chrome';
 import { ScreenHeader } from '../ui/kit';
-import { Icon } from '../ui/icons';
+import { Icon, type IconName } from '../ui/icons';
+import { Sheet } from '../ui/Sheet';
 import { images } from '../ui/images';
 import { avatarInitial } from '../ui/initial';
-import { EmptyNote, Expandable, Facts, LinkButton, SecondaryButton, SegmentedControl, Tag } from '../ui/kit';
+import { EmptyNote } from '../ui/kit';
 import { G } from '../ui/scheme';
 
 type Profile = NonNullable<Data['profile']>;
 
-// Three, not five. Health Info, Biomarkers and Care were three doors into
-// one subject: what is in her record and who is looking after it. Splitting
-// them meant a lab result and the clinician who ordered it lived on
-// different screens.
-const SEGMENTS = ['Overview', 'Health', 'Settings'] as const;
-type Segment = (typeof SEGMENTS)[number];
 
 const TONE: Record<Tone, string> = {
   coral: C.coral,
@@ -63,81 +52,27 @@ const TONE: Record<Tone, string> = {
   text: G.fillSelected,
 };
 
-const OVERVIEW_TONE: Record<Tone, string> = { coral: C.coral, mint: C.mint, lavender: C.lavender, indigo: C.lavender, text: C.gray };
 
-// Account, export and sharing flows arrive with the data layer.
 
 // ── Overview pieces ────────────────────────────────────────────
 
-function CareGroup({ profile, onOpen }: { profile: Profile; onOpen: (screen: Screen) => void }) {
-  return (
-    <ListGroup header="Care and Coverage">
-      {profile.care.map((c, n) => (
-        <ListRow
-          key={c.label}
-          first={n === 0}
-          icon={c.icon}
-          tint={TONE[c.tone]}
-          title={c.label}
-          sub={`${c.value} · ${c.sub}`}
-          // Who looks after her is in her provider records.
-          onPress={() => onOpen('chart')}
-        />
-      ))}
-      <ListRow icon="shield" tint={TONE.lavender} title="Insurance" sub="Your insurer and plan" onPress={() => onOpen('insurance')} />
-    </ListGroup>
-  );
-}
 
-// How many measures Ciatta can compare against her own usual. The ring
-// used to hold a health score out of 100, which nothing in her rows can
-// produce; this holds a count the engine can actually stand behind.
-function ReadyRing({ ready, total }: { ready: number; total: number }) {
-  const r = 36;
-  const len = 2 * Math.PI * r;
-  return (
-    <View style={p.ring} accessible accessibilityLabel={`${ready} of ${total} measures can be compared with your usual`}>
-      <Svg width={88} height={88} viewBox="0 0 88 88" style={StyleSheet.absoluteFill}>
-        <Defs>
-          <LinearGradient id="ready" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={C.coral} />
-            <Stop offset="0.5" stopColor={C.indigo} />
-            <Stop offset="1" stopColor={C.mint} />
-          </LinearGradient>
-        </Defs>
-        <Circle cx={44} cy={44} r={r} stroke={G.fill} strokeWidth={7} fill="none" />
-        {ready ? (
-          <Circle
-            cx={44}
-            cy={44}
-            r={r}
-            stroke="url(#ready)"
-            strokeWidth={7}
-            fill="none"
-            strokeLinecap="round"
-            strokeDasharray={`${(len * ready) / total} ${len}`}
-            transform="rotate(-90 44 44)"
-          />
-        ) : null}
-      </Svg>
-      <Text style={[numeral(28, 'bold'), { color: G.ink }]}>{ready}</Text>
-      <Text style={[font('caption2'), { color: G.body, marginTop: -2 }]}>of {total}</Text>
-    </View>
-  );
-}
 
 // What Ciatta is doing with her record. It does not grade her health. It
 // learns what is usual for her, measure by measure, and says when
 // something moves away from that, so the overview shows exactly that: what
 // it has found, and how far each measure is from being comparable.
-function HealthOverview({
+// The one card at the top: the facts a clinician asks first, then her
+// record in a short paragraph.
+function ProfileCard({
   stats = [],
   onOpen,
+  paragraph,
 }: {
   stats?: readonly { label: string; value: string; sub?: string }[];
   onOpen: (screen: Screen) => void;
+  paragraph: string;
 }) {
-  const { days } = useData();
   const nav = useNav();
   // Her insurance, as she entered it. Read again when Profile is back in
   // view, so what she just saved shows.
@@ -196,23 +131,8 @@ function HealthOverview({
   };
   // Where a tap on each fact goes.
   const OPENS: Partial<Record<string, Screen>> = { height: 'bodyMeasurements', weight: 'bodyMeasurements', blood: 'bodyMeasurements', insurance: 'insurance', situation: 'cycleProfile' };
-  const { ranked } = useInsights();
-  const ready = useMemo(() => patternReadiness(days), [days]);
-  const found = ranked.filter((i) => i.triage === 'Surface' || i.triage === 'Investigate').length;
-  const watching = ranked.filter((i) => i.triage === 'Watch').length;
-  const count = ready.filter((r) => r.ready).length;
   return (
     <Panel flat>
-      <View style={p.overviewTop}>
-        <ReadyRing ready={count} total={ready.length} />
-        <View style={{ flex: 1 }}>
-          <Text style={[font('headline'), { color: G.ink }]}>Health Overview</Text>
-          <Text style={[font('footnote'), { color: G.body, marginTop: 2 }]}>
-            {displayCopy(intelligenceLine(days, ready, found, watching))}
-          </Text>
-        </View>
-      </View>
-      {/* The facts about her a clinician asks first, inside the card. */}
       <View style={p.facts}>
         {facts.map((f) => (
           <Pressable
@@ -239,34 +159,7 @@ function HealthOverview({
           </Pressable>
         ))}
       </View>
-      {/*
-        One row per measure: how much of its usual Ciatta has learned. The
-        bar fills toward the days a comparison needs, not toward a target
-        for her to hit.
-      */}
-      <View style={p.measures}>
-        {ready.map((r) => (
-          <View key={r.key} accessible accessibilityLabel={`${r.label}, ${metricLine(r)}`}>
-            <View style={p.measureHead}>
-              <Text style={[font('footnote', 'semibold'), { color: G.ink, flex: 1 }]}>{r.label}</Text>
-              <Text style={[font('caption1'), { color: G.body }]}>
-                {r.ready ? 'Comparing' : `${r.have} of ${r.need} days`}
-              </Text>
-            </View>
-            <View style={p.track}>
-              <View
-                style={[
-                  p.fillBar,
-                  { width: `${Math.min(100, (r.have / r.need) * 100)}%`, backgroundColor: r.ready ? C.mint : C.lavender },
-                ]}
-              />
-            </View>
-          </View>
-        ))}
-      </View>
-      <Text style={[font('caption1'), { color: G.body, marginTop: 14 }]}>
-        Compared against your own days 35 to 90 back, never a population average.
-      </Text>
+      <Text style={[font('subhead'), p.paragraph]}>{displayCopy(paragraph)}</Text>
     </Panel>
   );
 }
@@ -305,91 +198,7 @@ function CycleGroup({ onOpen }: { onOpen: (screen: Screen) => void }) {
   );
 }
 
-// The ten body systems are the same for everyone, so every account sees them.
-function BodySystems() {
-  return (
-    <View>
-      <Text style={[font('title3', 'semibold'), { color: G.ink, marginBottom: 8 }]} accessibilityRole="header">
-        Body Systems
-      </Text>
-      <View style={p.grid}>
-        {bodySystems.map((b) => (
-          <View key={b.label} style={p.system}>
-            <Icon name={b.icon} size={20} color={SYSTEM_DOTS[b.label]?.color ?? G.body} weight={1.8} />
-            <Text style={[font('subhead'), { color: G.ink, flex: 1 }]}>{displayCopy(b.label)}</Text>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
 
-// A hospital or clinic she linked, and what has come from it.
-function Providers({ onOpen }: { onOpen: (screen: Screen) => void }) {
-  const [list, setList] = useState<Connection[] | null>(null);
-
-  useEffect(() => {
-    let ignore = false;
-    loadConnections()
-      .then((rows) => {
-        if (!ignore) setList(rows);
-      })
-      .catch(() => {
-        // Left null, so the section says nothing rather than claiming
-        // she has no providers when the read simply failed.
-      });
-    return () => {
-      ignore = true;
-    };
-  }, []);
-
-  return (
-    <View>
-      <Text style={[font('title3', 'semibold'), { color: G.ink, marginBottom: 4 }]} accessibilityRole="header">
-        Providers
-      </Text>
-      <Text style={[font('footnote'), { color: G.body, marginBottom: 10 }]}>
-        Your hospital or clinic, connected through their own patient portal.
-      </Text>
-
-      {list?.length ? (
-        <ListGroup>
-          {list.map((c, n) => (
-            <ListRow
-              key={c.id}
-              first={n === 0}
-              icon="stethoscope"
-              tint={TONE.lavender}
-              title={c.endpointName}
-              // Counted, never characterised. "412 records" is a fact;
-              // "your records are up to date" would be a claim about a
-              // chart Ciatta cannot see the whole of.
-              sub={
-                c.status === 'active'
-                  ? `${c.recordCount} records`
-                  : c.status === 'expired'
-                    ? 'Needs connecting again'
-                    : c.lastError
-                      ? 'Something went wrong'
-                      : 'Connected, nothing yet'
-              }
-              // A connection she can open is one she can verify. A row
-              // that counted records and could not show them would be
-              // asking her to take the number on trust.
-              onPress={() => onOpen('chart')}
-            />
-          ))}
-        </ListGroup>
-      ) : list ? (
-        <Text style={[font('footnote'), { color: G.body }]}>No provider connected yet.</Text>
-      ) : null}
-
-      <View style={{ marginTop: 12 }}>
-        <SecondaryButton label="Connect a Provider" onPress={() => onOpen('providerConnect')} />
-      </View>
-    </View>
-  );
-}
 
 // What she told Ciatta, in her own words, grouped as she gave it.
 //
@@ -421,170 +230,177 @@ function Reported({ reported }: { reported: Reported | null }) {
   );
 }
 
-// The weather around her: off until she says yes, then an approximate
-// area only. Saying yes fills the last 90 days so patterns she already has
-// get their background.
-function WeatherRow() {
-  const repo = useRepo();
-  const [state, setState] = useState<'unknown' | 'off' | 'on' | 'failed' | 'working'>('unknown');
-  useEffect(() => {
-    weatherIsOn().then((on) => setState(on ? 'on' : 'off'));
-  }, []);
-  const sub =
-    state === 'on'
-      ? 'On, for your approximate area only'
-      : state === 'failed'
-        ? 'Allowed, but weather is not set up yet. It will fill in once it is.'
-        : state === 'working'
-          ? 'Adding the air quality around you'
-          : 'Off. Adds the air quality and daylight around you as background.';
-  return (
-    <ListGroup header="Weather" footer="Only a rough area, about 10 km, leaves your phone, and it is never stored.">
-      <ListRow
-        first
-        icon="sun"
-        tint={TONE.indigo}
-        title="Air Quality and Daylight"
-        sub={sub}
-        onPress={
-          state === 'on' || state === 'working'
-            ? undefined
-            : async () => {
-                setState('working');
-                const r = await askForWeather(repo);
-                setState(r === 'off' ? 'off' : r === 'failed' ? 'failed' : 'on');
-              }
-        }
-      />
-    </ListGroup>
-  );
-}
 
-// ── Overview: what feeds her record ──────────────────────────────
 
-// Where her record comes from and what she has set for it: her devices,
-// her providers, the weather around her and her goals. On the Overview,
-// because these are what make the rest of Profile fill in.
-function Connections({ onOpen }: { onOpen: (screen: Screen) => void }) {
-  const [open, setOpen] = useState<string | null>(null);
-  const [list, setList] = useState<SourceView[]>([]);
-  const [sourceNote, setSourceNote] = useState<string | null>(null);
-  const [connecting, setConnecting] = useState(false);
-  const { mode, userId } = useSession();
-  const repo = useRepo();
 
-  useEffect(() => {
-    let ignore = false;
-    repo.loadSources().then((rows) => {
-      if (!ignore) setList(rows);
-    }).catch(() => {});
-    return () => {
-      ignore = true;
-    };
-  }, [repo]);
-
-  const refreshSources = () => {
-    repo.loadSources().then(setList).catch(() => {});
-  };
-
-  // Real mode walks availability, then permission, then a recovery sync,
-  // writing the Apple Health source's status at each step so it always
-  // reflects what actually happened, never what was merely attempted. Demo
-  // mode keeps today's honest notice: nothing here is hers to connect.
-  const onConnectSource = async () => {
-    if (mode === 'demo') {
-      setSourceNote('This is an example person. Sign in to connect your own sources.');
-      return;
-    }
-    if (!userId || connecting) return;
-    setConnecting(true);
-    try {
-      // The sequence itself now lives in lib/connectHealth, shared with
-      // onboarding, which offers the same connection. The status writing that
-      // keeps health_sources honest moved with it.
-      await connectAppleHealth({
-        userId,
-        saveStatus: (kind, status, lastSyncedAt) => repo.saveSourceStatus(kind, status, lastSyncedAt),
-        onNote: setSourceNote,
-      });
-      refreshSources();
-    } catch (e) {
-      setSourceNote(userFacingError(e, 'Apple Health did not connect. Try again.'));
-    } finally {
-      setConnecting(false);
-    }
-  };
-
-  return (
-    <View style={p.stack}>
-      <View>
-        <Text style={[font('title3', 'semibold'), { color: G.ink, marginBottom: 4 }]} accessibilityRole="header">
-          Sources
-        </Text>
-        {list.map((src, n) => {
-          const link = SOURCE_LINK[src.kind];
-          return (
-            <Expandable
-              flat
-              key={src.name}
-              first={n === 0}
-              title={src.name}
-              sub={src.kind === 'measured' ? src.status : `${KIND_LABEL[src.kind]} · ${src.status}`}
-              open={open === src.name}
-              onToggle={() => setOpen(open === src.name ? null : src.name)}
-            >
-              <View style={{ marginBottom: 8 }}>
-                {src.kind === 'measured' ? null : <Tag label={KIND_LABEL[src.kind]} tone={src.kind} />}
-              </View>
-              <Facts rows={src.facts} flat />
-              {link ? (
-                <LinkButton label={link.label} onPress={() => onOpen(link.screen)} />
-              ) : (
-                // iOS keeps what a device may share in the Health app, not
-                // here: Health, Sharing, Apps, Ciatta. This opens it.
-                <LinkButton label="Manage in Apple Health" onPress={() => void openAppleHealth()} />
-              )}
-            </Expandable>
-          );
-        })}
-        <View style={{ marginTop: 12 }}>
-          <SecondaryButton label="Connect a Source" onPress={onConnectSource} />
-        </View>
-        {sourceNote ? <Text style={[font('footnote'), { color: G.body, marginTop: 8 }]}>{displayCopy(sourceNote)}</Text> : null}
-      </View>
-
-      {/*
-        Providers sit apart from devices on purpose. A ring and a hospital
-        are not the same kind of source: one streams readings she
-        produces, the other holds the record somebody else wrote about
-        her, and listing them together would blur exactly the line this
-        app keeps everywhere else.
-      */}
-      <Providers onOpen={onOpen} />
-
-      <WeatherRow />
-
-      <ListGroup header="Your Goals" footer="Optional. Ciatta never sets these for you.">
-        <ListRow first icon="leaf" tint={TONE.mint} title="Nutrition Targets" sub="Calories, protein, carbs, fat" onPress={() => onOpen('nutritionTargets')} />
-        <ListRow icon="ruler" tint={TONE.coral} title="Body Measurements" sub="Blood type, height, weight and units" onPress={() => onOpen('bodyMeasurements')} />
-      </ListGroup>
-
-    </View>
-  );
-}
-
-// ── Settings: sources, notifications, privacy, account ────────
+// ── Sheets: each row of the list opens one ─────────────────────
 
 // The landing page's questions, which is where the help lives: one set of
 // answers, kept on the site, rather than a second copy in the app.
 const HELP_URL = 'https://ciatta.io/member/#q-heading';
 
-// Light, Dark, or the phone's own setting. Choosing reloads the app so
-// every surface takes the new colours together.
-function AppearanceGroup() {
+
+
+
+
+
+
+// One source, as a row: what it is, where it stands, and the one action.
+function SourceRow({
+  icon,
+  title,
+  status,
+  tone,
+  connected,
+  onPress,
+  first,
+}: {
+  icon: IconName;
+  title: string;
+  status?: string;
+  // Green for a source that is flowing, lavender for one worth adding.
+  tone?: 'live' | 'suggested';
+  connected: boolean;
+  onPress: () => void;
+  first?: boolean;
+}) {
+  return (
+    <View style={[p.source, !first && p.sourceRule]}>
+      <Icon name={icon} size={22} color={G.ink} weight={1.6} />
+      <View style={{ flex: 1 }}>
+        <Text style={[font('headline'), { color: G.ink }]}>{displayCopy(title)}</Text>
+        {status ? (
+          <View style={p.statusRow}>
+            {tone ? <View style={[p.statusDot, { backgroundColor: tone === 'live' ? '#34C759' : C.lavender }]} /> : null}
+            <Text style={[font('footnote'), { color: G.meta, flexShrink: 1 }]} numberOfLines={1}>
+              {displayCopy(status)}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`${title}, ${connected ? 'connected' : 'connect'}`}
+        style={({ pressed }) => [connected ? p.connected : p.connect, pressed && { opacity: 0.8 }]}
+      >
+        <Text style={[font('subhead', 'semibold'), { color: connected ? G.ink : G.onPill }]}>{connected ? 'Connected' : 'Connect'}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+// Everything that feeds her record, in one list: her phone and watch, her
+// providers, her plan, the weather around her, and what she adds herself.
+function DataSources({ onOpen }: { onOpen: (screen: Screen) => void }) {
+  const repo = useRepo();
+  const { mode, userId } = useSession();
+  const [sources, setSources] = useState<SourceView[]>([]);
+  const [providers, setProviders] = useState<Connection[] | null>(null);
+  const [insurance, setInsurance] = useState<Insurance | null>(null);
+  const [weather, setWeather] = useState<'unknown' | 'off' | 'on' | 'failed' | 'working'>('unknown');
+  const [note, setNote] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
+  useEffect(() => {
+    repo.loadSources().then(setSources).catch(() => {});
+    loadConnections().then(setProviders).catch(() => {});
+    repo.loadInsurance().then(setInsurance).catch(() => {});
+    weatherIsOn().then((on) => setWeather(on ? 'on' : 'off'));
+  }, [repo]);
+
+  // Apple Health walks availability, then permission, then a sync, writing
+  // its status at each step so the row says what happened.
+  const connectHealth = async () => {
+    if (mode === 'demo') {
+      setNote('This is an example person. Sign in to connect your own sources.');
+      return;
+    }
+    if (!userId || connecting) return;
+    setConnecting(true);
+    try {
+      await connectAppleHealth({ userId, saveStatus: (kind, status, at) => repo.saveSourceStatus(kind, status, at), onNote: setNote });
+      repo.loadSources().then(setSources).catch(() => {});
+    } catch (e) {
+      setNote(userFacingError(e, 'Apple Health did not connect. Try again.'));
+    } finally {
+      setConnecting(false);
+    }
+  };
+  const turnOnWeather = async () => {
+    setWeather('working');
+    const r = await askForWeather(repo);
+    setWeather(r === 'off' ? 'off' : r === 'failed' ? 'failed' : 'on');
+  };
+
+  const devices = sources.filter((x) => x.kind === 'measured');
+  const labs = sources.find((x) => x.kind === 'lab');
+  const logs = sources.find((x) => x.kind === 'logged');
+  const linked = (providers ?? []).filter((c) => c.status === 'active');
+
+  return (
+    <View>
+      <View style={p.sheetCard}>
+        {devices.length ? (
+          devices.map((d, n) => (
+            <SourceRow key={d.name} first={n === 0} icon="ringDevice" title={d.name} status={d.status} tone="live" connected onPress={() => void openAppleHealth()} />
+          ))
+        ) : (
+          <SourceRow first icon="heart" title="Apple Health" status={connecting ? 'Connecting' : 'Highly recommended'} tone="suggested" connected={false} onPress={() => void connectHealth()} />
+        )}
+        <SourceRow
+          icon="stethoscope"
+          title="Health Records"
+          status={linked.length ? `${linked.reduce((n, c) => n + c.recordCount, 0)} records from ${linked.length === 1 ? linked[0].endpointName : `${linked.length} providers`}` : 'Your hospital or clinic, through its portal'}
+          tone={linked.length ? 'live' : 'suggested'}
+          connected={linked.length > 0}
+          onPress={() => onOpen(linked.length ? 'chart' : 'providerConnect')}
+        />
+        <SourceRow
+          icon="shield"
+          title="Health Plans"
+          status={insurance ? displayCopy(insuranceFact(insurance)?.value ?? 'Your plan') : 'Highly recommended'}
+          tone={insurance ? 'live' : 'suggested'}
+          connected={!!insurance}
+          onPress={() => onOpen('insurance')}
+        />
+        <SourceRow
+          icon="sun"
+          title="Air Quality and Daylight"
+          status={weather === 'on' ? 'On, for your approximate area only' : weather === 'working' ? 'Turning on' : weather === 'failed' ? 'Allowed, not set up yet' : 'Off'}
+          tone={weather === 'on' ? 'live' : undefined}
+          connected={weather === 'on'}
+          onPress={() => (weather === 'on' || weather === 'working' ? undefined : void turnOnWeather())}
+        />
+        {labs ? <SourceRow icon="flask" title="Lab Reports" status={labs.status} tone="live" connected onPress={() => onOpen('healthrecords')} /> : null}
+        {logs ? <SourceRow icon="notebook" title="Your Logs" status={logs.status} tone="live" connected onPress={() => onOpen('journal')} /> : null}
+      </View>
+      {note ? <Text style={[font('footnote'), { color: G.body, marginTop: 10 }]}>{displayCopy(note)}</Text> : null}
+      <Text style={[font('footnote'), { color: G.meta, marginTop: 12 }]}>
+        Only a rough area, about 10 km, leaves your phone for the weather, and it is never stored.
+      </Text>
+    </View>
+  );
+}
+
+// What she told Ciatta and what it holds about her body and cycle.
+function HealthDetails({ onOpen, profile, reported }: { onOpen: (screen: Screen) => void; profile: Profile | null; reported: Reported | null }) {
+  return (
+    <View style={p.stack}>
+      {profile ? <DetailsGroup onOpen={onOpen} profile={profile} /> : <Reported reported={reported} />}
+      <CycleGroup onOpen={onOpen} />
+      <ListGroup header="Your Goals" footer="Optional. Ciatta never sets these for you.">
+        <ListRow first icon="leaf" tint={TONE.mint} title="Nutrition Targets" sub="Calories, protein, carbs, fat" onPress={() => onOpen('nutritionTargets')} />
+        <ListRow icon="ruler" tint={TONE.coral} title="Body Measurements" sub="Blood type, height, weight and units" onPress={() => onOpen('bodyMeasurements')} />
+      </ListGroup>
+    </View>
+  );
+}
+
+// Light, Dark, or the phone's own setting.
+function Appearance() {
   const { scheme, choose } = useColorScheme();
   return (
-    <ListGroup header="Appearance" footer="System follows your iPhone. Ciatta restarts briefly to change.">
+    <ListGroup footer="System follows your iPhone. Ciatta restarts briefly to change.">
       {SCHEMES.map((x, n) => (
         <ListRow key={x} first={n === 0} title={SCHEME_LABEL[x]} selected={scheme === x} onPress={() => void choose(x)} />
       ))}
@@ -592,126 +408,61 @@ function AppearanceGroup() {
   );
 }
 
-function LibraryGroup({ onOpen }: { onOpen: (screen: Screen) => void }) {
-  const { reactions } = useInsightReactions();
-  const { library } = useResearchInsights(reactions);
-  const n = savedInsights(library, reactions).length;
+function Notifications() {
+  const repo = useRepo();
+  const [findings, setFindingsState] = useState(true);
+  const [appointments, setAppointments] = useState(false);
+  useEffect(() => {
+    repo.loadNotifyFindings().then(setFindingsState).catch(() => {});
+  }, [repo]);
+  // Saved to her profile, which the server reads before sending a push.
+  const setFindings = (on: boolean) => {
+    setFindingsState(on);
+    void repo.saveNotifyFindings(on).catch(() => setFindingsState(!on));
+    if (on) void registerForFindings(repo, true);
+  };
+  const toggle = (value: boolean, onChange: (v: boolean) => void, label: string) => (
+    <Switch value={value} onValueChange={onChange} trackColor={{ false: G.fill, true: '#34C759' }} ios_backgroundColor={G.fill} accessibilityLabel={label} />
+  );
   return (
-    <ListGroup header="Saved and Help">
-      <ListRow first title="Bookmarks" sub={n ? `${n} saved` : 'Nothing saved yet'} onPress={() => onOpen('bookmarks')} />
-      <ListRow title="Help Center" sub="Answers to common questions" onPress={() => void WebBrowser.openBrowserAsync(HELP_URL)} />
+    <ListGroup footer="No nudges to log, and no reminders to take anything.">
+      <ListRow first title="New Findings" sub="Only once a pattern has appeared more than once" right={toggle(findings, setFindings, 'New findings')} />
+      <ListRow title="Before Appointments" sub="The day before, so you can prepare" right={toggle(appointments, setAppointments, 'Before appointments')} />
     </ListGroup>
   );
 }
 
-// A device source says only its status, Connected or Synced; the kind is
-// shown for labs and her own logs, where it is not obvious.
-const KIND_LABEL: Record<SourceKind, string> = { measured: 'Synced', lab: 'Lab', logged: 'You logged' };
-
-// Where each source's link goes. Devices have no screen of their own yet.
-const SOURCE_LINK: Partial<Record<SourceKind, { label: string; screen: Screen }>> = {
-  lab: { label: 'See health records', screen: 'healthrecords' },
-  logged: { label: 'See your notes', screen: 'journal' },
-};
-
-function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
-  const [newFindings, setNewFindingsState] = useState(true);
-  const settingsRepo = useRepo();
-  useEffect(() => {
-    settingsRepo.loadNotifyFindings().then(setNewFindingsState).catch(() => {});
-  }, [settingsRepo]);
-  // Saved to her profile, which the server reads before sending a push.
-  // Turning it on asks for notifications if she has not been asked yet.
-  const setNewFindings = (on: boolean) => {
-    setNewFindingsState(on);
-    void settingsRepo.saveNotifyFindings(on).catch(() => setNewFindingsState(!on));
-    if (on) void registerForFindings(settingsRepo, true);
-  };
-  const [appointments, setAppointments] = useState(false);
-  const [dataFooter, setDataFooter] = useState<string | null>(null);
-  const [accountNote, setAccountNote] = useState<string | null>(null);
-  const { mode, userId, signOut } = useSession();
-
-  const toggle = (value: boolean, onChange: (v: boolean) => void, label: string) => (
-    <Switch
-      value={value}
-      onValueChange={onChange}
-      trackColor={{ false: G.fill, true: C.green }}
-      ios_backgroundColor={G.fill}
-      accessibilityLabel={label}
-    />
-  );
-
+function PrivacyData({ onOpen }: { onOpen: (screen: Screen) => void }) {
+  const { mode, userId } = useSession();
+  const [footer, setFooter] = useState<string | null>(null);
   const onDownload = () => {
     if (mode === 'demo') {
-      setDataFooter('The example person has no data to download.');
+      setFooter('The example person has no data to download.');
       return;
     }
     if (!userId) return;
-    // Every table she has, read and written to one file, takes a moment.
-    setDataFooter('Gathering your record into one file.');
+    setFooter('Gathering your record into one file.');
     exportAndShare(userId)
-      .then(() => setDataFooter(null))
-      .catch((e) => setDataFooter(userFacingError(e, 'Your data did not download. Try again.')));
+      .then(() => setFooter(null))
+      .catch((e) => setFooter(userFacingError(e, 'Your data did not download. Try again.')));
   };
-
-  const onDelete = () => {
-    if (!userId) return;
-    Alert.alert('Delete your account?', 'Your record, notes, sources and files are deleted for good. This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () =>
-          deleteAccount(userId)
-            .then((keptOnThisPhone) => {
-              // Her account is gone either way; only say the phone is clean
-              // when it is.
-              if (keptOnThisPhone.length) {
-                setAccountNote(displayCopy('Your account is deleted. Some of what was saved on this phone could not be removed.'));
-              }
-            })
-            .catch((e) => setAccountNote(userFacingError(e, 'Your account was not deleted. Try again.'))),
-      },
-    ]);
-  };
-
   return (
-    <View style={p.stack}>
-      <AppearanceGroup />
-      <LibraryGroup onOpen={onOpen} />
-
-      <ListGroup header="Notifications" footer="No nudges to log, and no reminders to take anything.">
-        <ListRow
-          first
-          title="New Findings"
-          sub="Only once a pattern has appeared more than once"
-          right={toggle(newFindings, setNewFindings, 'New findings')}
-        />
-        <ListRow
-          title="Before Appointments"
-          sub="The day before, so you can prepare"
-          right={toggle(appointments, setAppointments, 'Before appointments')}
-        />
-      </ListGroup>
-
-      <ListGroup header="Privacy and Data" footer={dataFooter ?? undefined}>
-        <ListRow first title="Who Can See This" sub="Only you. Nothing is sold or shared." onPress={() => onOpen('privacy')} />
-        <ListRow title="Share with a Clinician" sub="A PDF summary, made on this phone" onPress={() => onOpen('shareClinician')} />
-        <ListRow title="Download Your Data" sub="Everything Ciatta holds, as one file" onPress={onDownload} />
-        <ListRow title="Privacy Policy" onPress={() => void WebBrowser.openBrowserAsync('https://ciatta.io/privacy/')} />
-        <ListRow title="Terms of Use" onPress={() => void WebBrowser.openBrowserAsync('https://ciatta.io/terms/')} />
-      </ListGroup>
-
-      <ListGroup footer={accountNote ?? undefined}>
-        <ListRow first title="Sign Out" onPress={signOut} />
-        {mode === 'real' ? <ListRow title="Delete Account and Data" destructive onPress={onDelete} /> : null}
-      </ListGroup>
-
-      <Text style={[font('footnote'), p.version]}>Version {expo.version}</Text>
-    </View>
+    <ListGroup footer={footer ?? undefined}>
+      <ListRow first title="Who Can See This" sub="Only you. Nothing is sold or shared." onPress={() => onOpen('privacy')} />
+      <ListRow title="Share with a Clinician" sub="A PDF summary, made on this phone" onPress={() => onOpen('shareClinician')} />
+      <ListRow title="Download Your Data" sub="Everything Ciatta holds, as one file" onPress={onDownload} />
+    </ListGroup>
   );
 }
+
+type SheetKey = 'sources' | 'details' | 'appearance' | 'notifications' | 'privacy';
+const SHEET_TITLE: Record<SheetKey, string> = {
+  sources: 'Data Sources',
+  details: 'Health Details',
+  appearance: 'Appearance',
+  notifications: 'Notifications',
+  privacy: 'Privacy and Data',
+};
 
 // ── Screen ─────────────────────────────────────────────────────
 
@@ -735,7 +486,12 @@ export function ProfileScreen() {
       ignore = true;
     };
   }, [repo]);
-  const [seg, setSeg] = useState<Segment>('Overview');
+  const [sheet, setSheet] = useState<SheetKey | null>(null);
+  const [accountNote, setAccountNote] = useState<string | null>(null);
+  const { userId, signOut } = useSession();
+  const { reactions } = useInsightReactions();
+  const { library } = useResearchInsights(reactions);
+  const saved = savedInsights(library, reactions).length;
   const [reported, setReported] = useState<Reported | null>(null);
   const [onboardedAt, setOnboardedAt] = useState<Date | null>(null);
 
@@ -778,114 +534,92 @@ export function ProfileScreen() {
   // to the example person and nobody else: her own circle is her initial.
   const initial = avatarInitial(name);
 
+  // A row inside a sheet that goes to a screen closes the sheet first, so
+  // the screen opens on Profile rather than under the sheet.
+  const openFromSheet = (screen: Screen) => {
+    setSheet(null);
+    nav.push(screen);
+  };
+  const browse = (url: string) => () => void WebBrowser.openBrowserAsync(url);
+  const onDelete = () => {
+    if (!userId) return;
+    Alert.alert('Delete your account?', 'Your record, notes, sources and files are deleted for good. This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () =>
+          deleteAccount(userId)
+            .then((keptOnThisPhone) => {
+              if (keptOnThisPhone.length) setAccountNote(displayCopy('Your account is deleted. Some of what was saved on this phone could not be removed.'));
+            })
+            .catch((e) => setAccountNote(userFacingError(e, 'Your account was not deleted. Try again.'))),
+      },
+    ]);
+  };
+
   return (
     <ScrollView style={p.fill} contentContainerStyle={p.body}>
-      {/*
-        Profile is opened from Today's hamburger rather than switched to,
-        so it owes her a way back. The tab bar used to be that and is not
-        any more.
-      */}
       <ScreenHeader title="Profile" onBack={nav.back} />
 
-      <View style={p.pad}>
-        <View style={p.identity}>
-          {mode === 'demo' ? (
-            <Image source={images.avatar} style={p.avatar} accessibilityIgnoresInvertColors />
-          ) : (
-            <View style={[p.avatar, p.initial]} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-              {initial ? (
-                <Text style={[font('title2', 'semibold'), { color: G.body }]}>{initial}</Text>
-              ) : (
-                <Icon name="person" size={34} color={G.body} weight={1.8} />
-              )}
-            </View>
-          )}
-          <View style={{ flex: 1 }}>
-            {name ? <Text style={[font('title2', 'semibold'), { color: G.ink }]}>{displayCopy(name)}</Text> : null}
-            {profile ? (
-              <Text style={[font('subhead'), { color: G.body }]}>
-                {profile.age} · {profile.born}
-              </Text>
-            ) : null}
+      {/* Who she is, centred, as Settings opens. */}
+      <View style={p.identity}>
+        {mode === 'demo' ? (
+          <Image source={images.avatar} style={p.avatar} accessibilityIgnoresInvertColors />
+        ) : (
+          <View style={[p.avatar, p.initial]} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+            {initial ? (
+              <Text style={[font('title2', 'semibold'), { color: G.body }]}>{initial}</Text>
+            ) : (
+              <Icon name="person" size={34} color={G.body} weight={1.8} />
+            )}
           </View>
-        </View>
+        )}
+        {name ? <Text style={[font('title2', 'semibold'), { color: G.ink, marginTop: 12 }]}>{displayCopy(name)}</Text> : null}
+        {profile ? <Text style={[font('subhead'), { color: G.meta, marginTop: 2 }]}>{`${profile.age} · ${profile.born}`}</Text> : null}
       </View>
 
-      <View style={p.segs}>
-        <SegmentedControl segments={SEGMENTS} active={seg} onChange={setSeg} />
+      <View style={p.pad}>
+        <ProfileCard stats={profile?.stats} onOpen={nav.push} paragraph={overview} />
+
+        {/* One long list. Each row opens its own sheet, or the page it names. */}
+        <Text style={[font('footnote', 'semibold'), p.label]}>Your record</Text>
+        <ListGroup>
+          <ListRow first light icon="zigzag" title="Data Sources" onPress={() => setSheet('sources')} />
+          <ListRow light icon="doc" title="Health Details" onPress={() => setSheet('details')} />
+          <ListRow light icon="bookmark" title="Bookmarks" value={saved ? String(saved) : undefined} onPress={() => nav.push('bookmarks')} />
+        </ListGroup>
+
+        <Text style={[font('footnote', 'semibold'), p.label]}>Settings</Text>
+        <ListGroup>
+          <ListRow first light icon="moon" title="Appearance" onPress={() => setSheet('appearance')} />
+          <ListRow light icon="clock" title="Notifications" onPress={() => setSheet('notifications')} />
+          <ListRow light icon="shield" title="Privacy and Data" onPress={() => setSheet('privacy')} />
+          <ListRow light icon="info" title="Help Center" onPress={browse(HELP_URL)} />
+        </ListGroup>
+
+        <Text style={[font('footnote', 'semibold'), p.label]}>Legal and Policy</Text>
+        <ListGroup>
+          <ListRow first light title="Terms of Service" onPress={browse('https://ciatta.io/terms/')} />
+          <ListRow light title="Privacy Policy" onPress={browse('https://ciatta.io/privacy/')} />
+        </ListGroup>
+
+        <Text style={[font('footnote', 'semibold'), p.label]}>Account</Text>
+        <ListGroup footer={accountNote ?? undefined}>
+          <ListRow first light title="Sign Out" onPress={signOut} />
+          {mode === 'real' ? <ListRow light title="Delete Account and Data" destructive onPress={onDelete} /> : null}
+        </ListGroup>
+
+        <Text style={[font('footnote'), p.version]}>Version {expo.version}</Text>
       </View>
 
-      <View style={[p.pad, p.stack]}>
-        {/*
-          Real mode. The paragraph was being computed and then thrown
-          away: it only rendered inside the profile branch, which is
-          sample only, so a signed in woman saw an empty note on a
-          record that was not empty.
-
-          No health score and no stat tiles: a score out of 100 is a
-          number nobody can compute from her rows without inventing most
-          of it. The overview shows what Ciatta is doing with her record
-          instead, which is real in this mode too, and the paragraph
-          closes with what is in it.
-        */}
-        {!profile && seg === 'Overview' ? (
-          <>
-            <HealthOverview onOpen={nav.push} />
-            <CycleGroup onOpen={nav.push} />
-            <Connections onOpen={nav.push} />
-            <View style={p.overviewCard}>
-              <Text style={[font('body'), p.overviewText]}>{displayCopy(overview)}</Text>
-            </View>
-          </>
-        ) : null}
-
-        {!profile && seg === 'Health' ? (
-          <>
-            <Reported reported={reported} />
-            <CycleGroup onOpen={nav.push} />
-            <BodySystems />
-            <ListGroup header="From your providers" footer="Results and notes your hospital sent, in their words.">
-              <ListRow
-                first
-                icon="doc"
-                tint={TONE.lavender}
-                title="Provider records"
-                sub="Results, conditions and medications"
-                onPress={() => nav.push('chart')}
-              />
-            </ListGroup>
-          </>
-        ) : null}
-        {profile && seg === 'Overview' ? (
-          <>
-            {/*
-              What Ciatta is doing with her record leads, then the facts
-              about her, then her record in a paragraph to close: the
-              summary reads best after the parts it summarises.
-            */}
-            <HealthOverview stats={profile.stats} onOpen={nav.push} />
-            <Connections onOpen={nav.push} />
-            <View style={p.overviewCard}>
-              <Text style={[font('body'), p.overviewText]}>{displayCopy(overview)}</Text>
-            </View>
-          </>
-        ) : null}
-        {profile && seg === 'Health' ? (
-          <>
-            {/*
-              One subject, one screen: what she told Ciatta, what her
-              cycle looks like, and who is looking after her. The biomarker
-              tiles moved to Today, where each metric card carries its own
-              trend line and arrow, computed from her readings.
-            */}
-            <DetailsGroup onOpen={nav.push} profile={profile} />
-            <CycleGroup onOpen={nav.push} />
-            <BodySystems />
-            <CareGroup profile={profile} onOpen={nav.push} />
-          </>
-        ) : null}
-        {seg === 'Settings' ? <Settings onOpen={nav.push} /> : null}
-      </View>
+      <Sheet visible={sheet !== null} title={sheet ? SHEET_TITLE[sheet] : ''} onDone={() => setSheet(null)}>
+        {sheet === 'sources' ? <DataSources onOpen={openFromSheet} /> : null}
+        {sheet === 'details' ? <HealthDetails onOpen={openFromSheet} profile={profile ?? null} reported={reported} /> : null}
+        {sheet === 'appearance' ? <Appearance /> : null}
+        {sheet === 'notifications' ? <Notifications /> : null}
+        {sheet === 'privacy' ? <PrivacyData onOpen={openFromSheet} /> : null}
+      </Sheet>
     </ScrollView>
   );
 }
@@ -896,8 +630,17 @@ const p = StyleSheet.create({
   pad: { paddingHorizontal: GUTTER },
   stack: { gap: 28 },
 
-  identity: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 12 },
-  avatar: { width: 72, height: 72, borderRadius: 36 },
+  identity: { alignItems: 'center', marginTop: 8, marginBottom: 20 },
+  avatar: { width: 84, height: 84, borderRadius: 42 },
+  label: { color: G.meta, marginTop: 24, marginBottom: 8, marginLeft: 4 },
+  paragraph: { color: G.body, lineHeight: 21, marginTop: 16 },
+  sheetCard: { backgroundColor: G.card, borderRadius: TILE_RADIUS, paddingHorizontal: 14 },
+  source: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
+  sourceRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: G.rule },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+  statusDot: { width: 8, height: 8, borderRadius: 4 },
+  connect: { backgroundColor: G.pill, borderRadius: 999, minHeight: 38, paddingHorizontal: 18, justifyContent: 'center' },
+  connected: { borderRadius: 999, minHeight: 38, paddingHorizontal: 16, justifyContent: 'center', borderWidth: 1, borderColor: G.rule },
   initial: { backgroundColor: G.fill, alignItems: 'center', justifyContent: 'center' },
   // Profile's scroll body has no gutter of its own, so each section pads
   // itself. The bottom margin comes from the control's own wrapper.
@@ -948,5 +691,5 @@ const p = StyleSheet.create({
     // page as Settings sets its rows.
   },
 
-  version: { color: G.body, textAlign: 'center' },
+  version: { color: G.meta, textAlign: 'center', marginTop: 24 },
 });
