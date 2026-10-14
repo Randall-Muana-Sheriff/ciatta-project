@@ -56,7 +56,15 @@ function latestLabs(labs: readonly LabResult[], system: string): LabResult[] {
 }
 
 export type SourceKind = 'Measured' | 'You logged' | 'Lab' | 'Provider';
-export type SystemReview = { highlights: string[]; facts: Fact[]; sources: { kind: SourceKind; label: string }[] };
+export type SystemReview = {
+  highlights: string[];
+  // What is worth exploring, said for the woman this is built for: one who
+  // keeps her own notes, hears that her results were normal, and still
+  // knows something is different. Named only when her record shows it.
+  explore: string[];
+  facts: Fact[];
+  sources: { kind: SourceKind; label: string }[];
+};
 
 export function systemReview(
   system: string,
@@ -114,15 +122,50 @@ export function systemReview(
   }
 
   const highlights = [...new Set(out)].slice(0, 5);
+
+  const explore: string[] = [];
+  const logged = Number(/Logged on (\d+) days this month/.exec(input.insight ?? '')?.[1] ?? 0);
+  const normal = latestLabs(c.labs, system).filter((l) => !isOutside(l)).slice(0, 2);
+  if (normal.length && logged >= 2) {
+    const names = normal.map((l) => l.name).join(' and ');
+    explore.push(
+      `Your ${names} came back within range, while you logged symptoms on ${logged} days this month. A normal result and a pattern you can feel can both be true, and the gap is worth exploring.`,
+    );
+  }
+  const timing = /of them (in the days before your period|during your period|just after your period|between periods)/.exec(input.insight ?? '')?.[1];
+  if (timing) {
+    const endo = system === 'Reproductive' && input.conditions.some((x) => /endometriosis/i.test(x));
+    explore.push(`Most of it came ${timing}. Tracked across your cycles, that timing is worth raising ${endo ? 'in your endometriosis care' : 'at your next visit'}.`);
+  }
+
   return {
     highlights,
-    facts: highlights.map((h) => ({ label: system, value: h, from: kinds.get(h) === 'You logged' ? ('reported' as const) : ('measured' as const) })),
+    explore,
+    facts: [
+      ...explore.map((e) => ({ label: `${system}, worth exploring`, value: e, from: 'derived' as const })),
+      ...highlights.map((h) => ({ label: system, value: h, from: kinds.get(h) === 'You logged' ? ('reported' as const) : ('measured' as const) })),
+    ],
     sources: highlights.map((h) => ({ kind: kinds.get(h)!, label: h })),
   };
 }
 
-// What Explore sends to Care: the system, a topic when she chose one, and
-// what to bring together.
+// The topics a system covers, with the one she is managing first.
+export function topicsFor(system: string, conditions: readonly string[]): string[] {
+  const topics = SYSTEM_TOPICS[system] ?? [];
+  const managed = topics.filter((t) => conditions.some((c) => c.toLowerCase() === t.toLowerCase()));
+  return [...managed, ...topics.filter((t) => !managed.includes(t))];
+}
+
+// Explore with no topic chosen focuses on what she is managing, when this
+// system covers it: endometriosis, for Reproductive.
+export function defaultTopic(system: string, conditions: readonly string[]): string | undefined {
+  const first = topicsFor(system, conditions)[0];
+  return first && conditions.some((c) => c.toLowerCase() === first.toLowerCase()) ? first : undefined;
+}
+
+// What Explore sends to Care, in her own voice: she wants the bigger
+// picture, she knows what happened between visits, and she wants to know
+// what is worth exploring and what to bring.
 export function explorePrompt(system: string, topic?: string): string {
-  return `Review my ${system.toLowerCase()} health${topic ? `, with a focus on ${topic.toLowerCase()}` : ''}: what my wearables, provider records, labs and food logs show, what stands out, and what to plan or raise at my next visit.`;
+  return `I want the bigger picture of my ${system.toLowerCase()} health${topic ? `, especially ${topic.toLowerCase()}` : ''}. Bring together what my wearables, provider records, labs, logs and the foods I eat show: what happened between visits, what still feels different even where results were normal, what is worth exploring, and what to bring to my next visit.`;
 }

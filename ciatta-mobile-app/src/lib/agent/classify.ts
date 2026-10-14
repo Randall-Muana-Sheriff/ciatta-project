@@ -87,7 +87,7 @@ export function classify(message: string): CapabilityId {
   if (RED_FLAGS.some((w) => text.includes(w))) return 'escalate';
 
   // Explore on a body system sends a prompt in one known shape.
-  if (text.startsWith('review my ') && text.includes(' health')) return 'system';
+  if (text.startsWith('i want the bigger picture of my ') && text.includes(' health')) return 'system';
 
   for (const m of MATCHERS) {
     if (m.any.some((w) => text.includes(w))) return m.id;

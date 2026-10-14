@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { displayCopy } from '../lib/displayCopy';
-import { SYSTEM_TOPICS } from '../lib/systemReview';
+import { topicsFor } from '../lib/systemReview';
 import { C, font, RADIUS } from '../theme';
 import { Icon, type IconName } from './icons';
 
@@ -17,6 +17,8 @@ export function SystemCard({
   icon,
   color,
   highlights,
+  explore,
+  conditions,
   sources,
   onExplore,
 }: {
@@ -24,12 +26,15 @@ export function SystemCard({
   icon: IconName;
   color: string;
   highlights: string[];
+  // The first thing worth exploring, when her record shows one.
+  explore: string | null;
+  conditions: readonly string[];
   // Where the highlights come from, by kind, for the Sources line.
   sources: { kind: string; label: string }[];
   onExplore: (topic?: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const topics = SYSTEM_TOPICS[label] ?? [];
+  const topics = topicsFor(label, conditions);
   const kinds = [...new Set(sources.map((s) => s.kind))];
   return (
     <View style={c.card}>
@@ -80,6 +85,13 @@ export function SystemCard({
         <Text style={[font('body'), c.empty]}>Nothing recorded for this system yet.</Text>
       )}
 
+      {explore ? (
+        <View style={c.worth}>
+          <Text style={[font('footnote', 'semibold'), { color: C.text }]}>Worth exploring</Text>
+          <Text style={[font('subhead'), c.worthText]}>{displayCopy(explore)}</Text>
+        </View>
+      ) : null}
+
       {sources.length ? (
         <>
           <Pressable
@@ -108,7 +120,7 @@ export function SystemCard({
       <Pressable onPress={() => onExplore()} accessibilityRole="button" style={({ pressed }) => [c.ask, pressed && c.pressed]}>
         <Text style={[font('subhead'), c.arrow]}>{'↳'}</Text>
         <Text style={[font('subhead', 'semibold'), c.askText]}>
-          {displayCopy(`Bring my ${label.toLowerCase()} health together and plan what to raise`)}
+          {displayCopy(`See the bigger picture, and what is worth exploring`)}
         </Text>
       </Pressable>
     </View>
@@ -155,6 +167,8 @@ const c = StyleSheet.create({
   },
   sourceDot: { width: 8, height: 8, borderRadius: 4 },
   sourceLine: { color: C.secondary, lineHeight: 19 },
+  worth: { gap: 4, padding: 12, borderRadius: 12, backgroundColor: C.cardHi },
+  worthText: { color: C.text, lineHeight: 21 },
   ask: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', marginTop: 4 },
   arrow: { color: C.secondary },
   askText: { color: C.text, flex: 1, lineHeight: 21 },

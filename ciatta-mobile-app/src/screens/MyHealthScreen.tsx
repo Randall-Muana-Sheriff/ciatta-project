@@ -13,7 +13,7 @@ import { C, font, GUTTER } from '../theme';
 import { NAV_CLEARANCE } from '../ui/surface';
 import { BodySystemView } from '../ui/BodySystemView';
 import { askCare } from '../lib/careHandoff';
-import { explorePrompt } from '../lib/systemReview';
+import { defaultTopic, explorePrompt } from '../lib/systemReview';
 import { useAgentContext } from '../state/agentContext';
 import { LargeTitle } from '../ui/chrome';
 import { RecordsView } from '../ui/RecordsView';
@@ -77,7 +77,9 @@ export function MyHealthScreen() {
             situations={profile.situations}
             onExplore={(system, topic) => {
               // Care asks it the moment it is in view.
-              askCare(explorePrompt(system, topic));
+              // With no topic chosen, what she is managing leads: for
+              // Reproductive, endometriosis when it is on her record.
+              askCare(explorePrompt(system, topic ?? defaultTopic(system, conditions)));
               nav.goTab('care');
             }}
           />

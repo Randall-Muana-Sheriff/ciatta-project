@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buildContext } from './agent/proactive';
-import { explorePrompt, systemReview, SYSTEM_TOPICS } from './systemReview';
+import { defaultTopic, explorePrompt, systemReview, SYSTEM_TOPICS, topicsFor } from './systemReview';
 
 const NOW = new Date(2026, 9, 20, 9);
 const iso = (n: number) => {
@@ -61,9 +61,9 @@ test('nothing recorded says so; the Explore prompt names the system and the topi
   assert.deepEqual(systemReview('Skin', { context, points: [], conditions: [], situations: [], insight: null, now: NOW }).highlights, []);
   assert.equal(
     explorePrompt('Reproductive', 'Endometriosis'),
-    'Review my reproductive health, with a focus on endometriosis: what my wearables, provider records, labs and food logs show, what stands out, and what to plan or raise at my next visit.',
+    'I want the bigger picture of my reproductive health, especially endometriosis. Bring together what my wearables, provider records, labs, logs and the foods I eat show: what happened between visits, what still feels different even where results were normal, what is worth exploring, and what to bring to my next visit.',
   );
-  assert.ok(explorePrompt('Whole Body').startsWith('Review my whole body health:'));
+  assert.ok(explorePrompt('Whole Body').startsWith('I want the bigger picture of my whole body health.'));
 });
 
 test('Explore\'s prompt reaches its own capability, which answers from the same highlights, within the checks', async () => {
@@ -75,9 +75,31 @@ test('Explore\'s prompt reaches its own capability, which answers from the same 
   const context = buildContext({ ...base, days: [], labs: [], cycle: { day: 22, phase: 'Likely luteal' } });
   const r = { name: null, today: null, days: [], episodes: [], conditions: ['Endometriosis'], medications: [], insights: [], references: [], cycleDay: 22, cyclePhase: 'Likely luteal', clinical: [], context } as never;
   const a = respond(prompt, r, 'system');
-  assert.equal(a.text, 'Your reproductive health, from your record: cycle day 22, likely luteal; endometriosis on your record. Your visit prep gathers what to raise, with your questions.');
+  assert.equal(
+    a.text,
+    'The bigger picture of your reproductive health. Between visits: cycle day 22, likely luteal; endometriosis on your record. Worth exploring: keep logging pain and symptoms each day; across a few cycles, your own pattern shows what a single visit cannot. For your next visit, your visit prep gathers what to raise.',
+  );
   assert.deepEqual(checkAnswer(a.text, a), []);
   assert.equal(a.suggestions[0].screen, 'visitPrep');
   const empty = respond(explorePrompt('Skin'), { ...(r as object), conditions: [], cycleDay: null, context: buildContext({ ...base, days: [], labs: [] }) } as never, 'system');
   assert.equal(empty.abstained, 'no_data');
+});
+
+test('her persona, managing endometriosis: it leads the topics, Explore focuses on it, and a normal result beside logged symptoms is named as worth exploring', () => {
+  assert.deepEqual(topicsFor('Reproductive', ['Endometriosis']).slice(0, 2), ['Endometriosis', 'Fertility']);
+  assert.equal(defaultTopic('Reproductive', ['Endometriosis']), 'Endometriosis');
+  assert.equal(defaultTopic('Reproductive', []), undefined);
+  assert.equal(defaultTopic('Digestive', ['Endometriosis']), undefined);
+  const context = buildContext({
+    ...base, days: [], cycle: { day: 3, phase: null },
+    labs: [lab({ name: 'Estradiol', value: 120, unit: 'pg/mL', low: 30, high: 400, rangeText: '30 to 400', on: iso(10) })] as never,
+  });
+  const r = systemReview('Reproductive', {
+    context, points: [{ title: 'Pain you logged', detail: '', source: 'You reported', region: 'pelvis' }] as never,
+    conditions: ['Endometriosis'], situations: [], insight: 'Logged on 6 days this month, up from 2 the month before, 5 of them during your period.', now: NOW,
+  });
+  assert.deepEqual(r.explore, [
+    'Your Estradiol came back within range, while you logged symptoms on 6 days this month. A normal result and a pattern you can feel can both be true, and the gap is worth exploring.',
+    'Most of it came during your period. Tracked across your cycles, that timing is worth raising in your endometriosis care.',
+  ]);
 });

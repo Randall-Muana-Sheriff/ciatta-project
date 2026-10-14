@@ -665,14 +665,16 @@ const SYSTEM_SCREEN: Partial<globalThis.Record<string, Suggestion>> = {
   'Whole Body': { label: 'Your symptoms', screen: 'symptoms' },
 };
 
+const lowerFirst = (h: string) => h.charAt(0).toLowerCase() + h.slice(1);
+
 // One system, brought together from her record: the same highlights the
 // Body card shows, then where to plan what to raise.
 export function answerSystem(r: Record, message: string): Answer {
   const text = message.toLowerCase();
-  const system = Object.keys(SYSTEM_TOPICS).find((s) => text.startsWith(`review my ${s.toLowerCase()} health`)) ?? 'Whole Body';
+  const system = Object.keys(SYSTEM_TOPICS).find((s) => text.startsWith(`i want the bigger picture of my ${s.toLowerCase()} health`)) ?? 'Whole Body';
   const review = r.context
     ? systemReview(system, { context: r.context, points: [], conditions: r.conditions, situations: [], insight: null, now: new Date() })
-    : { highlights: [], facts: [], sources: [] };
+    : { highlights: [], explore: [], facts: [], sources: [] };
   const screen = SYSTEM_SCREEN[system];
   if (!review.highlights.length) {
     return {
@@ -685,7 +687,16 @@ export function answerSystem(r: Record, message: string): Answer {
   }
   return {
     capability: 'system',
-    text: `Your ${system.toLowerCase()} health, from your record: ${review.highlights.map((h) => h.charAt(0).toLowerCase() + h.slice(1)).join('; ')}. Your visit prep gathers what to raise, with your questions.`,
+    // Three parts, for a woman who keeps her own notes: what happened
+    // between visits, what is worth exploring, and what to bring.
+    text: `The bigger picture of your ${system.toLowerCase()} health. Between visits: ${review.highlights
+      .slice(0, 3)
+      .map(lowerFirst)
+      .join('; ')}. Worth exploring: ${
+      review.explore.length
+        ? review.explore.slice(0, 2).map(lowerFirst).join(' ')
+        : 'keep logging pain and symptoms each day; across a few cycles, your own pattern shows what a single visit cannot.'
+    } For your next visit, your visit prep gathers what to raise.`,
     facts: review.facts,
     suggestions: [VISIT_PREP, ...(screen ? [screen] : [])],
   };

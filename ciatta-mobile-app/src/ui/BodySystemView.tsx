@@ -252,6 +252,8 @@ export function BodySystemView({
         icon={icons.get(system.label) ?? 'body'}
         color={SYSTEM_DOTS[system.label]?.color ?? C.text}
         highlights={review.highlights}
+        explore={review.explore[0] ?? null}
+        conditions={conditions}
         sources={review.sources}
         onExplore={(topic) => onExplore(system.label, topic)}
       />
