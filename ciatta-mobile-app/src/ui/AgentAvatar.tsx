@@ -8,8 +8,10 @@
 // not a button, and nothing else is needed to say so.
 
 import Svg, { Circle, Line } from 'react-native-svg';
+import { G } from './scheme';
 
-const INK = '#FFFFFF';
+// Set on the ground, so it takes the ground's ink.
+const INK = G.ink;
 
 export function AgentAvatar({ size = 64 }: { size?: number }) {
   // One stroke weight for the whole mark, scaled with it, so it stays a

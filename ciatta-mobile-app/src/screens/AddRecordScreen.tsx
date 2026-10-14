@@ -19,6 +19,7 @@ import { Composer } from '../ui/composer';
 import { ListGroup, ListRow } from '../ui/chrome';
 import { DetailScreen, SaveBar } from '../ui/kit';
 import { L, SPACE } from '../ui/surface';
+import { G } from '../ui/scheme';
 
 export function AddRecordScreen() {
   const nav = useNav();
@@ -68,7 +69,7 @@ export function AddRecordScreen() {
 }
 
 const a = StyleSheet.create({
-  lead: { color: L.ink, marginBottom: 6 },
-  hint: { color: L.meta, marginBottom: SPACE.near },
+  lead: { color: G.ink, marginBottom: 6 },
+  hint: { color: G.meta, marginBottom: SPACE.near },
   note: { color: L.meta, marginTop: 8 },
 });

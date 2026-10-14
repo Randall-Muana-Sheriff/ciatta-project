@@ -38,6 +38,7 @@ import { Composer } from '../ui/composer';
 import { Icon } from '../ui/icons';
 import { DetailScreen, LinkButton, PrimaryButton, SecondaryButton } from '../ui/kit';
 import { StoolScale } from '../ui/stoolScale';
+import { G } from '../ui/scheme';
 
 type StepId =
   | 'what'
@@ -362,7 +363,7 @@ export function CycleLogScreen() {
           selected={form.flare == null ? [] : [form.flare ? 'Yes' : 'No']}
           onToggle={(v) => set('flare', form.flare === (v === 'Yes') ? null : v === 'Yes')}
         />
-        <Text style={[font('footnote'), { color: C.secondary, marginTop: 12 }]}>
+        <Text style={[font('footnote'), { color: G.body, marginTop: 12 }]}>
           Saved as a flare up you reported. It isn't a diagnosis.
         </Text>
       </>
@@ -388,7 +389,7 @@ export function CycleLogScreen() {
 
     summary: () => (
       <>
-        <Text style={[font('footnote', 'semibold'), { color: C.tint }]}>{displayCopy(episodeTitle(episode))}</Text>
+        <Text style={[font('footnote', 'semibold'), { color: G.ink }]}>{displayCopy(episodeTitle(episode))}</Text>
         <StepHeader title="Check this before saving" hint="You can change anything with Edit." />
         <Panel>
           {summarize(episode).map((section, n) => (
@@ -500,6 +501,6 @@ const l = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: C.separator,
+    borderTopColor: G.rule,
   },
 });

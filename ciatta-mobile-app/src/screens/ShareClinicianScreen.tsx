@@ -25,6 +25,7 @@ import { Eyebrow } from '../ui/bento';
 import { DetailScreen, PrimaryButton, SecondaryButton, SegmentedControl, Lead } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 const SPANS = [
   { label: '3 months', months: 3 },
@@ -183,7 +184,7 @@ export function ShareClinicianScreen() {
 const st = StyleSheet.hairlineWidth;
 
 const s = StyleSheet.create({
-  lede: { color: L.ink, lineHeight: 24, marginBottom: SPACE.block },
+  lede: { color: G.ink, lineHeight: 24, marginBottom: SPACE.block },
   meta: { color: L.meta, marginTop: 4 },
   card: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, paddingHorizontal: 14, paddingVertical: 6, marginTop: 10, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },

@@ -17,6 +17,7 @@ import { Eyebrow } from '../ui/bento';
 import { DetailScreen, EmptyNote, PrimaryButton, SecondaryButton, Lead } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 export function VisitPrepScreen() {
   const nav = useNav();
@@ -108,8 +109,8 @@ export function VisitPrepScreen() {
 }
 
 const s = StyleSheet.create({
-  lede: { color: L.ink, lineHeight: 24 },
-  meta: { color: L.meta, marginTop: 10 },
+  lede: { color: G.ink, lineHeight: 24 },
+  meta: { color: G.meta, marginTop: 10 },
   card: { marginTop: SPACE.tight, backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 14, gap: 10, overflow: 'hidden' },
   line: { color: L.ink, lineHeight: 21 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },

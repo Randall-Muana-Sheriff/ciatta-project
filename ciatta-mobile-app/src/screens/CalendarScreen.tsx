@@ -35,6 +35,7 @@ import { DetailScreen, SecondaryButton } from '../ui/kit';
 import { addAppointmentWithForm, useDeviceCalendar } from '../state/deviceCalendar';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 export function CalendarScreen() {
   const nav = useNav();
@@ -115,7 +116,7 @@ export function CalendarScreen() {
           hitSlop={10}
           style={({ pressed }) => [s.arrow, pressed && s.pressed]}
         >
-          <Icon name="chevronLeft" size={18} color={L.body} />
+          <Icon name="chevronLeft" size={18} color={G.body} />
         </Pressable>
         <Text style={[font('headline'), s.month]} accessibilityRole="header">
           {grid.label}
@@ -134,7 +135,7 @@ export function CalendarScreen() {
           hitSlop={10}
           style={({ pressed }) => [s.arrow, pressed && s.pressed]}
         >
-          <Icon name="chevronRight" size={18} color={forward ? L.body : L.rule} />
+          <Icon name="chevronRight" size={18} color={forward ? G.body : G.rule} />
         </Pressable>
       </View>
 
@@ -306,19 +307,19 @@ const s = StyleSheet.create({
     paddingHorizontal: GUTTER,
   },
   arrow: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  month: { color: L.ink },
-  summary: { color: L.meta, paddingHorizontal: GUTTER, marginTop: 4 },
+  month: { color: G.ink },
+  summary: { color: G.meta, paddingHorizontal: GUTTER, marginTop: 4 },
 
   weekdays: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: GUTTER, marginTop: SPACE.near },
-  weekday: { color: L.meta, textAlign: 'center' },
+  weekday: { color: G.meta, textAlign: 'center' },
 
   grid: { paddingHorizontal: GUTTER, marginTop: 6 },
   week: { flexDirection: 'row', justifyContent: 'space-between' },
   cell: { alignItems: 'center', justifyContent: 'center', borderRadius: 12, gap: 3 },
-  cellOn: { backgroundColor: L.fillSelected, borderWidth: st, borderColor: L.edgeOn },
-  dayText: { color: L.body },
-  todayText: { color: L.ink },
-  dim: { color: L.rule },
+  cellOn: { backgroundColor: G.fillSelected, borderWidth: st, borderColor: G.rule },
+  dayText: { color: G.body },
+  todayText: { color: G.ink },
+  dim: { color: G.rule },
   todayRing: {
     position: 'absolute',
     top: 2,
@@ -327,7 +328,7 @@ const s = StyleSheet.create({
     bottom: 2,
     borderRadius: 11,
     borderWidth: st,
-    borderColor: L.meta,
+    borderColor: G.meta,
   },
 
   dots: { flexDirection: 'row', gap: 2, height: 5, alignItems: 'center' },
@@ -336,7 +337,7 @@ const s = StyleSheet.create({
 
   legend: { marginTop: SPACE.block, paddingHorizontal: GUTTER, gap: 8 },
   key: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  keyText: { color: L.meta },
+  keyText: { color: G.meta },
 
   detail: {
     marginTop: SPACE.block,
@@ -351,8 +352,8 @@ const s = StyleSheet.create({
   event: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
   eventText: { color: L.body, flex: 1 },
   section: { marginTop: SPACE.section, paddingHorizontal: GUTTER },
-  sectionTitle: { color: L.ink },
-  sectionSub: { color: L.meta, marginTop: 4, lineHeight: 18 },
-  none: { color: L.body, marginTop: 10 },
+  sectionTitle: { color: G.ink },
+  sectionSub: { color: G.meta, marginTop: 4, lineHeight: 18 },
+  none: { color: G.body, marginTop: 10 },
   pressed: { opacity: 0.55 },
 });

@@ -41,6 +41,7 @@ import { METRIC_HUE } from './metricHue';
 import { ChevronRight } from './kit';
 import { L, TILE_RADIUS } from './surface';
 import { CardFill } from './cardFill';
+import { G } from './scheme';
 
 // Every metric on one organised page, drawn in hairlines. Colours follow the
 // design system's meanings: Sky for measured, Rose for what she reported,
@@ -104,9 +105,9 @@ function Stat({ label, value, sub, color = C.text }: { label: string; value: str
   const s = sub ? displayCopy(sub) : undefined;
   return (
     <View style={d.stat} accessible accessibilityLabel={`${l}, ${v}${s ? `, ${s}` : ''}`}>
-      <Text style={[font('footnote'), { color: C.secondary }]}>{l}</Text>
+      <Text style={[font('footnote'), { color: G.body }]}>{l}</Text>
       <Text style={[numeral(22, 'medium'), { color }]}>{v}</Text>
-      {s ? <Text style={[font('caption1'), { color: C.secondary }]}>{s}</Text> : null}
+      {s ? <Text style={[font('caption1'), { color: G.body }]}>{s}</Text> : null}
     </View>
   );
 }

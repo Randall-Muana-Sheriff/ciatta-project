@@ -24,20 +24,29 @@ test('both palettes set every token the app reads', () => {
   }
 });
 
-test('type clears contrast on its ground in both modes', () => {
-  for (const mode of ['light', 'dark'] as const) {
-    const { L: l, HUE: hue, G: g } = PALETTES[mode];
-    for (const ground of [g.top, g.mid, g.foot]) {
-      assert.ok(contrast(l.ink, ground) >= 12, `${mode} ink on ${ground}`);
-      assert.ok(contrast(l.body, ground) >= 7, `${mode} body on ${ground}`);
-      assert.ok(contrast(l.meta, ground) >= 4.5, `${mode} meta on ${ground}`);
-      assert.ok(contrast(l.onPill, l.pill) >= 12, `${mode} pill`);
-      for (const [k, v] of Object.entries(hue)) {
-        if (k === 'attention' || k === 'uncertainty') continue; // marks only
-        assert.ok(contrast(v, ground) >= 4.5, `${mode} ${k} on ${ground}`);
-      }
-    }
+test('cards are the same dark object in both modes, so their type is too', () => {
+  const [d, l] = [PALETTES.dark, PALETTES.light];
+  assert.deepEqual(l.HUE, d.HUE);
+  for (const k of ['ink', 'body', 'meta', 'recessed', 'glass', 'field', 'rule'] as const) assert.equal(l.L[k], d.L[k], k);
+  const card = d.L.glass;
+  assert.ok(contrast(d.L.ink, card) >= 12);
+  assert.ok(contrast(d.L.body, card) >= 7);
+  assert.ok(contrast(d.L.meta, card) >= 4.5);
+  for (const [k, v] of Object.entries(d.HUE)) {
+    if (k === 'attention' || k === 'uncertainty') continue; // marks only
+    assert.ok(contrast(v, card) >= 4.5, k);
   }
+});
+
+test('type set straight on the ground clears contrast in both modes', () => {
+  for (const mode of ['light', 'dark'] as const) {
+    const g = PALETTES[mode].G;
+    assert.ok(contrast(g.ink, g.mid) >= 12, `${mode} ink`);
+    assert.ok(contrast(g.body, g.mid) >= 7, `${mode} body`);
+    assert.ok(contrast(g.meta, g.mid) >= 4.5, `${mode} meta`);
+    assert.ok(contrast(g.onPill, g.pill) >= 12, `${mode} pill`);
+  }
+  assert.equal(PALETTES.light.G.ink, '#0C0E11');
 });
 
 test('applying a mode moves every token at once', () => {
@@ -55,7 +64,7 @@ test('metric colours stay visible as marks in both modes', async () => {
   const { metricHues } = await import('./metricHue');
   for (const mode of ['light', 'dark'] as const) {
     for (const [k, v] of Object.entries(metricHues(mode))) {
-      assert.ok(contrast(v, PALETTES[mode].G.mid) >= 3, `${mode} ${k}`);
+      assert.ok(contrast(v, mode === 'light' ? PALETTES.light.G.mid : PALETTES.dark.L.glass) >= 3, `${mode} ${k}`);
     }
   }
 });
@@ -64,21 +73,20 @@ test('a mark colour is deepened on light until it reads, and left alone on dark'
   applyMode('dark');
   assert.equal(onGround('#E8C46A'), '#E8C46A');
   applyMode('light');
+  assert.equal(onGround('#E8C46A'), '#E8C46A');
   for (const c of ['#E8C46A', '#9BD36A', '#F2A4B8', '#5ED3C4', '#3E50C8']) {
-    const d = onGround(c);
+    const d = onGround(c, true);
     assert.ok(contrast(d, G.foot) >= 3, `${c} -> ${d}`);
     assert.match(d, /^#[0-9A-F]{6}$/);
   }
-  assert.equal(onGround('#3E50C8'), '#3E50C8');
+  assert.equal(onGround('#3E50C8', true), '#3E50C8');
   applyMode('dark');
 });
 
-test('every card ground has a black and a white rendering on disk', async () => {
+test('every card ground has its rendering on disk', async () => {
   const { existsSync } = await import('node:fs');
   for (const pair of ['measured-timeDepth', 'reported-change', 'timeDepth-measured', 'timeDepth-reported']) {
-    for (const mode of ['dark', 'light']) {
-      assert.ok(existsSync(new URL(`../../assets/images/cards/${pair}-${mode}.jpg`, import.meta.url)), `${pair} ${mode}`);
-    }
+    assert.ok(existsSync(new URL(`../../assets/images/cards/${pair}.jpg`, import.meta.url)), pair);
   }
 });
 

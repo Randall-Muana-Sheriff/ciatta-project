@@ -42,6 +42,7 @@ import { axisFor, emptyFor, posIn, type Scale } from '../lib/timeAxis';
 import { ViewByPicker } from '../ui/ViewByPicker';
 import { LargeTitle } from '../ui/chrome';
 import { Icon, type IconName } from '../ui/icons';
+import { G as GT } from '../ui/scheme';
 
 // The window is chosen now, not assumed. Day reads in hours, year in
 // months, and every lane positions against whichever is picked rather than
@@ -186,7 +187,7 @@ function LaneMarks({
       const top = 44;
       return (
         <G>
-          <Line x1={0} x2={plotW} y1={top + 28} y2={top + 28} stroke={C.text} opacity={0.08} />
+          <Line x1={0} x2={plotW} y1={top + 28} y2={top + 28} stroke={GT.ink} opacity={0.08} />
           {blocks.map((b, i) => {
             const p = stretch(b.start, b.end);
             if (!p) return null;
@@ -209,7 +210,7 @@ function LaneMarks({
           {gaps.map((g, i) => {
             const cx = x(g.mid);
             return cx == null ? null : (
-              <Label key={`g${i}`} x={cx} y={30} color={g.outside ? C.amber : C.secondary}>
+              <Label key={`g${i}`} x={cx} y={30} color={g.outside ? C.amber : GT.body}>
                 {`${g.days}d`}
               </Label>
             );
@@ -223,7 +224,7 @@ function LaneMarks({
       const cells = painCells(signals, bin);
       return (
         <G>
-          <Rect x={0} y={14} width={plotW} height={38} rx={6} fill={C.text} opacity={0.04} />
+          <Rect x={0} y={14} width={plotW} height={38} rx={6} fill={GT.ink} opacity={0.04} />
           {cells.map((c, i) => {
             const p = stretch(c.start, c.end);
             return p ? (
@@ -261,8 +262,8 @@ function LaneMarks({
       const lastIn = [...nights].reverse().find((n) => stretch(n.start, n.end));
       return (
         <G>
-          <Line x1={0} x2={plotW} y1={guide} y2={guide} stroke={C.text} opacity={0.22} strokeDasharray="3 4" />
-          <SvgText x={4} y={guide - 4} fill={C.tertiary} fontSize={10} fontFamily={fonts.regular}>
+          <Line x1={0} x2={plotW} y1={guide} y2={guide} stroke={GT.ink} opacity={0.22} strokeDasharray="3 4" />
+          <SvgText x={4} y={guide - 4} fill={GT.meta} fontSize={10} fontFamily={fonts.regular}>
             7h
           </SvgText>
           {nights.map((n, i) => {
@@ -276,7 +277,7 @@ function LaneMarks({
               <G key={i}>
                 <Rect x={cx - w / 2} y={a} width={w} height={Math.max(2, b - a)} rx={w / 2} fill={C.lavender} opacity={n.hours < SLEEP_GUIDE_HOURS ? 0.55 : 1} />
                 {n === lastIn ? (
-                  <Label x={cx} y={n.hours < SLEEP_GUIDE_HOURS ? b + 13 : a - 5} color={C.text}>
+                  <Label x={cx} y={n.hours < SLEEP_GUIDE_HOURS ? b + 13 : a - 5} color={GT.ink}>
                     {fmtHours(n.hours).replace(' ', '')}
                   </Label>
                 ) : null}
@@ -294,7 +295,7 @@ function LaneMarks({
         <G>
           {grid.map((row, r) => (
             <G key={row.symptom}>
-              <Rect x={0} y={ROW_TOP + r * ROW_H} width={plotW} height={ROW_H - 6} rx={4} fill={C.text} opacity={0.04} />
+              <Rect x={0} y={ROW_TOP + r * ROW_H} width={plotW} height={ROW_H - 6} rx={4} fill={GT.ink} opacity={0.04} />
               {row.cells.map((c, i) => {
                 const p = stretch(c.start, c.end);
                 return p ? (
@@ -350,7 +351,7 @@ function LaneMarks({
             <Circle key={i} cx={pt.x} cy={pt.y} r={lane === 'hrv' ? 4.5 : 3} fill={color} />
           ))}
           {last ? (
-            <Label x={last.x} y={last.y - 10} color={C.text}>
+            <Label x={last.x} y={last.y - 10} color={GT.ink}>
               {`${Math.round(last.b.value)} ${unit}`}
             </Label>
           ) : null}
@@ -365,8 +366,8 @@ function LaneMarks({
       const reach = Math.max(0.5, ...bins.map((b) => Math.abs(b.value)));
       return (
         <G>
-          <Line x1={0} x2={plotW} y1={mid} y2={mid} stroke={C.text} opacity={0.22} strokeDasharray="3 4" />
-          <SvgText x={4} y={mid - 4} fill={C.tertiary} fontSize={10} fontFamily={fonts.regular}>
+          <Line x1={0} x2={plotW} y1={mid} y2={mid} stroke={GT.ink} opacity={0.22} strokeDasharray="3 4" />
+          <SvgText x={4} y={mid - 4} fill={GT.meta} fontSize={10} fontFamily={fonts.regular}>
             Usual
           </SvgText>
           {bins.map((b, i) => {
@@ -390,7 +391,7 @@ function LaneMarks({
       const lastIn = [...bins].reverse().find((b) => stretch(b.start, b.end));
       return (
         <G>
-          <Line x1={0} x2={plotW} y1={floor} y2={floor} stroke={C.text} opacity={0.1} />
+          <Line x1={0} x2={plotW} y1={floor} y2={floor} stroke={GT.ink} opacity={0.1} />
           {bins.map((b, i) => {
             const p = stretch(b.start, b.end);
             if (!p) return null;
@@ -401,7 +402,7 @@ function LaneMarks({
               <G key={i}>
                 <Rect x={cx - w / 2} y={floor - h} width={w} height={Math.max(2, h)} rx={w / 3} fill={METRIC_HUE.steps} />
                 {b === lastIn ? (
-                  <Label x={cx} y={floor - h - 6} color={C.text}>
+                  <Label x={cx} y={floor - h - 6} color={GT.ink}>
                     {Math.round(b.value).toLocaleString('en-US')}
                   </Label>
                 ) : null}
@@ -421,8 +422,8 @@ function LaneMarks({
           <G>
             {(['meds', 'supplements'] as const).map((row) => (
               <G key={row}>
-                <Line x1={0} x2={plotW} y1={rowY[row]} y2={rowY[row]} stroke={C.text} opacity={0.06} strokeWidth={10} strokeLinecap="round" />
-                <SvgText x={4} y={rowY[row] - 10} fill={C.tertiary} fontSize={10} fontFamily={fonts.regular}>
+                <Line x1={0} x2={plotW} y1={rowY[row]} y2={rowY[row]} stroke={GT.ink} opacity={0.06} strokeWidth={10} strokeLinecap="round" />
+                <SvgText x={4} y={rowY[row] - 10} fill={GT.meta} fontSize={10} fontFamily={fonts.regular}>
                   {row === 'meds' ? 'Medications' : 'Supplements'}
                 </SvgText>
               </G>
@@ -441,7 +442,7 @@ function LaneMarks({
               const last = lastOf(row);
               const cx = last ? x(last.at) : null;
               return last && cx != null && last.label ? (
-                <Label key={`l${row}`} x={cx} y={rowY[row] + 20} color={C.text}>
+                <Label key={`l${row}`} x={cx} y={rowY[row] + 20} color={GT.ink}>
                   {last.label}
                 </Label>
               ) : null;
@@ -468,7 +469,7 @@ function LaneMarks({
                   <Rect x={ongoing[0]} y={med.y + 8} width={Math.max(6, ongoing[1] - ongoing[0])} height={16} rx={8} fill="none" stroke={color} strokeDasharray="3 3" />
                 ) : null}
                 {labelX != null ? (
-                  <Label x={labelX} y={med.y} color={C.text}>
+                  <Label x={labelX} y={med.y} color={GT.ink}>
                     {med.name}
                   </Label>
                 ) : null}
@@ -492,7 +493,7 @@ function LaneMarks({
                 ) : (
                   <Circle cx={cx} cy={34} r={9} fill="none" stroke={C.green} strokeWidth={2.5} />
                 )}
-                <Label x={cx} y={66} color={d.outside ? C.amber : C.secondary}>
+                <Label x={cx} y={66} color={d.outside ? C.amber : GT.body}>
                   {d.outside ? `${d.outsideCount} of ${d.count} outside` : 'All in range'}
                 </Label>
               </G>
@@ -514,7 +515,7 @@ function LaneMarks({
                   <Line x1={cx} x2={cx} y1={24} y2={50} stroke={C.indigo} strokeWidth={2} opacity={0.6} />
                   <Circle cx={cx} cy={18} r={8} fill={C.indigo} />
                   {n.lines.map((line, k) => (
-                    <Label key={k} x={cx} y={68 + k * 16} color={C.secondary}>
+                    <Label key={k} x={cx} y={68 + k * 16} color={GT.body}>
                       {`${k === 0 ? '\u201C' : ''}${line}${k === n.lines.length - 1 ? '\u201D' : ''}`}
                     </Label>
                   ))}
@@ -537,7 +538,7 @@ function LaneMarks({
                 <Line x1={cx} x2={cx} y1={24} y2={50} stroke={C.indigo} strokeWidth={2} opacity={0.6} />
                 <Circle cx={cx} cy={18} r={8} fill={C.indigo} />
                 {n.lines.map((line, k) => (
-                  <Label key={line} x={cx} y={68 + k * 16} color={C.secondary}>
+                  <Label key={line} x={cx} y={68 + k * 16} color={GT.body}>
                     {`${k === 0 ? '\u201C' : ''}${line}${k === n.lines.length - 1 ? '\u201D' : ''}`}
                   </Label>
                 ))}
@@ -659,7 +660,7 @@ export function JourneyScreen() {
       <LargeTitle title="Journey" />
 
       <View style={j.pad}>
-        <Text style={[font('subhead'), { color: C.secondary, marginBottom: 16 }]}>
+        <Text style={[font('subhead'), { color: GT.body, marginBottom: 16 }]}>
           {displayCopy(
             lanesHere.length
               ? `Your ${listWords(lanesHere.map((l) => (l.key === 'hrv' ? 'HRV' : l.title.toLowerCase())))} on one timeline.`
@@ -690,10 +691,10 @@ export function JourneyScreen() {
               <View key={lane.key} style={[j.laneLabel, { height: lane.height }]}>
                 <Icon name={lane.icon} size={18} color={lane.color} weight={1.8} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[font('subhead', 'semibold'), { color: C.text }]} numberOfLines={1}>
+                  <Text style={[font('subhead', 'semibold'), { color: GT.ink }]} numberOfLines={1}>
                     {lane.title}
                   </Text>
-                  <Text style={[font('caption1'), { color: C.secondary }]} numberOfLines={1}>
+                  <Text style={[font('caption1'), { color: GT.body }]} numberOfLines={1}>
                     {lane.sub}
                   </Text>
                   {/* The symptom grid's rows are named here, where the
@@ -751,7 +752,7 @@ export function JourneyScreen() {
                         y1={0}
                         x2={tick.at * plotW}
                         y2={lane.height}
-                        stroke={C.text}
+                        stroke={GT.ink}
                         opacity={0.07}
                       />
                     ))}
@@ -803,8 +804,8 @@ export function JourneyScreen() {
               hitSlop={{ top: 6, bottom: 6 }}
               style={[j.chip, !on && j.chipOff]}
             >
-              <View style={[j.chipDot, { backgroundColor: on ? lane.color : C.tertiary }]} />
-              <Text style={[font('footnote', 'medium'), { color: on ? C.text : C.secondary }]}>{lane.title}</Text>
+              <View style={[j.chipDot, { backgroundColor: on ? lane.color : GT.meta }]} />
+              <Text style={[font('footnote', 'medium'), { color: on ? GT.ink : GT.body }]}>{lane.title}</Text>
             </Pressable>
           );
         })}
@@ -827,11 +828,11 @@ const j = StyleSheet.create({
   monthRow: { flexDirection: 'row', paddingBottom: 8 },
   pickedRule: { height: 2, width: 18, borderRadius: 1, marginTop: 3, backgroundColor: 'transparent' },
   chartRow: { flexDirection: 'row' },
-  rowName: { color: C.tertiary, height: ROW_H, lineHeight: ROW_H },
+  rowName: { color: GT.meta, height: ROW_H, lineHeight: ROW_H },
   labelCol: { width: LABEL_W },
   axisSpacer: { height: 26 },
   axisRow: { position: 'relative' },
-  axisLabel: { color: C.secondary, position: 'absolute', top: 6, width: 48, textAlign: 'center' },
+  axisLabel: { color: GT.body, position: 'absolute', top: 6, width: 48, textAlign: 'center' },
   laneLabel: {
     flexDirection: 'row',
     gap: 6,
@@ -839,10 +840,10 @@ const j = StyleSheet.create({
     paddingLeft: 8,
     paddingRight: 4,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: C.separator,
+    borderTopColor: GT.rule,
   },
-  lanePlot: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.separator },
-  empty: { color: C.secondary, paddingHorizontal: 8, paddingTop: 16 },
+  lanePlot: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: GT.rule },
+  empty: { color: GT.body, paddingHorizontal: 8, paddingTop: 16 },
 
   legend: { gap: 8, paddingHorizontal: GUTTER, paddingVertical: 16 },
   chip: {
@@ -855,7 +856,7 @@ const j = StyleSheet.create({
     backgroundColor: L.recessed,
   },
   chipOff: { backgroundColor: L.recessed},
-  chipDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: L.recessed },
+  chipDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: GT.fill },
 
   detail: { marginBottom: 16 },
 });

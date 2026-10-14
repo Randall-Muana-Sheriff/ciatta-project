@@ -18,6 +18,7 @@ import { systemInsight } from '../lib/systemInsight';
 import { systemReview } from '../lib/systemReview';
 import type { AgentContext } from '../lib/agent/proactive';
 import { SystemCard } from './SystemCard';
+import { G } from './scheme';
 
 // The body view: the body systems from Profile on the left, a neutral
 // silhouette on the right, and what is recorded for the chosen system in
@@ -160,9 +161,9 @@ export function BodySystemView({
               >
                 {/* Muted white at rest; the chosen system alone takes its
                     colour, the same as its dot on the figure. One accent. */}
-                <Icon name={icons.get(s.label) ?? 'body'} size={18} color={on ? (SYSTEM_DOTS[s.label]?.color ?? C.text) : C.muted} weight={1.5} />
+                <Icon name={icons.get(s.label) ?? 'body'} size={18} color={on ? (SYSTEM_DOTS[s.label]?.color ?? G.ink) : G.meta} weight={1.5} />
                 <Text
-                  style={[font('footnote', on ? 'medium' : 'regular'), { color: C.text, flex: 1 }]}
+                  style={[font('footnote', on ? 'medium' : 'regular'), { color: G.ink, flex: 1 }]}
                   numberOfLines={2}
                 >
                   {displayCopy(s.short)}
@@ -250,7 +251,7 @@ export function BodySystemView({
       <SystemCard
         label={system.label}
         icon={icons.get(system.label) ?? 'body'}
-        color={SYSTEM_DOTS[system.label]?.color ?? C.text}
+        color={SYSTEM_DOTS[system.label]?.color ?? G.ink}
         highlights={review.highlights}
         explore={review.explore[0] ?? null}
         conditions={conditions}
@@ -269,7 +270,7 @@ const b = StyleSheet.create({
   silhouette: { ...StyleSheet.absoluteFill, opacity: 0.24 },
   dot: { position: 'absolute' },
   dotOn: { shadowOpacity: 0.8, shadowRadius: 5, shadowOffset: { width: 0, height: 0 } },
-  viewLabel: { color: C.secondary, textAlign: 'center', marginTop: 8 },
+  viewLabel: { color: G.body, textAlign: 'center', marginTop: 8 },
 
   detail: { marginTop: 16 },
   item: { paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },

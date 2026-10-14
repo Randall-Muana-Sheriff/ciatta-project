@@ -12,6 +12,7 @@ import { environmentLine } from '../lib/environmentContext';
 import { C, font } from '../theme';
 import { ListGroup, ListRow } from '../ui/chrome';
 import { DetailScreen, SecondaryButton, SourceFooter, Tag } from '../ui/kit';
+import { G } from '../ui/scheme';
 
 const TRIAGE_LABEL: Record<Triage, string> = {
   Surface: 'On Today',
@@ -46,7 +47,7 @@ export function EvidenceScreen() {
     const ready = patternReadiness(days);
     return (
       <DetailScreen title="Evidence" onBack={nav.back}>
-        <Text style={[font('body'), { color: C.secondary }]}>No patterns have appeared yet.</Text>
+        <Text style={[font('body'), { color: G.body }]}>No patterns have appeared yet.</Text>
         <Text style={[font('subhead'), e.brief]}>{displayCopy(readinessLine(days, ready))}</Text>
         {days.length ? (
           <ListGroup header="What Each Measure Has" style={e.section}>
@@ -68,8 +69,8 @@ export function EvidenceScreen() {
       onBack={nav.back}
       footer={<SourceFooter kind="logged" text="Built from your logs, your devices, and your records." />}
     >
-      <Text style={[font('footnote', 'semibold'), { color: C.tint }]}>{TRIAGE_LABEL[item.triage]}</Text>
-      <Text style={[font('title2', 'semibold'), { color: C.text, marginTop: 2 }]} accessibilityRole="header">
+      <Text style={[font('footnote', 'semibold'), { color: G.ink }]}>{TRIAGE_LABEL[item.triage]}</Text>
+      <Text style={[font('title2', 'semibold'), { color: G.ink, marginTop: 2 }]} accessibilityRole="header">
         {displayCopy(item.title)}
       </Text>
       <Text style={[font('body'), e.brief]}>{displayCopy(item.brief)}</Text>
@@ -135,7 +136,7 @@ export function EvidenceScreen() {
 }
 
 const e = StyleSheet.create({
-  brief: { color: C.text, marginTop: 10, lineHeight: 25 },
+  brief: { color: G.ink, marginTop: 10, lineHeight: 25 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 },
   section: { marginTop: 28 },
 });

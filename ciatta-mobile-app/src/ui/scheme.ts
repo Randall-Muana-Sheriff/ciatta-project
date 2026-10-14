@@ -38,6 +38,17 @@ export const G = {
   bar: 'rgba(14, 16, 20, 0.94)',
   shadow: '#000000',
   statusBar: 'light' as 'light' | 'dark',
+  // Type and controls set straight on the ground, outside any card: a
+  // screen's title, a section heading, a segmented control, a button. The
+  // cards are the same dark object in both modes, so only these turn.
+  ink: '#FFFFFF',
+  body: '#D2D5DA',
+  meta: '#A9AEB5',
+  fill: 'rgba(255, 255, 255, 0.08)',
+  fillSelected: 'rgba(255, 255, 255, 0.15)',
+  rule: 'rgba(255, 255, 255, 0.1)',
+  pill: '#FFFFFF',
+  onPill: '#0C0E11',
 };
 
 type Palette = {
@@ -66,28 +77,23 @@ const HUE_DARK: Record<Meaning, string> = {
   attention: '#CECB47',
 };
 
-// The eight a step deeper than Base, for paper: Base itself sits under
-// 4.5:1 on a light ground for half of them, and these are text too.
-const HUE_LIGHT: Record<Meaning, string> = {
-  measured: '#3456C8',
-  timeDepth: '#7440BE',
-  reported: '#B02D76',
-  escalation: '#AE2617',
-  change: '#8F4A14',
-  evidence: '#7A560C',
-  uncertainty: '#8A6C12',
-  attention: '#77740F',
-};
 
 function build(mode: Mode): Palette {
-  const dark = mode === 'dark';
-  const h = dark ? HUE_DARK : HUE_LIGHT;
+  // Every surface is the dark object in both modes, the way the insight
+  // cards are; the mode only decides the ground and what is set on it.
+  const onDark = mode === 'dark';
+  const dark = true;
+  mode = 'dark';
+  const h = HUE_DARK;
   const ink = dark ? '#FFFFFF' : '#0C0E11';
   const body = dark ? '#D2D5DA' : '#373C44';
   const meta = dark ? '#A9AEB5' : '#59606A';
-  const g: typeof G = dark
-    ? { mode, top: '#161616', mid: '#161616', foot: '#161616', washFrom: 0.22, washTo: 0.17, bar: 'rgba(14, 16, 20, 0.94)', shadow: '#000000', statusBar: 'light' }
-    : { mode, top: '#F1F0ED', mid: '#F1F0ED', foot: '#F1F0ED', washFrom: 0.13, washTo: 0.1, bar: 'rgba(250, 248, 245, 0.94)', shadow: '#2A2520', statusBar: 'dark' };
+  const ground = (c: string) => ({ top: c, mid: c, foot: c, washFrom: 0, washTo: 0 });
+  const g: typeof G = onDark
+    ? { mode: 'dark', ...ground('#161616'), bar: 'rgba(14, 16, 20, 0.94)', shadow: '#000000', statusBar: 'light',
+        ink: '#FFFFFF', body: '#D2D5DA', meta: '#A9AEB5', fill: 'rgba(255, 255, 255, 0.08)', fillSelected: 'rgba(255, 255, 255, 0.15)', rule: 'rgba(255, 255, 255, 0.1)', pill: '#FFFFFF', onPill: '#0C0E11' }
+    : { mode: 'light', ...ground('#F1F0ED'), bar: 'rgba(22, 22, 22, 0.94)', shadow: '#2A2520', statusBar: 'dark',
+        ink: '#0C0E11', body: '#373C44', meta: '#59606A', fill: 'rgba(12, 14, 17, 0.06)', fillSelected: 'rgba(12, 14, 17, 0.12)', rule: 'rgba(12, 14, 17, 0.12)', pill: '#161616', onPill: '#FFFFFF' };
   // A card on light is paper lifted toward white rather than darkened, so
   // it still reads as nearer than the ground.
   // Dark glass: a smoked fill over the blur, so a card is darker than the
@@ -98,7 +104,7 @@ function build(mode: Mode): Palette {
   const cardHi = lift(mode, dark ? 0.12 : 0.08);
   // The text box's field: darker than the ground on dark, whiter on light,
   // with a hairline. Lists and conversation take it.
-  const field = dark ? 'rgba(0, 0, 0, 0.32)' : 'rgba(255, 255, 255, 0.72)';
+  const field = '#0F0F0F';
 
   return {
     HUE: h,
@@ -209,11 +215,11 @@ function rgb(c: string): [number, number, number] {
   return [r, g, b];
 }
 
-// A chart or icon colour, as it should be drawn on the current ground.
-// Dark keeps the pastel; light deepens it, keeping its hue, until it clears
-// 3:1 against the darkest part of the paper, which is the bar for marks.
-export function onGround(hex: string): string {
-  if (G.mode === 'dark') return hex;
+// A chart or icon colour, as it should be drawn. Marks sit in cards, and
+// cards are dark in both modes, so the pastel stands everywhere; the
+// deepening is kept for a mark drawn straight on the light paper.
+export function onGround(hex: string, onPaper = false): string {
+  if (!onPaper || G.mode === 'dark') return hex;
   let [r, g, b] = rgb(hex);
   const out = () => `#${[r, g, b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('').toUpperCase()}`;
   for (let i = 0; i < 30 && contrast(out(), G.foot) < 3; i++) [r, g, b] = [r * 0.92, g * 0.92, b * 0.92];

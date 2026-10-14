@@ -36,6 +36,7 @@ import { Eyebrow } from '../ui/bento';
 import { DetailScreen, SecondaryButton, Lead } from '../ui/kit';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 const FLAG_HUE: Record<string, string> = {
   High: HUE.escalation,
@@ -65,7 +66,7 @@ export function ChartScreen() {
     return (
       <DetailScreen title="From your providers" onBack={nav.back}>
         <View style={s.centre}>
-          <ActivityIndicator color={L.meta} />
+          <ActivityIndicator color={G.meta} />
         </View>
       </DetailScreen>
     );
@@ -89,7 +90,7 @@ export function ChartScreen() {
       <ScrollView
         style={s.fill}
         contentContainerStyle={s.body}
-        refreshControl={<RefreshControl refreshing={busy} onRefresh={read} tintColor={L.meta} />}
+        refreshControl={<RefreshControl refreshing={busy} onRefresh={read} tintColor={G.meta} />}
       >
         <Lead style={s.lede} text={displayCopy(chartLine(view))} />
         <Text style={[font('caption1'), s.note]}>
@@ -171,7 +172,7 @@ function Result({ record, first }: { record: ClinicalRecord; first: boolean }) {
         here: an unflagged result shows its value and nothing beside it.
       */}
       {flag ? (
-        <Text style={[font('caption1', 'semibold'), { color: FLAG_HUE[flag] ?? L.meta }]}>{flag}</Text>
+        <Text style={[font('caption1', 'semibold'), { color: FLAG_HUE[flag] ?? G.meta }]}>{flag}</Text>
       ) : null}
       <Text style={[font('subhead', 'semibold'), s.value]}>
         {record.value ? displayCopy(record.value) : 'No value given'}
@@ -187,12 +188,12 @@ const s = StyleSheet.create({
   body: { paddingBottom: NAV_CLEARANCE },
   pad: { paddingHorizontal: GUTTER },
   centre: { paddingVertical: SPACE.section, alignItems: 'center' },
-  lede: { color: L.ink, lineHeight: 24, paddingHorizontal: GUTTER },
-  note: { color: L.meta, lineHeight: 18, marginTop: 8, paddingHorizontal: GUTTER },
+  lede: { color: G.ink, lineHeight: 24, paddingHorizontal: GUTTER },
+  note: { color: G.meta, lineHeight: 18, marginTop: 8, paddingHorizontal: GUTTER },
 
   section: { marginTop: SPACE.block, paddingHorizontal: GUTTER },
   day: { marginTop: SPACE.near },
-  dayHead: { color: L.body, marginBottom: 6 },
+  dayHead: { color: G.body, marginBottom: 6 },
 
   card: {
     marginTop: SPACE.tight,
@@ -202,7 +203,7 @@ const s = StyleSheet.create({
     overflow: 'hidden',
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
-  divided: { borderTopWidth: st, borderTopColor: L.rule },
+  divided: { borderTopWidth: st, borderTopColor: G.rule },
   name: { color: L.ink },
   when: { color: L.meta, marginTop: 2 },
   status: { color: HUE.uncertainty, marginTop: 2 },

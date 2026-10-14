@@ -16,6 +16,7 @@ import { Icon } from '../ui/icons';
 import { DetailScreen, SecondaryButton, SaveBar } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 const today = () => {
   const d = new Date();
@@ -108,7 +109,7 @@ export function ReferralScreen() {
   const field = (label: string, value: string | null, onChange: (v: string) => void, placeholder: string) => (
     <>
       <Text style={[font('caption1'), s.label]}>{label}</Text>
-      <TextInput value={value ?? ''} onChangeText={onChange} placeholder={placeholder} placeholderTextColor={L.meta} style={[font('body'), s.input]} accessibilityLabel={label} />
+      <TextInput value={value ?? ''} onChangeText={onChange} placeholder={placeholder} placeholderTextColor={G.meta} style={[font('body'), s.input]} accessibilityLabel={label} />
     </>
   );
 
@@ -134,7 +135,7 @@ export function ReferralScreen() {
               accessibilityState={{ checked: !!done }}
               style={[s.step, n > 0 && s.divided]}
             >
-              <View style={[s.tick, done && s.tickOn]}>{done ? <Icon name="check" size={14} color={L.canvas} /> : null}</View>
+              <View style={[s.tick, done && s.tickOn]}>{done ? <Icon name="check" size={14} color={L.onPill} /> : null}</View>
               <Text style={[font('subhead'), { color: L.ink, flex: 1 }]}>{step.label}</Text>
               <Text style={[font('caption1'), { color: L.meta }]}>{done ? shown(done) : 'Tap when done'}</Text>
             </Pressable>
@@ -176,14 +177,14 @@ export function ReferralScreen() {
       <View style={{ marginTop: SPACE.block, gap: 12 }}>
         {existing ? <SecondaryButton label="Remove Referral" onPress={() => void remove()} /> : null}
       </View>
-      {note ? <Text style={[font('footnote'), { color: L.meta, marginTop: 10 }]}>{displayCopy(note)}</Text> : null}
+      {note ? <Text style={[font('footnote'), { color: G.meta, marginTop: 10 }]}>{displayCopy(note)}</Text> : null}
     </DetailScreen>
   );
 }
 
 const s = StyleSheet.create({
-  label: { color: L.meta, marginTop: SPACE.near, marginBottom: 6 },
-  input: { color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
+  label: { color: G.meta, marginTop: SPACE.near, marginBottom: 6 },
+  input: { color: G.ink, backgroundColor: G.fill, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
   card: { marginTop: SPACE.tight, backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 14, overflow: 'hidden' },
   step: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },

@@ -17,6 +17,7 @@ import { Icon } from '../ui/icons';
 import { DetailScreen, EmptyNote, Lead } from '../ui/kit';
 import { PublisherLogo } from '../ui/PublisherLogo';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { G } from '../ui/scheme';
 
 export function BookmarksScreen() {
   const nav = useNav();
@@ -66,7 +67,7 @@ export function BookmarksScreen() {
                   hitSlop={12}
                   style={s.mark}
                 >
-                  <Icon name="bookmark" size={20} color={L.ink} filled />
+                  <Icon name="bookmark" size={20} color={G.ink} filled />
                 </Pressable>
               </Pressable>
             );
@@ -82,7 +83,7 @@ export function BookmarksScreen() {
 }
 
 const s = StyleSheet.create({
-  lede: { color: L.body, lineHeight: 21 },
+  lede: { color: G.body, lineHeight: 21 },
   list: { marginTop: SPACE.near, gap: SPACE.grid },
   row: {
     flexDirection: 'row',
@@ -95,8 +96,8 @@ const s = StyleSheet.create({
   pressed: { opacity: 0.7 },
   thumb: { width: 72, height: 88, borderRadius: 12 },
   text: { flex: 1, gap: 8 },
-  ink: { color: L.ink },
-  meta: { color: L.meta, flexShrink: 1, marginLeft: 6 },
+  ink: { color: G.ink },
+  meta: { color: G.meta, flexShrink: 1, marginLeft: 6 },
   sources: { flexDirection: 'row', alignItems: 'center' },
   mark: { alignSelf: 'flex-start', padding: 4 },
 });

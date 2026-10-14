@@ -19,6 +19,7 @@ import { hormoneView, phaseEffects } from '../lib/hormones';
 import { HormonesSection } from '../ui/HormonesSection';
 import { L, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 // Cycle home: timing, then what the cycle felt like, then how it's changing.
 export function CycleScreen() {
@@ -76,7 +77,7 @@ export function CycleScreen() {
         accessibilityLabel={`What you told us: ${lens.tags.join(', ') || 'nothing yet'}. Edit`}
         style={cy.told}
       >
-        <Text style={[font('footnote'), { color: C.secondary }]}>What you told us</Text>
+        <Text style={[font('footnote'), { color: G.body }]}>What you told us</Text>
         <View style={cy.tagRow}>
           {lens.tags.length ? lens.tags.map((t) => <Tag key={t} label={t} tone="neutral" />) : <Tag label="Not set" tone="neutral" />}
         </View>
@@ -271,6 +272,6 @@ const cy = StyleSheet.create({
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   below: { marginBottom: 16 },
   chartLabel: { color: C.secondary, marginBottom: 6 },
-  note: { color: C.secondary, marginBottom: 8 },
+  note: { color: G.body, marginBottom: 8 },
   fertileLine: { color: C.secondary, marginTop: 6 },
 });

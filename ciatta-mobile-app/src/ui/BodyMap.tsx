@@ -6,6 +6,7 @@ import { LOCATION_GROUPS } from '../data/cycleLog';
 import { C, font } from '../theme';
 import { ChoiceChips, FieldLabel, RemovableChips } from './cycleInputs';
 import { LinkButton, SegmentedControl } from './kit';
+import { G } from './scheme';
 
 // A quiet outline of a body, not an anatomical drawing. Tap regions to mark
 // where pain was felt; everything is also reachable from the list, which is
@@ -120,5 +121,5 @@ export function BodyMap({ selected, onToggle }: { selected: string[]; onToggle: 
 
 const s = StyleSheet.create({
   map: { height: 340, alignItems: 'center' },
-  caption: { color: C.secondary, textAlign: 'center', marginTop: 6 },
+  caption: { color: G.body, textAlign: 'center', marginTop: 6 },
 });

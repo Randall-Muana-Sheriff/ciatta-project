@@ -13,6 +13,7 @@ import { useRepo } from '../state/session';
 import { font } from '../theme';
 import { DetailScreen, SaveBar, Lead } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { G } from '../ui/scheme';
 
 const FIELDS: { key: keyof NutritionTargets; label: string; unit: string }[] = [
   { key: 'kcal', label: 'Calories', unit: 'kcal' },
@@ -77,16 +78,16 @@ export function NutritionTargetsScreen() {
 }
 
 const t = StyleSheet.create({
-  lede: { color: L.body, lineHeight: 22, marginBottom: SPACE.near },
+  lede: { color: G.body, lineHeight: 22, marginBottom: SPACE.near },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: L.rule,
+    borderBottomColor: G.rule,
   },
-  label: { color: L.ink, flex: 1 },
+  label: { color: G.ink, flex: 1 },
   input: {
     color: L.ink,
     minWidth: 90,
@@ -96,6 +97,6 @@ const t = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
-  unit: { color: L.meta, width: 64 },
-  error: { color: L.ink, marginTop: 10 },
+  unit: { color: G.meta, width: 64 },
+  error: { color: G.ink, marginTop: 10 },
 });

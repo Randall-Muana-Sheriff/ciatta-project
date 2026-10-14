@@ -11,6 +11,7 @@ import { font } from '../theme';
 import { ListGroup, ListRow } from '../ui/chrome';
 import { DetailScreen, EmptyNote, PrimaryButton } from '../ui/kit';
 import { L, SPACE } from '../ui/surface';
+import { G } from '../ui/scheme';
 
 export function ReferralsScreen() {
   const nav = useNav();
@@ -26,7 +27,7 @@ export function ReferralsScreen() {
 
   return (
     <DetailScreen title="Referrals" onBack={nav.back}>
-      <Text style={[font('body'), { color: L.ink, lineHeight: 24, marginBottom: SPACE.near }]}>
+      <Text style={[font('body'), { color: G.ink, lineHeight: 24, marginBottom: SPACE.near }]}>
         From referred to seen, one step at a time. Ciatta prepares each step; you make the calls.
       </Text>
       {list && !list.length ? <EmptyNote text="No referrals yet." /> : null}

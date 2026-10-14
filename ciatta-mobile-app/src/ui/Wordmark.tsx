@@ -26,7 +26,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { fonts } from '../theme';
-import { L } from './surface';
+import { G } from './scheme';
 
 export type WordmarkSize = 'sm' | 'md';
 
@@ -51,7 +51,7 @@ const SIZES: Record<WordmarkSize, { fontSize: number; trackEm: number }> = {
 
 export function Wordmark({
   size = 'sm',
-  color = L.ink,
+  color = G.ink,
 }: {
   size?: WordmarkSize;
   // Graphite or Paper. There is no third option, and a semantic colour is

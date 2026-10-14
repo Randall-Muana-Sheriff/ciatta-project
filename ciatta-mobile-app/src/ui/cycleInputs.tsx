@@ -6,6 +6,7 @@ import { C, font, RADIUS } from '../theme';
 import { L } from './surface';
 import { Panel } from './chrome';
 import { Icon } from './icons';
+import { G } from './scheme';
 
 // Inputs and read outs for the Cycle experience, built on the app's chips,
 // cards and controls.
@@ -13,10 +14,10 @@ import { Icon } from './icons';
 export function StepHeader({ title, hint }: { title: string; hint?: string }) {
   return (
     <View style={s.header}>
-      <Text style={[font('title2', 'semibold'), { color: C.text }]} accessibilityRole="header">
+      <Text style={[font('title2', 'semibold'), { color: G.ink }]} accessibilityRole="header">
         {title}
       </Text>
-      {hint ? <Text style={[font('subhead'), { color: C.secondary, marginTop: 4 }]}>{hint}</Text> : null}
+      {hint ? <Text style={[font('subhead'), { color: G.body, marginTop: 4 }]}>{hint}</Text> : null}
     </View>
   );
 }
@@ -24,8 +25,8 @@ export function StepHeader({ title, hint }: { title: string; hint?: string }) {
 export function FieldLabel({ children, hint }: { children: string; hint?: string }) {
   return (
     <View style={s.fieldLabel}>
-      <Text style={[font('headline'), { color: C.text }]}>{children}</Text>
-      {hint ? <Text style={[font('footnote'), { color: C.secondary, marginTop: 2 }]}>{hint}</Text> : null}
+      <Text style={[font('headline'), { color: G.ink }]}>{children}</Text>
+      {hint ? <Text style={[font('footnote'), { color: G.body, marginTop: 2 }]}>{hint}</Text> : null}
     </View>
   );
 }
@@ -56,8 +57,8 @@ export function ChoiceChips({
             hitSlop={4}
             style={({ pressed }) => [s.chip, on && s.chipOn, pressed && s.pressed]}
           >
-            {on ? <Icon name="check" size={14} color={C.tint} weight={2.4} /> : null}
-            <Text style={[font('subhead', on ? 'semibold' : 'regular'), { color: on ? C.tint : C.text }]}>{o}</Text>
+            {on ? <Icon name="check" size={14} color={G.ink} weight={2.4} /> : null}
+            <Text style={[font('subhead', on ? 'semibold' : 'regular'), { color: on ? G.ink : G.ink }]}>{o}</Text>
           </Pressable>
         );
       })}
@@ -77,8 +78,8 @@ export function RemovableChips({ items, onRemove }: { items: readonly string[]; 
           hitSlop={4}
           style={({ pressed }) => [s.chip, s.chipOn, pressed && s.pressed]}
         >
-          <Text style={[font('subhead', 'semibold'), { color: C.tint }]}>{o}</Text>
-          <Icon name="xmark" size={13} color={C.tint} weight={2.2} />
+          <Text style={[font('subhead', 'semibold'), { color: G.ink }]}>{o}</Text>
+          <Icon name="xmark" size={13} color={G.ink} weight={2.2} />
         </Pressable>
       ))}
     </View>
@@ -102,14 +103,14 @@ export function SeverityScale({ value, onChange }: { value: number | null; onCha
               accessibilityLabel={`${n} out of 10`}
               style={[s.dot, value != null && n < value && s.dotBelow, on && s.dotOn]}
             >
-              <Text style={[font('footnote', 'semibold'), { color: on ? C.bg : C.text }]}>{n}</Text>
+              <Text style={[font('footnote', 'semibold'), { color: on ? G.onPill : G.ink }]}>{n}</Text>
             </Pressable>
           );
         })}
       </View>
       <View style={s.scaleEnds}>
-        <Text style={[font('caption1'), { color: C.secondary }]}>No pain</Text>
-        <Text style={[font('caption1'), { color: C.secondary }]}>Worst imaginable</Text>
+        <Text style={[font('caption1'), { color: G.body }]}>No pain</Text>
+        <Text style={[font('caption1'), { color: G.body }]}>Worst imaginable</Text>
       </View>
     </View>
   );
@@ -130,9 +131,9 @@ export function Stepper({
 }) {
   return (
     <View style={s.stepper}>
-      <Text style={[font('body'), { color: C.text, flex: 1 }]}>{label}</Text>
+      <Text style={[font('body'), { color: G.ink, flex: 1 }]}>{label}</Text>
       <Pressable onPress={onEarlier} accessibilityRole="button" accessibilityLabel={`${label}, earlier`} style={s.stepButton}>
-        <Icon name="chevronLeft" size={18} color={C.tint} weight={2} />
+        <Icon name="chevronLeft" size={18} color={G.ink} weight={2} />
       </Pressable>
       <Text style={[font('body', 'semibold'), s.stepValue]} accessibilityLiveRegion="polite">
         {value}
@@ -145,7 +146,7 @@ export function Stepper({
         accessibilityState={{ disabled: laterDisabled }}
         style={[s.stepButton, laterDisabled && s.faded]}
       >
-        <Icon name="chevronRight" size={18} color={C.tint} weight={2} />
+        <Icon name="chevronRight" size={18} color={G.ink} weight={2} />
       </Pressable>
     </View>
   );
@@ -155,8 +156,8 @@ export function BarRow({ label, count, max, color, unit = '' }: { label: string;
   return (
     <View style={s.bar} accessible accessibilityLabel={`${label}, ${count}${unit}`}>
       <View style={s.barHead}>
-        <Text style={[font('subhead'), { color: C.text }]}>{label}</Text>
-        <Text style={[font('footnote'), { color: C.secondary }]}>
+        <Text style={[font('subhead'), { color: G.ink }]}>{label}</Text>
+        <Text style={[font('footnote'), { color: G.body }]}>
           {count}
           {unit}
         </Text>
@@ -201,8 +202,8 @@ const s = StyleSheet.create({
   header: { marginTop: 4, marginBottom: 16 },
   fieldLabel: { marginTop: 24, marginBottom: 10 },
 
-  track: { height: 6, borderRadius: 3, backgroundColor: C.fill, overflow: 'hidden' },
-  trackFill: { height: '100%', borderRadius: 3, backgroundColor: C.tint },
+  track: { height: 6, borderRadius: 3, backgroundColor: G.fill, overflow: 'hidden' },
+  trackFill: { height: '100%', borderRadius: 3, backgroundColor: G.ink },
 
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
@@ -237,10 +238,10 @@ const s = StyleSheet.create({
     paddingLeft: 16,
     marginTop: 8,
     borderRadius: RADIUS,
-    backgroundColor: C.card,
+    backgroundColor: G.fill,
   },
   stepButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  stepValue: { color: C.text, minWidth: 116, textAlign: 'center' },
+  stepValue: { color: G.ink, minWidth: 116, textAlign: 'center' },
 
 
   bar: { gap: 6, paddingVertical: 8 },

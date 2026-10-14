@@ -12,6 +12,7 @@ import { Composer } from '../ui/composer';
 import { DetailScreen, EmptyNote, SegmentedControl, SecondaryButton, SourceFooter, Tag } from '../ui/kit';
 import { L, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 const FILTERS = ['All', 'Notes', 'Symptoms', 'Context'] as const;
 
@@ -66,10 +67,10 @@ export function JournalScreen() {
 
       {journal ? (
         <View style={j.between}>
-          <Text style={[font('caption2', 'semibold'), { color: C.muted }]}>
+          <Text style={[font('caption2', 'semibold'), { color: G.meta }]}>
             {filter === 'All' ? `${journal.count} entries` : `${shown} shown`}
           </Text>
-          <Text style={[font('caption1'), { color: C.muted }]}>{journal.since}</Text>
+          <Text style={[font('caption1'), { color: G.meta }]}>{journal.since}</Text>
         </View>
       ) : null}
 

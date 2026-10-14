@@ -7,6 +7,7 @@ import { displayCopy } from '../lib/displayCopy';
 import { C, font, GUTTER } from '../theme';
 import { L, TILE_RADIUS } from './surface';
 import { CardFill } from './cardFill';
+import { G } from './scheme';
 
 // ── Icons ──────────────────────────────────────────────────────
 
@@ -16,7 +17,7 @@ export function ChevronRight({ light }: { light?: boolean } = {}) {
     <Svg width={8} height={13} viewBox="0 0 8 13" fill="none">
       <Path
         d="M1.5 1.5l5 5-5 5"
-        stroke={light ? L.rule : C.chevron}
+        stroke={light ? G.rule : G.meta}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -30,7 +31,7 @@ export function ChevronToggle({ open }: { open: boolean }) {
     <Svg width={13} height={8} viewBox="0 0 13 8" fill="none">
       <Path
         d={open ? 'M1.5 6.5l5-5 5 5' : 'M1.5 1.5l5 5 5-5'}
-        stroke={C.secondary}
+        stroke={G.body}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -56,11 +57,11 @@ export function ScreenHeader({ title, onBack }: { title: string; onBack: () => v
         style={({ pressed }) => [s.back, pressed && s.pressed]}
       >
         <Svg width={12} height={20} viewBox="0 0 12 20" fill="none">
-          <Path d="M10 2L2 10l8 8" stroke={C.tint} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+          <Path d="M10 2L2 10l8 8" stroke={G.ink} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
       </Pressable>
       <View style={s.headerTitle} pointerEvents="none">
-        <Text style={[font('headline'), { color: C.text }]} numberOfLines={1} accessibilityRole="header">
+        <Text style={[font('headline'), { color: G.ink }]} numberOfLines={1} accessibilityRole="header">
           {title}
         </Text>
       </View>
@@ -117,10 +118,10 @@ export function SaveBar({ label, onPress, disabled = false }: { label: string; o
 export function SecLabel({ children, right }: { children: string; right?: string }) {
   return (
     <View style={s.secLabel}>
-      <Text style={[font('title3', 'semibold'), { color: C.text, flex: 1 }]} accessibilityRole="header">
+      <Text style={[font('title3', 'semibold'), { color: G.ink, flex: 1 }]} accessibilityRole="header">
         {displayCopy(children)}
       </Text>
-      {right ? <Text style={[font('footnote'), { color: C.secondary }]}>{displayCopy(right)}</Text> : null}
+      {right ? <Text style={[font('footnote'), { color: G.body }]}>{displayCopy(right)}</Text> : null}
     </View>
   );
 }
@@ -167,7 +168,7 @@ export function SourceFooter({ kind, text }: { kind: SourceKind; text: string })
   return (
     <View style={s.sourceFooter}>
       <Tag label={SOURCE_LABEL[kind]} tone={kind} />
-      <Text style={[font('footnote'), { color: C.secondary, flex: 1 }]}>{displayCopy(text)}</Text>
+      <Text style={[font('footnote'), { color: G.body, flex: 1 }]}>{displayCopy(text)}</Text>
     </View>
   );
 }
@@ -203,7 +204,7 @@ export function SegmentedControl<T extends string>({
             style={[s.seg, !scroll && s.segFlex, on && s.segOn]}
           >
             <Text
-              style={[font('footnote', on ? 'semibold' : 'medium'), { color: on ? C.text : C.secondary }]}
+              style={[font('footnote', on ? 'semibold' : 'medium'), { color: on ? G.ink : G.body }]}
               numberOfLines={1}
             >
               {seg}
@@ -238,7 +239,7 @@ export function PrimaryButton({ label, onPress, disabled = false }: { label: str
       accessibilityState={{ disabled }}
       style={({ pressed }) => [s.button, s.primary, disabled && s.disabled, pressed && s.pressed]}
     >
-      <Text style={[font('headline'), { color: L.onPill }]}>{label}</Text>
+      <Text style={[font('headline'), { color: G.onPill }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -263,7 +264,7 @@ export function Lead({ text, style }: { text: string; style?: StyleProp<ViewStyl
 export function SecondaryButton({ label, onPress }: { label: string; onPress?: () => void }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [s.button, s.secondary, pressed && s.pressed]}>
-      <Text style={[font('headline'), { color: C.tint }]}>{label}</Text>
+      <Text style={[font('headline'), { color: G.ink }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -284,7 +285,7 @@ export function LinkButton({
       accessibilityRole="link"
       style={({ pressed }) => [s.link, center && { alignSelf: 'center' }, pressed && s.pressed]}
     >
-      <Text style={[font('subhead'), { color: C.tint }]}>{label}</Text>
+      <Text style={[font('subhead'), { color: G.ink }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -321,10 +322,10 @@ export function Row({
     >
       <View style={s.rowText}>
         <Text style={[font('body'), { color: titleColor }]}>{displayCopy(title)}</Text>
-        {sub ? <Text style={[font('footnote'), { color: C.secondary, marginTop: 2 }]}>{displayCopy(sub)}</Text> : null}
+        {sub ? <Text style={[font('footnote'), { color: G.body, marginTop: 2 }]}>{displayCopy(sub)}</Text> : null}
       </View>
       <View style={s.rowRight}>
-        {value ? <Text style={[font('body'), { color: valueColor ?? C.secondary }]}>{displayCopy(value)}</Text> : null}
+        {value ? <Text style={[font('body'), { color: valueColor ?? G.body }]}>{displayCopy(value)}</Text> : null}
         {onPress ? <ChevronRight /> : null}
       </View>
     </Pressable>
@@ -382,7 +383,7 @@ export function Facts({ rows }: { rows: { label: string; value: string }[] }) {
     <View>
       {rows.map((r) => (
         <View key={r.label} style={s.fact}>
-          <Text style={[font('subhead'), { color: C.secondary }]}>{displayCopy(r.label)}</Text>
+          <Text style={[font('subhead'), { color: G.body }]}>{displayCopy(r.label)}</Text>
           <Text style={[font('subhead'), s.factValue]}>{displayCopy(r.value)}</Text>
         </View>
       ))}
@@ -396,7 +397,7 @@ export const s = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: L.rule,
+    borderTopColor: G.rule,
   },
   fill: { flex: 1 },
   pressed: { opacity: 0.55 },
@@ -420,7 +421,7 @@ export const s = StyleSheet.create({
     paddingHorizontal: GUTTER,
     paddingVertical: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: C.separator,
+    borderTopColor: G.rule,
   },
 
   segWrap: { marginBottom: 20 },
@@ -431,7 +432,7 @@ export const s = StyleSheet.create({
   // the wrong one gets picked.
   segBar: {
     flexDirection: 'row',
-    backgroundColor: C.fill,
+    backgroundColor: G.fill,
     borderRadius: 999,
     padding: 3,
     minHeight: 44,
@@ -446,8 +447,8 @@ export const s = StyleSheet.create({
   // The white pill, as the Your Care cards set their actions: the one
   // primary action on any screen.
   primary: { backgroundColor: L.pill, borderRadius: 999 },
-  statement: { color: L.ink, lineHeight: 28, letterSpacing: -0.2 },
-  statementRest: { color: L.body, lineHeight: 23, marginTop: 6 },
+  statement: { color: G.ink, lineHeight: 28, letterSpacing: -0.2 },
+  statementRest: { color: G.body, lineHeight: 23, marginTop: 6 },
   disabled: { opacity: 0.4 },
   secondary: { backgroundColor: C.fill },
   link: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
@@ -465,12 +466,12 @@ export const s = StyleSheet.create({
     gap: 16,
     paddingVertical: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: C.separator,
+    borderTopColor: G.rule,
   },
-  factValue: { color: C.text, flexShrink: 1, textAlign: 'right' },
+  factValue: { color: G.ink, flexShrink: 1, textAlign: 'right' },
 });
 
 // What a screen shows while her record has nothing for it yet.
 export function EmptyNote({ text }: { text: string }) {
-  return <Text style={[font('body'), { color: C.secondary, lineHeight: 25 }]}>{displayCopy(text)}</Text>;
+  return <Text style={[font('body'), { color: G.body, lineHeight: 25 }]}>{displayCopy(text)}</Text>;
 }

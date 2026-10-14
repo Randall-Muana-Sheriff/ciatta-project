@@ -38,6 +38,7 @@ import { Icon } from '../ui/icons';
 import { DetailScreen, PrimaryButton, Lead } from '../ui/kit';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 const today = () => {
   const d = new Date();
@@ -118,7 +119,7 @@ export function DailyLogScreen() {
               }
             }}
           />
-          {error ? <Text style={[font('footnote'), { color: L.ink, marginTop: 10 }]}>{displayCopy(error)}</Text> : null}
+          {error ? <Text style={[font('footnote'), { color: G.ink, marginTop: 10 }]}>{displayCopy(error)}</Text> : null}
         </View>
       }
     >
@@ -159,7 +160,7 @@ export function DailyLogScreen() {
             value={draft}
             onChangeText={setDraft}
             placeholder="Porridge with berries"
-            placeholderTextColor={L.meta}
+            placeholderTextColor={G.meta}
             style={[font('body'), s.foodInput]}
             onSubmitEditing={addFood}
             returnKeyType="done"
@@ -169,7 +170,7 @@ export function DailyLogScreen() {
             value={kcalDraft}
             onChangeText={setKcalDraft}
             placeholder="kcal"
-            placeholderTextColor={L.meta}
+            placeholderTextColor={G.meta}
             keyboardType="number-pad"
             style={[font('body'), s.kcalInput]}
             accessibilityLabel="Calories from the label, if you have it"
@@ -180,7 +181,7 @@ export function DailyLogScreen() {
             accessibilityLabel="Add"
             style={({ pressed }) => [s.add, pressed && s.pressed]}
           >
-            <Icon name="plus" size={20} color={L.canvas} />
+            <Icon name="plus" size={20} color={G.onPill} />
           </Pressable>
         </View>
         <Text style={[font('caption2'), s.note]}>The calorie box is optional, and only for a figure you can read.</Text>
@@ -305,7 +306,7 @@ function Counter({
           hitSlop={8}
           style={({ pressed }) => [s.stepper, pressed && s.pressed]}
         >
-          <Icon name="minus" size={16} color={L.body} />
+          <Icon name="minus" size={16} color={G.body} />
         </Pressable>
         <Text style={[font('headline'), value == null ? s.none : s.nameOn]}>{value == null ? 'Not set' : value}</Text>
         <Pressable
@@ -315,7 +316,7 @@ function Counter({
           hitSlop={8}
           style={({ pressed }) => [s.stepper, pressed && s.pressed]}
         >
-          <Icon name="plus" size={16} color={L.body} />
+          <Icon name="plus" size={16} color={G.body} />
         </Pressable>
       </View>
     </View>
@@ -360,29 +361,29 @@ function Scale({
 const st = StyleSheet.hairlineWidth;
 
 const s = StyleSheet.create({
-  lede: { color: L.ink, lineHeight: 24, paddingHorizontal: GUTTER },
-  note: { color: L.meta, lineHeight: 18, marginTop: 6 },
+  lede: { color: G.ink, lineHeight: 24, paddingHorizontal: GUTTER },
+  note: { color: G.meta, lineHeight: 18, marginTop: 6 },
   sub: { color: L.body, marginTop: SPACE.near },
   section: { marginTop: SPACE.block, paddingHorizontal: GUTTER },
 
   addRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
   foodInput: {
     flex: 1,
-    color: L.ink,
-    backgroundColor: L.recessed,
+    color: G.ink,
+    backgroundColor: G.fill,
     borderRadius: 12,
     borderWidth: st,
-    borderColor: L.rule,
+    borderColor: G.rule,
     paddingHorizontal: 14,
     height: 48,
   },
   kcalInput: {
     width: 74,
-    color: L.ink,
-    backgroundColor: L.recessed,
+    color: G.ink,
+    backgroundColor: G.fill,
     borderRadius: 12,
     borderWidth: st,
-    borderColor: L.rule,
+    borderColor: G.rule,
     paddingHorizontal: 10,
     height: 48,
     textAlign: 'center',
@@ -399,11 +400,11 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
   divided: { borderTopWidth: st, borderTopColor: L.rule },
   name: { color: L.body, flex: 1 },
-  nameOn: { color: L.ink, flex: 1 },
+  nameOn: { color: G.ink, flex: 1 },
   // An estimate is drawn in Uncertainty, which is the system's hue for a
   // gap, so it never looks like a measured figure even at a glance.
   estimate: { color: HUE.uncertainty },
-  total: { color: L.meta, marginTop: 10, lineHeight: 18 },
+  total: { color: G.meta, marginTop: 10, lineHeight: 18 },
 
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
   chip: {
@@ -426,8 +427,8 @@ const s = StyleSheet.create({
     borderWidth: st,
     borderColor: L.rule,
   },
-  clear: { color: L.meta },
-  none: { color: L.meta },
+  clear: { color: G.meta },
+  none: { color: G.meta },
 
   scale: { marginTop: SPACE.near },
   scaleRow: { flexDirection: 'row', gap: 8, marginTop: 10 },

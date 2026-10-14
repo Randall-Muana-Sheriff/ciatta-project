@@ -25,7 +25,7 @@ export function ToolbarButton({ icon, label, onPress }: { icon: IconName; label:
       accessibilityLabel={label}
       style={({ pressed }) => [s.toolbarButton, pressed && s.pressed]}
     >
-      <Icon name={icon} size={20} color={C.tint} weight={2} />
+      <Icon name={icon} size={20} color={G.ink} weight={2} />
     </Pressable>
   );
 }
@@ -33,7 +33,7 @@ export function ToolbarButton({ icon, label, onPress }: { icon: IconName; label:
 export function TextButton({ label, onPress }: { label: string; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [s.textButton, pressed && s.pressed]}>
-      <Text style={[font('body'), { color: C.tint }]}>{label}</Text>
+      <Text style={[font('body'), { color: G.ink }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -50,14 +50,14 @@ export function LargeTitle({ title, eyebrow, trailing }: { title?: string; eyebr
       <View style={{ flex: 1 }}>
         {eyebrow ? (
           <Text
-            style={[font('footnote', 'semibold'), { color: C.secondary }]}
+            style={[font('footnote', 'semibold'), { color: G.body }]}
             accessibilityRole={title ? undefined : 'header'}
           >
             {eyebrow}
           </Text>
         ) : null}
         {title ? (
-          <Text style={[font('headline', 'bold'), { color: C.text }]} accessibilityRole="header">
+          <Text style={[font('headline', 'bold'), { color: G.ink }]} accessibilityRole="header">
             {title}
           </Text>
         ) : null}
@@ -76,7 +76,7 @@ export function Panel({ children, style }: { children: ReactNode; style?: object
 export function PanelTitle({ icon, children }: { icon: IconName; children: string }) {
   return (
     <View style={s.panelTitle}>
-      <Icon name={icon} size={20} color={C.tint} weight={1.8} />
+      <Icon name={icon} size={20} color={C.text} weight={1.8} />
       <Text style={[font('headline'), { color: C.text, flex: 1 }]} accessibilityRole="header">
         {children}
       </Text>
@@ -244,7 +244,7 @@ export function BottomNav({
         accessibilityLabel="Track something"
         style={({ pressed }) => [s.track, pressed && s.pressed]}
       >
-        <Icon name="plus" size={26} color={L.canvas} weight={2} />
+        <Icon name="plus" size={26} color={L.onPill} weight={2} />
       </Pressable>
     </View>
   );
@@ -262,7 +262,7 @@ function Card({ children, style, role }: { children: ReactNode; style: ViewStyle
       // clear bar over a washed ground stops being a surface. The scheme
       // is pinned dark because the app is, so the glass cannot resolve
       // light under a system setting the rest of the app ignores.
-      {...(GLASS ? ({ glassEffectStyle: 'regular', colorScheme: G.mode } as const) : {})}
+      {...(GLASS ? ({ glassEffectStyle: 'regular', colorScheme: 'dark' } as const) : {})}
     >
       {children}
     </Surface>
@@ -333,8 +333,8 @@ const s = StyleSheet.create({
   panelTitle: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
 
   iconSquare: { width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
-  groupHeader: { color: C.text, marginBottom: 8 },
-  groupHeaderLight: { color: L.ink },
+  groupHeader: { color: G.ink, marginBottom: 8 },
+  groupHeaderLight: { color: G.ink },
   groupLight: {
     backgroundColor: L.field,
     borderRadius: TILE_RADIUS,
@@ -344,7 +344,7 @@ const s = StyleSheet.create({
     backgroundColor: L.field,
     borderRadius: TILE_RADIUS,
     overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
-  groupFooter: { color: C.secondary, marginTop: 6, paddingHorizontal: 16 },
+  groupFooter: { color: G.body, marginTop: 6, paddingHorizontal: 16 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 16, minHeight: 44 },
   checkBlank: { width: 20 },
   rowBody: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingVertical: 11, paddingRight: 16 },
@@ -419,7 +419,7 @@ const s = StyleSheet.create({
   // one step above the page, and it is edged like a selected tile so the two
   // read as the same kind of selection.
   tabOn: {
-    backgroundColor: L.fillSelected,
+    backgroundColor: C.fillSelected,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: L.edgeOn,
   },

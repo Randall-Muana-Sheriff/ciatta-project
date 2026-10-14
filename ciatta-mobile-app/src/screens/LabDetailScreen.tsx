@@ -18,6 +18,7 @@ import { DetailScreen, EmptyNote } from '../ui/kit';
 import { LabRangeBar, LabStatusTag, STATUS_COLOR } from '../ui/labs';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 const CHART_H = 150;
 
@@ -141,11 +142,11 @@ export function LabDetailScreen() {
 
 const s = StyleSheet.create({
   meta: { color: L.meta },
-  body: { color: L.body },
+  body: { color: G.body },
   ink: { color: L.ink },
   big: { flexDirection: 'row', alignItems: 'baseline', marginVertical: 6 },
-  value: { color: L.ink, letterSpacing: -1.5 },
-  unit: { color: L.body, marginLeft: 6 },
+  value: { color: G.ink, letterSpacing: -1.5 },
+  unit: { color: G.body, marginLeft: 6 },
   card: { marginTop: SPACE.tight, backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 14, overflow: 'hidden' },
   ends: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },

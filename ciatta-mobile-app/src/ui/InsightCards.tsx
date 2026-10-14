@@ -16,6 +16,7 @@ import { font } from '../theme';
 import { Icon } from './icons';
 import { PhotoCard } from './PhotoCard';
 import { L } from './surface';
+import { G } from './scheme';
 
 // The heading images, generated for Ciatta in one style: a dark room,
 // light in two of the design system's hues, a soft figure out of focus.
@@ -56,8 +57,8 @@ export function InsightCards() {
             accessibilityState={{ selected: savedOnly }}
             style={[s.savedChip, savedOnly && s.savedChipOn]}
           >
-            <Icon name="bookmark" size={13} color={savedOnly ? L.canvas : L.body} filled={savedOnly} />
-            <Text style={[font('footnote', 'semibold'), { color: savedOnly ? L.canvas : L.body }]}>{`Saved ${saved.length}`}</Text>
+            <Icon name="bookmark" size={13} color={savedOnly ? G.onPill : G.body} filled={savedOnly} />
+            <Text style={[font('footnote', 'semibold'), { color: savedOnly ? G.onPill : G.body }]}>{`Saved ${saved.length}`}</Text>
           </Pressable>
         ) : null}
       </View>
@@ -136,7 +137,7 @@ export function InsightCards() {
 
 const s = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  ink: { color: L.ink },
+  ink: { color: G.ink },
   row: { gap: 12, paddingTop: 12 },
   card: { width: 272, height: 340 },
   title: { color: '#FFFFFF', lineHeight: 28 },

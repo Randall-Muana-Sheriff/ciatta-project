@@ -18,6 +18,7 @@ import { font } from '../theme';
 import { DetailScreen, EmptyNote, Tag } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const longDate = (iso: string) => {
@@ -117,9 +118,9 @@ export function ProcedureScreen() {
 }
 
 const p = StyleSheet.create({
-  question: { color: L.ink },
-  sentence: { color: L.body, lineHeight: 24, marginTop: SPACE.tight },
-  title: { color: L.ink, marginTop: SPACE.block, marginBottom: SPACE.tight },
+  question: { color: G.ink },
+  sentence: { color: G.body, lineHeight: 24, marginTop: SPACE.tight },
+  title: { color: G.ink, marginTop: SPACE.block, marginBottom: SPACE.tight },
   block: {
     backgroundColor: L.glass,
     borderRadius: TILE_RADIUS,
@@ -131,5 +132,5 @@ const p = StyleSheet.create({
   procedure: { backgroundColor: L.statement },
   ink: { color: L.ink },
   meta: { color: L.meta },
-  close: { color: L.meta, marginTop: SPACE.block, lineHeight: 18 },
+  close: { color: G.meta, marginTop: SPACE.block, lineHeight: 18 },
 });

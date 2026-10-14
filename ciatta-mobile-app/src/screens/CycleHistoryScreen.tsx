@@ -11,6 +11,7 @@ import { C, font } from '../theme';
 import { ListGroup, ListRow, Panel } from '../ui/chrome';
 import { BarRow, ObservationCard } from '../ui/cycleInputs';
 import { DetailScreen, SecLabel, SourceFooter } from '../ui/kit';
+import { G } from '../ui/scheme';
 
 function SeverityStrip({ severities }: { severities: number[] }) {
   const W = 132;
@@ -117,7 +118,7 @@ export function CycleHistoryScreen() {
             ))}
           </ListGroup>
         ) : (
-          <Text style={[font('subhead'), { color: C.secondary }]}>You haven't marked any flare ups.</Text>
+          <Text style={[font('subhead'), { color: G.body }]}>You haven't marked any flare ups.</Text>
         )}
       </View>
 

@@ -25,6 +25,7 @@ import { Eyebrow } from '../ui/bento';
 import { DetailScreen, SecondaryButton, Lead } from '../ui/kit';
 import { L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 const WINDOWS: { label: string; days: number }[] = [
   { label: '1 month', days: 30 },
@@ -194,7 +195,7 @@ function Section({ section }: { section: BriefSection }) {
 const s = StyleSheet.create({
   fill: { flex: 1 },
   body: { paddingHorizontal: GUTTER, paddingBottom: NAV_CLEARANCE },
-  lede: { color: L.body, lineHeight: 24, marginBottom: SPACE.block },
+  lede: { color: G.body, lineHeight: 24, marginBottom: SPACE.block },
   spans: { flexDirection: 'row', gap: 8, marginTop: 10 },
   span: {
     color: L.body,
@@ -204,11 +205,11 @@ const s = StyleSheet.create({
     backgroundColor: L.glass,
     overflow: 'hidden',
   },
-  spanOn: { color: L.canvas, backgroundColor: L.ink },
-  range: { color: L.meta, marginTop: 8 },
+  spanOn: { color: L.onPill, backgroundColor: L.ink },
+  range: { color: G.meta, marginTop: 8 },
   section: { marginTop: SPACE.block },
-  title: { color: L.ink },
-  what: { color: L.meta, marginTop: 2 },
+  title: { color: G.ink },
+  what: { color: G.meta, marginTop: 2 },
   card: {
     marginTop: 10,
     backgroundColor: L.glass,
@@ -222,5 +223,5 @@ const s = StyleSheet.create({
   lineDetail: { color: L.meta, marginTop: 2 },
   empty: { color: L.body, paddingVertical: 14, lineHeight: 21 },
   take: { marginTop: SPACE.section },
-  none: { color: L.body, lineHeight: 21 },
+  none: { color: G.body, lineHeight: 21 },
 });

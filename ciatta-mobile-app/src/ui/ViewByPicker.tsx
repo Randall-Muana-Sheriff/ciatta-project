@@ -10,6 +10,7 @@ import { C, font } from '../theme';
 import { Icon } from './icons';
 import { L, TILE_RADIUS } from './surface';
 import { CardFill } from './cardFill';
+import { G } from './scheme';
 
 export function ViewByPicker({ scale, onChange }: { scale: Scale; onChange: (scale: Scale) => void }) {
   const [open, setOpen] = useState(false);
@@ -24,8 +25,8 @@ export function ViewByPicker({ scale, onChange }: { scale: Scale; onChange: (sca
         style={s.picker}
       >
         <CardFill />
-        <Text style={[font('subhead', 'semibold'), { color: C.text }]}>View by {label}</Text>
-        <Icon name={open ? 'chevronDown' : 'chevronRight'} size={16} color={C.secondary} />
+        <Text style={[font('subhead', 'semibold'), { color: G.ink }]}>View by {label}</Text>
+        <Icon name={open ? 'chevronDown' : 'chevronRight'} size={16} color={G.body} />
       </Pressable>
       {open ? (
         <View style={s.menu}>

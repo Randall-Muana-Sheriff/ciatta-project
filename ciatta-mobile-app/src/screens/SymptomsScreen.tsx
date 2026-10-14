@@ -16,6 +16,7 @@ import { useData, useRepo } from '../state/session';
 import { C, font } from '../theme';
 import { DetailScreen, EmptyNote, Expandable, Facts, SecLabel, SecondaryButton, SegmentedControl, SourceFooter } from '../ui/kit';
 import { L } from '../ui/surface';
+import { G } from '../ui/scheme';
 
 export function SymptomsScreen() {
   const nav = useNav();
@@ -78,7 +79,7 @@ export function SymptomsScreen() {
                 </Text>
                 <View style={s.cells}>
                   {row.counts.map((n, i) => (
-                    <View key={i} style={[s.cell, { backgroundColor: n ? C.violet : L.recessed, opacity: n ? 0.3 + (n / most) * 0.7 : 1 }]} />
+                    <View key={i} style={[s.cell, { backgroundColor: n ? C.violet : G.fill, opacity: n ? 0.3 + (n / most) * 0.7 : 1 }]} />
                   ))}
                 </View>
               </View>
@@ -119,8 +120,8 @@ export function SymptomsScreen() {
 const s = StyleSheet.create({
   grid: { marginBottom: 24, gap: 8 },
   gridRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  gridName: { color: L.body, width: 96 },
+  gridName: { color: G.body, width: 96 },
   cells: { flex: 1, flexDirection: 'row', gap: 3 },
   cell: { flex: 1, height: 18, borderRadius: 4 },
-  meta: { color: L.meta, marginTop: 4 },
+  meta: { color: G.meta, marginTop: 4 },
 });

@@ -35,6 +35,7 @@ import { ChoiceChips } from './cycleInputs';
 import { PrimaryButton, SecondaryButton } from './kit';
 import { L, SPACE, TILE_RADIUS } from './surface';
 import { CardFill } from './cardFill';
+import { G } from './scheme';
 
 const id = () => `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
@@ -193,6 +194,6 @@ const p = StyleSheet.create({
   currentName: { color: L.ink },
   meta: { color: L.meta },
   actions: { gap: SPACE.tight, marginTop: SPACE.tight },
-  error: { color: L.ink },
-  safety: { color: L.body, lineHeight: 19 },
+  error: { color: G.ink },
+  safety: { color: G.body, lineHeight: 19 },
 });

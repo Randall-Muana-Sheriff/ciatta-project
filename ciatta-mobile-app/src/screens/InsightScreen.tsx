@@ -19,6 +19,7 @@ import { PhotoCard } from '../ui/PhotoCard';
 import { Sheet } from '../ui/Sheet';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 export function InsightScreen() {
   const nav = useNav();
@@ -76,7 +77,7 @@ export function InsightScreen() {
               hitSlop={8}
               style={[s.reaction, of(insight.id).reaction === 'up' && s.reactionOn]}
             >
-              <Icon name="thumbUp" size={18} color={of(insight.id).reaction === 'up' ? L.canvas : L.body} />
+              <Icon name="thumbUp" size={18} color={of(insight.id).reaction === 'up' ? G.onPill : G.body} />
             </Pressable>
             <Pressable
               onPress={() => react(insight.id, { reaction: of(insight.id).reaction === 'down' ? null : 'down' })}
@@ -86,7 +87,7 @@ export function InsightScreen() {
               hitSlop={8}
               style={[s.reaction, of(insight.id).reaction === 'down' && s.reactionOn]}
             >
-              <Icon name="thumbDown" size={18} color={of(insight.id).reaction === 'down' ? L.canvas : L.body} />
+              <Icon name="thumbDown" size={18} color={of(insight.id).reaction === 'down' ? G.onPill : G.body} />
             </Pressable>
             <Pressable
               onPress={() => react(insight.id, { saved: !of(insight.id).saved })}
@@ -96,7 +97,7 @@ export function InsightScreen() {
               hitSlop={8}
               style={[s.reaction, of(insight.id).saved && s.reactionOn]}
             >
-              <Icon name="bookmark" size={18} color={of(insight.id).saved ? L.canvas : L.body} filled={of(insight.id).saved} />
+              <Icon name="bookmark" size={18} color={of(insight.id).saved ? G.onPill : G.body} filled={of(insight.id).saved} />
             </Pressable>
             {of(insight.id).reaction === 'down' ? (
               <Text style={[font('footnote'), s.meta, { flex: 1 }]}>Got it. Ciatta will show fewer like this.</Text>
@@ -136,8 +137,8 @@ export function InsightScreen() {
         accessibilityRole="button"
         style={({ pressed }) => [s.discuss, pressed && { opacity: 0.8 }]}
       >
-        <Icon name="chat" size={16} color={L.onPill} />
-        <Text style={[font('subhead', 'semibold'), { color: L.onPill }]}>Discuss</Text>
+        <Icon name="chat" size={16} color={G.onPill} />
+        <Text style={[font('subhead', 'semibold'), { color: G.onPill }]}>Discuss</Text>
       </Pressable>
 
       <Sheet visible={sourcesOpen} title="Sources" onDone={() => setSourcesOpen(false)}>
@@ -179,11 +180,11 @@ const s = StyleSheet.create({
   },
   body: { paddingHorizontal: GUTTER, paddingTop: SPACE.block, gap: 14 },
   ink: { color: L.ink },
-  meta: { color: L.meta },
+  meta: { color: G.meta },
   bullet: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: HUE.reported, marginTop: 9 },
-  bulletText: { color: L.ink, flex: 1, lineHeight: 26 },
-  paragraph: { color: L.ink, lineHeight: 27, marginTop: 6 },
+  bulletText: { color: G.ink, flex: 1, lineHeight: 26 },
+  paragraph: { color: G.ink, lineHeight: 27, marginTop: 6 },
   record: { marginTop: 8, padding: 16, gap: 6, borderRadius: TILE_RADIUS, backgroundColor: L.glass, overflow: 'hidden' },
   recordLine: { color: L.body, lineHeight: 21 },
   discuss: {

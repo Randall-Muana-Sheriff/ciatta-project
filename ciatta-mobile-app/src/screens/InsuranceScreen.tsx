@@ -14,6 +14,7 @@ import { useRepo } from '../state/session';
 import { font } from '../theme';
 import { DetailScreen, SecondaryButton, SaveBar } from '../ui/kit';
 import { L, SPACE } from '../ui/surface';
+import { G } from '../ui/scheme';
 
 export function InsuranceScreen() {
   const nav = useNav();
@@ -73,15 +74,15 @@ export function InsuranceScreen() {
   return (
     <DetailScreen title="Insurance" onBack={nav.back} footer={<SaveBar label={saving ? 'Saving' : 'Save'} disabled={saving || !provider.trim()} onPress={() => void save()} />}>
       <Text style={[font('caption1'), s.label]}>Insurer</Text>
-      <TextInput value={provider} onChangeText={setProvider} placeholder="For example, Anthem" placeholderTextColor={L.meta} style={[font('body'), s.input]} accessibilityLabel="Insurer" autoCapitalize="words" />
+      <TextInput value={provider} onChangeText={setProvider} placeholder="For example, Anthem" placeholderTextColor={G.meta} style={[font('body'), s.input]} accessibilityLabel="Insurer" autoCapitalize="words" />
       <Text style={[font('caption1'), s.label]}>Plan</Text>
-      <TextInput value={plan} onChangeText={setPlan} placeholder="For example, PPO" placeholderTextColor={L.meta} style={[font('body'), s.input]} accessibilityLabel="Plan" />
+      <TextInput value={plan} onChangeText={setPlan} placeholder="For example, PPO" placeholderTextColor={G.meta} style={[font('body'), s.input]} accessibilityLabel="Plan" />
       <Text style={[font('caption1'), s.label]}>Member ID</Text>
       <TextInput
         value={memberId}
         onChangeText={setMemberId}
         placeholder="Optional"
-        placeholderTextColor={L.meta}
+        placeholderTextColor={G.meta}
         style={[font('body'), s.input]}
         accessibilityLabel="Member ID, optional"
         autoCapitalize="characters"
@@ -101,7 +102,7 @@ export function InsuranceScreen() {
 }
 
 const s = StyleSheet.create({
-  label: { color: L.meta, marginTop: SPACE.near, marginBottom: 6 },
-  input: { color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
-  note: { color: L.meta, marginTop: 10, lineHeight: 18 },
+  label: { color: G.meta, marginTop: SPACE.near, marginBottom: 6 },
+  input: { color: G.ink, backgroundColor: G.fill, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
+  note: { color: G.meta, marginTop: 10, lineHeight: 18 },
 });

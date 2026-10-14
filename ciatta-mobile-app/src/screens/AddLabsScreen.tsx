@@ -24,6 +24,7 @@ import { DetailScreen, PrimaryButton, SecondaryButton, SaveBar, Lead } from '../
 import { LabStatusTag } from '../ui/labs';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 type Line = { key: string; keep: boolean; name: string; value: string; unit: string; range: string; flag: LabFlag | null };
 
@@ -164,12 +165,12 @@ export function AddLabsScreen() {
         <>
           <Lead style={s.lede} text={"Check each line against your report. Correct anything that was read wrong, or switch it off."} />
           <Text style={[font('caption1'), s.label]}>Lab</Text>
-          <TextInput value={lab} onChangeText={setLab} placeholder="For example, Quest Diagnostics" placeholderTextColor={L.meta} style={[font('body'), s.input]} accessibilityLabel="Lab" />
+          <TextInput value={lab} onChangeText={setLab} placeholder="For example, Quest Diagnostics" placeholderTextColor={G.meta} style={[font('body'), s.input]} accessibilityLabel="Lab" />
           <Text style={[font('caption1'), s.label]}>Collected on</Text>
           <View style={s.dateRow}>
-            <TextInput value={day} onChangeText={setDay} placeholder="Day" keyboardType="number-pad" maxLength={2} placeholderTextColor={L.meta} style={[font('body'), s.input, s.part]} accessibilityLabel="Day" />
-            <TextInput value={month} onChangeText={setMonth} placeholder="Month" keyboardType="number-pad" maxLength={2} placeholderTextColor={L.meta} style={[font('body'), s.input, s.part]} accessibilityLabel="Month, as a number" />
-            <TextInput value={year} onChangeText={setYear} placeholder="Year" keyboardType="number-pad" maxLength={4} placeholderTextColor={L.meta} style={[font('body'), s.input, s.part]} accessibilityLabel="Year" />
+            <TextInput value={day} onChangeText={setDay} placeholder="Day" keyboardType="number-pad" maxLength={2} placeholderTextColor={G.meta} style={[font('body'), s.input, s.part]} accessibilityLabel="Day" />
+            <TextInput value={month} onChangeText={setMonth} placeholder="Month" keyboardType="number-pad" maxLength={2} placeholderTextColor={G.meta} style={[font('body'), s.input, s.part]} accessibilityLabel="Month, as a number" />
+            <TextInput value={year} onChangeText={setYear} placeholder="Year" keyboardType="number-pad" maxLength={4} placeholderTextColor={G.meta} style={[font('body'), s.input, s.part]} accessibilityLabel="Year" />
           </View>
           {!on ? <Text style={[font('footnote'), s.meta, { marginTop: 6 }]}>Add the day the sample was taken, as it is on the report.</Text> : null}
 
@@ -221,11 +222,11 @@ export function AddLabsScreen() {
 }
 
 const s = StyleSheet.create({
-  lede: { color: L.ink, lineHeight: 24, marginBottom: SPACE.near },
+  lede: { color: G.ink, lineHeight: 24, marginBottom: SPACE.near },
   meta: { color: L.meta },
   ink: { color: L.ink },
-  label: { color: L.meta, marginTop: SPACE.near, marginBottom: 6 },
-  input: { color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, marginTop: 4 },
+  label: { color: G.meta, marginTop: SPACE.near, marginBottom: 6 },
+  input: { color: G.ink, backgroundColor: G.fill, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, marginTop: 4 },
   dateRow: { flexDirection: 'row', gap: 8 },
   part: { flex: 1, textAlign: 'center' },
   card: { marginTop: 12, backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 14, overflow: 'hidden' },

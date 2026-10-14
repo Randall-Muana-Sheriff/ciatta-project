@@ -56,6 +56,7 @@ import { ProductNowCard } from '../ui/ProductNowCard';
 import type { IconName } from '../ui/icons';
 import { Icon } from '../ui/icons';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 function greeting(now: Date): string {
   const h = now.getHours();
@@ -336,7 +337,7 @@ export function TodayScreen() {
           hitSlop={10}
           style={({ pressed }) => [t.menu, pressed && t.pressed]}
         >
-          <Icon name="menu" size={26} color={L.ink} />
+          <Icon name="menu" size={26} color={G.ink} />
         </Pressable>
         <Wordmark />
         <Pressable
@@ -346,7 +347,7 @@ export function TodayScreen() {
           hitSlop={10}
           style={({ pressed }) => [t.menu, pressed && t.pressed]}
         >
-          <Icon name="calendar" size={25} color={L.ink} />
+          <Icon name="calendar" size={25} color={G.ink} />
         </Pressable>
       </View>
 
@@ -449,7 +450,7 @@ export function TodayScreen() {
             style={({ pressed }) => [t.all, pressed && t.pressed]}
           >
             <Text style={[font('footnote', 'semibold'), t.allText]}>All</Text>
-            <Icon name="chevronRight" size={14} color={L.body} />
+            <Icon name="chevronRight" size={14} color={G.body} />
           </Pressable>
         </View>
         {state.measured ? (
@@ -579,7 +580,7 @@ export function TodayScreen() {
                       hitSlop={8}
                       style={[t.tick, ticked && t.tickOn]}
                     >
-                      {ticked ? <Icon name="check" size={14} color={L.canvas} weight={2} /> : null}
+                      {ticked ? <Icon name="check" size={14} color={L.onPill} weight={2} /> : null}
                     </Pressable>
                     <Pressable
                       onPress={() => doItem(item)}
@@ -668,7 +669,7 @@ const t = StyleSheet.create({
   },
   // Both sides reserve the same width so the mark stays centred.
   menu: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  hello: { color: L.ink, letterSpacing: -0.4 },
+  hello: { color: G.ink, letterSpacing: -0.4 },
 
   dayCard: {
     marginTop: SPACE.near,
@@ -723,7 +724,7 @@ const t = StyleSheet.create({
     justifyContent: 'space-between',
   },
   all: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  allText: { color: L.body },
+  allText: { color: G.body },
 
   youCan: {
     marginTop: 10,
@@ -751,7 +752,7 @@ const t = StyleSheet.create({
   },
   chart: { flex: 1, aspectRatio: 190 / 150 },
   planHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  planCount: { color: L.meta },
+  planCount: { color: G.meta },
   plan: {
     marginTop: 10,
     backgroundColor: L.glass,

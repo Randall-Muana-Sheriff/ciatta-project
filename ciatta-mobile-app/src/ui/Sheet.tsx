@@ -8,6 +8,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { font, GUTTER } from '../theme';
 import { Ground, type GroundHue } from './Ground';
 import { HUE, L } from './surface';
+import { G } from './scheme';
 
 export function Sheet({
   visible,
@@ -48,8 +49,8 @@ export function Sheet({
 
 const s = StyleSheet.create({
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: GUTTER, paddingTop: 20, paddingBottom: 8 },
-  title: { color: L.ink },
+  title: { color: G.ink },
   done: { color: HUE.measured },
-  sub: { color: L.meta, paddingHorizontal: GUTTER },
+  sub: { color: G.meta, paddingHorizontal: GUTTER },
   body: { paddingHorizontal: GUTTER, paddingBottom: 40 },
 });

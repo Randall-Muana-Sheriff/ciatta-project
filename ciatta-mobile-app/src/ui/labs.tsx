@@ -73,7 +73,7 @@ const t = StyleSheet.create({
   tag: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start' },
   track: { backgroundColor: L.rule, position: 'relative' },
   band: { position: 'absolute', top: 0, bottom: 0, backgroundColor: 'rgba(94, 211, 196, 0.35)' },
-  dot: { position: 'absolute', borderWidth: 2, borderColor: L.canvas },
+  dot: { position: 'absolute', borderWidth: 2, borderColor: L.glass },
   ends: { height: 16, position: 'relative', marginTop: 2 },
   end: { position: 'absolute', color: L.meta, width: 40, marginLeft: -20, textAlign: 'center' },
 });

@@ -15,6 +15,7 @@ import { Icon, type IconName } from './icons';
 import { images } from './images';
 import { L, SPACE, TILE_RADIUS } from './surface';
 import { CardFill } from './cardFill';
+import { G } from './scheme';
 
 export function TodayStart({
   onConnect,
@@ -49,7 +50,7 @@ export function TodayStart({
           accessibilityState={{ busy: connecting }}
           style={({ pressed }) => [s.primary, (pressed || connecting) && s.pressed]}
         >
-          <Icon name="heart" size={16} color={L.canvas} />
+          <Icon name="heart" size={16} color={L.onPill} />
           <Text style={[font('subhead', 'semibold'), s.primaryText]}>{connecting ? 'Connecting' : 'Connect Apple Health'}</Text>
         </Pressable>
         {note ? <Text style={[font('footnote'), s.note]}>{displayCopy(note)}</Text> : null}
@@ -74,7 +75,7 @@ export function TodayStart({
 function Pill({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [s.pill, pressed && s.pressed]}>
-      <Icon name={icon} size={14} color={L.ink} />
+      <Icon name={icon} size={14} color={G.ink} />
       <Text style={[font('footnote', 'semibold'), s.pillText]}>{label}</Text>
     </Pressable>
   );
@@ -112,7 +113,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  primaryText: { color: L.canvas },
+  primaryText: { color: L.onPill },
   note: { color: L.meta, textAlign: 'center', marginTop: 10 },
   or: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 12 },
   pill: {
@@ -122,7 +123,7 @@ const s = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 14,
     borderRadius: 999, backgroundColor: L.recessed },
-  pillText: { color: L.ink },
+  pillText: { color: G.ink },
   pressed: { opacity: 0.6 },
   preview: {
     marginTop: SPACE.tight,

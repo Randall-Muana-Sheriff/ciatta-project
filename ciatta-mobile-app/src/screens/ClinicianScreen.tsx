@@ -14,6 +14,7 @@ import { useRepo } from '../state/session';
 import { font } from '../theme';
 import { DetailScreen, SaveBar, SecondaryButton } from '../ui/kit';
 import { L, SPACE } from '../ui/surface';
+import { G } from '../ui/scheme';
 
 const blank = (): ClinicianRow => ({
   id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
@@ -92,11 +93,11 @@ export function ClinicianScreen() {
       <View style={s.names}>
         <View style={{ flex: 1 }}>
           <Text style={[font('footnote'), s.label]}>First name</Text>
-          <TextInput value={first} onChangeText={setFirst} placeholder="Maria" placeholderTextColor={L.meta} autoCapitalize="words" style={[font('body'), s.input]} accessibilityLabel="First name" />
+          <TextInput value={first} onChangeText={setFirst} placeholder="Maria" placeholderTextColor={G.meta} autoCapitalize="words" style={[font('body'), s.input]} accessibilityLabel="First name" />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[font('footnote'), s.label]}>Last name</Text>
-          <TextInput value={last} onChangeText={setLast} placeholder="Rivera" placeholderTextColor={L.meta} autoCapitalize="words" style={[font('body'), s.input]} accessibilityLabel="Last name" />
+          <TextInput value={last} onChangeText={setLast} placeholder="Rivera" placeholderTextColor={G.meta} autoCapitalize="words" style={[font('body'), s.input]} accessibilityLabel="Last name" />
         </View>
       </View>
       {FIELDS.map((f) => (
@@ -135,7 +136,7 @@ export function ClinicianScreen() {
 
 const s = StyleSheet.create({
   names: { flexDirection: 'row', gap: 10 },
-  label: { color: L.meta, marginTop: SPACE.near, marginBottom: 6 },
-  input: { color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
-  note: { color: L.meta, marginTop: 10, lineHeight: 18 },
+  label: { color: G.meta, marginTop: SPACE.near, marginBottom: 6 },
+  input: { color: G.ink, backgroundColor: G.fill, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
+  note: { color: G.meta, marginTop: 10, lineHeight: 18 },
 });

@@ -63,6 +63,7 @@ import { CONNECT_SYMPTOMS } from '../lib/agent/connect';
 import type { RequestKind } from '../lib/care';
 import { Icon } from '../ui/icons';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
+import { G } from '../ui/scheme';
 
 // Said once, the first time she opens Care. Each line is a promise the
 // code below keeps, which is the only reason it is allowed to be said.
@@ -538,7 +539,7 @@ function AnswerBlock({ turn, onOpen, onGrow }: { turn: Turn; onOpen: (sug: Sugge
       <View style={s.answer} accessibilityLiveRegion="polite" accessibilityLabel={`${steps[step]}`}>
         {steps.slice(0, step + 1).map((label, n) => (
           <View key={label} style={s.stepRow}>
-            {n < step ? <Icon name="check" size={13} color={L.meta} /> : <Thinking />}
+            {n < step ? <Icon name="check" size={13} color={G.meta} /> : <Thinking />}
             <Text style={[font('footnote', n === step ? 'semibold' : 'regular'), n === step ? s.stepNow : s.stepDone]}>{label}</Text>
           </View>
         ))}
@@ -572,7 +573,7 @@ function AnswerBlock({ turn, onOpen, onGrow }: { turn: Turn; onOpen: (sug: Sugge
             <View key={k} style={[s.dot, { backgroundColor: DOT[k] }]} />
           ))}
           <Text style={[font('caption1', 'semibold'), s.factText]}>{`Sources, ${a.facts.length}`}</Text>
-          <Icon name={sources ? 'chevronDown' : 'chevronRight'} size={12} color={L.meta} />
+          <Icon name={sources ? 'chevronDown' : 'chevronRight'} size={12} color={G.meta} />
         </Pressable>
       ) : null}
       {a.facts.length && sources ? (
@@ -620,11 +621,11 @@ const st = StyleSheet.hairlineWidth;
 
 const s = StyleSheet.create({
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 22 },
-  stepNow: { color: L.ink },
-  stepDone: { color: L.meta },
+  stepNow: { color: G.ink },
+  stepDone: { color: G.meta },
   dots: { flexDirection: 'row', gap: 3, width: 13, alignItems: 'center' },
-  thinkDot: { width: 3.5, height: 3.5, borderRadius: 2, backgroundColor: L.ink },
-  caret: { color: L.meta },
+  thinkDot: { width: 3.5, height: 3.5, borderRadius: 2, backgroundColor: G.ink },
+  caret: { color: G.meta },
   sourcesToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', minHeight: 32 },
   fill: { flex: 1 },
   body: { paddingBottom: SPACE.block },
@@ -644,7 +645,7 @@ const s = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 14,
   },
-  nameText: { color: L.ink },
+  nameText: { color: G.ink },
   names: { gap: SPACE.tight, marginTop: 12 },
   nameOption: {
     flexDirection: 'row',
@@ -683,15 +684,15 @@ const s = StyleSheet.create({
     alignSelf: 'flex-end',
     maxWidth: '82%',
     marginTop: SPACE.near,
-    backgroundColor: L.statement,
+    backgroundColor: G.fillSelected,
     borderRadius: TILE_RADIUS,
     borderWidth: st,
-    borderColor: L.rule,
+    borderColor: G.rule,
     paddingVertical: 10,
     paddingHorizontal: 14,
   },
-  hersText: { color: L.ink },
-  hersFile: { color: L.meta, marginTop: 4 },
+  hersText: { color: G.ink },
+  hersFile: { color: G.meta, marginTop: 4 },
 
   answer: { marginTop: SPACE.near },
   // Escalation is the one case that takes a hue, and it takes Flare, which
@@ -703,14 +704,14 @@ const s = StyleSheet.create({
     borderColor: HUE.escalation,
     padding: 16,
   },
-  answerText: { color: L.ink, lineHeight: 25 },
+  answerText: { color: G.ink, lineHeight: 25 },
 
   facts: { marginTop: 12, gap: 6 },
   fact: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 6, height: 6, borderRadius: 3 },
-  factText: { color: L.meta, flex: 1 },
+  factText: { color: G.meta, flex: 1 },
 
-  abstained: { color: L.meta, marginTop: 10, lineHeight: 18 },
+  abstained: { color: G.meta, marginTop: 10, lineHeight: 18 },
 
   suggestions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 14 },
   actionCard: {

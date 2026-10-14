@@ -30,6 +30,7 @@ import { GLASS } from '../ui/glass';
 import { DetailScreen, SecondaryButton, Tag, SaveBar } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 type Phase = 'reading' | 'ready' | 'failed';
 
@@ -304,7 +305,7 @@ function Arc({ fill }: { fill: number }) {
   const at = point(Math.max(0.001, Math.min(1, fill)));
   return (
     <Svg width={size} height={size / 2 + 10} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <Path d={`M${start.x},${start.y} A${r},${r} 0 0 1 ${end.x},${end.y}`} stroke={L.rule} strokeWidth={5} fill="none" strokeLinecap="round" />
+      <Path d={`M${start.x},${start.y} A${r},${r} 0 0 1 ${end.x},${end.y}`} stroke={G.rule} strokeWidth={5} fill="none" strokeLinecap="round" />
       {fill > 0 ? (
         <Path d={`M${start.x},${start.y} A${r},${r} 0 0 1 ${at.x},${at.y}`} stroke="#6FB6F5" strokeWidth={5} fill="none" strokeLinecap="round" />
       ) : null}
@@ -316,7 +317,7 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
   return (
     <View style={f.field}>
       <Text style={[font('caption1'), f.meta]}>{label}</Text>
-      <TextInput value={value} onChangeText={onChange} style={[font('body'), f.input]} placeholderTextColor={L.meta} accessibilityLabel={label} />
+      <TextInput value={value} onChangeText={onChange} style={[font('body'), f.input]} placeholderTextColor={G.meta} accessibilityLabel={label} />
     </View>
   );
 }
@@ -362,15 +363,15 @@ const f = StyleSheet.create({
   cardFigure: { color: L.ink },
   cardCaption: { color: L.meta, marginBottom: 6 },
   estimateRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: SPACE.tight },
-  item: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: L.rule, paddingVertical: 12 },
+  item: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: G.rule, paddingVertical: 12 },
   itemHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   editor: { gap: 10, marginTop: 10 },
   numbers: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   field: { gap: 4 },
   numberField: { width: '47%', gap: 4 },
-  input: { color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 },
-  remove: { color: L.meta },
+  input: { color: G.ink, backgroundColor: G.fill, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 },
+  remove: { color: G.meta },
   block: { gap: SPACE.tight, marginTop: SPACE.block },
-  body: { color: L.ink },
-  meta: { color: L.meta, lineHeight: 18 },
+  body: { color: G.ink },
+  meta: { color: G.meta, lineHeight: 18 },
 });

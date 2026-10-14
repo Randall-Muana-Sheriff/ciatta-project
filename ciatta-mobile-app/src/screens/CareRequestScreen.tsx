@@ -17,6 +17,7 @@ import { useData, useRepo } from '../state/session';
 import { font } from '../theme';
 import { DetailScreen, SaveBar, SecondaryButton, SegmentedControl, Lead } from '../ui/kit';
 import { L, SPACE } from '../ui/surface';
+import { G } from '../ui/scheme';
 
 const STATUSES: RequestStatus[] = ['draft', 'sent', 'answered', 'closed'];
 const today = () => new Date().toISOString().slice(0, 10);
@@ -193,13 +194,13 @@ export function CareRequestScreen() {
 }
 
 const s = StyleSheet.create({
-  lede: { color: L.body, lineHeight: 21 },
-  label: { color: L.meta, marginTop: SPACE.near, marginBottom: 6 },
+  lede: { color: G.body, lineHeight: 21 },
+  label: { color: G.meta, marginTop: SPACE.near, marginBottom: 6 },
   input: { color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
   body: { minHeight: 180 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderColor: L.rule, backgroundColor: L.recessed },
   chipOn: { backgroundColor: L.statement, borderColor: L.ink },
-  ink: { color: L.ink },
-  note: { color: L.meta, marginTop: 10, lineHeight: 18 },
+  ink: { color: G.ink },
+  note: { color: G.meta, marginTop: 10, lineHeight: 18 },
 });

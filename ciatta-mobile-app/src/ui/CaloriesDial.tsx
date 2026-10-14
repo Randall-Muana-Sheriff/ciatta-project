@@ -7,6 +7,7 @@ import Svg, { Circle, Line, Path } from 'react-native-svg';
 
 import { L } from './surface';
 import { onGround } from './scheme';
+import { G } from './scheme';
 
 const SKY = onGround('#6FB6F5');
 
@@ -35,9 +36,9 @@ export function CaloriesDial({ fill, width }: { fill: number; width: number }) {
         const t = i / 30;
         const outer = at(t, r + 14);
         const inner = at(t, r + (i % 5 === 0 ? 6 : 10));
-        return <Line key={i} x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y} stroke={L.meta} strokeWidth={i % 5 === 0 ? 1.4 : 0.8} opacity={0.6} />;
+        return <Line key={i} x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y} stroke={G.meta} strokeWidth={i % 5 === 0 ? 1.4 : 0.8} opacity={0.6} />;
       })}
-      <Path d={arc(0, 1)} stroke={L.rule} strokeWidth={4} fill="none" strokeLinecap="round" />
+      <Path d={arc(0, 1)} stroke={G.rule} strokeWidth={4} fill="none" strokeLinecap="round" />
       {f > 0 ? <Path d={arc(0, f)} stroke={SKY} strokeWidth={4} fill="none" strokeLinecap="round" /> : null}
       <Circle cx={dot.x} cy={dot.y} r={7} fill={SKY} />
     </Svg>

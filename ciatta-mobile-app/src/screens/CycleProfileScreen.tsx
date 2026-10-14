@@ -12,6 +12,7 @@ import { C, font } from '../theme';
 import { ListGroup, ListRow } from '../ui/chrome';
 import { ChoiceChips, FieldLabel, Stepper } from '../ui/cycleInputs';
 import { DetailScreen, PrimaryButton } from '../ui/kit';
+import { G } from '../ui/scheme';
 
 const weeksAgo = (iso: string | undefined, now: Date) => (iso ? Math.max(0, Math.round(daysBetween(parseDay(iso), now) / 7)) : null);
 const weeksLabel = (n: number) => (n === 0 ? 'This week' : n === 1 ? '1 week ago' : `${n} weeks ago`);
@@ -48,12 +49,12 @@ export function CycleProfileScreen() {
       onBack={nav.back}
       footer={
         <View style={p.footer}>
-          {error ? <Text style={[font('footnote'), { color: C.tint, marginBottom: 8 }]}>{error}</Text> : null}
+          {error ? <Text style={[font('footnote'), { color: G.ink, marginBottom: 8 }]}>{error}</Text> : null}
           <PrimaryButton label="Save" onPress={save} disabled={saving} />
         </View>
       }
     >
-      <Text style={[font('subhead'), { color: C.secondary, marginBottom: 16 }]}>
+      <Text style={[font('subhead'), { color: G.body, marginBottom: 16 }]}>
         Pick everything that fits. You can change this any time.
       </Text>
       <ListGroup>
@@ -148,6 +149,6 @@ const p = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: C.separator,
+    borderTopColor: G.rule,
   },
 });

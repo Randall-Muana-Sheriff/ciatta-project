@@ -41,6 +41,7 @@ import { displayCopy } from '../lib/displayCopy';
 import { font } from '../theme';
 import { Icon, type IconName } from './icons';
 import { L, TILE_RADIUS } from './surface';
+import { G } from './scheme';
 
 export type ComposerProps = {
   value: string;
@@ -248,7 +249,7 @@ export function Composer({
               accessibilityLabel={way.label}
               style={({ pressed }) => [s.wayButton, way.shown && s.wayWide, pressed && s.pressed]}
             >
-              <Icon name={way.icon} size={19} color={L.body} />
+              <Icon name={way.icon} size={19} color={G.body} />
               {way.shown ? <Text style={[font('footnote'), s.wayLabel]}>{way.label}</Text> : null}
             </Pressable>
           ))}
@@ -287,7 +288,7 @@ export function Composer({
               style={({ pressed }) => [s.plus, open && s.plusOn, pressed && s.pressed]}
             >
               <View style={open ? s.turned : undefined}>
-                <Icon name="plus" size={20} color={open ? L.canvas : L.body} />
+                <Icon name="plus" size={20} color={open ? G.onPill : G.body} />
               </View>
             </Pressable>
           ) : (
@@ -304,7 +305,7 @@ export function Composer({
             <Icon
               name={action === 'stop' ? 'stopSquare' : action === 'send' ? 'send' : 'mic'}
               size={19}
-              color={action === 'mic' ? L.ink : L.canvas}
+              color={action === 'mic' ? G.ink : G.onPill}
               filled={action === 'stop'}
             />
           </Pressable>
@@ -339,7 +340,7 @@ export function Composer({
                 <Image source={{ uri: file.uri }} style={s.thumb} accessibilityIgnoresInvertColors />
               ) : (
                 <View style={[s.thumb, s.thumbDoc]}>
-                  <Icon name={file.kind === 'video' ? 'video' : 'doc'} size={16} color={L.body} />
+                  <Icon name={file.kind === 'video' ? 'video' : 'doc'} size={16} color={G.body} />
                 </View>
               )}
               {/*
@@ -356,7 +357,7 @@ export function Composer({
                 hitSlop={8}
                 style={({ pressed }) => [s.remove, pressed && s.pressed]}
               >
-                <Icon name="xmark" size={13} color={L.meta} />
+                <Icon name="xmark" size={13} color={G.meta} />
               </Pressable>
             </View>
           ))}
@@ -428,7 +429,7 @@ const s = StyleSheet.create({
     borderColor: L.rule,
   },
   wayWide: { paddingHorizontal: 16 },
-  wayLabel: { color: L.ink },
+  wayLabel: { color: G.ink },
   action: {
     width: 38,
     height: 38,
@@ -441,21 +442,21 @@ const s = StyleSheet.create({
   },
   actionOn: { backgroundColor: L.ink, borderColor: L.ink },
   pressed: { opacity: 0.55 },
-  partial: { color: L.meta, marginTop: 12, fontStyle: 'italic' },
-  note: { color: L.meta, marginTop: 10, lineHeight: 18 },
+  partial: { color: G.meta, marginTop: 12, fontStyle: 'italic' },
+  note: { color: G.meta, marginTop: 10, lineHeight: 18 },
   files: { marginTop: 12, gap: 8 },
   file: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: L.recessed,
+    backgroundColor: G.fill,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: L.rule,
+    borderColor: G.rule,
     paddingRight: 10,
   },
-  thumb: { width: 40, height: 40, borderTopLeftRadius: 12, borderBottomLeftRadius: 12, backgroundColor: L.statement },
+  thumb: { width: 40, height: 40, borderTopLeftRadius: 12, borderBottomLeftRadius: 12, backgroundColor: G.fillSelected },
   thumbDoc: { alignItems: 'center', justifyContent: 'center' },
-  fileName: { color: L.body, flex: 1 },
+  fileName: { color: G.body, flex: 1 },
   remove: { width: 26, height: 26, alignItems: 'center', justifyContent: 'center' },
 });

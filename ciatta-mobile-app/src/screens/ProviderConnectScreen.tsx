@@ -27,6 +27,7 @@ import { Icon } from '../ui/icons';
 import { DetailScreen, PrimaryButton, SecondaryButton } from '../ui/kit';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 export function ProviderConnectScreen() {
   const nav = useNav();
@@ -110,7 +111,7 @@ export function ProviderConnectScreen() {
 
       {directory === null ? (
         <View style={s.centre}>
-          <ActivityIndicator color={L.meta} />
+          <ActivityIndicator color={G.meta} />
         </View>
       ) : null}
 
@@ -239,7 +240,7 @@ function EndpointRow({
         <Text style={[font('subhead'), s.rowName]}>{displayCopy(endpoint.name)}</Text>
         {isSandbox(endpoint) ? <Text style={[font('caption1'), s.sandbox]}>Test server, not a hospital</Text> : null}
       </View>
-      <Icon name="chevronRight" size={15} color={L.meta} />
+      <Icon name="chevronRight" size={15} color={G.meta} />
     </Pressable>
   );
 }
@@ -311,7 +312,7 @@ function ProviderSheet({
         <View style={s.action}>
           {connecting ? (
             <View style={s.centre}>
-              <ActivityIndicator color={L.ink} />
+              <ActivityIndicator color={G.ink} />
               <Text style={[font('subhead'), s.note]}>Waiting for your provider.</Text>
             </View>
           ) : (
@@ -345,7 +346,7 @@ function ProviderSheet({
                         value={draftId}
                         onChangeText={setDraftId}
                         placeholder="Client ID"
-                        placeholderTextColor={L.meta}
+                        placeholderTextColor={G.meta}
                         autoCapitalize="none"
                         autoCorrect={false}
                         style={[font('body'), s.idInput]}
@@ -403,13 +404,13 @@ const s = StyleSheet.create({
   search: { flex: 1, color: L.ink },
 
   centre: { alignItems: 'center', gap: 10, paddingVertical: SPACE.block },
-  note: { color: L.meta, marginHorizontal: GUTTER, marginTop: 12, lineHeight: 19 },
-  empty: { color: L.body, marginHorizontal: GUTTER, marginTop: SPACE.block, lineHeight: 22 },
-  message: { color: L.ink, marginHorizontal: GUTTER, marginTop: SPACE.near, lineHeight: 22 },
+  note: { color: G.meta, marginHorizontal: GUTTER, marginTop: 12, lineHeight: 19 },
+  empty: { color: G.body, marginHorizontal: GUTTER, marginTop: SPACE.block, lineHeight: 22 },
+  message: { color: G.ink, marginHorizontal: GUTTER, marginTop: SPACE.near, lineHeight: 22 },
 
   group: { marginTop: SPACE.block, marginHorizontal: GUTTER },
-  groupTitle: { color: L.ink },
-  groupLine: { color: L.meta, marginTop: 2 },
+  groupTitle: { color: G.ink },
+  groupLine: { color: G.meta, marginTop: 2 },
   groupBody: { marginTop: 10, gap: 1 },
   viewAll: { color: HUE.measured, marginTop: 12 },
 
@@ -425,7 +426,7 @@ const s = StyleSheet.create({
     overflow: 'hidden',
   },
   rowAlone: { marginTop: SPACE.grid, marginHorizontal: GUTTER },
-  rowName: { color: L.ink },
+  rowName: { color: G.ink },
   sandbox: { color: HUE.uncertainty, marginTop: 2 },
 
   // The sheet sits at the foot of the screen; the scrim is painted on
@@ -438,36 +439,36 @@ const s = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderTopWidth: st,
-    borderColor: L.rule,
+    borderColor: G.rule,
     paddingTop: 10,
   },
-  grabber: { alignSelf: 'center', width: 38, height: 4, borderRadius: 2, backgroundColor: L.rule, marginBottom: 12 },
+  grabber: { alignSelf: 'center', width: 38, height: 4, borderRadius: 2, backgroundColor: G.rule, marginBottom: 12 },
   sheet: { paddingHorizontal: GUTTER, paddingBottom: SPACE.section },
   close: { alignSelf: 'center', marginTop: SPACE.block, paddingVertical: 12, paddingHorizontal: 20 },
-  closeText: { color: L.meta },
+  closeText: { color: G.meta },
   setup: { marginTop: SPACE.near, gap: 12 },
   idInput: {
-    color: L.ink,
-    backgroundColor: L.recessed,
+    color: G.ink,
+    backgroundColor: G.fill,
     borderRadius: 12,
     borderWidth: st,
-    borderColor: L.rule,
+    borderColor: G.rule,
     paddingHorizontal: 14,
     height: 48,
   },
-  sheetTitle: { color: L.ink, letterSpacing: -0.4 },
-  sheetLede: { color: L.body, lineHeight: 24, marginTop: 12, marginBottom: SPACE.block },
+  sheetTitle: { color: G.ink, letterSpacing: -0.4 },
+  sheetLede: { color: G.body, lineHeight: 24, marginTop: 12, marginBottom: SPACE.block },
   bullets: { marginTop: SPACE.tight, gap: SPACE.near },
   bullet: {
-    backgroundColor: L.recessed,
+    backgroundColor: G.fill,
     borderRadius: TILE_RADIUS,
     borderWidth: st,
-    borderColor: L.rule,
+    borderColor: G.rule,
     padding: 16,
   },
-  bulletTitle: { color: L.ink },
-  bulletBody: { color: L.body, marginTop: 4, lineHeight: 21 },
-  blocked: { color: L.body, lineHeight: 22, marginTop: SPACE.near },
+  bulletTitle: { color: G.ink },
+  bulletBody: { color: G.body, marginTop: 4, lineHeight: 21 },
+  blocked: { color: G.body, lineHeight: 22, marginTop: SPACE.near },
   action: { marginTop: SPACE.section },
   pressed: { opacity: 0.55 },
 });

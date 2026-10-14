@@ -41,6 +41,7 @@ import { lastNight, type Night } from '../lib/hypnogram';
 import { METRIC_HUE } from '../ui/metricHue';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 const NEEDS_VITALS: MetricKey[] = ['bp', 'spo2'];
 
@@ -199,9 +200,9 @@ const st = StyleSheet.hairlineWidth;
 
 const d = StyleSheet.create({
   head: { marginBottom: SPACE.near },
-  value: { color: L.ink, letterSpacing: -1.5, fontVariant: ['tabular-nums'] },
-  none: { color: L.meta },
-  when: { color: L.meta, marginTop: 2, marginBottom: 4 },
+  value: { color: G.ink, letterSpacing: -1.5, fontVariant: ['tabular-nums'] },
+  none: { color: G.meta },
+  when: { color: G.meta, marginTop: 2, marginBottom: 4 },
   card: { marginTop: SPACE.near, backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 14, overflow: 'hidden' },
   legend: { color: L.meta, marginTop: 10, lineHeight: 17 },
   group: { marginTop: SPACE.block },

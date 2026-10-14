@@ -20,6 +20,7 @@ import { Sheet } from './Sheet';
 import { HUE, L, TILE_RADIUS } from './surface';
 import { onGround } from './scheme';
 import { CardFill } from './cardFill';
+import { G } from './scheme';
 
 const RANGES: { key: Range; label: string }[] = [
   { key: '7', label: '7 day' },
@@ -76,8 +77,8 @@ export function SymptomCompare({
       <View style={s.head}>
         <Text style={[font('headline'), s.ink]}>Symptoms</Text>
         <Pressable onPress={onAll} accessibilityRole="button" hitSlop={8} style={s.all}>
-          <Text style={[font('footnote', 'semibold'), { color: L.body }]}>All</Text>
-          <Icon name="chevronRight" size={14} color={L.body} />
+          <Text style={[font('footnote', 'semibold'), { color: G.body }]}>All</Text>
+          <Icon name="chevronRight" size={14} color={G.body} />
         </Pressable>
       </View>
       <View style={s.card}>
@@ -91,7 +92,7 @@ export function SymptomCompare({
               accessibilityState={{ selected: r.key === range }}
               style={[s.range, r.key === range && s.rangeOn]}
             >
-              <Text style={[font('footnote', r.key === range ? 'semibold' : 'regular'), { color: r.key === range ? L.canvas : L.body }]}>{r.label}</Text>
+              <Text style={[font('footnote', r.key === range ? 'semibold' : 'regular'), { color: r.key === range ? L.onPill : L.body }]}>{r.label}</Text>
             </Pressable>
           ))}
         </View>
@@ -104,7 +105,7 @@ export function SymptomCompare({
                 <View style={s.cells}>
                   {strip.labels.map((l, i) => (
                     <View key={i} style={[s.cellBox, i === n - 1 && s.todayHead]}>
-                      <Text style={[font('caption2', i === n - 1 ? 'semibold' : 'regular'), { color: i === n - 1 ? L.canvas : L.meta }]}>{l}</Text>
+                      <Text style={[font('caption2', i === n - 1 ? 'semibold' : 'regular'), { color: i === n - 1 ? L.onPill : L.meta }]}>{l}</Text>
                     </View>
                   ))}
                 </View>
@@ -156,7 +157,7 @@ export function SymptomCompare({
                     const on = isPicked(p);
                     return (
                       <Pressable key={m.key} onPress={() => pick(p)} accessibilityRole="checkbox" accessibilityState={{ checked: on }} style={[s.metric, on && s.metricOn]}>
-                        <Text style={[font('footnote', on ? 'semibold' : 'regular'), { color: on ? L.canvas : L.body }]}>{m.label}</Text>
+                        <Text style={[font('footnote', on ? 'semibold' : 'regular'), { color: on ? L.onPill : L.body }]}>{m.label}</Text>
                       </Pressable>
                     );
                   })}
@@ -186,8 +187,8 @@ export function SymptomCompare({
               accessibilityState={{ selected: comparing }}
               style={({ pressed }) => [s.btn, s.btnOn, pressed && s.pressed]}
             >
-              <Icon name="layers" size={15} color={L.canvas} />
-              <Text style={[font('footnote', 'semibold'), { color: L.canvas }]}>{comparing ? 'Done' : 'Compare'}</Text>
+              <Icon name="layers" size={15} color={L.onPill} />
+              <Text style={[font('footnote', 'semibold'), { color: L.onPill }]}>{comparing ? 'Done' : 'Compare'}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -230,8 +231,8 @@ function SymptomPicker({ visible, chosen, logged, onDone }: { visible: boolean; 
               const sel = on.includes(x);
               return (
                 <Pressable key={x} onPress={() => toggle(x)} accessibilityRole="checkbox" accessibilityState={{ checked: sel }} style={[s.pickChip, sel && s.pickChipOn]}>
-                  <Icon name={chipIcon(x, g.category) ?? 'plus'} size={14} color={sel ? L.canvas : L.body} />
-                  <Text style={[font('footnote', sel ? 'semibold' : 'regular'), { color: sel ? L.canvas : L.body }]}>{displayCopy(x)}</Text>
+                  <Icon name={chipIcon(x, g.category) ?? 'plus'} size={14} color={sel ? G.onPill : G.body} />
+                  <Text style={[font('footnote', sel ? 'semibold' : 'regular'), { color: sel ? G.onPill : G.body }]}>{displayCopy(x)}</Text>
                 </Pressable>
               );
             })}

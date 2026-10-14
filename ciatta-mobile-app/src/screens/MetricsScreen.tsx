@@ -37,6 +37,7 @@ import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
 import { HUE, L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 const VIEWS = ['Dashboard', 'List'] as const;
 
@@ -186,7 +187,7 @@ function Row({ row, first, onOpen }: { row: MetricRow; first: boolean; onOpen?: 
       <Text style={[font('subhead', missing ? 'regular' : 'semibold'), missing ? s.missing : s.value]}>
         {row.value ?? 'Not yet'}
       </Text>
-      {onOpen ? <Icon name="chevronRight" size={14} color={L.meta} /> : null}
+      {onOpen ? <Icon name="chevronRight" size={14} color={G.meta} /> : null}
     </Pressable>
   );
 }
@@ -194,10 +195,10 @@ function Row({ row, first, onOpen }: { row: MetricRow; first: boolean; onOpen?: 
 const st = StyleSheet.hairlineWidth;
 
 const s = StyleSheet.create({
-  lede: { color: L.ink, lineHeight: 24, paddingHorizontal: GUTTER },
+  lede: { color: G.ink, lineHeight: 24, paddingHorizontal: GUTTER },
   switch: { marginBottom: SPACE.near },
   dashboard: {},
-  note: { color: L.meta, lineHeight: 18, marginTop: 6, paddingHorizontal: GUTTER },
+  note: { color: G.meta, lineHeight: 18, marginTop: 6, paddingHorizontal: GUTTER },
   group: { marginTop: SPACE.block, paddingHorizontal: GUTTER },
   card: {
     marginTop: SPACE.tight,
@@ -209,11 +210,11 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
   divided: { borderTopWidth: st, borderTopColor: L.rule },
   left: { flex: 1 },
-  label: { color: L.body },
-  rowNote: { color: L.meta, marginTop: 2 },
+  label: { color: G.body },
+  rowNote: { color: G.meta, marginTop: 2 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: HUE.reported },
-  value: { color: L.ink },
-  missing: { color: L.meta },
+  value: { color: G.ink },
+  missing: { color: G.meta },
   pressed: { opacity: 0.6 },
 
 });

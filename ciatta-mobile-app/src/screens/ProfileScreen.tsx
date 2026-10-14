@@ -45,6 +45,7 @@ import { images } from '../ui/images';
 import { avatarInitial } from '../ui/initial';
 import { EmptyNote, Expandable, Facts, LinkButton, SecondaryButton, SegmentedControl, Tag } from '../ui/kit';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 type Profile = NonNullable<Data['profile']>;
 
@@ -105,7 +106,7 @@ function ReadyRing({ ready, total }: { ready: number; total: number }) {
             <Stop offset="1" stopColor={C.mint} />
           </LinearGradient>
         </Defs>
-        <Circle cx={44} cy={44} r={r} stroke={C.fill} strokeWidth={7} fill="none" />
+        <Circle cx={44} cy={44} r={r} stroke={G.fill} strokeWidth={7} fill="none" />
         {ready ? (
           <Circle
             cx={44}
@@ -120,8 +121,8 @@ function ReadyRing({ ready, total }: { ready: number; total: number }) {
           />
         ) : null}
       </Svg>
-      <Text style={[numeral(28, 'bold'), { color: C.text }]}>{ready}</Text>
-      <Text style={[font('caption2'), { color: C.secondary, marginTop: -2 }]}>of {total}</Text>
+      <Text style={[numeral(28, 'bold'), { color: G.ink }]}>{ready}</Text>
+      <Text style={[font('caption2'), { color: G.body, marginTop: -2 }]}>of {total}</Text>
     </View>
   );
 }
@@ -309,7 +310,7 @@ function CycleGroup({ onOpen }: { onOpen: (screen: Screen) => void }) {
 function BodySystems() {
   return (
     <View>
-      <Text style={[font('title3', 'semibold'), { color: C.text, marginBottom: 8 }]} accessibilityRole="header">
+      <Text style={[font('title3', 'semibold'), { color: G.ink, marginBottom: 8 }]} accessibilityRole="header">
         Body Systems
       </Text>
       <View style={p.grid}>
@@ -346,10 +347,10 @@ function Providers({ onOpen }: { onOpen: (screen: Screen) => void }) {
 
   return (
     <View>
-      <Text style={[font('title3', 'semibold'), { color: C.text, marginBottom: 4 }]} accessibilityRole="header">
+      <Text style={[font('title3', 'semibold'), { color: G.ink, marginBottom: 4 }]} accessibilityRole="header">
         Providers
       </Text>
-      <Text style={[font('footnote'), { color: C.secondary, marginBottom: 10 }]}>
+      <Text style={[font('footnote'), { color: G.body, marginBottom: 10 }]}>
         Your hospital or clinic, connected through their own patient portal.
       </Text>
 
@@ -382,7 +383,7 @@ function Providers({ onOpen }: { onOpen: (screen: Screen) => void }) {
           ))}
         </ListGroup>
       ) : list ? (
-        <Text style={[font('footnote'), { color: C.secondary }]}>No provider connected yet.</Text>
+        <Text style={[font('footnote'), { color: G.body }]}>No provider connected yet.</Text>
       ) : null}
 
       <View style={{ marginTop: 12 }}>
@@ -519,7 +520,7 @@ function Connections({ onOpen }: { onOpen: (screen: Screen) => void }) {
   return (
     <View style={p.stack}>
       <View>
-        <Text style={[font('title3', 'semibold'), { color: C.text, marginBottom: 4 }]} accessibilityRole="header">
+        <Text style={[font('title3', 'semibold'), { color: G.ink, marginBottom: 4 }]} accessibilityRole="header">
           Sources
         </Text>
         {list.map((src, n) => {
@@ -550,7 +551,7 @@ function Connections({ onOpen }: { onOpen: (screen: Screen) => void }) {
         <View style={{ marginTop: 12 }}>
           <SecondaryButton label="Connect a Source" onPress={onConnectSource} />
         </View>
-        {sourceNote ? <Text style={[font('footnote'), { color: C.secondary, marginTop: 8 }]}>{displayCopy(sourceNote)}</Text> : null}
+        {sourceNote ? <Text style={[font('footnote'), { color: G.body, marginTop: 8 }]}>{displayCopy(sourceNote)}</Text> : null}
       </View>
 
       {/*
@@ -636,8 +637,8 @@ function Settings({ onOpen }: { onOpen: (screen: Screen) => void }) {
     <Switch
       value={value}
       onValueChange={onChange}
-      trackColor={{ false: C.fill, true: C.green }}
-      ios_backgroundColor={C.fill}
+      trackColor={{ false: G.fill, true: C.green }}
+      ios_backgroundColor={G.fill}
       accessibilityLabel={label}
     />
   );
@@ -794,16 +795,16 @@ export function ProfileScreen() {
           ) : (
             <View style={[p.avatar, p.initial]} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
               {initial ? (
-                <Text style={[font('title2', 'semibold'), { color: C.secondary }]}>{initial}</Text>
+                <Text style={[font('title2', 'semibold'), { color: G.body }]}>{initial}</Text>
               ) : (
-                <Icon name="person" size={34} color={C.secondary} weight={1.8} />
+                <Icon name="person" size={34} color={G.body} weight={1.8} />
               )}
             </View>
           )}
           <View style={{ flex: 1 }}>
-            {name ? <Text style={[font('title2', 'semibold'), { color: C.text }]}>{displayCopy(name)}</Text> : null}
+            {name ? <Text style={[font('title2', 'semibold'), { color: G.ink }]}>{displayCopy(name)}</Text> : null}
             {profile ? (
-              <Text style={[font('subhead'), { color: C.secondary }]}>
+              <Text style={[font('subhead'), { color: G.body }]}>
                 {profile.age} · {profile.born}
               </Text>
             ) : null}
@@ -898,7 +899,7 @@ const p = StyleSheet.create({
 
   identity: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 12 },
   avatar: { width: 72, height: 72, borderRadius: 36 },
-  initial: { backgroundColor: C.fill, alignItems: 'center', justifyContent: 'center' },
+  initial: { backgroundColor: G.fill, alignItems: 'center', justifyContent: 'center' },
   // Profile's scroll body has no gutter of its own, so each section pads
   // itself. The bottom margin comes from the control's own wrapper.
   segs: { marginTop: 20, paddingHorizontal: GUTTER },
@@ -910,12 +911,12 @@ const p = StyleSheet.create({
   // The paragraph sits on the statement ground the system keeps for one
   // sentence at a time.
   overviewCard: {
-    backgroundColor: L.statement,
+    backgroundColor: G.fillSelected,
     borderRadius: TILE_RADIUS,
     padding: 18,
     marginTop: 4,
   },
-  overviewText: { color: L.ink, lineHeight: 25 },
+  overviewText: { color: G.ink, lineHeight: 25 },
   overviewTop: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   ring: { width: 88, height: 88, alignItems: 'center', justifyContent: 'center' },
   // Each fact in a card of its own, three to a row.
@@ -949,5 +950,5 @@ const p = StyleSheet.create({
     overflow: 'hidden',
   },
 
-  version: { color: C.secondary, textAlign: 'center' },
+  version: { color: G.body, textAlign: 'center' },
 });

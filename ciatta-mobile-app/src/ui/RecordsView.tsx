@@ -24,6 +24,7 @@ import { C, font } from '../theme';
 import { ListGroup, ListRow } from './chrome';
 import { EmptyNote, PrimaryButton, Row, SecondaryButton } from './kit';
 import { Eyebrow } from './bento';
+import { G } from './scheme';
 
 
 
@@ -55,14 +56,14 @@ function LabsSection({ onOpen }: { onOpen: (screen: Screen) => void }) {
       <View style={hr.section}>
         <Eyebrow>Labs</Eyebrow>
       </View>
-      {summary ? <Text style={[font('subhead'), { color: C.text, marginBottom: 12 }]}>{displayCopy(summary)}</Text> : null}
+      {summary ? <Text style={[font('subhead'), { color: G.ink, marginBottom: 12 }]}>{displayCopy(summary)}</Text> : null}
       {labs && !labs.length ? (
         <EmptyNote text="No labs yet. They arrive from a provider you connect, or from a lab report you add." />
       ) : null}
       {draws.slice(0, shown).map((d) => (
         <View key={`${d.on}-${d.lab ?? ''}`} style={{ marginBottom: 18 }}>
-          <Text style={[font('caption1'), { color: C.muted, letterSpacing: 0.4 }]}>{labDay(d.on)}</Text>
-          <Text style={[font('caption1'), { color: C.muted, marginBottom: 6 }]}>
+          <Text style={[font('caption1'), { color: G.meta, letterSpacing: 0.4 }]}>{labDay(d.on)}</Text>
+          <Text style={[font('caption1'), { color: G.meta, marginBottom: 6 }]}>
             {displayCopy(`${d.lab ?? 'Lab not named'}${d.outside ? ` · ${d.outside} outside range` : ''}`)}
           </Text>
           {d.results.map((r) => (
@@ -78,10 +79,10 @@ function LabsSection({ onOpen }: { onOpen: (screen: Screen) => void }) {
             >
               <View style={{ flex: 1, gap: 6 }}>
                 <View style={hr.labTop}>
-                  <Text style={[font('subhead'), { color: C.text, flex: 1 }]} numberOfLines={1}>
+                  <Text style={[font('subhead'), { color: G.ink, flex: 1 }]} numberOfLines={1}>
                     {r.name}
                   </Text>
-                  <Text style={[font('subhead', 'semibold'), { color: C.text }]}>
+                  <Text style={[font('subhead', 'semibold'), { color: G.ink }]}>
                     {r.value != null ? `${r.value}${r.unit ? ` ${r.unit}` : ''}` : (r.valueText ?? '')}
                   </Text>
                 </View>
@@ -221,5 +222,5 @@ const hr = StyleSheet.create({
   },
   section: { marginTop: 24, marginBottom: 10 },
   labTop: { flexDirection: 'row', alignItems: 'center', gap: 10, justifyContent: 'space-between' },
-  addHint: { color: C.muted, textAlign: 'center', marginTop: 6 },
+  addHint: { color: G.meta, textAlign: 'center', marginTop: 6 },
 });

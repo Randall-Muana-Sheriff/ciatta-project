@@ -45,6 +45,7 @@ import { takeLogCategory, takeLogMode } from '../lib/logHandoff';
 import { useQuickLogSave } from '../state/quickLogSave';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 export function QuickLogScreen() {
   const nav = useNav();
@@ -395,8 +396,8 @@ const q = StyleSheet.create({
     overflow: 'hidden',
   },
   catOn: { backgroundColor: L.ink, borderColor: L.ink },
-  catText: { color: L.body },
-  catTextOn: { color: L.canvas },
+  catText: { color: G.body },
+  catTextOn: { color: G.onPill },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   chip: {
     flexDirection: 'row',
@@ -408,7 +409,7 @@ const q = StyleSheet.create({
   chipOn: { backgroundColor: L.statement, borderColor: L.ink },
   chipText: { color: L.body },
   chipTextOn: { color: L.ink },
-  hint: { color: L.meta, marginTop: SPACE.near, marginBottom: 10 },
+  hint: { color: G.meta, marginTop: SPACE.near, marginBottom: 10 },
   noted: { color: L.meta, marginTop: 10, lineHeight: 18 },
   error: { color: L.ink, marginTop: 10 },
   detail: { marginTop: SPACE.block, paddingVertical: 14, alignItems: 'center' },

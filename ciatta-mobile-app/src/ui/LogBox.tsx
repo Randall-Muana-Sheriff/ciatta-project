@@ -79,7 +79,7 @@ export function LogBox({
                     style={({ pressed }) => [s.topic, on && s.topicOn, pressed && s.pressed]}
                   >
                     <CardFill />
-                    <Text style={[font('footnote', on ? 'semibold' : 'regular'), { color: on ? L.canvas : L.body }]}>{t.label}</Text>
+                    <Text style={[font('footnote', on ? 'semibold' : 'regular'), { color: on ? L.onPill : L.body }]}>{t.label}</Text>
                   </Pressable>
                 );
               })}
@@ -99,8 +99,8 @@ export function LogBox({
                   accessibilityLabel={done ? `${c}, logged` : `Log ${c}`}
                   style={({ pressed }) => [s.chip, done && s.chipDone, pressed && s.pressed]}
                 >
-                  <Icon name={done ? 'check' : (chipIcon(c, topic) ?? 'plus')} size={14} color={done ? L.canvas : L.body} />
-                  <Text style={[font('footnote', done ? 'semibold' : 'regular'), { color: done ? L.canvas : L.body }]}>{displayCopy(c)}</Text>
+                  <Icon name={done ? 'check' : (chipIcon(c, topic) ?? 'plus')} size={14} color={done ? L.onPill : L.body} />
+                  <Text style={[font('footnote', done ? 'semibold' : 'regular'), { color: done ? L.onPill : L.body }]}>{displayCopy(c)}</Text>
                 </Pressable>
               );
             })}

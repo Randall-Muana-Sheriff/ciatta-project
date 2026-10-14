@@ -6,7 +6,7 @@
 // Pastels on dark; the same hues deepened on light, where a pastel mark
 // would fade into the paper.
 
-import { G, type Mode } from './scheme';
+import type { Mode } from './scheme';
 
 const DARK: Record<string, string> = {
   sleep: '#8E9BFF',
@@ -30,5 +30,5 @@ const LIGHT: Record<string, string> = {
 
 export const metricHues = (mode: Mode) => (mode === 'light' ? LIGHT : DARK);
 
-// Read once, after Boot has resolved the scheme.
-export const METRIC_HUE: Record<string, string> = metricHues(G.mode);
+// Drawn in cards, which are dark in both modes.
+export const METRIC_HUE: Record<string, string> = DARK;

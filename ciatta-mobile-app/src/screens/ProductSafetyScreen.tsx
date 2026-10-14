@@ -10,6 +10,7 @@ import { useNav } from '../navigation';
 import { font } from '../theme';
 import { DetailScreen } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { G } from '../ui/scheme';
 
 export function ProductSafetyScreen() {
   const nav = useNav();
@@ -49,7 +50,7 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(236, 93, 74, 0.10)',
     marginBottom: SPACE.block,
   },
-  rule: { gap: 4, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: L.rule },
-  ink: { color: L.ink, lineHeight: 22 },
-  meta: { color: L.meta },
+  rule: { gap: 4, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: G.rule },
+  ink: { color: G.ink, lineHeight: 22 },
+  meta: { color: G.meta },
 });

@@ -18,6 +18,7 @@ import { font } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen, SecondaryButton, SegmentedControl, SaveBar } from '../ui/kit';
 import { L, SPACE } from '../ui/surface';
+import { G } from '../ui/scheme';
 
 const UNIT_SEGMENTS = ['Metric', 'US', 'UK'] as const;
 const SEG_UNITS: Record<(typeof UNIT_SEGMENTS)[number], Units> = { Metric: 'metric', US: 'us', UK: 'uk' };
@@ -107,7 +108,7 @@ export function BodyMeasurementsScreen() {
 
   const input = (value: string, onChange: (v: string) => void, label: string, flex = 1) => (
     <View style={{ flex }}>
-      <TextInput value={value} onChangeText={onChange} keyboardType="decimal-pad" placeholder={label} placeholderTextColor={L.meta} style={[font('body'), s.input]} accessibilityLabel={label} />
+      <TextInput value={value} onChangeText={onChange} keyboardType="decimal-pad" placeholder={label} placeholderTextColor={G.meta} style={[font('body'), s.input]} accessibilityLabel={label} />
     </View>
   );
 
@@ -127,7 +128,7 @@ export function BodyMeasurementsScreen() {
           const on = blood === c;
           return (
             <Pressable key={c} onPress={() => setBlood(on ? null : c)} accessibilityRole="radio" accessibilityState={{ selected: on }} style={[s.chip, on && s.chipOn]}>
-              <Text style={[font('footnote', on ? 'semibold' : 'regular'), { color: on ? L.ink : L.body }]}>{bloodTypeLabel(c)}</Text>
+              <Text style={[font('footnote', on ? 'semibold' : 'regular'), { color: on ? G.ink : G.body }]}>{bloodTypeLabel(c)}</Text>
             </Pressable>
           );
         })}
@@ -179,9 +180,9 @@ export function BodyMeasurementsScreen() {
 }
 
 const s = StyleSheet.create({
-  meta: { color: L.meta, marginTop: 6, lineHeight: 18 },
+  meta: { color: G.meta, marginTop: 6, lineHeight: 18 },
   row: { flexDirection: 'row', gap: 10, marginTop: SPACE.tight },
-  input: { color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
+  input: { color: G.ink, backgroundColor: G.fill, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: SPACE.tight },
   chip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, backgroundColor: L.recessed, borderColor: L.rule },
   chipOn: { backgroundColor: L.fillSelected, borderColor: L.edgeOn },

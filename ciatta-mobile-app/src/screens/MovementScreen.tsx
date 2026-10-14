@@ -12,6 +12,7 @@ import { ListGroup, ListRow, Panel } from '../ui/chrome';
 import { DetailScreen, SecLabel, SourceFooter } from '../ui/kit';
 import { L, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
+import { G } from '../ui/scheme';
 
 // Daily steps for four weeks against the usual range. Coral days sit below
 // it. With no baseline days yet (a new real record, or a source that has
@@ -37,11 +38,11 @@ function StepsChart({ movement }: { movement: MovementSummary }) {
       <Svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`}>
         {band ? (
           <>
-            <Rect x={0} y={y(band.high)} width={W} height={y(band.low) - y(band.high)} fill={C.text} opacity={0.05} />
-            <Line x1={0} y1={y(band.usual)} x2={W} y2={y(band.usual)} stroke={C.secondary} strokeDasharray="3 4" opacity={0.6} />
+            <Rect x={0} y={y(band.high)} width={W} height={y(band.low) - y(band.high)} fill={G.ink} opacity={0.05} />
+            <Line x1={0} y1={y(band.usual)} x2={W} y2={y(band.usual)} stroke={G.body} strokeDasharray="3 4" opacity={0.6} />
           </>
         ) : null}
-        <Line x1={0} y1={base} x2={W} y2={base} stroke={C.separator} />
+        <Line x1={0} y1={base} x2={W} y2={base} stroke={G.rule} />
         {series.map((d, i) => (
           <Rect
             key={d.date}
@@ -53,10 +54,10 @@ function StepsChart({ movement }: { movement: MovementSummary }) {
             fill={band && d.steps < band.low ? C.coral : C.lavender}
           />
         ))}
-        <SvgText x={0} y={H - 6} fontSize={11} fill={C.secondary} fontFamily={fonts.regular}>
+        <SvgText x={0} y={H - 6} fontSize={11} fill={G.body} fontFamily={fonts.regular}>
           {shortDate(parseDay(series[0].date))}
         </SvgText>
-        <SvgText x={W} y={H - 6} fontSize={11} fill={C.secondary} fontFamily={fonts.regular} textAnchor="end">
+        <SvgText x={W} y={H - 6} fontSize={11} fill={G.body} fontFamily={fonts.regular} textAnchor="end">
           {dayLabel(series[series.length - 1].date)}
         </SvgText>
       </Svg>
@@ -107,7 +108,7 @@ export function MovementScreen() {
 
   return (
     <DetailScreen title="Movement" onBack={nav.back} footer={<SourceFooter kind="measured" text={footerText} />}>
-      <Text style={[font('footnote'), { color: C.secondary, marginBottom: 8 }]}>Last 7 days</Text>
+      <Text style={[font('footnote'), { color: G.body, marginBottom: 8 }]}>Last 7 days</Text>
       <View style={m.tiles}>
         {tiles.map((t) => (
           <View key={t.label} style={m.tile} accessible accessibilityLabel={`${t.label}, ${t.value}${t.sub ? `, ${t.sub}` : ''}`}>
@@ -137,7 +138,7 @@ export function MovementScreen() {
             ))}
           </ListGroup>
         ) : (
-          <Text style={[font('subhead'), { color: C.secondary }]}>Nothing lines up with your movement yet.</Text>
+          <Text style={[font('subhead'), { color: G.body }]}>Nothing lines up with your movement yet.</Text>
         )}
       </View>
     </DetailScreen>

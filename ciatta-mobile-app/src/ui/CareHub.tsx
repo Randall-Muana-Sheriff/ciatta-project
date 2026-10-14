@@ -23,6 +23,7 @@ import { images } from './images';
 import { PhotoCard } from './PhotoCard';
 import { L, SPACE, TILE_RADIUS } from './surface';
 import { CardFill } from './cardFill';
+import { G } from './scheme';
 
 const NEW_KINDS: { kind: RequestKind; label: string }[] = [
   { kind: 'refill', label: 'Refill' },
@@ -230,7 +231,7 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
             style={({ pressed }) => [s.member, s.addMember, pressed && s.pressed]}
           >
             <CardFill />
-            <Icon name="plus" size={26} color={L.ink} />
+            <Icon name="plus" size={26} color={G.ink} />
             <Text style={[font('headline'), s.ink]}>Add a clinician</Text>
           </Pressable>
         </ScrollView>
@@ -295,7 +296,7 @@ function Row({
 }) {
   return (
     <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? 'button' : undefined} style={({ pressed }) => [s.row, !first && s.rule, pressed && onPress && s.pressed]}>
-      <Icon name={icon} size={18} color={L.body} />
+      <Icon name={icon} size={18} color={G.body} />
       <View style={{ flex: 1 }}>
         <Text style={[font('subhead'), s.ink]} numberOfLines={2}>
           {displayCopy(title)}
@@ -312,7 +313,7 @@ function Row({
         </View>
       ) : null}
       {right ? <Text style={[font('caption1'), s.meta]}>{right}</Text> : null}
-      {onPress ? <Icon name="chevronRight" size={14} color={L.meta} /> : null}
+      {onPress ? <Icon name="chevronRight" size={14} color={G.meta} /> : null}
     </Pressable>
   );
 }
@@ -330,12 +331,12 @@ const s = StyleSheet.create({
   card: { marginTop: SPACE.tight, backgroundColor: L.glass, borderRadius: TILE_RADIUS, paddingHorizontal: 14, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
   rule: { borderTopWidth: st, borderTopColor: L.rule },
-  ink: { color: L.ink },
-  body: { color: L.body },
-  meta: { color: L.meta },
+  ink: { color: G.ink },
+  body: { color: G.body },
+  meta: { color: G.meta },
   note: { color: L.meta, paddingBottom: 12 },
-  empty: { color: L.body, lineHeight: 21, paddingVertical: 14 },
-  pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: L.recessed},
+  empty: { color: G.body, lineHeight: 21, paddingVertical: 14 },
+  pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: G.fill},
   kinds: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 12 },
   kind: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: st, borderColor: L.rule, backgroundColor: L.statement },
   ask: { flexDirection: 'row', gap: 8, paddingVertical: 12, borderTopWidth: st, borderTopColor: L.rule },
@@ -350,7 +351,7 @@ const s = StyleSheet.create({
   askLine: { flexDirection: 'row', gap: 8, marginTop: 4 },
   inner: { marginTop: 8, padding: 14, gap: 6, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.14)' },
   whiteButton: { marginTop: 8, minHeight: 46, borderRadius: 999, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
-  teamLede: { color: L.body, marginTop: 8, lineHeight: 22 },
+  teamLede: { color: G.body, marginTop: 8, lineHeight: 22 },
   initials: { color: 'rgba(255,255,255,0.9)', fontSize: 44, fontWeight: '300', letterSpacing: 2 },
   memberFill: { flex: 1, minHeight: 120, justifyContent: 'center' },
 });
