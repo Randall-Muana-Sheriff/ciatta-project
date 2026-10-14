@@ -108,4 +108,19 @@ export const SANDBOX: Endpoint = {
 
 // Whether a row is the sandbox, so the interface can say so plainly rather
 // than letting a test server sit in a list of hospitals looking like one.
-export const isSandbox = (endpoint: Endpoint) => endpoint.id === SANDBOX.id;
+export const isSandbox = (endpoint: Endpoint) => endpoint.id === SANDBOX.id || endpoint.id === 'smart-test';
+
+// The SMART Health IT test server, which accepts any registered app. It is
+// here so a connection can be run from start to finish (her login, the
+// token, the records arriving) while Epic is still activating Ciatta. The
+// address carries the launch: a standalone patient launch for one
+// synthetic patient, with the login and consent pages skipped. Test data
+// only, and labelled so.
+export const SMART_TEST: Endpoint = {
+  id: 'smart-test',
+  name: 'SMART Test Server (test data only)',
+  organization: null,
+  fhirBaseUrl: 'https://launch.smarthealthit.org/v/r4/sim/WzMsIjI2YjYyYmVjLTA2NTEtNGU4OC1iOGUzLTgzMjNkNWYxYTdlYyIsIiIsIkFVVE8iLDEsMSwwLCIiLCIiLCIiLCIiLCIiLCIiLCIiLDAsMSwiIl0/fhir',
+  vendor: 'other',
+  portalName: 'the SMART test login',
+};

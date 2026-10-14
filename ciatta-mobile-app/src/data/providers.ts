@@ -19,8 +19,16 @@ import { supabase } from '../lib/supabase';
 import { parseCompact } from '../lib/providers/brandsDirectory';
 import type { Endpoint } from '../lib/providers/directory';
 import type { ClinicalRecord } from '../lib/providers/fhirMap';
-import { parseEndpointBundle, SANDBOX } from '../lib/providers/epicDirectory';
-import { authorizeUrl, failureLine, readCallback, type SmartConfig, smartConfigUrl } from '../lib/providers/smart';
+import { parseEndpointBundle, SANDBOX, SMART_TEST } from '../lib/providers/epicDirectory';
+import {
+  authorizeUrl,
+  failureLine,
+  notActivatedLine,
+  readCallback,
+  refusedAtLogin,
+  type SmartConfig,
+  smartConfigUrl,
+} from '../lib/providers/smart';
 
 export const REDIRECT_URI = 'ciatta://provider-callback';
 
@@ -70,19 +78,19 @@ async function readCarried(): Promise<Endpoint[]> {
 export async function loadDirectory(): Promise<Endpoint[]> {
   carried ??= readCarried().catch(() => []);
   const rows = await carried;
-  if (rows.length) return [SANDBOX, ...rows];
+  if (rows.length) return [SANDBOX, SMART_TEST, ...rows];
   // The carried file could not be read: fall back to Epic's live list of
   // health systems, which has no locations but is still every system.
   carried = null;
   try {
     const res = await fetch(EPIC_DIRECTORY, { headers: { Accept: 'application/json' } });
-    if (!res.ok) return [SANDBOX];
-    return [SANDBOX, ...parseEndpointBundle(await res.json(), 'epic', 'MyChart')];
+    if (!res.ok) return [SANDBOX, SMART_TEST];
+    return [SANDBOX, SMART_TEST, ...parseEndpointBundle(await res.json(), 'epic', 'MyChart')];
   } catch {
     // Offline, or the vendor moved the file. The sandbox still works and
     // the screen says the rest of the directory could not be reached,
     // rather than showing an empty search that looks like no match.
-    return [SANDBOX];
+    return [SANDBOX, SMART_TEST];
   }
 }
 
@@ -106,6 +114,17 @@ async function smartConfig(endpoint: Endpoint): Promise<SmartConfig | null> {
   }
 }
 
+// Whether the provider's authorize page is the refusal page. Any doubt (no
+// network, an odd answer) is a no, so a real login is never held back.
+async function refusesClient(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, { headers: { Accept: 'text/html' } });
+    return refusedAtLogin(await res.text());
+  } catch {
+    return false;
+  }
+}
+
 export async function connectProvider(endpoint: Endpoint, clientId: string): Promise<ConnectOutcome> {
   const config = await smartConfig(endpoint);
   if (!config) {
@@ -114,6 +133,12 @@ export async function connectProvider(endpoint: Endpoint, clientId: string): Pro
 
   const random = await randomness();
   const request = authorizeUrl(endpoint, config, REDIRECT_URI, clientId, random);
+
+  // Asked first, without her: a login that Epic has not activated for
+  // Ciatta is a dead error page, and it is better said here than shown.
+  if (await refusesClient(request.url)) {
+    return { ok: false, message: notActivatedLine(endpoint.organization ?? endpoint.name) };
+  }
 
   // Her provider's page, in the system browser. Ciatta cannot read it.
   const result = await WebBrowser.openAuthSessionAsync(request.url, REDIRECT_URI);

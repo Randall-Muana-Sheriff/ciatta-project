@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { isSandbox, parseEndpointBundle, SANDBOX } from './epicDirectory';
+import { isSandbox, parseEndpointBundle, SANDBOX, SMART_TEST } from './epicDirectory';
 
 const bundle = (entry: unknown[]) => ({ resourceType: 'Bundle', entry });
 const ep = (over: Record<string, unknown>) => ({
@@ -85,4 +85,20 @@ test('the sandbox is a real endpoint and says it is test data', () => {
   assert.ok(SANDBOX.name.toLowerCase().includes('test data'));
   assert.ok(isSandbox(SANDBOX));
   assert.ok(!isSandbox({ ...SANDBOX, id: 'other' }));
+});
+
+test('the SMART test server is a test server, said plainly', () => {
+  assert.equal(isSandbox(SMART_TEST), true);
+  assert.match(SMART_TEST.name, /test data only/);
+  assert.match(SMART_TEST.fhirBaseUrl, /^https:\/\/launch\.smarthealthit\.org\/v\/r4\/sim\/[A-Za-z0-9_]+\/fhir$/);
+});
+
+test('the SMART test server signs in the test patient without a password', () => {
+  const segment = SMART_TEST.fhirBaseUrl.split('/sim/')[1].replace('/fhir', '');
+  const launch = JSON.parse(Buffer.from(segment, 'base64url').toString());
+  // Standalone patient launch, a patient chosen, login and consent skipped.
+  assert.equal(launch[0], 3);
+  assert.ok(launch[1]);
+  assert.equal(launch[4], 1);
+  assert.equal(launch[5], 1);
 });

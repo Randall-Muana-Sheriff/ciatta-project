@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 import type { Endpoint } from './directory';
-import { authorizeUrl, failureLine, readCallback, SCOPES, type SmartConfig, smartConfigUrl } from './smart';
+import { authorizeUrl, failureLine, notActivatedLine, readCallback, refusedAtLogin, SCOPES, type SmartConfig, smartConfigUrl } from './smart';
 
 const endpoint: Endpoint = {
   id: '1',
@@ -143,4 +143,23 @@ test('Ciatta asks to read the whole chart, and to write nothing', () => {
     assert.ok(SCOPES.includes(`patient/${r}.read` as (typeof SCOPES)[number]), r);
   }
   for (const s of SCOPES) assert.ok(!/\.(write|\*)$|\.(c|u|d)$/.test(s), `${s} is not read only`);
+});
+
+// ── A login page that refuses Ciatta before she sees it ───────────────
+
+test("Epic's refusal page is recognised, so she is told why instead of shown it", () => {
+  const page = '<html><body><h1>OAuth2 Error</h1><p>Something went wrong trying to authorize the client. Please try logging in again.</p></body></html>';
+  assert.equal(refusedAtLogin(page), true);
+});
+
+test('a real login page is not mistaken for a refusal', () => {
+  assert.equal(refusedAtLogin('<html><title>MyChart - Login Page</title><input name="Login"></html>'), false);
+  assert.equal(refusedAtLogin(''), false);
+});
+
+test('the refusal line names the hospital and says nothing was shared', () => {
+  const line = notActivatedLine("St Luke's");
+  assert.match(line, /St Luke's/);
+  assert.match(line, /Nothing was shared/);
+  assert.doesNotMatch(line, /[—–-]/);
 });

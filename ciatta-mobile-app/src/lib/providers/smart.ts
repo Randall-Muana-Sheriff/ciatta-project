@@ -174,3 +174,16 @@ export function smartConfigUrl(endpoint: Endpoint): string {
   const base = endpoint.fhirBaseUrl.replace(/\/+$/, '');
   return `${base}/.well-known/smart-configuration`;
 }
+
+// Epic answers a client it does not recognise with its own error page
+// ("OAuth2 Error ... Something went wrong trying to authorize the client")
+// rather than a redirect, so nothing ever comes back to the app: she is
+// left on a dead page in Safari. The page is read first, and when it is
+// that one she is told why here instead.
+export function refusedAtLogin(html: string): boolean {
+  return /OAuth2 Error/i.test(html) && /authorize the client/i.test(html);
+}
+
+export function notActivatedLine(hospital: string): string {
+  return `${hospital} has not switched on Ciatta's connection yet, so its login cannot open. Nothing was shared. This is on Ciatta's side to finish with Epic, not something you did.`;
+}
