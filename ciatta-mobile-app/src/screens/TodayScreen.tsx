@@ -357,10 +357,10 @@ export function TodayScreen() {
       </View>
 
       <View style={t.pad}>
-        {/* One row on every phone: the Large Title where it fits, sized
+        {/* One row on every phone, the whole name shown: Title 1 where it fits, sized
             down from the screen's width for a long name. */}
         <Text
-          style={[font('largeTitle', 'bold'), t.hello, { fontSize: helloSize, lineHeight: Math.round(helloSize * 1.2) }]}
+          style={[font('title1', 'medium'), t.hello, { fontSize: helloSize, lineHeight: Math.round(helloSize * 1.2) }]}
           accessibilityRole="header"
           numberOfLines={1}
         >
