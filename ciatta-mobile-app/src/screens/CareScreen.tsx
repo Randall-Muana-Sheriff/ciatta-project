@@ -34,7 +34,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { respond, type Record as AgentRecord } from '../lib/agent/capabilities';
 import { classify, mentionsLab } from '../lib/agent/classify';
 import { wordOrFallback } from '../lib/agent/check';
-import { capabilityCards, type CapabilityCard, readinessLine } from '../lib/agent/readiness';
+import { capabilityCards } from '../lib/agent/readiness';
 import { buildRecord } from '../lib/agent/record';
 import { chooseReferral } from '../lib/agent/handoff';
 import { interventions } from '../lib/agent/proactive';
@@ -60,15 +60,10 @@ import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 
 // Said once, the first time she opens Care. Each line is a promise the
 // code below keeps, which is the only reason it is allowed to be said.
-// Said once, the first time. What the agent does comes first, because it
-// works on her behalf before she asks: it watches, raises and prepares.
-// Answering is the last of it, not the whole of it.
-const HOW_I_WORK = [
-  'I keep watch. When a reading, a lab or a symptom changes, I raise it here with the next step.',
-  'I do the work. A visit summary with your questions, a plain brief for each lab, and every step of a referral, ready for you to read, change and share.',
-  'I work from your record and nowhere else: what you log, what your devices measure, and what your providers send. Under every answer I show where it came from.',
-  'I prepare, you decide. I never contact anyone for you, and when your record is not enough, I say so rather than guess.',
-];
+// Said once, the first time, in one line. The rest of how it works is
+// shown rather than told: sources under every answer, cards that prepare
+// rather than act, and silence where her record is not enough.
+const HOW_I_WORK = 'I work only from your record, show where every answer comes from, and never act without you.';
 
 const INTRO_SEEN = 'ciatta.care.introSeen';
 // Action cards she chose Not now on, by id, so each stays put away.
@@ -155,7 +150,6 @@ export function CareScreen() {
   // The list opens short. Seven boxed rows and an open box beneath them
   // filled the first screen edge to edge; one, the first that is ready,
   // shows what tapping does, and the rest are one tap away.
-  const [allShown, setAllShown] = useState(false);
   // Whether she has had the introduction. Null until the read lands, so
   // the bullets never flash in for someone who has seen them.
   const [introSeen, setIntroSeen] = useState<boolean | null>(null);
@@ -237,8 +231,7 @@ export function CareScreen() {
   // Recomputed whenever her record changes, by running the capabilities.
   // Readiness held separately from the answer is readiness that can lie.
   const cards = useMemo(() => capabilityCards(record), [record]);
-  const sorted = useMemo(() => [...cards].sort((a, b) => Number(b.ready) - Number(a.ready)), [cards]);
-  const ready = sorted.filter((c) => c.ready);
+  const ready = useMemo(() => cards.filter((c) => c.ready), [cards]);
 
   const send = useCallback(
     (text: string) => {
@@ -308,9 +301,10 @@ export function CareScreen() {
           <View style={s.bubble}>
             <Text style={[font('body'), s.bubbleText]}>
               {displayCopy(
-                `${person?.firstName ? `Hi ${person.firstName}, I` : 'Hi, I'}’m ${name}. I work on your health with you: I watch your record for what needs attention, get you ready for visits, decode your labs and keep your referrals moving. Ask me anything about your own data, too.`,
+                `${person?.firstName ? `Hi ${person.firstName}, I` : 'Hi, I'}’m ${name}. I keep watch over your record and get things ready for you.`,
               )}
             </Text>
+            {introSeen === false ? <Text style={[font('footnote'), s.howLine]}>{displayCopy(HOW_I_WORK)}</Text> : null}
           </View>
 
           {/* What Ciatta noticed in her record on its own, each card with
@@ -332,30 +326,19 @@ export function CareScreen() {
             </View>
           ))}
 
-          {/* What Ciatta can do for her, on request. */}
+          {/* Where to start: what she can ask now, and the visit prep, as
+              one row. The full list of what Ciatta can do stays out of the
+              way; asking for anything still works. */}
           <View style={s.suggestions}>
-            {[
-              { label: 'Visit prep', screen: 'visitPrep' },
-              { label: 'Referrals', screen: 'referrals' },
-              { label: 'Labs', screen: 'healthrecords' },
-            ].map((t) => (
-              <Pressable key={t.label} onPress={() => nav.push(t.screen as Screen)} accessibilityRole="button" style={({ pressed }) => [s.suggestion, pressed && s.pressed]}>
-                <Text style={[font('footnote', 'semibold'), s.suggestionText]}>{t.label}</Text>
+            {ready.slice(0, 2).map((c) => (
+              <Pressable key={c.id} onPress={() => send(c.ask)} accessibilityRole="button" style={({ pressed }) => [s.suggestion, pressed && s.pressed]}>
+                <Text style={[font('footnote', 'semibold'), s.suggestionText]}>{c.title}</Text>
               </Pressable>
             ))}
+            <Pressable onPress={() => nav.push('visitPrep')} accessibilityRole="button" style={({ pressed }) => [s.suggestion, pressed && s.pressed]}>
+              <Text style={[font('footnote', 'semibold'), s.suggestionText]}>Visit prep</Text>
+            </Pressable>
           </View>
-
-          {introSeen === false ? (
-            <View style={s.bubble}>
-              <Text style={[font('body'), s.bubbleText]}>A bit about how I work:</Text>
-              {HOW_I_WORK.map((line) => (
-                <View key={line} style={s.bullet}>
-                  <Text style={[font('body'), s.bubbleText]}>{'\u2022'}</Text>
-                  <Text style={[font('body'), s.bubbleText, { flex: 1 }]}>{displayCopy(line)}</Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
 
           {naming ? (
             <View style={s.bubble}>
@@ -382,52 +365,6 @@ export function CareScreen() {
             </View>
           ) : null}
 
-          {/*
-            Where to start: what she can ask right now, as things to tap.
-            Ready first, because those answer; the full list, with what
-            each one is waiting for, is one tap further.
-          */}
-          <View style={s.bubble}>
-            <Text style={[font('body'), s.bubbleText]}>
-              {ready.length ? 'Here is where we could start:' : 'Your record is still filling in. Here is what I will be able to do:'}
-            </Text>
-            {ready.length ? (
-              <View style={s.suggestions}>
-                {ready.slice(0, 3).map((c) => (
-                  <Pressable
-                    key={c.id}
-                    onPress={() => send(c.ask)}
-                    accessibilityRole="button"
-                    style={({ pressed }) => [s.suggestion, pressed && s.pressed]}
-                  >
-                    <Text style={[font('footnote', 'semibold'), s.suggestionText]}>{c.title}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            ) : null}
-            <Pressable
-              onPress={() => setAllShown((v) => !v)}
-              accessibilityRole="button"
-              accessibilityLabel={allShown ? 'Hide what I can do' : 'Everything I can do'}
-              hitSlop={8}
-              style={({ pressed }) => [s.more, pressed && s.pressed]}
-            >
-              <Text style={[font('footnote', 'semibold'), s.moreText]}>
-                {displayCopy(allShown ? 'Hide' : `Everything I can do, ${readinessLine(cards).toLowerCase()}`)}
-              </Text>
-              <View style={allShown ? s.flipped : undefined}>
-                <Icon name="chevronDown" size={14} color={L.body} />
-              </View>
-            </Pressable>
-          </View>
-
-          {allShown ? (
-            <View style={s.allCaps}>
-              {sorted.map((c) => (
-                <CapabilityRow key={c.id} card={c} onRun={() => send(c.ask)} />
-              ))}
-            </View>
-          ) : null}
         </View>
 
         {turns.length ? (
@@ -472,44 +409,15 @@ export function CareScreen() {
           paragraph between her and the screen.
         */}
         <Text style={[font('caption1'), s.limit]}>
-          Ciatta can make mistakes and responses are not meant for medical advice. Always consult a healthcare
-          professional.
+          Not medical advice. Ciatta can make mistakes.
         </Text>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
-// One capability, with whether it can answer from her record right now.
-//
-// A blocked row is still tappable. Tapping it answers by saying exactly
-// what is missing, which is more use than a disabled row that says nothing
-// and cannot be asked why.
-function CapabilityRow({ card, onRun }: { card: CapabilityCard; onRun: () => void }) {
-  return (
-    <Pressable
-      onPress={onRun}
-      accessibilityRole="button"
-      accessibilityLabel={`${card.title}. ${card.ready ? 'Ready' : card.blocked}`}
-      style={({ pressed }) => [s.cap, !card.ready && s.capBlocked, pressed && s.pressed]}
-    >
-      <View style={s.capLeft}>
-        <Text style={[font('subhead', 'semibold'), s.capTitle]}>{card.title}</Text>
-        <Text style={[font('caption1'), s.capWhat]}>
-          {displayCopy(card.ready ? card.what : (card.blocked as string))}
-        </Text>
-      </View>
-      {/*
-        A filled pip when ready, a hollow ring when not, so the state
-        survives being read without colour.
-      */}
-      <View style={[s.pip, card.ready ? s.pipOn : s.pipOff]} />
-      <Icon name="chevronRight" size={15} color={L.meta} />
-    </Pressable>
-  );
-}
-
 function AnswerBlock({ turn, onOpen }: { turn: Turn; onOpen: (sug: Suggestion) => void }) {
+  const [sources, setSources] = useState(false);
   const a = turn.answer;
   if (!a) return null;
   const escalating = a.capability === 'escalate';
@@ -519,11 +427,27 @@ function AnswerBlock({ turn, onOpen }: { turn: Turn; onOpen: (sug: Suggestion) =
       <Text style={[font('body'), s.answerText]}>{displayCopy(turn.text)}</Text>
 
       {/*
-        What the sentence was built from. Shown, not hidden behind a
-        disclosure, because the provenance is the product: an answer whose
-        sources she has to go looking for is an answer she has to trust.
+        What the sentence was built from, one tap away: a line with a dot
+        for each kind of source, opening to the facts themselves. Every
+        answer carries them; the screen just does not lead with them.
       */}
       {a.facts.length ? (
+        <Pressable
+          onPress={() => setSources((v) => !v)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: sources }}
+          accessibilityLabel={`Sources, ${a.facts.length}`}
+          hitSlop={6}
+          style={s.sourcesToggle}
+        >
+          {[...new Set(a.facts.map((f) => f.from))].map((k) => (
+            <View key={k} style={[s.dot, { backgroundColor: DOT[k] }]} />
+          ))}
+          <Text style={[font('caption1', 'semibold'), s.factText]}>{`Sources, ${a.facts.length}`}</Text>
+          <Icon name={sources ? 'chevronDown' : 'chevronRight'} size={12} color={L.meta} />
+        </Pressable>
+      ) : null}
+      {a.facts.length && sources ? (
         <View style={s.facts}>
           {a.facts.map((f) => (
             <View key={`${f.label}-${f.value}`} style={s.fact}>
@@ -567,6 +491,8 @@ function AnswerBlock({ turn, onOpen }: { turn: Turn; onOpen: (sug: Suggestion) =
 const st = StyleSheet.hairlineWidth;
 
 const s = StyleSheet.create({
+  howLine: { color: L.meta, marginTop: 8, lineHeight: 19 },
+  sourcesToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', minHeight: 32 },
   fill: { flex: 1 },
   body: { paddingBottom: SPACE.block },
   // The wordmark used to open this screen and its clear space was doing
@@ -617,33 +543,10 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
   },
   bubbleText: { color: L.ink, lineHeight: 24 },
-  bullet: { flexDirection: 'row', gap: 10, marginTop: SPACE.tight, paddingLeft: 4 },
-  allCaps: { marginTop: SPACE.near },
 
-  cap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: L.recessed,
-    borderRadius: TILE_RADIUS,
-    borderWidth: st,
-    borderColor: L.rule,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    marginBottom: SPACE.grid,
-  },
-  more: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 4, paddingTop: 12 },
-  moreText: { color: L.body },
   flipped: { transform: [{ rotate: '180deg' }] },
   // Not disabled, only quieter. It still answers, by saying what is
   // missing, so it keeps its edge and loses its fill.
-  capBlocked: { backgroundColor: 'transparent' },
-  capLeft: { flex: 1 },
-  capTitle: { color: L.ink },
-  capWhat: { color: L.meta, marginTop: 3, lineHeight: 18 },
-  pip: { width: 9, height: 9, borderRadius: 5 },
-  pipOn: { backgroundColor: HUE.measured },
-  pipOff: { borderWidth: 1.5, borderColor: L.meta },
 
   hers: {
     alignSelf: 'flex-end',
