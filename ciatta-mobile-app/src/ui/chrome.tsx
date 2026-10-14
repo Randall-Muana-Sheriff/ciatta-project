@@ -69,15 +69,21 @@ export function LargeTitle({ title, eyebrow, trailing }: { title?: string; eyebr
 
 // ── Content ────────────────────────────────────────────────────
 
-export function Panel({ children, style }: { children: ReactNode; style?: object }) {
-  return <View style={[s.panel, style]}><CardFill />{children}</View>;
+// A card. `flat` draws the plain surface Settings uses instead of a glow.
+export function Panel({ children, style, flat = false }: { children: ReactNode; style?: object; flat?: boolean }) {
+  return (
+    <View style={[s.panel, flat && s.panelFlat, style]}>
+      {flat ? null : <CardFill />}
+      {children}
+    </View>
+  );
 }
 
 export function PanelTitle({ icon, children }: { icon: IconName; children: string }) {
   return (
     <View style={s.panelTitle}>
-      <Icon name={icon} size={20} color={G.ink} weight={1.8} />
-      <Text style={[font('headline'), { color: G.ink, flex: 1 }]} accessibilityRole="header">
+      <Icon name={icon} size={20} color={C.text} weight={1.8} />
+      <Text style={[font('headline'), { color: C.text, flex: 1 }]} accessibilityRole="header">
         {children}
       </Text>
     </View>
@@ -330,6 +336,7 @@ const s = StyleSheet.create({
     padding: 16,
     overflow: 'hidden',
   },
+  panelFlat: { backgroundColor: G.card },
   panelTitle: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
 
   iconSquare: { width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },

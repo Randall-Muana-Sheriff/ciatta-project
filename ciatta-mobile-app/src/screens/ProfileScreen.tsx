@@ -37,14 +37,13 @@ import { useData, useRepo, useSession } from '../state/session';
 import { askForWeather, weatherIsOn } from '../state/environmentRun';
 import { registerForFindings } from '../state/notifications';
 import { C, font, GUTTER, numeral } from '../theme';
-import { L, NAV_CLEARANCE, TILE_RADIUS } from '../ui/surface';
+import { NAV_CLEARANCE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow, Panel, TextButton } from '../ui/chrome';
 import { ScreenHeader } from '../ui/kit';
 import { Icon } from '../ui/icons';
 import { images } from '../ui/images';
 import { avatarInitial } from '../ui/initial';
 import { EmptyNote, Expandable, Facts, LinkButton, SecondaryButton, SegmentedControl, Tag } from '../ui/kit';
-import { CardFill } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
 type Profile = NonNullable<Data['profile']>;
@@ -61,7 +60,7 @@ const TONE: Record<Tone, string> = {
   mint: '#2FB8B4',
   lavender: C.indigo,
   indigo: C.blue,
-  text: C.fillSelected,
+  text: G.fillSelected,
 };
 
 const OVERVIEW_TONE: Record<Tone, string> = { coral: C.coral, mint: C.mint, lavender: C.lavender, indigo: C.lavender, text: C.gray };
@@ -203,12 +202,12 @@ function HealthOverview({
   const watching = ranked.filter((i) => i.triage === 'Watch').length;
   const count = ready.filter((r) => r.ready).length;
   return (
-    <Panel>
+    <Panel flat>
       <View style={p.overviewTop}>
         <ReadyRing ready={count} total={ready.length} />
         <View style={{ flex: 1 }}>
-          <Text style={[font('headline'), { color: C.text }]}>Health Overview</Text>
-          <Text style={[font('footnote'), { color: C.secondary, marginTop: 2 }]}>
+          <Text style={[font('headline'), { color: G.ink }]}>Health Overview</Text>
+          <Text style={[font('footnote'), { color: G.body, marginTop: 2 }]}>
             {displayCopy(intelligenceLine(days, ready, found, watching))}
           </Text>
         </View>
@@ -226,11 +225,11 @@ function HealthOverview({
             accessibilityHint={OPENS[f.key] ? `Opens ${f.label.toLowerCase()}` : fromHealth && !f.value && f.key === 'age' ? 'Adds it from Apple Health' : undefined}
           >
             <Icon name={f.icon} size={16} color={f.key === 'insurance' ? C.lavender : C.coral} weight={1.8} />
-            <Text style={[font('caption1'), { color: C.secondary, marginTop: 6 }]} numberOfLines={1}>{f.label}</Text>
-            <Text style={[font('subhead', 'semibold'), { color: f.value ? C.text : C.tertiary }]} numberOfLines={1} adjustsFontSizeToFit>
+            <Text style={[font('caption1'), { color: G.body, marginTop: 6 }]} numberOfLines={1}>{f.label}</Text>
+            <Text style={[font('subhead', 'semibold'), { color: f.value ? G.ink : G.meta }]} numberOfLines={1} adjustsFontSizeToFit>
               {f.value ? displayCopy(f.value) : 'Not added'}
             </Text>
-            {f.sub ? <Text style={[font('caption2'), { color: C.secondary }]} numberOfLines={1}>{displayCopy(f.sub)}</Text> : null}
+            {f.sub ? <Text style={[font('caption2'), { color: G.body }]} numberOfLines={1}>{displayCopy(f.sub)}</Text> : null}
             {!f.sub && !f.value && fromHealth && f.key === 'age' ? (
               <Text style={[font('caption2'), { color: C.blueLink }]} numberOfLines={1}>From Apple Health</Text>
             ) : null}
@@ -249,8 +248,8 @@ function HealthOverview({
         {ready.map((r) => (
           <View key={r.key} accessible accessibilityLabel={`${r.label}, ${metricLine(r)}`}>
             <View style={p.measureHead}>
-              <Text style={[font('footnote', 'semibold'), { color: C.text, flex: 1 }]}>{r.label}</Text>
-              <Text style={[font('caption1'), { color: C.secondary }]}>
+              <Text style={[font('footnote', 'semibold'), { color: G.ink, flex: 1 }]}>{r.label}</Text>
+              <Text style={[font('caption1'), { color: G.body }]}>
                 {r.ready ? 'Comparing' : `${r.have} of ${r.need} days`}
               </Text>
             </View>
@@ -265,7 +264,7 @@ function HealthOverview({
           </View>
         ))}
       </View>
-      <Text style={[font('caption1'), { color: C.secondary, marginTop: 14 }]}>
+      <Text style={[font('caption1'), { color: G.body, marginTop: 14 }]}>
         Compared against your own days 35 to 90 back, never a population average.
       </Text>
     </Panel>
@@ -316,9 +315,8 @@ function BodySystems() {
       <View style={p.grid}>
         {bodySystems.map((b) => (
           <View key={b.label} style={p.system}>
-            <CardFill />
-            <Icon name={b.icon} size={20} color={SYSTEM_DOTS[b.label]?.color ?? C.secondary} weight={1.8} />
-            <Text style={[font('subhead'), { color: C.text, flex: 1 }]}>{displayCopy(b.label)}</Text>
+            <Icon name={b.icon} size={20} color={SYSTEM_DOTS[b.label]?.color ?? G.body} weight={1.8} />
+            <Text style={[font('subhead'), { color: G.ink, flex: 1 }]}>{displayCopy(b.label)}</Text>
           </View>
         ))}
       </View>
@@ -527,6 +525,7 @@ function Connections({ onOpen }: { onOpen: (screen: Screen) => void }) {
           const link = SOURCE_LINK[src.kind];
           return (
             <Expandable
+              flat
               key={src.name}
               first={n === 0}
               title={src.name}
@@ -537,7 +536,7 @@ function Connections({ onOpen }: { onOpen: (screen: Screen) => void }) {
               <View style={{ marginBottom: 8 }}>
                 {src.kind === 'measured' ? null : <Tag label={KIND_LABEL[src.kind]} tone={src.kind} />}
               </View>
-              <Facts rows={src.facts} />
+              <Facts rows={src.facts} flat />
               {link ? (
                 <LinkButton label={link.label} onPress={() => onOpen(link.screen)} />
               ) : (
@@ -905,7 +904,7 @@ const p = StyleSheet.create({
   segs: { marginTop: 20, paddingHorizontal: GUTTER },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
-  tile: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 14, overflow: 'hidden' },
+  tile: { backgroundColor: G.card, borderRadius: TILE_RADIUS, padding: 14, overflow: 'hidden' },
   sectionHead: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
 
   // The paragraph sits on the statement ground the system keeps for one
@@ -934,7 +933,7 @@ const p = StyleSheet.create({
   },
   measures: { gap: 12, marginTop: 16 },
   measureHead: { flexDirection: 'row', alignItems: 'baseline' },
-  track: { height: 5, borderRadius: 2.5, backgroundColor: C.fill, marginTop: 6, overflow: 'hidden' },
+  track: { height: 5, borderRadius: 2.5, backgroundColor: G.fill, marginTop: 6, overflow: 'hidden' },
   fillBar: { height: 5, borderRadius: 2.5 },
 
 
@@ -945,9 +944,8 @@ const p = StyleSheet.create({
     gap: 10,
     minHeight: 52,
     paddingHorizontal: 12,
-    borderRadius: TILE_RADIUS,
-    backgroundColor: L.glass,
-    overflow: 'hidden',
+    // No surface of its own: a body system here is a label, set on the
+    // page as Settings sets its rows.
   },
 
   version: { color: G.body, textAlign: 'center' },

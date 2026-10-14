@@ -357,6 +357,7 @@ export function Expandable({
   open,
   onToggle,
   first = false,
+  flat = false,
   children,
 }: {
   title: string;
@@ -366,14 +367,16 @@ export function Expandable({
   open: boolean;
   onToggle: () => void;
   first?: boolean;
+  // A plain surface, as Settings draws its lists, instead of a glow card.
+  flat?: boolean;
   children: ReactNode;
 }) {
   if (!open) {
     return <Row title={title} sub={sub} value={value} valueColor={valueColor} onPress={onToggle} first={first} />;
   }
   return (
-    <View style={s.openCard}>
-      <CardFill />
+    <View style={[s.openCard, flat && s.openFlat]}>
+      {flat ? null : <CardFill />}
       <Pressable
         onPress={onToggle}
         accessibilityRole="button"
@@ -381,11 +384,11 @@ export function Expandable({
         style={s.openHead}
       >
         <View style={s.rowText}>
-          <Text style={[font('headline'), { color: C.text }]}>{displayCopy(title)}</Text>
-          {sub ? <Text style={[font('footnote'), { color: C.secondary }]}>{displayCopy(sub)}</Text> : null}
+          <Text style={[font('headline'), { color: flat ? G.ink : C.text }]}>{displayCopy(title)}</Text>
+          {sub ? <Text style={[font('footnote'), { color: flat ? G.body : C.secondary }]}>{displayCopy(sub)}</Text> : null}
         </View>
         <View style={s.rowRight}>
-          {value ? <Text style={[font('headline'), { color: valueColor ?? C.text }]}>{displayCopy(value)}</Text> : null}
+          {value ? <Text style={[font('headline'), { color: valueColor ?? (flat ? G.ink : C.text) }]}>{displayCopy(value)}</Text> : null}
           <ChevronToggle open />
         </View>
       </Pressable>
@@ -394,13 +397,14 @@ export function Expandable({
   );
 }
 
-export function Facts({ rows }: { rows: { label: string; value: string }[] }) {
+// Inside a dark card by default; `flat` on a plain Settings surface.
+export function Facts({ rows, flat = false }: { rows: { label: string; value: string }[]; flat?: boolean }) {
   return (
     <View>
       {rows.map((r) => (
-        <View key={r.label} style={s.fact}>
-          <Text style={[font('subhead'), { color: G.body }]}>{displayCopy(r.label)}</Text>
-          <Text style={[font('subhead'), s.factValue]}>{displayCopy(r.value)}</Text>
+        <View key={r.label} style={[s.fact, !flat && s.factOnCard]}>
+          <Text style={[font('subhead'), { color: flat ? G.body : C.secondary }]}>{displayCopy(r.label)}</Text>
+          <Text style={[font('subhead'), s.factValue, { color: flat ? G.ink : C.text }]}>{displayCopy(r.value)}</Text>
         </View>
       ))}
     </View>
@@ -496,6 +500,8 @@ export const s = StyleSheet.create({
     borderTopColor: G.rule,
   },
   factValue: { color: G.ink, flexShrink: 1, textAlign: 'right' },
+  factOnCard: { borderTopColor: C.separator },
+  openFlat: { backgroundColor: G.card },
 });
 
 // What a screen shows while her record has nothing for it yet.
