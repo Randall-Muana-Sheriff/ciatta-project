@@ -66,7 +66,7 @@ import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 // code below keeps, which is the only reason it is allowed to be said.
 
 const INTRO_SEEN = 'ciatta.care.introSeen';
-const MODES = ['Ask Ciatta', 'Your Care'] as const;
+const MODES = ['Concierge', 'Your Care'] as const;
 // Action cards she chose Not now on, by id, so each stays put away.
 const DISMISSED = 'ciatta.care.dismissed';
 
@@ -235,8 +235,8 @@ export function CareScreen() {
   const cards = useMemo(() => capabilityCards(record), [record]);
   const ready = useMemo(() => cards.filter((c) => c.ready), [cards]);
 
-  const [mode, setMode] = useState<(typeof MODES)[number]>('Ask Ciatta');
-  // A question handed over from Your Care is asked in Ask Ciatta.
+  const [mode, setMode] = useState<(typeof MODES)[number]>('Concierge');
+  // A question handed over from Your Care is asked in Concierge.
   // Keeps the newest words in view while an answer is written out.
   const grow = useCallback(() => scroller.current?.scrollToEnd({ animated: true }), []);
 
@@ -280,11 +280,11 @@ export function CareScreen() {
   useEffect(() => {
     const waiting = takeCareAsk();
     if (waiting) {
-      setMode('Ask Ciatta');
+      setMode('Concierge');
       send(waiting);
     }
     return onCareAsk((prompt) => {
-      setMode('Ask Ciatta');
+      setMode('Concierge');
       send(prompt);
     });
   }, [send]);
@@ -318,7 +318,7 @@ export function CareScreen() {
 
         {mode === 'Your Care' ? (
           <View style={s.hub}>
-            <CareHub onAsk={() => setMode('Ask Ciatta')} />
+            <CareHub onAsk={() => setMode('Concierge')} />
           </View>
         ) : (
         <>
@@ -334,7 +334,7 @@ export function CareScreen() {
           <View style={s.bubble}>
             <Text style={[font('body'), s.bubbleText]}>
               {displayCopy(
-                `${person?.firstName ? `Hi ${person.firstName}, I` : 'Hi, I'}’m ${name}. I keep watch over your record and get things ready for you. What would you like help with first?`,
+                `${person?.firstName ? `Hi ${person.firstName}, I` : 'Hi, I'}’m ${name}, your care concierge. I keep watch over your record and get things ready for you. What would you like help with first?`,
               )}
             </Text>
           </View>
@@ -432,14 +432,14 @@ export function CareScreen() {
         )}
       </ScrollView>
 
-      {mode === 'Ask Ciatta' ? (
+      {mode === 'Concierge' ? (
       <View style={s.composer}>
         <Composer
           value={draft}
           onChange={setDraft}
           // An example of what she might ask, in her own voice.
           placeholder="My labs came back normal, but I still feel off. What stands out?"
-          label="Ask Ciatta about your record"
+          label="Ask your concierge about your record"
           attachments={files}
           onAttachments={setFiles}
           onSend={() => send(draft)}

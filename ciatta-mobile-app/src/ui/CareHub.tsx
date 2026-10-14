@@ -18,7 +18,9 @@ import { useCareHub } from '../state/careHub';
 import { font } from '../theme';
 import { Eyebrow } from './bento';
 import { Icon, type IconName } from './icons';
-import { HUE, L, SPACE, TILE_RADIUS } from './surface';
+import { images } from './images';
+import { PhotoCard } from './PhotoCard';
+import { L, SPACE, TILE_RADIUS } from './surface';
 
 const NEW_KINDS: { kind: RequestKind; label: string }[] = [
   { kind: 'refill', label: 'Refill' },
@@ -65,15 +67,6 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
         )}
       </Section>
 
-      {/* Latest activity */}
-      <Section title="Latest activity">
-        {hub.activity.length ? (
-          hub.activity.map((a, n) => <Row key={`${a.title}${a.at}`} first={n === 0} icon={a.icon as IconName} title={a.title} right={a.when} />)
-        ) : (
-          <Empty text="What you log, and what your providers send, shows here as it happens." />
-        )}
-      </Section>
-
       {/* Open requests */}
       <Section title="Open requests" action={{ label: choosing ? 'Close' : 'New', onPress: () => setChoosing((v) => !v) }}>
         {choosing ? (
@@ -105,62 +98,80 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
         ) : null}
       </Section>
 
-      {/* Prescriptions */}
-      <Section title="Prescriptions">
-        {hub.rx.items.length ? (
-          <>
-            {hub.rx.items.map((m, n) => (
-              <Row
-                key={m.name}
-                first={n === 0}
-                icon="pill"
-                title={m.name}
-                sub={`${m.from === 'Provider' ? 'From your provider' : 'You added'}${m.last ? ` · last taken ${m.last}` : ''}`}
-                right="Refill"
-                onPress={() => draft('refill', { medication: m.name })}
-              />
-            ))}
-            {hub.rx.missed ? <Text style={[font('footnote'), s.note]}>{`${hub.rx.missed} missed ${hub.rx.missed === 1 ? 'dose' : 'doses'} logged in the last 30 days.`}</Text> : null}
-          </>
-        ) : (
-          <Empty text="Your medications show here, from your providers and your profile." />
-        )}
-      </Section>
+      {/* Prescriptions, as Lotus sets it: on a photograph, what is on
+          file, and a line that asks the concierge. */}
+      <View style={s.section}>
+        <PhotoCard source={images.medications}>
+          <Text style={[font('headline'), s.white]}>Prescriptions</Text>
+          <Text style={[font('footnote'), s.whiteMeta]}>From your providers and your profile</Text>
+          <Text style={[font('title3', 'semibold'), s.white, s.statement]}>
+            {displayCopy(
+              hub.rx.items.length
+                ? `${listNames(hub.rx.items.map((m) => m.name))} on file.${hub.rx.items[0].last ? ` Last taken ${hub.rx.items[0].last}.` : ''}`
+                : 'No prescriptions on file yet. Refill or ask about one by simply asking.',
+            )}
+          </Text>
+          <AskLine
+            text="Refill an existing prescription or ask about a new one"
+            onPress={() => {
+              askCare(REFILL_PROMPT);
+              onAsk();
+            }}
+          />
+          {hub.rx.missed ? <Text style={[font('footnote'), s.whiteMeta]}>{`${hub.rx.missed} missed ${hub.rx.missed === 1 ? 'dose' : 'doses'} logged in the last 30 days.`}</Text> : null}
+        </PhotoCard>
+      </View>
 
       {/* Labs */}
-      <Section title="Labs">
-        {hub.latestDraw ? (
-          <Row
-            first
-            icon="flask"
-            title={`${hub.latestDraw.results.length} results, ${labDay(hub.latestDraw.on)}`}
-            sub={hub.latestDraw.outside ? `${hub.latestDraw.outside} outside range` : 'All within range'}
-            onPress={() => nav.push('healthrecords')}
+      <View style={s.section}>
+        <PhotoCard source={images.records}>
+          <Text style={[font('headline'), s.white]}>Labs</Text>
+          <Text style={[font('footnote'), s.whiteMeta]}>From your providers and your reports</Text>
+          <Pressable onPress={() => (hub.latestDraw ? nav.push('healthrecords') : undefined)} disabled={!hub.latestDraw}>
+            <Text style={[font('title3', 'semibold'), s.white, s.statement]}>
+              {displayCopy(
+                hub.latestDraw
+                  ? `${hub.latestDraw.results.length} results ${labDay(hub.latestDraw.on).toLowerCase().startsWith('on') ? '' : 'from '}${labDay(hub.latestDraw.on)}. ${hub.latestDraw.outside ? `${hub.latestDraw.outside} outside range.` : 'All within range.'}`
+                  : 'No labs yet. Ask your concierge which are worth asking your clinician for.',
+              )}
+            </Text>
+          </Pressable>
+          <AskLine
+            text="Suggest the next labs worth asking about, based on my health data"
+            onPress={() => {
+              askCare(SUGGEST_LABS);
+              onAsk();
+            }}
           />
-        ) : (
-          <Empty text="No labs yet. Connect a provider or add a report." />
-        )}
-        <Pressable
-          onPress={() => {
-            askCare(SUGGEST_LABS);
-            onAsk();
-          }}
-          accessibilityRole="button"
-          style={({ pressed }) => [s.ask, pressed && s.pressed]}
-        >
-          <Text style={[font('subhead'), s.meta]}>{'↳'}</Text>
-          <Text style={[font('subhead', 'semibold'), s.ink, { flex: 1 }]}>Suggest the next labs worth asking about, based on my health data</Text>
-        </Pressable>
-        <View style={s.buttons}>
-          <Small label="Add a Lab Report" onPress={() => nav.push('addLabs')} />
-          {!hub.insurance ? <Small label="Add Insurance" onPress={() => nav.push('insurance')} /> : null}
-        </View>
-      </Section>
+          <View style={s.inner}>
+            {hub.insurance ? (
+              <>
+                <Text style={[font('subhead', 'semibold'), s.white]}>Have a report?</Text>
+                <Text style={[font('footnote'), s.whiteMeta]}>Add a photo or PDF, and Ciatta reads it into your record.</Text>
+                <WhiteButton label="Add a lab report" onPress={() => nav.push('addLabs')} />
+              </>
+            ) : (
+              <>
+                <Text style={[font('subhead', 'semibold'), s.white]}>Please add an insurance plan</Text>
+                <Text style={[font('footnote'), s.whiteMeta]}>So a lab request can name your plan.</Text>
+                <WhiteButton label="Add insurance" onPress={() => nav.push('insurance')} />
+              </>
+            )}
+          </View>
+        </PhotoCard>
+      </View>
 
-      {/* Your care team */}
-      <Section title="Your care team">
+      {/* Your care team, as Lotus sets it: the heading, a line, and tall
+          cards with the name across the foot. Her own clinicians. */}
+      <View style={s.section}>
+        <Text style={[font('title3', 'semibold'), s.ink]} accessibilityRole="header">
+          Meet your care team
+        </Text>
+        <Text style={[font('subhead', 'semibold'), s.teamLede]}>
+          The clinicians in your record, from your providers, referrals and visits. Ciatta gets each request ready, and you send it.
+        </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.team}>
-          {hub.team.map((c) => (
+          {hub.team.map((c, n) => (
             <Pressable
               key={c.id}
               onPress={() => {
@@ -170,17 +181,19 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
               }}
               accessibilityRole="button"
               accessibilityLabel={`${c.name}${c.role ? `, ${c.role}` : ''}`}
-              style={({ pressed }) => [s.member, pressed && s.pressed]}
+              style={({ pressed }) => [pressed && s.pressed]}
             >
-              <View style={s.avatar}>
-                <Text style={[font('headline'), s.ink]}>{c.initials}</Text>
-              </View>
-              <Text style={[font('subhead', 'semibold'), s.ink]} numberOfLines={1}>
-                {displayCopy(c.name)}
-              </Text>
-              <Text style={[font('caption1'), s.meta]} numberOfLines={1}>
-                {displayCopy(c.role ?? c.organization ?? 'From your calendar')}
-              </Text>
+              <PhotoCard source={TEAM_PHOTOS[n % TEAM_PHOTOS.length]} style={s.member} shade={0.72}>
+                <View style={s.memberFill}>
+                  <Text style={[s.initials]}>{c.initials}</Text>
+                </View>
+                <Text style={[font('headline'), s.white]} numberOfLines={1}>
+                  {displayCopy(c.name)}
+                </Text>
+                <Text style={[font('footnote', 'semibold'), s.whiteMeta]} numberOfLines={1}>
+                  {displayCopy(c.organization ?? c.role ?? 'From your calendar')}
+                </Text>
+              </PhotoCard>
             </Pressable>
           ))}
           <Pressable
@@ -192,15 +205,34 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
             accessibilityLabel="Add a clinician"
             style={({ pressed }) => [s.member, s.addMember, pressed && s.pressed]}
           >
-            <View style={[s.avatar, s.addAvatar]}>
-              <Icon name="plus" size={20} color={L.ink} />
-            </View>
-            <Text style={[font('subhead', 'semibold'), s.ink]}>Add</Text>
-            <Text style={[font('caption1'), s.meta]}>A clinician</Text>
+            <Icon name="plus" size={26} color={L.ink} />
+            <Text style={[font('headline'), s.ink]}>Add a clinician</Text>
           </Pressable>
         </ScrollView>
-      </Section>
+      </View>
     </View>
+  );
+}
+
+const REFILL_PROMPT = 'I would like to refill a prescription or ask about a new one. Review my medications and help me prepare the request for my clinician.';
+const TEAM_PHOTOS = [images.horizon, images.journal, images.cycle, images.sleep];
+const listNames = (xs: string[]) => (xs.length < 2 ? xs.join('') : xs.length === 2 ? `${xs[0]} and ${xs[1]}` : `${xs[0]}, ${xs[1]} and ${xs.length - 2} more`);
+
+// The line under a card that asks the concierge, as Lotus marks it.
+function AskLine({ text, onPress }: { text: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [s.askLine, pressed && s.pressed]}>
+      <Text style={[font('subhead'), s.whiteMeta]}>{'\u21B3'}</Text>
+      <Text style={[font('subhead', 'semibold'), s.white, { flex: 1 }]}>{text}</Text>
+    </Pressable>
+  );
+}
+
+function WhiteButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [s.whiteButton, pressed && s.pressed]}>
+      <Text style={[font('subhead', 'semibold'), { color: '#0C0E11' }]}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -265,13 +297,6 @@ function Empty({ text }: { text: string }) {
   return <Text style={[font('subhead'), s.empty]}>{text}</Text>;
 }
 
-function Small({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [s.small, pressed && s.pressed]}>
-      <Text style={[font('footnote', 'semibold'), s.ink]}>{label}</Text>
-    </Pressable>
-  );
-}
 
 const st = StyleSheet.hairlineWidth;
 const s = StyleSheet.create({
@@ -290,12 +315,17 @@ const s = StyleSheet.create({
   kinds: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 12 },
   kind: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: st, borderColor: L.rule, backgroundColor: L.statement },
   ask: { flexDirection: 'row', gap: 8, paddingVertical: 12, borderTopWidth: st, borderTopColor: L.rule },
-  buttons: { flexDirection: 'row', gap: 8, paddingBottom: 14 },
-  small: { paddingHorizontal: 14, minHeight: 36, justifyContent: 'center', borderRadius: 999, backgroundColor: L.statement },
-  team: { gap: 10, paddingVertical: 14 },
-  member: { width: 124, gap: 4 },
-  addMember: {},
-  avatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: L.statement, marginBottom: 6, borderWidth: st, borderColor: HUE.timeDepth },
-  addAvatar: { borderStyle: 'dashed', borderColor: L.meta },
+  team: { gap: 12, paddingVertical: 14 },
+  member: { width: 172, height: 232 },
+  addMember: { borderRadius: 24, borderWidth: 1, borderStyle: 'dashed', borderColor: L.meta, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: L.recessed },
   pressed: { opacity: 0.6 },
+  white: { color: '#FFFFFF' },
+  whiteMeta: { color: 'rgba(255,255,255,0.72)' },
+  statement: { marginTop: 6, lineHeight: 28 },
+  askLine: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  inner: { marginTop: 8, padding: 14, gap: 6, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.14)' },
+  whiteButton: { marginTop: 8, minHeight: 46, borderRadius: 999, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  teamLede: { color: L.body, marginTop: 8, lineHeight: 22 },
+  initials: { color: 'rgba(255,255,255,0.9)', fontSize: 44, fontWeight: '300', letterSpacing: 2 },
+  memberFill: { flex: 1, minHeight: 120, justifyContent: 'center' },
 });
