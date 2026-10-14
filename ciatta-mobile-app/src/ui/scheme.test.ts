@@ -85,7 +85,7 @@ test('a mark colour is deepened on light until it reads, and left alone on dark'
 
 test('every photo in the card pool is on disk, and there are enough for a screen', async () => {
   const { existsSync } = await import('node:fs');
-  const names = [...Array.from({ length: 17 }, (_, n) => String(n).padStart(2, '0')), 'metrics'];
+  const names = Array.from({ length: 16 }, (_, n) => String(n).padStart(2, '0'));
   for (const n of names) assert.ok(existsSync(new URL(`../../assets/images/cards/${n}.jpg`, import.meta.url)), n);
 });
 

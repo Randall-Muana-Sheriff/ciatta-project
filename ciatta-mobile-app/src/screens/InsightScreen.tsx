@@ -34,7 +34,7 @@ export function InsightScreen() {
   return (
     <View style={s.fill}>
       <ScrollView contentContainerStyle={{ paddingBottom: NAV_CLEARANCE + 60 }}>
-        <PhotoCard source={headingFor(insight.image)} style={s.hero} shade={0.75}>
+        <PhotoCard source={headingFor(insight.image)} style={s.hero}>
           <View style={s.bar}>
             <Pressable onPress={nav.back} accessibilityRole="button" accessibilityLabel="Back" hitSlop={8} style={s.circle}>
               <Icon name="chevronLeft" size={20} color="#FFFFFF" />

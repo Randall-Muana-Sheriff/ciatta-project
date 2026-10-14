@@ -75,7 +75,7 @@ export function InsightCards() {
             accessibilityLabel={`${insight.title}. ${insight.sources.length} sources`}
             style={({ pressed }) => [pressed && s.pressed]}
           >
-            <PhotoCard source={headingFor(insight.image)} style={s.card} shade={0.7}>
+            <PhotoCard source={headingFor(insight.image)} style={s.card}>
               <View style={s.cardTop}>
                 <Pressable
                   onPress={() => react(insight.id, { saved: !of(insight.id).saved })}

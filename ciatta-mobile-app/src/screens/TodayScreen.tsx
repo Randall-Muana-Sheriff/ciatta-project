@@ -55,7 +55,7 @@ import { ProductNowCard } from '../ui/ProductNowCard';
 import type { IconName } from '../ui/icons';
 import { Icon } from '../ui/icons';
 import { BlurView } from 'expo-blur';
-import { CardFill, METRICS_GROUND } from '../ui/cardFill';
+import { CardFill } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
 function greeting(now: Date): string {
@@ -461,7 +461,7 @@ export function TodayScreen() {
         // One container on a photograph, and the six as frosted glass tiles
         // over it.
         <View style={t.metricsCard}>
-          <CardFill source={METRICS_GROUND} wash={[0.3, 0.38, 0.5]} />
+          <CardFill />
           {/*
             Six cards and nothing else. The card holds only metrics now:
             the chart and the cycle moved up into Today's Patterns, where

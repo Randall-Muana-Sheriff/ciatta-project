@@ -211,7 +211,7 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
               accessibilityLabel={`${c.name}${c.role ? `, ${c.role}` : ''}`}
               style={({ pressed }) => [pressed && s.pressed]}
             >
-              <PhotoCard source={TEAM_PHOTOS[n % TEAM_PHOTOS.length]} style={s.member} shade={0.72}>
+              <PhotoCard source={TEAM_PHOTOS[n % TEAM_PHOTOS.length]} style={s.member}>
                 <View style={s.memberFill}>
                   <Text style={[s.initials]}>{c.initials}</Text>
                 </View>
