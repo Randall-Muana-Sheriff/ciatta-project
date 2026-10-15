@@ -1,10 +1,10 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import type { ViewStyle } from 'react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { displayCopy } from '../lib/displayCopy';
-import type { Tab } from '../navigation';
+import { menuFor, type MenuItem, type Tab } from '../navigation';
 import { C, font, fonts, GUTTER } from '../theme';
 import { Icon, type IconName } from './icons';
 import { G } from './scheme';
@@ -184,113 +184,82 @@ export function ListRow({
   );
 }
 
-// ── Tab bar ────────────────────────────────────────────────────
+// ── Corner navigation ─────────────────────────────────────────
 
-// The four she moves between. Profile left this row and lives behind the
-// hamburger at the top of Today: it is where she goes to read about
-// herself, not somewhere she switches to twenty times a day, and holding
-// a seat here it rarely earned pushed Care out of the group.
-const TABS: { key: Tab; label: string; icon: IconName }[] = [
-  { key: 'today', label: 'Today', icon: 'home' },
-  { key: 'myhealth', label: 'Health', icon: 'heart' },
-  { key: 'journey', label: 'Journey', icon: 'timeline' },
-  { key: 'care', label: 'Care', icon: 'concierge' },
-];
-
-// The card beside them is no longer a destination at all. It is the one
-// thing on the bar that does something rather than going somewhere, which
-// is why it is a different object and why it is the only white surface in
-// a dark app: nothing else competes with it, so it reads as the action
-// before it is read as a button.
-
-// A floating rounded bar rather than a full width strip, the way Oura's
-// sits. Labels and glyphs are untouched: this is where the bar is and what
-// shape it is, nothing about what it says.
-//
-// It floats clear of the home indicator rather than padding itself down to
-// meet it, so the rounded edge stays a rounded edge instead of becoming a
-// shelf attached to the bottom of the screen.
-//
-// Drawn as the rest of the app now is: a plain surface that follows the
-// mode, with the selected tab on a soft fill and the plus as the one solid
-// pill.
-export function BottomNav({
+// Two round buttons in the bottom right corner, in place of the tab card:
+// the plus, which logs, and the menu, which opens the places above it.
+// They are the same object as the plus always was, at a circle's width,
+// so the corner reads as one pair rather than two new things.
+export function CornerNav({
   active,
-  onTab,
+  onGo,
   onTrack,
 }: {
   active: Tab;
-  onTab: (tab: Tab) => void;
+  onGo: (item: MenuItem) => void;
   onTrack: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const [open, setOpen] = useState(false);
+  const rows = menuFor(active);
   return (
-    // Lower, as iOS floats its own tab bar: into the home indicator's
-    // area rather than on top of it, with the indicator still clear below.
-    <View style={[s.navWrap, { paddingBottom: Math.max(insets.bottom - 16, 8) }]} pointerEvents="box-none">
-      {/*
-        Two cards, not one bar with a fifth seat. Same material, same
-        radius, same hairline, so they read as two objects of one kind with
-        a gap between them rather than as a bar that grew a lump.
-      */}
-      <Card style={s.navGroup} role="tablist">
-        {TABS.map((t) => (
-          <TabButton key={t.key} tab={t} on={t.key === active} onPress={() => onTab(t.key)} />
-        ))}
-      </Card>
-      <Pressable
-        onPress={onTrack}
-        accessibilityRole="button"
-        accessibilityLabel="Track something"
-        style={({ pressed }) => [s.track, pressed && s.pressed]}
-      >
-        <Icon name="plus" size={26} color={G.onPill} weight={2} />
-      </Pressable>
+    <View style={s.cornerRoot} pointerEvents="box-none">
+      {open ? (
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={() => setOpen(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Close the menu"
+        />
+      ) : null}
+      <View style={[s.cornerWrap, { paddingBottom: Math.max(insets.bottom - 16, 8) }]} pointerEvents="box-none">
+        {open ? (
+          <View style={[s.card, s.cardPlain, s.menuCard]} accessibilityRole="menu">
+            {rows.map((m) => (
+              <Pressable
+                key={m.key}
+                onPress={() => {
+                  setOpen(false);
+                  onGo(m);
+                }}
+                accessibilityRole="menuitem"
+                accessibilityState={{ selected: m.current }}
+                accessibilityLabel={m.label}
+                style={({ pressed }) => [s.menuRow, m.current && s.tabOn, pressed && s.pressed]}
+              >
+                <Icon name={m.icon} size={22} color={m.current ? G.ink : G.meta} weight={1.5} />
+                <Text style={[font('body', m.current ? 'semibold' : 'regular'), { color: m.current ? G.ink : G.body, flex: 1 }]}>
+                  {m.label}
+                </Text>
+                {m.current ? <View style={s.menuDot} /> : null}
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+        <View style={s.cornerButtons}>
+          <Pressable
+            onPress={() => {
+              setOpen(false);
+              onTrack();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Track something"
+            style={({ pressed }) => [s.track, s.round, pressed && s.pressed]}
+          >
+            <Icon name="plus" size={26} color={G.onPill} weight={2} />
+          </Pressable>
+          <Pressable
+            onPress={() => setOpen((o) => !o)}
+            accessibilityRole="button"
+            accessibilityLabel={open ? 'Close the menu' : 'Open the menu'}
+            accessibilityState={{ expanded: open }}
+            style={({ pressed }) => [s.track, s.round, pressed && s.pressed]}
+          >
+            <Icon name={open ? 'xmark' : 'menu'} size={24} color={G.onPill} weight={2} />
+          </Pressable>
+        </View>
+      </View>
     </View>
-  );
-}
-
-// The shared surface of both cards. Glass where there is glass, the old
-// near opaque fill where there is not.
-// The bar's surface: the same plain card the lists and the text box use,
-// white on light and a step below the ground on dark, with a hairline and
-// a soft lift so it reads as floating over what scrolls beneath it.
-function Card({ children, style, role }: { children: ReactNode; style: ViewStyle; role?: 'tablist' }) {
-  return (
-    <View style={[s.card, s.cardPlain, style]} accessibilityRole={role}>
-      {children}
-    </View>
-  );
-}
-
-function TabButton({
-  tab,
-  on,
-  onPress,
-  wide = false,
-}: {
-  tab: { key: Tab; label: string; icon: IconName };
-  on: boolean;
-  onPress: () => void;
-  wide?: boolean;
-}) {
-  // Ink when selected, meta when not. The selected tab is also the only one
-  // sitting on the lifted ground, so the state is carried by the ground
-  // rather than by a colour spent on it.
-  const color = on ? G.ink : G.meta;
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="tab"
-      accessibilityState={{ selected: on }}
-      accessibilityLabel={tab.label}
-      style={[s.tab, wide && s.tabWide, on && s.tabOn]}
-    >
-      <Icon name={tab.icon} size={24} color={color} weight={1.5} />
-      <Text style={[s.tabLabel, { color }]} maxFontSizeMultiplier={1.2}>
-        {tab.label}
-      </Text>
-    </Pressable>
   );
 }
 
@@ -346,11 +315,6 @@ const s = StyleSheet.create({
   rowBody: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingVertical: 11, paddingRight: 16 },
   rowSep: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: G.rule },
 
-  // The bar floats: the wrapper holds the safe area, lays the two cards out
-  // in a row, and lets taps through to the screen either side of them.
-  navWrap: { paddingHorizontal: 14, paddingTop: 8, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  // The four, which share one card and divide its width between them.
-  navGroup: { flex: 1 },
   // The tracking button. White, filled, and the same 60 the bar is tall,
   // so it sits as a peer of the group rather than inside it.
   // The same object as the card beside it, in a different colour.
@@ -400,18 +364,8 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
-  // Glass brings its own material, so the bar adds no fill of its own: a
-  // colour behind glass is a colour the glass then has to see through.
-  cardGlass: {},
-  // No glass: the old fill, which is nearly opaque because it has to stop
-  // the content by itself rather than diffusing it.
-  cardPainted: { backgroundColor: G.bar },
   cardPlain: { backgroundColor: G.card, borderColor: G.rule },
 
-  tab: { flex: 1, height: 54, alignItems: 'center', justifyContent: 'center', gap: 3, borderRadius: 25 },
-  // Alone in its card, Care has no siblings to divide width with, so it
-  // sets its own instead of stretching to fill.
-  tabWide: { flex: 0, paddingHorizontal: 16, minWidth: 72 },
   // The selected tab stands one step above the bar, the way the bar stands
   // one step above the page, and it is edged like a selected tile so the two
   // read as the same kind of selection.
@@ -420,5 +374,14 @@ const s = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: G.rule,
   },
-  tabLabel: { fontFamily: fonts.medium, fontSize: 11, lineHeight: 13 },
+
+  // The corner: a full screen layer that only catches taps while the menu
+  // is open, and the buttons and card anchored to its bottom right.
+  cornerRoot: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
+  cornerWrap: { position: 'absolute', right: 0, bottom: 0, paddingRight: 14, alignItems: 'flex-end', gap: 10 },
+  cornerButtons: { flexDirection: 'row', gap: 10 },
+  round: { width: 60, height: 60, borderRadius: 30 },
+  menuCard: { flexDirection: 'column', minWidth: 200, padding: 6, borderRadius: 24 },
+  menuRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, paddingHorizontal: 14, borderRadius: 18 },
+  menuDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: G.ink },
 });

@@ -1,8 +1,12 @@
 import { createContext, useContext } from 'react';
 
-export type Tab = 'today' | 'myhealth' | 'journey' | 'care';
+import type { IconName } from './ui/icons';
 
-export const TAB_ORDER: Tab[] = ['today', 'myhealth', 'journey', 'care'];
+// Three places. Journey is a screen now, reached from Today's patterns and
+// from Health, rather than a place of its own.
+export type Tab = 'today' | 'myhealth' | 'care';
+
+export const TAB_ORDER: Tab[] = ['today', 'myhealth', 'care'];
 
 // The header arrows step through the tabs, wrapping at either end.
 export function adjacentTab(tab: Tab, step: 1 | -1): Tab {
@@ -51,6 +55,8 @@ export type Screen =
   | 'shareClinician'
   | 'productSafety'
   | 'gut'
+  | 'journey'
+  | 'patterns'
   | 'careRequest'
   | 'clinician'
   | 'insight'
@@ -73,4 +79,20 @@ export function useNav(): Nav {
   const nav = useContext(NavContext);
   if (!nav) throw new Error('useNav must be used inside NavContext');
   return nav;
+}
+
+// The corner menu, in the order it lists. Profile is somewhere she goes,
+// not a place she switches between, so it opens over the current place.
+export type MenuGo = { kind: 'tab'; tab: Tab } | { kind: 'screen'; screen: Screen };
+export type MenuItem = { key: string; label: string; icon: IconName; go: MenuGo };
+
+export const MENU_ITEMS: MenuItem[] = [
+  { key: 'today', label: 'Today', icon: 'home', go: { kind: 'tab', tab: 'today' } },
+  { key: 'myhealth', label: 'Health', icon: 'heart', go: { kind: 'tab', tab: 'myhealth' } },
+  { key: 'care', label: 'Care', icon: 'concierge', go: { kind: 'tab', tab: 'care' } },
+  { key: 'profile', label: 'Profile', icon: 'person', go: { kind: 'screen', screen: 'profile' } },
+];
+
+export function menuFor(current: Tab): (MenuItem & { current: boolean })[] {
+  return MENU_ITEMS.map((m) => ({ ...m, current: m.go.kind === 'tab' && m.go.tab === current }));
 }

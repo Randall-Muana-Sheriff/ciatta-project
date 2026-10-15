@@ -1,5 +1,5 @@
 import { NAME } from '../lib/metricNames';
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
@@ -40,7 +40,7 @@ import type { BaselineRow } from '../lib/metricDetail';
 import type { LabResult } from '../lib/labs';
 import { axisFor, emptyFor, posIn, type Scale } from '../lib/timeAxis';
 import { ViewByPicker } from '../ui/ViewByPicker';
-import { LargeTitle } from '../ui/chrome';
+import { DetailScreen } from '../ui/kit';
 import { Icon, type IconName } from '../ui/icons';
 import { G as GT } from '../ui/scheme';
 
@@ -550,7 +550,10 @@ function LaneMarks({
   }
 }
 
-export function JourneyScreen() {
+// A screen of its own when pushed from Health or the Cycle screen, and
+// embedded under the Journey toggle on Today's patterns, where the detail
+// screen around it already scrolls and carries the title.
+export function JourneyScreen({ embedded = false }: { embedded?: boolean } = {}) {
   const { signals, windows, lens, profile } = useCycleInsights();
   const { journey, days } = useData();
   const nav = useNav();
@@ -656,8 +659,7 @@ export function JourneyScreen() {
     setHidden((h) => (h.includes(lane) ? h.filter((l) => l !== lane) : [...h, lane]));
 
   return (
-    <ScrollView style={j.fill} contentContainerStyle={j.body}>
-      <LargeTitle title="Journey" />
+    <Shell embedded={embedded} onBack={nav.back}>
 
       <View style={j.pad}>
         <Text style={[font('subhead'), { color: GT.body, marginBottom: 16 }]}>
@@ -813,7 +815,16 @@ export function JourneyScreen() {
 
       {/* The timeline and its categories are the screen; nothing sits
           under them. Logging lives behind the plus on every screen. */}
-    </ScrollView>
+    </Shell>
+  );
+}
+
+function Shell({ embedded, onBack, children }: { embedded: boolean; onBack: () => void; children: ReactNode }) {
+  if (embedded) return <View>{children}</View>;
+  return (
+    <DetailScreen title="Journey" onBack={onBack}>
+      {children}
+    </DetailScreen>
   );
 }
 

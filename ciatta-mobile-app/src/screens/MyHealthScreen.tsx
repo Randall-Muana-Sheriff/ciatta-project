@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { type BodyPoint, readBody } from '../lib/bodyMap';
 import { drawsFromLabs } from '../lib/labs';
@@ -19,7 +19,18 @@ import { LargeTitle } from '../ui/chrome';
 import { RecordsView } from '../ui/RecordsView';
 import { SegmentedControl } from '../ui/kit';
 import { G } from '../ui/scheme';
+import { displayCopy } from '../lib/displayCopy';
 import { font } from '../theme';
+import { loadClinicalRecords } from '../data/providers';
+import type { DocumentSummary } from '../data/repo';
+import { DOC_TYPE_LABEL } from '../lib/documents';
+import { chooseDocument } from '../lib/documentHandoff';
+import { chooseLab } from '../lib/labHandoff';
+import { type HealthOpen, searchHealth } from '../lib/healthSearch';
+import type { ClinicalRecord } from '../lib/providers/fhirMap';
+import { ListGroup, ListRow } from '../ui/chrome';
+import { Icon } from '../ui/icons';
+import { TILE_RADIUS } from '../ui/surface';
 
 // The dashboard of every chart lives behind All on Today now; Health is
 // her body and her records.
@@ -36,6 +47,48 @@ export function MyHealthScreen() {
   const labs = useLabs();
   const [view, setView] = useState<(typeof VIEWS)[number]>('Body');
   const repo = useRepo();
+
+  // Search: what is already on the phone, read once Health is in view.
+  const [query, setQuery] = useState('');
+  const [docs, setDocs] = useState<DocumentSummary[]>([]);
+  const [records, setRecords] = useState<ClinicalRecord[]>([]);
+  useEffect(() => {
+    if (nav.depth > 0) return;
+    let ignore = false;
+    repo
+      .loadDocuments()
+      .then((rows) => !ignore && setDocs(rows))
+      .catch(() => {});
+    loadClinicalRecords()
+      .then((rows) => !ignore && setRecords(rows))
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, [repo, nav.depth]);
+  const results = useMemo(
+    () =>
+      searchHealth(query, {
+        labs,
+        documents: docs.map((d) => ({ id: d.id, title: d.title ?? DOC_TYPE_LABEL[d.docType], type: DOC_TYPE_LABEL[d.docType] })),
+        records,
+      }),
+    [query, labs, docs, records],
+  );
+  const open = (o: HealthOpen) => {
+    if (o.kind === 'lab') {
+      chooseLab(o.name);
+      nav.push('lab');
+    } else if (o.kind === 'document') {
+      chooseDocument(o.id);
+      nav.push('document');
+    } else if (o.kind === 'screen') {
+      nav.push(o.screen);
+    } else {
+      setQuery('');
+      setView(o.view);
+    }
+  };
   // What she logged on the Log screen, placed under the systems it is
   // about. Read again whenever Body is back in view, so a log she just
   // made shows.
@@ -68,6 +121,41 @@ export function MyHealthScreen() {
 
       <View style={h.pad}>
         <Text style={[font('subhead'), { color: G.body, marginBottom: 16 }]}>Everything about your health, in one place.</Text>
+        <View style={h.search}>
+          <Icon name="search" size={18} color={G.meta} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search your health"
+            placeholderTextColor={G.meta}
+            autoCorrect={false}
+            returnKeyType="search"
+            style={[font('body'), h.searchInput]}
+            accessibilityLabel="Search your health"
+          />
+          {query ? (
+            <Pressable onPress={() => setQuery('')} accessibilityRole="button" accessibilityLabel="Clear" hitSlop={8}>
+              <Icon name="xmark" size={15} color={G.meta} />
+            </Pressable>
+          ) : null}
+        </View>
+
+        {query.trim().length >= 2 ? (
+          results.length ? (
+            <ListGroup style={h.results}>
+              {results.map((r, n) => (
+                <ListRow key={r.key} first={n === 0} title={displayCopy(r.title)} sub={displayCopy(r.sub)} onPress={() => open(r.open)} />
+              ))}
+            </ListGroup>
+          ) : (
+            <Text style={[font('subhead'), h.none]}>{displayCopy(`Nothing in your health matches "${query.trim()}".`)}</Text>
+          )
+        ) : null}
+
+        <ListGroup style={h.results}>
+          <ListRow first icon="timeline" title="Timeline" sub="Your cycle, symptoms, sleep, labs and more on one timeline" onPress={() => nav.push('journey')} />
+        </ListGroup>
+
         <SegmentedControl segments={VIEWS} active={view} onChange={setView} />
 
         {view === 'Body' ? (
@@ -97,4 +185,17 @@ const h = StyleSheet.create({
   fill: { flex: 1 },
   body: { paddingBottom: NAV_CLEARANCE },
   pad: { paddingHorizontal: GUTTER, paddingTop: 4 },
+  search: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    height: 48,
+    borderRadius: TILE_RADIUS,
+    backgroundColor: G.card,
+    overflow: 'hidden',
+  },
+  searchInput: { flex: 1, color: G.ink },
+  results: { marginTop: 12, marginBottom: 16 },
+  none: { color: G.body, marginTop: 12, lineHeight: 22 },
 });

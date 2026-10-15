@@ -56,7 +56,8 @@ import { SleepScreen } from './screens/SleepScreen';
 import { SymptomsScreen } from './screens/SymptomsScreen';
 import { TodayScreen } from './screens/TodayScreen';
 import { C } from './theme';
-import { BottomNav } from './ui/chrome';
+import { CornerNav } from './ui/chrome';
+import { PatternsScreen } from './screens/PatternsScreen';
 import { Ground, type GroundHue } from './ui/Ground';
 import { useUnits } from './state/units';
 
@@ -67,7 +68,6 @@ import { useUnits } from './state/units';
 const TAB_GROUND: Record<Tab, [GroundHue, GroundHue]> = {
   today: ['measured', 'timeDepth'],
   myhealth: ['reported', 'change'],
-  journey: ['timeDepth', 'measured'],
   // Care takes Lavender into Rose: time depth into what she reported,
   // which is what the agent reads and what it is for.
   care: ['timeDepth', 'reported'],
@@ -76,7 +76,6 @@ const TAB_GROUND: Record<Tab, [GroundHue, GroundHue]> = {
 const TAB_SCREENS: Record<Tab, ComponentType> = {
   today: TodayScreen,
   myhealth: MyHealthScreen,
-  journey: JourneyScreen,
   care: CareScreen,
 };
 
@@ -101,6 +100,8 @@ const DETAIL_SCREENS: Record<Screen, ComponentType> = {
   calendar: CalendarScreen,
   quickLog: QuickLogScreen,
   gut: GutScreen,
+  journey: JourneyScreen,
+  patterns: PatternsScreen,
   careRequest: CareRequestScreen,
   clinician: ClinicianScreen,
   insight: InsightScreen,
@@ -127,8 +128,8 @@ const DETAIL_SCREENS: Record<Screen, ComponentType> = {
   productSafety: ProductSafetyScreen,
 };
 
-// Four tabs, each with its own stack of detail screens. The tab bar stays
-// visible on detail screens, as in the reference design.
+// Three places, each with its own stack of detail screens. The corner
+// buttons stay on every screen.
 export function Root() {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('today');
@@ -190,21 +191,16 @@ export function Root() {
           <Current />
         </View>
         {/*
-          The bar floats over the screen rather than sitting under it, which
-          is what makes it read as a rounded object instead of a shelf. Each
-          screen's own ground shows around it, so a white screen keeps a
-          white foot and a dark one keeps a dark one, and screens leave
-          NAV_CLEARANCE at the bottom of their scroll so nothing hides
-          beneath it.
+          The plus and the menu float in the bottom right corner, over the
+          screen. Screens leave NAV_CLEARANCE at the bottom of their scroll
+          so nothing hides beneath them. The plus goes straight to the one
+          logging screen.
         */}
-        <View style={r.navOver} pointerEvents="box-none">
-          {/*
-            The plus goes straight to the one logging screen. It used to
-            open a menu of three, which asked her to classify what she was
-            about to say before she had said it.
-          */}
-          <BottomNav active={tab} onTab={(next) => nav.goTab(next)} onTrack={() => nav.push('quickLog')} />
-          </View>
+        <CornerNav
+          active={tab}
+          onGo={(item) => (item.go.kind === 'tab' ? nav.goTab(item.go.tab) : nav.push(item.go.screen))}
+          onTrack={() => nav.push('quickLog')}
+        />
         </View>
       </Ground>
     </NavContext.Provider>
@@ -214,5 +210,4 @@ export function Root() {
 const r = StyleSheet.create({
   root: { flex: 1 },
   fill: { flex: 1 },
-  navOver: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });

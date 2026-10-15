@@ -19,7 +19,18 @@ const HEIGHT = 120;
 const PAD = 10;
 const TICKS = ['12a', '6a', '12p', '6p', '12a'];
 
-export function DayPair({ view, usual = {} }: { view: DayView; usual?: Partial<Record<DayMetricKey, number>> }) {
+// full is the detail screen: the summary in full rather than three lines,
+// and a taller chart.
+export function DayPair({
+  view,
+  usual = {},
+  full = false,
+}: {
+  view: DayView;
+  usual?: Partial<Record<DayMetricKey, number>>;
+  full?: boolean;
+}) {
+  const height = full ? 180 : HEIGHT;
   const [width, setWidth] = useState(0);
   const [pair, setPair] = useState<DayMetricKey[]>(() => defaultPair(view.series));
   // A metric that has gone (a new day, a new sync) leaves the pair.
@@ -42,12 +53,12 @@ export function DayPair({ view, usual = {} }: { view: DayView; usual?: Partial<R
     () =>
       shown.map((s) => {
         const span = s.high - s.low || 1;
-        const y = (v: number) => PAD + (1 - (v - s.low) / span) * (HEIGHT - PAD * 2);
+        const y = (v: number) => PAD + (1 - (v - s.low) / span) * (height - PAD * 2);
         const pts = s.values.flatMap((v, h) => (v == null ? [] : [{ x: x(h + 0.5), y: y(v) }]));
         return { key: s.key, pts, steps: s.key === 'steps', y, values: s.values };
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [shown.map((s) => s.key).join(), width, view],
+    [shown.map((s) => s.key).join(), width, view, height],
   );
 
   return (
@@ -55,7 +66,7 @@ export function DayPair({ view, usual = {} }: { view: DayView; usual?: Partial<R
       {/* How the pair moved, then where each stands, at a size she can
           read at a glance: one block, never more than three lines. */}
       {lead ? (
-        <Text style={[font('body'), s.insight]} numberOfLines={3} accessibilityLiveRegion="polite">
+        <Text style={[font('body'), s.insight]} numberOfLines={full ? undefined : 3} accessibilityLiveRegion="polite">
           <Text style={[font('body', 'semibold'), s.lead]}>{displayCopy(lead)}</Text>
           {'\n'}
           <Text style={[font('subhead'), s.state]}>{displayCopy(state)}</Text>
@@ -80,23 +91,23 @@ export function DayPair({ view, usual = {} }: { view: DayView; usual?: Partial<R
       </ScrollView>
 
       <View
-        style={{ height: HEIGHT, marginTop: 10 }}
+        style={{ height: height, marginTop: 10 }}
         onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
         accessible
         accessibilityRole="image"
         accessibilityLabel={shown.map((m) => `${m.label} today, ${m.range}`).join('. ')}
       >
         {width ? (
-          <Svg width={width} height={HEIGHT}>
-            {view.wokeAt != null ? <Rect x={0} y={0} width={x(view.wokeAt)} height={HEIGHT} rx={4} fill={L.rule} /> : null}
+          <Svg width={width} height={height}>
+            {view.wokeAt != null ? <Rect x={0} y={0} width={x(view.wokeAt)} height={height} rx={4} fill={L.rule} /> : null}
             {[6, 12, 18].map((h) => (
-              <Line key={h} x1={x(h)} x2={x(h)} y1={0} y2={HEIGHT} stroke={L.rule} strokeWidth={StyleSheet.hairlineWidth} />
+              <Line key={h} x1={x(h)} x2={x(h)} y1={0} y2={height} stroke={L.rule} strokeWidth={StyleSheet.hairlineWidth} />
             ))}
             {paths.map((p, i) =>
               p.steps ? (
                 p.values.map((v, h) =>
                   v == null ? null : (
-                    <Rect key={`${p.key}${h}`} x={x(h) + width / 96} y={p.y(v)} width={width / 48} height={Math.max(1, HEIGHT - PAD - p.y(v))} rx={2} fill={COLORS[i]} opacity={0.55} />
+                    <Rect key={`${p.key}${h}`} x={x(h) + width / 96} y={p.y(v)} width={width / 48} height={Math.max(1, height - PAD - p.y(v))} rx={2} fill={COLORS[i]} opacity={0.55} />
                   ),
                 )
               ) : (
@@ -106,7 +117,7 @@ export function DayPair({ view, usual = {} }: { view: DayView; usual?: Partial<R
             {paths.map((p, i) =>
               p.steps ? null : p.pts.map((pt, n) => <Circle key={`${p.key}d${n}`} cx={pt.x} cy={pt.y} r={2.2} fill={COLORS[i]} />),
             )}
-            <Line x1={x(view.nowHour + 0.5)} x2={x(view.nowHour + 0.5)} y1={0} y2={HEIGHT} stroke={L.meta} strokeWidth={1} strokeDasharray="2 3" />
+            <Line x1={x(view.nowHour + 0.5)} x2={x(view.nowHour + 0.5)} y1={0} y2={height} stroke={L.meta} strokeWidth={1} strokeDasharray="2 3" />
           </Svg>
         ) : null}
       </View>

@@ -250,7 +250,7 @@ export function CycleScreen() {
 
       <View style={[cy.section, { gap: 12 }]}>
         <SecondaryButton label="Pain & Flare History" onPress={history} />
-        <SecondaryButton label="View Cycle Journey" onPress={() => nav.goTab('journey')} />
+        <SecondaryButton label="View Cycle Journey" onPress={() => nav.push('journey')} />
       </View>
     </DetailScreen>
   );

@@ -16,6 +16,7 @@ import {
 } from '../lib/cycleModel';
 import { type Screen, useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
+import { useCyclePosition } from '../state/cyclePosition';
 import { useInsights } from '../state/insights';
 import { useData, useRepo, useSession } from '../state/session';
 import { connectAppleHealth } from '../lib/connectHealth';
@@ -151,43 +152,9 @@ export function TodayScreen() {
     };
   }, [repo]);
 
-  // Where today sits in her cycle. Null when there is no open cycle or
-  // when it has been left open too long to mean anything, and the header
-  // then says nothing rather than guessing.
-  //
-  // Kept as the object rather than only its line, because Metrics shows the
-  // two halves apart: the day is a number she can read like a step count,
-  // and the phase is the part that means something.
-  const cycleNow = useMemo(() => {
-    const open = windows[windows.length - 1] ?? null;
-    const predicted = lens.predicts ? medianLength(countedWindows(windows, profile)) : null;
-    return cycleToday(open && !open.end ? open : null, predicted, new Date());
-  }, [windows, lens, profile]);
-
-  // The phase, in the corner of the cycle row.
-  //
-  // The clinical name when it has been earned: only a confirmed ovulation
-  // counts, from a logged test or a temperature shift. Otherwise an
-  // estimate, and the label says "Likely" so an estimate is never shown as
-  // a position.
-  const phaseText = useMemo(() => {
-    const open = windows[windows.length - 1] ?? null;
-    const confirmed =
-      fertility?.confirmedThisCycle && open
-        ? ([...(fertility.past ?? [])]
-            .reverse()
-            .find((o) => o.date >= open.start)?.date ?? null)
-        : null;
-    const today = new Date();
-    const bleeding = !!open && !open.end && cycleNow != null && cycleNow.day <= 5 && cycleNow.phase === 'During period';
-    const clinical = clinicalPhase({ date: today, bleeding, ovulation: confirmed });
-    if (clinical) return clinicalPhaseLabel(clinical);
-    // Nothing confirmed, so an estimate from the day and her own usual
-    // length, labelled as one. An empty corner told her nothing about where
-    // she is; "Likely follicular" tells her something and says how sure.
-    if (!cycleNow) return null;
-    return estimatedPhaseLabel(estimatedPhase(cycleNow.day, medianLength(countedWindows(windows, profile))));
-  }, [windows, fertility, cycleNow, profile]);
+  // Where today sits in her cycle, and its phase, shared with the Today's
+  // patterns detail so the two never disagree.
+  const { cycleNow, phaseText } = useCyclePosition();
 
   const todayKey = (() => {
     const d = new Date();
@@ -335,15 +302,9 @@ export function TodayScreen() {
         button is a wordmark set incorrectly.
       */}
       <View style={t.wordmarkRow}>
-        <Pressable
-          onPress={go('profile')}
-          accessibilityRole="button"
-          accessibilityLabel="Your profile"
-          hitSlop={10}
-          style={({ pressed }) => [t.menu, pressed && t.pressed]}
-        >
-          <Icon name="menu" size={26} color={G.ink} />
-        </Pressable>
+        {/* Profile lives in the corner menu now; the space stays so the
+            wordmark stays centred. */}
+        <View style={t.menu} />
         <Wordmark />
         <Pressable
           onPress={go('calendar')}
@@ -384,11 +345,26 @@ export function TodayScreen() {
         */}
         <View style={t.headed}>
           <SectionHeading
-            title="Today's Patterns"
-            right={<Text style={[font('subhead'), t.headRight]}>{now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>}
+            title="Today's patterns"
+            right={
+              <Pressable onPress={go('patterns')} accessibilityRole="button" accessibilityLabel="Open Today's patterns" hitSlop={8} style={t.all}>
+                <Text style={[font('subhead'), t.headRight]}>{now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
+                <Icon name="chevronRight" size={14} color={G.meta} />
+              </Pressable>
+            }
           />
         </View>
-        <View style={t.dayCard}>
+        {/*
+          The whole card opens the detail: the day in full, and a toggle to
+          the Journey timeline. The chips inside still switch the pair, and
+          the cycle row still logs a period when none is open.
+        */}
+        <Pressable
+          onPress={go('patterns')}
+          accessibilityRole="button"
+          accessibilityHint="Opens Today's patterns, with your Journey timeline"
+          style={({ pressed }) => [t.dayCard, pressed && t.cardPressed]}
+        >
           <CardFill />
           {/*
             The day itself, from her wearable: two metrics at a time on the
@@ -434,7 +410,7 @@ export function TodayScreen() {
               <Text style={[font('footnote', 'semibold'), t.phase]}>Log a period</Text>
             ) : null}
           </Pressable>
-        </View>
+        </Pressable>
 
         {/* The chart, then the daily brief written from whatever ranks highest. */}
         {/*
@@ -695,6 +671,7 @@ const t = StyleSheet.create({
     paddingBottom: 10,
     overflow: 'hidden',
   },
+  cardPressed: { opacity: 0.8 },
   dayEmpty: { color: L.body, lineHeight: 21, paddingVertical: 10 },
 
   // The cycle sits on its own full width row above the three pills, and

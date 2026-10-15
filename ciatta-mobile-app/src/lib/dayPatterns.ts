@@ -129,3 +129,12 @@ export function rotatePair(pair: readonly DayMetricKey[], k: DayMetricKey): DayM
   if (pair.includes(k)) return pair.length === 2 ? [pair[1], pair[0]] : [...pair];
   return pair.length < 2 ? [...pair, k] : [pair[1], k];
 }
+
+// Every metric with readings today, for the detail view: its range, and her
+// usual beside it only when there is a baseline to say it from.
+export function readingRows(view: DayView, usual: Partial<Record<DayMetricKey, number>>) {
+  return view.series.map((s) => {
+    const u = usual[s.key];
+    return { key: s.key, label: s.label, range: s.range, usual: u == null ? null : `Usually ${say(u)} ${s.unit}` };
+  });
+}
