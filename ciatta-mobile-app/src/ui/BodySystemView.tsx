@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { regionAt } from '../lib/bodyTap';
+import type { RegionId } from '../lib/bodyMap';
 import { AccessibilityInfo, Animated, Easing, Image, PanResponder, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 
@@ -58,6 +60,7 @@ export function BodySystemView({
   conditions,
   situations,
   onExplore,
+  onTapBody,
 }: {
   reading: BodyReading;
   signals: Parameters<typeof systemInsight>[0]['signals'];
@@ -65,6 +68,9 @@ export function BodySystemView({
   conditions: readonly string[];
   situations: readonly string[];
   onExplore: (system: string, topic?: string) => void;
+  // A tap on the figure, as a place on the body, so she can log pain
+  // there. Absent, the figure only turns.
+  onTapBody?: (region: RegionId) => void;
 }) {
   const reduce = useReduceMotion();
   const { width } = useWindowDimensions();
@@ -204,6 +210,18 @@ export function BodySystemView({
               accessible={false}
             />
 
+            {/* A tap anywhere on the body, read as the place it landed. */}
+            {onTapBody ? (
+              <Pressable
+                style={StyleSheet.absoluteFill}
+                onPress={(e) => {
+                  const region = regionAt((e.nativeEvent.locationX / WIDTH) * 100, (e.nativeEvent.locationY / HEIGHT) * 100, quarter);
+                  if (region) onTapBody(region);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Tap where it hurts to log pain there"
+              />
+            ) : null}
             {/* A system shows its own dot, where it sits, in its colour.
                 Whole Body shows every system's dot, and tapping one there
                 chooses that system. Only on the front: the back is the

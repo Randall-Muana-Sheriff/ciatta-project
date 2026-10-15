@@ -94,7 +94,7 @@ export type MenuItem = { key: string; label: string; icon: IconName; go: MenuGo 
 export const MENU_ITEMS: MenuItem[] = [
   { key: 'today', label: 'Today', icon: 'home', go: { kind: 'tab', tab: 'today' } },
   { key: 'records', label: 'Labs', icon: 'flask', go: { kind: 'tab', tab: 'records' } },
-  { key: 'care', label: 'Care', icon: 'concierge', go: { kind: 'tab', tab: 'care' } },
+  { key: 'care', label: 'Care', icon: 'heart', go: { kind: 'tab', tab: 'care' } },
   { key: 'profile', label: 'Profile', icon: 'person', go: { kind: 'screen', screen: 'profile' } },
 ];
 

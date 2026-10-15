@@ -84,7 +84,13 @@ export function useTodayPlan() {
     if (repo.mode !== 'real') return;
     let cancelled = false;
     void (async () => {
-      if (!(await remindersAllowed(false)) || cancelled) return;
+      // Part of the notifications she accepted: allowed on the phone, and
+      // Check Ins and Plans on in Profile.
+      if (!(await remindersAllowed(false)) || !(await repo.loadNotifyCheckins()) || cancelled) {
+        const ids = await phoneScheduler.list().catch(() => [] as string[]);
+        await Promise.all(ids.filter((id) => id.startsWith('plan:')).map((id) => phoneScheduler.cancel(id)));
+        return;
+      }
       const ids = await phoneScheduler.list();
       await Promise.all(ids.filter((id) => id.startsWith('plan:')).map((id) => phoneScheduler.cancel(id)));
       const left = plan.filter((p) => !done.includes(p.key));

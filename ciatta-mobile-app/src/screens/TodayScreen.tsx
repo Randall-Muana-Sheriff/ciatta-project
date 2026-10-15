@@ -27,6 +27,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PatternInsightsRow } from '../ui/PatternInsightsRow';
 import { ExploreHealthRow } from '../ui/ExploreHealthRow';
 import { PlansSection } from './PlansScreen';
+import { useBodyOpen } from '../state/todayMode';
 import { offerCheckIn } from '../lib/checkInHandoff';
 import { JourneyScreen } from './JourneyScreen';
 import { useInsights } from '../state/insights';
@@ -86,6 +87,7 @@ export function TodayScreen() {
   const insets = useSafeAreaInsets();
   // How tall the scrolling area is, so the first screen can fill it.
   const [viewport, setViewport] = useState(0);
+  const [bodyOpen] = useBodyOpen();
   const chatHeight = chatCardHeight(insets.bottom);
   const { accept, watching, setWatching, episodes } = useCycle();
   const { today: brief, ranked } = useInsights();
@@ -344,7 +346,7 @@ export function TodayScreen() {
 
       <ScrollView
         style={t.fill}
-        contentContainerStyle={[t.body, { paddingBottom: chatHeight + MENU_ROOM }]}
+        contentContainerStyle={[t.body, { paddingBottom: bodyOpen ? MENU_ROOM : chatHeight + MENU_ROOM }]}
         onLayout={(e) => setViewport(e.nativeEvent.layout.height)}
       >
         <View style={[t.pad, t.grow]}>
@@ -364,22 +366,28 @@ export function TodayScreen() {
                 fills exactly what shows between the greeting and the chat,
                 so nothing else is on it.
               */}
-              <View style={[t.firstScreen, viewport ? { minHeight: viewport - chatHeight - MENU_ROOM } : null]}>
+              <View style={[t.firstScreen, viewport && !bodyOpen ? { minHeight: viewport - chatHeight - PLANS_PEEK } : null]}>
                 {/* The period product she has in, only while one is in. */}
                 <ProductNowCard />
                 {/* Topics to look into, each read from what Ciatta knows. */}
                 <ExploreHealthRow />
-                <View style={t.space} />
-                {/* Pattern Insights, low on the screen, well clear of Explore. */}
-                <PatternInsightsRow />
+                {bodyOpen ? null : (
+                  <>
+                    <View style={t.space} />
+                    {/* Pattern Insights, low on the screen, well clear of Explore. */}
+                    <PatternInsightsRow />
+                  </>
+                )}
               </View>
               {/*
                 Plans, below the fold and below the chat: she scrolls to
                 them, and Ciatta sends them through the day as well.
               */}
-              <View style={t.belowFold}>
-                <PlansSection />
-              </View>
+              {bodyOpen ? null : (
+                <View style={t.belowFold}>
+                  <PlansSection />
+                </View>
+              )}
             </>
           )}
         </View>
@@ -387,13 +395,17 @@ export function TodayScreen() {
 
       {/* The chat box, live at the foot; sending opens the chat over the
           whole screen with the message in it. */}
-      <ChatCard onSent={openChat} />
+      {/* Body is immersive: no chat card while she is in it. */}
+      {bodyOpen ? null : <ChatCard onSent={openChat} />}
     </View>
   );
 }
 
 // Room above the chat card for the menu button that sits on it.
 const MENU_ROOM = 84;
+// How much of Plans shows above the chat on the first screen: its heading,
+// so there is a cue that more waits below.
+const PLANS_PEEK = 56;
 
 const t = StyleSheet.create({
   // Transparent: the ground behind Root is what paints this screen, and
@@ -457,7 +469,7 @@ const t = StyleSheet.create({
   // The open space between Explore and Pattern Insights: at least a
   // section's worth, and everything the screen has left.
   space: { flexGrow: 1, minHeight: SPACE.section * 2 },
-  belowFold: { marginTop: SPACE.section * 2 },
+  belowFold: { marginTop: SPACE.near },
   calendar: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   metricsHead: { marginBottom: SPACE.tight },
   patternToggle: { marginBottom: 10 },

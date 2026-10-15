@@ -58,6 +58,7 @@ import { TodayScreen } from './screens/TodayScreen';
 import { C } from './theme';
 import { CornerNav } from './ui/chrome';
 import { chatCardHeight } from './ui/ChatCard';
+import { useBodyOpen } from './state/todayMode';
 import { PatternsScreen } from './screens/PatternsScreen';
 import { YourCareScreen } from './screens/YourCareScreen';
 import { RecordsScreen } from './screens/RecordsScreen';
@@ -143,6 +144,8 @@ const DETAIL_SCREENS: Record<Screen, ComponentType> = {
 export function Root() {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
+  // Body on Today hides the chat card, so the menu drops to the corner.
+  const [bodyOpen] = useBodyOpen();
   const [tab, setTab] = useState<Tab>('today');
   const [stack, setStack] = useState<Screen[]>([]);
 
@@ -216,7 +219,7 @@ export function Root() {
           <CornerNav
             active={tab}
             onGo={(item) => (item.go.kind === 'tab' ? nav.goTab(item.go.tab) : nav.push(item.go.screen))}
-            lift={tab === 'today' && !top ? chatCardHeight(insets.bottom) : 0}
+            lift={tab === 'today' && !top && !bodyOpen ? chatCardHeight(insets.bottom) : 0}
           />
         )}
         </View>

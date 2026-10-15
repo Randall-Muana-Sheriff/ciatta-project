@@ -2,7 +2,7 @@
 // then a row of topic tiles, an icon over a name, running off the right
 // edge. Each opens what Ciatta knows about her for that topic.
 
-import { useState } from 'react';
+import { useBodyOpen } from '../state/todayMode';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { BodyView } from './BodyView';
@@ -33,7 +33,9 @@ const VIEWS = ['Topics', 'Body'] as const;
 
 export function ExploreHealthRow() {
   const nav = useNav();
-  const [view, setView] = useState<(typeof VIEWS)[number]>('Topics');
+  const [bodyOpen, setBodyOpen] = useBodyOpen();
+  const view: (typeof VIEWS)[number] = bodyOpen ? 'Body' : 'Topics';
+  const setView = (v: (typeof VIEWS)[number]) => setBodyOpen(v === 'Body');
   return (
     <View>
       <View style={e.head}>

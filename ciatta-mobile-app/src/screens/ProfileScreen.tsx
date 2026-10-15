@@ -32,7 +32,7 @@ import { savedInsights } from '../lib/insights';
 import { SCHEME_LABEL, SCHEMES } from '../ui/scheme';
 import { useData, useRepo, useSession } from '../state/session';
 import { askForWeather, weatherIsOn } from '../state/environmentRun';
-import { registerForFindings } from '../state/notifications';
+import { phoneScheduler, registerForFindings } from '../state/notifications';
 import { C, font, GUTTER } from '../theme';
 import { NAV_CLEARANCE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow, Panel } from '../ui/chrome';
@@ -572,6 +572,12 @@ function Notifications() {
     setCheckinsState(on);
     void repo.saveNotifyCheckins(on).catch(() => setCheckinsState(!on));
     if (on) void registerForFindings(repo, true);
+    // Off: today's plan notifications already scheduled go too.
+    else
+      void phoneScheduler
+        .list()
+        .then((ids) => Promise.all(ids.filter((id) => id.startsWith('plan:')).map((id) => phoneScheduler.cancel(id))))
+        .catch(() => {});
   };
   // Saved to her profile, which the server reads before sending a push.
   const setFindings = (on: boolean) => {
@@ -585,7 +591,11 @@ function Notifications() {
   return (
     <ListGroup footer="No reminders to take anything. A check in only ever says there is a question, never what it is about.">
       <ListRow first title="New Findings" sub="Only once a pattern has appeared more than once" right={toggle(findings, setFindings, 'New findings')} />
-      <ListRow title="Check Ins" sub="At most once a day, when your readings change" right={toggle(checkins, setCheckins, 'Check ins')} />
+      <ListRow
+        title="Check Ins and Plans"
+        sub="Ciatta's question when your readings change, and today's plans at free moments in your calendar"
+        right={toggle(checkins, setCheckins, 'Check ins and plans')}
+      />
       <ListRow title="Before Appointments" sub="The day before, so you can prepare" right={toggle(appointments, setAppointments, 'Before appointments')} />
     </ListGroup>
   );
