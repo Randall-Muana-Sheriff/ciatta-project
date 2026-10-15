@@ -49,6 +49,9 @@ type Palette = { ink: string; body: string; meta: string; fill: string; fillSele
 export type ComposerProps = {
   // Drawn on the chat's white paper rather than the dark ground.
   paper?: boolean;
+  // The box is whatever holds it: it fills its container, with no inset,
+  // and the plus and send sit at the container's foot.
+  fill?: boolean;
   value: string;
   // The second argument is how the words arrived. Onboarding persists it
   // as input_mode, because "she typed this" and "she said this out loud"
@@ -117,6 +120,7 @@ export function Composer({
   start = null,
   command = null,
   paper = false,
+  fill = false,
 }: ComposerProps) {
   // On the chat's white paper, or on the dark ground.
   const K: Palette = paper ? PAPER : G;
@@ -241,7 +245,7 @@ export function Composer({
   const action = dictation.listening ? 'stop' : value.trim() ? 'send' : 'mic';
 
   return (
-    <View>
+    <View style={fill ? s.fillRoot : undefined}>
       {/*
         Above the box, not over it. A sheet covering what she has written
         while she decides what to attach to it is a sheet in the way.
@@ -265,7 +269,7 @@ export function Composer({
         </View>
       ) : null}
 
-      <View style={s.wrap}>
+      <View style={[s.wrap, fill && s.fillRoot]}>
         <TextInput
           ref={field}
           value={value}
@@ -274,11 +278,11 @@ export function Composer({
           placeholderTextColor={K.meta}
           multiline
           textAlignVertical="top"
-          style={[font('body'), s.field, { minHeight: MIN_HEIGHT }]}
+          style={[font('body'), s.field, fill ? s.fillField : { minHeight: MIN_HEIGHT }]}
           accessibilityLabel={label}
         />
 
-        <View style={s.foot}>
+        <View style={[s.foot, fill && s.fillFoot]}>
           {/*
             One plus on the left, away from the control that commits. Gone
             entirely once the list is full rather than shown dead, because a
@@ -394,6 +398,9 @@ const styles = (K: Palette) =>
     // them rather than under them.
     paddingBottom: 56,
   },
+  fillRoot: { flex: 1 },
+  fillField: { flex: 1, paddingHorizontal: 0, paddingTop: 4, paddingBottom: 60 },
+  fillFoot: { left: 0, right: 0, bottom: 0 },
   foot: {
     position: 'absolute',
     left: 10,

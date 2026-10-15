@@ -3,8 +3,9 @@
 // when she sends does the chat open over the whole screen, with what she
 // sent already in it. Closing the chat brings her back here.
 //
-// Drawn as a sheet slid up from the foot: white, rounded at the top, with
-// a grabber, for the strongest contrast against the dark ground. It rises
+// Drawn as a sheet slid up from the foot, and the sheet is the text box:
+// she writes straight on it, with the plus and the microphone at its foot.
+// White, rounded at the top, with a grabber, for the strongest contrast against the dark ground. It rises
 // with the keyboard, so the box stays in view while she writes.
 
 import { useEffect, useRef, useState } from 'react';
@@ -55,7 +56,7 @@ export function ChatCard({ onSent }: { onSent: () => void }) {
       style={[
         c.card,
         {
-          minHeight: Math.round(height * CHAT_CARD_SHARE),
+          height: Math.round(height * CHAT_CARD_SHARE),
           paddingBottom: Math.max(insets.bottom, 12),
           transform: [{ translateY: Animated.multiply(lift, -1) }],
         },
@@ -64,6 +65,7 @@ export function ChatCard({ onSent }: { onSent: () => void }) {
       <View style={c.grabber} />
       <Composer
         paper
+        fill
         value={draft}
         onChange={setDraft}
         placeholder="Ask Ciatta"
