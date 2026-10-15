@@ -30,7 +30,7 @@ export function ExploreHealthRow() {
   return (
     <View>
       <View style={e.head}>
-        <Text style={[font('title3', 'semibold'), e.title]} accessibilityRole="header">
+        <Text style={[font('headline'), e.title]} accessibilityRole="header">
           Explore health
         </Text>
         <Pressable onPress={() => nav.push('exploreAll')} accessibilityRole="button" accessibilityLabel="View all health topics" hitSlop={8} style={e.all}>
@@ -59,8 +59,8 @@ export function TopicTile({ topicKey, label, wide = false }: { topicKey: string;
       accessibilityLabel={`Explore ${label}`}
       style={({ pressed }) => [e.tile, wide && e.tileWide, pressed && e.pressed]}
     >
-      <Icon name={TOPIC_ICON[topicKey] ?? 'sparkle'} size={22} color={G.ink} />
-      <Text style={[font('headline'), e.label]} numberOfLines={2}>
+      <Icon name={TOPIC_ICON[topicKey] ?? 'sparkle'} size={18} color={G.ink} />
+      <Text style={[font('footnote', 'semibold'), e.label]} numberOfLines={2}>
         {label}
       </Text>
     </Pressable>
@@ -71,13 +71,13 @@ const e = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.tight + 4 },
   title: { color: G.ink },
   all: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  allText: { color: G.meta },
+  allText: { color: G.meta, fontSize: 13 },
   rowWrap: { marginHorizontal: -GUTTER },
   row: { gap: 10, paddingHorizontal: GUTTER },
   tile: {
-    width: 132,
-    height: 104,
-    padding: 14,
+    width: 108,
+    height: 84,
+    padding: 12,
     justifyContent: 'space-between',
     borderRadius: 18,
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
@@ -85,6 +85,6 @@ const e = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.14)',
   },
   tileWide: { width: '48%' },
-  label: { color: G.ink, lineHeight: 21 },
+  label: { color: G.ink, lineHeight: 17 },
   pressed: { opacity: 0.6 },
 });

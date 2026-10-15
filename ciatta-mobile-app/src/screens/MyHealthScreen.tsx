@@ -32,11 +32,9 @@ import { ListGroup, ListRow } from '../ui/chrome';
 import { Icon } from '../ui/icons';
 import { TILE_RADIUS } from '../ui/surface';
 
-// The dashboard of every chart lives behind All on Today now; Health is
-// her body and her records.
-const VIEWS = ['Body', 'Records'] as const;
 
-// Health: her body, system by system, and her records.
+// Body: her body, system by system, with search across her health and the
+// timeline. Records is its own place.
 export function MyHealthScreen() {
   const nav = useNav();
   const { ranked } = useInsights();
@@ -45,10 +43,9 @@ export function MyHealthScreen() {
   const [conditions, setConditions] = useState<string[]>([]);
   const { days } = useData();
   const labs = useLabs();
-  const [view, setView] = useState<(typeof VIEWS)[number]>('Body');
   const repo = useRepo();
 
-  // Search: what is already on the phone, read once Health is in view.
+  // Search: what is already on the phone, read once Body is in view.
   const [query, setQuery] = useState('');
   const [docs, setDocs] = useState<DocumentSummary[]>([]);
   const [records, setRecords] = useState<ClinicalRecord[]>([]);
@@ -84,9 +81,11 @@ export function MyHealthScreen() {
       nav.push('document');
     } else if (o.kind === 'screen') {
       nav.push(o.screen);
+    } else if (o.kind === 'tab') {
+      nav.goTab(o.tab);
     } else {
+      // Body is this screen: clear the search to show it.
       setQuery('');
-      setView(o.view);
     }
   };
   // What she logged on the Log screen, placed under the systems it is
@@ -94,7 +93,7 @@ export function MyHealthScreen() {
   // made shows.
   const [logged, setLogged] = useState<BodyPoint[]>([]);
   useEffect(() => {
-    if (view !== 'Body' || nav.depth > 1) return;
+    if (nav.depth > 1) return;
     let ignore = false;
     repo
       .loadJournal()
@@ -103,7 +102,7 @@ export function MyHealthScreen() {
     return () => {
       ignore = true;
     };
-  }, [repo, view, nav.depth]);
+  }, [repo, nav.depth]);
   useEffect(() => {
     repo.loadReported().then((r) => setConditions(r.conditions)).catch(() => {});
   }, [repo]);
@@ -117,7 +116,7 @@ export function MyHealthScreen() {
       {/* No logging control here. Logging lives behind the white plus in the
           bottom navigation, which is reachable from every screen, and two
           doors to the same room only made the room harder to find. */}
-      <LargeTitle title="Health" />
+      <LargeTitle title="Body" />
 
       <View style={h.pad}>
         <Text style={[font('subhead'), { color: G.body, marginBottom: 16 }]}>Everything about your health, in one place.</Text>
@@ -156,10 +155,9 @@ export function MyHealthScreen() {
           <ListRow first icon="timeline" title="Timeline" sub="Your cycle, symptoms, sleep, labs and more on one timeline" onPress={() => nav.push('journey')} />
         </ListGroup>
 
-        <SegmentedControl segments={VIEWS} active={view} onChange={setView} />
-
-        {view === 'Body' ? (
-          <BodySystemView
+        {/* Records is its own place in the corner menu now; this screen is
+            her body, system by system. */}
+        <BodySystemView
             reading={body}
             signals={signals}
             context={context}
@@ -173,9 +171,6 @@ export function MyHealthScreen() {
               nav.push('ciatta');
             }}
           />
-        ) : (
-          <RecordsView onOpen={nav.push} />
-        )}
       </View>
     </ScrollView>
   );

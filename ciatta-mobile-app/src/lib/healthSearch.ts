@@ -17,7 +17,8 @@ export type HealthOpen =
   | { kind: 'lab'; name: string }
   | { kind: 'document'; id: string }
   | { kind: 'screen'; screen: Screen }
-  | { kind: 'view'; view: 'Body' | 'Records' };
+  | { kind: 'view'; view: 'Body' }
+  | { kind: 'tab'; tab: import('../navigation').Tab };
 
 export type HealthResult = { key: string; title: string; sub: string; open: HealthOpen };
 
@@ -25,7 +26,7 @@ const PLACES: { title: string; words: string; open: HealthOpen }[] = [
   { title: 'Timeline', words: 'timeline journey', open: { kind: 'screen', screen: 'journey' } },
   { title: 'Cycle', words: 'cycle period', open: { kind: 'screen', screen: 'cycle' } },
   { title: 'Body systems', words: 'body systems', open: { kind: 'view', view: 'Body' } },
-  { title: 'Records', words: 'records labs documents', open: { kind: 'view', view: 'Records' } },
+  { title: 'Records', words: 'records labs documents', open: { kind: 'tab', tab: 'records' } },
   { title: 'Medications', words: 'medications medicines', open: { kind: 'screen', screen: 'medications' } },
   { title: 'Symptoms', words: 'symptoms', open: { kind: 'screen', screen: 'symptoms' } },
   { title: 'Journal', words: 'journal notes', open: { kind: 'screen', screen: 'journal' } },

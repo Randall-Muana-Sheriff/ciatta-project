@@ -2,11 +2,11 @@ import { createContext, useContext } from 'react';
 
 import type { IconName } from './ui/icons';
 
-// Four places. Journey is a screen now, reached from Today's patterns and
+// Five places. Journey is a screen now, reached from Today's patterns and
 // from Health, rather than a place of its own.
-export type Tab = 'today' | 'myhealth' | 'plans' | 'care';
+export type Tab = 'today' | 'myhealth' | 'records' | 'plans' | 'care';
 
-export const TAB_ORDER: Tab[] = ['today', 'myhealth', 'plans', 'care'];
+export const TAB_ORDER: Tab[] = ['today', 'myhealth', 'records', 'plans', 'care'];
 
 // The header arrows step through the tabs, wrapping at either end.
 export function adjacentTab(tab: Tab, step: 1 | -1): Tab {
@@ -91,9 +91,10 @@ export type MenuItem = { key: string; label: string; icon: IconName; go: MenuGo 
 
 export const MENU_ITEMS: MenuItem[] = [
   { key: 'today', label: 'Today', icon: 'home', go: { kind: 'tab', tab: 'today' } },
-  { key: 'myhealth', label: 'Health', icon: 'heart', go: { kind: 'tab', tab: 'myhealth' } },
-  { key: 'plans', label: 'Plans & Protocols', icon: 'target', go: { kind: 'tab', tab: 'plans' } },
-  { key: 'care', label: 'Your care', icon: 'concierge', go: { kind: 'tab', tab: 'care' } },
+  { key: 'myhealth', label: 'Body', icon: 'heart', go: { kind: 'tab', tab: 'myhealth' } },
+  { key: 'records', label: 'Records', icon: 'doc', go: { kind: 'tab', tab: 'records' } },
+  { key: 'plans', label: 'Plans', icon: 'target', go: { kind: 'tab', tab: 'plans' } },
+  { key: 'care', label: 'Care team', icon: 'concierge', go: { kind: 'tab', tab: 'care' } },
   { key: 'profile', label: 'Profile', icon: 'person', go: { kind: 'screen', screen: 'profile' } },
 ];
 

@@ -61,6 +61,7 @@ import { CHAT_CARD_SHARE } from './ui/ChatCard';
 import { PatternsScreen } from './screens/PatternsScreen';
 import { YourCareScreen } from './screens/YourCareScreen';
 import { PlansScreen } from './screens/PlansScreen';
+import { RecordsScreen } from './screens/RecordsScreen';
 import { ExploreScreen } from './screens/ExploreScreen';
 import { ExploreAllScreen } from './screens/ExploreAllScreen';
 import { Ground, type GroundHue } from './ui/Ground';
@@ -73,6 +74,7 @@ import { useUnits } from './state/units';
 const TAB_GROUND: Record<Tab, [GroundHue, GroundHue]> = {
   today: ['measured', 'timeDepth'],
   myhealth: ['reported', 'change'],
+  records: ['evidence', 'timeDepth'],
   plans: ['change', 'measured'],
   // Care takes Lavender into Rose: time depth into what she reported,
   // which is what the agent reads and what it is for.
@@ -82,6 +84,7 @@ const TAB_GROUND: Record<Tab, [GroundHue, GroundHue]> = {
 const TAB_SCREENS: Record<Tab, ComponentType> = {
   today: TodayScreen,
   myhealth: MyHealthScreen,
+  records: RecordsScreen,
   plans: PlansScreen,
   care: YourCareScreen,
 };

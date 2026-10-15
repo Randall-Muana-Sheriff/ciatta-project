@@ -1,4 +1,4 @@
-// Plans & Protocols: what she could do today, each with its reason in her
+// Plans: what she could do today, each with its reason in her
 // own numbers, ticked off as she goes. A place in the corner menu rather
 // than a section of Today, so Today stays Ciatta and her day.
 //
@@ -34,7 +34,7 @@ export function PlansScreen() {
   const finished = plan.filter((p) => done.includes(p.key)).length;
   return (
     <ScrollView style={p.fill} contentContainerStyle={p.body}>
-      <LargeTitle title="Plans & Protocols" />
+      <LargeTitle title="Plans" />
       <View style={p.pad}>
         <Text style={[font('subhead'), p.lede]}>
           {plan.length ? `Today, from your own readings. ${finished} of ${plan.length} done.` : 'Today, from your own readings.'}

@@ -5,15 +5,15 @@ import { MENU_ITEMS, menuFor, TAB_ORDER } from '../navigation';
 import { type DaySeries, readingRows } from './dayPatterns';
 import { searchHealth } from './healthSearch';
 
-test('four places, in order', () => {
-  assert.deepEqual(TAB_ORDER, ['today', 'myhealth', 'plans', 'care']);
+test('five places, in order', () => {
+  assert.deepEqual(TAB_ORDER, ['today', 'myhealth', 'records', 'plans', 'care']);
 });
 
-test('the corner menu lists Today, Health, Plans & Protocols, Your care and Profile, marking where she is', () => {
-  assert.deepEqual(MENU_ITEMS.map((m) => m.label), ['Today', 'Health', 'Plans & Protocols', 'Your care', 'Profile']);
-  const rows = menuFor('plans');
-  assert.deepEqual(rows.map((r) => r.current), [false, false, true, false, false]);
-  assert.equal(rows[4].go.kind, 'screen');
+test('the corner menu lists Today, Body, Records, Plans, Care team and Profile, marking where she is', () => {
+  assert.deepEqual(MENU_ITEMS.map((m) => m.label), ['Today', 'Body', 'Records', 'Plans', 'Care team', 'Profile']);
+  const rows = menuFor('records');
+  assert.deepEqual(rows.map((r) => r.current), [false, false, true, false, false, false]);
+  assert.equal(rows[5].go.kind, 'screen');
 });
 
 const series = (key: DaySeries['key'], label: string, unit: string, range: string): DaySeries => ({
@@ -51,6 +51,7 @@ test('each kind opens where it lives', () => {
   assert.deepEqual(searchHealth('timeline', index)[0].open, { kind: 'screen', screen: 'journey' });
   assert.deepEqual(searchHealth('cycle', index)[0].open, { kind: 'screen', screen: 'cycle' });
   assert.deepEqual(searchHealth('body', index)[0].open, { kind: 'view', view: 'Body' });
+  assert.deepEqual(searchHealth('records', index)[0].open, { kind: 'tab', tab: 'records' });
 });
 
 test('an empty or one letter query finds nothing, and results stop at 20', () => {

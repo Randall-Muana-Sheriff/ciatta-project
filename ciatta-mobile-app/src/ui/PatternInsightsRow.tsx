@@ -25,7 +25,7 @@ export function PatternInsightsRow() {
   const cardWidth = width - GUTTER - PEEK - GAP;
   return (
     <View>
-      <Text style={[font('largeTitle', 'medium'), r.headline]} accessibilityRole="header">
+      <Text style={[font('headline'), r.headline]} accessibilityRole="header">
         Pattern Insights
       </Text>
       {matches.length ? (
@@ -69,7 +69,7 @@ const PEEK = 44;
 const GAP = 12;
 
 const r = StyleSheet.create({
-  headline: { color: G.ink, letterSpacing: -0.6, marginBottom: SPACE.near },
+  headline: { color: G.ink, marginBottom: SPACE.tight + 4 },
   rowWrap: { marginHorizontal: -GUTTER },
   row: { gap: GAP, paddingHorizontal: GUTTER },
   card: {
