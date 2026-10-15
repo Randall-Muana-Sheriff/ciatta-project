@@ -9,7 +9,7 @@ import Svg, { Circle, Line, Polyline, Rect } from 'react-native-svg';
 
 import { displayCopy } from '../lib/displayCopy';
 import { chosenLab } from '../lib/labHandoff';
-import { type LabResult, labDay, labHistory, labStatus } from '../lib/labs';
+import { changeSinceLast, type LabResult, labDay, labHistory, labStatus } from '../lib/labs';
 import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
 import { font, numeral } from '../theme';
@@ -51,9 +51,13 @@ function History({ results }: { results: LabResult[] }) {
               />
             ) : null}
             <Polyline points={pts.map((r) => `${x(r.on)},${y(r.value!)}`).join(' ')} fill="none" stroke={L.meta} strokeWidth={1.5} />
-            {pts.map((r) => (
-              <Circle key={r.id} cx={x(r.on)} cy={y(r.value!)} r={5} fill={STATUS_COLOR[labStatus(r).key]} />
-            ))}
+            {pts.map((r) =>
+              r.source === 'report' ? (
+                <Rect key={r.id} x={x(r.on) - 4.5} y={y(r.value!) - 4.5} width={9} height={9} rx={2} fill={STATUS_COLOR[labStatus(r).key]} />
+              ) : (
+                <Circle key={r.id} cx={x(r.on)} cy={y(r.value!)} r={5} fill={STATUS_COLOR[labStatus(r).key]} />
+              ),
+            )}
             <Line x1={0} x2={width} y1={CHART_H - 1} y2={CHART_H - 1} stroke={L.rule} />
           </Svg>
         ) : null}
@@ -63,6 +67,9 @@ function History({ results }: { results: LabResult[] }) {
         <Text style={[font('caption2'), s.meta]}>{labDay(latest.on)}</Text>
       </View>
       <Text style={[font('caption1'), s.meta, { marginTop: 8 }]}>Shaded: the range on your latest result.</Text>
+      {pts.some((r) => r.source === 'report') && pts.some((r) => r.source === 'provider') ? (
+        <Text style={[font('caption1'), s.meta, { marginTop: 4 }]}>Squares were read from a report you added; circles came from your provider.</Text>
+      ) : null}
     </View>
   );
 }
@@ -95,6 +102,7 @@ export function LabDetailScreen() {
       </View>
       <LabStatusTag result={latest} />
       {st.basis ? <Text style={[font('caption1'), s.meta, { marginTop: 6 }]}>{displayCopy(st.basis)}</Text> : null}
+      <Text style={[font('subhead'), s.body, { marginTop: 6 }]}>{displayCopy(changeSinceLast(history))}</Text>
       <View style={{ marginTop: SPACE.near }}>
         <LabRangeBar result={latest} height={8} labels />
       </View>

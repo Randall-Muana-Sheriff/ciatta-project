@@ -6,20 +6,46 @@
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle, Polyline } from 'react-native-svg';
 
 import { displayCopy } from '../lib/displayCopy';
 import { chooseLab, chosenReport } from '../lib/labHandoff';
 import { countLine, reportPanels, reportResults } from '../lib/labReport';
-import { type LabResult, labDay } from '../lib/labs';
+import { changeSinceLast, type LabResult, labDay, labHistory, labStatus } from '../lib/labs';
 import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
 import { font } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { CardFill } from '../ui/cardFill';
 import { DetailScreen, EmptyNote, SecondaryButton } from '../ui/kit';
-import { LabRangeBar, LabStatusTag } from '../ui/labs';
+import { LabRangeBar, LabStatusTag, STATUS_COLOR } from '../ui/labs';
 import { G } from '../ui/scheme';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+
+const MINI_H = 44;
+
+function MiniTrend({ history }: { history: LabResult[] }) {
+  const [width, setWidth] = useState(0);
+  const pts = history.filter((h) => h.value != null);
+  const lo = Math.min(...pts.map((p) => p.value!));
+  const hi = Math.max(...pts.map((p) => p.value!));
+  const t0 = Date.parse(pts[0].on);
+  const t1 = Date.parse(pts[pts.length - 1].on);
+  const x = (on: string) => 4 + (t1 === t0 ? 0.5 : (Date.parse(on) - t0) / (t1 - t0)) * (width - 8);
+  const y = (v: number) => 4 + (hi === lo ? 0.5 : 1 - (v - lo) / (hi - lo)) * (MINI_H - 8);
+  return (
+    <View style={{ height: MINI_H }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      {width ? (
+        <Svg width={width} height={MINI_H}>
+          <Polyline points={pts.map((p) => `${x(p.on)},${y(p.value!)}`).join(' ')} fill="none" stroke={L.meta} strokeWidth={1.5} />
+          {pts.map((p) => (
+            <Circle key={p.id} cx={x(p.on)} cy={y(p.value!)} r={3} fill={STATUS_COLOR[labStatus(p).key]} />
+          ))}
+        </Svg>
+      ) : null}
+    </View>
+  );
+}
 
 export function LabReportScreen() {
   const nav = useNav();
@@ -34,6 +60,18 @@ export function LabReportScreen() {
 
   const results = useMemo(() => (key && labs ? reportResults(labs, key) : []), [key, labs]);
   const panels = useMemo(() => reportPanels(results), [results]);
+  const trends = useMemo(
+    () =>
+      panels
+        .map((p) => ({
+          title: p.title,
+          items: p.items
+            .map((result) => ({ result, history: labHistory(labs ?? [], result.name).filter((h) => h.value != null) }))
+            .filter((t) => t.history.length >= 2),
+        }))
+        .filter((p) => p.items.length),
+    [panels, labs],
+  );
 
   const openOriginal = useCallback(async () => {
     if (!key?.documentId) return;
@@ -121,7 +159,32 @@ export function LabReportScreen() {
         </View>
       ))}
 
-      {/* PART 2 SECTIONS (Tasks 3 to 5 add trends, body systems and the cycle here) */}
+      {trends.length ? (
+        <View style={{ marginTop: SPACE.block }}>
+          <Eyebrow>Panel trends</Eyebrow>
+          {trends.map((panel) => (
+            <View key={panel.title} style={s.card}>
+              <CardFill />
+              <Text style={[font('footnote', 'semibold'), s.ink, { marginTop: 12 }]}>{displayCopy(panel.title)}</Text>
+              <View style={s.grid}>
+                {panel.items.map(({ result, history }) => (
+                  <View key={result.id} style={s.cell}>
+                    <Text style={[font('caption2'), s.meta]} numberOfLines={1}>
+                      {displayCopy(result.name)}
+                    </Text>
+                    <MiniTrend history={history} />
+                    <Text style={[font('caption2'), s.meta]} numberOfLines={1}>
+                      {displayCopy(changeSinceLast(history))}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {/* PART 2 SECTIONS: body systems and cycle follow */}
 
       {key.documentId ? (
         <View style={{ marginTop: SPACE.section }}>
@@ -144,4 +207,6 @@ const s = StyleSheet.create({
   row: { paddingVertical: 12, gap: 6 },
   divided: { borderTopWidth: st, borderTopColor: G.rule },
   top: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingVertical: 10 },
+  cell: { width: '47%', gap: 2 },
 });
