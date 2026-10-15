@@ -1,4 +1,4 @@
-// Reading a long report in pieces, and putting the pieces back together.
+// Reading a long document in pieces, and putting the pieces back together. Shared by lab-scan and document-scan.
 // Pure, so it is tested from the app's suite.
 
 export const CHUNK_PAGES = 8;

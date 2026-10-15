@@ -17,8 +17,8 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-import { pageCount, splitPdf } from './pdf.ts';
-import { chunkRanges, type ChunkRead, mergeChunks } from './scan.ts';
+import { pageCount, splitPdf } from '../_shared/pdf.ts';
+import { chunkRanges, type ChunkRead, mergeChunks } from '../_shared/chunks.ts';
 
 const url = Deno.env.get('SUPABASE_URL')!;
 const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;

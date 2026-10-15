@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { CHUNK_PAGES, chunkRanges, mergeChunks } from '../../supabase/functions/lab-scan/scan.ts';
+import { CHUNK_PAGES, chunkRanges, mergeChunks } from '../../supabase/functions/_shared/chunks.ts';
 
 const t = (name: string, panel: string | null = null) => ({ name, value: 1, value_text: null, unit: null, range: null, flag: null, panel });
 
