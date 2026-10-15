@@ -12,14 +12,32 @@ import type { LegalDoc } from './types';
 //     one-way hash of the IP address or email, kept for at most 24 hours
 //   · fonts loaded from Google Fonts
 //   · no cookies and no analytics unless she accepts; no advertising pixels
-// If any of that changes, this document has to change with it.
+//
+// The app section was written from the app's code and from the answers in
+// Ciatta's Epic on FHIR Data Use Questionnaire (app 62277), which patients
+// see when they connect a hospital. The two must say the same thing:
+//   · for-profit; funded by memberships, other business ventures and
+//     investment; no business associate agreements with hospitals
+//   · stored on her phone and on servers in the United States (Supabase,
+//     us-east-1)
+//   · seen by Ciatta staff as needed, people she shares with, and
+//     infrastructure providers under contract (Supabase, OpenAI)
+//   · consent by accepting this policy; no notice of each access
+//   · used to provide and improve Ciatta; research only de-identified and
+//     only if she opts in separately
+//   · complete export, delete everything, nothing kept after deletion; no
+//     record of who accessed her data
+// If any of that changes, this document, and the questionnaire, have to
+// change with it.
 
 export const privacy: LegalDoc = {
   title: 'Privacy Policy',
-  summary: `How ${LEGAL.operator} handles the little personal information this website and our emails use.`,
+  summary: `How ${LEGAL.operator} handles your information in the Ciatta app, on this website and in our emails.`,
   plainly: [
-    'This policy covers ciatta.io, the Ciatta Briefs newsletter and the waitlist. The Ciatta app is not open yet and will have its own notice before it is.',
-    'We ask for one thing: your email address. We do not ask for health information on this website.',
+    'This policy covers the Ciatta app, ciatta.io, the Ciatta Briefs newsletter and the waitlist.',
+    'In the app, your health information is used to give you Ciatta and to improve it. It is kept on your phone and on servers in the United States, and you can export it or delete all of it at any time.',
+    'Records from a hospital you connect are only ever read. Ciatta cannot change anything in your chart, and you can disconnect at any time.',
+    'On this website we ask for one thing: your email address. We do not ask for health information here.',
     'The site sets no cookies unless you accept analytics, and you are asked before anything is set. We do not track whether you open our emails or click their links.',
     'We never sell your information, and we do not use it for advertising.',
     'You can unsubscribe from any email in one click, and ask us to delete your address at any time.',
@@ -36,8 +54,92 @@ export const privacy: LegalDoc = {
       ],
     },
     {
+      id: 'app',
+      title: 'The Ciatta app',
+      blocks: [
+        {
+          p: `${LEGAL.operator} is a for-profit company. The app is funded by memberships, by our other business ventures, and by investment. It is never funded by advertising or by selling or giving access to your information.`,
+        },
+        { p: 'What the app holds about you, and where it comes from:' },
+        {
+          list: [
+            'What you tell it: what you log, your cycle, symptoms, conditions, medications, notes and your profile.',
+            'What you connect: health data you allow it to read from Apple Health on your phone, and records from a hospital or clinic you connect through its patient portal, such as MyChart.',
+            'Lab reports you add: the results read from them, and the original file, so you can check any result against it.',
+          ],
+        },
+        {
+          p: 'Records from a hospital you connect are read only. Ciatta asks for read access and nothing else, so it cannot add to or change anything in your chart. You log in on your provider’s own page, and Ciatta never sees your portal password.',
+        },
+        {
+          p: 'Ciatta does not have business associate agreements with the hospitals and clinics you connect. Once your records are in Ciatta, they are protected by this policy and by the laws that apply to us, rather than by the HIPAA rules that apply to your provider.',
+        },
+      ],
+    },
+    {
+      id: 'app-use',
+      title: 'How the app uses your information',
+      blocks: [
+        {
+          list: [
+            'To give you Ciatta: your record, its patterns and insights, your care tools, and the analysis of lab reports you add.',
+            'To improve Ciatta.',
+            'For research, only if you choose to take part, separately from agreeing to this policy, and only with information that no longer identifies you. Ciatta does not do this today, and will ask you before it ever does.',
+          ],
+        },
+        {
+          p: 'The clinical AI analysis of a lab report is written by an AI model from your results and your record, and checked against your record before you see it. It is not a diagnosis. Discuss it with your clinician.',
+        },
+        {
+          p: 'You agree to this use by accepting this policy. You are not notified each time your information is accessed, and the app does not give you a record of who has accessed it.',
+        },
+      ],
+    },
+    {
+      id: 'app-share',
+      title: 'Who else can see what is in the app',
+      blocks: [
+        {
+          list: [
+            'Ciatta staff, only where they need to, to run and support the service.',
+            'People you choose to share with, such as a clinician you send a summary to. Ciatta does not send your information to your care team on its own.',
+            'Infrastructure providers that host and run the service for Ciatta under contract, listed below. They process it only on our instructions.',
+          ],
+        },
+        {
+          table: {
+            head: ['Provider', 'What they do for the app', 'Where'],
+            rows: [
+              ['Supabase', 'Stores your account and your record, and runs the server side of the app', 'United States'],
+              ['OpenAI', 'Reads lab reports and meal photos you add, and writes the clinical AI analysis of a lab report', 'United States'],
+              ['Apple', 'Apple Health data stays on your phone, and the app reads only what you allow', 'On your phone'],
+            ],
+          },
+        },
+        {
+          p: 'Researchers, advertisers, data brokers, insurers, our partners or affiliates, and government agencies do not receive your information from the app, except where the law requires us to disclose it.',
+        },
+      ],
+    },
+    {
+      id: 'app-control',
+      title: 'Where it is kept, for how long, and your control',
+      blocks: [
+        {
+          list: [
+            'Your information is stored on your phone and on servers in the United States.',
+            'It is kept for as long as your account is open.',
+            'You can download a complete copy of what Ciatta holds about you at any time, from Privacy and Data in the app.',
+            'You can delete all of it. When you delete your account, everything is deleted, and nothing is kept afterwards.',
+            'You can disconnect a hospital or clinic at any time, and the records it sent are removed from Ciatta. Nothing changes in your chart at your provider.',
+            'You can remove a lab report you added, with its results, its original file and its analysis.',
+          ],
+        },
+      ],
+    },
+    {
       id: 'collect',
-      title: 'What we collect and why',
+      title: 'What the website collects and why',
       blocks: [
         {
           table: {

@@ -1,15 +1,15 @@
 import { LEGAL } from './config';
 import type { LegalDoc } from './types';
 
-// Terms for the website, Ciatta Briefs and the waitlist. The Ciatta app is not
-// open yet; membership will come with its own terms, and section 5 says so
-// rather than promising anything about them here.
+// Terms for the website, Ciatta Briefs, the waitlist and the Ciatta app,
+// including connecting health records through Epic on FHIR. Membership
+// billing is in section 6.
 
 export const terms: LegalDoc = {
   title: 'Terms of Use',
-  summary: 'The terms for using ciatta.io, reading Ciatta Briefs and joining the waitlist.',
+  summary: 'The terms for using the Ciatta app and ciatta.io, reading Ciatta Briefs and joining the waitlist.',
   plainly: [
-    'Nothing on this site or in our emails is medical advice. It cannot tell you what is happening in your own body. Talk to a clinician about that.',
+    'Nothing in the app, on this site or in our emails is medical advice, and the clinical AI analysis of your lab reports is not a diagnosis. Talk to a clinician about what is happening in your own body.',
     'In an emergency, call your local emergency number now.',
     'Joining the waitlist is free and commits you to nothing. It does not guarantee a place, a date or a price.',
     'Our writing is ours. Share links to it freely; do not republish it as your own.',
@@ -20,7 +20,7 @@ export const terms: LegalDoc = {
       title: '1. These terms',
       blocks: [
         {
-          p: `These terms apply to ciatta.io, the Ciatta Briefs newsletter, and the Ciatta waitlist (together, "the site"), provided by ${LEGAL.operator} ("Ciatta", "we", "us"). By using the site you agree to them. If you do not agree, please do not use it.`,
+          p: `These terms apply to the Ciatta app, ciatta.io, the Ciatta Briefs newsletter, and the Ciatta waitlist (together, "the site"), provided by ${LEGAL.operator} ("Ciatta", "we", "us"). By using the site you agree to them. If you do not agree, please do not use it.`,
         },
         { p: 'Our Privacy Policy explains how we handle personal information, and forms part of these terms.' },
       ],
@@ -106,8 +106,23 @@ export const terms: LegalDoc = {
       ],
     },
     {
+      id: 'app',
+      title: '7. Using the Ciatta app',
+      blocks: [
+        {
+          list: [
+            'Your account is yours. Keep your login safe, and tell us if you think someone else has used it.',
+            'When you connect a hospital or clinic, you log in on your provider\u2019s own page, and you choose to let Ciatta read your records. Ciatta reads them only, and cannot change anything in your chart. Records come from your provider as they sent them; Ciatta does not correct them, and is not responsible for what they contain.',
+            'Lab reports you add are read by an AI model, and you check every result before it is saved. You are responsible for the results you save.',
+            'The clinical AI analysis of a lab report, and every insight in the app, is general information to help you notice changes and ask better questions. It is not a diagnosis, and section 2 applies to it in full.',
+            'You can disconnect a provider, remove a lab report, export your record or delete your account at any time, as the Privacy Policy describes.',
+          ],
+        },
+      ],
+    },
+    {
       id: 'use',
-      title: '7. Using the site properly',
+      title: '8. Using the site properly',
       blocks: [
         { p: 'You agree not to:' },
         {
@@ -124,7 +139,7 @@ export const terms: LegalDoc = {
     },
     {
       id: 'ip',
-      title: '8. Our content',
+      title: '9. Our content',
       blocks: [
         {
           p: 'The writing, design, photography, video, the Ciatta name and wordmark on the site belong to Ciatta or the people who licensed them to us, and are protected by intellectual property law.',
@@ -136,7 +151,7 @@ export const terms: LegalDoc = {
     },
     {
       id: 'links',
-      title: '9. Other websites',
+      title: '10. Other websites',
       blocks: [
         {
           p: 'Our writing may link to studies, guidelines and other sites we do not control. We link to them because we think they are useful, not because we endorse everything on them, and we are not responsible for their content.',
@@ -145,7 +160,7 @@ export const terms: LegalDoc = {
     },
     {
       id: 'availability',
-      title: '10. Availability and changes',
+      title: '11. Availability and changes',
       blocks: [
         {
           p: 'We work to keep the site available and accurate, but we provide it as it is and as available. We may change, pause or withdraw any part of it at any time.',
@@ -154,7 +169,7 @@ export const terms: LegalDoc = {
     },
     {
       id: 'liability',
-      title: '11. Liability',
+      title: '12. Liability',
       blocks: [
         {
           p: 'Nothing in these terms limits liability that cannot legally be limited, including for death or personal injury caused by negligence, for fraud, or your rights as a consumer under the law where you live.',
@@ -166,7 +181,7 @@ export const terms: LegalDoc = {
     },
     {
       id: 'law',
-      title: '12. Law and disputes',
+      title: '13. Law and disputes',
       blocks: [
         {
           p: LEGAL.governingLaw
@@ -180,7 +195,7 @@ export const terms: LegalDoc = {
     },
     {
       id: 'data',
-      title: '13. Your data, and what we will not do with it',
+      title: '14. Your data, and what we will not do with it',
       blocks: [
         {
           p: 'Health data is the most sensitive data you have. Data is encrypted with TLS 1.3 in transit and AES-256 at rest, sensitive fields are wrapped in per-user encryption envelopes, access patterns are audited, and the principle of least privilege applies across every service.',
@@ -195,7 +210,7 @@ export const terms: LegalDoc = {
     },
     {
       id: 'changes',
-      title: '14. Changes to these terms',
+      title: '15. Changes to these terms',
       blocks: [
         {
           p: 'We may update these terms. The date at the top shows when they last changed. If a change is significant, we will tell subscribers by email before it applies. Continuing to use the site after that means you accept the updated terms.',
