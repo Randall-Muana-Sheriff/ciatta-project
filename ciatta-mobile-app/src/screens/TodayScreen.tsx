@@ -17,6 +17,8 @@ import {
 import { type Screen, useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useCyclePosition } from '../state/cyclePosition';
+import { PATTERN_VIEWS, usePatternView } from '../state/patternsView';
+import { JourneyScreen } from './JourneyScreen';
 import { useInsights } from '../state/insights';
 import { useData, useRepo, useSession } from '../state/session';
 import { connectAppleHealth } from '../lib/connectHealth';
@@ -44,7 +46,7 @@ import { usePlanDone } from '../state/planDone';
 import { upcomingVisits, visitWhen } from '../lib/calendarEvents';
 import { useDeviceCalendar } from '../state/deviceCalendar';
 import { font, GUTTER } from '../theme';
-import { SectionHeading } from '../ui/kit';
+import { SectionHeading, SegmentedControl } from '../ui/kit';
 import { Wordmark } from '../ui/Wordmark';
 import { ground, HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow } from '../ui/chrome';
@@ -155,6 +157,7 @@ export function TodayScreen() {
   // Where today sits in her cycle, and its phase, shared with the Today's
   // patterns detail so the two never disagree.
   const { cycleNow, phaseText } = useCyclePosition();
+  const [patternView, setPatternView] = usePatternView();
 
   const todayKey = (() => {
     const d = new Date();
@@ -359,6 +362,17 @@ export function TodayScreen() {
           the Journey timeline. The chips inside still switch the pair, and
           the cycle row still logs a period when none is open.
         */}
+        <View style={t.patternToggle}>
+          <SegmentedControl segments={PATTERN_VIEWS} active={patternView} onChange={setPatternView} />
+        </View>
+        {patternView === 'Journey' ? (
+          // The Journey timeline in place, the same graph as the Journey
+          // screen, opening on the day.
+          <View style={[t.dayCard, t.journeyCard]}>
+            <CardFill />
+            <JourneyScreen embedded />
+          </View>
+        ) : (
         <Pressable
           onPress={go('patterns')}
           accessibilityRole="button"
@@ -411,6 +425,7 @@ export function TodayScreen() {
             ) : null}
           </Pressable>
         </Pressable>
+        )}
 
         {/* The chart, then the daily brief written from whatever ranks highest. */}
         {/*
@@ -672,6 +687,9 @@ const t = StyleSheet.create({
     overflow: 'hidden',
   },
   cardPressed: { opacity: 0.8 },
+  patternToggle: { marginBottom: 10 },
+  // The timeline brings its own side padding, so the card adds none.
+  journeyCard: { paddingHorizontal: 0 },
   dayEmpty: { color: L.body, lineHeight: 21, paddingVertical: 10 },
 
   // The cycle sits on its own full width row above the three pills, and

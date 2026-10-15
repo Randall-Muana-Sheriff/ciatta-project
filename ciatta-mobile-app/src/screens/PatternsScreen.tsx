@@ -17,6 +17,7 @@ import { chooseLogCategory } from '../lib/logHandoff';
 import { type BaselineRow, usualFor } from '../lib/metricDetail';
 import { useNav } from '../navigation';
 import { useCyclePosition } from '../state/cyclePosition';
+import { PATTERN_VIEWS, usePatternView } from '../state/patternsView';
 import { useRepo } from '../state/session';
 import { font, GUTTER } from '../theme';
 import { CardFill } from '../ui/cardFill';
@@ -26,19 +27,11 @@ import { G } from '../ui/scheme';
 import { ground, HUE, L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { JourneyScreen } from './JourneyScreen';
 
-const VIEWS = ['Today', 'Journey'] as const;
-type View_ = (typeof VIEWS)[number];
-// Kept for the session: the view she left is the one she comes back to.
-let lastView: View_ = 'Today';
 
 export function PatternsScreen() {
   const nav = useNav();
   const repo = useRepo();
-  const [view, setView] = useState<View_>(lastView);
-  const choose = (v: View_) => {
-    lastView = v;
-    setView(v);
-  };
+  const [view, choose] = usePatternView();
 
   const [intraday, setIntraday] = useState<IntradayPoint[]>([]);
   const [baselines, setBaselines] = useState<BaselineRow[]>([]);
@@ -77,7 +70,7 @@ export function PatternsScreen() {
     <DetailScreen title="Today's patterns" onBack={nav.back}>
       <View style={p.pad}>
         <Text style={[font('subhead'), p.date]}>{now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
-        <SegmentedControl segments={VIEWS} active={view} onChange={choose} />
+        <SegmentedControl segments={PATTERN_VIEWS} active={view} onChange={choose} />
       </View>
 
       {view === 'Today' ? (
