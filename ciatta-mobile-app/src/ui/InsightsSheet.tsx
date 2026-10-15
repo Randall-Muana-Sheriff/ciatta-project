@@ -1,18 +1,18 @@
-// Insights on Today, as Lotus sets them: a sheet resting over the lower
-// part of the screen with the first pattern showing, which slides up to
-// fill the screen with every pattern for the day. Pull it up, or start
-// scrolling, and it rises; pull it down from the top of the list and it
-// settles again. Tapping a pattern opens its page.
+// Pattern Insights on Today, as Lotus sets them: resting over the lower
+// part of the screen with the first pattern showing, and opening into the
+// same sheet the rest of the app uses (ui/Sheet, iOS's own page sheet,
+// as Gender in Profile opens): rounded top corners, no outline, the screen
+// behind stepping back, and a swipe down to close.
 //
-// On the same ground as every screen, so it is never a flat page of its
-// own. Built on React Native's Animated and PanResponder, since the app
-// carries no gesture library.
+// The resting part is drawn to match that sheet: the same corners and no
+// edge line, so the two read as one object at two heights. Tap it or swipe
+// it up to open. Tapping a pattern closes the sheet and opens its page.
 
 import { useMemo, useRef, useState } from 'react';
-import { Animated, PanResponder, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PanResponder, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { openInsight } from '../lib/careHandoff';
+import type { InsightMatch } from '../lib/insights';
 import { useNav } from '../navigation';
 import { useInsightReactions } from '../state/insightReactions';
 import { useResearchInsights } from '../state/researchInsights';
@@ -20,115 +20,113 @@ import { font, GUTTER } from '../theme';
 import { GroundLayer } from './Ground';
 import { InsightCard } from './InsightCards';
 import { G } from './scheme';
-import { BLEED, L, NAV_CLEARANCE, SPACE } from './surface';
+import { Sheet } from './Sheet';
+import { BLEED, L, SPACE } from './surface';
 
-// How much of the screen the resting sheet takes, and how far from the top
-// it stops when open.
+// How much of the screen the resting sheet takes.
 const REST = 0.44;
-const TOP_GAP = 56;
+// The corner iOS gives a page sheet on these phones.
+const SHEET_CORNER = 12;
 
 export function InsightsSheet() {
   const nav = useNav();
-  const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const { reactions } = useInsightReactions();
   const { matches } = useResearchInsights(reactions);
-
-  const full = height - insets.top - TOP_GAP;
-  const resting = full - Math.round(height * REST);
-  const y = useRef(new Animated.Value(resting)).current;
-  const at = useRef(resting);
   const [open, setOpen] = useState(false);
-  const scrollTop = useRef(0);
+  const opening = useRef(false);
 
-  const settle = (toOpen: boolean) => {
-    const to = toOpen ? 0 : resting;
-    at.current = to;
-    setOpen(toOpen);
-    Animated.spring(y, { toValue: to, useNativeDriver: true, bounciness: 2 }).start();
-  };
-
+  // A clear swipe up on the resting sheet opens it.
   const pan = useMemo(
     () =>
       PanResponder.create({
-        // Resting: any clear vertical drag moves the sheet. Open: only a
-        // pull down from the top of the list, so the list still scrolls.
-        onMoveShouldSetPanResponder: (_, g) =>
-          Math.abs(g.dy) > 6 && Math.abs(g.dy) > Math.abs(g.dx) && (at.current !== 0 || (g.dy > 0 && scrollTop.current <= 0)),
-        onPanResponderMove: (_, g) => y.setValue(Math.min(resting, Math.max(0, at.current + g.dy))),
-        onPanResponderRelease: (_, g) => {
-          const moved = at.current + g.dy;
-          if (g.vy < -0.4 || moved < resting / 2) settle(true);
-          else settle(false);
+        onMoveShouldSetPanResponder: (_, g) => g.dy < -8 && Math.abs(g.dy) > Math.abs(g.dx),
+        onPanResponderMove: (_, g) => {
+          if (!opening.current && g.dy < -24) {
+            opening.current = true;
+            setOpen(true);
+          }
         },
-        onPanResponderTerminate: () => settle(at.current === 0),
+        onPanResponderRelease: () => {
+          opening.current = false;
+        },
+        onPanResponderTerminate: () => {
+          opening.current = false;
+        },
       }),
-    [resting],
+    [],
   );
 
   if (!matches.length) return null;
 
+  const openPattern = (id: string) => {
+    setOpen(false);
+    openInsight(id);
+    nav.push('insight');
+  };
+
   return (
-    <Animated.View
-      style={[s.sheet, { top: insets.top + TOP_GAP, height: full, transform: [{ translateY: y }] }]}
-      {...pan.panHandlers}
-    >
-      <GroundLayer />
-      <Pressable onPress={() => settle(!open)} accessibilityRole="button" accessibilityLabel={open ? 'Lower pattern insights' : 'Show all pattern insights'} style={s.head}>
-        <View style={s.grabber} />
-        <View style={s.titleRow}>
-          <Text style={[font('title3', 'semibold'), s.title]} accessibilityRole="header">
-            Pattern Insights
-          </Text>
-          <Text style={[font('footnote'), s.count]}>{`${matches.length} for today`}</Text>
+    <>
+      <View style={[s.rest, { height: Math.round(height * REST) }]} {...pan.panHandlers}>
+        <GroundLayer />
+        <Pressable onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel="Show all pattern insights" style={s.head}>
+          <View style={s.grabber} />
+          <View style={s.titleRow}>
+            <Text style={[font('title3', 'semibold'), s.title]} accessibilityRole="header">
+              Pattern Insights
+            </Text>
+            <Text style={[font('footnote'), s.count]}>{`${matches.length} for today`}</Text>
+          </View>
+        </Pressable>
+        <View style={s.peek}>
+          <Card match={matches[0]} onOpen={openPattern} />
         </View>
-      </Pressable>
-      <ScrollView
-        scrollEnabled={open}
-        onScroll={(e) => {
-          scrollTop.current = e.nativeEvent.contentOffset.y;
-        }}
-        scrollEventThrottle={16}
-        contentContainerStyle={[s.list, { paddingBottom: NAV_CLEARANCE + (height - full) }]}
-        showsVerticalScrollIndicator={false}
-      >
-        {matches.map(({ insight, connections }) => (
-          <Pressable
-            key={insight.id}
-            onPress={() => {
-              openInsight(insight.id);
-              nav.push('insight');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={`${insight.title}. Opens this pattern`}
-            style={({ pressed }) => [pressed && s.pressed]}
-          >
-            <InsightCard insight={insight} connections={connections} style={s.card} />
-          </Pressable>
-        ))}
-      </ScrollView>
-    </Animated.View>
+      </View>
+
+      <Sheet visible={open} title="Pattern Insights" sub={`${matches.length} for today`} onDone={() => setOpen(false)}>
+        <View style={s.list}>
+          {matches.map((m) => (
+            <Card key={m.insight.id} match={m} onOpen={openPattern} />
+          ))}
+        </View>
+      </Sheet>
+    </>
+  );
+}
+
+function Card({ match, onOpen }: { match: InsightMatch; onOpen: (id: string) => void }) {
+  return (
+    <Pressable
+      onPress={() => onOpen(match.insight.id)}
+      accessibilityRole="button"
+      accessibilityLabel={`${match.insight.title}. Opens this pattern`}
+      style={({ pressed }) => [pressed && s.pressed]}
+    >
+      <InsightCard insight={match.insight} connections={match.connections} style={s.card} />
+    </Pressable>
   );
 }
 
 const s = StyleSheet.create({
-  sheet: {
+  // The resting sheet: full width, the page sheet's corners, no edge line,
+  // on the same ground.
+  rest: {
     position: 'absolute',
     left: 0,
     right: 0,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    bottom: 0,
+    borderTopLeftRadius: SHEET_CORNER,
+    borderTopRightRadius: SHEET_CORNER,
     overflow: 'hidden',
     backgroundColor: L.canvas,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: G.rule,
   },
-  head: { paddingTop: 10, paddingBottom: 12, paddingHorizontal: GUTTER },
-  grabber: { alignSelf: 'center', width: 38, height: 4, borderRadius: 2, backgroundColor: G.rule, marginBottom: 14 },
+  head: { paddingTop: 8, paddingBottom: 12, paddingHorizontal: GUTTER },
+  grabber: { alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: G.rule, marginBottom: 14 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { color: G.ink, flex: 1 },
   count: { color: G.meta },
-  list: { paddingHorizontal: GUTTER, gap: SPACE.grid },
+  peek: { paddingHorizontal: GUTTER },
+  list: { gap: SPACE.grid, paddingTop: SPACE.tight },
   // Edge to edge, as every full width card is.
   card: { height: 320, ...BLEED },
   pressed: { opacity: 0.8 },
