@@ -45,8 +45,6 @@ import { handPhoto } from '../lib/scanHandoff';
 import { BOWEL } from '../lib/logCategories';
 import type { IntradayPoint } from '../data/repo';
 import type { JournalView } from '../data/rows';
-import { actionPlan, type PlanItem, type PlanKey } from '../lib/actionPlan';
-import { usePlanDone } from '../state/planDone';
 import { upcomingVisits, visitWhen } from '../lib/calendarEvents';
 import { useDeviceCalendar } from '../state/deviceCalendar';
 import { font, GUTTER } from '../theme';
@@ -180,61 +178,6 @@ export function TodayScreen() {
 
   const go = (screen: Screen) => () => nav.push(screen);
   const now = new Date();
-
-  // Today's plan: what she could do today, each item with its reason in
-  // her own numbers. See lib/actionPlan.
-  const usualOf = (key: 'sleep' | 'hrv' | 'rhr' | 'steps') => usualFor(key, baselines);
-  const usualLength = lens.predicts ? medianLength(countedWindows(windows, profile)) : null;
-  const loggedToday =
-    episodes.some((e) => e.date === todayKey) ||
-    (!!todayDay && ([todayDay.mood, todayDay.energy, todayDay.stress].some((v) => v != null) || todayDay.foods.length > 0));
-  const plan = actionPlan({
-    days,
-    usual: {
-      sleep: usualOf('sleep')?.median ?? null,
-      hrv: usualOf('hrv'),
-      rhr: usualOf('rhr'),
-      steps: usualOf('steps')?.median ?? null,
-    },
-    cycle: cycleNow ? { day: cycleNow.day, usualLength, bleeding: cycleNow.phase === 'During period' } : null,
-    loggedToday,
-    visit: nextVisit ? { title: nextVisit.title, when: visitWhen(nextVisit, now) } : null,
-    watchSuggested: brief.lead?.id === 'combined' && watching.nextCycle !== true,
-    raise: ranked.find((i) => i.triage === 'Investigate')?.title ?? null,
-    walkSuggested: !!brief.recommendation && !brief.walkPlanned,
-    now,
-  });
-  const { done, toggle } = usePlanDone(now);
-  const PLAN_ICON: Record<PlanKey, IconName> = {
-    visit: 'calendarPlus', prepare: 'stethoscope', flow: 'drop', period: 'drop', recover: 'heartPulse', sleep: 'sleep', walk: 'steps', watch: 'target', log: 'plus',
-  };
-  const openMetric = (key: MetricKey) => {
-    chooseMetric(key);
-    nav.push('metric');
-  };
-  const doItem = (item: PlanItem) => {
-    switch (item.key) {
-      case 'visit':
-      case 'prepare':
-        return nav.push('appointment');
-      case 'flow':
-        return logCycle();
-      case 'period':
-        return nav.push('cycle');
-      case 'recover':
-        return openMetric('hrv');
-      case 'sleep':
-        return openMetric('sleep');
-      case 'walk':
-        if (brief.recommendation && !brief.walkPlanned) accept('walk');
-        return openMetric('steps');
-      case 'watch':
-        setWatching('nextCycle', true);
-        return toggle('watch');
-      case 'log':
-        return logSymptoms();
-    }
-  };
 
   // Today's Patterns: today's wearable readings, hour by hour. Labs are
   // snapshots and the cycle runs in months, so neither is drawn on a day.
@@ -409,8 +352,8 @@ export function TodayScreen() {
           <>
         {/*
           Ciatta first: the check in when today gives a reason, then what
-          Ciatta noticed and what she could try. Everything Ciatta says on
-          Today is in this one card.
+          Ciatta noticed. What she could try is Plans & Protocols, in the
+          corner menu.
         */}
         <CiattaCard checkIn={question} onAnswer={answerCheckIn} answered={checkInNote}>
         {state.state === 'content' ? (
@@ -418,61 +361,6 @@ export function TodayScreen() {
             <InsightCards />
           </View>
         ) : null}
-        <View style={t.section}>
-          <SectionHeading
-            title="What you could try"
-            right={
-              plan.length ? (
-                <Text style={[font('subhead'), t.headRight]}>
-                  {`${plan.filter((p) => done.includes(p.key)).length} of ${plan.length} done`}
-                </Text>
-              ) : undefined
-            }
-          />
-          {plan.length ? (
-            <View style={t.plan}>
-              <CardFill />
-              {plan.map((item, n) => {
-                const ticked = done.includes(item.key);
-                return (
-                  <View key={item.key} style={[t.planRow, n > 0 && t.planRule]}>
-                    <Pressable
-                      onPress={() => toggle(item.key)}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: ticked }}
-                      accessibilityLabel={`Mark ${item.title} done`}
-                      hitSlop={8}
-                      style={[t.tick, ticked && t.tickOn]}
-                    >
-                      {ticked ? <Icon name="check" size={14} color={L.onPill} weight={2} /> : null}
-                    </Pressable>
-                    <Pressable
-                      onPress={() => doItem(item)}
-                      accessibilityRole="button"
-                      style={({ pressed }) => [t.planBody, pressed && t.pressed]}
-                    >
-                      <View style={t.planTitleRow}>
-                        <Icon name={PLAN_ICON[item.key]} size={16} color={ticked ? L.meta : L.ink} />
-                        <Text style={[font('subhead', 'semibold'), ticked ? t.planDone : t.planTitle]}>{displayCopy(item.title)}</Text>
-                      </View>
-                      <Text style={[font('footnote'), t.planWhy]}>{displayCopy(item.why)}</Text>
-                    </Pressable>
-                  </View>
-                );
-              })}
-            </View>
-          ) : (
-            // Nothing earned today: said, with when the plan comes back.
-            <View style={[t.plan, t.planEmpty]}>
-              <CardFill />
-              <Icon name="check" size={20} color={L.meta} />
-              <Text style={[font('subhead', 'semibold'), t.planTitle]}>Nothing needs doing today</Text>
-              <Text style={[font('footnote'), t.planWhy, { textAlign: 'center' }]}>
-                Your plan is built each morning from your sleep, heart, cycle and logs. New items appear here as readings arrive.
-              </Text>
-            </View>
-          )}
-        </View>
         </CiattaCard>
 
         {/* The conversation, one tap away: talk or type, or ask. */}

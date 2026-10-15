@@ -5,15 +5,15 @@ import { MENU_ITEMS, menuFor, TAB_ORDER } from '../navigation';
 import { type DaySeries, readingRows } from './dayPatterns';
 import { searchHealth } from './healthSearch';
 
-test('three places, in order', () => {
-  assert.deepEqual(TAB_ORDER, ['today', 'myhealth', 'care']);
+test('four places, in order', () => {
+  assert.deepEqual(TAB_ORDER, ['today', 'myhealth', 'plans', 'care']);
 });
 
-test('the corner menu lists Today, Health, Your care and Profile, marking where she is', () => {
-  assert.deepEqual(MENU_ITEMS.map((m) => m.label), ['Today', 'Health', 'Your care', 'Profile']);
-  const rows = menuFor('myhealth');
-  assert.deepEqual(rows.map((r) => r.current), [false, true, false, false]);
-  assert.equal(rows[3].go.kind, 'screen');
+test('the corner menu lists Today, Health, Plans & Protocols, Your care and Profile, marking where she is', () => {
+  assert.deepEqual(MENU_ITEMS.map((m) => m.label), ['Today', 'Health', 'Plans & Protocols', 'Your care', 'Profile']);
+  const rows = menuFor('plans');
+  assert.deepEqual(rows.map((r) => r.current), [false, false, true, false, false]);
+  assert.equal(rows[4].go.kind, 'screen');
 });
 
 const series = (key: DaySeries['key'], label: string, unit: string, range: string): DaySeries => ({
