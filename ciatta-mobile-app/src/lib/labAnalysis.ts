@@ -66,6 +66,25 @@ export function reportFingerprint(report: LabResult[], all: LabResult[]): string
 
 export const analysisStale = (stored: StoredAnalysis, report: LabResult[], all: LabResult[]) => stored.factsHash !== reportFingerprint(report, all);
 
+// What the urgent banner says. Every result the lab flagged as critical,
+// always, from the lab's own flags; the analysis adds its reason where it
+// has one, and its other urgent items after. The banner never depends on
+// the model to know a result is critical.
+export function urgentLines(results: LabResult[], analysis: Analysis | null): string[] {
+  const value = (r: LabResult) => `${r.value ?? r.valueText ?? ''}${r.value != null && r.unit ? ` ${r.unit}` : ''}`;
+  const said = new Map((analysis?.urgent ?? []).map((u) => [testKey(u.test), u]));
+  const critical = criticalResults(results);
+  const keys = new Set(critical.map((r) => testKey(r.name)));
+  const lines = critical.map((r) => {
+    const u = said.get(testKey(r.name));
+    return u ? `${r.name} ${value(r)}. ${u.reason} ${ACTION_WORDS[u.action]}.` : `${r.name} ${value(r)} was flagged as critical by the lab. Contact your clinician today.`;
+  });
+  for (const u of analysis?.urgent ?? []) {
+    if (!keys.has(testKey(u.test))) lines.push(`${u.test} ${u.value}. ${u.reason} ${ACTION_WORDS[u.action]}.`);
+  }
+  return lines;
+}
+
 export const criticalResults = (results: LabResult[]) => results.filter((r) => r.flag === 'HH' || r.flag === 'LL' || r.flag === 'AA');
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

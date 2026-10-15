@@ -121,3 +121,79 @@ test('the fingerprint changes when a result does, and not when only the order do
   assert.notEqual(fingerprint(a), fingerprint([{ ...a[0], value: 9 }, a[1]]));
   assert.equal(fingerprint([{ ...a[1], name: 'Hemoglobin A1c' }]), fingerprint([a[1]]), 'spellings of one test fingerprint alike');
 });
+
+// ── From the branch review ───────────────────────────────────────────
+
+const twoCritical: Facts = {
+  ...facts,
+  tests: [
+    { ...facts.tests[1], value: 6.1, flag: 'LL' },
+    { name: 'Potassium', value: 6.8, value_text: null, unit: 'mmol/L', range: '3.5 to 5.1', low: 3.5, high: 5.1, flag: 'HH', panel: 'CMP' },
+  ],
+  earlier: [],
+};
+
+const bare = (): Analysis => ({ urgent: [], summary: 'Two results need attention.', findings: [], patterns: [], considerations: [], next_tests: [], questions: [] });
+
+test('every critical result must be in urgent, not just one of them', () => {
+  const a = bare();
+  a.urgent = [{ test: 'Hemoglobin', value: '6.1 g/dL', reason: 'Very low.', action: 'contact_today' }];
+  assert.match(checkAnalysis(a, twoCritical).join(' '), /Potassium/);
+});
+
+test('a value field is scanned like any other text', () => {
+  const a = good();
+  a.findings[0].value = '8 ng/mL. Stop your Levothyroxine and take 325 mg iron';
+  assert.ok(checkAnalysis(a, facts).length > 0);
+});
+
+test('a value must be this report\'s value, not an earlier one, and in its unit', () => {
+  const a = good();
+  a.findings[0].value = '22 ng/mL';
+  assert.ok(checkAnalysis(a, facts).length > 0, 'earlier value quoted as current');
+  const b = good();
+  b.findings[0].value = '8 mmol/L';
+  assert.ok(checkAnalysis(b, facts).length > 0, 'wrong unit');
+});
+
+test('doses per day, in words of units, or by count of tablets are refused', () => {
+  for (const q of ['Take 15 mg/day.', 'Try 2 g/day of fish oil.', 'Take 100 milligrams.', 'Take 2 tablets.', 'Take 1000 international units.']) {
+    const a = good();
+    a.questions = [q];
+    assert.match(checkAnalysis(a, facts).join(' '), /dose/i, q);
+  }
+});
+
+test('medication changes in other words are refused', () => {
+  for (const q of ['You could start an iron supplement.', 'Levothyroxine should be stopped.', 'Pause your Levothyroxine for now.', 'Switch to a different medication.']) {
+    const a = good();
+    a.questions = [q];
+    assert.match(checkAnalysis(a, facts).join(' '), /medication/i, q);
+  }
+});
+
+test('a number glued to its unit is still read', () => {
+  const a = good();
+  a.summary = 'Your ferritin was 80ng/mL.';
+  assert.ok(checkAnalysis(a, facts).length > 0);
+});
+
+test('a test quoted at a value that is not hers is refused, even when the number appears elsewhere', () => {
+  const a = good();
+  a.summary = 'Your hemoglobin of 12 g/dL is low.';
+  assert.match(checkAnalysis(a, facts).join(' '), /Hemoglobin|hemoglobin/);
+});
+
+test('a result in words is quoted in words, and a critical one can be marked urgent', () => {
+  const qual: Facts = {
+    ...facts,
+    tests: [{ name: 'Urine culture', value: null, value_text: 'Growth detected', unit: null, range: 'No growth', low: null, high: null, flag: 'AA', panel: null }],
+    earlier: [],
+  };
+  const a = bare();
+  a.urgent = [{ test: 'Urine culture', value: 'Growth detected', reason: 'An infection may need treatment.', action: 'contact_today' }];
+  assert.deepEqual(checkAnalysis(a, qual), []);
+  const b = bare();
+  b.urgent = [{ test: 'Urine culture', value: 'No growth', reason: 'x', action: 'contact_today' }];
+  assert.ok(checkAnalysis(b, qual).length > 0);
+});

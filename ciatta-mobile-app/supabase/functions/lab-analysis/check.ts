@@ -54,22 +54,38 @@ export function readAnalysis(json: unknown): Analysis | null {
 const LIMITS = { findings: 12, patterns: 8, considerations: 6, next_tests: 8, questions: 10 } as const;
 
 // A number standing on its own, not part of a name like T4, B12 or A1c.
-const NUMBER = /(?<![A-Za-z0-9.])\d+(?:\.\d+)?(?![A-Za-z0-9])/g;
-const DOSE = /(?<![A-Za-z0-9.])\d+(?:\.\d+)?\s?(?:mg|mcg|µg|iu|units?|g)\b(?!\s*\/)/i;
-const CHANGE_MED = /\b(?:start|stop|begin|discontinue|increase|decrease|reduce|raise|double|halve)\s+(?:taking\s+|using\s+|your\s+|the\s+|a\s+)*(?:\w+\s+){0,2}(?:medication|medicine|dose|dosage|prescription|pills?|tablets?)\b/i;
-
+const NUMBER = /(?<![A-Za-z0-9.,])\d{1,3}(?:,\d{3})+(?:\.\d+)?(?![A-Za-z0-9])|(?<![A-Za-z0-9.,])\d+(?:\.\d+)?(?![A-Za-z0-9])/g;
 // Names that carry a number of their own ("25 hydroxy vitamin D",
 // "1,25 dihydroxy") are taken out first, so the number is not read as a
 // value.
 const NAMED_NUMBER = /(?<![A-Za-z0-9.])\d+(?:,\s*\d+)?\s*(?:hydroxy|dihydroxy|oh)\b/gi;
-const numbersIn = (text: string) => [...text.replace(NAMED_NUMBER, ' ').matchAll(NUMBER)].map((m) => Number(m[0]));
+// A number glued to its unit ("80ng/mL", "15mg") is spaced apart first, so
+// it is read; a letter then a digit (T4, B12, A1c) is left alone.
+const glued = (text: string) => text.replace(/(?<![A-Za-z])(\d+(?:\.\d+)?)(?=[a-zA-Zµ%])/g, '$1 ');
+const prepared = (text: string) => glued(text.replace(NAMED_NUMBER, ' '));
+const numbersIn = (text: string) => [...prepared(text).matchAll(NUMBER)].map((m) => Number(m[0].replace(/,/g, '')));
+
+// A dose: an amount of a drug, per day or not. Lab units per volume
+// (mg/dL, g/L, mmol/L) are concentrations, not doses.
+const DOSE_UNIT = '(?:mg|mcg|µg|iu|units?|g|grams?|milligrams?|micrograms?|international units|tablets?|capsules?|pills?|drops?)';
+const DOSE = new RegExp(`(?<![A-Za-z0-9.])\\d+(?:\\.\\d+)?\\s?${DOSE_UNIT}\\b(?!\\s*\\/\\s*(?:dl|l|ml|ul|µl|mmol|kg|m2)\\b)`, 'i');
+const VERBS = '(?:start|stop|begin|discontinue|increase|decrease|reduce|raise|double|halve|switch|pause|hold|taper|quit|resume|add|cut back on|come off)';
+const OBJECTS = '(?:medications?|medicines?|doses?|dosage|prescriptions?|pills?|tablets?|capsules?|supplements?|drugs?)';
+const CHANGE_MED = new RegExp(`\\b${VERBS}\\s+(?:taking\\s+|using\\s+|your\\s+|the\\s+|an?\\s+|to\\s+)*(?:\\w+\\s+){0,2}${OBJECTS}\\b`, 'i');
+const PASSIVE_MED = new RegExp(`\\b${OBJECTS}\\b[^.]{0,30}\\b(?:should|must|could|can|needs? to)\\s+be\\s+(?:stopped|started|increased|decreased|reduced|discontinued|paused|switched|held|tapered|changed|adjusted)\\b`, 'i');
+const escape = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const fold = (t: string) => t.toLowerCase().replace(/\s+/g, ' ').trim();
 
 export function checkAnalysis(a: Analysis, facts: Facts): string[] {
   const problems: string[] = [];
-  const known = new Map<string, number[]>();
+
+  // This report's results by test, and every value she has for each test.
+  const current = new Map<string, Facts['tests'][number]>();
+  for (const t of facts.tests) current.set(testKey(t.name), t);
+  const values = new Map<string, number[]>();
   const add = (name: string, v: number | null) => {
     const k = testKey(name);
-    known.set(k, [...(known.get(k) ?? []), ...(v != null ? [v] : [])]);
+    values.set(k, [...(values.get(k) ?? []), ...(v != null ? [v] : [])]);
   };
   for (const t of facts.tests) add(t.name, t.value);
   for (const e of facts.earlier) for (const r of e.results) add(e.name, r.value);
@@ -88,16 +104,32 @@ export function checkAnalysis(a: Analysis, facts: Facts): string[] {
     allowed.add(facts.cycle.day);
     if (facts.cycle.usual_length != null) allowed.add(facts.cycle.usual_length);
   }
+  for (const n of numbersIn(facts.profile.age_range ?? '')) allowed.add(n);
   for (const sym of facts.symptoms) allowed.add(sym.count);
   for (let i = 1; i <= 12; i++) allowed.add(i);
 
   const testNamed = (name: string, where: string) => {
-    if (!known.has(testKey(name))) problems.push(`${where} names ${name}, which is not in her record`);
+    if (!values.has(testKey(name))) problems.push(`${where} names ${name}, which is not in her record`);
   };
+  // A quoted value is this report's own: its number in its unit, or its
+  // words when the result is not a number.
   const valueQuoted = (name: string, value: string, where: string) => {
+    const fact = current.get(testKey(name));
+    if (!fact) {
+      problems.push(`${where} quotes ${name}, which is not on this report`);
+      return;
+    }
+    if (fact.value == null) {
+      if (!fact.value_text || !fold(value).includes(fold(fact.value_text))) problems.push(`${where} quotes ${value} for ${name}, which is not her result`);
+      return;
+    }
     const quoted = numbersIn(value)[0];
-    const hers = known.get(testKey(name)) ?? [];
-    if (quoted == null || !hers.includes(quoted)) problems.push(`${where} quotes ${value} for ${name}, which is not her value`);
+    if (quoted !== fact.value) {
+      problems.push(`${where} quotes ${value} for ${name}, which is not her value`);
+      return;
+    }
+    const words = value.replace(NUMBER, '').replace(/[\s.,:;]/g, '');
+    if (words && fact.unit && !fold(value).includes(fold(fact.unit))) problems.push(`${where} gives ${name} in a unit that is not the lab's`);
   };
 
   for (const u of a.urgent) {
@@ -111,27 +143,43 @@ export function checkAnalysis(a: Analysis, facts: Facts): string[] {
   for (const p of a.patterns) for (const t of p.tests) testNamed(t, 'a pattern');
   for (const c of a.considerations) for (const t of c.tests) testNamed(t, 'a consideration');
 
+  // Every string the model wrote, value fields included.
   const texts = [
     a.summary,
-    ...a.urgent.map((u) => u.reason),
-    ...a.findings.flatMap((f) => [f.explanation, ...f.common_causes, f.relevance ?? '']),
+    ...a.urgent.flatMap((u) => [u.value, u.reason]),
+    ...a.findings.flatMap((f) => [f.value, f.explanation, ...f.common_causes, f.relevance ?? '']),
     ...a.patterns.flatMap((p) => [p.title, p.explanation]),
     ...a.considerations.flatMap((c) => [c.condition, c.how_confirmed]),
     ...a.next_tests.flatMap((n) => [n.test, n.reason]),
     ...a.questions,
   ];
+  const meds = [...facts.medications, ...facts.supplements].filter(Boolean);
+  const named = [...new Set([...facts.tests.map((t) => t.name), ...facts.earlier.map((e) => e.name)])];
   for (const text of texts) {
     for (const n of numbersIn(text)) if (!allowed.has(n)) problems.push(`the number ${n} is in no fact`);
-    if (DOSE.test(text)) problems.push('it gives a dose');
-    if (CHANGE_MED.test(text)) problems.push('it tells her to change a medication');
-    for (const med of [...facts.medications, ...facts.supplements]) {
-      const m = new RegExp(`\\b(?:start|stop|discontinue|increase|decrease|reduce|raise)\\b[^.]{0,30}\\b${med.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-      if (m.test(text)) problems.push('it tells her to change a medication');
+    if (DOSE.test(glued(text))) problems.push('it gives a dose');
+    if (CHANGE_MED.test(text) || PASSIVE_MED.test(text)) problems.push('it tells her to change a medication');
+    for (const med of meds) {
+      const m = escape(med);
+      const active = new RegExp(`\\b${VERBS}\\b[^.]{0,30}\\b${m}\\b`, 'i');
+      const passive = new RegExp(`\\b${m}\\b[^.]{0,30}\\b(?:should|must|could|can|needs? to)\\s+be\\s+\\w+ed\\b`, 'i');
+      if (active.test(text) || passive.test(text)) problems.push('it tells her to change a medication');
+    }
+    // "your hemoglobin of 12": a test named and then a number is her value.
+    for (const name of named) {
+      const quote = new RegExp(`\\b${escape(name)}\\b\\s+(?:of|is|was|at|came back at|measured|reading of|level of)\\s+(\\d+(?:\\.\\d+)?)`, 'gi');
+      for (const m of prepared(text).matchAll(quote)) {
+        if (!(values.get(testKey(name)) ?? []).includes(Number(m[1]))) problems.push(`it quotes ${name} at ${m[1]}, which is not her value`);
+      }
     }
   }
 
-  if (facts.tests.some((t) => t.flag === 'HH' || t.flag === 'LL' || t.flag === 'AA') && !a.urgent.length) {
-    problems.push('a critical result is not marked urgent');
+  // Every critical result is urgent, by name.
+  const urgentKeys = new Set(a.urgent.map((u) => testKey(u.test)));
+  for (const t of facts.tests) {
+    if ((t.flag === 'HH' || t.flag === 'LL' || t.flag === 'AA') && !urgentKeys.has(testKey(t.name))) {
+      problems.push(`the critical result ${t.name} is not marked urgent`);
+    }
   }
   for (const [key, max] of Object.entries(LIMITS)) {
     if ((a[key as keyof typeof LIMITS] as unknown[]).length > max) problems.push(`more than ${max} ${key}`);

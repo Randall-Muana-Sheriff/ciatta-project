@@ -13,7 +13,7 @@ import { displayCopy } from '../lib/displayCopy';
 import { chooseLab, chosenReport } from '../lib/labHandoff';
 import { countLine, reportPanels, reportResults } from '../lib/labReport';
 import { SYSTEM_DOTS, WHOLE_BODY } from '../lib/bodyMap';
-import { ACTION_WORDS, ANALYSIS_LABEL, analysisHtml, analysisStale, criticalResults, type StoredAnalysis } from '../lib/labAnalysis';
+import { ANALYSIS_LABEL, analysisHtml, analysisStale, type StoredAnalysis, urgentLines } from '../lib/labAnalysis';
 import { changeSinceLast, isOutside, type LabResult, labDay, labHistory, labStatus, testKey } from '../lib/labs';
 import { reportSystems } from '../lib/labSystems';
 import { countedWindows, estimatedPhaseLabel, medianLength } from '../lib/cycleModel';
@@ -195,7 +195,7 @@ export function LabReportScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, labs, repo]);
 
-  const critical = useMemo(() => criticalResults(results), [results]);
+  const urgent = useMemo(() => urgentLines(results, stored?.analysis ?? null), [results, stored]);
   const stale = stored && labs ? analysisStale(stored, results, labs) : false;
   const share = useCallback(async () => {
     if (!stored || !key) return;
@@ -258,14 +258,11 @@ export function LabReportScreen() {
     <DetailScreen title={key.lab ?? 'Lab Report'} onBack={nav.back}>
       <Text style={[font('caption1'), s.meta]}>{displayCopy(`Collected ${labDay(key.on)}`)}</Text>
       <Text style={[font('title3', 'semibold'), s.count]}>{displayCopy(countLine(results))}</Text>
-      {critical.length || stored?.analysis.urgent.length ? (
+      {urgent.length ? (
         <View style={[s.card, s.urgent]}>
           <CardFill />
           <Text style={[font('headline'), s.urgentHead]}>Needs prompt attention</Text>
-          {(stored?.analysis.urgent.length
-            ? stored.analysis.urgent.map((u) => `${u.test} ${u.value}. ${u.reason} ${ACTION_WORDS[u.action]}.`)
-            : critical.map((r) => `${r.name} ${r.value ?? r.valueText}${r.unit ? ` ${r.unit}` : ''} was flagged as critical by the lab. Contact your clinician today.`)
-          ).map((line) => (
+          {urgent.map((line) => (
             <Text key={line} style={[font('subhead'), s.ink, { marginTop: 4 }]}>
               {displayCopy(line)}
             </Text>
