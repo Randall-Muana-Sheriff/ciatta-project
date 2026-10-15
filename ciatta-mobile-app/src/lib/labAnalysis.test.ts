@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { fingerprint } from '../../supabase/functions/lab-analysis/facts.ts';
+import { fingerprint, pickEarlier } from '../../supabase/functions/lab-analysis/facts.ts';
 import { testKey as serverKey } from '../../supabase/functions/lab-analysis/keys.ts';
 import { analysisHtml, analysisStale, criticalResults, readStoredAnalysis, reportFingerprint, urgentLines } from './labAnalysis';
 import { type LabResult, testKey } from './labs';
@@ -39,21 +39,26 @@ test('the app and the function fold test names the same way', () => {
   for (const n of ['Hemoglobin A1c', 'HbA1c', 'Vitamin D, 25 Hydroxy', 'TSH', 'Free T4', 'Something New']) assert.equal(testKey(n), serverKey(n), n);
 });
 
-test('the app fingerprints a report exactly as the function does', () => {
+test('the app fingerprints a report exactly as the function does, from the same earlier rows in the same order', () => {
   const report = [r({}), r({ name: 'Hemoglobin', value: 11.2, unit: 'g/dL' })];
-  const earlier = r({ on: '2026-01-10', value: 22, documentId: 'doc0' });
+  // Newest first, as both sides query them: seven earlier ferritins, two on
+  // one day, so which five are kept depends on the order alone.
+  const earlier = [30, 29, 28, 27, 26, 25, 24].map((v, i) => r({ value: v, on: `2026-0${Math.max(1, 5 - Math.floor(i / 2))}-01`, documentId: 'doc0' }));
+  const rows = earlier.map((x) => ({ name: x.name, value: x.value, value_text: x.valueText, unit: x.unit, on: x.on }));
   const server = fingerprint([
     ...report.map((x) => ({ name: x.name, value: x.value, value_text: x.valueText, unit: x.unit, on: x.on })),
-    { name: earlier.name, value: earlier.value, value_text: earlier.valueText, unit: earlier.unit, on: earlier.on },
+    ...pickEarlier(rows, new Set(report.map((x) => serverKey(x.name)))).flatMap((e) => e.results.map((res) => ({ name: e.name, ...res }))),
   ]);
-  assert.equal(reportFingerprint(report, [...report, earlier]), server);
+  assert.equal(reportFingerprint(report, earlier), server);
 });
 
-test('a stored analysis is out of date once an earlier result for the same test arrives', () => {
+test('a stored analysis is out of date once a newer earlier result for the same test arrives, and not for one beyond the five', () => {
   const report = [r({})];
-  const stored = { analysis, model: 'gpt-4o', createdAt: '2026-06-13T00:00:00Z', factsHash: reportFingerprint(report, report) };
-  assert.equal(analysisStale(stored, report, report), false);
-  assert.equal(analysisStale(stored, report, [...report, r({ on: '2026-02-01', value: 30, documentId: 'doc0' })]), true);
+  const earlier = [22, 21, 20, 19, 18].map((v, i) => r({ value: v, on: `2026-0${5 - i}-01`, documentId: 'doc0' }));
+  const stored = { analysis, model: 'gpt-4o', createdAt: '2026-06-13T00:00:00Z', factsHash: reportFingerprint(report, earlier) };
+  assert.equal(analysisStale(stored, report, earlier), false);
+  assert.equal(analysisStale(stored, report, [...earlier, r({ value: 5, on: '2025-01-01', documentId: 'doc9' })]), false, 'a sixth, older result changes nothing');
+  assert.equal(analysisStale(stored, report, [r({ value: 30, on: '2026-06-01', documentId: 'doc9' }), ...earlier]), true);
 });
 
 test('critical results come from the lab flags alone', () => {

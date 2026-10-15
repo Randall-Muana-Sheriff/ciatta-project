@@ -3,7 +3,7 @@
 // this only reads what was stored, says whether it is out of date, and
 // finds the critical results from the lab's own flags.
 
-import { type LabResult, labDay, labHistory, testKey } from './labs';
+import { type LabResult, labDay, testKey } from './labs';
 
 export type Analysis = {
   urgent: { test: string; value: string; reason: string; action: 'contact_today' | 'urgent_care' }[];
@@ -47,24 +47,26 @@ export function readStoredAnalysis(row: unknown): StoredAnalysis | null {
 }
 
 // The same fingerprint the function stores (lab-analysis/facts.ts): the
-// report's results, and up to five earlier results for each of its tests.
-export function reportFingerprint(report: LabResult[], all: LabResult[]): string {
-  const on = report[0]?.on ?? '';
-  const earlier: LabResult[] = [];
-  const seen = new Set<string>();
-  for (const t of report) {
-    const k = testKey(t.name);
-    if (seen.has(k)) continue;
-    seen.add(k);
-    earlier.push(...labHistory(all, t.name).filter((h) => h.on < on).reverse().slice(0, 5));
+// report's results, and the first five earlier results of each of its
+// tests from `earlier`, which is her results before the draw, newest first
+// by time then id (repo.loadLabsBefore), the same rows the function reads.
+export function reportFingerprint(report: LabResult[], earlier: LabResult[]): string {
+  const keys = new Set(report.map((t) => testKey(t.name)));
+  const kept = new Map<string, number>();
+  const picked: LabResult[] = [];
+  for (const e of earlier) {
+    const k = testKey(e.name);
+    if (!keys.has(k) || (kept.get(k) ?? 0) >= 5) continue;
+    kept.set(k, (kept.get(k) ?? 0) + 1);
+    picked.push(e);
   }
-  return [...report, ...earlier]
+  return [...report, ...picked]
     .map((t) => `${testKey(t.name)}|${t.value ?? t.valueText ?? ''}|${(t.unit ?? '').trim().toLowerCase()}|${t.on}`)
     .sort()
     .join('\n');
 }
 
-export const analysisStale = (stored: StoredAnalysis, report: LabResult[], all: LabResult[]) => stored.factsHash !== reportFingerprint(report, all);
+export const analysisStale = (stored: StoredAnalysis, report: LabResult[], earlier: LabResult[]) => stored.factsHash !== reportFingerprint(report, earlier);
 
 // What the urgent banner says. Every result the lab flagged as critical,
 // always, from the lab's own flags; the analysis adds its reason where it

@@ -51,3 +51,21 @@ export function fingerprint(tests: { name: string; value: number | null; value_t
     .sort()
     .join('\n');
 }
+
+type EarlierRow = { name: string; value: number | null; value_text: string | null; unit: string | null; on: string };
+
+// Her earlier results for the report's tests: the first five of each in the
+// order given, which is newest first by time and then id, the same query the
+// app makes (repo.loadLabsBefore). Which five are kept depends on that order
+// alone, so both sides keep the same five.
+export function pickEarlier(rows: EarlierRow[], keys: Set<string>): Facts['earlier'] {
+  const by = new Map<string, { name: string; results: Facts['earlier'][number]['results'] }>();
+  for (const r of rows) {
+    const k = testKey(r.name);
+    if (!keys.has(k)) continue;
+    const entry = by.get(k) ?? { name: r.name, results: [] };
+    if (entry.results.length < 5) entry.results.push({ on: r.on, value: r.value, value_text: r.value_text, unit: r.unit });
+    by.set(k, entry);
+  }
+  return [...by.values()];
+}

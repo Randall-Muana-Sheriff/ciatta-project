@@ -210,6 +210,9 @@ export type Repo = {
   removeLabReport(id: string): Promise<void>;
   // A short lived private link to the report's original file.
   labReportFile(documentId: string): Promise<string | null>;
+  // Her labs collected before a day, newest first by time then id: the
+  // same rows the lab-analysis function reads, so both fingerprint alike.
+  loadLabsBefore(day: string): Promise<LabResult[]>;
   // The latest stored clinical AI analysis of a report, or null.
   loadLabAnalysis(documentId: string): Promise<StoredAnalysis | null>;
   // Asks for a new one. Throws with the function's own sentence when it
@@ -577,6 +580,7 @@ export function demoRepo(): Repo {
       return hit ? { id: hit.id, on: hit.on } : null;
     },
     labReportFile: async () => null,
+    loadLabsBefore: async (day) => labs.filter((l) => l.on < day).sort((a, b) => b.on.localeCompare(a.on)),
     loadLabAnalysis: async (documentId) => demoAnalyses.get(documentId) ?? null,
     analyzeLabReport: async (documentId) => {
       const rows = labs.filter((l) => l.documentId === documentId);
@@ -1281,6 +1285,18 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       ) as { id: string; occurred_at: string }[] | null;
       const hit = rows?.[0];
       return hit ? { id: hit.id, on: hit.occurred_at.slice(0, 10) } : null;
+    },
+    async loadLabsBefore(day) {
+      const rows = must(
+        await db
+          .from('results')
+          .select('id, test_name, value, value_text, unit, reference_low, reference_high, reference_text, flag, status, source, provider, occurred_at, document_id, panel')
+          .lt('occurred_at', `${day}T00:00:00Z`)
+          .order('occurred_at', { ascending: false })
+          .order('id', { ascending: false })
+          .limit(1000),
+      ) as LabRow[] | null;
+      return (rows ?? []).map(labFromRow);
     },
     async labReportFile(documentId) {
       const rows = must(await db.from('documents').select('storage_path').eq('id', documentId).limit(1)) as { storage_path: string }[] | null;

@@ -17,7 +17,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 import { ANALYSIS_SCHEMA, type Analysis, checkAnalysis, readAnalysis } from './check.ts';
 import { fakeAnalysis } from './fake.ts';
-import { type Facts, type FactTest, fingerprint, readCycle } from './facts.ts';
+import { type Facts, type FactTest, fingerprint, pickEarlier, readCycle } from './facts.ts';
 import { testKey } from './keys.ts';
 
 const url = Deno.env.get('SUPABASE_URL')!;
@@ -171,24 +171,26 @@ async function gatherFacts(db: any, uid: string, doc: any, cycle: Facts['cycle']
     panel: (r.panel as string | null) ?? null,
   }));
 
-  // Her earlier results for the same tests: up to five each, before this draw.
+  // Her earlier results for the same tests: up to five each, before this
+  // draw, newest first by time then id, as the app reads them.
   const keys = new Set(tests.map((t) => testKey(t.name)));
   const { data: before } = await db
     .from('results')
     .select('test_name, value, value_text, unit, occurred_at')
     .lt('occurred_at', `${on}T00:00:00Z`)
     .order('occurred_at', { ascending: false })
+    .order('id', { ascending: false })
     .limit(1000);
-  const earlierBy = new Map<string, { name: string; results: Facts['earlier'][number]['results'] }>();
-  for (const r of (before ?? []) as Record<string, unknown>[]) {
-    const k = testKey(String(r.test_name));
-    if (!keys.has(k)) continue;
-    const entry = earlierBy.get(k) ?? { name: String(r.test_name), results: [] };
-    if (entry.results.length < 5) {
-      entry.results.push({ on: String(r.occurred_at).slice(0, 10), value: r.value == null ? null : Number(r.value), value_text: (r.value_text as string | null) ?? null, unit: (r.unit as string | null) ?? null });
-    }
-    earlierBy.set(k, entry);
-  }
+  const earlier = pickEarlier(
+    ((before ?? []) as Record<string, unknown>[]).map((r) => ({
+      name: String(r.test_name),
+      value: r.value == null ? null : Number(r.value),
+      value_text: (r.value_text as string | null) ?? null,
+      unit: (r.unit as string | null) ?? null,
+      on: String(r.occurred_at).slice(0, 10),
+    })),
+    keys,
+  );
 
   const [{ data: profile }, { data: conditions }, { data: clinical }, { data: meds }, { data: supps }, { data: episodes }] = await Promise.all([
     db.from('profiles').select('onboarding, body').eq('id', uid).maybeSingle(),
@@ -213,7 +215,7 @@ async function gatherFacts(db: any, uid: string, doc: any, cycle: Facts['cycle']
     collected_on: on,
     lab: (doc.metadata?.lab as string | null) ?? doc.title ?? null,
     tests,
-    earlier: [...earlierBy.values()],
+    earlier,
     cycle,
     profile: {
       age_range: (profile?.onboarding?.ageRange as string | null) ?? null,

@@ -158,6 +158,7 @@ export function LabReportScreen() {
   const usual = useMemo(() => medianLength(countedWindows(windows, profile)), [windows, profile]);
   const cycle = useMemo(() => (key ? cycleDayAt(key.on, windows, usual) : null), [key, windows, usual]);
   const [stored, setStored] = useState<StoredAnalysis | null>(null);
+  const [earlier, setEarlier] = useState<LabResult[] | null>(null);
   const [analysing, setAnalysing] = useState(false);
   const [analysisNote, setAnalysisNote] = useState<string | null>(null);
 
@@ -196,7 +197,11 @@ export function LabReportScreen() {
   }, [key, labs, repo]);
 
   const urgent = useMemo(() => urgentLines(results, stored?.analysis ?? null), [results, stored]);
-  const stale = stored && labs ? analysisStale(stored, results, labs) : false;
+  useEffect(() => {
+    if (!key) return;
+    repo.loadLabsBefore(key.on).then(setEarlier).catch(() => setEarlier(null));
+  }, [key, repo, stored]);
+  const stale = stored && earlier ? analysisStale(stored, results, earlier) : false;
   const share = useCallback(async () => {
     if (!stored || !key) return;
     const { uri } = await Print.printToFileAsync({ html: analysisHtml(key.lab ?? 'Lab report', key.on, stored) });
