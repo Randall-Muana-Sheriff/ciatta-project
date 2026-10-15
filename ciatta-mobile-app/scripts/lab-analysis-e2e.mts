@@ -78,6 +78,13 @@ async function main() {
     const refused = await analyse(her.jwt, doc, 'always-bad');
     check('an answer that never passes is not stored, and says so', refused.status === 422 && (await stored(her.jwt)) === 2 && /could not be checked/.test(refused.body?.error ?? ''), `${refused.status}`);
 
+    const direct = await fetch(`${API}/rest/v1/rpc/store_lab_analysis`, {
+      method: 'POST',
+      headers: asHer(her.jwt),
+      body: JSON.stringify({ p_user: her.id, p_document: doc, p_model: 'gpt-4o', p_facts_hash: 'x', p_analysis: { summary: 'Anything at all' } }),
+    });
+    check('she cannot store an unchecked analysis by calling the database directly', !direct.ok && (await stored(her.jwt)) === 2, `${direct.status}`);
+
     const theirs = await analyse(other.jwt, doc, 'good');
     check('someone else cannot analyse her report', theirs.status === 404 && (await stored(other.jwt)) === 0, `${theirs.status}`);
   } finally {

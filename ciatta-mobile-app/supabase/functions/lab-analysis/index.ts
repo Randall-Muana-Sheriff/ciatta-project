@@ -1,7 +1,8 @@
 // A clinical AI analysis of one lab report she added.
 //
 // Runs as her: the database client carries her JWT, so every read is hers
-// under RLS. The facts are gathered here from her rows (the cycle is the
+// under RLS. Only the final store uses the server's key, because nothing
+// the app sends may write an analysis. The facts are gathered here from her rows (the cycle is the
 // one exception, sent by the app in an exact shape). The model is given
 // only those facts and a strict schema. Its answer is checked against
 // them (check.ts) and retried once with the reasons. If it still fails,
@@ -21,6 +22,9 @@ import { testKey } from './keys.ts';
 
 const url = Deno.env.get('SUPABASE_URL')!;
 const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+// Used for one thing only: storing an analysis after it has passed the
+// check, for the person the verified token names. Every read is as her.
+const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const openAiKey = Deno.env.get('OPENAI_API_KEY');
 const MODEL = Deno.env.get('OPENAI_ANALYSIS_MODEL') ?? 'gpt-4o';
 const CONSIDERATIONS_OFF = Deno.env.get('LAB_ANALYSIS_CONSIDERATIONS') === 'off';
@@ -107,7 +111,8 @@ Deno.serve(async (req) => {
   if (!analysis) return json({ error: NOT_CHECKED }, 422);
 
   const model = fake ? `fake:${fake}` : MODEL;
-  const { error: storeError } = await db.rpc('store_lab_analysis', { p_document: documentId, p_model: model, p_facts_hash: hash, p_analysis: analysis });
+  const admin = createClient(url, serviceKey);
+  const { error: storeError } = await admin.rpc('store_lab_analysis', { p_user: uid, p_document: documentId, p_model: model, p_facts_hash: hash, p_analysis: analysis });
   if (storeError) return json({ error: 'The analysis could not be saved.' }, 500);
   console.log(`lab-analysis: stored, ${facts.tests.length} tests, attempt ${attempt}`);
   return json({ analysis, model, created_at: new Date().toISOString(), facts_hash: hash });
