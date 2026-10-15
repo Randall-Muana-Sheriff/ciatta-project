@@ -18,7 +18,6 @@ import { useInsightReactions } from '../state/insightReactions';
 import { useResearchInsights } from '../state/researchInsights';
 import { font, GUTTER } from '../theme';
 import { GroundLayer } from './Ground';
-import { Icon } from './icons';
 import { InsightCard } from './InsightCards';
 import { G } from './scheme';
 import { L, NAV_CLEARANCE, SPACE } from './surface';
@@ -78,7 +77,6 @@ export function InsightsSheet() {
       <Pressable onPress={() => settle(!open)} accessibilityRole="button" accessibilityLabel={open ? 'Lower pattern insights' : 'Show all pattern insights'} style={s.head}>
         <View style={s.grabber} />
         <View style={s.titleRow}>
-          <Icon name="sparkle" size={18} color={G.ink} />
           <Text style={[font('title3', 'semibold'), s.title]} accessibilityRole="header">
             Pattern Insights
           </Text>
