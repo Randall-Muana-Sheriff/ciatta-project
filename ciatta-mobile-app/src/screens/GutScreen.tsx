@@ -48,7 +48,7 @@ export function GutScreen() {
   const log = () => {
     chooseLogCategory('gut');
     chooseLogMode('type');
-    nav.push('quickLog');
+    nav.push('ciatta');
   };
 
   const slot = width ? (width - LABEL_W) / out.days.length : 0;
@@ -189,7 +189,7 @@ export function GutScreen() {
         <PrimaryButton label={view === 'Out' ? 'Log a Bowel Movement' : 'Log a Meal'} onPress={view === 'Out' ? log : () => {
           chooseLogCategory('nutrition');
           chooseLogMode('camera');
-          nav.push('quickLog');
+          nav.push('ciatta');
         }} />
       </View>
     </DetailScreen>

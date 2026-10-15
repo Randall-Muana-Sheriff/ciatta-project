@@ -560,10 +560,19 @@ function Appearance() {
 function Notifications() {
   const repo = useRepo();
   const [findings, setFindingsState] = useState(true);
+  const [checkins, setCheckinsState] = useState(true);
   const [appointments, setAppointments] = useState(false);
   useEffect(() => {
     repo.loadNotifyFindings().then(setFindingsState).catch(() => {});
+    repo.loadNotifyCheckins().then(setCheckinsState).catch(() => {});
   }, [repo]);
+  // Ciatta's once a day question, when today gives a reason. The lock
+  // screen only ever says there is a question.
+  const setCheckins = (on: boolean) => {
+    setCheckinsState(on);
+    void repo.saveNotifyCheckins(on).catch(() => setCheckinsState(!on));
+    if (on) void registerForFindings(repo, true);
+  };
   // Saved to her profile, which the server reads before sending a push.
   const setFindings = (on: boolean) => {
     setFindingsState(on);
@@ -574,8 +583,9 @@ function Notifications() {
     <Switch value={value} onValueChange={onChange} trackColor={{ false: G.fill, true: '#34C759' }} ios_backgroundColor={G.fill} accessibilityLabel={label} />
   );
   return (
-    <ListGroup footer="No nudges to log, and no reminders to take anything.">
+    <ListGroup footer="No reminders to take anything. A check in only ever says there is a question, never what it is about.">
       <ListRow first title="New Findings" sub="Only once a pattern has appeared more than once" right={toggle(findings, setFindings, 'New findings')} />
+      <ListRow title="Check Ins" sub="At most once a day, when your readings change" right={toggle(checkins, setCheckins, 'Check ins')} />
       <ListRow title="Before Appointments" sub="The day before, so you can prepare" right={toggle(appointments, setAppointments, 'Before appointments')} />
     </ListGroup>
   );

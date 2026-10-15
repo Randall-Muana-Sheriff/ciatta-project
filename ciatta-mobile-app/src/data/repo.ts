@@ -146,6 +146,8 @@ export type Repo = {
   savePushToken(token: string, platform: 'ios' | 'android'): Promise<void>;
   loadNotifyFindings(): Promise<boolean>;
   saveNotifyFindings(on: boolean): Promise<void>;
+  loadNotifyCheckins(): Promise<boolean>;
+  saveNotifyCheckins(on: boolean): Promise<void>;
   // What she wants to understand, as she wrote it at onboarding, and as
   // she changes it later in Profile.
   loadGoals(): Promise<string[]>;
@@ -403,6 +405,7 @@ export function demoRepo(): Repo {
   // has a usual day to fill toward. Figures are sample estimates, marked as
   // estimates like any scan.
   let notifyFindings = true;
+  let notifyCheckins = true;
   let firstNameNow = person.firstName;
   // What the example person said she wants to understand.
   let goals: string[] = ['Why I am so tired', 'What sets off my flares', 'Whether my cycle is changing'];
@@ -485,6 +488,10 @@ export function demoRepo(): Repo {
       goals = [...next];
     },
     loadNotifyFindings: async () => notifyFindings,
+    loadNotifyCheckins: async () => notifyCheckins,
+    saveNotifyCheckins: async (on) => {
+      notifyCheckins = on;
+    },
     saveNotifyFindings: async (on) => {
       notifyFindings = on;
     },
@@ -1066,6 +1073,15 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
     },
     async saveNotifyFindings(on) {
       must(await db.from('profiles').update({ notify_findings: on }).eq('id', userId));
+    },
+    async loadNotifyCheckins() {
+      const row = must(await db.from('profiles').select('notify_checkins').eq('id', userId).maybeSingle()) as
+        | { notify_checkins: boolean | null }
+        | null;
+      return row?.notify_checkins !== false;
+    },
+    async saveNotifyCheckins(on) {
+      must(await db.from('profiles').update({ notify_checkins: on }).eq('id', userId));
     },
     async loadDaylight(since) {
       // Each Apple Health sample is a stretch of time outside; a day's

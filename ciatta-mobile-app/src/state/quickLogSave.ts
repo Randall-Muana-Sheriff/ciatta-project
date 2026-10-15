@@ -12,7 +12,16 @@ import { planSave, runSave } from '../lib/quickLog';
 import { useCycle } from './cycleStore';
 import { useRepo } from './session';
 
-export type QuickEntry = { text: string; key: CategoryKey; tapped: string[]; files?: Attachment[]; stool?: number | null };
+export type QuickEntry = {
+  text: string;
+  key: CategoryKey;
+  tapped: string[];
+  files?: Attachment[];
+  stool?: number | null;
+  // Words already sorted into the categories they file under, as Ciatta's
+  // log offer sends them. Taken as they are when present.
+  byCategory?: Partial<Record<CategoryKey, string[]>>;
+};
 
 export function useQuickLogSave() {
   const repo = useRepo();
@@ -27,13 +36,14 @@ export function useQuickLogSave() {
       const withStool = key === 'gut' && stool != null && !tapped.includes(BOWEL) ? [...tapped, BOWEL] : tapped;
       // Under Symptoms, each tap is filed under its own category.
       const byCategory =
-        key === 'symptoms'
+        entry.byCategory ??
+        (key === 'symptoms'
           ? withStool.reduce<Record<string, string[]>>((acc, item) => {
               const cat = symptomCategory(item);
               acc[cat] = [...(acc[cat] ?? []), item];
               return acc;
             }, {})
-          : undefined;
+          : undefined);
       const plan = planSave({ text, selected: key, tapped: withStool, files, byCategory });
       if (!plan) return false;
       const said = text.trim();

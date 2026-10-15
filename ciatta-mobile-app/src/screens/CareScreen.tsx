@@ -57,7 +57,12 @@ import { Composer } from '../ui/composer';
 import { AgentAvatar } from '../ui/AgentAvatar';
 import { onCareAsk, openRequest, takeCareAsk } from '../lib/careHandoff';
 import { CareHub } from '../ui/CareHub';
-import { SegmentedControl } from '../ui/kit';
+import { ScreenHeader } from '../ui/kit';
+import { groupItems, mergeItems, offerLine, turnPlan } from '../lib/agent/logOffer';
+import { isLoggable } from '../../supabase/functions/_shared/checkIn';
+import { readCategories } from '../lib/quickLog';
+import { readLog } from '../data/logRead';
+import { useQuickLogSave } from '../state/quickLogSave';
 import { progressSteps, revealWords } from '../lib/agent/progress';
 import { CONNECT_SYMPTOMS } from '../lib/agent/connect';
 import type { RequestKind } from '../lib/care';
@@ -69,15 +74,11 @@ import { G } from '../ui/scheme';
 // code below keeps, which is the only reason it is allowed to be said.
 
 const INTRO_SEEN = 'ciatta.care.introSeen';
-const MODES = ['Concierge', 'Your Care'] as const;
 // Action cards she chose Not now on, by id, so each stays put away.
 const DISMISSED = 'ciatta.care.dismissed';
 
-// What she calls the agent. Three to choose from, the way a first meeting
-// offers a name rather than asking her to invent one; Ciatta first, since
-// it is the name she already knows. Kept on this phone.
-const AGENT_NAME = 'ciatta.care.agentName';
-const NAMES = ['Ciatta', 'Iris', 'Wren'] as const;
+// The agent is Ciatta, the name she already knows. There is no other.
+const name = 'Ciatta';
 
 const DOT: Record<Fact['from'], string> = {
   measured: HUE.measured,
@@ -157,27 +158,11 @@ export function CareScreen() {
   // Whether she has had the introduction. Null until the read lands, so
   // the bullets never flash in for someone who has seen them.
   const [introSeen, setIntroSeen] = useState<boolean | null>(null);
-  // The name she chose, or null before she has chosen one. Until then the
-  // agent goes by Ciatta and asks.
-  const [agentName, setAgentName] = useState<string | null>(null);
-  const [naming, setNaming] = useState(false);
   useEffect(() => {
     AsyncStorage.getItem(INTRO_SEEN)
       .then((v) => setIntroSeen(v === '1'))
       .catch(() => setIntroSeen(false));
-    AsyncStorage.getItem(AGENT_NAME)
-      .then((v) => {
-        if (v) setAgentName(v);
-        else setNaming(true);
-      })
-      .catch(() => setNaming(true));
   }, []);
-  const name = agentName ?? NAMES[0];
-  const chooseName = (next: string) => {
-    setAgentName(next);
-    setNaming(false);
-    AsyncStorage.setItem(AGENT_NAME, next).catch(() => {});
-  };
 
   // Everything a capability may read, and nothing more. Assembled here so
   // the boundary is one object in one place rather than a set of imports
@@ -239,8 +224,31 @@ export function CareScreen() {
   const cards = useMemo(() => capabilityCards(record), [record]);
   const ready = useMemo(() => cards.filter((c) => c.ready), [cards]);
 
-  const [mode, setMode] = useState<(typeof MODES)[number]>('Concierge');
-  // A question handed over from Your Care is asked in Concierge.
+  const saveLog = useQuickLogSave();
+  const setOffer = useCallback((id: string, state: NonNullable<Turn['offer']>['state']) => {
+    setTurns((prev) => prev.map((t) => (t.id === id && t.offer ? { ...t, offer: { ...t.offer, state } } : t)));
+  }, []);
+  // Add: saved through the same path every log takes, each word under the
+  // category the record keeps it in, and her own words kept as the note.
+  const addOffer = useCallback(
+    async (id: string) => {
+      const turn = turns.find((t) => t.id === id);
+      if (!turn?.offer || (turn.offer.state !== 'offered' && turn.offer.state !== 'failed')) return;
+      try {
+        const ok = await saveLog({
+          text: turn.offer.text,
+          key: 'symptoms',
+          tapped: turn.offer.items,
+          byCategory: groupItems(turn.offer.items),
+          files: [...(turn.offer.files ?? [])],
+        });
+        setOffer(id, ok ? 'added' : 'failed');
+      } catch {
+        setOffer(id, 'failed');
+      }
+    },
+    [turns, saveLog, setOffer],
+  );
   // Keeps the newest words in view while an answer is written out.
   const grow = useCallback(() => scroller.current?.scrollToEnd({ animated: true }), []);
 
@@ -254,6 +262,7 @@ export function CareScreen() {
       const routed = classify(message);
       const capability =
         routed !== 'escalate' && mentionsLab(message, context.labs.map((l) => l.name)) ? 'labs' : routed;
+      const plan = turnPlan(capability, []);
       const answer = respond(message, record, capability);
       // No backend reached yet, so there is no rewrite to weigh and the
       // deterministic sentence stands. wordOrFallback is still the only
@@ -261,11 +270,42 @@ export function CareScreen() {
       // and nothing else.
       const { text: said, worded } = wordOrFallback(answer, null);
 
+      // Said, not asked: read for what could go on her timeline, by the
+      // server's reader and the phone's own, and offered rather than saved.
+      const loggable = isLoggable(message) && capability !== 'escalate';
+      const local = loggable ? Object.values(readCategories(message)).flat() : [];
       setTurns((prev) => [
         ...prev,
         { id: `${at}-her`, role: 'her', text: message, at, attachments: files },
-        { id: `${at}-ciatta`, role: 'ciatta', text: said, at, answer, worded, fresh: true },
+        ...(plan.answer && !(loggable && capability === 'decline')
+          ? [{ id: `${at}-ciatta`, role: 'ciatta' as const, text: said, at, answer, worded, fresh: true }]
+          : []),
       ]);
+      if (loggable) {
+        const attached = files;
+        void readLog(message).then((read) => {
+          const items = mergeItems(read?.items ?? null, local);
+          const next = turnPlan(capability, items);
+          setTurns((prev) => {
+            const out = [...prev];
+            // A statement Ciatta could not answer and nothing to add: the
+            // plain answer after all, so she is never left without a reply.
+            if (!next.offer) {
+              if (capability === 'decline') out.push({ id: `${at}-ciatta`, role: 'ciatta', text: said, at, answer, worded, fresh: true });
+              return out;
+            }
+            out.push({
+              id: `${at}-offer`,
+              role: 'ciatta',
+              text: offerLine(items),
+              at,
+              offer: { items, text: message, daysAgo: read?.daysAgo ?? 0, state: 'offered', files: attached },
+            });
+            return out;
+          });
+          requestAnimationFrame(() => scroller.current?.scrollToEnd({ animated: true }));
+        });
+      }
       setDraft('');
       setFiles([]);
       // Her first question is the moment the introduction has done its
@@ -283,49 +323,23 @@ export function CareScreen() {
   // system: asked as if she had typed it.
   useEffect(() => {
     const waiting = takeCareAsk();
-    if (waiting) {
-      setMode('Concierge');
-      send(waiting);
-    }
-    return onCareAsk((prompt) => {
-      setMode('Concierge');
-      send(prompt);
-    });
+    if (waiting) send(waiting);
+    return onCareAsk((prompt) => send(prompt));
   }, [send]);
 
   return (
     <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScreenHeader title="Ciatta" onBack={nav.back} />
       <ScrollView ref={scroller} style={s.fill} contentContainerStyle={s.body} keyboardDismissMode="interactive">
-        {/*
-          The agent, centred, with the name she gave it. Tapping the name
-          is how she changes it.
-        */}
+        {/* The agent, centred. */}
         <View style={s.intro}>
           <AgentAvatar size={72} />
-          <Pressable
-            onPress={() => setNaming((v) => !v)}
-            accessibilityRole="button"
-            accessibilityLabel={`${name}. Change name`}
-            hitSlop={8}
-            style={({ pressed }) => [s.namePill, pressed && s.pressed]}
-          >
+          <View style={s.namePill}>
             <Text style={[font('subhead', 'semibold'), s.nameText]} accessibilityRole="header">
               {name}
             </Text>
-          </Pressable>
-        </View>
-
-        {/* Two sides of Care: asking Ciatta, and her care itself. */}
-        <View style={s.switch}>
-          <SegmentedControl segments={MODES} active={mode} onChange={setMode} />
-        </View>
-
-        {mode === 'Your Care' ? (
-          <View style={s.hub}>
-            <CareHub onAsk={() => setMode('Concierge')} />
           </View>
-        ) : (
-        <>
+        </View>
 
         {/*
           The opening, as Ciatta speaking rather than a page about Ciatta.
@@ -338,7 +352,7 @@ export function CareScreen() {
           <View style={s.bubble}>
             <Text style={[font('body'), s.bubbleText]}>
               {displayCopy(
-                `${person?.firstName ? `Hi ${person.firstName}, I` : 'Hi, I'}’m ${name}, your care concierge. I keep watch over your record and get things ready for you. What would you like help with first?`,
+                `${person?.firstName ? `Hi ${person.firstName}, I` : 'Hi, I'}’m ${name}. I keep watch over your record and get things ready for you. What would you like help with first?`,
               )}
             </Text>
           </View>
@@ -381,30 +395,6 @@ export function CareScreen() {
             </Pressable>
           </View>
 
-          {naming ? (
-            <View style={s.bubble}>
-              <Text style={[font('body'), s.bubbleText]}>
-                What would you like to call me? You can change this any time by tapping my name.
-              </Text>
-              <View style={s.names}>
-                {NAMES.map((n) => {
-                  const on = n === name;
-                  return (
-                    <Pressable
-                      key={n}
-                      onPress={() => chooseName(n)}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: on }}
-                      style={({ pressed }) => [s.nameOption, on && s.nameOptionOn, pressed && s.pressed]}
-                    >
-                      <Text style={[font('body', on ? 'semibold' : 'regular'), s.bubbleText]}>{n}</Text>
-                      {on ? <Icon name="check" size={16} color={G.ink} /> : null}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          ) : null}
 
         </View>
 
@@ -426,6 +416,8 @@ export function CareScreen() {
                       ))
                     : null}
                 </View>
+              ) : turn.offer ? (
+                <OfferBlock key={turn.id} turn={turn} onAdd={() => void addOffer(turn.id)} onDecline={() => setOffer(turn.id, 'declined')} />
               ) : (
                 <AnswerBlock
                   key={turn.id}
@@ -437,18 +429,15 @@ export function CareScreen() {
             )}
           </View>
         ) : null}
-        </>
-        )}
       </ScrollView>
 
-      {mode === 'Concierge' ? (
       <View style={s.composer}>
         <Composer
           value={draft}
           onChange={setDraft}
           // An example of what she might ask, in her own voice.
-          placeholder="My labs came back normal, but I still feel off. What stands out?"
-          label="Ask your concierge about your record"
+          placeholder="Had a dull ache since lunch and felt drained. Or ask about your record."
+          label="Tell Ciatta anything, or ask about your record"
           attachments={files}
           onAttachments={setFiles}
           onSend={() => send(draft)}
@@ -462,8 +451,35 @@ export function CareScreen() {
           Not medical advice. Ciatta can make mistakes.
         </Text>
       </View>
-      ) : null}
     </KeyboardAvoidingView>
+  );
+}
+
+// Ciatta's offer to add what she said to her timeline. Add saves it;
+// Not this leaves it unsaved. Once answered, the card says what happened.
+function OfferBlock({ turn, onAdd, onDecline }: { turn: Turn; onAdd: () => void; onDecline: () => void }) {
+  const o = turn.offer!;
+  return (
+    <View style={s.actionCard}>
+      <Text style={[font('subhead'), s.bubbleText]}>{displayCopy(turn.text)}</Text>
+      {o.state === 'failed' ? (
+        <Text style={[font('footnote'), s.actionDetail]}>That did not save. Nothing was added.</Text>
+      ) : null}
+      {o.state === 'offered' || o.state === 'failed' ? (
+        <View style={s.suggestions}>
+          <Pressable onPress={onAdd} accessibilityRole="button" style={({ pressed }) => [s.actionButton, pressed && s.pressed]}>
+            <Text style={[font('footnote', 'semibold'), s.actionButtonText]}>{o.state === 'failed' ? 'Try again' : 'Add'}</Text>
+          </Pressable>
+          <Pressable onPress={onDecline} accessibilityRole="button" hitSlop={6}>
+            <Text style={[font('footnote'), s.actionDetail]}>Not this</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Text style={[font('footnote'), s.actionDetail]}>
+          {o.state === 'added' ? 'Added to your timeline.' : 'Not added.'}
+        </Text>
+      )}
+    </View>
   );
 }
 

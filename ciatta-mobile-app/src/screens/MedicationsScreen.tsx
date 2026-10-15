@@ -52,7 +52,7 @@ export function MedicationsScreen() {
   );
   const log = (key: 'meds' | 'supplements') => {
     chooseLogCategory(key);
-    nav.push('quickLog');
+    nav.push('ciatta');
   };
   const nothing = !view.medications.length && !view.supplements.length && !view.month.length && !view.changes.length;
 

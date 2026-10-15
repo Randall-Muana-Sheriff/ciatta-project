@@ -9,8 +9,8 @@ test('three places, in order', () => {
   assert.deepEqual(TAB_ORDER, ['today', 'myhealth', 'care']);
 });
 
-test('the corner menu lists Today, Health, Care and Profile, marking where she is', () => {
-  assert.deepEqual(MENU_ITEMS.map((m) => m.label), ['Today', 'Health', 'Care', 'Profile']);
+test('the corner menu lists Today, Health, Your care and Profile, marking where she is', () => {
+  assert.deepEqual(MENU_ITEMS.map((m) => m.label), ['Today', 'Health', 'Your care', 'Profile']);
   const rows = menuFor('myhealth');
   assert.deepEqual(rows.map((r) => r.current), [false, true, false, false]);
   assert.equal(rows[3].go.kind, 'screen');

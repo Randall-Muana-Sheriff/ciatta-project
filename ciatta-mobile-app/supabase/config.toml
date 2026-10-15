@@ -462,3 +462,6 @@ verify_jwt = false
 
 [functions.fasten-connect]
 verify_jwt = true
+
+[functions.log-read]
+verify_jwt = true

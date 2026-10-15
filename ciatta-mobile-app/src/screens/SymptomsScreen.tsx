@@ -48,7 +48,7 @@ export function SymptomsScreen() {
 
   const logOne = () => {
     chooseLogCategory('symptoms');
-    nav.push('quickLog');
+    nav.push('ciatta');
   };
 
   return (

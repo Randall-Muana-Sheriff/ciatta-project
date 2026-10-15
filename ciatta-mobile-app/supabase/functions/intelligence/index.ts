@@ -37,6 +37,7 @@ import {
 } from './threads.ts';
 import { contextEntry, offending, wordInsight, type ContextEntry, type OutcomeValue } from './wording.ts';
 import { findingPush } from './push.ts';
+import { checkIn, checkInPush } from '../_shared/checkIn.ts';
 
 const url = Deno.env.get('SUPABASE_URL')!;
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -387,6 +388,51 @@ async function runJob(admin: Admin, job: JobRow): Promise<RunCounts> {
     }
   } catch (e) {
     console.log('intelligence push failed', e instanceof Error ? e.name : 'unknown');
+  }
+
+  // A check in, when today gives a reason: one private push a day saying
+  // Ciatta has a question, and the question itself waits on Today. Same
+  // rule the app asks with (_shared/checkIn.ts). A failure is logged and
+  // never fails the run.
+  try {
+    const [{ data: prefs }, { data: dayRow }, { data: usualRows }, { data: named }] = await Promise.all([
+      admin.from('profiles').select('notify_checkins, last_checkin_push').eq('id', job.user_id).maybeSingle(),
+      admin.from('daily_metrics').select('resting_hr, hrv, sleep_hours, temp_deviation').eq('user_id', job.user_id).eq('day', todayIso).maybeSingle(),
+      admin.from('baselines').select('metric, low, high, sufficient').eq('user_id', job.user_id).eq('window_days', 90),
+      admin.from('conditions').select('kind, name').eq('user_id', job.user_id),
+    ]);
+    const question = dayRow
+      ? checkIn({
+          today: {
+            resting_hr: numOrNull(dayRow.resting_hr),
+            hrv: numOrNull(dayRow.hrv),
+            sleep_hours: numOrNull(dayRow.sleep_hours),
+            temp_deviation: numOrNull(dayRow.temp_deviation),
+          },
+          baselines: ((usualRows ?? []) as Row[]).map((b) => ({ metric: b.metric, low: numOrNull(b.low), high: numOrNull(b.high), sufficient: b.sufficient === true })),
+          conditions: ((named ?? []) as Row[]).filter((c) => c.kind === 'condition').map((c) => String(c.name)),
+          answered: [],
+          day: todayIso,
+        })
+      : null;
+    if (question) {
+      const { data: phones } = await admin.from('push_tokens').select('token').eq('user_id', job.user_id);
+      const messages = checkInPush(
+        (phones ?? []).map((p: { token: string }) => p.token),
+        { allowed: prefs?.notify_checkins !== false, lastSent: prefs?.last_checkin_push ?? null, today: todayIso },
+      );
+      if (messages.length) {
+        const res = await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', accept: 'application/json' },
+          body: JSON.stringify(messages),
+        });
+        console.log('intelligence check in push', res.status, messages.length);
+        if (res.ok) await admin.from('profiles').update({ last_checkin_push: todayIso }).eq('id', job.user_id);
+      }
+    }
+  } catch (e) {
+    console.log('intelligence check in failed', e instanceof Error ? e.name : 'unknown');
   }
 
   // ── The loop's second half: measure, learn, offer ───────────────

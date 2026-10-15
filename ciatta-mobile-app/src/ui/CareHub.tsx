@@ -160,7 +160,7 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
               {displayCopy(
                 hub.latestDraw
                   ? `${hub.latestDraw.results.length} results ${labDay(hub.latestDraw.on).toLowerCase().startsWith('on') ? '' : 'from '}${labDay(hub.latestDraw.on)}. ${hub.latestDraw.outside ? `${hub.latestDraw.outside} outside range.` : 'All within range.'}`
-                  : 'No labs yet. Ask your concierge which are worth asking your clinician for.',
+                  : 'No labs yet. Ask Ciatta which are worth asking your clinician for.',
               )}
             </Text>
           </Pressable>

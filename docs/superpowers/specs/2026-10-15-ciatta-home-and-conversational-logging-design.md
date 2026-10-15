@@ -138,7 +138,7 @@ Shared by the app and the intelligence run, with no imports.
 - **Migration:** `profiles.notify_checkins boolean not null default true`
   and `profiles.last_checkin_push date`.
 - **When it sends.** After the findings push, the run:
-  - reads today's `daily_metrics` row and the `baselines` rows (window 30)
+  - reads today's `daily_metrics` row and the `baselines` rows (window 90)
   - runs `checkIn`
   - if it returns a check in, notify_checkins is on, and last_checkin_push
     is not today, sends one push: title "Ciatta", body "Ciatta has a quick

@@ -170,7 +170,7 @@ export function MyHealthScreen() {
               // With no topic chosen, what she is managing leads: for
               // Reproductive, endometriosis when it is on her record.
               askCare(explorePrompt(system, topic ?? defaultTopic(system, conditions)));
-              nav.goTab('care');
+              nav.push('ciatta');
             }}
           />
         ) : (

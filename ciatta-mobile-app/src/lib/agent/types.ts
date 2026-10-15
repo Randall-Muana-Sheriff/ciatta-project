@@ -123,6 +123,15 @@ export type Turn = {
   // explicit that Ciatta does not open a file, and the composer says so
   // under the box.
   attachments?: readonly { id: string; kind: string; name: string }[];
+  // Ciatta's offer to add what she said to her timeline, and where it
+  // stands. Nothing is saved while it is offered.
+  offer?: {
+    items: string[];
+    text: string;
+    daysAgo: number;
+    state: 'offered' | 'added' | 'declined' | 'failed';
+    files?: readonly import('../attachments').Attachment[];
+  };
   // Asked in this sitting, so the screen shows it being worked out and
   // written rather than appearing whole.
   fresh?: boolean;

@@ -58,6 +58,7 @@ import { TodayScreen } from './screens/TodayScreen';
 import { C } from './theme';
 import { CornerNav } from './ui/chrome';
 import { PatternsScreen } from './screens/PatternsScreen';
+import { YourCareScreen } from './screens/YourCareScreen';
 import { Ground, type GroundHue } from './ui/Ground';
 import { useUnits } from './state/units';
 
@@ -76,7 +77,7 @@ const TAB_GROUND: Record<Tab, [GroundHue, GroundHue]> = {
 const TAB_SCREENS: Record<Tab, ComponentType> = {
   today: TodayScreen,
   myhealth: MyHealthScreen,
-  care: CareScreen,
+  care: YourCareScreen,
 };
 
 const DETAIL_SCREENS: Record<Screen, ComponentType> = {
@@ -102,6 +103,7 @@ const DETAIL_SCREENS: Record<Screen, ComponentType> = {
   gut: GutScreen,
   journey: JourneyScreen,
   patterns: PatternsScreen,
+  ciatta: CareScreen,
   careRequest: CareRequestScreen,
   clinician: ClinicianScreen,
   insight: InsightScreen,
@@ -160,7 +162,10 @@ export function Root() {
   }, [mode, repo]);
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      if (response.notification.request.content.data?.screen === 'evidence') nav.push('evidence');
+      const screen = response.notification.request.content.data?.screen;
+      if (screen === 'evidence') nav.push('evidence');
+      // A check in: the question waits on Today.
+      if (screen === 'today') nav.goTab('today');
     });
     return () => sub.remove();
   }, [nav]);
@@ -199,7 +204,7 @@ export function Root() {
         <CornerNav
           active={tab}
           onGo={(item) => (item.go.kind === 'tab' ? nav.goTab(item.go.tab) : nav.push(item.go.screen))}
-          onTrack={() => nav.push('quickLog')}
+          onTrack={() => nav.push('ciatta')}
         />
         </View>
       </Ground>

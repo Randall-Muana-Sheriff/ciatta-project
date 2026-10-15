@@ -141,7 +141,7 @@ export function InsightView({ id, onClose, sheet = false }: { id: string | null;
         onPress={() => {
           askCare(discussPrompt(insight.title));
           if (sheet) onClose();
-          nav.goTab('care');
+          nav.push('ciatta');
         }}
         accessibilityRole="button"
         style={({ pressed }) => [s.discuss, sheet && s.discussInSheet, pressed && { opacity: 0.8 }]}

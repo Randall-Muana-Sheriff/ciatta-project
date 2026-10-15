@@ -57,6 +57,7 @@ export type Screen =
   | 'gut'
   | 'journey'
   | 'patterns'
+  | 'ciatta'
   | 'careRequest'
   | 'clinician'
   | 'insight'
@@ -89,7 +90,7 @@ export type MenuItem = { key: string; label: string; icon: IconName; go: MenuGo 
 export const MENU_ITEMS: MenuItem[] = [
   { key: 'today', label: 'Today', icon: 'home', go: { kind: 'tab', tab: 'today' } },
   { key: 'myhealth', label: 'Health', icon: 'heart', go: { kind: 'tab', tab: 'myhealth' } },
-  { key: 'care', label: 'Care', icon: 'concierge', go: { kind: 'tab', tab: 'care' } },
+  { key: 'care', label: 'Your care', icon: 'concierge', go: { kind: 'tab', tab: 'care' } },
   { key: 'profile', label: 'Profile', icon: 'person', go: { kind: 'screen', screen: 'profile' } },
 ];
 

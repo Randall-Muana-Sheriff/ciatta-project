@@ -17,7 +17,11 @@ import {
 import { type Screen, useNav } from '../navigation';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useCyclePosition } from '../state/cyclePosition';
-import { PATTERN_VIEWS, usePatternView } from '../state/patternsView';
+import { usePatternView } from '../state/patternsView';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { answerSave, checkIn } from '../../supabase/functions/_shared/checkIn';
+import { groupItems } from '../lib/agent/logOffer';
+import { CiattaCard } from '../ui/CiattaCard';
 import { JourneyScreen } from './JourneyScreen';
 import { useInsights } from '../state/insights';
 import { useData, useRepo, useSession } from '../state/session';
@@ -68,6 +72,10 @@ function greeting(now: Date): string {
 }
 
 
+const CARD_VIEWS = ['Day', 'Metrics', 'Symptoms', 'Journey'] as const;
+type CardView = (typeof CARD_VIEWS)[number];
+const CHECKINS_ANSWERED = 'ciatta.checkins.answered';
+
 export function TodayScreen() {
   const nav = useNav();
   const { width: screenWidth } = useWindowDimensions();
@@ -91,13 +99,13 @@ export function TodayScreen() {
   // daily symptoms log, and the cycle experience.
   const logSymptoms = () => {
     chooseLogCategory('symptoms');
-    nav.push('quickLog');
+    nav.push('ciatta');
   };
   // The cycle is logged the same way as everything else: the Log screen on
   // Cycle, voice and text first, the step by step form a link inside it.
   const logCycle = () => {
     chooseLogCategory('cycle');
-    nav.push('quickLog');
+    nav.push('ciatta');
   };
 
   // Connecting Apple Health from Today, the same sequence Profile and
@@ -274,6 +282,64 @@ export function TodayScreen() {
 
   // What the You can box asks for: only what is not logged yet today.
   const quickSave = useQuickLogSave();
+
+  // Ciatta's check in. Her conditions shape the question; what she
+  // already answered today (kept on this phone) never comes back.
+  const [conditions, setConditions] = useState<string[]>([]);
+  useEffect(() => {
+    repo
+      .loadReported()
+      .then((r) => setConditions(r.conditions))
+      .catch(() => {});
+  }, [repo]);
+  const [answered, setAnswered] = useState<string[]>([]);
+  useEffect(() => {
+    AsyncStorage.getItem(CHECKINS_ANSWERED)
+      .then((v) => setAnswered(v ? (JSON.parse(v) as string[]) : []))
+      .catch(() => {});
+  }, []);
+  const question = useMemo(
+    () =>
+      todayDay
+        ? checkIn({
+            today: { resting_hr: todayDay.restingHR, hrv: todayDay.hrv, sleep_hours: todayDay.sleepHours, temp_deviation: todayDay.tempDeviation },
+            baselines,
+            conditions,
+            answered,
+            day: todayKey,
+          })
+        : null,
+    [todayDay, baselines, conditions, answered, todayKey],
+  );
+  const [checkInNote, setCheckInNote] = useState<string | null>(null);
+  const answerCheckIn = async (answer: string | null) => {
+    if (!question) return;
+    // Only today's keys are kept, so the list never grows past a day.
+    const next = [...answered.filter((k) => k.endsWith(todayKey)), question.key];
+    setAnswered(next);
+    AsyncStorage.setItem(CHECKINS_ANSWERED, JSON.stringify(next)).catch(() => {});
+    if (answer == null) return;
+    const { text, tapped } = answerSave(question, answer);
+    try {
+      const saved = await quickSave({ text, key: tapped.length ? 'symptoms' : 'note', tapped, byCategory: tapped.length ? groupItems(tapped) : undefined });
+      setCheckInNote(saved ? 'Added to your timeline. Thank you.' : 'That did not save. Nothing was added.');
+      if (saved) {
+        setLogged((n) => n + 1);
+        void reloadDays();
+      }
+    } catch {
+      setCheckInNote('That did not save. Nothing was added.');
+    }
+  };
+
+  // The patterns card's four views. Day and Journey are shared with the
+  // detail screen's own toggle, so the two agree.
+  const [cardView, setCardView] = useState<CardView>(() => (patternView === 'Journey' ? 'Journey' : 'Day'));
+  const chooseCardView = (v: CardView) => {
+    setCardView(v);
+    if (v === 'Day') setPatternView('Today');
+    if (v === 'Journey') setPatternView('Journey');
+  };
   const needs = useMemo(() => {
     const today = todayKey;
     const symptomsToday = [...seen.values()].some((d) => d.has(today));
@@ -342,223 +408,16 @@ export function TodayScreen() {
         ) : (
           <>
         {/*
-          Today's patterns: the day itself, or a plain line saying there is
-          not enough of it yet. A chart drawn from one reading would be a
-          shape Ciatta chose rather than one she produced.
+          Ciatta first: the check in when today gives a reason, then what
+          Ciatta noticed and what she could try. Everything Ciatta says on
+          Today is in this one card.
         */}
-        <View style={t.headed}>
-          <SectionHeading
-            title="Today's patterns"
-            right={
-              <Pressable onPress={go('patterns')} accessibilityRole="button" accessibilityLabel="Open Today's patterns" hitSlop={8} style={t.all}>
-                <Text style={[font('subhead'), t.headRight]}>{now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
-                <Icon name="chevronRight" size={14} color={G.meta} />
-              </Pressable>
-            }
-          />
-        </View>
-        {/*
-          The whole card opens the detail: the day in full, and a toggle to
-          the Journey timeline. The chips inside still switch the pair, and
-          the cycle row still logs a period when none is open.
-        */}
-        <View style={t.patternToggle}>
-          <SegmentedControl segments={PATTERN_VIEWS} active={patternView} onChange={setPatternView} />
-        </View>
-        {patternView === 'Journey' ? (
-          // The Journey timeline in place, the same graph as the Journey
-          // screen, opening on the day.
-          <View style={[t.dayCard, t.journeyCard]}>
-            <CardFill />
-            <JourneyScreen embedded />
-          </View>
-        ) : (
-        <Pressable
-          onPress={go('patterns')}
-          accessibilityRole="button"
-          accessibilityHint="Opens Today's patterns, with your Journey timeline"
-          style={({ pressed }) => [t.dayCard, pressed && t.cardPressed]}
-        >
-          <CardFill />
-          {/*
-            The day itself, from her wearable: two metrics at a time on the
-            day's hours, so one can be read against the other.
-          */}
-          {dayView.series.length ? (
-            <DayPair
-              view={dayView}
-              usual={{
-                hrv: usualFor('hrv', baselines)?.median,
-                oxygen_saturation: usualFor('spo2', baselines)?.median,
-              }}
-            />
-          ) : (
-            <Text style={[font('subhead'), t.dayEmpty]}>
-              Your day appears here as your watch or ring sends heart rate, HRV and steps.
-            </Text>
-          )}
-
-          {/*
-            Where she is in her cycle, under the day it belongs to. It
-            lives here rather than among the metrics because it is not a
-            metric: it is the context the day is read in, and it is the
-            one thing on this card she reported rather than a device
-            measured.
-          */}
-          <Pressable
-            disabled={!!cycleNow}
-            onPress={logCycle}
-            accessibilityRole={cycleNow ? undefined : 'button'}
-            accessibilityHint={cycleNow ? undefined : 'Opens Log Cycle Experience'}
-            style={({ pressed }) => [t.cycleRow, pressed && !cycleNow ? t.pressed : null]}
-          >
-            <View>
-              <Text style={[font('caption1'), t.cycleKey]}>CYCLE</Text>
-              <Text style={[font('headline'), cycleNow ? t.cycleValue : t.cycleNone]}>
-                {cycleNow ? `Day ${cycleNow.day}` : 'No logged cycle'}
-              </Text>
-            </View>
-            {phaseText ? (
-              <Text style={[font('footnote', 'semibold'), t.phase]}>{phaseText}</Text>
-            ) : !cycleNow ? (
-              <Text style={[font('footnote', 'semibold'), t.phase]}>Log a period</Text>
-            ) : null}
-          </Pressable>
-        </Pressable>
-        )}
-
-        {/* The chart, then the daily brief written from whatever ranks highest. */}
-        {/*
-          The heading belongs to the card under it, not the card over it.
-          Sitting a block below the day chart and a hair above the metrics,
-          it read as a footer on the chart. So the gap moved: a section's
-          worth above, so it separates from what came before, and almost
-          none below, so it binds to what it names.
-
-          All opens the rest of them. Today carries three because three is
-          what a glance holds, and the other sixteen have to be reachable
-          without that being a reason to crowd this card.
-        */}
-        {/* The period product she has in, only while one is in. */}
-        <ProductNowCard />
-
-        <View style={t.section}>
-          <SectionHeading
-            title="Metrics"
-            right={
-          <Pressable
-            onPress={go('metrics')}
-            accessibilityRole="button"
-            accessibilityLabel="All your metrics, as a dashboard or a list"
-            hitSlop={8}
-            style={({ pressed }) => [t.all, pressed && t.pressed]}
-          >
-            <Text style={[font('footnote', 'semibold'), t.allText]}>All</Text>
-            <Icon name="chevronRight" size={14} color={G.body} />
-          </Pressable>
-            }
-          />
-        </View>
-        {state.measured ? (
-        // One container on a photograph, and the six as frosted glass tiles
-        // over it.
-        <View style={t.metricsCard}>
-          <CardFill />
-          {/*
-            Six cards and nothing else. The card holds only metrics now:
-            the chart and the cycle moved up into Today's Patterns, where
-            the one is the day drawn and the other is the context it is
-            read in.
-          */}
-          <View style={t.grid}>
-            {headlineMetrics(days, vitals, new Date(), baselines).map((m) => (
-              <Pressable
-                key={m.key}
-                style={({ pressed }) => [chip.tile, t.gridCell, pressed && t.pressed]}
-                onPress={() => {
-                  chooseMetric(m.key as MetricKey);
-                  nav.push('metric');
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`${m.label}, ${m.value ?? 'not recorded today'}${m.note && m.value ? `, ${m.note}` : ''}`}
-                accessibilityHint="Opens this metric over time"
-              >
-                <MetricCard
-                  label={m.label}
-                  value={m.value}
-                  note={m.note}
-                  from={m.from}
-                  trend={m.trend}
-                  color={METRIC_HUE[m.key]}
-                  icon={METRIC_ICON[m.key]}
-                />
-              </Pressable>
-            ))}
-          </View>
-  
-          </View>
-        ) : (
-          // Nothing measured yet: one row that says how to fill this,
-          // rather than six cards reading Not yet.
-          <ListGroup light style={{ marginTop: SPACE.tight }}>
-            <ListRow
-              light
-              first
-              icon="heart"
-              title={connecting ? 'Connecting' : 'Connect a Source'}
-              sub={connectNote ?? 'Connect Apple Health to see your sleep, HRV, steps and more each day.'}
-              onPress={connecting ? undefined : () => void connect()}
-            />
-          </ListGroup>
-        )}
-
-          </>
-        )}
-
-        {/*
-          Two ways in, and only two. One adds to the record, the other
-          takes the record somewhere, and everything else she might do is
-          reachable from the screen it belongs to.
-        */}
-        <View style={t.section}>
-          <SectionHeading title="You can log" />
-          <View style={t.youCan}>
-            <CardFill />
-            {/* Logging, one step from here: the topic, then speak, type or
-                take a photo. The Log screen opens already doing it. */}
-            <LogBox
-              needs={needs}
-              onSave={async (entry) => {
-                const saved = await quickSave(entry);
-                if (saved) {
-                  setLogged((n) => n + 1);
-                  void reloadDays();
-                }
-                return saved;
-              }}
-              onMealPhoto={(uri) => {
-                handPhoto(uri);
-                nav.push('foodScan');
-              }}
-              onMore={() => nav.push('quickLog')}
-            />
-          </View>
-        </View>
-
-        {/* Research that connects to her own record. */}
+        <CiattaCard checkIn={question} onAnswer={answerCheckIn} answered={checkInNote}>
         {state.state === 'content' ? (
           <View style={t.section}>
             <InsightCards />
           </View>
         ) : null}
-
-        {state.state !== 'empty' ? (
-          <>
-        {/*
-          What today's pattern suggests trying, which only exists when the
-          pattern does. The concept calls this the try block and gives it
-          one job: the thing she might do about what she just read.
-        */}
         <View style={t.section}>
           <SectionHeading
             title="What you could try"
@@ -614,12 +473,165 @@ export function TodayScreen() {
             </View>
           )}
         </View>
+        </CiattaCard>
 
-        </>
-        ) : null}
-        {/* Symptoms side by side, below the ways in. */}
-        {state.state === 'content' ? (
-          <View style={t.section}>
+        {/* The conversation, one tap away: talk or type, or ask. */}
+        <Pressable
+          onPress={go('ciatta')}
+          accessibilityRole="button"
+          accessibilityLabel="Ask Ciatta anything"
+          style={({ pressed }) => [t.askBox, pressed && t.pressed]}
+        >
+          <Text style={[font('body'), t.askText]}>Ask Ciatta anything</Text>
+          <Icon name="mic" size={20} color={G.meta} />
+        </Pressable>
+
+        {/*
+          Every visualization of her day in one card, behind one switch:
+          the day itself, the six metrics, her symptoms over time, and the
+          Journey timeline with the latest activity under it.
+        */}
+        <View style={t.headed}>
+          <SectionHeading
+            title="Today's patterns"
+            right={
+              <Pressable onPress={go('patterns')} accessibilityRole="button" accessibilityLabel="Open Today's patterns" hitSlop={8} style={t.all}>
+                <Text style={[font('subhead'), t.headRight]}>{now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
+                <Icon name="chevronRight" size={14} color={G.meta} />
+              </Pressable>
+            }
+          />
+        </View>
+        <View style={t.patternToggle}>
+          <SegmentedControl segments={CARD_VIEWS} active={cardView} onChange={chooseCardView} />
+        </View>
+        {cardView === 'Day' ? (
+        <Pressable
+          onPress={go('patterns')}
+          accessibilityRole="button"
+          accessibilityHint="Opens Today's patterns, with your Journey timeline"
+          style={({ pressed }) => [t.dayCard, pressed && t.cardPressed]}
+        >
+          <CardFill />
+          {/*
+            The day itself, from her wearable: two metrics at a time on the
+            day's hours, so one can be read against the other.
+          */}
+          {dayView.series.length ? (
+            <DayPair
+              view={dayView}
+              usual={{
+                hrv: usualFor('hrv', baselines)?.median,
+                oxygen_saturation: usualFor('spo2', baselines)?.median,
+              }}
+            />
+          ) : (
+            <Text style={[font('subhead'), t.dayEmpty]}>
+              Your day appears here as your watch or ring sends heart rate, HRV and steps.
+            </Text>
+          )}
+
+          {/*
+            Where she is in her cycle, under the day it belongs to. It
+            lives here rather than among the metrics because it is not a
+            metric: it is the context the day is read in, and it is the
+            one thing on this card she reported rather than a device
+            measured.
+          */}
+          <Pressable
+            disabled={!!cycleNow}
+            onPress={logCycle}
+            accessibilityRole={cycleNow ? undefined : 'button'}
+            accessibilityHint={cycleNow ? undefined : 'Opens Ciatta to tell it about your period'}
+            style={({ pressed }) => [t.cycleRow, pressed && !cycleNow ? t.pressed : null]}
+          >
+            <View>
+              <Text style={[font('caption1'), t.cycleKey]}>CYCLE</Text>
+              <Text style={[font('headline'), cycleNow ? t.cycleValue : t.cycleNone]}>
+                {cycleNow ? `Day ${cycleNow.day}` : 'No logged cycle'}
+              </Text>
+            </View>
+            {phaseText ? (
+              <Text style={[font('footnote', 'semibold'), t.phase]}>{phaseText}</Text>
+            ) : !cycleNow ? (
+              <Text style={[font('footnote', 'semibold'), t.phase]}>Log a period</Text>
+            ) : null}
+          </Pressable>
+        </Pressable>
+        ) : cardView === 'Metrics' ? (
+          <>
+            <View style={t.metricsHead}>
+          <SectionHeading
+            title="Metrics"
+            right={
+          <Pressable
+            onPress={go('metrics')}
+            accessibilityRole="button"
+            accessibilityLabel="All your metrics, as a dashboard or a list"
+            hitSlop={8}
+            style={({ pressed }) => [t.all, pressed && t.pressed]}
+          >
+            <Text style={[font('footnote', 'semibold'), t.allText]}>All</Text>
+            <Icon name="chevronRight" size={14} color={G.body} />
+          </Pressable>
+            }
+          />
+            </View>
+        {state.measured ? (
+        // One container on a photograph, and the six as frosted glass tiles
+        // over it.
+        <View style={t.metricsCard}>
+          <CardFill />
+          {/*
+            Six cards and nothing else. The card holds only metrics now:
+            the chart and the cycle moved up into Today's Patterns, where
+            the one is the day drawn and the other is the context it is
+            read in.
+          */}
+          <View style={t.grid}>
+            {headlineMetrics(days, vitals, new Date(), baselines).map((m) => (
+              <Pressable
+                key={m.key}
+                style={({ pressed }) => [chip.tile, t.gridCell, pressed && t.pressed]}
+                onPress={() => {
+                  chooseMetric(m.key as MetricKey);
+                  nav.push('metric');
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`${m.label}, ${m.value ?? 'not recorded today'}${m.note && m.value ? `, ${m.note}` : ''}`}
+                accessibilityHint="Opens this metric over time"
+              >
+                <MetricCard
+                  label={m.label}
+                  value={m.value}
+                  note={m.note}
+                  from={m.from}
+                  trend={m.trend}
+                  color={METRIC_HUE[m.key]}
+                  icon={METRIC_ICON[m.key]}
+                />
+              </Pressable>
+            ))}
+          </View>
+  
+          </View>
+        ) : (
+          // Nothing measured yet: one row that says how to fill this,
+          // rather than six cards reading Not yet.
+          <ListGroup light style={{ marginTop: SPACE.tight }}>
+            <ListRow
+              light
+              first
+              icon="heart"
+              title={connecting ? 'Connecting' : 'Connect a Source'}
+              sub={connectNote ?? 'Connect Apple Health to see your sleep, HRV, steps and more each day.'}
+              onPress={connecting ? undefined : () => void connect()}
+            />
+          </ListGroup>
+        )}
+          </>
+        ) : cardView === 'Symptoms' ? (
+          state.state === 'content' ? (
             <SymptomCompare
               strip={strip}
               range={stripRange}
@@ -630,15 +642,30 @@ export function TodayScreen() {
               onChoose={setChosen}
               onAll={go('symptoms')}
             />
-          </View>
-        ) : null}
-
-        {/* The latest thing in her record, last on the page. */}
-        {state.state === 'content' ? (
-          <View style={t.section}>
+          ) : (
+            <View style={t.dayCard}>
+              <CardFill />
+              <Text style={[font('subhead'), t.dayEmpty]}>Your symptoms appear here once you tell Ciatta about them.</Text>
+            </View>
+          )
+        ) : (
+          <>
+            <View style={[t.dayCard, t.journeyCard]}>
+              <CardFill />
+              <JourneyScreen embedded />
+            </View>
+            {state.state === 'content' ? (
+              <View style={t.section}>
             <LatestActivity />
-          </View>
-        ) : null}
+              </View>
+            ) : null}
+          </>
+        )}
+
+        {/* The period product she has in, only while one is in. */}
+        <ProductNowCard />
+          </>
+        )}
       </View>
     </ScrollView>
   );
@@ -687,6 +714,19 @@ const t = StyleSheet.create({
     overflow: 'hidden',
   },
   cardPressed: { opacity: 0.8 },
+  askBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: SPACE.near,
+    paddingHorizontal: 16,
+    minHeight: 52,
+    borderRadius: TILE_RADIUS,
+    backgroundColor: G.card,
+    overflow: 'hidden',
+  },
+  askText: { flex: 1, color: G.meta },
+  metricsHead: { marginBottom: SPACE.tight },
   patternToggle: { marginBottom: 10 },
   // The timeline brings its own side padding, so the card adds none.
   journeyCard: { paddingHorizontal: 0 },

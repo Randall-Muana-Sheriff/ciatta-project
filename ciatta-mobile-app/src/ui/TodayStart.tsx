@@ -55,8 +55,8 @@ export function TodayStart({
         </Pressable>
         {note ? <Text style={[font('footnote'), s.note]}>{displayCopy(note)}</Text> : null}
         <View style={s.or}>
-          <Pill icon="plus" label="Log Today's Symptoms" onPress={onLogSymptoms} />
-          <Pill icon="drop" label="Log Cycle Experience" onPress={onLogCycle} />
+          {/* No forms: what she would log, she tells Ciatta. */}
+          <Pill icon="mic" label="Tell Ciatta how you feel" onPress={onLogSymptoms} />
         </View>
       </View>
 

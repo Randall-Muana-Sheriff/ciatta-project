@@ -52,11 +52,11 @@ export function CycleScreen() {
   const overallLocations = top(signals.filter((s) => s.pain).map((s) => s.episode.locations), 3);
   const split = lens.painSplit ? painSplit(signals) : null;
 
-  // Logged the way everything is: the Log screen on Cycle, voice and text
-  // first, with the step by step form a link inside it.
+  // Logged the way everything is now: said to Ciatta, which offers to add
+  // it to her timeline.
   const log = () => {
     chooseLogCategory('cycle');
-    nav.push('quickLog');
+    nav.push('ciatta');
   };
   const similar = () => {
     if (!template) return;
@@ -191,19 +191,8 @@ export function CycleScreen() {
 
       <View style={cy.below} />
 
-      <PrimaryButton label="Log Cycle Experience" onPress={log} />
+      <PrimaryButton label="Tell Ciatta" onPress={log} />
 
-      {template ? (
-        <Panel style={cy.gap}>
-          <Text style={[font('headline'), { color: C.text }]}>Pain again?</Text>
-          <Text style={[font('subhead'), { color: C.secondary, marginTop: 4 }]}>
-            Your usual details are filled in, so you only add what changed.
-          </Text>
-          <View style={{ marginTop: 12 }}>
-            <SecondaryButton label="Log Similar Episode" onPress={similar} />
-          </View>
-        </Panel>
-      ) : null}
 
       <View style={cy.section}>
         <SecLabel>Your Experience</SecLabel>

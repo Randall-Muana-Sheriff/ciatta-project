@@ -90,7 +90,7 @@ export function PatternsScreen() {
             disabled={!!cycleNow}
             onPress={() => {
               chooseLogCategory('cycle');
-              nav.push('quickLog');
+              nav.push('ciatta');
             }}
             accessibilityRole={cycleNow ? undefined : 'button'}
             style={({ pressed }) => [p.card, p.cycleRow, pressed && !cycleNow ? p.pressed : null]}
