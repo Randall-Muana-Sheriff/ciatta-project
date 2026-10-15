@@ -2,7 +2,7 @@
 // today?": a large line of type, then a row of small cards, one per pattern
 // for the day, running off the right edge. Tapping one opens its page.
 
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { openInsight } from '../lib/careHandoff';
 import { displayCopy } from '../lib/displayCopy';
@@ -19,13 +19,24 @@ export function PatternInsightsRow() {
   const nav = useNav();
   const { reactions } = useInsightReactions();
   const { matches } = useResearchInsights(reactions);
+  // One card whole, and the next showing at the right edge, so the row
+  // says there is more to swipe to. Swipes stop on a card.
+  const { width } = useWindowDimensions();
+  const cardWidth = width - GUTTER - PEEK - GAP;
   return (
     <View>
       <Text style={[font('largeTitle', 'medium'), r.headline]} accessibilityRole="header">
         Pattern Insights
       </Text>
       {matches.length ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={r.rowWrap} contentContainerStyle={r.row}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={r.rowWrap}
+          contentContainerStyle={r.row}
+          snapToInterval={cardWidth + GAP}
+          decelerationRate="fast"
+        >
           {matches.map(({ insight }) => (
             <Pressable
               key={insight.id}
@@ -35,12 +46,12 @@ export function PatternInsightsRow() {
               }}
               accessibilityRole="button"
               accessibilityLabel={`${insight.title}. Opens this pattern`}
-              style={({ pressed }) => [r.card, pressed && r.pressed]}
+              style={({ pressed }) => [r.card, { width: cardWidth }, pressed && r.pressed]}
             >
               <CardFill />
-              <Icon name="sparkle" size={16} color={G.ink} />
+              <Icon name="sparkle" size={18} color={G.ink} />
               <View style={{ flex: 1 }} />
-              <Text style={[font('footnote', 'medium'), r.title]} numberOfLines={3}>
+              <Text style={[font('headline'), r.title]} numberOfLines={4}>
                 {displayCopy(insight.title)}
               </Text>
             </Pressable>
@@ -53,20 +64,23 @@ export function PatternInsightsRow() {
   );
 }
 
+// How much of the next card shows, and the gap between cards.
+const PEEK = 44;
+const GAP = 12;
+
 const r = StyleSheet.create({
   headline: { color: G.ink, letterSpacing: -0.6, marginBottom: SPACE.near },
   rowWrap: { marginHorizontal: -GUTTER },
-  row: { gap: 10, paddingHorizontal: GUTTER },
+  row: { gap: GAP, paddingHorizontal: GUTTER },
   card: {
-    width: 136,
-    height: 112,
-    padding: 12,
-    borderRadius: 16,
+    height: 176,
+    padding: 16,
+    borderRadius: 20,
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255, 255, 255, 0.10)',
   },
-  title: { color: G.ink, lineHeight: 17 },
+  title: { color: G.ink, lineHeight: 22 },
   none: { color: G.body, lineHeight: 21 },
   pressed: { opacity: 0.7 },
 });
