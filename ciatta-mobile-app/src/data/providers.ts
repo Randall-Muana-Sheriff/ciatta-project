@@ -238,3 +238,11 @@ export async function loadConnections(): Promise<Connection[]> {
     lastError: (r.last_error as string | null) ?? null,
   }));
 }
+
+// Removes a provider: the connection, its records and its labs, on the
+// server, as her. False when it was not hers or did not go through, so the
+// screen can say nothing changed.
+export async function disconnectProvider(connectionId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('disconnect_provider', { p_connection: connectionId });
+  return !error && data === true;
+}

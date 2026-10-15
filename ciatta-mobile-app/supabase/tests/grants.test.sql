@@ -16,7 +16,8 @@ select is(
 -- (20261012120000_save_daily_log.sql) and claim_food_scan
 -- (20261013150000_food_scan_limit.sql) and vital_days
 -- (20261014100000_vital_days.sql) and claim_lab_scan
--- (20261014120000_labs.sql), each with its own revoke and grant,
+-- (20261014120000_labs.sql) and disconnect_provider
+-- (20261018120000_disconnect_provider.sql), each with its own revoke and grant,
 -- and nothing else. A new grant to authenticated must be added to this list on
 -- purpose; one that appears here by accident fails the test.
 select is(
@@ -24,7 +25,7 @@ select is(
    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public' and p.prokind in ('f', 'p')
      and has_function_privilege('authenticated', p.oid, 'execute')),
-  'accept_recommendation, claim_food_scan, claim_lab_scan, dismiss_recommendation, end_action, get_today, record_insight_view, record_visit, report_outcome, save_daily_log, set_thread_watch, start_action, vital_days',
+  'accept_recommendation, claim_food_scan, claim_lab_scan, disconnect_provider, dismiss_recommendation, end_action, get_today, record_insight_view, record_visit, report_outcome, save_daily_log, set_thread_watch, start_action, vital_days',
   'authenticated can execute exactly the loop RPCs named here, and nothing else');
 
 -- And no execute grant is left waiting for the next function this project

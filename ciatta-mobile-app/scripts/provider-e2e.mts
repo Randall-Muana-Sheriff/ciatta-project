@@ -72,6 +72,15 @@ async function count(jwt: string, table: string, filter = ''): Promise<number> {
   return Number(res.headers.get('content-range')?.split('/')[1] ?? -1);
 }
 
+async function removeConnection(jwt: string, connectionId: string): Promise<unknown> {
+  const res = await fetch(`${API}/rest/v1/rpc/disconnect_provider`, {
+    method: 'POST',
+    headers: { apikey: ANON, Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_connection: connectionId }),
+  });
+  return res.json();
+}
+
 async function login(): Promise<{ code: string; verifier: string; tokenEndpoint: string }> {
   const raw = await fetch(smartConfigUrl(SMART_TEST)).then((r) => r.json());
   const config = {
@@ -142,7 +151,10 @@ async function main() {
     const back = await exchange(her.jwt);
     check('connecting again revives the same connection', back.body?.connection?.id === id && back.body?.connection?.status === 'active');
 
-    // REMOVAL CHECKS (Task 3 adds them here)
+    check('someone else cannot remove her connection', (await removeConnection(other.jwt, id)) === false && (await connection(id)) !== null);
+    check('she can remove it', (await removeConnection(her.jwt, id)) === true && (await connection(id)) === null);
+    check('its records and labs are gone', (await count(her.jwt, 'clinical_records')) === 0 && (await count(her.jwt, 'results', '&source=eq.provider')) === 0);
+    check('a sync after removal writes nothing', (await call(her.jwt, { action: 'sync', connectionId: id })).status === 404 && (await count(her.jwt, 'results', '&source=eq.provider')) === 0);
   } finally {
     for (const u of [her, other]) await fetch(`${API}/auth/v1/admin/users/${u.id}`, { method: 'DELETE', headers: admin });
   }
