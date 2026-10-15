@@ -24,6 +24,7 @@ import { groupItems } from '../lib/agent/logOffer';
 import { CiattaCard } from '../ui/CiattaCard';
 import { ChatCard, CHAT_CARD_SHARE } from '../ui/ChatCard';
 import { PatternInsightsRow } from '../ui/PatternInsightsRow';
+import { ExploreHealthRow } from '../ui/ExploreHealthRow';
 import { offerCheckIn } from '../lib/checkInHandoff';
 import { JourneyScreen } from './JourneyScreen';
 import { useInsights } from '../state/insights';
@@ -351,6 +352,9 @@ export function TodayScreen() {
               {/* The period product she has in, only while one is in. */}
               <ProductNowCard />
               <View style={{ flex: 1 }} />
+              {/* Topics to look into, each read from what Ciatta knows. */}
+              <ExploreHealthRow />
+              <View style={t.between} />
               {/* Pattern Insights, set low on the screen above the chat. */}
               <PatternInsightsRow />
             </>
@@ -425,6 +429,7 @@ const t = StyleSheet.create({
   helloRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   fixedHead: { paddingTop: 12, paddingBottom: 8 },
   grow: { flexGrow: 1 },
+  between: { height: SPACE.block },
   calendar: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   metricsHead: { marginBottom: SPACE.tight },
   patternToggle: { marginBottom: 10 },

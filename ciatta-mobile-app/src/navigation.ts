@@ -58,6 +58,8 @@ export type Screen =
   | 'journey'
   | 'patterns'
   | 'ciatta'
+  | 'explore'
+  | 'exploreAll'
   | 'careRequest'
   | 'clinician'
   | 'insight'

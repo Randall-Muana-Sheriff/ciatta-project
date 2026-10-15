@@ -61,6 +61,8 @@ import { CHAT_CARD_SHARE } from './ui/ChatCard';
 import { PatternsScreen } from './screens/PatternsScreen';
 import { YourCareScreen } from './screens/YourCareScreen';
 import { PlansScreen } from './screens/PlansScreen';
+import { ExploreScreen } from './screens/ExploreScreen';
+import { ExploreAllScreen } from './screens/ExploreAllScreen';
 import { Ground, type GroundHue } from './ui/Ground';
 import { useUnits } from './state/units';
 
@@ -108,6 +110,8 @@ const DETAIL_SCREENS: Record<Screen, ComponentType> = {
   journey: JourneyScreen,
   patterns: PatternsScreen,
   ciatta: CareScreen,
+  explore: ExploreScreen,
+  exploreAll: ExploreAllScreen,
   careRequest: CareRequestScreen,
   clinician: ClinicianScreen,
   insight: InsightScreen,
