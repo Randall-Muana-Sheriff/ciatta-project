@@ -26,6 +26,7 @@ export const EXPORT_TABLES = [
   'supplements',
   'documents',
   'results',
+  'lab_analyses',
   'provider_connections',
   'clinical_records',
   'environment_days',
@@ -52,6 +53,7 @@ export const EXPORT_SKIPPED: Record<string, string> = {
   jobs: 'A queue of work for the server to do, not information about you.',
   food_scan_uses: 'A count of meal scans per day, kept on the server only to limit scans to 40 a day.',
   lab_scan_uses: 'A count of lab reports read per day, kept on the server only to limit them to 20 a day.',
+  lab_analysis_uses: 'A count of lab report analyses per day, kept on the server only to limit them to 20 a day.',
 };
 
 // Read as these columns rather than all of them. A provider connection's
@@ -82,6 +84,7 @@ const ABOUT_TABLES: Record<ExportTable, string> = {
   supplements: 'Supplements you named.',
   documents: 'Documents you added.',
   results: 'Your labs: from your providers and from reports you had read, each with the lab\'s range and flag.',
+  lab_analyses: 'The clinical AI analyses of your lab reports, each with the model and the day it was written.',
   provider_connections: 'Hospitals and clinics you connected. The keys Ciatta uses to reach them stay on the server.',
   clinical_records: 'Records your providers sent, in their words.',
   environment_days: 'Weather, air quality and daylight around you, by day.',

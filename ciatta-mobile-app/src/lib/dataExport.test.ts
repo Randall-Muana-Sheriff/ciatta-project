@@ -32,6 +32,7 @@ test('the export says what it is, what each part holds, and what could not be re
     { table: 'jobs', reason: 'A queue of work for the server to do, not information about you.' },
     { table: 'food_scan_uses', reason: 'A count of meal scans per day, kept on the server only to limit scans to 40 a day.' },
     { table: 'lab_scan_uses', reason: 'A count of lab reports read per day, kept on the server only to limit them to 20 a day.' },
+    { table: 'lab_analysis_uses', reason: 'A count of lab report analyses per day, kept on the server only to limit them to 20 a day.' },
   ]);
   assert.match(out.about.files, /on this phone/);
   assert.ok(out.about.tables.episodes);
