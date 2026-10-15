@@ -64,6 +64,8 @@ import { readCategories } from '../lib/quickLog';
 import { readLog } from '../data/logRead';
 import { useQuickLogSave } from '../state/quickLogSave';
 import { takeCheckIn } from '../lib/checkInHandoff';
+import { PAPER } from '../ui/paper';
+import { StatusBar } from 'expo-status-bar';
 import { progressSteps, revealWords } from '../lib/agent/progress';
 import { CONNECT_SYMPTOMS } from '../lib/agent/connect';
 import type { RequestKind } from '../lib/care';
@@ -337,13 +339,15 @@ export function CareScreen() {
   }, [send]);
 
   return (
-    <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={[s.fill, s.paper]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* White paper, so the status bar's type turns dark over it. */}
+      <StatusBar style="dark" />
       {/* Close chat, as the reference sets it: back to the chat card on
           Today, whatever she was doing. */}
       <View style={s.closeRow}>
         <Pressable onPress={nav.back} accessibilityRole="button" accessibilityLabel="Close chat" hitSlop={8} style={({ pressed }) => [s.closePill, pressed && s.pressed]}>
-          <Icon name="xmark" size={13} color={G.ink} />
-          <Text style={[font('footnote', 'medium'), { color: G.ink }]}>Close chat</Text>
+          <Icon name="xmark" size={13} color={PAPER.ink} />
+          <Text style={[font('footnote', 'medium'), { color: PAPER.ink }]}>Close chat</Text>
         </Pressable>
       </View>
       <ScrollView ref={scroller} style={s.fill} contentContainerStyle={s.body} keyboardDismissMode="interactive">
@@ -387,6 +391,7 @@ export function CareScreen() {
 
       <View style={s.composer}>
         <Composer
+          paper
           value={draft}
           onChange={setDraft}
           // An example of what she might ask, in her own voice.
@@ -509,7 +514,7 @@ function AnswerBlock({ turn, onOpen, onGrow }: { turn: Turn; onOpen: (sug: Sugge
       <View style={s.answer} accessibilityLiveRegion="polite" accessibilityLabel={`${steps[step]}`}>
         {steps.slice(0, step + 1).map((label, n) => (
           <View key={label} style={s.stepRow}>
-            {n < step ? <Icon name="check" size={13} color={G.meta} /> : <Thinking />}
+            {n < step ? <Icon name="check" size={13} color={PAPER.meta} /> : <Thinking />}
             <Text style={[font('footnote', n === step ? 'semibold' : 'regular'), n === step ? s.stepNow : s.stepDone]}>{label}</Text>
           </View>
         ))}
@@ -543,7 +548,7 @@ function AnswerBlock({ turn, onOpen, onGrow }: { turn: Turn; onOpen: (sug: Sugge
             <View key={k} style={[s.dot, { backgroundColor: DOT[k] }]} />
           ))}
           <Text style={[font('caption1', 'semibold'), s.factText]}>{`Sources, ${a.facts.length}`}</Text>
-          <Icon name={sources ? 'chevronDown' : 'chevronRight'} size={12} color={G.meta} />
+          <Icon name={sources ? 'chevronDown' : 'chevronRight'} size={12} color={PAPER.meta} />
         </Pressable>
       ) : null}
       {a.facts.length && sources ? (
@@ -595,11 +600,11 @@ const ON_WHITE_META = '#59606A';
 
 const s = StyleSheet.create({
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 22 },
-  stepNow: { color: G.ink },
-  stepDone: { color: G.meta },
+  stepNow: { color: PAPER.ink },
+  stepDone: { color: PAPER.meta },
   dots: { flexDirection: 'row', gap: 3, width: 13, alignItems: 'center' },
-  thinkDot: { width: 3.5, height: 3.5, borderRadius: 2, backgroundColor: G.ink },
-  caret: { color: G.meta },
+  thinkDot: { width: 3.5, height: 3.5, borderRadius: 2, backgroundColor: PAPER.ink },
+  caret: { color: PAPER.meta },
   sourcesToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', minHeight: 32 },
   fill: { flex: 1 },
   body: { paddingBottom: SPACE.block },
@@ -619,7 +624,7 @@ const s = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 14,
   },
-  nameText: { color: G.ink },
+  nameText: { color: PAPER.ink },
   names: { gap: SPACE.tight, marginTop: 12 },
   nameOption: {
     flexDirection: 'row',
@@ -632,7 +637,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
   },
   nameOptionOn: { borderColor: ON_WHITE, borderWidth: 1.5 },
-  limit: { color: G.meta, lineHeight: 19, marginTop: SPACE.tight, textAlign: 'center' },
+  limit: { color: PAPER.meta, lineHeight: 19, marginTop: SPACE.tight, textAlign: 'center' },
 
   // Ciatta's side of the conversation: her messages sit right on the
   // statement ground, Ciatta's on the left on the recessed one.
@@ -645,7 +650,7 @@ const s = StyleSheet.create({
     alignSelf: 'flex-start',
     width: '90%',
     marginTop: SPACE.tight,
-    backgroundColor: WHITE,
+    backgroundColor: PAPER.fill,
     borderRadius: TILE_RADIUS,
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -660,15 +665,15 @@ const s = StyleSheet.create({
     alignSelf: 'flex-end',
     maxWidth: '82%',
     marginTop: SPACE.near,
-    backgroundColor: G.fillSelected,
+    backgroundColor: PAPER.fillSelected,
     borderRadius: TILE_RADIUS,
     borderWidth: st,
-    borderColor: G.rule,
+    borderColor: PAPER.rule,
     paddingVertical: 10,
     paddingHorizontal: 14,
   },
-  hersText: { color: G.ink },
-  hersFile: { color: G.meta, marginTop: 4 },
+  hersText: { color: PAPER.ink },
+  hersFile: { color: PAPER.meta, marginTop: 4 },
 
   answer: { marginTop: SPACE.near },
   // Escalation is the one case that takes a hue, and it takes Flare, which
@@ -680,22 +685,22 @@ const s = StyleSheet.create({
     borderColor: HUE.escalation,
     padding: 16,
   },
-  answerText: { color: G.ink, lineHeight: 25 },
+  answerText: { color: PAPER.ink, lineHeight: 25 },
 
   facts: { marginTop: 12, gap: 6 },
   fact: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 6, height: 6, borderRadius: 3 },
-  factText: { color: G.meta, flex: 1 },
+  factText: { color: PAPER.meta, flex: 1 },
 
-  abstained: { color: G.meta, marginTop: 10, lineHeight: 18 },
+  abstained: { color: PAPER.meta, marginTop: 10, lineHeight: 18 },
 
   suggestions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 14 },
   actionCard: {
-    backgroundColor: WHITE,
+    backgroundColor: PAPER.fill,
     borderRadius: TILE_RADIUS,
     padding: 14,
-    borderWidth: 1,
-    borderColor: WHITE,
+    borderWidth: st,
+    borderColor: PAPER.rule,
   },
   actionUrgent: { borderColor: '#C52D1E' },
   actionDetail: { color: ON_WHITE_META, marginTop: 4, lineHeight: 18 },
@@ -720,7 +725,9 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: PAPER.fill,
   },
+  // The chat is on white paper, for the strongest contrast.
+  paper: { backgroundColor: PAPER.bg },
   composer: { paddingHorizontal: GUTTER, paddingBottom: NAV_CLEARANCE },
 });

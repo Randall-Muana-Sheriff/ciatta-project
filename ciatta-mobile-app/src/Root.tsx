@@ -196,7 +196,8 @@ export function Root() {
   return (
     <NavContext.Provider value={nav}>
       <Ground from={TAB_GROUND[tab][0]} to={TAB_GROUND[tab][1]}>
-        <View style={[r.root, { paddingTop: insets.top }]}>
+        {/* The chat is on white paper, up under the status bar too. */}
+        <View style={[r.root, { paddingTop: insets.top }, top === 'ciatta' && r.paper]}>
         <View style={r.fill} key={top ? `${tab}:${stack.length}:${top}` : tab}>
           <Current />
         </View>
@@ -223,4 +224,5 @@ export function Root() {
 const r = StyleSheet.create({
   root: { flex: 1 },
   fill: { flex: 1 },
+  paper: { backgroundColor: '#FFFFFF' },
 });

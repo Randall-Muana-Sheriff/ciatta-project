@@ -3,17 +3,19 @@
 // when she sends does the chat open over the whole screen, with what she
 // sent already in it. Closing the chat brings her back here.
 //
-// It rises with the keyboard, so the box stays in view while she writes.
+// Drawn as a sheet slid up from the foot: white, rounded at the top, with
+// a grabber, for the strongest contrast against the dark ground. It rises
+// with the keyboard, so the box stays in view while she writes.
 
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Keyboard, Platform, StyleSheet, useWindowDimensions } from 'react-native';
+import { Animated, Keyboard, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Attachment } from '../lib/attachments';
 import { askCare } from '../lib/careHandoff';
 import { GUTTER } from '../theme';
-import { CardFill } from './cardFill';
 import { Composer } from './composer';
+import { PAPER } from './paper';
 
 // Half the height the Pattern Insights sheet rested at.
 export const CHAT_CARD_SHARE = 0.22;
@@ -59,8 +61,9 @@ export function ChatCard({ onSent }: { onSent: () => void }) {
         },
       ]}
     >
-      <CardFill />
+      <View style={c.grabber} />
       <Composer
+        paper
         value={draft}
         onChange={setDraft}
         placeholder="Ask Ciatta"
@@ -80,9 +83,15 @@ const c = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingHorizontal: GUTTER,
-    paddingTop: 16,
+    paddingTop: 8,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    overflow: 'hidden',
+    backgroundColor: PAPER.bg,
+    shadowColor: '#000000',
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 12,
   },
+  grabber: { alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: PAPER.rule, marginBottom: 12 },
 });

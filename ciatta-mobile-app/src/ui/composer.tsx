@@ -42,8 +42,13 @@ import { font } from '../theme';
 import { Icon, type IconName } from './icons';
 import { L, TILE_RADIUS } from './surface';
 import { G } from './scheme';
+import { PAPER } from './paper';
+
+type Palette = { ink: string; body: string; meta: string; fill: string; fillSelected: string; rule: string; pill: string; onPill: string; card: string };
 
 export type ComposerProps = {
+  // Drawn on the chat's white paper rather than the dark ground.
+  paper?: boolean;
   value: string;
   // The second argument is how the words arrived. Onboarding persists it
   // as input_mode, because "she typed this" and "she said this out loud"
@@ -111,7 +116,11 @@ export function Composer({
   onSend,
   start = null,
   command = null,
+  paper = false,
 }: ComposerProps) {
+  // On the chat's white paper, or on the dark ground.
+  const K: Palette = paper ? PAPER : G;
+  const s = paper ? ON_PAPER : DARK;
   const field = useRef<TextInput>(null);
   // Why a picker did not open. Permission refused is the common one and is
   // not an error she did anything wrong, so it reads as a fact and says
@@ -249,7 +258,7 @@ export function Composer({
               accessibilityLabel={way.label}
               style={({ pressed }) => [s.wayButton, way.shown && s.wayWide, pressed && s.pressed]}
             >
-              <Icon name={way.icon} size={19} color={G.body} />
+              <Icon name={way.icon} size={19} color={K.body} />
               {way.shown ? <Text style={[font('footnote'), s.wayLabel]}>{way.label}</Text> : null}
             </Pressable>
           ))}
@@ -262,7 +271,7 @@ export function Composer({
           value={value}
           onChangeText={(t) => onChange(t, 'typed')}
           placeholder={placeholder}
-          placeholderTextColor={G.meta}
+          placeholderTextColor={K.meta}
           multiline
           textAlignVertical="top"
           style={[font('body'), s.field, { minHeight: MIN_HEIGHT }]}
@@ -288,7 +297,7 @@ export function Composer({
               style={({ pressed }) => [s.plus, open && s.plusOn, pressed && s.pressed]}
             >
               <View style={open ? s.turned : undefined}>
-                <Icon name="plus" size={20} color={open ? G.onPill : G.body} />
+                <Icon name="plus" size={20} color={open ? K.onPill : K.body} />
               </View>
             </Pressable>
           ) : (
@@ -305,7 +314,7 @@ export function Composer({
             <Icon
               name={action === 'stop' ? 'stopSquare' : action === 'send' ? 'send' : 'mic'}
               size={19}
-              color={action === 'mic' ? G.ink : G.onPill}
+              color={action === 'mic' ? K.ink : K.onPill}
               filled={action === 'stop'}
             />
           </Pressable>
@@ -340,7 +349,7 @@ export function Composer({
                 <Image source={{ uri: file.uri }} style={s.thumb} accessibilityIgnoresInvertColors />
               ) : (
                 <View style={[s.thumb, s.thumbDoc]}>
-                  <Icon name={file.kind === 'video' ? 'video' : 'doc'} size={16} color={G.body} />
+                  <Icon name={file.kind === 'video' ? 'video' : 'doc'} size={16} color={K.body} />
                 </View>
               )}
               {/*
@@ -357,7 +366,7 @@ export function Composer({
                 hitSlop={8}
                 style={({ pressed }) => [s.remove, pressed && s.pressed]}
               >
-                <Icon name="xmark" size={13} color={G.meta} />
+                <Icon name="xmark" size={13} color={K.meta} />
               </Pressable>
             </View>
           ))}
@@ -370,14 +379,15 @@ export function Composer({
   );
 }
 
-const s = StyleSheet.create({
+const styles = (K: Palette) =>
+  StyleSheet.create({
   wrap: { position: 'relative' },
   field: {
-    color: G.ink,
-    backgroundColor: G.card,
+    color: K.ink,
+    backgroundColor: K.card,
     borderRadius: TILE_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: G.rule,
+    borderColor: K.rule,
     padding: 16,
     // Room at the foot for the controls, so a long answer scrolls behind
     // them rather than under them.
@@ -400,11 +410,11 @@ const s = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: G.fill,
+    backgroundColor: K.fill,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: G.rule,
+    borderColor: K.rule,
   },
-  plusOn: { backgroundColor: G.ink, borderColor: G.ink },
+  plusOn: { backgroundColor: K.ink, borderColor: K.ink },
   // A cross is a plus turned, so the open state is the same glyph rotated
   // rather than a second icon that has to be kept looking like the first.
   turned: { transform: [{ rotate: '45deg' }] },
@@ -424,39 +434,42 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: G.fill,
+    backgroundColor: K.fill,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: G.rule,
+    borderColor: K.rule,
   },
   wayWide: { paddingHorizontal: 16 },
-  wayLabel: { color: G.ink },
+  wayLabel: { color: K.ink },
   action: {
     width: 38,
     height: 38,
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: G.fillSelected,
+    backgroundColor: K.fillSelected,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: G.rule,
+    borderColor: K.rule,
   },
-  actionOn: { backgroundColor: G.ink, borderColor: G.ink },
+  actionOn: { backgroundColor: K.ink, borderColor: K.ink },
   pressed: { opacity: 0.55 },
-  partial: { color: G.meta, marginTop: 12, fontStyle: 'italic' },
-  note: { color: G.meta, marginTop: 10, lineHeight: 18 },
+  partial: { color: K.meta, marginTop: 12, fontStyle: 'italic' },
+  note: { color: K.meta, marginTop: 10, lineHeight: 18 },
   files: { marginTop: 12, gap: 8 },
   file: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: G.fill,
+    backgroundColor: K.fill,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: G.rule,
+    borderColor: K.rule,
     paddingRight: 10,
   },
-  thumb: { width: 40, height: 40, borderTopLeftRadius: 12, borderBottomLeftRadius: 12, backgroundColor: G.fillSelected },
+  thumb: { width: 40, height: 40, borderTopLeftRadius: 12, borderBottomLeftRadius: 12, backgroundColor: K.fillSelected },
   thumbDoc: { alignItems: 'center', justifyContent: 'center' },
-  fileName: { color: G.body, flex: 1 },
+  fileName: { color: K.body, flex: 1 },
   remove: { width: 26, height: 26, alignItems: 'center', justifyContent: 'center' },
 });
+
+const DARK = styles(G);
+const ON_PAPER = styles(PAPER);
