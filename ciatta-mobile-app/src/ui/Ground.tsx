@@ -1,10 +1,15 @@
-// The ground every screen stands on: flat, #161616 on dark and #F1F0ED on
-// light. The mood moved into the cards. A screen still names its two hues,
-// and every content card on it is lit in that pair (see CardFill), so a
-// screen keeps its colour without the ground fighting what sits on it.
+// The ground every screen stands on, lit the way the cards are (see
+// CardFill): the screen's first hue falling softly from the top into the
+// dark, its second pooled at the top to one side, and the same fine grain
+// over it. Small and smooth: the light ends well before the middle of the
+// screen, so type sits on the dark. Every content card on a screen is lit
+// in that pair too, so the ground and the cards read as one light.
 
-import { createContext, type ReactNode, useContext, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { createContext, type ReactNode, useContext, useRef, useState } from 'react';
+import { Image, StyleSheet, View } from 'react-native';
+import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
+
+import { FOOT, GLOW_OF, mix, topFor } from './glow';
 
 import { G } from './scheme';
 import type { Meaning } from './surface';
@@ -35,14 +40,61 @@ export function Ground({
   const next = () => count.current++;
   return (
     <PairContext.Provider value={{ from, to, next }}>
-      <View style={s.fill}>{children}</View>
+      <View style={s.fill}>
+        <GroundGlow from={from} to={to} />
+        {children}
+      </View>
     </PairContext.Provider>
   );
 }
 
-// The ground alone, filling whatever holds it.
-export function GroundLayer(_: { from?: GroundHue; to?: GroundHue }) {
-  return <View style={[StyleSheet.absoluteFill, s.flat]} pointerEvents="none" />;
+// The ground alone, filling whatever holds it, in the pair of the screen
+// it sits on unless told otherwise.
+export function GroundLayer({ from, to }: { from?: GroundHue; to?: GroundHue }) {
+  const pair = useContext(PairContext);
+  return (
+    <View style={[StyleSheet.absoluteFill, s.flat]} pointerEvents="none">
+      <GroundGlow from={from ?? pair.from} to={to ?? pair.to} />
+    </View>
+  );
+}
+
+const GRAIN = require('../../assets/images/grain.png');
+let glowIds = 0;
+
+// Where the light ends, as a share of the screen, and how strong it is
+// against a card's: a screen is taller than a card, so the same light is
+// held lower to stay small.
+const SCREEN_LIGHT_END = 0.38;
+const SCREEN_STRENGTH = 0.7;
+const SCREEN_POOL = 0.22;
+
+function GroundGlow({ from, to }: { from: GroundHue; to: GroundHue }) {
+  const [id] = useState(() => `ground${glowIds++}`);
+  const first = GLOW_OF[from] ?? GLOW_OF.measured;
+  const second = GLOW_OF[to] ?? GLOW_OF.timeDepth;
+  const top = topFor([first, second]) * SCREEN_STRENGTH;
+  return (
+    <>
+      <Svg style={StyleSheet.absoluteFill} viewBox="0 0 1 1" preserveAspectRatio="none" pointerEvents="none">
+        <Defs>
+          <LinearGradient id={`${id}l`} x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={mix(first, FOOT, top)} />
+            <Stop offset={SCREEN_LIGHT_END * 0.5} stopColor={mix(first, FOOT, top * 0.45)} />
+            <Stop offset={SCREEN_LIGHT_END} stopColor={mix(first, FOOT, top * 0.12)} />
+            <Stop offset="1" stopColor={FOOT} />
+          </LinearGradient>
+          <RadialGradient id={`${id}r`} cx="0.85" cy="0" rx="0.8" ry="0.3" fx="0.85" fy="0">
+            <Stop offset="0" stopColor={second} stopOpacity={SCREEN_POOL * top * 2} />
+            <Stop offset="1" stopColor={second} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Rect x="0" y="0" width="1" height="1" fill={`url(#${id}l)`} />
+        <Rect x="0" y="0" width="1" height="1" fill={`url(#${id}r)`} />
+      </Svg>
+      <Image source={GRAIN} resizeMode="cover" style={StyleSheet.absoluteFill} accessible={false} />
+    </>
+  );
 }
 
 const s = StyleSheet.create({

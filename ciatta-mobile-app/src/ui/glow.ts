@@ -67,3 +67,14 @@ export function topFor(pair: [string, string]): number {
 }
 
 export const glowFor = (n: number) => GLOWS[n % GLOWS.length];
+
+// Each meaning's glow colour, for a screen's ground: the same family the
+// cards are lit in, so the ground and the cards read as one light.
+export const GLOW_OF: Record<string, string> = {
+  measured: SKY,
+  timeDepth: LAVENDER,
+  reported: ROSE,
+  change: EMBER,
+  evidence: AMBER,
+  escalation: FLARE,
+};

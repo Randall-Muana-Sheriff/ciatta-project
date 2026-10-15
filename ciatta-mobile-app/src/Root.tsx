@@ -1,5 +1,5 @@
 import { type ComponentType, useEffect, useMemo, useState } from 'react';
-import { BackHandler, StyleSheet, View } from 'react-native';
+import { BackHandler, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import * as Notifications from 'expo-notifications';
@@ -57,6 +57,7 @@ import { SymptomsScreen } from './screens/SymptomsScreen';
 import { TodayScreen } from './screens/TodayScreen';
 import { C } from './theme';
 import { CornerNav } from './ui/chrome';
+import { CHAT_CARD_SHARE } from './ui/ChatCard';
 import { PatternsScreen } from './screens/PatternsScreen';
 import { YourCareScreen } from './screens/YourCareScreen';
 import { PlansScreen } from './screens/PlansScreen';
@@ -137,6 +138,7 @@ const DETAIL_SCREENS: Record<Screen, ComponentType> = {
 // buttons stay on every screen.
 export function Root() {
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const [tab, setTab] = useState<Tab>('today');
   const [stack, setStack] = useState<Screen[]>([]);
 
@@ -204,11 +206,14 @@ export function Root() {
           so nothing hides beneath them. The plus goes straight to the one
           logging screen.
         */}
-        <CornerNav
-          active={tab}
-          onGo={(item) => (item.go.kind === 'tab' ? nav.goTab(item.go.tab) : nav.push(item.go.screen))}
-          onTrack={() => nav.push('ciatta')}
-        />
+        {/* The chat takes the whole screen, and closes back to Today. */}
+        {top === 'ciatta' ? null : (
+          <CornerNav
+            active={tab}
+            onGo={(item) => (item.go.kind === 'tab' ? nav.goTab(item.go.tab) : nav.push(item.go.screen))}
+            lift={tab === 'today' && !top ? Math.round(height * CHAT_CARD_SHARE) : 0}
+          />
+        )}
         </View>
       </Ground>
     </NavContext.Provider>

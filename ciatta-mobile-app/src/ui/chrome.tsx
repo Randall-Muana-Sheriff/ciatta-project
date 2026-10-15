@@ -186,18 +186,17 @@ export function ListRow({
 
 // ── Corner navigation ─────────────────────────────────────────
 
-// Two round buttons in the bottom right corner, in place of the tab card:
-// the plus, which logs, and the menu, which opens the places above it.
-// They are the same object as the plus always was, at a circle's width,
-// so the corner reads as one pair rather than two new things.
+// The menu, one round button in the bottom right corner, opening the
+// places above it. On Today it sits just above the chat card (lift), since
+// the chat is how she talks to Ciatta now and there is no other button.
 export function CornerNav({
   active,
   onGo,
-  onTrack,
+  lift = 0,
 }: {
   active: Tab;
   onGo: (item: MenuItem) => void;
-  onTrack: () => void;
+  lift?: number;
 }) {
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
@@ -212,7 +211,7 @@ export function CornerNav({
           accessibilityLabel="Close the menu"
         />
       ) : null}
-      <View style={[s.cornerWrap, { paddingBottom: Math.max(insets.bottom - 16, 8) }]} pointerEvents="box-none">
+      <View style={[s.cornerWrap, lift ? { bottom: lift + 10 } : { paddingBottom: Math.max(insets.bottom - 16, 8) }]} pointerEvents="box-none">
         {open ? (
           <View style={[s.card, s.cardPlain, s.menuCard]} accessibilityRole="menu">
             {rows.map((m) => (
@@ -237,17 +236,6 @@ export function CornerNav({
           </View>
         ) : null}
         <View style={s.cornerButtons}>
-          <Pressable
-            onPress={() => {
-              setOpen(false);
-              onTrack();
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Track something"
-            style={({ pressed }) => [s.track, s.round, pressed && s.pressed]}
-          >
-            <Icon name="plus" size={26} color={G.onPill} weight={2} />
-          </Pressable>
           <Pressable
             onPress={() => setOpen((o) => !o)}
             accessibilityRole="button"

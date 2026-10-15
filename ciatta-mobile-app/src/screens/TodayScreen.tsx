@@ -22,7 +22,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { answerSave, checkIn } from '../../supabase/functions/_shared/checkIn';
 import { groupItems } from '../lib/agent/logOffer';
 import { CiattaCard } from '../ui/CiattaCard';
-import { InsightsSheet } from '../ui/InsightsSheet';
+import { ChatCard, CHAT_CARD_SHARE } from '../ui/ChatCard';
+import { PatternInsightsRow } from '../ui/PatternInsightsRow';
+import { offerCheckIn } from '../lib/checkInHandoff';
 import { JourneyScreen } from './JourneyScreen';
 import { useInsights } from '../state/insights';
 import { useData, useRepo, useSession } from '../state/session';
@@ -77,7 +79,8 @@ const CHECKINS_ANSWERED = 'ciatta.checkins.answered';
 
 export function TodayScreen() {
   const nav = useNav();
-  const { width: screenWidth } = useWindowDimensions();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const chatHeight = Math.round(screenHeight * CHAT_CARD_SHARE);
   const { accept, watching, setWatching, episodes } = useCycle();
   const { today: brief, ranked } = useInsights();
   const { windows, signals, lens, profile, fertility } = useCycleInsights();
@@ -303,77 +306,66 @@ export function TodayScreen() {
   const hello = displayCopy(person ? `${greeting(now)}, ${person.firstName}` : greeting(now));
   const helloSize = fitTitle(hello, screenWidth - GUTTER * 2);
 
+  // The chat over the whole screen. A check in waiting is handed to it, so
+  // Ciatta asks it there, and counts as asked.
+  const openChat = () => {
+    if (question) {
+      offerCheckIn(question);
+      void answerCheckIn(null);
+    }
+    nav.push('ciatta');
+  };
+
   return (
     <View style={t.fill}>
-    {/* No wordmark: her name is the top of the screen, with the calendar
-        beside it, fixed while the rest scrolls under it. */}
-    <View style={[t.pad, t.fixedHead]}>
-      <View style={t.helloRow}>
-        <Text
-          style={[font('title1', 'medium'), t.hello, { flex: 1, fontSize: helloSize, lineHeight: Math.round(helloSize * 1.2) }]}
-          accessibilityRole="header"
-          numberOfLines={1}
-        >
-          {hello}
-        </Text>
-        <Pressable
-          onPress={go('calendar')}
-          accessibilityRole="button"
-          accessibilityLabel="Your calendar"
-          hitSlop={10}
-          style={({ pressed }) => [t.menu, pressed && t.pressed]}
-        >
-          <Icon name="calendar" size={25} color={G.ink} />
-        </Pressable>
+      {/* Her greeting, small, with the calendar beside it. */}
+      <View style={[t.pad, t.fixedHead]}>
+        <View style={t.helloRow}>
+          <Text style={[font('subhead'), t.hello, { flex: 1 }]} accessibilityRole="header" numberOfLines={1}>
+            {hello}
+          </Text>
+          <Pressable
+            onPress={go('calendar')}
+            accessibilityRole="button"
+            accessibilityLabel="Your calendar"
+            hitSlop={12}
+            style={({ pressed }) => [t.calendar, pressed && t.pressed]}
+          >
+            <Icon name="calendar" size={16} color={G.ink} />
+          </Pressable>
+        </View>
       </View>
-    </View>
-    <ScrollView style={t.fill} contentContainerStyle={t.body}>
 
-      <View style={t.pad}>
-        {/* One row on every phone, the whole name shown: Title 1 where it fits, sized
-            down from the screen's width for a long name. */}
+      <ScrollView style={t.fill} contentContainerStyle={[t.body, { paddingBottom: chatHeight + MENU_ROOM }]}>
+        <View style={[t.pad, t.grow]}>
+          {state.state === 'empty' ? (
+            <TodayStart
+              onConnect={() => void connect()}
+              connecting={connecting}
+              note={connectNote}
+              onLogSymptoms={openChat}
+              onLogCycle={openChat}
+            />
+          ) : (
+            <>
+              {/* The period product she has in, only while one is in. */}
+              <ProductNowCard />
+              <View style={{ flex: 1 }} />
+              {/* Pattern Insights, set low on the screen above the chat. */}
+              <PatternInsightsRow />
+            </>
+          )}
+        </View>
+      </ScrollView>
 
-        {state.state === 'empty' ? (
-          <TodayStart
-            onConnect={() => void connect()}
-            connecting={connecting}
-            note={connectNote}
-            onLogSymptoms={logSymptoms}
-            onLogCycle={logCycle}
-          />
-        ) : (
-          <>
-        {/*
-          Ciatta first: the check in when today gives a reason. What
-          Ciatta noticed is the Insights sheet below; what she could try is
-          Plans & Protocols, in the corner menu.
-        */}
-        <CiattaCard checkIn={question} onAnswer={answerCheckIn} answered={checkInNote}>
-        </CiattaCard>
-
-        {/* The conversation, one tap away: talk or type, or ask. */}
-        <Pressable
-          onPress={go('ciatta')}
-          accessibilityRole="button"
-          accessibilityLabel="Ask Ciatta anything"
-          style={({ pressed }) => [t.askBox, pressed && t.pressed]}
-        >
-          <Text style={[font('body'), t.askText]}>Ask Ciatta anything</Text>
-          <Icon name="mic" size={20} color={G.meta} />
-        </Pressable>
-
-        {/* The period product she has in, only while one is in. */}
-        <ProductNowCard />
-          </>
-        )}
-      </View>
-    </ScrollView>
-    {/* What Ciatta noticed today, resting over the lower screen and
-        sliding up to show every pattern. */}
-    {state.state === 'content' ? <InsightsSheet /> : null}
+      {/* The chat, resting at the foot; it opens over the whole screen. */}
+      <ChatCard onOpen={openChat} />
     </View>
   );
 }
+
+// Room above the chat card for the menu button that sits on it.
+const MENU_ROOM = 84;
 
 const t = StyleSheet.create({
   // Transparent: the ground behind Root is what paints this screen, and
@@ -382,7 +374,8 @@ const t = StyleSheet.create({
   // No padding above the mark. Root has already inset the screen past the
   // camera, and the Wordmark carries its own clear space, so anything added
   // here is a third gap stacked on two that already exist.
-  body: { paddingBottom: NAV_CLEARANCE, paddingTop: 0 },
+  // Grows to the screen, so Pattern Insights sits low, above the chat.
+  body: { flexGrow: 1, paddingTop: 0 },
   pad: { paddingHorizontal: GUTTER },
   pressed: { opacity: 0.6 },
   section: { marginTop: SPACE.section },
@@ -430,6 +423,8 @@ const t = StyleSheet.create({
   askText: { flex: 1, color: G.meta },
   helloRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   fixedHead: { paddingTop: 12, paddingBottom: 8 },
+  grow: { flexGrow: 1 },
+  calendar: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   metricsHead: { marginBottom: SPACE.tight },
   patternToggle: { marginBottom: 10 },
   // The timeline brings its own side padding, so the card adds none.

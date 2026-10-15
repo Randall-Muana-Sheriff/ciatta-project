@@ -63,6 +63,7 @@ import { isLoggable } from '../../supabase/functions/_shared/checkIn';
 import { readCategories } from '../lib/quickLog';
 import { readLog } from '../data/logRead';
 import { useQuickLogSave } from '../state/quickLogSave';
+import { takeCheckIn } from '../lib/checkInHandoff';
 import { progressSteps, revealWords } from '../lib/agent/progress';
 import { CONNECT_SYMPTOMS } from '../lib/agent/connect';
 import type { RequestKind } from '../lib/care';
@@ -146,7 +147,13 @@ export function CareScreen() {
       ignore = true;
     };
   }, [repo]);
-  const [turns, setTurns] = useState<Turn[]>([]);
+  const [turns, setTurns] = useState<Turn[]>(() => {
+    // A check in handed over from Today, asked here in words.
+    const c = takeCheckIn();
+    if (!c) return [];
+    const at = new Date().toISOString();
+    return [{ id: `${at}-checkin`, role: 'ciatta', text: `${c.line} ${c.question}`, at }];
+  });
   const [draft, setDraft] = useState('');
   // The same box as Log Cycle Experience, which means the same plus and
   // the same four ways in.
@@ -329,75 +336,20 @@ export function CareScreen() {
 
   return (
     <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScreenHeader title="Ciatta" onBack={nav.back} />
+      {/* Close chat, as the reference sets it: back to the chat card on
+          Today, whatever she was doing. */}
+      <View style={s.closeRow}>
+        <Pressable onPress={nav.back} accessibilityRole="button" accessibilityLabel="Close chat" hitSlop={8} style={({ pressed }) => [s.closePill, pressed && s.pressed]}>
+          <Icon name="xmark" size={13} color={G.ink} />
+          <Text style={[font('footnote', 'medium'), { color: G.ink }]}>Close chat</Text>
+        </Pressable>
+      </View>
       <ScrollView ref={scroller} style={s.fill} contentContainerStyle={s.body} keyboardDismissMode="interactive">
-        {/* The agent, centred. */}
-        <View style={s.intro}>
-          <AgentAvatar size={72} />
-          <View style={s.namePill}>
-            <Text style={[font('subhead', 'semibold'), s.nameText]} accessibilityRole="header">
-              {name}
-            </Text>
-          </View>
-        </View>
-
         {/*
-          The opening, as Ciatta speaking rather than a page about Ciatta.
-          The same shape a first conversation with any agent has: who it
-          is, how it works, and where to start, then the box. How it works
-          is said once, the first time; after that she knows, and the
-          opening is a greeting and a place to begin.
+          No avatar, no name, no suggestions: the conversation alone. What
+          Ciatta can do and what it noticed are still worked out above
+          (capabilityCards, interventions) and answer when she asks.
         */}
-        <View style={s.thread}>
-          <View style={s.bubble}>
-            <Text style={[font('body'), s.bubbleText]}>
-              {displayCopy(
-                `${person?.firstName ? `Hi ${person.firstName}, I` : 'Hi, I'}’m ${name}. I keep watch over your record and get things ready for you. What would you like help with first?`,
-              )}
-            </Text>
-          </View>
-
-          {/* What Ciatta noticed in her record on its own, each card with
-              the facts behind it and a next step she can take. */}
-          {actionCards.map((card) => (
-            <View key={card.id} style={[s.actionCard, card.tone === 'urgent' && s.actionUrgent]}>
-              <Text style={[font('subhead', 'semibold'), s.bubbleText]}>{displayCopy(card.title)}</Text>
-              <Text style={[font('footnote'), s.actionDetail]}>{displayCopy(card.detail)}</Text>
-              <View style={s.suggestions}>
-                {card.action ? (
-                  <Pressable onPress={() => openSuggestion(card.action!)} accessibilityRole="button" style={({ pressed }) => [s.actionButton, pressed && s.pressed]}>
-                    <Text style={[font('footnote', 'semibold'), s.actionButtonText]}>{card.action.label}</Text>
-                  </Pressable>
-                ) : null}
-                <Pressable onPress={() => dismiss(card.id)} accessibilityRole="button" accessibilityLabel={`Dismiss: ${card.title}`} hitSlop={6}>
-                  <Text style={[font('footnote'), s.actionDetail]}>Not now</Text>
-                </Pressable>
-              </View>
-            </View>
-          ))}
-
-          {/* Where to start: what she can ask now, and the visit prep, as
-              one row. The full list of what Ciatta can do stays out of the
-              way; asking for anything still works. */}
-          <View style={s.suggestions}>
-            {/* The question most worth asking first: how her symptoms may
-                fit together, across her whole record. */}
-            <Pressable onPress={() => send(CONNECT_SYMPTOMS)} accessibilityRole="button" style={({ pressed }) => [s.suggestion, pressed && s.pressed]}>
-              <Text style={[font('footnote', 'semibold'), s.suggestionText]}>How my symptoms may connect</Text>
-            </Pressable>
-            {ready.slice(0, 1).map((c) => (
-              <Pressable key={c.id} onPress={() => send(c.ask)} accessibilityRole="button" style={({ pressed }) => [s.suggestion, pressed && s.pressed]}>
-                <Text style={[font('footnote', 'semibold'), s.suggestionText]}>{c.title}</Text>
-              </Pressable>
-            ))}
-            <Pressable onPress={() => nav.push('visitPrep')} accessibilityRole="button" style={({ pressed }) => [s.suggestion, pressed && s.pressed]}>
-              <Text style={[font('footnote', 'semibold'), s.suggestionText]}>Visit prep</Text>
-            </Pressable>
-          </View>
-
-
-        </View>
-
         {turns.length ? (
           <View style={s.thread}>
             {turns.map((turn) =>
@@ -436,8 +388,8 @@ export function CareScreen() {
           value={draft}
           onChange={setDraft}
           // An example of what she might ask, in her own voice.
-          placeholder="Had a dull ache since lunch and felt drained. Or ask about your record."
-          label="Tell Ciatta anything, or ask about your record"
+          placeholder="Ask Ciatta"
+          label="Ask Ciatta, or tell it how you feel"
           attachments={files}
           onAttachments={setFiles}
           onSend={() => send(draft)}
@@ -758,5 +710,15 @@ const s = StyleSheet.create({
   suggestionText: { color: ON_WHITE },
   pressed: { opacity: 0.55 },
 
+  closeRow: { alignItems: 'center', paddingTop: 8, paddingBottom: 6 },
+  closePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+  },
   composer: { paddingHorizontal: GUTTER, paddingBottom: NAV_CLEARANCE },
 });
