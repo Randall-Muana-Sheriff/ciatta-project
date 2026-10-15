@@ -107,17 +107,104 @@ export function labDraws(results: readonly LabResult[]): LabDraw[] {
     .sort((a, b) => b.on.localeCompare(a.on));
 }
 
-// Every result for one test, oldest first.
-export function labHistory(results: readonly LabResult[], name: string): LabResult[] {
-  const key = name.trim().toLowerCase();
-  return results.filter((r) => r.name.trim().toLowerCase() === key).sort((a, b) => a.on.localeCompare(b.on));
-}
-
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 export const labDay = (iso: string) => {
   const [y, m, d] = iso.split('-').map(Number);
   return m && d ? `${d} ${MONTHS[m - 1]} ${y}` : iso;
 };
+
+// One name per test, whichever lab wrote it: case, spacing and punctuation
+// folded, and a small table of the spellings labs commonly use for the
+// same test. No guessing beyond the table.
+const LAB_ALIASES: Record<string, string> = {
+  'hemoglobin a1c': 'a1c',
+  hba1c: 'a1c',
+  'hgb a1c': 'a1c',
+  'glycated hemoglobin': 'a1c',
+  'glycohemoglobin': 'a1c',
+  'thyroid stimulating hormone': 'tsh',
+  'free t4': 'free t4',
+  't4 free': 'free t4',
+  'thyroxine free': 'free t4',
+  'free thyroxine': 'free t4',
+  'free t3': 'free t3',
+  't3 free': 'free t3',
+  'vitamin d 25 hydroxy': 'vitamin d',
+  '25 hydroxy vitamin d': 'vitamin d',
+  '25 oh vitamin d': 'vitamin d',
+  'vitamin d 25 oh': 'vitamin d',
+  'vitamin b12': 'b12',
+  cobalamin: 'b12',
+  hgb: 'hemoglobin',
+  hct: 'hematocrit',
+  wbc: 'white blood cells',
+  'white blood cell count': 'white blood cells',
+  rbc: 'red blood cells',
+  'red blood cell count': 'red blood cells',
+  plt: 'platelets',
+  'platelet count': 'platelets',
+  'c reactive protein': 'crp',
+  'hs crp': 'crp',
+  'high sensitivity crp': 'crp',
+  'alanine aminotransferase': 'alt',
+  sgpt: 'alt',
+  'aspartate aminotransferase': 'ast',
+  sgot: 'ast',
+  'alkaline phosphatase': 'alp',
+  'blood urea nitrogen': 'bun',
+  'urea nitrogen': 'bun',
+  'luteinizing hormone': 'lh',
+  'follicle stimulating hormone': 'fsh',
+  'estradiol e2': 'estradiol',
+  e2: 'estradiol',
+  'testosterone total': 'testosterone',
+  'total testosterone': 'testosterone',
+  'dhea sulfate': 'dhea s',
+  'dhea s': 'dhea s',
+  'anti mullerian hormone': 'amh',
+  'erythrocyte sedimentation rate': 'esr',
+  'sed rate': 'esr',
+  'glucose fasting': 'glucose',
+  'fasting glucose': 'glucose',
+  'ldl cholesterol': 'ldl',
+  'ldl c': 'ldl',
+  'hdl cholesterol': 'hdl',
+  'hdl c': 'hdl',
+  'cholesterol total': 'total cholesterol',
+};
+
+export function testKey(name: string): string {
+  const folded = name
+    .toLowerCase()
+    .replace(/[,()\-/.:]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return LAB_ALIASES[folded] ?? folded;
+}
+
+// What changed since her previous result for the same test, in words.
+// Only numbers in the same unit are compared; anything else says why not.
+export function changeSinceLast(history: readonly LabResult[]): string {
+  const nums = history.filter((h) => h.value != null);
+  if (nums.length < 2) return 'No earlier result';
+  const cur = nums[nums.length - 1];
+  const prev = nums[nums.length - 2];
+  const unit = (u: string | null) => (u ?? '').trim().toLowerCase();
+  if (unit(cur.unit) !== unit(prev.unit)) return 'Earlier result in a different unit';
+  const since = labDay(prev.on);
+  if (cur.value === prev.value) return `No change since ${since}`;
+  if (prev.value === 0) return `${cur.value! > 0 ? 'Up' : 'Down'} from 0 since ${since}`;
+  const pct = Math.round(((cur.value! - prev.value!) / Math.abs(prev.value!)) * 100);
+  if (pct === 0) return `No change since ${since}`;
+  return `${pct > 0 ? 'Up' : 'Down'} ${Math.abs(pct)}% since ${since}`;
+}
+
+// Every result for one test, oldest first, whatever spelling a lab used.
+export function labHistory(results: readonly LabResult[], name: string): LabResult[] {
+  const key = testKey(name);
+  return results.filter((r) => testKey(r.name) === key).sort((a, b) => a.on.localeCompare(b.on));
+}
+
 
 export function latestSummary(results: readonly LabResult[]): string | null {
   const latest = labDraws(results)[0];
