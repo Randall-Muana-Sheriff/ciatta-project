@@ -6,6 +6,7 @@
 // The file goes to the lab-scan function and from there to OpenAI to be
 // read; it is not kept on Ciatta's servers.
 
+import * as Crypto from 'expo-crypto';
 import { File } from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
@@ -14,7 +15,8 @@ import { useState } from 'react';
 import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { displayCopy } from '../lib/displayCopy';
-import { type LabFlag, type LabResult, type ScannedTest, testFromFields } from '../lib/labs';
+import { isScannerAvailable, scanDocument } from '../../modules/document-scanner';
+import { groupByPanel, type LabFlag, type LabResult, labDay, type ScannedTest, testFromFields } from '../lib/labs';
 import { dayFromParts } from '../lib/procedureEffect';
 import { userFacingError } from '../lib/userFacingError';
 import { useNav } from '../navigation';
@@ -22,11 +24,11 @@ import { useRepo } from '../state/session';
 import { C, font } from '../theme';
 import { DetailScreen, PrimaryButton, SecondaryButton, SaveBar, Lead } from '../ui/kit';
 import { LabStatusTag } from '../ui/labs';
-import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { HUE, L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
-type Line = { key: string; keep: boolean; name: string; value: string; unit: string; range: string; flag: LabFlag | null };
+type Line = { key: string; keep: boolean; name: string; value: string; unit: string; range: string; flag: LabFlag | null; panel: string | null };
 
 const lineFrom = (t: ScannedTest, n: number): Line => ({
   key: `l${n}`,
@@ -36,6 +38,7 @@ const lineFrom = (t: ScannedTest, n: number): Line => ({
   unit: t.unit ?? '',
   range: t.rangeText ?? '',
   flag: t.flag,
+  panel: t.panel,
 });
 
 export function AddLabsScreen() {
@@ -49,17 +52,35 @@ export function AddLabsScreen() {
   const [year, setYear] = useState('');
   const [note, setNote] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [file, setFile] = useState<{ base64: string; kind: 'image' | 'pdf'; checksum: string } | null>(null);
+  const [meta, setMeta] = useState<{ orderingClinician: string | null; specimen: string | null; pages: number | null; unreadable: number[] }>({
+    orderingClinician: null,
+    specimen: null,
+    pages: null,
+    unreadable: [],
+  });
+  const [duplicate, setDuplicate] = useState<{ id: string; on: string } | null>(null);
+  const canScan = isScannerAvailable();
 
   const read = async (base64: string, kind: 'image' | 'pdf') => {
-    setStage('reading');
     setNote(null);
+    setDuplicate(null);
+    const checksum = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, base64);
+    const seen = await repo.findLabReport(checksum).catch(() => null);
+    if (seen) {
+      setDuplicate(seen);
+      return;
+    }
+    setStage('reading');
     try {
       const scan = await repo.scanLab(base64, kind);
       if (scan.notLab || !scan.tests.length) {
-        setNote(scan.notLab ? 'That does not look like a lab report.' : 'No results could be read from it. Try a clearer photo.');
+        setNote(scan.notLab ? 'This does not look like a lab report. Nothing was saved.' : 'Ciatta could not read any results from this file. Nothing was saved.');
         setStage('pick');
         return;
       }
+      setFile({ base64, kind, checksum });
+      setMeta({ orderingClinician: scan.orderingClinician, specimen: scan.specimen, pages: scan.pages, unreadable: scan.unreadablePages });
       setLines(scan.tests.map(lineFrom));
       setLab(scan.lab ?? '');
       if (scan.on) {
@@ -75,18 +96,9 @@ export function AddLabsScreen() {
     }
   };
 
-  const fromCamera = async (camera: boolean) => {
+  const fromPhoto = async () => {
     try {
-      if (camera) {
-        const ok = await ImagePicker.requestCameraPermissionsAsync();
-        if (!ok.granted) {
-          setNote('The camera needs permission. You can turn it on in Settings.');
-          return;
-        }
-      }
-      const picked = camera
-        ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 })
-        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
+      const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
       if (picked.canceled || !picked.assets?.length) return;
       // Large enough to read small print, small enough to send.
       const ref = await ImageManipulator.manipulate(picked.assets[0].uri).resize({ width: 1800 }).renderAsync();
@@ -94,6 +106,16 @@ export function AddLabsScreen() {
       if (out.base64) await read(out.base64, 'image');
     } catch {
       setNote('That photo did not open.');
+    }
+  };
+
+  const fromScan = async () => {
+    try {
+      const scanned = await scanDocument();
+      if (!scanned) return;
+      await read(await new File(scanned.uri).base64(), 'pdf');
+    } catch {
+      setNote('The scan did not open. Try again.');
     }
   };
 
@@ -112,14 +134,23 @@ export function AddLabsScreen() {
   const edit = (key: string, patch: Partial<Line>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
 
   const save = async () => {
-    if (!on || !kept.length || saving) return;
+    if (!on || !kept.length || saving || !file) return;
     setSaving(true);
     setNote(null);
     try {
-      await repo.saveLabReport({ file: { base64: '', kind: 'pdf' }, checksum: '', on, lab: lab.trim() || null, orderingClinician: null, specimen: null, pages: null, tests: kept });
+      await repo.saveLabReport({
+        file: { base64: file.base64, kind: file.kind },
+        checksum: file.checksum,
+        on,
+        lab: lab.trim() || null,
+        orderingClinician: meta.orderingClinician,
+        specimen: meta.specimen,
+        pages: meta.pages,
+        tests: kept,
+      });
       nav.back();
     } catch (e) {
-      setNote(userFacingError(e, 'Your labs did not save. Try again.'));
+      setNote(userFacingError(e, 'Your report did not save. Try again.'));
     } finally {
       setSaving(false);
     }
@@ -129,6 +160,42 @@ export function AddLabsScreen() {
   const preview = (l: Line): LabResult | null => {
     const t = testFromFields(l);
     return t ? { ...t, id: l.key, status: 'final', source: 'report', lab: null, on: on ?? '' } : null;
+  };
+
+  const renderLine = (l: Line) => {
+    const p = preview(l);
+    return (
+      <View key={l.key} style={[s.card, !l.keep && { opacity: 0.45 }]}>
+        <CardFill />
+        <View style={s.head}>
+          <TextInput value={l.name} onChangeText={(v) => edit(l.key, { name: v })} style={[font('headline'), s.ink, { flex: 1 }]} accessibilityLabel="Test name" />
+          <Switch
+            value={l.keep}
+            onValueChange={(v) => edit(l.key, { keep: v })}
+            trackColor={{ false: C.fill, true: C.green }}
+            ios_backgroundColor={C.fill}
+            accessibilityLabel={`Keep ${l.name}`}
+          />
+        </View>
+        <View style={s.fields}>
+          <View style={{ flex: 1 }}>
+            <Text style={[font('caption2'), s.meta]}>Result</Text>
+            <TextInput value={l.value} onChangeText={(v) => edit(l.key, { value: v })} style={[font('body'), s.input]} accessibilityLabel="Result" />
+          </View>
+          <View style={{ width: 90 }}>
+            <Text style={[font('caption2'), s.meta]}>Unit</Text>
+            <TextInput value={l.unit} onChangeText={(v) => edit(l.key, { unit: v })} style={[font('body'), s.input]} accessibilityLabel="Unit" autoCapitalize="none" />
+          </View>
+        </View>
+        <Text style={[font('caption2'), s.meta, { marginTop: 8 }]}>Range on the report</Text>
+        <TextInput value={l.range} onChangeText={(v) => edit(l.key, { range: v })} placeholder="None printed" placeholderTextColor={L.meta} style={[font('body'), s.input]} accessibilityLabel="Range on the report" />
+        {p ? (
+          <View style={{ marginTop: 10 }}>
+            <LabStatusTag result={p} small />
+          </View>
+        ) : null}
+      </View>
+    );
   };
 
   return (
@@ -147,14 +214,24 @@ export function AddLabsScreen() {
     >
       {stage === 'pick' ? (
         <>
-          <Lead style={s.lede} text={"A photo of your report, or the PDF your clinic sent. Ciatta reads each result, then you check every line before anything is saved."} />
+          <Lead style={s.lede} text={"Scan a paper report, or upload the PDF from your patient portal. Ciatta reads every page, then you check each line before anything is saved."} />
           <View style={{ gap: 12 }}>
-            <PrimaryButton label="Take a Photo of a Report" onPress={() => void fromCamera(true)} />
-            <SecondaryButton label="Choose a Photo" onPress={() => void fromCamera(false)} />
-            <SecondaryButton label="Choose a PDF" onPress={() => void fromPdf()} />
+            {canScan ? <PrimaryButton label="Scan a Paper Report" onPress={() => void fromScan()} /> : null}
+            {canScan ? (
+              <SecondaryButton label="Upload a PDF" onPress={() => void fromPdf()} />
+            ) : (
+              <PrimaryButton label="Upload a PDF" onPress={() => void fromPdf()} />
+            )}
+            <SecondaryButton label="Choose a Photo" onPress={() => void fromPhoto()} />
           </View>
+          {duplicate ? (
+            <View style={[s.card, { marginTop: SPACE.near }]}>
+              <CardFill />
+              <Text style={[font('subhead'), s.ink]}>{displayCopy(`You added this report on ${labDay(duplicate.on)}. It is already in your labs.`)}</Text>
+            </View>
+          ) : null}
           <Text style={[font('footnote'), s.meta, { marginTop: SPACE.near }]}>
-            The report is sent to OpenAI to be read and is not kept on Ciatta's servers.
+            The report is sent to OpenAI to be read. The original is kept privately in your Ciatta account so you can check any result against it, and you can remove it at any time.
           </Text>
         </>
       ) : null}
@@ -174,41 +251,20 @@ export function AddLabsScreen() {
           </View>
           {!on ? <Text style={[font('footnote'), s.meta, { marginTop: 6 }]}>Add the day the sample was taken, as it is on the report.</Text> : null}
 
-          {lines.map((l) => {
-            const p = preview(l);
-            return (
-              <View key={l.key} style={[s.card, !l.keep && { opacity: 0.45 }]}>
-                <CardFill />
-                <View style={s.head}>
-                  <TextInput value={l.name} onChangeText={(v) => edit(l.key, { name: v })} style={[font('headline'), s.ink, { flex: 1 }]} accessibilityLabel="Test name" />
-                  <Switch
-                    value={l.keep}
-                    onValueChange={(v) => edit(l.key, { keep: v })}
-                    trackColor={{ false: C.fill, true: C.green }}
-                    ios_backgroundColor={C.fill}
-                    accessibilityLabel={`Keep ${l.name}`}
-                  />
-                </View>
-                <View style={s.fields}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[font('caption2'), s.meta]}>Result</Text>
-                    <TextInput value={l.value} onChangeText={(v) => edit(l.key, { value: v })} style={[font('body'), s.input]} accessibilityLabel="Result" />
-                  </View>
-                  <View style={{ width: 90 }}>
-                    <Text style={[font('caption2'), s.meta]}>Unit</Text>
-                    <TextInput value={l.unit} onChangeText={(v) => edit(l.key, { unit: v })} style={[font('body'), s.input]} accessibilityLabel="Unit" autoCapitalize="none" />
-                  </View>
-                </View>
-                <Text style={[font('caption2'), s.meta, { marginTop: 8 }]}>Range on the report</Text>
-                <TextInput value={l.range} onChangeText={(v) => edit(l.key, { range: v })} placeholder="None printed" placeholderTextColor={L.meta} style={[font('body'), s.input]} accessibilityLabel="Range on the report" />
-                {p ? (
-                  <View style={{ marginTop: 10 }}>
-                    <LabStatusTag result={p} small />
-                  </View>
-                ) : null}
-              </View>
-            );
-          })}
+          {meta.unreadable.length ? (
+            <Text style={[font('footnote'), s.warn, { marginTop: 10 }]}>
+              {meta.unreadable.length === 1
+                ? `Page ${meta.unreadable[0]} could not be read. Check it against your report.`
+                : `Pages ${meta.unreadable.join(', ')} could not be read. Check them against your report.`}
+            </Text>
+          ) : null}
+
+          {groupByPanel(lines).map((group) => (
+            <View key={group.title} style={{ marginTop: SPACE.block }}>
+              <Text style={[font('footnote', 'semibold'), s.panel]}>{displayCopy(group.title)}</Text>
+              {group.items.map(renderLine)}
+            </View>
+          ))}
 
           <View style={{ marginTop: SPACE.block, gap: 12 }}>
             <SecondaryButton label="Read a Different Report" onPress={() => setStage('pick')} />
@@ -225,6 +281,9 @@ const s = StyleSheet.create({
   lede: { color: G.ink, lineHeight: 24, marginBottom: SPACE.near },
   meta: { color: L.meta },
   ink: { color: L.ink },
+  panel: { color: G.body, marginBottom: 2 },
+  warn: { color: HUE.attention },
+
   label: { color: G.meta, marginTop: SPACE.near, marginBottom: 6 },
   input: { color: G.ink, backgroundColor: G.fill, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, marginTop: 4 },
   dateRow: { flexDirection: 'row', gap: 8 },
