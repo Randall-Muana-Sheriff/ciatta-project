@@ -20,3 +20,15 @@ export const chooseReport = (key: ReportKey) => {
 };
 
 export const chosenReport = () => report;
+
+// A file a document reading found to be a lab report, handed to Add a Lab
+// Report so it is read there, once.
+let pendingLabFile: { base64: string; kind: 'image' | 'pdf' } | null = null;
+export const chooseLabFile = (f: { base64: string; kind: 'image' | 'pdf' }) => {
+  pendingLabFile = f;
+};
+export const takeLabFile = () => {
+  const f = pendingLabFile;
+  pendingLabFile = null;
+  return f;
+};

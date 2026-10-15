@@ -11,13 +11,13 @@ import { File } from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { displayCopy } from '../lib/displayCopy';
 import { isScannerAvailable, scanDocument } from '../../modules/document-scanner';
 import { groupByPanel, type LabFlag, type LabResult, labDay, type ScannedTest, testFromFields } from '../lib/labs';
-import { chooseReport } from '../lib/labHandoff';
+import { chooseReport, takeLabFile } from '../lib/labHandoff';
 import { dayFromParts } from '../lib/procedureEffect';
 import { userFacingError } from '../lib/userFacingError';
 import { useNav } from '../navigation';
@@ -97,6 +97,14 @@ export function AddLabsScreen() {
       setStage('pick');
     }
   };
+
+  // A lab report found through Scan or Upload a Document is read here.
+  useEffect(() => {
+    const f = takeLabFile();
+    if (f) void read(f.base64, f.kind);
+    // read is stable for a once on open handoff.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fromPhoto = async () => {
     try {

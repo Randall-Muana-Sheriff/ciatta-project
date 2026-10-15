@@ -41,6 +41,8 @@ export type Screen =
   | 'lab'
   | 'labReport'
   | 'addLabs'
+  | 'addDocument'
+  | 'document'
   | 'visitPrep'
   | 'labBrief'
   | 'referrals'

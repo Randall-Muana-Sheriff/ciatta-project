@@ -14,6 +14,9 @@ import { type Screen, useNav } from '../navigation';
 import { displayCopy } from '../lib/displayCopy';
 import { type LabResult, labDay, labDraws, labStatus, latestSummary } from '../lib/labs';
 import { chooseLab, chooseReport } from '../lib/labHandoff';
+import { chooseDocument } from '../lib/documentHandoff';
+import { DOC_TYPE_LABEL } from '../lib/documents';
+import type { DocumentSummary } from '../data/repo';
 import { LabRangeBar, LabStatusTag } from './labs';
 import { useRepo } from '../state/session';
 import { C, font } from '../theme';
@@ -107,6 +110,41 @@ function LabsSection({ onOpen }: { onOpen: (screen: Screen) => void }) {
   );
 }
 
+function DocumentsSection({ onOpen }: { onOpen: (screen: Screen) => void }) {
+  const repo = useRepo();
+  const nav = useNav();
+  const [docs, setDocs] = useState<DocumentSummary[]>([]);
+  useEffect(() => {
+    if (nav.depth > 1) return;
+    let ignore = false;
+    repo
+      .loadDocuments()
+      .then((rows) => !ignore && setDocs(rows))
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, [repo, nav.depth]);
+  if (!docs.length) return null;
+  return (
+    <ListGroup header="Documents" style={hr.section}>
+      {docs.map((d, n) => (
+        <ListRow
+          key={d.id}
+          first={n === 0}
+          icon="doc"
+          title={displayCopy(d.title ?? DOC_TYPE_LABEL[d.docType])}
+          sub={displayCopy(`${DOC_TYPE_LABEL[d.docType]}, ${labDay(d.on)}`)}
+          onPress={() => {
+            chooseDocument(d.id);
+            onOpen('document');
+          }}
+        />
+      ))}
+    </ListGroup>
+  );
+}
+
 export function RecordsView({ onOpen }: { onOpen: (screen: Screen) => void }) {
   const repo = useRepo();
   const nav = useNav();
@@ -146,6 +184,7 @@ export function RecordsView({ onOpen }: { onOpen: (screen: Screen) => void }) {
       ) : null}
 
       {/* Labs: from her providers and from reports she had read. */}
+      <DocumentsSection onOpen={onOpen} />
       <LabsSection onOpen={onOpen} />
 
     </View>
