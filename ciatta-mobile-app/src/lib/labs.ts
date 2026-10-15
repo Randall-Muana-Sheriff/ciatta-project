@@ -35,6 +35,10 @@ export type LabResult = {
   lab: string | null;
   // ISO day it was collected.
   on: string;
+  // The report it was read from, and the panel heading it was printed
+  // under. Absent for provider results and anything saved before reports.
+  documentId?: string | null;
+  panel?: string | null;
 };
 
 export type StatusKey = 'inRange' | 'high' | 'low' | 'criticalHigh' | 'criticalLow' | 'abnormal' | 'noRange';
@@ -132,12 +136,29 @@ export type ScannedTest = {
   high: number | null;
   rangeText: string | null;
   flag: LabFlag | null;
+  // The heading it is printed under: "Complete Blood Count", "Lipid Panel".
+  panel: string | null;
 };
 
-export type LabScan = { notLab: boolean; on: string | null; lab: string | null; tests: ScannedTest[] };
+export type LabScan = {
+  notLab: boolean;
+  on: string | null;
+  lab: string | null;
+  orderingClinician: string | null;
+  specimen: string | null;
+  pages: number | null;
+  // Pages of the report the model could not read, so she can check them.
+  unreadablePages: number[];
+  tests: ScannedTest[];
+};
 
 const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null);
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+const pageNumber = (v: unknown) => (typeof v === 'number' && Number.isInteger(v) && v >= 1 ? v : null);
+
+// A long portal export can carry a few hundred results; past this it is not
+// one report.
+const MAX_TESTS = 300;
 
 // What the model returned, checked. A test with no name, or with neither a
 // number nor words for its result, is dropped; a flag that is not an HL7
@@ -145,6 +166,7 @@ const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : n
 export function readLabScan(json: unknown): LabScan {
   const j = (json && typeof json === 'object' ? json : {}) as Record<string, unknown>;
   const day = str(j.collected_on);
+  const pages = pageNumber(j.pages);
   const tests: ScannedTest[] = [];
   for (const raw of Array.isArray(j.tests) ? j.tests : []) {
     const t = (raw ?? {}) as Record<string, unknown>;
@@ -162,20 +184,37 @@ export function readLabScan(json: unknown): LabScan {
       ...parseRange(rangeText),
       rangeText,
       flag: flag && FLAGS.includes(flag) ? flag : null,
+      panel: str(t.panel),
     });
+  }
+  const unreadable = new Set<number>();
+  for (const p of Array.isArray(j.unreadable_pages) ? j.unreadable_pages : []) {
+    const n = pageNumber(p);
+    if (n != null && (pages == null || n <= pages)) unreadable.add(n);
   }
   return {
     notLab: j.not_lab === true,
     on: day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null,
     lab: str(j.lab),
-    tests: tests.slice(0, 60),
+    orderingClinician: str(j.ordering_clinician),
+    specimen: str(j.specimen),
+    pages,
+    unreadablePages: [...unreadable].sort((a, b) => a - b),
+    tests: tests.slice(0, MAX_TESTS),
   };
 }
 
 // A line she checked on the review screen, read back. A value that is a
 // number is kept as one; anything else is kept as her words. A line with no
 // name or no result is not a result.
-export function testFromFields(f: { name: string; value: string; unit: string; range: string; flag: LabFlag | null }): ScannedTest | null {
+export function testFromFields(f: {
+  name: string;
+  value: string;
+  unit: string;
+  range: string;
+  flag: LabFlag | null;
+  panel?: string | null;
+}): ScannedTest | null {
   const name = f.name.trim();
   const raw = f.value.trim();
   if (!name || !raw) return null;
@@ -189,7 +228,28 @@ export function testFromFields(f: { name: string; value: string; unit: string; r
     ...parseRange(rangeText),
     rangeText,
     flag: f.flag,
+    panel: f.panel?.trim() || null,
   };
+}
+
+export const OTHER_RESULTS = 'Other results';
+
+// Lines under the panel heading they were printed under, panels in the
+// order they first appear, and anything without one last.
+export function groupByPanel<T extends { panel: string | null }>(items: readonly T[]): { title: string; items: T[] }[] {
+  const groups = new Map<string, T[]>();
+  const loose: T[] = [];
+  for (const item of items) {
+    if (!item.panel) {
+      loose.push(item);
+      continue;
+    }
+    const list = groups.get(item.panel) ?? [];
+    list.push(item);
+    groups.set(item.panel, list);
+  }
+  const out = [...groups].map(([title, list]) => ({ title, items: list }));
+  return loose.length ? [...out, { title: OTHER_RESULTS, items: loose }] : out;
 }
 
 // Her labs as the visits the insight engine and the body view read, in the

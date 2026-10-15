@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import {
-  type LabResult,
+import { type LabResult,
   drawsFromLabs,
   labDraws,
   labHistory,
@@ -11,8 +10,7 @@ import {
   parseRange,
   rangePosition,
   readLabScan,
-  testFromFields,
-} from './labs';
+  testFromFields, groupByPanel, OTHER_RESULTS } from './labs';
 
 const lab = (over: Partial<LabResult>): LabResult => ({
   id: 'x',
@@ -108,7 +106,7 @@ test('what the model read off a report is checked before she sees it', () => {
   assert.equal(read.lab, 'Quest Diagnostics');
   assert.equal(read.on, '2026-06-12');
   assert.deepEqual(read.tests.map((t) => t.name), ['Ferritin', 'Hepatitis B surface antigen', 'Sodium']);
-  assert.deepEqual(read.tests[0], { name: 'Ferritin', value: 12, valueText: null, unit: 'ng/mL', low: 15, high: 150, rangeText: '15 to 150', flag: 'L' });
+  assert.deepEqual(read.tests[0], { name: 'Ferritin', value: 12, valueText: null, unit: 'ng/mL', low: 15, high: 150, rangeText: '15 to 150', flag: 'L', panel: null });
   assert.equal(read.tests[2].flag, null, 'a flag that is not an HL7 code is dropped');
   assert.equal(read.notLab, false);
   assert.equal(readLabScan({ not_lab: true, tests: [] }).notLab, true);
@@ -117,10 +115,10 @@ test('what the model read off a report is checked before she sees it', () => {
 
 test('a line she edited is read back as a result, a number when it is one', () => {
   assert.deepEqual(testFromFields({ name: ' Ferritin ', value: '12', unit: 'ng/mL', range: '15 to 150', flag: 'L' }), {
-    name: 'Ferritin', value: 12, valueText: null, unit: 'ng/mL', low: 15, high: 150, rangeText: '15 to 150', flag: 'L',
+    name: 'Ferritin', value: 12, valueText: null, unit: 'ng/mL', low: 15, high: 150, rangeText: '15 to 150', flag: 'L', panel: null,
   });
   assert.deepEqual(testFromFields({ name: 'HBsAg', value: 'Non reactive', unit: '', range: 'Non reactive', flag: null }), {
-    name: 'HBsAg', value: null, valueText: 'Non reactive', unit: null, low: null, high: null, rangeText: 'Non reactive', flag: null,
+    name: 'HBsAg', value: null, valueText: 'Non reactive', unit: null, low: null, high: null, rangeText: 'Non reactive', flag: null, panel: null,
   });
   assert.equal(testFromFields({ name: '', value: '3', unit: '', range: '', flag: null }), null);
   assert.equal(testFromFields({ name: 'TSH', value: ' ', unit: '', range: '', flag: null }), null);
@@ -137,4 +135,57 @@ test('her labs as the visits insights and the body read, newest first, numbers w
     { date: '12 Jun 2026', lab: 'Quest Diagnostics', results: [{ name: 'Ferritin', value: '12 ng/mL', range: '15 to 150', status: 'Low' }] },
     { date: '3 Feb 2026', lab: 'Quest Diagnostics', results: [{ name: 'Ferritin', value: '34 ng/mL', range: '15 to 150', status: 'In' }] },
   ]);
+});
+
+test('a report says which panel each test is printed under, and what else the page printed', () => {
+  const read = readLabScan({
+    not_lab: false,
+    collected_on: '2026-06-12',
+    lab: 'Quest Diagnostics',
+    ordering_clinician: ' Dr A Rivera ',
+    specimen: 'Serum',
+    pages: 3,
+    unreadable_pages: [3, 0, 'x', 9, 3],
+    tests: [
+      { name: 'Hemoglobin', value: 11.2, value_text: null, unit: 'g/dL', range: '12.0 to 15.5', flag: 'L', panel: 'Complete Blood Count' },
+      { name: 'TSH', value: 2.1, value_text: null, unit: 'mIU/L', range: '0.4 to 4.0', flag: null, panel: '  ' },
+    ],
+  });
+  assert.equal(read.orderingClinician, 'Dr A Rivera');
+  assert.equal(read.specimen, 'Serum');
+  assert.equal(read.pages, 3);
+  assert.deepEqual(read.unreadablePages, [3], 'only page numbers that exist on the report, each once');
+  assert.equal(read.tests[0].panel, 'Complete Blood Count');
+  assert.equal(read.tests[1].panel, null);
+});
+
+test('a report with no page count keeps any positive page numbers it names', () => {
+  const read = readLabScan({ not_lab: false, unreadable_pages: [2, -1, 1.5], tests: [] });
+  assert.equal(read.pages, null);
+  assert.deepEqual(read.unreadablePages, [2]);
+});
+
+test('a long report keeps every result it read', () => {
+  const tests = Array.from({ length: 150 }, (_, n) => ({ name: `Test ${n}`, value: n, value_text: null, unit: null, range: null, flag: null, panel: null }));
+  assert.equal(readLabScan({ not_lab: false, tests }).tests.length, 150);
+});
+
+test('a line she edited keeps its panel', () => {
+  assert.equal(testFromFields({ name: 'TSH', value: '2', unit: '', range: '', flag: null, panel: ' Thyroid ' })?.panel, 'Thyroid');
+  assert.equal(testFromFields({ name: 'TSH', value: '2', unit: '', range: '', flag: null })?.panel, null);
+});
+
+test('the review groups lines under their printed panel, in the order printed, with the rest last', () => {
+  const lines = [
+    { id: 'a', panel: 'Complete Blood Count' },
+    { id: 'b', panel: null },
+    { id: 'c', panel: 'Thyroid' },
+    { id: 'd', panel: 'Complete Blood Count' },
+  ];
+  assert.deepEqual(groupByPanel(lines), [
+    { title: 'Complete Blood Count', items: [lines[0], lines[3]] },
+    { title: 'Thyroid', items: [lines[2]] },
+    { title: OTHER_RESULTS, items: [lines[1]] },
+  ]);
+  assert.deepEqual(groupByPanel([]), []);
 });
