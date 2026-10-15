@@ -11,7 +11,7 @@ import type { DocumentDetail } from '../data/repo';
 import { displayCopy } from '../lib/displayCopy';
 import { chosenDocument } from '../lib/documentHandoff';
 import { countedWindows, medianLength } from '../lib/cycleModel';
-import { docAnalysisHtml, documentUrgentLines, extractionFingerprint, type StoredDocAnalysis } from '../lib/documentAnalysis';
+import { analysisFingerprint, docAnalysisHtml, documentUrgentLines, type StoredDocAnalysis } from '../lib/documentAnalysis';
 import { DOC_TYPE_LABEL, toSnake } from '../lib/documents';
 import { cycleDayAt } from '../lib/labCycle';
 import { useCycleInsights } from '../state/cycleStore';
@@ -73,6 +73,7 @@ export function DocumentScreen() {
   const [stored, setStored] = useState<StoredDocAnalysis | null>(null);
   const [analysing, setAnalysing] = useState(false);
   const [analysisNote, setAnalysisNote] = useState<string | null>(null);
+  const [basis, setBasis] = useState<{ conditions: string[]; medications: string[] } | null>(null);
   const { windows, profile } = useCycleInsights();
   const usual = useMemo(() => medianLength(countedWindows(windows, profile)), [windows, profile]);
 
@@ -91,8 +92,9 @@ export function DocumentScreen() {
   }, [id, doc, analysing, repo, windows, usual]);
 
   // Read the stored analysis; write one the first time the document opens.
+  // An insurance card is not analysed.
   useEffect(() => {
-    if (!id || !doc) return;
+    if (!id || !doc || doc.docType === 'insurance') return;
     let ignore = false;
     repo
       .loadDocumentAnalysis(id)
@@ -121,6 +123,7 @@ export function DocumentScreen() {
 
   useEffect(() => {
     if (!id) return setDoc(null);
+    repo.loadAnalysisBasis().then(setBasis).catch(() => setBasis(null));
     repo.loadDocument(id).then(setDoc).catch(() => setDoc(null));
   }, [id, repo]);
 
@@ -128,14 +131,16 @@ export function DocumentScreen() {
     if (!id) return;
     const url = await repo.labReportFile(id);
     if (!url) return setNote('The original could not be opened just now.');
-    await WebBrowser.openBrowserAsync(url);
+    // A file on this phone (the example) opens in the share sheet's preview.
+    if (url.startsWith('file:')) await Share.share({ url });
+    else await WebBrowser.openBrowserAsync(url);
   }, [id, repo]);
 
   const remove = useCallback(() => {
     if (!id) return;
     Alert.alert(
       'Remove this document?',
-      'The document, its original, and what was filed from it are removed from Ciatta. Items you already had stay. A plan it replaced is not restored.',
+      'The document, its original, and what was filed from it are removed from Ciatta. Items you already had stay, and a medication it marked as stopped stays stopped. A plan it replaced is not restored.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -161,7 +166,7 @@ export function DocumentScreen() {
 
   const x = doc.extraction;
   const urgent = documentUrgentLines(toSnake(x), stored?.analysis ?? null);
-  const stale = stored ? stored.factsHash !== extractionFingerprint(toSnake(x)) : false;
+  const stale = stored && basis ? stored.factsHash !== analysisFingerprint(toSnake(x), basis.conditions, basis.medications) : false;
   const v = x.visit;
   return (
     <DetailScreen title={displayCopy(doc.title ?? DOC_TYPE_LABEL[doc.docType])} onBack={nav.back}>
@@ -219,6 +224,7 @@ export function DocumentScreen() {
         </View>
       ) : null}
 
+      {doc.docType === 'insurance' ? null : (
       <View style={{ marginTop: SPACE.block }}>
         <Eyebrow>Clinical AI analysis</Eyebrow>
         <Text style={[font('footnote', 'semibold'), s.label]}>Clinical AI analysis. Not a diagnosis. Discuss it with your clinician.</Text>
@@ -229,7 +235,7 @@ export function DocumentScreen() {
             <Text style={[font('caption1'), s.meta, { marginTop: 4 }]}>
               {displayCopy(`Written by ${stored.model} on ${labDay(stored.createdAt.slice(0, 10))} from this document and your record.`)}
             </Text>
-            {stale ? <Text style={[font('subhead'), s.flagText, { marginTop: 8 }]}>This document has changed since this was written.</Text> : null}
+            {stale ? <Text style={[font('subhead'), s.flagText, { marginTop: 8 }]}>Your record or this document has changed since this was written.</Text> : null}
             <View style={s.card}>
               <CardFill />
               <Text style={[font('body'), s.ink, { paddingVertical: 12 }]}>{displayCopy(stored.analysis.summary)}</Text>
@@ -254,6 +260,7 @@ export function DocumentScreen() {
           </View>
         ) : null}
       </View>
+      )}
 
       <View style={{ marginTop: SPACE.section }}>
         <SecondaryButton label="Remove This Document" onPress={remove} />

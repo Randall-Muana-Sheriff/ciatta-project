@@ -20,6 +20,8 @@ import { mergeDocumentChunks } from './merge.ts';
 
 const url = Deno.env.get('SUPABASE_URL')!;
 const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+// Used only to give back reads for a lab report, which the lab reader reads.
+const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const openAiKey = Deno.env.get('OPENAI_API_KEY');
 const MODEL = Deno.env.get('OPENAI_DOCUMENT_MODEL') ?? Deno.env.get('OPENAI_LAB_MODEL') ?? 'gpt-4o';
 const FAKE_ALLOWED = Deno.env.get('DOCUMENT_SCAN_FAKE_MODEL') === '1' && /^https?:\/\/(127\.0\.0\.1|localhost|kong)(:\d+)?/.test(url);
@@ -136,7 +138,13 @@ Deno.serve(async (req) => {
   if (reads.every((r) => r.parsed == null)) return json({ error: 'Could not read the document' }, 502);
   const merged = mergeDocumentChunks(reads, pages);
   if (as) merged.doc_type = as;
-  console.log(`document-scan: ${kind}, ${pages} pages, ${parts.length} pieces, ${merged.doc_type}`);
+  // A lab report is read again by the lab reader; the reads spent here are
+  // given back so it costs her one read, not two.
+  if (merged.doc_type === 'lab_report') {
+    const { error: refundError } = await createClient(url, serviceKey).rpc('refund_lab_scan', { p_user: who.user.id, p_count: parts.length });
+    if (refundError) console.log('document-scan: refund failed');
+  }
+  console.log(`document-scan: ${kind}, ${pages} pages, ${parts.length} pieces`);
   return json(merged);
 });
 

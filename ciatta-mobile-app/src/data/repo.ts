@@ -239,6 +239,9 @@ export type Repo = {
   loadDocument(id: string): Promise<DocumentDetail | null>;
   removeDocument(id: string): Promise<void>;
   loadDocumentAnalysis(documentId: string): Promise<StoredDocAnalysis | null>;
+  // Her conditions and current medications by name: what an analysis was
+  // written against, for knowing when it is out of date.
+  loadAnalysisBasis(): Promise<{ conditions: string[]; medications: string[] }>;
   analyzeDocument(documentId: string, cycle: { day: number; phase: string | null; usual_length: number | null } | null): Promise<StoredDocAnalysis>;
   // The latest stored clinical AI analysis of a report, or null.
   loadLabAnalysis(documentId: string): Promise<StoredAnalysis | null>;
@@ -373,6 +376,9 @@ export function demoRepo(): Repo {
   let demoReports: { id: string; on: string; checksum: string }[] = [];
   const demoAnalyses = new Map<string, StoredAnalysis>();
   let demoDocuments: (DocumentDetail & { checksum: string })[] = [];
+  // Originals kept in memory in the example, so View original opens.
+  const demoFiles = new Map<string, { base64: string; kind: 'image' | 'pdf' }>();
+  let demoFiled: { conditions: { id: string; name: string }[]; medications: { id: string; name: string; stoppedOn: string | null }[]; allergies: { id: string; name: string }[] } = { conditions: [], medications: [], allergies: [] };
   const demoDocAnalyses = new Map<string, StoredDocAnalysis>();
   // The example person's insurance, as the sample shows it.
   let insurance: Insurance | null = { provider: 'Anthem', plan: 'PPO' };
@@ -597,6 +603,7 @@ export function demoRepo(): Repo {
       }),
     saveLabReport: async (input) => {
       const id = `report-${Date.now()}`;
+      demoFiles.set(id, input.file);
       demoReports.push({ id, on: input.on, checksum: input.checksum });
       labs = [
         ...labs,
@@ -608,7 +615,18 @@ export function demoRepo(): Repo {
       const hit = demoReports.find((r) => r.checksum === checksum);
       return hit ? { id: hit.id, on: hit.on } : null;
     },
-    labReportFile: async () => null,
+    labReportFile: async (id) => {
+      const f = demoFiles.get(id);
+      if (!f) return null;
+      // Loaded here, not at the top: this file is also read by the unit tests,
+      // where native modules cannot load.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { File: ExpoFile, Paths } = require('expo-file-system') as typeof import('expo-file-system');
+      const file = new ExpoFile(Paths.cache, `example-${id}.${f.kind === 'pdf' ? 'pdf' : 'jpg'}`);
+      file.write(Uint8Array.from(atob(f.base64), (c) => c.charCodeAt(0)));
+      return file.uri;
+    },
+    loadAnalysisBasis: async () => ({ conditions: demoFiled.conditions.map((c) => c.name), medications: demoFiled.medications.filter((m) => !m.stoppedOn).map((m) => m.name) }),
     scanDocument: async (_b64, _kind, as) =>
       readDocumentScan({
         not_medical: false,
@@ -639,9 +657,18 @@ export function demoRepo(): Repo {
         insurance: null,
         other: (as ?? 'visit') === 'visit' ? null : { description: 'An example document' },
       }),
-    loadExistingForDocuments: async () => ({ conditions: [], medications: [] }),
+    loadExistingForDocuments: async () => demoFiled,
     saveDocument: async (input) => {
       const id = `document-${Date.now()}`;
+      demoFiles.set(id, input.file);
+      demoFiled = {
+        conditions: [...demoFiled.conditions, ...input.filings.conditions.map((c, n) => ({ id: `${id}-c${n}`, name: c.name }))],
+        medications: [
+          ...demoFiled.medications.map((m) => (input.filings.stop_medications.some((x) => x.id === m.id) ? { ...m, stoppedOn: input.scan.date ?? new Date().toISOString().slice(0, 10) } : m)),
+          ...input.filings.medications.map((m, n) => ({ id: `${id}-m${n}`, name: m.name, stoppedOn: m.stopped_on })),
+        ],
+        allergies: [...demoFiled.allergies, ...input.filings.allergies.map((a, n) => ({ id: `${id}-a${n}`, name: a.name }))],
+      };
       demoDocuments = [
         {
           id,
@@ -697,6 +724,13 @@ export function demoRepo(): Repo {
     },
     removeDocument: async (id) => {
       demoDocuments = demoDocuments.filter((d) => d.id !== id);
+      demoDocAnalyses.delete(id);
+      demoFiles.delete(id);
+      demoFiled = {
+        conditions: demoFiled.conditions.filter((c) => !c.id.startsWith(`${id}-`)),
+        medications: demoFiled.medications.filter((m) => !m.id.startsWith(`${id}-`)),
+        allergies: demoFiled.allergies.filter((a) => !a.id.startsWith(`${id}-`)),
+      };
     },
     loadLabsBefore: async (day) => labs.filter((l) => l.on < day).sort((a, b) => b.on.localeCompare(a.on)),
     loadLabAnalysis: async (documentId) => demoAnalyses.get(documentId) ?? null,
@@ -1492,9 +1526,11 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
         p_title: input.scan.title,
         p_occurred_on: input.scan.date,
         p_storage_path: path,
-        p_metadata: { checksum: input.checksum, pages: null, clinician: input.scan.clinician, facility: input.scan.facility, extraction: toSnake(input.scan) },
+        p_metadata: { checksum: input.checksum, pages: input.scan.pages, clinician: input.scan.clinician, facility: input.scan.facility, extraction: toSnake(input.scan) },
         p_filings: input.filings,
         p_insurance: input.insurance,
+        // The document takes the id its stored file is named for.
+        p_id: docId,
       });
       if (error) {
         await db.storage.from('documents').remove([path]);
@@ -1549,6 +1585,16 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
         linked: Array.isArray(r.metadata?.linked) ? (r.metadata.linked as { table: string; id: string }[]) : [],
       };
     },
+    async loadAnalysisBasis() {
+      const [conds, meds] = await Promise.all([
+        db.from('conditions').select('name').neq('status', 'resolved'),
+        db.from('medications').select('name').is('stopped_on', null),
+      ]);
+      return {
+        conditions: ((must(conds) as { name: string }[] | null) ?? []).map((c) => c.name),
+        medications: ((must(meds) as { name: string }[] | null) ?? []).map((m) => m.name),
+      };
+    },
     async loadDocumentAnalysis(documentId) {
       const rows = must(
         await db.from('document_analyses').select('analysis, model, created_at, facts_hash').eq('document_id', documentId).order('created_at', { ascending: false }).limit(1),
@@ -1572,16 +1618,27 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       return stored;
     },
     async removeDocument(id) {
-      const { data: path, error } = await db.rpc('remove_document', { p_document: id });
+      // The original goes first: if it cannot be deleted, nothing is removed
+      // and she is told, rather than a record pointing at a missing file or
+      // a file left behind a removed record.
+      const rows = must(await db.from('documents').select('storage_path').eq('id', id).neq('doc_type', 'lab_report').limit(1)) as { storage_path: string }[] | null;
+      const path = rows?.[0]?.storage_path;
+      if (!path) throw new Error('That document could not be removed.');
+      const { error: fileError } = await db.storage.from('documents').remove([path]);
+      if (fileError) throw new Error('The original could not be deleted just now, so nothing was removed. Try again.');
+      const { data: removed, error } = await db.rpc('remove_document', { p_document: id });
       if (error) throw error;
-      // Null means nothing was removed: not hers, or not a document of this kind.
-      if (typeof path !== 'string') throw new Error('That document could not be removed.');
-      await db.storage.from('documents').remove([path]);
+      if (typeof removed !== 'string') throw new Error('That document could not be removed.');
     },
     async removeLabReport(id) {
-      const { data: path, error } = await db.rpc('remove_lab_report', { p_document: id });
+      const rows = must(await db.from('documents').select('storage_path').eq('id', id).eq('doc_type', 'lab_report').limit(1)) as { storage_path: string }[] | null;
+      const path = rows?.[0]?.storage_path;
+      if (!path) throw new Error('That report could not be removed.');
+      const { error: fileError } = await db.storage.from('documents').remove([path]);
+      if (fileError) throw new Error('The original could not be deleted just now, so nothing was removed. Try again.');
+      const { data: removed, error } = await db.rpc('remove_lab_report', { p_document: id });
       if (error) throw error;
-      if (typeof path === 'string') await db.storage.from('documents').remove([path]);
+      if (typeof removed !== 'string') throw new Error('That report could not be removed.');
     },
     async loadSleepSamples(sinceIso) {
       const rows = must(

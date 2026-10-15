@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { extractionFingerprint as serverFingerprint } from '../../supabase/functions/document-analysis/facts.ts';
-import { docAnalysisHtml, documentUrgentLines, extractionFingerprint, readStoredDocAnalysis } from './documentAnalysis';
+import { analysisFingerprint as serverAnalysisFingerprint, extractionFingerprint as serverFingerprint } from '../../supabase/functions/document-analysis/facts.ts';
+import { analysisFingerprint, docAnalysisHtml, documentUrgentLines, extractionFingerprint, readStoredDocAnalysis } from './documentAnalysis';
 
 const analysis = { urgent: [], summary: 'A summary.', terms: [{ term: 'Impression', meaning: 'The conclusion.' }], findings: [], patterns: [], considerations: [], next_steps: [], questions: [] };
 
@@ -31,4 +31,12 @@ test('the printed analysis carries the label', () => {
 
 test('a facility or title with an urgent word in its name does not raise the banner', () => {
   assert.deepEqual(documentUrgentLines({ facility: 'Mercy Emergency Department', title: 'Emergency Department Discharge', visit: { instructions: ['Rest and drink fluids.'] } }, null), []);
+});
+
+test('the analysis is out of date when the document, her conditions or her current medications change', () => {
+  const x = { doc_type: 'visit', visit: { diagnoses: [{ name: 'Endometriosis' }] } };
+  const base = analysisFingerprint(x, ['Asthma', 'Anemia'], ['Iron']);
+  assert.equal(base, serverAnalysisFingerprint(x, ['Anemia', 'Asthma'], ['iron']), 'the same on both sides, in any order or case');
+  assert.notEqual(base, analysisFingerprint(x, ['Asthma', 'Anemia'], ['Iron', 'Sertraline']));
+  assert.notEqual(base, analysisFingerprint({ ...x, date: '2026-09-03' }, ['Asthma', 'Anemia'], ['Iron']));
 });

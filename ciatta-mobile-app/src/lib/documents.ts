@@ -31,6 +31,7 @@ export type DocumentScan = {
   facility: string | null;
   multipleDates: boolean;
   unreadablePages: number[];
+  pages: number | null;
   visit: {
     reason: string | null;
     diagnoses: { name: string; status: 'new' | 'existing' | 'unclear' }[];
@@ -86,6 +87,7 @@ export function readDocumentScan(json: unknown): DocumentScan {
     facility: str(j.facility),
     multipleDates: j.multiple_dates === true,
     unreadablePages: [...new Set(pages)].sort((a, b) => a - b),
+    pages: typeof j.pages === 'number' && Number.isInteger(j.pages) && j.pages >= 1 ? j.pages : null,
     visit: v
       ? {
           reason: str(v.reason),
@@ -166,8 +168,14 @@ const join = (...parts: (string | null | undefined)[]) => parts.filter(Boolean).
 export function reviewItems(scan: DocumentScan, existing: Existing): ReviewItem[] {
   const items: ReviewItem[] = [];
   let n = 0;
-  const push = (target: Target, title: string, detail: string | null, value: Record<string, string | null>, existingId: string | null, source: string) =>
+  const seen = new Set<string>();
+  // The same thing listed twice in one document is offered once.
+  const push = (target: Target, title: string, detail: string | null, value: Record<string, string | null>, existingId: string | null, source: string) => {
+    const k = `${target}|${foldName(title)}`;
+    if (seen.has(k)) return;
+    seen.add(k);
     items.push({ key: `i${n++}`, target, title, detail, keep: true, existingId, value, source });
+  };
   const medItem = (target: 'medications' | 'stop_medications', m: DocMed, source: string) =>
     push(target, m.name, target === 'medications' ? join(m.strength, m.dose, m.frequency, m.route) : join(m.strength, m.dose), { ...m, name: m.name }, matchExisting(target, m.name, existing), source);
 
@@ -238,6 +246,13 @@ export function editedScan(scan: DocumentScan, items: ReviewItem[]): DocumentSca
   return out;
 }
 
+// Text cut to what each list accepts (referrals and plans have limits), so
+// a long reading never refuses the whole save.
+const cut = (v: string | null | undefined, max: number) => {
+  const t = v?.trim();
+  return t ? t.slice(0, max) : null;
+};
+
 export type DocumentFilings = {
   conditions: { name: string; status: 'active' | 'unknown' }[];
   allergies: { name: string; reaction: string | null }[];
@@ -281,7 +296,7 @@ export function buildFilings(items: ReviewItem[], docDate: string | null, today:
         f.procedures.push({ name, performed_on: v.date ?? docDate });
         break;
       case 'referrals':
-        f.referrals.push({ specialty: (v.specialty ?? i.title).trim(), clinician: v.clinician ?? null, reason: v.reason ?? null, referred_by: v.referredBy ?? null, referred_on: docDate });
+        f.referrals.push({ specialty: cut(v.specialty ?? i.title, 120)!, clinician: cut(v.clinician, 120), reason: cut(v.reason, 500), referred_by: cut(v.referredBy, 120), referred_on: docDate });
         break;
     }
   }
@@ -299,13 +314,11 @@ export function renameItem(item: ReviewItem, title: string, existing: Existing):
 
 export function insuranceFrom(items: ReviewItem[]): { provider: string; plan?: string; member_id?: string } | null {
   const i = items.find((x) => x.target === 'insurance' && x.keep);
-  const provider = i?.value.provider?.trim();
+  const provider = cut(i?.value.provider, 120);
   if (!i || !provider) return null;
-  return {
-    provider,
-    ...(i.value.plan?.trim() ? { plan: i.value.plan.trim() } : {}),
-    ...(i.value.memberId?.trim() ? { member_id: i.value.memberId.trim() } : {}),
-  };
+  const plan = cut(i.value.plan, 120);
+  const member = cut(i.value.memberId, 60);
+  return { provider, ...(plan ? { plan } : {}), ...(member ? { member_id: member } : {}) };
 }
 
 // The scan as stored in documents.metadata.extraction: the function's own
@@ -315,3 +328,19 @@ export function toSnake(v: unknown): unknown {
   if (!v || typeof v !== 'object') return v;
   return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`), toSnake(x)]));
 }
+
+// Whether a card is new to her, the plan she has, or a different one; only
+// a different one asks before replacing.
+export function planDecision(
+  current: { provider: string; plan: string | null; memberId: string | null } | null,
+  card: { provider: string; plan?: string; member_id?: string } | null,
+): 'none' | 'new' | 'same' | 'differs' {
+  if (!card) return 'none';
+  if (!current) return 'new';
+  const same = (a: string | null | undefined, b: string | null | undefined) => foldName(a ?? '') === foldName(b ?? '');
+  return same(current.provider, card.provider) && same(current.plan, card.plan) && same(current.memberId, card.member_id) ? 'same' : 'differs';
+}
+
+// How many items she is keeping with no name; she is asked to name them or
+// switch them off rather than have them dropped without a word.
+export const emptyKept = (items: ReviewItem[]) => items.filter((i) => i.keep && !i.title.trim()).length;

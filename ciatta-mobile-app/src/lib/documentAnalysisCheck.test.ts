@@ -140,3 +140,12 @@ test('urgent words are read from the instructions, findings and impression, not 
   const er: DocFacts = { ...facts, document: { ...facts.document, facility: 'Mercy Emergency Department', extraction: { ...extraction, facility: 'Mercy Emergency Department', title: 'Emergency Department Discharge' } } };
   assert.deepEqual(checkDocumentAnalysis(good(), er), []);
 });
+
+test('terms and items match whole words, not pieces of words', () => {
+  const a = good();
+  a.terms = [{ term: 'PE', meaning: 'x' }];
+  assert.match(checkDocumentAnalysis(a, facts).join(' '), /PE/);
+  const b = good();
+  b.findings = [{ item: 'a', explanation: 'x', relevance: null }];
+  assert.match(checkDocumentAnalysis(b, facts).join(' '), /neither/);
+});

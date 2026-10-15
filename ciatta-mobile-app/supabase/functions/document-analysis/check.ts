@@ -5,7 +5,7 @@
 // that is not the document's own credited instruction, misses the
 // document's own urgent words, or runs long. Pure; tested from the app.
 
-import { changesMedication, doseMatches, fold, medsNamed, numbersIn, URGENT_WORDS } from '../_shared/textChecks.ts';
+import { changesMedication, doseMatches, escape, fold, medsNamed, numbersIn, URGENT_WORDS } from '../_shared/textChecks.ts';
 import { type DocFacts, documentMedLines, documentMeds, documentText, urgentText } from './facts.ts';
 
 export type DocAnalysis = {
@@ -66,9 +66,13 @@ export function checkDocumentAnalysis(a: DocAnalysis, facts: DocFacts): string[]
   const r = facts.record;
   const recordNames = [...r.conditions, ...r.medications, ...r.supplements, ...r.procedures.map((p) => p.name), ...r.labs.map((l) => l.name)].map(fold);
 
+  // Whole words only: "PE" is not found in "pelvic", and a one letter item
+  // is never known.
+  const inText = (needle: string, hay: string) => needle.length >= 2 && new RegExp(`(?<![a-z0-9])${escape(needle)}(?![a-z0-9])`, 'i').test(hay);
   const known = (item: string) => {
     const f = fold(item);
-    return docFold.includes(f) || recordNames.some((n) => n === f || n.includes(f) || f.includes(n));
+    if (f.length < 3) return false;
+    return inText(f, docFold) || recordNames.some((n) => n === f || inText(f, n) || inText(n, f));
   };
 
   const allowed = new Set<number>(numbersIn(docText));
@@ -86,7 +90,7 @@ export function checkDocumentAnalysis(a: DocAnalysis, facts: DocFacts): string[]
   for (const sym of r.symptoms) allowed.add(sym.count);
   for (let i = 1; i <= 12; i++) allowed.add(i);
 
-  for (const t of a.terms) if (!docFold.includes(fold(t.term))) problems.push(`the term ${t.term} is not in the document`);
+  for (const t of a.terms) if (!inText(fold(t.term), docFold)) problems.push(`the term ${t.term} is not in the document`);
   for (const u of a.urgent) if (!known(u.item)) problems.push(`urgent names ${u.item}, which is in neither the document nor her record`);
   for (const f of a.findings) if (!known(f.item)) problems.push(`a finding names ${f.item}, which is in neither the document nor her record`);
   for (const p of a.patterns) for (const i of p.items) if (!known(i)) problems.push(`a pattern names ${i}, which is in neither the document nor her record`);

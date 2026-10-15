@@ -48,6 +48,14 @@ function stable(v: unknown): unknown {
 }
 export const extractionFingerprint = (extraction: unknown) => JSON.stringify(stable(extraction));
 
+// What an analysis was written from, for "out of date": the document as
+// she kept it, and the names of her conditions and current medications.
+// Folded and sorted, so order and case do not matter. The same in the app.
+export function analysisFingerprint(extraction: unknown, conditions: string[], medications: string[]): string {
+  const names = (xs: string[]) => [...new Set(xs.map((x) => x.toLowerCase().replace(/\s+/g, ' ').trim()).filter(Boolean))].sort();
+  return JSON.stringify({ e: JSON.parse(extractionFingerprint(extraction)), c: names(conditions), m: names(medications) });
+}
+
 const URGENT = /\b(urgent|urgently|critical|emergency|call 911|immediately|stat|seek (?:immediate|emergency) care)\b/i;
 function strings(v: unknown, out: string[] = []): string[] {
   if (typeof v === 'string') out.push(v);

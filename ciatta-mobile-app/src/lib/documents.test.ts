@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildFilings, foldName, insuranceFrom, readDocumentScan, editedScan, renameItem, reviewItems, TARGET_HEADING, toSnake } from './documents';
+import { buildFilings, editedScan, emptyKept, foldName, insuranceFrom, planDecision, readDocumentScan, renameItem, reviewItems, TARGET_HEADING, toSnake } from './documents';
 
 const med = (name: string, extra: Record<string, unknown> = {}) => ({ name, strength: null, dose: null, frequency: null, route: null, prescriber: null, date: null, ...extra });
 
@@ -168,4 +168,42 @@ test('what is saved for the analysis is the document as she kept and corrected i
   assert.equal(edited.visit?.medicationsStarted[0].name, 'Ferrous gluconate');
   assert.deepEqual(edited.visit?.instructions, scan.visit?.instructions, 'text she did not review is kept as read');
   assert.deepEqual(scan.visit?.diagnoses.length, 2, 'the original scan is not changed');
+});
+
+// ── Smaller review items ─────────────────────────────────────────────
+
+test('the same item listed twice in one document is offered once', () => {
+  const s = readDocumentScan({ ...visitJson, visit: { ...visitJson.visit, diagnoses: [{ name: 'Endometriosis', status: 'new' }, { name: 'endometriosis ', status: 'existing' }] } });
+  assert.equal(reviewItems(s, { conditions: [], medications: [] }).filter((i) => i.target === 'conditions').length, 1);
+});
+
+test('long text is cut to what each list accepts, so it never refuses the save', () => {
+  const long = 'x'.repeat(700);
+  const s = readDocumentScan({ ...visitJson, visit: { ...visitJson.visit, follow_ups: [{ specialty: 'Gynecology', clinician: long, reason: long, when: null }] } });
+  const r = buildFilings(reviewItems(s, { conditions: [], medications: [] }), s.date).referrals[0];
+  assert.equal(r.clinician?.length, 120);
+  assert.equal(r.reason?.length, 500);
+  const card = readDocumentScan({ ...visitJson, doc_type: 'insurance', visit: null, insurance: { provider: long, plan: long, member_id: long } });
+  const ins = insuranceFrom(reviewItems(card, { conditions: [], medications: [] }))!;
+  assert.deepEqual([ins.provider.length, ins.plan?.length, ins.member_id?.length], [120, 120, 60]);
+});
+
+test('a card asks to replace her plan only when it differs from the one she has', () => {
+  const card = { provider: 'Aetna', plan: 'Choice POS II', member_id: 'W123' };
+  assert.equal(planDecision(null, card), 'new');
+  assert.equal(planDecision({ provider: 'aetna', plan: 'Choice POS II', memberId: 'W123' }, card), 'same');
+  assert.equal(planDecision({ provider: 'Cigna', plan: null, memberId: null }, card), 'differs');
+  assert.equal(planDecision({ provider: 'Cigna', plan: null, memberId: null }, null), 'none');
+});
+
+test('a kept item with no name is found, so she is asked to name it or switch it off', () => {
+  const items = reviewItems(readDocumentScan(visitJson), { conditions: [], medications: [] });
+  assert.equal(emptyKept(items), 0);
+  assert.equal(emptyKept(items.map((i, n) => (n === 0 ? { ...i, title: '  ' } : i))), 1);
+  assert.equal(emptyKept(items.map((i, n) => (n === 0 ? { ...i, title: '', keep: false } : i))), 0);
+});
+
+test('the page count is read and kept', () => {
+  assert.equal(readDocumentScan({ ...visitJson, pages: 4 }).pages, 4);
+  assert.equal(readDocumentScan(visitJson).pages, null);
 });

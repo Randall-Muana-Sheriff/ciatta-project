@@ -84,6 +84,14 @@ async function main() {
     });
     check('she cannot store an unchecked analysis by calling the database directly', !direct.ok && (await stored(her.jwt)) === 2, `${direct.status}`);
 
+    const card = await fetch(`${API}/rest/v1/rpc/save_document`, {
+      method: 'POST',
+      headers: asHer(her.jwt),
+      body: JSON.stringify({ p_doc_type: 'insurance', p_title: 'Card', p_occurred_on: '2026-09-02', p_storage_path: `${her.id}/documents/card.jpg`, p_metadata: { extraction: { doc_type: 'insurance', insurance: { provider: 'Aetna', plan: null, member_id: 'W1' } } }, p_filings: {}, p_insurance: null }),
+    }).then((r) => r.json());
+    const cardRes = await analyse(her.jwt, card, 'good');
+    check('an insurance card is not analysed, so its member id is not sent anywhere', cardRes.status === 422 && (await stored(her.jwt)) === 2, `${cardRes.status}`);
+
     const theirs = await analyse(other.jwt, doc, 'good');
     check('someone else cannot analyse her document', theirs.status === 404 && (await stored(other.jwt)) === 0, `${theirs.status}`);
   } finally {

@@ -46,9 +46,9 @@ export function AddRecordScreen() {
 
   return (
     <DetailScreen title="Add to Your Records" onBack={nav.back} footer={<SaveBar label={saving ? 'Saving' : 'Save'} disabled={!ready || saving} onPress={() => void save()} />}>
-          <PrimaryButton label="Scan or Upload a Document" onPress={() => nav.push('addDocument')} />
-          <Text style={[font('caption1'), a.hint, { marginTop: 6 }]}>Visit summaries, imaging, prescriptions, referrals, insurance cards and labs, read and filed for you</Text>
-    
+      <PrimaryButton label="Scan or Upload a Document" onPress={() => nav.push('addDocument')} />
+      <Text style={[font('caption1'), a.hint, { marginTop: 6 }]}>Visit summaries, imaging, prescriptions, referrals, insurance cards and labs, read and filed for you</Text>
+
       <Text style={[font('subhead'), a.lead, { marginTop: SPACE.block }]}>Or say it, type it, or attach a file as a note.</Text>
       <Text style={[font('caption1'), a.hint]}>Tap the microphone to speak. Tap the plus for the camera, an image, a PDF or a video.</Text>
       <Composer

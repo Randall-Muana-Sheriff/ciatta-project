@@ -9,7 +9,8 @@ import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-nati
 
 import { displayCopy } from '../lib/displayCopy';
 import { chooseDocument } from '../lib/documentHandoff';
-import { buildFilings, DOC_TYPE_LABEL, type DocType, type DocumentScan, editedScan, type Existing, insuranceFrom, renameItem, type ReviewItem, reviewItems, TARGET_HEADING, type Target } from '../lib/documents';
+import { buildFilings, DOC_TYPE_LABEL, type DocType, type DocumentScan, editedScan, emptyKept, type Existing, insuranceFrom, planDecision, renameItem, type ReviewItem, reviewItems, TARGET_HEADING, type Target } from '../lib/documents';
+import type { Insurance } from '../lib/insurance';
 import { chooseLabFile, chooseReport } from '../lib/labHandoff';
 import { labDay } from '../lib/labs';
 import { userFacingError } from '../lib/userFacingError';
@@ -36,6 +37,7 @@ export function AddDocumentScreen() {
   const [note, setNote] = useState<string | null>(null);
   const [duplicate, setDuplicate] = useState<{ id: string; on: string; docType: string } | null>(null);
   const [replacePlan, setReplacePlan] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState<Insurance | null>(null);
   const [saving, setSaving] = useState(false);
 
   const read = async (f: Captured, as?: DocType) => {
@@ -67,6 +69,7 @@ export function AddDocumentScreen() {
       setScan(s);
       const have = await repo.loadExistingForDocuments().catch(() => ({ conditions: [], medications: [] }));
       setExisting(have);
+      setCurrentPlan(await repo.loadInsurance().catch(() => null));
       setItems(reviewItems(s, have));
       setStage('review');
     } catch (e) {
@@ -81,10 +84,14 @@ export function AddDocumentScreen() {
   }, [capture.note]);
 
   const edit = (key: string, patch: Partial<ReviewItem>) => setItems((xs) => xs.map((x) => (x.key === key ? { ...x, ...patch } : x)));
-  const hasPlan = items.some((i) => i.target === 'insurance' && i.keep);
+  const card = insuranceFrom(items);
+  // Only a card that differs from the plan she has asks before replacing;
+  // a first plan is simply kept, and the same plan changes nothing.
+  const plan = planDecision(currentPlan ? { provider: currentPlan.provider, plan: currentPlan.plan ?? null, memberId: currentPlan.member_id ?? null } : null, card);
+  const unnamed = emptyKept(items);
 
   const save = async () => {
-    if (!file || !scan || saving) return;
+    if (!file || !scan || saving || unnamed) return;
     setSaving(true);
     setNote(null);
     try {
@@ -93,7 +100,7 @@ export function AddDocumentScreen() {
         checksum: file.checksum,
         scan: editedScan(scan, items),
         filings: buildFilings(items, scan.date),
-        insurance: hasPlan && replacePlan ? insuranceFrom(items) : null,
+        insurance: plan === 'new' || (plan === 'differs' && replacePlan) ? card : null,
       });
       chooseDocument(id);
       nav.back();
@@ -109,7 +116,7 @@ export function AddDocumentScreen() {
     <DetailScreen
       title="Add a Document"
       onBack={nav.back}
-      footer={stage === 'review' ? <SaveBar label={saving ? 'Saving' : 'Save Document'} disabled={saving} onPress={() => void save()} /> : undefined}
+      footer={stage === 'review' ? <SaveBar label={saving ? 'Saving' : 'Save Document'} disabled={saving || unnamed > 0} onPress={() => void save()} /> : undefined}
     >
       {stage === 'pick' ? (
         <>
@@ -153,7 +160,17 @@ export function AddDocumentScreen() {
             {TYPES.map((t) => (
               <Pressable
                 key={t}
-                onPress={() => file && t !== scan.docType && void read(file, t)}
+                onPress={() => {
+                  if (!file || t === scan.docType) return;
+                  // A lab report goes straight to the lab reader, without being read here again.
+                  if (t === 'lab_report') {
+                    chooseLabFile(file);
+                    nav.back();
+                    nav.push('addLabs');
+                    return;
+                  }
+                  void read(file, t);
+                }}
                 accessibilityRole="button"
                 accessibilityState={{ selected: t === scan.docType }}
                 style={[s.type, t === scan.docType && s.typeOn]}
@@ -211,13 +228,15 @@ export function AddDocumentScreen() {
             </View>
           ))}
 
-          {hasPlan ? (
+          {plan === 'differs' ? (
             <View style={[s.row, { marginTop: SPACE.near }]}>
               <Text style={[font('subhead'), s.ink, { flex: 1 }]}>Replace your current plan with this card</Text>
               <Switch value={replacePlan} onValueChange={setReplacePlan} trackColor={{ false: C.fill, true: C.green }} ios_backgroundColor={C.fill} accessibilityLabel="Replace your current plan" />
             </View>
           ) : null}
 
+          {plan === 'same' ? <Text style={[font('footnote'), s.meta, { marginTop: 8 }]}>This is the plan you already have.</Text> : null}
+          {unnamed ? <Text style={[font('footnote'), s.warn, { marginTop: 8 }]}>{unnamed === 1 ? 'One item you are keeping has no name. Name it, or switch it off.' : `${unnamed} items you are keeping have no name. Name them, or switch them off.`}</Text> : null}
           {!items.length ? <Text style={[font('subhead'), s.meta, { marginTop: SPACE.near }]}>Nothing to file from this document. It will be kept, with its original.</Text> : null}
           <View style={{ marginTop: SPACE.block }}>
             <SecondaryButton label="Read a Different Document" onPress={() => setStage('pick')} />

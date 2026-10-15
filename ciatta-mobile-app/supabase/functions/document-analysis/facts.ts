@@ -78,3 +78,11 @@ export function documentMedLines(extraction: Record<string, unknown>): { name: s
   for (const line of Array.isArray(visit.instructions) ? visit.instructions : []) if (typeof line === 'string') out.push({ name: '', text: line });
   return out;
 }
+
+// What an analysis was written from, for "out of date": the document as
+// she kept it, and the names of her conditions and current medications.
+// Folded and sorted, so order and case do not matter. The same in the app.
+export function analysisFingerprint(extraction: unknown, conditions: string[], medications: string[]): string {
+  const names = (xs: string[]) => [...new Set(xs.map((x) => x.toLowerCase().replace(/\s+/g, ' ').trim()).filter(Boolean))].sort();
+  return JSON.stringify({ e: JSON.parse(extractionFingerprint(extraction)), c: names(conditions), m: names(medications) });
+}

@@ -13,7 +13,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 import { checkDocumentAnalysis, DOC_ANALYSIS_SCHEMA, type DocAnalysis, readDocAnalysis } from './check.ts';
 import { fakeDocAnalysis } from './fake.ts';
-import { type DocFacts, extractionFingerprint, readCycle } from './facts.ts';
+import { analysisFingerprint, type DocFacts, readCycle } from './facts.ts';
 
 const url = Deno.env.get('SUPABASE_URL')!;
 const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -62,6 +62,10 @@ Deno.serve(async (req) => {
   const { data: doc } = await db.from('documents').select('id, doc_type, title, occurred_at, metadata').eq('id', documentId).neq('doc_type', 'lab_report').maybeSingle();
   if (!doc) return json({ error: 'That document was not found.' }, 404);
 
+  // An insurance card is not analysed: there is nothing clinical in it, and
+  // its member id should not be sent anywhere again.
+  if (doc.doc_type === 'insurance') return json({ error: 'Insurance cards are not analysed.' }, 422);
+
   const fake = FAKE_ALLOWED ? req.headers.get('x-fake-model') : null;
   if (!fake && !openAiKey) return json({ error: 'Document analysis is not set up yet' }, 503);
 
@@ -71,7 +75,7 @@ Deno.serve(async (req) => {
 
   const extraction = (doc.metadata?.extraction ?? {}) as Record<string, unknown>;
   const facts = await gatherFacts(db, uid, doc, extraction, readCycle(body.cycle));
-  const hash = extractionFingerprint(extraction);
+  const hash = analysisFingerprint(extraction, facts.record.conditions, facts.record.medications);
 
   let attempt = 0;
   let reasons: string[] = [];
@@ -99,7 +103,7 @@ Deno.serve(async (req) => {
   const admin = createClient(url, serviceKey);
   const { error: storeError } = await admin.rpc('store_document_analysis', { p_user: uid, p_document: documentId, p_model: model, p_facts_hash: hash, p_analysis: analysis });
   if (storeError) return json({ error: 'The analysis could not be saved.' }, 500);
-  console.log(`document-analysis: stored, ${doc.doc_type}, attempt ${attempt}`);
+  console.log(`document-analysis: stored, attempt ${attempt}`);
   return json({ analysis, model, created_at: new Date().toISOString(), facts_hash: hash });
 });
 

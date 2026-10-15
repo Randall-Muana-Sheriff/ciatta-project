@@ -37,6 +37,13 @@ async function main() {
     check('a document is read and comes back typed', visit.status === 200 && visit.body?.doc_type === 'visit' && visit.body?.visit?.diagnoses?.length === 1, `${visit.status}`);
     const asked = await call({ file: 'aGVsbG8=', kind: 'image', as: 'insurance' });
     check('read again as the type she chose', asked.status === 200 && asked.body?.doc_type === 'insurance' && asked.body?.insurance?.provider === 'Aetna');
+    const uses = async () => {
+      const rows = await fetch(`${API}/rest/v1/lab_scan_uses?select=count&user_id=eq.${made.id}`, { headers: admin }).then((r) => r.json());
+      return Array.isArray(rows) && rows[0] ? Number(rows[0].count) : 0;
+    };
+    const before = await uses();
+    const lab = await call({ file: 'aGVsbG8=', kind: 'image', as: 'lab_report' });
+    check('a lab report found here gives its read back, since the lab reader reads it', lab.status === 200 && lab.body?.doc_type === 'lab_report' && (await uses()) === before, `${before} -> ${await uses()}`);
     const bad = await call({ file: '', kind: 'image' });
     check('an empty file is refused', bad.status === 400);
     const unsigned = await fetch(`${API}/functions/v1/document-scan`, { method: 'POST', body: '{}' });

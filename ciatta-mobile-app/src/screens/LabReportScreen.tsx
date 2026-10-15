@@ -228,7 +228,9 @@ export function LabReportScreen() {
       setNote('The original could not be opened just now.');
       return;
     }
-    await WebBrowser.openBrowserAsync(url);
+    // A file on this phone (the example) opens in the share sheet's preview.
+    if (url.startsWith('file:')) await Share.share({ url });
+    else await WebBrowser.openBrowserAsync(url);
   }, [key, repo]);
 
   const remove = useCallback(() => {
