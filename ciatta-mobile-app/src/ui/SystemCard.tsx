@@ -100,7 +100,7 @@ export function SystemCard({
 
       {sources.length ? (
         <>
-          <Pressable
+          <Pressable hitSlop={8}
             onPress={() => setOpen((v) => !v)}
             accessibilityRole="button"
             accessibilityState={{ expanded: open }}

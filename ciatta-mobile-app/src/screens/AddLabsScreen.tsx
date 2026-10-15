@@ -307,7 +307,8 @@ const s = StyleSheet.create({
   warn: { color: HUE.attention },
 
   label: { color: G.meta, marginTop: SPACE.near, marginBottom: 6 },
-  input: { color: G.ink, backgroundColor: G.fill, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, marginTop: 4 },
+  // Inside a card, which is dark in every appearance: the card's inks.
+  input: { color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, marginTop: 4 },
   dateRow: { flexDirection: 'row', gap: 8 },
   part: { flex: 1, textAlign: 'center' },
   card: { marginTop: 12, backgroundColor: L.glass, padding: 14, overflow: 'hidden', ...BLEED },

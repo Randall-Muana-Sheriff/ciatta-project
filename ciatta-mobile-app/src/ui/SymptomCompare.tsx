@@ -176,12 +176,12 @@ export function SymptomCompare({
         )}
 
         <View style={s.buttons}>
-          <Pressable onPress={() => setChoosing(true)} accessibilityRole="button" style={({ pressed }) => [s.btn, pressed && s.pressed]}>
+          <Pressable hitSlop={8} onPress={() => setChoosing(true)} accessibilityRole="button" style={({ pressed }) => [s.btn, pressed && s.pressed]}>
             <Icon name="plus" size={15} color={L.ink} />
             <Text style={[font('footnote', 'semibold'), s.ink]}>Symptoms</Text>
           </Pressable>
           {strip.rows.length ? (
-            <Pressable
+            <Pressable hitSlop={8}
               onPress={() => {
                 setComparing((v) => !v);
                 setPicked([]);

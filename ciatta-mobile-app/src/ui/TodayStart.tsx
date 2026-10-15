@@ -74,7 +74,7 @@ export function TodayStart({
 
 function Pill({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [s.pill, pressed && s.pressed]}>
+    <Pressable hitSlop={8} onPress={onPress} accessibilityRole="button" style={({ pressed }) => [s.pill, pressed && s.pressed]}>
       <Icon name={icon} size={14} color={G.ink} />
       <Text style={[font('footnote', 'semibold'), s.pillText]}>{label}</Text>
     </Pressable>

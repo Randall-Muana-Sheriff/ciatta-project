@@ -377,7 +377,7 @@ export function Expandable({
   return (
     <View style={[s.openCard, flat && s.openFlat]}>
       {flat ? null : <CardFill />}
-      <Pressable
+      <Pressable hitSlop={8}
         onPress={onToggle}
         accessibilityRole="button"
         accessibilityState={{ expanded: true }}

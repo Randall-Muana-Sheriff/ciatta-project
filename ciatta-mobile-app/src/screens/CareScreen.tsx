@@ -426,7 +426,7 @@ function OfferBlock({ turn, onAdd, onDecline }: { turn: Turn; onAdd: () => void;
       ) : null}
       {o.state === 'offered' || o.state === 'failed' ? (
         <View style={s.suggestions}>
-          <Pressable onPress={onAdd} accessibilityRole="button" style={({ pressed }) => [s.actionButton, pressed && s.pressed]}>
+          <Pressable hitSlop={8} onPress={onAdd} accessibilityRole="button" style={({ pressed }) => [s.actionButton, pressed && s.pressed]}>
             <Text style={[font('footnote', 'semibold'), s.actionButtonText]}>{o.state === 'failed' ? 'Try again' : 'Add'}</Text>
           </Pressable>
           <Pressable onPress={onDecline} accessibilityRole="button" hitSlop={6}>
@@ -577,7 +577,7 @@ function AnswerBlock({ turn, onOpen, onGrow }: { turn: Turn; onOpen: (sug: Sugge
       {!writing && a.suggestions.length ? (
         <View style={s.suggestions}>
           {a.suggestions.map((sug) => (
-            <Pressable
+            <Pressable hitSlop={8}
               key={sug.label}
               onPress={() => onOpen(sug)}
               accessibilityRole="button"

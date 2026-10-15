@@ -226,7 +226,7 @@ function SourceRow({
           </View>
         ) : null}
       </View>
-      <Pressable
+      <Pressable hitSlop={8}
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={`${title}, ${connected ? 'connected' : 'connect'}`}
@@ -460,7 +460,7 @@ function Goals() {
           accessibilityLabel="Add a goal"
         />
         {draft.trim() ? (
-          <Pressable onPress={add} accessibilityRole="button" style={p.goalButton}>
+          <Pressable hitSlop={8} onPress={add} accessibilityRole="button" style={p.goalButton}>
             <Text style={[font('subhead', 'semibold'), { color: G.onPill }]}>Add</Text>
           </Pressable>
         ) : null}
@@ -778,7 +778,7 @@ export function ProfileScreen() {
         )}
         {name ? <Text style={[font('title2', 'semibold'), { color: G.ink, marginTop: 12 }]}>{displayCopy(name)}</Text> : null}
         {profile ? <Text style={[font('subhead'), { color: G.meta, marginTop: 2 }]}>{`${profile.age} · ${profile.born}`}</Text> : null}
-        <Pressable onPress={() => setSheet('edit')} accessibilityRole="button" style={({ pressed }) => [p.editPill, pressed && { opacity: 0.7 }]}>
+        <Pressable hitSlop={8} onPress={() => setSheet('edit')} accessibilityRole="button" style={({ pressed }) => [p.editPill, pressed && { opacity: 0.7 }]}>
           <Text style={[font('subhead', 'semibold'), { color: G.ink }]}>Edit Profile</Text>
         </Pressable>
       </View>

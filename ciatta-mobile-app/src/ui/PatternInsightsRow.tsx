@@ -12,7 +12,7 @@ import { useResearchInsights } from '../state/researchInsights';
 import { font, GUTTER } from '../theme';
 import { CardFill } from './cardFill';
 import { G } from './scheme';
-import { SPACE } from './surface';
+import { L, SPACE } from './surface';
 
 export function PatternInsightsRow() {
   const nav = useNav();
@@ -71,14 +71,16 @@ const r = StyleSheet.create({
   rowWrap: { marginHorizontal: -GUTTER },
   row: { gap: GAP, paddingHorizontal: GUTTER },
   card: {
-    height: 176,
+    // Grows with larger text sizes rather than clipping the title.
+    minHeight: 176,
     padding: 16,
     borderRadius: 20,
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255, 255, 255, 0.10)',
   },
-  title: { color: G.ink, lineHeight: 22 },
+  // On a glow card, dark in every appearance.
+  title: { color: L.ink, lineHeight: 22 },
   none: { color: G.body, lineHeight: 21 },
   pressed: { opacity: 0.7 },
 });

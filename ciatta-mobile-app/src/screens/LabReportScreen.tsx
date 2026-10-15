@@ -120,7 +120,7 @@ function BodySystems({ results }: { results: LabResult[] }) {
               >
                 <View style={[s.swatch, { backgroundColor: SYSTEM_DOTS[row.key]?.color ?? L.meta }]} />
                 <Text style={[font('subhead'), s.ink, { flex: 1 }]}>{row.key}</Text>
-                <Text style={[font('caption1'), row.flagged ? s.flag : s.meta]}>
+                <Text style={[font('caption1'), row.flagged ? s.flag : s.cardMeta]}>
                   {row.flagged ? `${row.results.filter(isOutside).length} outside` : `${row.results.length}`}
                 </Text>
               </Pressable>
@@ -316,9 +316,9 @@ export function LabReportScreen() {
                 </View>
                 {isCycleHormone(r.name) ? (
                   <View style={{ gap: 2 }}>
-                    <Text style={[font('caption1'), s.meta]}>{displayCopy(cycleLine(cycle))}</Text>
+                    <Text style={[font('caption1'), s.cardMeta]}>{displayCopy(cycleLine(cycle))}</Text>
                     {phaseRanges(r.rangeText).length ? (
-                      <Text style={[font('caption1'), s.meta]}>
+                      <Text style={[font('caption1'), s.cardMeta]}>
                         {displayCopy(
                           phaseRangeLine(
                             phaseRanges(r.rangeText),
@@ -353,11 +353,11 @@ export function LabReportScreen() {
               <View style={s.grid}>
                 {panel.items.map(({ result, history }) => (
                   <View key={result.id} style={s.cell}>
-                    <Text style={[font('caption2'), s.meta]} numberOfLines={1}>
+                    <Text style={[font('caption2'), s.cardMeta]} numberOfLines={1}>
                       {displayCopy(result.name)}
                     </Text>
                     <MiniTrend history={history} />
-                    <Text style={[font('caption2'), s.meta]} numberOfLines={1}>
+                    <Text style={[font('caption2'), s.cardMeta]} numberOfLines={1}>
                       {displayCopy(changeSinceLast(history))}
                     </Text>
                   </View>
@@ -421,6 +421,8 @@ const st = StyleSheet.hairlineWidth;
 
 const s = StyleSheet.create({
   meta: { color: G.meta },
+  // Meta type inside a card, which stays dark in light appearance too.
+  cardMeta: { color: L.meta },
   ink: { color: L.ink },
   count: { color: G.ink, marginTop: 6, marginBottom: 6 },
   link: { color: G.ink, textDecorationLine: 'underline', marginTop: 4 },

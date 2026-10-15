@@ -76,13 +76,16 @@ const e = StyleSheet.create({
   row: { gap: 10, paddingHorizontal: GUTTER },
   tile: {
     width: 108,
-    height: 84,
+    // A floor, not a fixed height: at larger text sizes the tile grows
+    // rather than cutting the name off.
+    minHeight: 84,
     padding: 12,
     justifyContent: 'space-between',
     borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    // The ground's own lift and edge, so a tile reads in light and dark.
+    backgroundColor: G.fill,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255, 255, 255, 0.14)',
+    borderColor: G.rule,
   },
   tileWide: { width: '48%' },
   label: { color: G.ink, lineHeight: 17 },

@@ -73,16 +73,21 @@ function GroundGlow({ from, to }: { from: GroundHue; to: GroundHue }) {
   const [id] = useState(() => `ground${glowIds++}`);
   const first = GLOW_OF[from] ?? GLOW_OF.measured;
   const second = GLOW_OF[to] ?? GLOW_OF.timeDepth;
-  const top = topFor([first, second]) * SCREEN_STRENGTH;
+  // On light, the same light over paper: the hue tints the top and fades
+  // into the light ground, so dark type keeps its contrast. On dark, it
+  // falls into the dark.
+  const light = G.mode === 'light';
+  const foot = light ? G.mid : FOOT;
+  const top = light ? 0.16 : topFor([first, second]) * SCREEN_STRENGTH;
   return (
     <>
       <Svg style={StyleSheet.absoluteFill} viewBox="0 0 1 1" preserveAspectRatio="none" pointerEvents="none">
         <Defs>
           <LinearGradient id={`${id}l`} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={mix(first, FOOT, top)} />
-            <Stop offset={SCREEN_LIGHT_END * 0.5} stopColor={mix(first, FOOT, top * 0.45)} />
-            <Stop offset={SCREEN_LIGHT_END} stopColor={mix(first, FOOT, top * 0.12)} />
-            <Stop offset="1" stopColor={FOOT} />
+            <Stop offset="0" stopColor={mix(first, foot, top)} />
+            <Stop offset={SCREEN_LIGHT_END * 0.5} stopColor={mix(first, foot, top * 0.45)} />
+            <Stop offset={SCREEN_LIGHT_END} stopColor={mix(first, foot, top * 0.12)} />
+            <Stop offset="1" stopColor={foot} />
           </LinearGradient>
           <RadialGradient id={`${id}r`} cx="0.85" cy="0" rx="0.8" ry="0.3" fx="0.85" fy="0">
             <Stop offset="0" stopColor={second} stopOpacity={SCREEN_POOL * top * 2} />
@@ -92,7 +97,7 @@ function GroundGlow({ from, to }: { from: GroundHue; to: GroundHue }) {
         <Rect x="0" y="0" width="1" height="1" fill={`url(#${id}l)`} />
         <Rect x="0" y="0" width="1" height="1" fill={`url(#${id}r)`} />
       </Svg>
-      <Image source={GRAIN} resizeMode="cover" style={StyleSheet.absoluteFill} accessible={false} />
+      {light ? null : <Image source={GRAIN} resizeMode="cover" style={StyleSheet.absoluteFill} accessible={false} />}
     </>
   );
 }

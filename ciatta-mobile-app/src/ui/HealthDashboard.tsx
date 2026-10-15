@@ -83,7 +83,7 @@ function Card({
   return (
     <View style={d.card}>
       <CardFill />
-      <Pressable
+      <Pressable hitSlop={8}
         onPress={onPress}
         disabled={!onPress}
         accessibilityRole={onPress ? 'button' : 'header'}

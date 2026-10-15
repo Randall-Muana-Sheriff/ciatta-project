@@ -155,7 +155,7 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
         <PhotoCard source={images.careLabs}>
           <Text style={[font('headline'), s.white]}>Labs</Text>
           <Text style={[font('footnote'), s.whiteMeta]}>From your providers and your reports</Text>
-          <Pressable onPress={() => (hub.latestDraw ? nav.push('healthrecords') : undefined)} disabled={!hub.latestDraw}>
+          <Pressable onPress={() => (hub.latestDraw ? nav.push('healthrecords') : undefined)} disabled={!hub.latestDraw} accessibilityRole="button" accessibilityHint="Opens your lab results">
             <Text style={[font('title3', 'semibold'), s.white, s.statement]}>
               {displayCopy(
                 hub.latestDraw
@@ -241,8 +241,8 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
             style={({ pressed }) => [s.member, s.addMember, pressed && s.pressed]}
           >
             <CardPhoto />
-            <Icon name="plus" size={26} color={G.ink} />
-            <Text style={[font('headline'), s.ink]}>Add a clinician</Text>
+            <Icon name="plus" size={26} color={L.ink} />
+            <Text style={[font('headline'), s.cardInk]}>Add a clinician</Text>
           </Pressable>
         </ScrollView>
       </View>
@@ -324,6 +324,7 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
   rule: { borderTopWidth: st, borderTopColor: 'rgba(255,255,255,0.18)' },
   ink: { color: G.ink },
+  cardInk: { color: L.ink },
   body: { color: G.body },
   meta: { color: G.meta },
   note: { color: L.meta, paddingBottom: 12 },
