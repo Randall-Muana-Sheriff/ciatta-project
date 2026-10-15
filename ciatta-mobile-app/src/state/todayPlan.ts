@@ -15,6 +15,8 @@ import { useCycle, useCycleInsights } from './cycleStore';
 import { useDeviceCalendar } from './deviceCalendar';
 import { useInsights } from './insights';
 import { usePlanDone } from './planDone';
+import { planNudges } from '../lib/planNudges';
+import { phoneScheduler, remindersAllowed } from './notifications';
 import { useData, useRepo } from './session';
 
 const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -72,6 +74,30 @@ export function useTodayPlan() {
     now,
   });
   const { done, toggle } = usePlanDone(now);
+
+  // Plans through the day: today's items not yet done, each timed into a
+  // free moment of her calendar, as notifications on this phone. Only for
+  // her own record, and only once she has allowed notifications; this
+  // never asks. Rescheduled whenever the plan or her calendar changes.
+  const nudgeKey = plan.filter((p) => !done.includes(p.key)).map((p) => p.key).join(',') + '|' + calendar.events.length;
+  useEffect(() => {
+    if (repo.mode !== 'real') return;
+    let cancelled = false;
+    void (async () => {
+      if (!(await remindersAllowed(false)) || cancelled) return;
+      const ids = await phoneScheduler.list();
+      await Promise.all(ids.filter((id) => id.startsWith('plan:')).map((id) => phoneScheduler.cancel(id)));
+      const left = plan.filter((p) => !done.includes(p.key));
+      for (const n of planNudges(left, calendar.events, new Date())) {
+        if (cancelled) return;
+        await phoneScheduler.schedule({ id: n.id, title: n.title, body: n.body, at: n.at.toISOString() });
+      }
+    })().catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nudgeKey, repo]);
 
   const openMetric = (key: MetricKey) => {
     chooseMetric(key);

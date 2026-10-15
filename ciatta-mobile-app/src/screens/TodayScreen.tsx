@@ -84,6 +84,8 @@ export function TodayScreen() {
   const nav = useNav();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  // How tall the scrolling area is, so the first screen can fill it.
+  const [viewport, setViewport] = useState(0);
   const chatHeight = chatCardHeight(insets.bottom);
   const { accept, watching, setWatching, episodes } = useCycle();
   const { today: brief, ranked } = useInsights();
@@ -340,7 +342,11 @@ export function TodayScreen() {
         </View>
       </View>
 
-      <ScrollView style={t.fill} contentContainerStyle={[t.body, { paddingBottom: chatHeight + MENU_ROOM }]}>
+      <ScrollView
+        style={t.fill}
+        contentContainerStyle={[t.body, { paddingBottom: chatHeight + MENU_ROOM }]}
+        onLayout={(e) => setViewport(e.nativeEvent.layout.height)}
+      >
         <View style={[t.pad, t.grow]}>
           {state.state === 'empty' ? (
             <TodayStart
@@ -352,17 +358,28 @@ export function TodayScreen() {
             />
           ) : (
             <>
-              {/* The period product she has in, only while one is in. */}
-              <ProductNowCard />
-              <View style={{ flex: 1 }} />
-              {/* Topics to look into, each read from what Ciatta knows. */}
-              <ExploreHealthRow />
-              <View style={t.between} />
-              {/* Pattern Insights, set low on the screen above the chat. */}
-              <PatternInsightsRow />
-              <View style={t.between} />
-              {/* What she could do today, under what Ciatta noticed. */}
-              <PlansSection />
+              {/*
+                The first screen, and only this: Explore at the top, open
+                space, and Pattern Insights resting just above the chat. It
+                fills exactly what shows between the greeting and the chat,
+                so nothing else is on it.
+              */}
+              <View style={[t.firstScreen, viewport ? { minHeight: viewport - chatHeight - MENU_ROOM } : null]}>
+                {/* The period product she has in, only while one is in. */}
+                <ProductNowCard />
+                {/* Topics to look into, each read from what Ciatta knows. */}
+                <ExploreHealthRow />
+                <View style={t.space} />
+                {/* Pattern Insights, low on the screen, well clear of Explore. */}
+                <PatternInsightsRow />
+              </View>
+              {/*
+                Plans, below the fold and below the chat: she scrolls to
+                them, and Ciatta sends them through the day as well.
+              */}
+              <View style={t.belowFold}>
+                <PlansSection />
+              </View>
             </>
           )}
         </View>
@@ -436,6 +453,11 @@ const t = StyleSheet.create({
   fixedHead: { paddingTop: 12, paddingBottom: 8 },
   grow: { flexGrow: 1 },
   between: { height: SPACE.block },
+  firstScreen: { paddingTop: SPACE.block },
+  // The open space between Explore and Pattern Insights: at least a
+  // section's worth, and everything the screen has left.
+  space: { flexGrow: 1, minHeight: SPACE.section * 2 },
+  belowFold: { marginTop: SPACE.section * 2 },
   calendar: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   metricsHead: { marginBottom: SPACE.tight },
   patternToggle: { marginBottom: 10 },
