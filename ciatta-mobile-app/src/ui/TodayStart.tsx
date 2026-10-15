@@ -13,7 +13,7 @@ import { displayCopy } from '../lib/displayCopy';
 import { font } from '../theme';
 import { Icon, type IconName } from './icons';
 import { images } from './images';
-import { L, SPACE, TILE_RADIUS } from './surface';
+import { L, SPACE, TILE_RADIUS, BLEED } from './surface';
 import { CardFill } from './cardFill';
 import { G } from './scheme';
 
@@ -85,12 +85,10 @@ const s = StyleSheet.create({
   card: {
     marginTop: SPACE.near,
     backgroundColor: L.glass,
-    borderRadius: TILE_RADIUS,
     paddingVertical: 28,
     paddingHorizontal: 20,
     alignItems: 'center',
-    overflow: 'hidden',
-  },
+    overflow: 'hidden', ...BLEED },
   badge: {
     width: 48,
     height: 48,
@@ -127,12 +125,10 @@ const s = StyleSheet.create({
   pressed: { opacity: 0.6 },
   preview: {
     marginTop: SPACE.tight,
-    borderRadius: TILE_RADIUS,
     overflow: 'hidden',
     backgroundColor: L.glass,
     minHeight: 180,
-    justifyContent: 'flex-end',
-  },
+    justifyContent: 'flex-end', ...BLEED },
   previewPhoto: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', opacity: 0.5 },
   fade: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(12, 14, 17, 0.45)' },
   previewText: { color: 'rgba(255, 255, 255, 0.88)', textAlign: 'center', paddingHorizontal: 24, paddingBottom: 20, lineHeight: 19 },

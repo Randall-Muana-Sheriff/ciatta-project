@@ -40,7 +40,7 @@ export function PhotoCard({
   style?: ViewStyle;
 }) {
   return (
-    <ImageBackground source={source} style={[s.card, style]} imageStyle={s.image} resizeMode="cover" accessibilityIgnoresInvertColors>
+    <ImageBackground source={source} style={[s.card, style]} imageStyle={[s.image, style?.borderRadius != null ? { borderRadius: style.borderRadius } : null]} resizeMode="cover" accessibilityIgnoresInvertColors>
       <CardWash />
       <View style={s.body}>{children}</View>
     </ImageBackground>

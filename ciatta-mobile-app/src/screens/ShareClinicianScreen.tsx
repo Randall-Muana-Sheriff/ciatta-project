@@ -23,7 +23,7 @@ import { useData, useRepo } from '../state/session';
 import { C, font } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen, PrimaryButton, SecondaryButton, SegmentedControl, Lead } from '../ui/kit';
-import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { L, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
@@ -186,7 +186,7 @@ const st = StyleSheet.hairlineWidth;
 const s = StyleSheet.create({
   lede: { color: G.ink, lineHeight: 24, marginBottom: SPACE.block },
   meta: { color: L.meta, marginTop: 4 },
-  card: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, paddingHorizontal: 14, paddingVertical: 6, marginTop: 10, overflow: 'hidden' },
+  card: { backgroundColor: L.glass, paddingHorizontal: 14, paddingVertical: 6, marginTop: 10, overflow: 'hidden', ...BLEED },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
   divided: { borderTopWidth: st, borderTopColor: L.rule },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingVertical: 8 },

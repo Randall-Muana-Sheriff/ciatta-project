@@ -20,7 +20,7 @@ import { font, GUTTER } from '../theme';
 import { GroundLayer } from './Ground';
 import { InsightCard } from './InsightCards';
 import { G } from './scheme';
-import { L, NAV_CLEARANCE, SPACE } from './surface';
+import { BLEED, L, NAV_CLEARANCE, SPACE } from './surface';
 
 // How much of the screen the resting sheet takes, and how far from the top
 // it stops when open.
@@ -129,6 +129,7 @@ const s = StyleSheet.create({
   title: { color: G.ink, flex: 1 },
   count: { color: G.meta },
   list: { paddingHorizontal: GUTTER, gap: SPACE.grid },
-  card: { width: '100%', height: 320 },
+  // Edge to edge, as every full width card is.
+  card: { height: 320, ...BLEED },
   pressed: { opacity: 0.8 },
 });

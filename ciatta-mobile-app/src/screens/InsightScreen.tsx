@@ -17,7 +17,7 @@ import { Icon } from '../ui/icons';
 import { headingFor } from '../ui/InsightCards';
 import { PhotoCard } from '../ui/PhotoCard';
 import { Sheet } from '../ui/Sheet';
-import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
+import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
 import { CardPhoto } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 import { SegmentedControl } from '../ui/kit';
@@ -244,7 +244,7 @@ const s = StyleSheet.create({
   metricsSwitch: { paddingHorizontal: GUTTER, marginBottom: SPACE.tight },
   tiles: { paddingHorizontal: GUTTER, paddingTop: SPACE.tight },
   dotYours: { backgroundColor: HUE.measured, marginTop: 7 },
-  record: { marginTop: 8, padding: 16, gap: 6, borderRadius: TILE_RADIUS, backgroundColor: L.glass, overflow: 'hidden' },
+  record: { marginTop: 8, padding: 16, gap: 6, backgroundColor: L.glass, overflow: 'hidden', ...BLEED },
   recordLine: { color: L.body, lineHeight: 21 },
   discuss: {
     position: 'absolute',

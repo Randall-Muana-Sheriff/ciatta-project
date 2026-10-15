@@ -8,7 +8,7 @@ import { menuFor, type MenuItem, type Tab } from '../navigation';
 import { C, font, fonts, GUTTER } from '../theme';
 import { Icon, type IconName } from './icons';
 import { G } from './scheme';
-import { L, TILE_RADIUS } from './surface';
+import { L, TILE_RADIUS, BLEED } from './surface';
 import { ChevronRight } from './kit';
 import { CardFill } from './cardFill';
 
@@ -289,10 +289,8 @@ const s = StyleSheet.create({
 
   panel: {
     backgroundColor: L.glass,
-    borderRadius: TILE_RADIUS,
     padding: 16,
-    overflow: 'hidden',
-  },
+    overflow: 'hidden', ...BLEED },
   panelFlat: { backgroundColor: G.card },
   panelTitle: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
 
@@ -302,13 +300,11 @@ const s = StyleSheet.create({
   groupHeaderLight: { color: G.ink },
   groupLight: {
     backgroundColor: G.card,
-    borderRadius: TILE_RADIUS,
-    overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: G.rule },
+    overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: G.rule, ...BLEED },
   rowSepLight: { borderTopColor: G.rule },
   group: {
     backgroundColor: G.card,
-    borderRadius: TILE_RADIUS,
-    overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: G.rule },
+    overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: G.rule, ...BLEED },
   groupFooter: { color: G.body, marginTop: 6, paddingHorizontal: 16 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 16, minHeight: 44 },
   checkBlank: { width: 20 },

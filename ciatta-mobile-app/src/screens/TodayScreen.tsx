@@ -51,7 +51,7 @@ import { useDeviceCalendar } from '../state/deviceCalendar';
 import { font, GUTTER } from '../theme';
 import { SectionHeading, SegmentedControl } from '../ui/kit';
 import { Wordmark } from '../ui/Wordmark';
-import { ground, HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
+import { ground, HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
 import { ListGroup, ListRow } from '../ui/chrome';
 import { MetricCard, METRIC_CARD_GAP } from '../ui/metricCard';
 import { METRIC_HUE } from '../ui/metricHue';
@@ -305,31 +305,33 @@ export function TodayScreen() {
 
   return (
     <View style={t.fill}>
+    {/* No wordmark: her name is the top of the screen, with the calendar
+        beside it, fixed while the rest scrolls under it. */}
+    <View style={[t.pad, t.fixedHead]}>
+      <View style={t.helloRow}>
+        <Text
+          style={[font('title1', 'medium'), t.hello, { flex: 1, fontSize: helloSize, lineHeight: Math.round(helloSize * 1.2) }]}
+          accessibilityRole="header"
+          numberOfLines={1}
+        >
+          {hello}
+        </Text>
+        <Pressable
+          onPress={go('calendar')}
+          accessibilityRole="button"
+          accessibilityLabel="Your calendar"
+          hitSlop={10}
+          style={({ pressed }) => [t.menu, pressed && t.pressed]}
+        >
+          <Icon name="calendar" size={25} color={G.ink} />
+        </Pressable>
+      </View>
+    </View>
     <ScrollView style={t.fill} contentContainerStyle={t.body}>
 
       <View style={t.pad}>
         {/* One row on every phone, the whole name shown: Title 1 where it fits, sized
             down from the screen's width for a long name. */}
-        {/* No wordmark: her name is the top of the screen, with the
-            calendar beside it. */}
-        <View style={t.helloRow}>
-          <Text
-            style={[font('title1', 'medium'), t.hello, { flex: 1, fontSize: helloSize, lineHeight: Math.round(helloSize * 1.2) }]}
-            accessibilityRole="header"
-            numberOfLines={1}
-          >
-            {hello}
-          </Text>
-          <Pressable
-            onPress={go('calendar')}
-            accessibilityRole="button"
-            accessibilityLabel="Your calendar"
-            hitSlop={10}
-            style={({ pressed }) => [t.menu, pressed && t.pressed]}
-          >
-            <Icon name="calendar" size={25} color={G.ink} />
-          </Pressable>
-        </View>
 
         {state.state === 'empty' ? (
           <TodayStart
@@ -409,12 +411,10 @@ const t = StyleSheet.create({
 
   dayCard: {
     backgroundColor: L.glass,
-    borderRadius: TILE_RADIUS,
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 10,
-    overflow: 'hidden',
-  },
+    overflow: 'hidden', ...BLEED },
   cardPressed: { opacity: 0.8 },
   askBox: {
     flexDirection: 'row',
@@ -429,6 +429,7 @@ const t = StyleSheet.create({
   },
   askText: { flex: 1, color: G.meta },
   helloRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  fixedHead: { paddingTop: 12, paddingBottom: 8 },
   metricsHead: { marginBottom: SPACE.tight },
   patternToggle: { marginBottom: 10 },
   // The timeline brings its own side padding, so the card adds none.
@@ -460,7 +461,7 @@ const t = StyleSheet.create({
   // these are: six readings from one day, none ranked above another.
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: METRIC_CARD_GAP },
   // Each metric its own card, on the same ground as every other card.
-  metricsCard: { borderRadius: TILE_RADIUS, overflow: 'hidden', backgroundColor: L.glass, padding: 10 },
+  metricsCard: { overflow: 'hidden', backgroundColor: L.glass, padding: 10, ...BLEED },
   // Each metric as the body system chips are drawn: no fill, a hairline
   // edge (chip.tile), on the card's own glow.
   gridCell: {
@@ -486,10 +487,8 @@ const t = StyleSheet.create({
   card: {
     marginTop: SPACE.tight,
     backgroundColor: L.glass,
-    borderRadius: TILE_RADIUS,
     padding: 18,
-    overflow: 'hidden',
-  },
+    overflow: 'hidden', ...BLEED },
   chart: { flex: 1, aspectRatio: 190 / 150 },
   plan: {
     backgroundColor: L.glass,

@@ -16,7 +16,7 @@ import { useCycle } from '../state/cycleStore';
 import { useData, useRepo } from '../state/session';
 import { font } from '../theme';
 import { DetailScreen, EmptyNote, Tag } from '../ui/kit';
-import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { L, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
@@ -123,12 +123,10 @@ const p = StyleSheet.create({
   title: { color: G.ink, marginTop: SPACE.block, marginBottom: SPACE.tight },
   block: {
     backgroundColor: L.glass,
-    borderRadius: TILE_RADIUS,
     padding: 16,
     gap: 4,
     marginTop: SPACE.tight,
-    overflow: 'hidden',
-  },
+    overflow: 'hidden', ...BLEED },
   procedure: { backgroundColor: L.statement },
   ink: { color: L.ink },
   meta: { color: L.meta },

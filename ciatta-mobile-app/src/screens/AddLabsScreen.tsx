@@ -25,7 +25,7 @@ import { useRepo } from '../state/session';
 import { C, font } from '../theme';
 import { DetailScreen, PrimaryButton, SecondaryButton, SaveBar, Lead } from '../ui/kit';
 import { LabStatusTag } from '../ui/labs';
-import { HUE, L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { HUE, L, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
@@ -310,7 +310,7 @@ const s = StyleSheet.create({
   input: { color: G.ink, backgroundColor: G.fill, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, marginTop: 4 },
   dateRow: { flexDirection: 'row', gap: 8 },
   part: { flex: 1, textAlign: 'center' },
-  card: { marginTop: 12, backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 14, overflow: 'hidden' },
+  card: { marginTop: 12, backgroundColor: L.glass, padding: 14, overflow: 'hidden', ...BLEED },
   head: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   fields: { flexDirection: 'row', gap: 10, marginTop: 8 },
 });

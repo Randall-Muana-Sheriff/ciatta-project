@@ -39,7 +39,7 @@ import { MetricChart } from '../ui/MetricChart';
 import { Hypnogram } from '../ui/Hypnogram';
 import { lastNight, type Night } from '../lib/hypnogram';
 import { METRIC_HUE } from '../ui/metricHue';
-import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { L, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
@@ -203,10 +203,10 @@ const d = StyleSheet.create({
   value: { color: G.ink, letterSpacing: -1.5, fontVariant: ['tabular-nums'] },
   none: { color: G.meta },
   when: { color: G.meta, marginTop: 2, marginBottom: 4 },
-  card: { marginTop: SPACE.near, backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 14, overflow: 'hidden' },
+  card: { marginTop: SPACE.near, backgroundColor: L.glass, padding: 14, overflow: 'hidden', ...BLEED },
   legend: { color: L.meta, marginTop: 10, lineHeight: 17 },
   group: { marginTop: SPACE.block },
-  list: { marginTop: SPACE.tight, backgroundColor: L.glass, borderRadius: TILE_RADIUS, paddingHorizontal: 14, overflow: 'hidden' },
+  list: { marginTop: SPACE.tight, backgroundColor: L.glass, paddingHorizontal: 14, overflow: 'hidden', ...BLEED },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
   divided: { borderTopWidth: st, borderTopColor: L.rule },
   label: { color: L.body, flex: 1 },

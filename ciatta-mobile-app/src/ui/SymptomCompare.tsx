@@ -17,7 +17,7 @@ import type { Range, Strip } from '../lib/symptomStrip';
 import { font } from '../theme';
 import { Icon } from './icons';
 import { Sheet } from './Sheet';
-import { HUE, L, TILE_RADIUS } from './surface';
+import { HUE, L, TILE_RADIUS, BLEED } from './surface';
 import { onGround } from './scheme';
 import { CardFill } from './cardFill';
 import { G } from './scheme';
@@ -248,7 +248,7 @@ function SymptomPicker({ visible, chosen, logged, onDone }: { visible: boolean; 
 
 const s = StyleSheet.create({
   all: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  card: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 14, overflow: 'hidden' },
+  card: { backgroundColor: L.glass, padding: 14, overflow: 'hidden', ...BLEED },
   ranges: { flexDirection: 'row', gap: 6, marginBottom: 12 },
   range: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: L.statement },
   rangeOn: { backgroundColor: HUE.measured },

@@ -35,7 +35,7 @@ import { DetailScreen, SegmentedControl, Lead } from '../ui/kit';
 import { HealthDashboard } from '../ui/HealthDashboard';
 import { useCycle, useCycleInsights } from '../state/cycleStore';
 import { useInsights } from '../state/insights';
-import { HUE, L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { HUE, L, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
@@ -203,10 +203,8 @@ const s = StyleSheet.create({
   card: {
     marginTop: SPACE.tight,
     backgroundColor: L.glass,
-    borderRadius: TILE_RADIUS,
     paddingHorizontal: 14,
-    overflow: 'hidden',
-  },
+    overflow: 'hidden', ...BLEED },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
   divided: { borderTopWidth: st, borderTopColor: L.rule },
   left: { flex: 1 },

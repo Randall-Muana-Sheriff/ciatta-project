@@ -15,7 +15,7 @@ import { CardFill } from '../ui/cardFill';
 import { LargeTitle } from '../ui/chrome';
 import { Icon, type IconName } from '../ui/icons';
 import { G } from '../ui/scheme';
-import { L, NAV_CLEARANCE, TILE_RADIUS } from '../ui/surface';
+import { L, NAV_CLEARANCE, TILE_RADIUS, BLEED } from '../ui/surface';
 
 const PLAN_ICON: Record<PlanKey, IconName> = {
   visit: 'calendarPlus',
@@ -87,7 +87,7 @@ const p = StyleSheet.create({
   body: { paddingBottom: NAV_CLEARANCE },
   pad: { paddingHorizontal: GUTTER, paddingTop: 4 },
   lede: { color: G.body, marginBottom: 16 },
-  plan: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, paddingHorizontal: 14, overflow: 'hidden' },
+  plan: { backgroundColor: L.glass, paddingHorizontal: 14, overflow: 'hidden', ...BLEED },
   row: { flexDirection: 'row', gap: 12, paddingVertical: 14 },
   rule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },
   tick: {

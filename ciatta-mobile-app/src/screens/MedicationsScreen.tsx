@@ -15,7 +15,7 @@ import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
 import { C, font } from '../theme';
 import { DetailScreen, EmptyNote, SecLabel, SecondaryButton, SourceFooter } from '../ui/kit';
-import { L, TILE_RADIUS } from '../ui/surface';
+import { L, TILE_RADIUS, BLEED } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
 
 function ItemCard({ item, kind }: { item: NamedItem; kind: string }) {
@@ -124,11 +124,9 @@ export function MedicationsScreen() {
 const m = StyleSheet.create({
   card: {
     backgroundColor: L.glass,
-    borderRadius: TILE_RADIUS,
     padding: 14,
     marginBottom: 10,
-    overflow: 'hidden',
-  },
+    overflow: 'hidden', ...BLEED },
   between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingVertical: 2 },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule, marginTop: 8, paddingTop: 8 },
 });

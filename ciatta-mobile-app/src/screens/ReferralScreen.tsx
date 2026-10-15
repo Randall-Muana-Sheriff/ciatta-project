@@ -14,7 +14,7 @@ import { C, font } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { Icon } from '../ui/icons';
 import { DetailScreen, SecondaryButton, SaveBar } from '../ui/kit';
-import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { L, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
@@ -185,7 +185,7 @@ export function ReferralScreen() {
 const s = StyleSheet.create({
   label: { color: G.meta, marginTop: SPACE.near, marginBottom: 6 },
   input: { color: G.ink, backgroundColor: G.fill, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
-  card: { marginTop: SPACE.tight, backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 14, overflow: 'hidden' },
+  card: { marginTop: SPACE.tight, backgroundColor: L.glass, padding: 14, overflow: 'hidden', ...BLEED },
   step: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },
   tick: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: L.meta, alignItems: 'center', justifyContent: 'center' },

@@ -14,7 +14,7 @@ import { displayCopy } from '../lib/displayCopy';
 import { font } from '../theme';
 import { AgentAvatar } from './AgentAvatar';
 import { CardFill } from './cardFill';
-import { L, SPACE, TILE_RADIUS } from './surface';
+import { L, SPACE, TILE_RADIUS, BLEED } from './surface';
 
 export function CiattaCard({
   checkIn,
@@ -73,7 +73,7 @@ const c = StyleSheet.create({
   wrap: { marginTop: SPACE.near },
   head: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
   name: { color: L.ink },
-  card: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 16, overflow: 'hidden' },
+  card: { backgroundColor: L.glass, padding: 16, overflow: 'hidden', ...BLEED },
   line: { color: L.meta, lineHeight: 18 },
   question: { color: L.ink, marginTop: 6, lineHeight: 24 },
   answers: { flexDirection: 'row', gap: 8, marginTop: 14 },

@@ -19,7 +19,7 @@ import { useData, useRepo } from '../state/session';
 import { font } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen, PrimaryButton, SegmentedControl, SourceFooter } from '../ui/kit';
-import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { L, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
 import { onGround } from '../ui/scheme';
 import { CardFill } from '../ui/cardFill';
 
@@ -240,7 +240,7 @@ const st = StyleSheet.hairlineWidth;
 const s = StyleSheet.create({
   section: { marginTop: SPACE.block },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  card: { marginTop: SPACE.tight, backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 14, overflow: 'hidden' },
+  card: { marginTop: SPACE.tight, backgroundColor: L.glass, padding: 14, overflow: 'hidden', ...BLEED },
   meta: { color: L.meta },
   note: { color: L.meta, marginTop: 10, lineHeight: 17 },
   body: { color: L.body },
