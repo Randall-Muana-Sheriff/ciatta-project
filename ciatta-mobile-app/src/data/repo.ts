@@ -315,18 +315,22 @@ export function demoRepo(): Repo {
   // The example person's recent logs by category, dated from today, so the
   // dashboard's category cards have something of hers to count.
   const recent = (daysAgo: number) => new Date(Date.now() - daysAgo * 86400000).toISOString();
+  // An endometriosis week: pelvic pain coming back as her period nears,
+  // the gut and back pain that travel with it, the tiredness, and what
+  // she ate and drank around it.
   const logged: [number, string, EntryKind, CategoryKey, Found][] = [
-    [0, 'Two coffees before ten', 'Context', 'nutrition', { nutrition: ['Caffeine'] }],
-    [2, 'Coffee, and skipped lunch', 'Context', 'nutrition', { nutrition: ['Caffeine', 'Skipped a meal'] }],
+    [0, 'Dull pelvic ache since lunch, totally drained', 'Symptoms', 'body', { body: ['Pelvic pain', 'Fatigue'] }],
+    [1, 'Bloated and crampy after dinner', 'Symptoms', 'gut', { gut: ['Bloating', 'Cramping'] }],
+    [1, 'Two coffees before ten', 'Context', 'nutrition', { nutrition: ['Caffeine'] }],
+    [2, 'Lower back aching all evening, heat pad helped', 'Symptoms', 'body', { body: ['Lower back pain'] }],
+    [3, 'Pelvic pain again, worse sitting at my desk', 'Symptoms', 'body', { body: ['Pelvic pain'] }],
+    [3, 'Foggy all afternoon, hard to focus', 'Symptoms', 'mind', { mind: ['Brain fog', 'Hard to focus'] }],
     [4, 'Glass of wine with a late dinner', 'Context', 'nutrition', { nutrition: ['Alcohol', 'Ate late'] }],
-    [1, 'Foggy all afternoon, hard to focus', 'Symptoms', 'mind', { mind: ['Brain fog', 'Hard to focus'] }],
-    [3, 'Headache by the evening', 'Symptoms', 'mind', { mind: ['Headache'] }],
-    [6, 'Foggy again', 'Symptoms', 'mind', { mind: ['Brain fog'] }],
-    [2, 'Night sweats, woke twice', 'Symptoms', 'body', { body: ['Night sweats', 'Fatigue'] }],
+    [5, 'Some pain with sex, and needing to pee more often', 'Symptoms', 'sexual', { sexual: ['Pain with sex', 'Urinary urgency'] }],
+    [6, 'Night sweats, woke twice', 'Symptoms', 'body', { body: ['Night sweats', 'Fatigue'] }],
+    [8, 'Pelvic pain on the left side, came and went', 'Symptoms', 'body', { body: ['Pelvic pain'] }],
     [9, 'Tired all day', 'Symptoms', 'body', { body: ['Fatigue'] }],
-    [4, 'Breakout on my chin', 'Symptoms', 'skin', { skin: ['Acne'] }],
     [12, 'More hair in the brush', 'Symptoms', 'skin', { skin: ['Hair shedding'] }],
-    [5, 'Needing to pee more often', 'Symptoms', 'sexual', { sexual: ['Urinary urgency'] }],
   ];
   const sampleRecent = logged.map(([ago, text, kind, cat, items]) => ({
     text,
@@ -350,7 +354,7 @@ export function demoRepo(): Repo {
       id: 'demo-refill',
       kind: 'refill',
       title: 'Refill: Levothyroxine',
-      body: 'Hello Dr Maria Rivera,\n\nI would like to request a refill of Levothyroxine.\n\nThank you,\nAlex',
+      body: 'Hello Dr Maria Rivera,\n\nI would like to request a refill of Levothyroxine.\n\nThank you,\nMaya',
       clinician: 'Dr Maria Rivera',
       status: 'sent',
       sentOn: daysAgo(2).slice(0, 10),
@@ -361,7 +365,7 @@ export function demoRepo(): Repo {
       id: 'demo-records',
       kind: 'records',
       title: 'Records request: Riverside Health',
-      body: 'Hello,\n\nI would like a copy of my recent visit notes and test results, sent to my patient portal if possible.\n\nThank you,\nAlex',
+      body: 'Hello,\n\nI would like a copy of my recent visit notes and test results, sent to my patient portal if possible.\n\nThank you,\nMaya',
       clinician: 'Riverside Health',
       status: 'draft',
       sentOn: null,
@@ -377,7 +381,7 @@ export function demoRepo(): Repo {
   let labs: LabResult[] = sampleLabs();
   let demoReports: { id: string; on: string; checksum: string }[] = [];
   const demoAnalyses = new Map<string, StoredAnalysis>();
-  let demoDocuments: (DocumentDetail & { checksum: string })[] = [];
+  let demoDocuments: (DocumentDetail & { checksum: string })[] = sampleDocuments();
   // Originals kept in memory in the example, so View original opens.
   const demoFiles = new Map<string, { base64: string; kind: 'image' | 'pdf' }>();
   let demoFiled: { conditions: { id: string; name: string }[]; medications: { id: string; name: string; stoppedOn: string | null }[]; allergies: { id: string; name: string }[] } = { conditions: [], medications: [], allergies: [] };
@@ -1995,6 +1999,74 @@ function labFromRow(r: LabRow): LabResult {
 const SAMPLE_MONTH: Record<string, string> = { Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06', Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12' };
 
 // The example person's draws ("12 Jun 2026", "41 ng/mL", "15 to 150") as labs.
+// The example person's documents: the ultrasound that first showed the
+// endometrioma, and the visit summary after her laparoscopy, dated from
+// today so they sit before and after it as the rest of her record does.
+function sampleDocuments(): (DocumentDetail & { checksum: string })[] {
+  const ago = (n: number) => {
+    const d = new Date(Date.now() - n * 86400000);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const empty = { notMedical: false, multipleDates: false, unreadablePages: [] as number[], visit: null, report: null, prescription: null, referral: null, insurance: null, other: null };
+  const noneFiled = { conditions: [] as string[], allergies: [] as string[], medications: [] as string[], procedures: [] as string[], referrals: [] as string[] };
+  return [
+    {
+      id: 'sample-doc-ultrasound',
+      checksum: 'sample-ultrasound',
+      docType: 'imaging',
+      title: 'Pelvic ultrasound',
+      on: ago(130),
+      extraction: {
+        ...empty,
+        docType: 'imaging',
+        title: 'Pelvic ultrasound',
+        date: ago(130),
+        clinician: 'Dr Priya Nair',
+        facility: 'Riverside Imaging',
+        pages: 2,
+        report: {
+          study: 'Transvaginal pelvic ultrasound',
+          bodySite: 'Pelvis',
+          findings: 'Left ovary: a 3.1 cm cyst with uniform low level echoes. Right ovary normal. Uterus normal in size, no fibroids seen.',
+          impression: 'Left ovarian cyst with an appearance that may represent an endometrioma. Correlation with symptoms and gynecology review suggested.',
+          namedConditions: ['Endometrioma'],
+        },
+      },
+      filed: noneFiled,
+      linked: [],
+    },
+    {
+      id: 'sample-doc-lap-visit',
+      checksum: 'sample-lap-visit',
+      docType: 'visit',
+      title: 'Laparoscopy follow up',
+      on: ago(56),
+      extraction: {
+        ...empty,
+        docType: 'visit',
+        title: 'Laparoscopy follow up',
+        date: ago(56),
+        clinician: 'Dr Maria Rivera',
+        facility: 'Riverside Health',
+        pages: 1,
+        visit: {
+          reason: 'Review after laparoscopy',
+          diagnoses: [{ name: 'Endometriosis', status: 'existing' }],
+          medicationsStarted: [{ name: 'Dienogest', strength: '2 mg', dose: '1 tablet', frequency: 'once daily', route: 'by mouth', prescriber: 'Dr Maria Rivera', date: ago(56) }],
+          medicationsStopped: [],
+          medicationsChanged: [],
+          procedures: [{ name: 'Laparoscopy', date: ago(70) }],
+          followUps: [{ specialty: 'Gynecology', clinician: 'Dr Maria Rivera', reason: 'Review pain and bleeding on dienogest', when: 'in 3 months' }],
+          instructions: ['Keep a note of pain, bleeding and bowel symptoms until the next visit.', 'Take iron with vitamin C, away from levothyroxine.'],
+          allergies: [{ substance: 'Penicillin', reaction: 'Rash' }],
+        },
+      },
+      filed: noneFiled,
+      linked: [],
+    },
+  ];
+}
+
 function sampleLabs(): LabResult[] {
   return sampleRecords.draws.flatMap((d, i) => {
     const [day, mon, year] = d.date.split(' ');

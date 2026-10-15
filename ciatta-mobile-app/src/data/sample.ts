@@ -112,6 +112,11 @@ export const symptoms = {
     { label: 'Low energy', start: 3.8, end: 5.5, color: 'mild' },
   ] as { label: string; start: number; end: number; color: 'mild' | 'moderate' | 'severe' }[],
   list: [
+    { name: 'Pelvic pain', days: '19 days', facts: [
+      { label: 'First logged', value: '9 Jan' },
+      { label: 'Most often', value: 'In the days before a period, 14 of 19 days' },
+      { label: 'Around it', value: 'Bloating and lower back pain on 9 of those days' },
+    ] },
     { name: 'Disrupted sleep', days: '34 days', group: 'Sleep', facts: [
       { label: 'First logged', value: '18 Mar' },
       { label: 'Most often', value: 'Moderate, 21 of 34 days' },
@@ -134,6 +139,8 @@ export const symptoms = {
 
 export const medications = {
   current: [
+    { name: 'Dienogest', dose: '2 mg', timing: 'Morning', since: 'Since your laparoscopy follow up', note: 'Started by Dr Maria Rivera' },
+    { name: 'Tranexamic acid', dose: '1 g', timing: 'Heavy period days', since: 'As needed', note: null },
     { name: 'Magnesium', dose: '300 mg', timing: 'Evening', since: 'Since 14 Mar', note: null },
     { name: 'Vitamin D', dose: '1,000 IU', timing: 'Morning', since: 'Since 12 Jun', note: 'Added after your 12 Jun results' },
   ],
@@ -168,15 +175,18 @@ export const journal = {
   since: 'Since January',
   months: [
     { month: 'July 2026', items: [
+      { text: 'Period started. Heavy the first two days, pain 7 of 10 on day one.', date: '6 Jul', tag: 'Cycle', kind: 'Symptoms', usedInInsight: false },
       { text: 'Better week. Slept through four nights.', date: '3 Jul', tag: 'Sleep', kind: 'Notes', usedInInsight: false },
     ] },
     { month: 'June 2026', items: [
+      { text: 'Ultrasound booked after another painful period.', date: '18 Jun', tag: 'Care', kind: 'Context', usedInInsight: false },
       { text: 'Started vitamin D after the last results.', date: '12 Jun', tag: 'Medication', kind: 'Context', usedInInsight: false },
     ] },
     { month: 'May 2026', items: [
       { text: 'Tired in a way sleep is not fixing.', date: '22 May', tag: 'Energy', kind: 'Symptoms', usedInInsight: false },
     ] },
     { month: 'March 2026', items: [
+      { text: 'Pelvic pain flared before my period, missed a day of work.', date: '24 Mar', tag: 'Pain', kind: 'Symptoms', usedInInsight: false },
       { text: 'Stopped sleeping through the night.', date: '18 Mar', tag: 'Used in an insight', kind: 'Symptoms', usedInInsight: true },
       { text: 'Stressful stretch at work.', date: '14 Mar', tag: 'Used in an insight', kind: 'Context', usedInInsight: true },
     ] },
@@ -186,7 +196,7 @@ export const journal = {
   ] as { month: string; items: { text: string; date: string; tag: string; kind: EntryKind; usedInInsight: boolean }[] }[],
 };
 
-export type LabStatus = 'In' | 'Low';
+export type LabStatus = 'In' | 'Low' | 'High';
 
 export const records = {
   highlight: { name: 'Ferritin, latest', value: '41', unit: 'ng/mL', status: 'In' as LabStatus, change: 'up from 34 on 2 Feb' },
@@ -195,6 +205,8 @@ export const records = {
       { name: 'Ferritin', value: '41 ng/mL', range: '15 to 150', status: 'In' },
       { name: 'Vitamin D', value: '26 ng/mL', range: '30 to 100', status: 'Low' },
       { name: 'TSH', value: '2.3 mIU/L', range: '0.4 to 4.0', status: 'In' },
+      { name: 'Hemoglobin', value: '11.6 g/dL', range: '12.0 to 15.5', status: 'Low' },
+      { name: 'CA 125', value: '38 U/mL', range: '0 to 35', status: 'High' },
     ] },
     { date: '2 Feb 2026', lab: 'Quest Diagnostics', results: [
       { name: 'Ferritin', value: '34 ng/mL', range: '15 to 150', status: 'In' },
@@ -241,7 +253,7 @@ export const aboutYou = [
   { label: 'Age', value: '28' },
   { label: 'Life stage', value: 'Not added' },
   { label: 'Cycle', value: 'Usually 26 to 30 days' },
-  { label: 'Conditions', value: 'None added' },
+  { label: 'Conditions', value: 'Endometriosis, hypothyroidism' },
 ];
 
 // ── Reference screens (ciatta-visual-assets) ──────────────────
