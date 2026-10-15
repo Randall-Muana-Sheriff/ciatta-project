@@ -20,12 +20,15 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 import {
   allowedClients,
+  dueBefore,
   exchangeBody,
   failureLine,
   isFailure,
   needsRefresh,
   readTokens,
   refreshBody,
+  sameSecret,
+  SYNC_BATCH,
   MAX_PAGES,
   nextPage,
   pageOutcome,
@@ -63,6 +66,17 @@ Deno.serve(async (req: Request) => {
 
   const auth = req.headers.get('Authorization') ?? '';
   if (!auth.startsWith('Bearer ')) return json({ error: 'Not signed in' }, 401);
+
+  // The scheduler, not a person. It may only run the scheduled sync, and
+  // a signed in person can never reach that action.
+  if (sameSecret(auth.slice('Bearer '.length), serviceKey)) {
+    try {
+      return await syncDue(createClient(url, serviceKey));
+    } catch (e) {
+      console.error('provider sync_due failed', e instanceof Error ? e.name : 'unknown');
+      return json({ error: 'That did not finish.' }, 500);
+    }
+  }
 
   const caller = createClient(url, anonKey, { global: { headers: { Authorization: auth } } });
   const { data: who, error: whoError } = await caller.auth.getUser();
@@ -165,6 +179,12 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
     .maybeSingle();
   if (error) throw error;
   if (!conn) return json({ error: 'That connection was not found.' }, 404);
+
+  await admin
+    .from('provider_connections')
+    .update({ sync_attempted_at: new Date().toISOString() })
+    .eq('id', connectionId)
+    .eq('user_id', uid);
 
   let accessToken: string = conn.access_token ?? '';
 
@@ -323,6 +343,35 @@ async function discoverTokenEndpoint(fhirBaseUrl: string): Promise<string | null
   } catch {
     return null;
   }
+}
+
+// The connections that have waited longest, read one at a time. One that
+// fails is noted and the run goes on to the next.
+async function syncDue(admin: any): Promise<Response> {
+  const { data: due, error } = await admin
+    .from('provider_connections')
+    .select('id, user_id')
+    .in('status', ['active', 'connected'])
+    .or(`sync_attempted_at.is.null,sync_attempted_at.lt.${dueBefore(new Date())}`)
+    .order('sync_attempted_at', { ascending: true, nullsFirst: true })
+    .limit(SYNC_BATCH);
+  if (error) throw error;
+
+  let synced = 0;
+  for (const c of (due ?? []) as { id: string; user_id: string }[]) {
+    try {
+      const res = await sync(admin, c.user_id, c.id);
+      if (res.ok) synced++;
+    } catch (e) {
+      console.error('provider sync failed', e instanceof Error ? e.name : 'unknown');
+      await admin
+        .from('provider_connections')
+        .update({ last_error: 'The last update did not finish. Ciatta will try again.' })
+        .eq('id', c.id)
+        .eq('user_id', c.user_id);
+    }
+  }
+  return json({ considered: (due ?? []).length, synced });
 }
 
 // The provider no longer accepts this connection. Her records so far are

@@ -3,6 +3,10 @@ import { test } from 'node:test';
 
 import {
   allowedClients,
+  dueBefore,
+  sameSecret,
+  SYNC_BATCH,
+  SYNC_EVERY_HOURS,
   exchangeBody,
   failureLine,
   FETCH_ORDER,
@@ -213,4 +217,23 @@ test('the allowed ids are the listed ones and the single legacy one, each once',
 test('nothing configured allows nothing', () => {
   assert.deepEqual(allowedClients(undefined, undefined), []);
   assert.deepEqual(allowedClients(' , ', ''), []);
+});
+
+// ── The scheduled sync ───────────────────────────────────────────────
+
+test('a connection is due once it has waited its interval', () => {
+  assert.equal(SYNC_EVERY_HOURS, 20);
+  assert.equal(dueBefore(new Date('2026-10-14T20:00:00.000Z')), '2026-10-14T00:00:00.000Z');
+});
+
+test('one scheduled run reads a few connections, not everyone', () => {
+  assert.ok(SYNC_BATCH >= 1 && SYNC_BATCH <= 5);
+});
+
+test('the scheduler is recognised by the exact key and by nothing else', () => {
+  assert.equal(sameSecret('key 123', 'key 123'), true);
+  assert.equal(sameSecret('key 124', 'key 123'), false);
+  assert.equal(sameSecret('key 12', 'key 123'), false);
+  assert.equal(sameSecret('key 1234', 'key 123'), false);
+  assert.equal(sameSecret('', ''), false);
 });

@@ -211,6 +211,29 @@ export function needsRefresh(expiresAt: string | null, now: Date): boolean {
   return at - now.getTime() < 60_000;
 }
 
+// How long a connection waits before the scheduled run reads it again, and
+// how many one run reads. Under a day keeps a chart that changes at visits
+// current; three keeps one run well inside the function's time limit.
+export const SYNC_EVERY_HOURS = 20;
+export const SYNC_BATCH = 3;
+
+export function dueBefore(now: Date): string {
+  return new Date(now.getTime() - SYNC_EVERY_HOURS * 3_600_000).toISOString();
+}
+
+// Whether the bearer is the service role key, compared in constant time so
+// how long it takes says nothing about how much of a guess was right. An
+// empty key is never a match, or an unset env would let an empty bearer in.
+export function sameSecret(given: string, expected: string): boolean {
+  const encoder = new TextEncoder();
+  const a = encoder.encode(given);
+  const b = encoder.encode(expected);
+  if (b.length === 0) return false;
+  let difference = a.length ^ b.length;
+  for (let i = 0; i < b.length; i++) difference |= (a[i] ?? 0) ^ b[i];
+  return difference === 0;
+}
+
 // What she is told. Never the protocol's words.
 export function failureLine(failure: ExchangeFailure): string {
   switch (failure.reason) {

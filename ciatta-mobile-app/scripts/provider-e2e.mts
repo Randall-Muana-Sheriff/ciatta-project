@@ -132,7 +132,11 @@ async function main() {
     const again = await call(her.jwt, { action: 'sync', connectionId: id });
     check('a re sync makes no duplicates', again.status === 200 && (await count(her.jwt, 'clinical_records')) === held);
 
-    // SCHEDULED SYNC CHECKS (Task 4 adds them here)
+    await setConnection(id, { sync_attempted_at: new Date(Date.now() - 24 * 3600_000).toISOString() });
+    const due = await call(SERVICE, { action: 'sync_due' });
+    const attempted = Date.parse((await connection(id))?.sync_attempted_at ?? '');
+    check('the scheduled run reads a connection that is due', due.status === 200 && attempted > Date.now() - 120_000, JSON.stringify(due.body));
+    check('a signed in person cannot run the scheduled sync', (await call(her.jwt, { action: 'sync_due' })).status === 400);
 
     const theirs = await call(other.jwt, { action: 'sync', connectionId: id });
     check('someone else cannot sync her connection', theirs.status === 404);
