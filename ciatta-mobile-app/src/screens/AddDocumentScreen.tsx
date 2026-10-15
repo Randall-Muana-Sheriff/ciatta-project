@@ -20,7 +20,7 @@ import { C, font } from '../theme';
 import { CardFill } from '../ui/cardFill';
 import { DetailScreen, Lead, PrimaryButton, SaveBar, SecondaryButton } from '../ui/kit';
 import { G } from '../ui/scheme';
-import { HUE, L, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
+import { HUE, L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { type Captured, useCapture } from '../ui/useCapture';
 
 const ORDER: Target[] = ['conditions', 'allergies', 'medications', 'stop_medications', 'procedures', 'referrals', 'insurance'];
@@ -256,7 +256,7 @@ const s = StyleSheet.create({
   ink: { color: L.ink },
   warn: { color: HUE.attention },
   block: { paddingVertical: 8 },
-  card: { marginTop: SPACE.tight, backgroundColor: L.glass, paddingHorizontal: 14, overflow: 'hidden', ...BLEED },
+  card: { marginTop: SPACE.tight, backgroundColor: L.glass, paddingHorizontal: 14, overflow: 'hidden', borderRadius: TILE_RADIUS },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
   divided: { borderTopWidth: st, borderTopColor: G.rule },
   types: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },

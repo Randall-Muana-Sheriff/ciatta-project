@@ -154,11 +154,6 @@ export function onTint(meaning: Meaning): string {
 // shares an edge treatment.
 export const TILE_RADIUS = 22;
 
-// Full bleed: a full width card runs to both edges of the phone. Screens
-// pad their content by the gutter (16, theme.ts GUTTER), so a card pulls
-// itself out by the same amount, and loses its corners and side edges,
-// which an edge has no use for. Text inside keeps its own padding.
-export const BLEED = { marginHorizontal: -16, borderRadius: 0, borderLeftWidth: 0, borderRightWidth: 0 } as const;
 
 // Editorial spacing. Whitespace is the only thing carrying hierarchy once
 // the palette is this quiet, so the steps are few and far apart rather than

@@ -15,7 +15,7 @@ import { CardFill } from '../ui/cardFill';
 import { LargeTitle } from '../ui/chrome';
 import { Icon, type IconName } from '../ui/icons';
 import { G } from '../ui/scheme';
-import { L, NAV_CLEARANCE, TILE_RADIUS, BLEED } from '../ui/surface';
+import { L, NAV_CLEARANCE, TILE_RADIUS } from '../ui/surface';
 
 const PLAN_ICON: Record<PlanKey, IconName> = {
   visit: 'calendarPlus',
@@ -29,16 +29,19 @@ const PLAN_ICON: Record<PlanKey, IconName> = {
   log: 'plus',
 };
 
-export function PlansScreen() {
+// Plans on Today, under Pattern Insights: the heading with how many are
+// done, then the list.
+export function PlansSection() {
   const { plan, done, toggle, doItem } = useTodayPlan();
   const finished = plan.filter((p) => done.includes(p.key)).length;
   return (
-    <ScrollView style={p.fill} contentContainerStyle={p.body}>
-      <LargeTitle title="Plans" />
-      <View style={p.pad}>
-        <Text style={[font('subhead'), p.lede]}>
-          {plan.length ? `Today, from your own readings. ${finished} of ${plan.length} done.` : 'Today, from your own readings.'}
+    <View>
+      <View style={p.head}>
+        <Text style={[font('headline'), p.heading]} accessibilityRole="header">
+          Plans
         </Text>
+        {plan.length ? <Text style={[font('footnote'), p.count]}>{`${finished} of ${plan.length} done`}</Text> : null}
+      </View>
         {plan.length ? (
           <View style={p.plan}>
             <CardFill />
@@ -77,17 +80,15 @@ export function PlansScreen() {
             </Text>
           </View>
         )}
-      </View>
-    </ScrollView>
+    </View>
   );
 }
 
 const p = StyleSheet.create({
-  fill: { flex: 1 },
-  body: { paddingBottom: NAV_CLEARANCE },
-  pad: { paddingHorizontal: GUTTER, paddingTop: 4 },
-  lede: { color: G.body, marginBottom: 16 },
-  plan: { backgroundColor: L.glass, paddingHorizontal: 14, overflow: 'hidden', ...BLEED },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  heading: { color: G.ink },
+  count: { color: G.meta },
+  plan: { backgroundColor: L.glass, paddingHorizontal: 14, overflow: 'hidden', borderRadius: TILE_RADIUS },
   row: { flexDirection: 'row', gap: 12, paddingVertical: 14 },
   rule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },
   tick: {

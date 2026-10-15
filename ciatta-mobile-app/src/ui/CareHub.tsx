@@ -20,7 +20,7 @@ import { font } from '../theme';
 import { Icon, type IconName } from './icons';
 import { images } from './images';
 import { PhotoCard } from './PhotoCard';
-import { L, SPACE, TILE_RADIUS, BLEED } from './surface';
+import { L, SPACE, TILE_RADIUS } from './surface';
 import { CardPhoto } from './cardFill';
 import { G } from './scheme';
 
@@ -320,7 +320,7 @@ const s = StyleSheet.create({
   stack: { gap: 0 },
   section: { marginTop: SPACE.block },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  card: { marginTop: SPACE.tight, backgroundColor: L.glass, paddingHorizontal: 14, overflow: 'hidden', ...BLEED },
+  card: { marginTop: SPACE.tight, backgroundColor: L.glass, paddingHorizontal: 14, overflow: 'hidden', borderRadius: TILE_RADIUS },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
   rule: { borderTopWidth: st, borderTopColor: 'rgba(255,255,255,0.18)' },
   ink: { color: G.ink },

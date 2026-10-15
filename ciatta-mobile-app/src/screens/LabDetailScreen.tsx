@@ -19,7 +19,7 @@ import { font, numeral } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen, EmptyNote } from '../ui/kit';
 import { LabRangeBar, LabStatusTag, STATUS_COLOR } from '../ui/labs';
-import { L, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
+import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
@@ -167,7 +167,7 @@ const s = StyleSheet.create({
   big: { flexDirection: 'row', alignItems: 'baseline', marginVertical: 6 },
   value: { color: G.ink, letterSpacing: -1.5 },
   unit: { color: G.body, marginLeft: 6 },
-  card: { marginTop: SPACE.tight, backgroundColor: L.glass, padding: 14, overflow: 'hidden', ...BLEED },
+  card: { marginTop: SPACE.tight, backgroundColor: L.glass, padding: 14, overflow: 'hidden', borderRadius: TILE_RADIUS },
   ends: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },

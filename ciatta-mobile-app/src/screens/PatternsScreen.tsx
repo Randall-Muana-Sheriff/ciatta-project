@@ -24,7 +24,7 @@ import { CardFill } from '../ui/cardFill';
 import { DayPair } from '../ui/DayPair';
 import { DetailScreen, SectionHeading, SegmentedControl } from '../ui/kit';
 import { G } from '../ui/scheme';
-import { ground, HUE, L, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
+import { ground, HUE, L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { JourneyScreen } from './JourneyScreen';
 
 
@@ -145,7 +145,7 @@ const p = StyleSheet.create({
     backgroundColor: L.glass,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    overflow: 'hidden', ...BLEED },
+    overflow: 'hidden', borderRadius: TILE_RADIUS },
   empty: { color: L.body, lineHeight: 21, paddingVertical: 10 },
   cycleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   key: { color: L.meta, letterSpacing: 0.9 },

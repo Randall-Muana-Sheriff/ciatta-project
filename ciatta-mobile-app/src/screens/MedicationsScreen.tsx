@@ -15,7 +15,7 @@ import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
 import { C, font } from '../theme';
 import { DetailScreen, EmptyNote, SecLabel, SecondaryButton, SourceFooter } from '../ui/kit';
-import { L, TILE_RADIUS, BLEED } from '../ui/surface';
+import { L, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
 
 function ItemCard({ item, kind }: { item: NamedItem; kind: string }) {
@@ -126,7 +126,7 @@ const m = StyleSheet.create({
     backgroundColor: L.glass,
     padding: 14,
     marginBottom: 10,
-    overflow: 'hidden', ...BLEED },
+    overflow: 'hidden', borderRadius: TILE_RADIUS },
   between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingVertical: 2 },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule, marginTop: 8, paddingTop: 8 },
 });

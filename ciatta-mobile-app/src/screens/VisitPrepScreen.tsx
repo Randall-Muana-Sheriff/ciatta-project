@@ -15,7 +15,7 @@ import { useData } from '../state/session';
 import { C, font } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen, EmptyNote, PrimaryButton, SecondaryButton, Lead } from '../ui/kit';
-import { L, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
+import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardPhoto } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
@@ -111,7 +111,7 @@ export function VisitPrepScreen() {
 const s = StyleSheet.create({
   lede: { color: G.ink, lineHeight: 24 },
   meta: { color: G.meta, marginTop: 10 },
-  card: { marginTop: SPACE.tight, backgroundColor: L.glass, padding: 14, gap: 10, overflow: 'hidden', ...BLEED },
+  card: { marginTop: SPACE.tight, backgroundColor: L.glass, padding: 14, gap: 10, overflow: 'hidden', borderRadius: TILE_RADIUS },
   line: { color: L.ink, lineHeight: 21 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   input: { flex: 1, color: L.ink, backgroundColor: L.recessed, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10 },

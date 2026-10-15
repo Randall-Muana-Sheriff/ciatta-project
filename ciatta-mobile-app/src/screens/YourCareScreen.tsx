@@ -1,4 +1,4 @@
-// Care team: visits, the care team, referrals and requests. In the corner
+// Care: visits, the care team, referrals and requests. In the corner
 // menu rather than a place of its own beside Ciatta, since Ciatta is home.
 
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -13,7 +13,7 @@ export function YourCareScreen() {
   const nav = useNav();
   return (
     <ScrollView style={y.fill} contentContainerStyle={y.body}>
-      <LargeTitle title="Care team" />
+      <LargeTitle title="Care" />
       <View style={y.pad}>
         <CareHub onAsk={() => nav.push('ciatta')} />
       </View>

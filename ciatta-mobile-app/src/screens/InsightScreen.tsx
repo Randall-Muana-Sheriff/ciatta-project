@@ -17,7 +17,7 @@ import { Icon } from '../ui/icons';
 import { headingFor } from '../ui/InsightCards';
 import { PhotoCard } from '../ui/PhotoCard';
 import { Sheet } from '../ui/Sheet';
-import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
+import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill, CardPhoto } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 import { PAPER } from '../ui/paper';
@@ -220,13 +220,13 @@ const s = StyleSheet.create({
   bulletText: { color: PAPER.ink, flex: 1, lineHeight: 26 },
   paragraph: { color: PAPER.body, lineHeight: 27, marginTop: 6 },
   timelineHead: { marginTop: SPACE.block },
-  timeline: { paddingVertical: 12, overflow: 'hidden', ...BLEED },
+  timeline: { paddingVertical: 12, overflow: 'hidden', borderRadius: TILE_RADIUS },
   toggle: { paddingHorizontal: GUTTER, paddingTop: SPACE.near },
   metrics: { paddingTop: SPACE.near },
   metricsSwitch: { paddingHorizontal: GUTTER, marginBottom: SPACE.tight },
   tiles: { paddingHorizontal: GUTTER, paddingTop: SPACE.tight },
   dotYours: { backgroundColor: HUE.measured, marginTop: 7 },
-  record: { marginTop: 8, padding: 16, gap: 6, backgroundColor: L.glass, overflow: 'hidden', ...BLEED },
+  record: { marginTop: 8, padding: 16, gap: 6, backgroundColor: L.glass, overflow: 'hidden', borderRadius: TILE_RADIUS },
   recordLine: { color: L.body, lineHeight: 21 },
   discuss: {
     position: 'absolute',

@@ -26,6 +26,7 @@ import { ChatCard, chatCardHeight } from '../ui/ChatCard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PatternInsightsRow } from '../ui/PatternInsightsRow';
 import { ExploreHealthRow } from '../ui/ExploreHealthRow';
+import { PlansSection } from './PlansScreen';
 import { offerCheckIn } from '../lib/checkInHandoff';
 import { JourneyScreen } from './JourneyScreen';
 import { useInsights } from '../state/insights';
@@ -55,7 +56,7 @@ import { useDeviceCalendar } from '../state/deviceCalendar';
 import { font, GUTTER } from '../theme';
 import { SectionHeading, SegmentedControl } from '../ui/kit';
 import { Wordmark } from '../ui/Wordmark';
-import { ground, HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
+import { ground, HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { ListGroup, ListRow } from '../ui/chrome';
 import { MetricCard, METRIC_CARD_GAP } from '../ui/metricCard';
 import { METRIC_HUE } from '../ui/metricHue';
@@ -359,6 +360,9 @@ export function TodayScreen() {
               <View style={t.between} />
               {/* Pattern Insights, set low on the screen above the chat. */}
               <PatternInsightsRow />
+              <View style={t.between} />
+              {/* What she could do today, under what Ciatta noticed. */}
+              <PlansSection />
             </>
           )}
         </View>
@@ -414,7 +418,7 @@ const t = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 10,
-    overflow: 'hidden', ...BLEED },
+    overflow: 'hidden', borderRadius: TILE_RADIUS },
   cardPressed: { opacity: 0.8 },
   askBox: {
     flexDirection: 'row',
@@ -464,7 +468,7 @@ const t = StyleSheet.create({
   // these are: six readings from one day, none ranked above another.
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: METRIC_CARD_GAP },
   // Each metric its own card, on the same ground as every other card.
-  metricsCard: { overflow: 'hidden', backgroundColor: L.glass, padding: 10, ...BLEED },
+  metricsCard: { overflow: 'hidden', backgroundColor: L.glass, padding: 10, borderRadius: TILE_RADIUS },
   // Each metric as the body system chips are drawn: no fill, a hairline
   // edge (chip.tile), on the card's own glow.
   gridCell: {
@@ -491,7 +495,7 @@ const t = StyleSheet.create({
     marginTop: SPACE.tight,
     backgroundColor: L.glass,
     padding: 18,
-    overflow: 'hidden', ...BLEED },
+    overflow: 'hidden', borderRadius: TILE_RADIUS },
   chart: { flex: 1, aspectRatio: 190 / 150 },
   plan: {
     backgroundColor: L.glass,

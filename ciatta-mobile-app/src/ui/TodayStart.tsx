@@ -13,7 +13,7 @@ import { displayCopy } from '../lib/displayCopy';
 import { font } from '../theme';
 import { Icon, type IconName } from './icons';
 import { images } from './images';
-import { L, SPACE, TILE_RADIUS, BLEED } from './surface';
+import { L, SPACE, TILE_RADIUS } from './surface';
 import { CardFill } from './cardFill';
 import { G } from './scheme';
 
@@ -88,7 +88,7 @@ const s = StyleSheet.create({
     paddingVertical: 28,
     paddingHorizontal: 20,
     alignItems: 'center',
-    overflow: 'hidden', ...BLEED },
+    overflow: 'hidden', borderRadius: TILE_RADIUS },
   badge: {
     width: 48,
     height: 48,
@@ -128,7 +128,7 @@ const s = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: L.glass,
     minHeight: 180,
-    justifyContent: 'flex-end', ...BLEED },
+    justifyContent: 'flex-end', borderRadius: TILE_RADIUS },
   previewPhoto: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', opacity: 0.5 },
   fade: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(12, 14, 17, 0.45)' },
   previewText: { color: 'rgba(255, 255, 255, 0.88)', textAlign: 'center', paddingHorizontal: 24, paddingBottom: 20, lineHeight: 19 },

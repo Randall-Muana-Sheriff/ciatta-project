@@ -10,7 +10,7 @@ import { useRepo } from '../state/session';
 import { C, font } from '../theme';
 import { Composer } from '../ui/composer';
 import { DetailScreen, EmptyNote, SegmentedControl, SecondaryButton, SourceFooter, Tag } from '../ui/kit';
-import { L, TILE_RADIUS, BLEED } from '../ui/surface';
+import { L, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
@@ -140,6 +140,6 @@ const j = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     marginBottom: 8,
-    overflow: 'hidden', ...BLEED },
+    overflow: 'hidden', borderRadius: TILE_RADIUS },
   cardFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 });

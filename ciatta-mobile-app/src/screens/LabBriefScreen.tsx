@@ -15,7 +15,7 @@ import { useLabs } from '../state/labs';
 import { font } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen, EmptyNote, PrimaryButton, SecondaryButton } from '../ui/kit';
-import { L, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
+import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
 
 export function LabBriefScreen() {
@@ -88,7 +88,7 @@ export function LabBriefScreen() {
 }
 
 const s = StyleSheet.create({
-  card: { marginTop: SPACE.tight, backgroundColor: L.glass, padding: 14, overflow: 'hidden', ...BLEED },
+  card: { marginTop: SPACE.tight, backgroundColor: L.glass, padding: 14, overflow: 'hidden', borderRadius: TILE_RADIUS },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 10 },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },
   body: { color: L.body },

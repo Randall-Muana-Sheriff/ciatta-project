@@ -23,7 +23,7 @@ import { useData, useRepo } from '../state/session';
 import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen, SecondaryButton, Lead } from '../ui/kit';
-import { L, NAV_CLEARANCE, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
+import { L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
@@ -214,7 +214,7 @@ const s = StyleSheet.create({
     marginTop: 10,
     backgroundColor: L.glass,
     paddingHorizontal: 14,
-    overflow: 'hidden', ...BLEED },
+    overflow: 'hidden', borderRadius: TILE_RADIUS },
   line: { paddingVertical: 11 },
   lineDivided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: L.rule },
   lineText: { color: L.ink },

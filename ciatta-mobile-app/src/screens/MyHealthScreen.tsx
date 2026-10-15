@@ -151,10 +151,6 @@ export function MyHealthScreen() {
           )
         ) : null}
 
-        <ListGroup style={h.results}>
-          <ListRow first icon="timeline" title="Timeline" sub="Your cycle, symptoms, sleep, labs and more on one timeline" onPress={() => nav.push('journey')} />
-        </ListGroup>
-
         {/* Records is its own place in the corner menu now; this screen is
             her body, system by system. */}
         <BodySystemView

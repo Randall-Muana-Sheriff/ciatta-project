@@ -18,7 +18,7 @@ import { keepRemindersInStep } from '../state/notifications';
 import { heavyBleedingFlag, overnightNote } from '../lib/productSafety';
 import { font } from '../theme';
 import { PrimaryButton, SecondaryButton } from './kit';
-import { L, SPACE, TILE_RADIUS, BLEED } from './surface';
+import { L, SPACE, TILE_RADIUS } from './surface';
 import { onGround } from './scheme';
 import { CardFill } from './cardFill';
 
@@ -123,7 +123,7 @@ const c = StyleSheet.create({
     backgroundColor: L.glass,
     padding: 16,
     gap: 4,
-    overflow: 'hidden', ...BLEED },
+    overflow: 'hidden', borderRadius: TILE_RADIUS },
   over: { borderColor: onGround('#F27D9B') },
   eyebrow: { color: L.meta, letterSpacing: 0.9 },
   name: { color: L.ink },

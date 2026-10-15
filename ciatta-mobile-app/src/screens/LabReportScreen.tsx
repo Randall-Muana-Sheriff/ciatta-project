@@ -28,7 +28,7 @@ import { DetailScreen, EmptyNote, SecondaryButton } from '../ui/kit';
 import { LabRangeBar, LabStatusTag, STATUS_COLOR } from '../ui/labs';
 import { G } from '../ui/scheme';
 import { images } from '../ui/images';
-import { HUE, L, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
+import { HUE, L, SPACE, TILE_RADIUS } from '../ui/surface';
 
 const MINI_H = 44;
 
@@ -426,7 +426,7 @@ const s = StyleSheet.create({
   ink: { color: L.ink },
   count: { color: G.ink, marginTop: 6, marginBottom: 6 },
   link: { color: G.ink, textDecorationLine: 'underline', marginTop: 4 },
-  card: { marginTop: SPACE.tight, backgroundColor: L.glass, paddingHorizontal: 14, overflow: 'hidden', ...BLEED },
+  card: { marginTop: SPACE.tight, backgroundColor: L.glass, paddingHorizontal: 14, overflow: 'hidden', borderRadius: TILE_RADIUS },
   row: { paddingVertical: 12, gap: 6 },
   divided: { borderTopWidth: st, borderTopColor: G.rule },
   top: { flexDirection: 'row', alignItems: 'center', gap: 10 },

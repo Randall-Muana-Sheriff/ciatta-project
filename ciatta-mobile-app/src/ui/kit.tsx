@@ -5,7 +5,7 @@ import Svg, { Path } from 'react-native-svg';
 import type { SourceKind } from '../data/sample';
 import { displayCopy } from '../lib/displayCopy';
 import { C, font, GUTTER } from '../theme';
-import { L, TILE_RADIUS, BLEED } from './surface';
+import { L, TILE_RADIUS } from './surface';
 import { CardFill } from './cardFill';
 import { Icon, type IconName } from './icons';
 import { G } from './scheme';
@@ -484,12 +484,12 @@ export const s = StyleSheet.create({
   secondary: { backgroundColor: G.fill, borderWidth: StyleSheet.hairlineWidth, borderColor: G.rule },
   link: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
 
-  card: { backgroundColor: L.glass, padding: 16, overflow: 'hidden', ...BLEED },
+  card: { backgroundColor: L.glass, padding: 16, overflow: 'hidden', borderRadius: TILE_RADIUS },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 44, paddingVertical: 11 },
   rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: G.rule },
   rowText: { flex: 1, paddingRight: 12 },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  openCard: { backgroundColor: L.glass, paddingVertical: 12, paddingHorizontal: 16, marginVertical: 4, overflow: 'hidden', ...BLEED },
+  openCard: { backgroundColor: L.glass, paddingVertical: 12, paddingHorizontal: 16, marginVertical: 4, overflow: 'hidden', borderRadius: TILE_RADIUS },
   openHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 32 },
   fact: {
     flexDirection: 'row',

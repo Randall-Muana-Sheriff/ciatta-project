@@ -21,7 +21,7 @@ import { GroundLayer } from './Ground';
 import { InsightCard } from './InsightCards';
 import { G } from './scheme';
 import { Sheet } from './Sheet';
-import { BLEED, L, SPACE } from './surface';
+import { L, SPACE, TILE_RADIUS } from './surface';
 
 // How much of the screen the resting sheet takes.
 const REST = 0.44;
@@ -128,6 +128,6 @@ const s = StyleSheet.create({
   peek: { paddingHorizontal: GUTTER },
   list: { gap: SPACE.grid, paddingTop: SPACE.tight },
   // Edge to edge, as every full width card is.
-  card: { height: 320, ...BLEED },
+  card: { height: 320, borderRadius: TILE_RADIUS },
   pressed: { opacity: 0.8 },
 });

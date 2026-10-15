@@ -28,7 +28,7 @@ import { useRepo } from '../state/session';
 import { font, numeral } from '../theme';
 import { GLASS } from '../ui/glass';
 import { DetailScreen, SecondaryButton, Tag, SaveBar } from '../ui/kit';
-import { L, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
+import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
@@ -342,7 +342,7 @@ function NumberField({ label, value, onChange }: { label: string; value: number;
 }
 
 const f = StyleSheet.create({
-  photoWrap: { overflow: 'hidden', backgroundColor: L.glass, minHeight: 200, ...BLEED },
+  photoWrap: { overflow: 'hidden', backgroundColor: L.glass, minHeight: 200, borderRadius: TILE_RADIUS },
   labelSpot: { position: 'absolute', width: 180, alignItems: 'center' },
   label: { borderRadius: 999, paddingVertical: 7, paddingHorizontal: 14, overflow: 'hidden' },
   labelPainted: { backgroundColor: 'rgba(40, 44, 40, 0.55)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.25)' },
@@ -356,7 +356,7 @@ const f = StyleSheet.create({
     backgroundColor: L.glass,
     paddingTop: 14,
     gap: 2,
-    overflow: 'hidden', ...BLEED },
+    overflow: 'hidden', borderRadius: TILE_RADIUS },
   cardFigure: { color: L.ink },
   cardCaption: { color: L.meta, marginBottom: 6 },
   estimateRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: SPACE.tight },

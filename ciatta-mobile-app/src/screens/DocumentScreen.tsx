@@ -23,7 +23,7 @@ import { Eyebrow } from '../ui/bento';
 import { CardFill } from '../ui/cardFill';
 import { DetailScreen, EmptyNote, SecondaryButton } from '../ui/kit';
 import { G } from '../ui/scheme';
-import { HUE, L, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
+import { HUE, L, SPACE, TILE_RADIUS } from '../ui/surface';
 
 function Section({ title, lines }: { title: string; lines: (string | null | undefined)[] }) {
   const kept = lines.filter((l): l is string => !!l);
@@ -274,7 +274,7 @@ const s = StyleSheet.create({
   meta: { color: G.meta },
   ink: { color: L.ink },
   link: { color: G.ink, textDecorationLine: 'underline', marginTop: 4 },
-  card: { marginTop: SPACE.tight, backgroundColor: L.glass, paddingHorizontal: 14, overflow: 'hidden', ...BLEED },
+  card: { marginTop: SPACE.tight, backgroundColor: L.glass, paddingHorizontal: 14, overflow: 'hidden', borderRadius: TILE_RADIUS },
   line: { paddingVertical: 10 },
   divided: { borderTopWidth: st, borderTopColor: G.rule },
   item: { paddingVertical: 12, gap: 6 },

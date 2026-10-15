@@ -16,7 +16,7 @@ import { smooth } from '../lib/curve';
 import { displayCopy } from '../lib/displayCopy';
 import { HORMONE_LABEL, type HormoneKey, hormoneCurves, type HormoneView, PHASE_NOTE, phaseBounds, type PhaseRow } from '../lib/hormones';
 import { font } from '../theme';
-import { L, TILE_RADIUS, BLEED } from './surface';
+import { L, TILE_RADIUS } from './surface';
 import { onGround } from './scheme';
 import { CardFill } from './cardFill';
 
@@ -155,7 +155,7 @@ export function HormonesSection({ view, effects }: { view: HormoneView; effects:
 }
 
 const h = StyleSheet.create({
-  card: { backgroundColor: L.glass, padding: 14, overflow: 'hidden', ...BLEED },
+  card: { backgroundColor: L.glass, padding: 14, overflow: 'hidden', borderRadius: TILE_RADIUS },
   col: { position: 'absolute', top: 0, bottom: 0, alignItems: 'center', paddingTop: 7 },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 10 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },

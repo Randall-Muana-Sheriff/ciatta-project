@@ -20,7 +20,7 @@ import { InsightCard } from '../ui/InsightCards';
 import { Icon } from '../ui/icons';
 import { DetailScreen, SectionHeading } from '../ui/kit';
 import { G } from '../ui/scheme';
-import { BLEED, L, SPACE } from '../ui/surface';
+import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { useEffect } from 'react';
 
 export function ExploreScreen() {
@@ -94,7 +94,7 @@ export function ExploreScreen() {
 }
 
 const x = StyleSheet.create({
-  card: { backgroundColor: L.glass, padding: 16, gap: 10, overflow: 'hidden', ...BLEED },
+  card: { backgroundColor: L.glass, padding: 16, gap: 10, overflow: 'hidden', borderRadius: TILE_RADIUS },
   line: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: G.ink, marginTop: 8 },
   lineText: { color: L.ink, lineHeight: 22, flex: 1 },
@@ -110,6 +110,6 @@ const x = StyleSheet.create({
   },
   section: { marginTop: SPACE.section },
   list: { gap: SPACE.grid },
-  insight: { height: 300, ...BLEED },
+  insight: { height: 300, borderRadius: TILE_RADIUS },
   pressed: { opacity: 0.8 },
 });

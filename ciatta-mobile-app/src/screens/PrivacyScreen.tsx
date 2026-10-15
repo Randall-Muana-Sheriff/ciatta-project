@@ -13,7 +13,7 @@ import { weatherIsOn } from '../state/environmentRun';
 import { useRepo } from '../state/session';
 import { font } from '../theme';
 import { DetailScreen, SecondaryButton } from '../ui/kit';
-import { L, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
+import { L, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardFill } from '../ui/cardFill';
 
 export function PrivacyScreen() {
@@ -63,7 +63,7 @@ export function PrivacyScreen() {
 }
 
 const s = StyleSheet.create({
-  card: { backgroundColor: L.glass, padding: 16, marginTop: 12, overflow: 'hidden', ...BLEED },
+  card: { backgroundColor: L.glass, padding: 16, marginTop: 12, overflow: 'hidden', borderRadius: TILE_RADIUS },
   title: { color: L.ink, marginBottom: 6 },
   body: { color: L.body, lineHeight: 21 },
 });
