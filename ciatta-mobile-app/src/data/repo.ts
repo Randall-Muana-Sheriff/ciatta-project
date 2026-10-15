@@ -41,7 +41,8 @@ import type { Referral } from '../lib/referrals';
 import type { BodyManual } from '../lib/overviewFacts';
 import type { SleepSample } from '../lib/hypnogram';
 import { type LabFlag, type LabResult, type LabScan, parseRange, readLabScan, type ScannedTest } from '../lib/labs';
-import { type DocType, type DocumentFilings, type DocumentScan, type Existing, readDocumentScan, toSnake } from '../lib/documents';
+import { DOC_TYPE_LABEL, type DocType, type DocumentFilings, type DocumentScan, type Existing, readDocumentScan, toSnake } from '../lib/documents';
+import { extractionFingerprint, readStoredDocAnalysis, type StoredDocAnalysis } from '../lib/documentAnalysis';
 import { readStoredAnalysis, type StoredAnalysis } from '../lib/labAnalysis';
 import { records as sampleRecords } from './sample';
 import type { CareRequest, ClinicianRow } from '../lib/care';
@@ -237,6 +238,8 @@ export type Repo = {
   loadDocuments(): Promise<DocumentSummary[]>;
   loadDocument(id: string): Promise<DocumentDetail | null>;
   removeDocument(id: string): Promise<void>;
+  loadDocumentAnalysis(documentId: string): Promise<StoredDocAnalysis | null>;
+  analyzeDocument(documentId: string, cycle: { day: number; phase: string | null; usual_length: number | null } | null): Promise<StoredDocAnalysis>;
   // The latest stored clinical AI analysis of a report, or null.
   loadLabAnalysis(documentId: string): Promise<StoredAnalysis | null>;
   // Asks for a new one. Throws with the function's own sentence when it
@@ -370,6 +373,7 @@ export function demoRepo(): Repo {
   let demoReports: { id: string; on: string; checksum: string }[] = [];
   const demoAnalyses = new Map<string, StoredAnalysis>();
   let demoDocuments: (DocumentDetail & { checksum: string })[] = [];
+  const demoDocAnalyses = new Map<string, StoredDocAnalysis>();
   // The example person's insurance, as the sample shows it.
   let insurance: Insurance | null = { provider: 'Anthem', plan: 'PPO' };
   let view: JournalView = {
@@ -669,6 +673,27 @@ export function demoRepo(): Repo {
       if (!d) return null;
       const { checksum: _c, ...rest } = d;
       return rest;
+    },
+    loadDocumentAnalysis: async (id) => demoDocAnalyses.get(id) ?? null,
+    analyzeDocument: async (id) => {
+      const d = demoDocuments.find((x) => x.id === id);
+      const stored: StoredDocAnalysis = {
+        analysis: {
+          urgent: [],
+          summary: `This example ${d ? DOC_TYPE_LABEL[d.docType].toLowerCase() : 'document'} was read and filed. In the real app a clinical AI analysis explains it here.`,
+          terms: [],
+          findings: [],
+          patterns: [],
+          considerations: [],
+          next_steps: [],
+          questions: ['What does this document mean for me?'],
+        },
+        model: 'example',
+        createdAt: new Date().toISOString(),
+        factsHash: d ? extractionFingerprint(toSnake(d.extraction)) : '',
+      };
+      demoDocAnalyses.set(id, stored);
+      return stored;
     },
     removeDocument: async (id) => {
       demoDocuments = demoDocuments.filter((d) => d.id !== id);
@@ -1515,6 +1540,28 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
         filed: { conditions, allergies, medications, procedures, referrals },
         linked: Array.isArray(r.metadata?.linked) ? (r.metadata.linked as { table: string; id: string }[]) : [],
       };
+    },
+    async loadDocumentAnalysis(documentId) {
+      const rows = must(
+        await db.from('document_analyses').select('analysis, model, created_at, facts_hash').eq('document_id', documentId).order('created_at', { ascending: false }).limit(1),
+      ) as unknown[] | null;
+      return readStoredDocAnalysis(rows?.[0] ?? null);
+    },
+    async analyzeDocument(documentId, cycle) {
+      const { data, error } = await db.functions.invoke('document-analysis', { body: { documentId, cycle } });
+      if (error) {
+        let sentence = 'The analysis could not be written just now.';
+        try {
+          const body = await (error as { context?: Response }).context?.json();
+          if (typeof body?.error === 'string') sentence = body.error;
+        } catch {
+          // Not JSON; the plain sentence stands.
+        }
+        throw new Error(sentence);
+      }
+      const stored = readStoredDocAnalysis(data);
+      if (!stored) throw new Error('The analysis could not be written just now.');
+      return stored;
     },
     async removeDocument(id) {
       const { data: path, error } = await db.rpc('remove_document', { p_document: id });

@@ -2,14 +2,19 @@
 // and the original one tap away. Everything here is what the document said
 // and she kept; nothing is interpreted. Part B adds the analysis below.
 
+import * as Print from 'expo-print';
 import * as WebBrowser from 'expo-web-browser';
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import type { DocumentDetail } from '../data/repo';
 import { displayCopy } from '../lib/displayCopy';
 import { chosenDocument } from '../lib/documentHandoff';
-import { DOC_TYPE_LABEL } from '../lib/documents';
+import { countedWindows, medianLength } from '../lib/cycleModel';
+import { docAnalysisHtml, documentUrgentLines, extractionFingerprint, type StoredDocAnalysis } from '../lib/documentAnalysis';
+import { DOC_TYPE_LABEL, toSnake } from '../lib/documents';
+import { cycleDayAt } from '../lib/labCycle';
+import { useCycleInsights } from '../state/cycleStore';
 import { labDay } from '../lib/labs';
 import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
@@ -18,7 +23,7 @@ import { Eyebrow } from '../ui/bento';
 import { CardFill } from '../ui/cardFill';
 import { DetailScreen, EmptyNote, SecondaryButton } from '../ui/kit';
 import { G } from '../ui/scheme';
-import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { HUE, L, SPACE, TILE_RADIUS } from '../ui/surface';
 
 function Section({ title, lines }: { title: string; lines: (string | null | undefined)[] }) {
   const kept = lines.filter((l): l is string => !!l);
@@ -38,12 +43,81 @@ function Section({ title, lines }: { title: string; lines: (string | null | unde
   );
 }
 
+function AnalysisList({ title, items }: { title: string; items: { head: string; body: string; chip?: string }[] }) {
+  if (!items.length) return null;
+  return (
+    <View style={{ marginTop: SPACE.near }}>
+      <Text style={[font('footnote', 'semibold'), { color: G.body }]}>{title}</Text>
+      <View style={s.card}>
+        <CardFill />
+        {items.map((item, n) => (
+          <View key={`${item.head}${n}`} style={[s.item, n > 0 && s.divided]}>
+            <View style={s.top}>
+              <Text style={[font('subhead', 'semibold'), s.ink, { flex: 1 }]}>{displayCopy(item.head)}</Text>
+              {item.chip ? <Text style={[font('caption2', 'semibold'), s.chip]}>{displayCopy(item.chip)}</Text> : null}
+            </View>
+            {item.body ? <Text style={[font('subhead'), s.ink]}>{displayCopy(item.body)}</Text> : null}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 export function DocumentScreen() {
   const nav = useNav();
   const repo = useRepo();
   const [id] = useState(() => chosenDocument());
   const [doc, setDoc] = useState<DocumentDetail | null | undefined>(undefined);
   const [note, setNote] = useState<string | null>(null);
+  const [stored, setStored] = useState<StoredDocAnalysis | null>(null);
+  const [analysing, setAnalysing] = useState(false);
+  const [analysisNote, setAnalysisNote] = useState<string | null>(null);
+  const { windows, profile } = useCycleInsights();
+  const usual = useMemo(() => medianLength(countedWindows(windows, profile)), [windows, profile]);
+
+  const analyse = useCallback(async () => {
+    if (!id || !doc || analysing) return;
+    setAnalysing(true);
+    setAnalysisNote(null);
+    try {
+      const at = cycleDayAt(doc.on, windows, usual);
+      setStored(await repo.analyzeDocument(id, at ? { day: at.day, phase: at.phase, usual_length: usual } : null));
+    } catch (e) {
+      setAnalysisNote(e instanceof Error ? e.message : 'The analysis could not be written just now.');
+    } finally {
+      setAnalysing(false);
+    }
+  }, [id, doc, analysing, repo, windows, usual]);
+
+  // Read the stored analysis; write one the first time the document opens.
+  useEffect(() => {
+    if (!id || !doc) return;
+    let ignore = false;
+    repo
+      .loadDocumentAnalysis(id)
+      .then((s) => {
+        if (ignore) return;
+        if (s) setStored(s);
+        else void analyse();
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+    // analyse is stable enough for a once per document read; listing it would loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, doc, repo]);
+
+  const share = useCallback(async () => {
+    if (!stored || !doc) return;
+    try {
+      const { uri } = await Print.printToFileAsync({ html: docAnalysisHtml(doc.title ?? DOC_TYPE_LABEL[doc.docType], doc.on, stored) });
+      await Share.share({ url: uri, title: 'Document analysis' });
+    } catch {
+      setAnalysisNote('The analysis could not be shared just now.');
+    }
+  }, [stored, doc]);
 
   useEffect(() => {
     if (!id) return setDoc(null);
@@ -86,6 +160,8 @@ export function DocumentScreen() {
   }
 
   const x = doc.extraction;
+  const urgent = documentUrgentLines(toSnake(x), stored?.analysis ?? null);
+  const stale = stored ? stored.factsHash !== extractionFingerprint(toSnake(x)) : false;
   const v = x.visit;
   return (
     <DetailScreen title={displayCopy(doc.title ?? DOC_TYPE_LABEL[doc.docType])} onBack={nav.back}>
@@ -131,7 +207,53 @@ export function DocumentScreen() {
         ]}
       />
 
-      {/* PART B ANALYSIS */}
+      {urgent.length ? (
+        <View style={[s.card, s.urgent]}>
+          <CardFill />
+          <Text style={[font('headline'), s.urgentHead]}>Needs prompt attention</Text>
+          {urgent.map((line) => (
+            <Text key={line} style={[font('subhead'), s.ink, { marginTop: 4 }]}>
+              {displayCopy(line)}
+            </Text>
+          ))}
+        </View>
+      ) : null}
+
+      <View style={{ marginTop: SPACE.block }}>
+        <Eyebrow>Clinical AI analysis</Eyebrow>
+        <Text style={[font('footnote', 'semibold'), s.label]}>Clinical AI analysis. Not a diagnosis. Discuss it with your clinician.</Text>
+        {analysing ? <Text style={[font('subhead'), s.meta, { marginTop: 8 }]}>Analysing your document.</Text> : null}
+        {analysisNote ? <Text style={[font('subhead'), s.meta, { marginTop: 8 }]}>{displayCopy(analysisNote)}</Text> : null}
+        {stored ? (
+          <>
+            <Text style={[font('caption1'), s.meta, { marginTop: 4 }]}>
+              {displayCopy(`Written by ${stored.model} on ${labDay(stored.createdAt.slice(0, 10))} from this document and your record.`)}
+            </Text>
+            {stale ? <Text style={[font('subhead'), s.flagText, { marginTop: 8 }]}>This document has changed since this was written.</Text> : null}
+            <View style={s.card}>
+              <CardFill />
+              <Text style={[font('body'), s.ink, { paddingVertical: 12 }]}>{displayCopy(stored.analysis.summary)}</Text>
+            </View>
+            <AnalysisList title="Terms explained" items={stored.analysis.terms.map((t) => ({ head: t.term, body: t.meaning }))} />
+            <AnalysisList title="Findings" items={stored.analysis.findings.map((f) => ({ head: f.item, body: [f.explanation, f.relevance ?? ''].filter(Boolean).join(' ') }))} />
+            <AnalysisList title="Patterns" items={stored.analysis.patterns.map((p) => ({ head: p.title, body: `${p.explanation} (${p.items.join(', ')})` }))} />
+            <AnalysisList
+              title="Conditions to consider"
+              items={stored.analysis.considerations.map((c) => ({ head: c.condition, chip: `${c.confidence} confidence`, body: `How it is confirmed: ${c.how_confirmed} Based on ${c.items.join(', ')}.` }))}
+            />
+            <AnalysisList title="Next steps" items={stored.analysis.next_steps.map((n) => ({ head: n.step, body: n.reason }))} />
+            <AnalysisList title="Questions for your clinician" items={stored.analysis.questions.map((q) => ({ head: q, body: '' }))} />
+            <View style={{ marginTop: SPACE.near, gap: 12 }}>
+              <SecondaryButton label="Share or Print" onPress={() => void share()} />
+              <SecondaryButton label="Analyze Again" onPress={() => void analyse()} />
+            </View>
+          </>
+        ) : !analysing ? (
+          <View style={{ marginTop: SPACE.near }}>
+            <SecondaryButton label="Analyze This Document" onPress={() => void analyse()} />
+          </View>
+        ) : null}
+      </View>
 
       <View style={{ marginTop: SPACE.section }}>
         <SecondaryButton label="Remove This Document" onPress={remove} />
@@ -148,4 +270,11 @@ const s = StyleSheet.create({
   card: { marginTop: SPACE.tight, backgroundColor: L.glass, borderRadius: TILE_RADIUS, paddingHorizontal: 14, overflow: 'hidden' },
   line: { paddingVertical: 10 },
   divided: { borderTopWidth: st, borderTopColor: G.rule },
+  item: { paddingVertical: 12, gap: 6 },
+  top: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  urgent: { borderWidth: 1, borderColor: HUE.escalation, paddingVertical: 12, marginTop: SPACE.near },
+  urgentHead: { color: HUE.escalation },
+  label: { color: G.ink, marginTop: 4 },
+  flagText: { color: HUE.attention },
+  chip: { color: L.meta, borderWidth: 1, borderColor: L.rule, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, overflow: 'hidden' },
 });
