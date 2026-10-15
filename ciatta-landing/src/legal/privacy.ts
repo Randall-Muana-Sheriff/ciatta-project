@@ -111,7 +111,7 @@ export const privacy: LegalDoc = {
             head: ['Provider', 'What they do for the app', 'Where'],
             rows: [
               ['Supabase', 'Stores your account and your record, and runs the server side of the app', 'United States'],
-              ['OpenAI', 'Reads lab reports, medical documents and meal photos you add, and writes the clinical AI analyses of lab reports and documents', 'United States'],
+              ['OpenAI', 'Reads lab reports, medical documents and meal photos you add, reads messages you send Ciatta so they can be added to your timeline, and writes the clinical AI analyses of lab reports and documents', 'United States'],
               ['Fasten Health', 'Connects to the hospitals, clinics, labs and insurance plans you choose through it, and passes their records to Ciatta', 'United States'],
               ['Apple', 'Apple Health data stays on your phone, and the app reads only what you allow', 'On your phone'],
             ],
