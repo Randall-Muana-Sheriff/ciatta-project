@@ -31,7 +31,7 @@ export function ExploreHealthRow() {
     <View>
       <View style={e.head}>
         <Text style={[font('headline'), e.title]} accessibilityRole="header">
-          Explore health
+          Explore
         </Text>
         <Pressable onPress={() => nav.push('exploreAll')} accessibilityRole="button" accessibilityLabel="View all health topics" hitSlop={8} style={e.all}>
           <Text style={[font('subhead'), e.allText]}>View all</Text>

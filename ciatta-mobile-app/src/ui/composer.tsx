@@ -49,8 +49,9 @@ type Palette = { ink: string; body: string; meta: string; fill: string; fillSele
 export type ComposerProps = {
   // Drawn on the chat's white paper rather than the dark ground.
   paper?: boolean;
-  // The box is whatever holds it: it fills its container, with no inset,
-  // and the plus and send sit at the container's foot.
+  // One line, edge to edge in whatever holds it: the plus on the left, the
+  // words between, the microphone or send on the right. It grows as she
+  // writes, up to a few lines.
   fill?: boolean;
   value: string;
   // The second argument is how the words arrived. Onboarding persists it
@@ -245,7 +246,7 @@ export function Composer({
   const action = dictation.listening ? 'stop' : value.trim() ? 'send' : 'mic';
 
   return (
-    <View style={fill ? s.fillRoot : undefined}>
+    <View>
       {/*
         Above the box, not over it. A sheet covering what she has written
         while she decides what to attach to it is a sheet in the way.
@@ -269,7 +270,7 @@ export function Composer({
         </View>
       ) : null}
 
-      <View style={[s.wrap, fill && s.fillRoot]}>
+      <View style={s.wrap}>
         <TextInput
           ref={field}
           value={value}
@@ -398,9 +399,8 @@ const styles = (K: Palette) =>
     // them rather than under them.
     paddingBottom: 56,
   },
-  fillRoot: { flex: 1 },
-  fillField: { flex: 1, paddingHorizontal: 0, paddingTop: 4, paddingBottom: 60 },
-  fillFoot: { left: 0, right: 0, bottom: 0 },
+  fillField: { paddingHorizontal: 50, paddingTop: 12, paddingBottom: 12, minHeight: 46, maxHeight: 120 },
+  fillFoot: { left: 0, right: 0, bottom: 4 },
   foot: {
     position: 'absolute',
     left: 10,

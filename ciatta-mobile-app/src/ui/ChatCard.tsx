@@ -9,7 +9,7 @@
 // with the keyboard, so the box stays in view while she writes.
 
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Keyboard, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Animated, Keyboard, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Attachment } from '../lib/attachments';
@@ -18,11 +18,11 @@ import { GUTTER } from '../theme';
 import { Composer } from './composer';
 import { PAPER } from './paper';
 
-// Half the height the Pattern Insights sheet rested at.
-export const CHAT_CARD_SHARE = 0.22;
+// The resting height: the grabber, one line of the box, and the home
+// indicator's room. About half what it was, so Today keeps its air.
+export const chatCardHeight = (insetBottom: number) => 72 + Math.max(insetBottom, 12);
 
 export function ChatCard({ onSent }: { onSent: () => void }) {
-  const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState('');
   const [files, setFiles] = useState<Attachment[]>([]);
@@ -56,7 +56,7 @@ export function ChatCard({ onSent }: { onSent: () => void }) {
       style={[
         c.card,
         {
-          height: Math.round(height * CHAT_CARD_SHARE),
+          minHeight: chatCardHeight(insets.bottom),
           paddingBottom: Math.max(insets.bottom, 12),
           transform: [{ translateY: Animated.multiply(lift, -1) }],
         },
@@ -85,7 +85,7 @@ const c = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingHorizontal: GUTTER,
-    paddingTop: 8,
+    paddingTop: 6,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     backgroundColor: PAPER.bg,
@@ -95,5 +95,5 @@ const c = StyleSheet.create({
     shadowOffset: { width: 0, height: -4 },
     elevation: 12,
   },
-  grabber: { alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: PAPER.rule, marginBottom: 12 },
+  grabber: { alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: PAPER.rule, marginBottom: 8 },
 });

@@ -10,7 +10,7 @@ import { DetailScreen } from '../ui/kit';
 export function ExploreAllScreen() {
   const nav = useNav();
   return (
-    <DetailScreen title="Explore health" onBack={nav.back}>
+    <DetailScreen title="Explore" onBack={nav.back}>
       <View style={a.grid}>
         {EXPLORE_TOPICS.map((t) => (
           <TopicTile key={t.key} topicKey={t.key} label={t.label} wide />

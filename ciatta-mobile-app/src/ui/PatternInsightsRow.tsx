@@ -11,7 +11,6 @@ import { useInsightReactions } from '../state/insightReactions';
 import { useResearchInsights } from '../state/researchInsights';
 import { font, GUTTER } from '../theme';
 import { CardFill } from './cardFill';
-import { Icon } from './icons';
 import { G } from './scheme';
 import { SPACE } from './surface';
 
@@ -49,7 +48,6 @@ export function PatternInsightsRow() {
               style={({ pressed }) => [r.card, { width: cardWidth }, pressed && r.pressed]}
             >
               <CardFill />
-              <Icon name="sparkle" size={18} color={G.ink} />
               <View style={{ flex: 1 }} />
               <Text style={[font('headline'), r.title]} numberOfLines={4}>
                 {displayCopy(insight.title)}

@@ -57,7 +57,7 @@ import { SymptomsScreen } from './screens/SymptomsScreen';
 import { TodayScreen } from './screens/TodayScreen';
 import { C } from './theme';
 import { CornerNav } from './ui/chrome';
-import { CHAT_CARD_SHARE } from './ui/ChatCard';
+import { chatCardHeight } from './ui/ChatCard';
 import { PatternsScreen } from './screens/PatternsScreen';
 import { YourCareScreen } from './screens/YourCareScreen';
 import { PlansScreen } from './screens/PlansScreen';
@@ -219,7 +219,7 @@ export function Root() {
           <CornerNav
             active={tab}
             onGo={(item) => (item.go.kind === 'tab' ? nav.goTab(item.go.tab) : nav.push(item.go.screen))}
-            lift={tab === 'today' && !top ? Math.round(height * CHAT_CARD_SHARE) : 0}
+            lift={tab === 'today' && !top ? chatCardHeight(insets.bottom) : 0}
           />
         )}
         </View>

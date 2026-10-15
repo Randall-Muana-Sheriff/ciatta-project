@@ -18,16 +18,13 @@ import { headingFor } from '../ui/InsightCards';
 import { PhotoCard } from '../ui/PhotoCard';
 import { Sheet } from '../ui/Sheet';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS, BLEED } from '../ui/surface';
-import { CardPhoto } from '../ui/cardFill';
+import { CardFill, CardPhoto } from '../ui/cardFill';
 import { G } from '../ui/scheme';
-import { SegmentedControl } from '../ui/kit';
-import { MetricTiles } from '../ui/MetricTiles';
+import { PAPER } from '../ui/paper';
 import { patternContext } from '../lib/patternContext';
 import { useAgentContext } from '../state/agentContext';
 import { JourneyScreen } from './JourneyScreen';
 
-const VIEWS = ['Insight', 'Metrics'] as const;
-const METRIC_VIEWS = ['Timeline', 'Each metric'] as const;
 
 export function InsightScreen() {
   const nav = useNav();
@@ -49,8 +46,6 @@ export function InsightView({ id, onClose, sheet = false }: { id: string | null;
   // about, for the Insight view and the Metrics view.
   const { context: agent } = useAgentContext();
   const pattern = useMemo(() => patternContext(id ?? '', connections, agent), [id, connections, agent]);
-  const [view, setView] = useState<(typeof VIEWS)[number]>('Insight');
-  const [metricsView, setMetricsView] = useState<(typeof METRIC_VIEWS)[number]>('Timeline');
   if (!insight) return null;
 
   return (
@@ -61,15 +56,49 @@ export function InsightView({ id, onClose, sheet = false }: { id: string | null;
             <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={sheet ? 'Close' : 'Back'} hitSlop={8} style={s.circle}>
               <Icon name={sheet ? 'chevronDown' : 'chevronLeft'} size={20} color="#FFFFFF" />
             </Pressable>
-            <Pressable
-              onPress={() => void Share.share({ message: `${insight.title}\n\n${insight.highlights.map((h) => `• ${h}`).join('\n')}` })}
-              accessibilityRole="button"
-              accessibilityLabel="Share"
-              hitSlop={8}
-              style={s.circle}
-            >
-              <Icon name="send" size={17} color="#FFFFFF" />
-            </Pressable>
+            {/* Her say on it, up here with Share, so Ciatta shows more of
+                what she finds useful. */}
+            <View style={s.barRight}>
+              <Pressable
+                onPress={() => react(insight.id, { reaction: of(insight.id).reaction === 'up' ? null : 'up' })}
+                accessibilityRole="button"
+                accessibilityLabel="Helpful"
+                accessibilityState={{ selected: of(insight.id).reaction === 'up' }}
+                hitSlop={6}
+                style={[s.circle, of(insight.id).reaction === 'up' && s.circleOn]}
+              >
+                <Icon name="thumbUp" size={17} color={of(insight.id).reaction === 'up' ? '#0C0E11' : '#FFFFFF'} />
+              </Pressable>
+              <Pressable
+                onPress={() => react(insight.id, { reaction: of(insight.id).reaction === 'down' ? null : 'down' })}
+                accessibilityRole="button"
+                accessibilityLabel="Not for me"
+                accessibilityState={{ selected: of(insight.id).reaction === 'down' }}
+                hitSlop={6}
+                style={[s.circle, of(insight.id).reaction === 'down' && s.circleOn]}
+              >
+                <Icon name="thumbDown" size={17} color={of(insight.id).reaction === 'down' ? '#0C0E11' : '#FFFFFF'} />
+              </Pressable>
+              <Pressable
+                onPress={() => react(insight.id, { saved: !of(insight.id).saved })}
+                accessibilityRole="button"
+                accessibilityLabel={of(insight.id).saved ? 'Remove from saved' : 'Save'}
+                accessibilityState={{ selected: of(insight.id).saved }}
+                hitSlop={6}
+                style={[s.circle, of(insight.id).saved && s.circleOn]}
+              >
+                <Icon name="bookmark" size={17} color={of(insight.id).saved ? '#0C0E11' : '#FFFFFF'} filled={of(insight.id).saved} />
+              </Pressable>
+              <Pressable
+                onPress={() => void Share.share({ message: `${insight.title}\n\n${insight.highlights.map((h) => `• ${h}`).join('\n')}` })}
+                accessibilityRole="button"
+                accessibilityLabel="Share"
+                hitSlop={6}
+                style={s.circle}
+              >
+                <Icon name="send" size={17} color="#FFFFFF" />
+              </Pressable>
+            </View>
           </View>
           <View style={{ flex: 1 }} />
           <Text style={[font('title1', 'semibold'), s.title]} accessibilityRole="header">
@@ -88,67 +117,8 @@ export function InsightView({ id, onClose, sheet = false }: { id: string | null;
           </Pressable>
         </PhotoCard>
 
-        {/*
-          The pattern, or the numbers behind it. Metrics is the Journey
-          timeline, and a switch to each metric on its own.
-        */}
-        <View style={s.toggle}>
-          <SegmentedControl segments={VIEWS} active={view} onChange={setView} />
-        </View>
-
-        {view === 'Metrics' ? (
-          <View style={s.metrics}>
-            <View style={s.metricsSwitch}>
-              <SegmentedControl segments={METRIC_VIEWS} active={metricsView} onChange={setMetricsView} />
-            </View>
-            {metricsView === 'Timeline' ? (
-              <JourneyScreen embedded />
-            ) : (
-              <View style={s.tiles}>
-                <MetricTiles first={pattern.metrics} />
-              </View>
-            )}
-          </View>
-        ) : (
+        {/* The page itself on white, for the strongest contrast. */}
         <View style={s.body}>
-          {/* Her say on it, so Ciatta shows more of what she finds useful. */}
-          <View style={s.reactions}>
-            <Pressable
-              onPress={() => react(insight.id, { reaction: of(insight.id).reaction === 'up' ? null : 'up' })}
-              accessibilityRole="button"
-              accessibilityLabel="Helpful"
-              accessibilityState={{ selected: of(insight.id).reaction === 'up' }}
-              hitSlop={8}
-              style={[s.reaction, of(insight.id).reaction === 'up' && s.reactionOn]}
-            >
-              <Icon name="thumbUp" size={18} color={of(insight.id).reaction === 'up' ? G.onPill : G.body} />
-            </Pressable>
-            <Pressable
-              onPress={() => react(insight.id, { reaction: of(insight.id).reaction === 'down' ? null : 'down' })}
-              accessibilityRole="button"
-              accessibilityLabel="Not for me"
-              accessibilityState={{ selected: of(insight.id).reaction === 'down' }}
-              hitSlop={8}
-              style={[s.reaction, of(insight.id).reaction === 'down' && s.reactionOn]}
-            >
-              <Icon name="thumbDown" size={18} color={of(insight.id).reaction === 'down' ? G.onPill : G.body} />
-            </Pressable>
-            <Pressable
-              onPress={() => react(insight.id, { saved: !of(insight.id).saved })}
-              accessibilityRole="button"
-              accessibilityLabel={of(insight.id).saved ? 'Remove from saved' : 'Save'}
-              accessibilityState={{ selected: of(insight.id).saved }}
-              hitSlop={8}
-              style={[s.reaction, of(insight.id).saved && s.reactionOn]}
-            >
-              <Icon name="bookmark" size={18} color={of(insight.id).saved ? G.onPill : G.body} filled={of(insight.id).saved} />
-            </Pressable>
-            {of(insight.id).reaction === 'down' ? (
-              <Text style={[font('footnote'), s.meta, { flex: 1 }]}>Got it. Ciatta will show fewer like this.</Text>
-            ) : of(insight.id).reaction === 'up' || of(insight.id).saved ? (
-              <Text style={[font('footnote'), s.meta, { flex: 1 }]}>Ciatta will show more like this.</Text>
-            ) : null}
-          </View>
           <Text style={[font('title2', 'semibold'), s.ink]}>Highlights</Text>
           {/*
             Her own context first: what this rests on in her record, her
@@ -159,7 +129,7 @@ export function InsightView({ id, onClose, sheet = false }: { id: string | null;
           {pattern.lines.length ? (
             <View style={s.record}>
               <CardPhoto />
-              <Text style={[font('headline'), s.ink]}>For you</Text>
+              <Text style={[font('headline'), s.onCard]}>For you</Text>
               {pattern.lines.map((c) => (
                 <View key={c} style={s.bullet}>
                   <View style={[s.dot, s.dotYours]} />
@@ -177,8 +147,14 @@ export function InsightView({ id, onClose, sheet = false }: { id: string | null;
           ))}
           <Text style={[font('body'), s.paragraph]}>{displayCopy(insight.body)}</Text>
 
+          {/* The numbers behind it, at the foot of the prose: her Journey
+              timeline, on its own dark card so its colours read. */}
+          <Text style={[font('headline'), s.ink, s.timelineHead]}>Timeline</Text>
+          <View style={s.timeline}>
+            <CardFill />
+            <JourneyScreen embedded />
+          </View>
         </View>
-        )}
       </ScrollView>
 
       {/* Discuss, as Lotus floats it: Ciatta, asked about this. */}
@@ -191,8 +167,8 @@ export function InsightView({ id, onClose, sheet = false }: { id: string | null;
         accessibilityRole="button"
         style={({ pressed }) => [s.discuss, sheet && s.discussInSheet, pressed && { opacity: 0.8 }]}
       >
-        <Icon name="chat" size={16} color={G.onPill} />
-        <Text style={[font('subhead', 'semibold'), { color: G.onPill }]}>Discuss</Text>
+        <Icon name="chat" size={16} color={PAPER.onPill} />
+        <Text style={[font('subhead', 'semibold'), { color: PAPER.onPill }]}>Discuss</Text>
       </Pressable>
 
       <Sheet visible={sourcesOpen} title="Sources" onDone={() => setSourcesOpen(false)}>
@@ -214,9 +190,11 @@ export function InsightView({ id, onClose, sheet = false }: { id: string | null;
 }
 
 const s = StyleSheet.create({
-  fill: { flex: 1 },
+  fill: { flex: 1, backgroundColor: PAPER.bg },
   hero: { height: 430, borderRadius: 0, borderWidth: 0 },
   bar: { flexDirection: 'row', justifyContent: 'space-between' },
+  barRight: { flexDirection: 'row', gap: 8 },
+  circleOn: { backgroundColor: '#FFFFFF' },
   circle: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.18)' },
   title: { color: '#FFFFFF', lineHeight: 36 },
   white: { color: '#FFFFFF' },
@@ -233,12 +211,16 @@ const s = StyleSheet.create({
     marginBottom: 6,
   },
   body: { paddingHorizontal: GUTTER, paddingTop: SPACE.block, gap: 14 },
-  ink: { color: L.ink },
-  meta: { color: G.meta },
+  ink: { color: PAPER.ink },
+  // Type on the dark photo card inside the white page.
+  onCard: { color: L.ink },
+  meta: { color: PAPER.meta },
   bullet: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: HUE.reported, marginTop: 9 },
-  bulletText: { color: G.ink, flex: 1, lineHeight: 26 },
-  paragraph: { color: G.ink, lineHeight: 27, marginTop: 6 },
+  bulletText: { color: PAPER.ink, flex: 1, lineHeight: 26 },
+  paragraph: { color: PAPER.body, lineHeight: 27, marginTop: 6 },
+  timelineHead: { marginTop: SPACE.block },
+  timeline: { paddingVertical: 12, overflow: 'hidden', ...BLEED },
   toggle: { paddingHorizontal: GUTTER, paddingTop: SPACE.near },
   metrics: { paddingTop: SPACE.near },
   metricsSwitch: { paddingHorizontal: GUTTER, marginBottom: SPACE.tight },
@@ -256,7 +238,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 18,
     minHeight: 46,
     borderRadius: 999,
-    backgroundColor: G.pill,
+    backgroundColor: PAPER.pill,
   },
   discussInSheet: { bottom: 40 },
   source: { paddingVertical: 14, flexDirection: 'row', gap: 12, alignItems: 'flex-start' },

@@ -102,19 +102,8 @@ export function InsightCard({
   connections: readonly string[];
   style?: ViewStyle;
 }) {
-  const { react, of } = useInsightReactions();
   return (
     <PhotoCard source={headingFor(insight.image)} style={style}>
-      <View style={s.cardTop}>
-        <Pressable
-          onPress={() => react(insight.id, { saved: !of(insight.id).saved })}
-          accessibilityRole="button"
-          accessibilityLabel={of(insight.id).saved ? 'Remove from saved' : 'Save'}
-          hitSlop={10}
-        >
-          <Icon name="bookmark" size={20} color="#FFFFFF" filled={of(insight.id).saved} />
-        </Pressable>
-      </View>
       <View style={{ flex: 1 }} />
       <Text style={[font('title3', 'semibold'), s.title]} numberOfLines={4}>
         {displayCopy(insight.title)}
@@ -135,26 +124,6 @@ export function InsightCard({
         </View>
         <Text style={[font('footnote'), chip.text]}>{`${insight.sources.length} ${insight.sources.length === 1 ? 'Source' : 'Sources'}`}</Text>
         <Icon name="chevronRight" size={12} color="#FFFFFF" />
-      </View>
-      {/* What she thinks of it, which is what Ciatta learns from:
-          up shows more like it, down stops showing it. */}
-      <View style={s.thumbs}>
-        {(['up', 'down'] as const).map((r) => {
-          const on = of(insight.id).reaction === r;
-          return (
-            <Pressable
-              key={r}
-              onPress={() => react(insight.id, { reaction: on ? null : r })}
-              accessibilityRole="button"
-              accessibilityLabel={r === 'up' ? 'Show more like this' : 'Show less like this'}
-              accessibilityState={{ selected: on }}
-              hitSlop={8}
-              style={[chip.round, on && chip.on]}
-            >
-              <Icon name={r === 'up' ? 'thumbUp' : 'thumbDown'} size={17} color={on ? '#0C0E11' : '#FFFFFF'} />
-            </Pressable>
-          );
-        })}
       </View>
       </View>
     </PhotoCard>
