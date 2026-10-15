@@ -16,9 +16,10 @@
 //   chart that looks shorter than she remembers has an explanation.
 
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { loadClinicalRecords } from '../data/providers';
+import { type Connection, disconnectProvider, loadClinicalRecords, loadConnections, syncProviders } from '../data/providers';
+import { connectionLine, needsReconnect, providerName, syncNote } from '../lib/providers/connectionView';
 import { displayCopy } from '../lib/displayCopy';
 import {
   type ChartView,
@@ -47,12 +48,16 @@ const FLAG_HUE: Record<string, string> = {
 export function ChartScreen() {
   const nav = useNav();
   const [view, setView] = useState<ChartView | null>(null);
+  const [connections, setConnections] = useState<Connection[]>([]);
   const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
 
   const read = useCallback(async () => {
     setBusy(true);
     try {
-      setView(chartView(await loadClinicalRecords()));
+      const [records, conns] = await Promise.all([loadClinicalRecords(), loadConnections()]);
+      setView(chartView(records));
+      setConnections(conns);
     } finally {
       setBusy(false);
     }
@@ -61,6 +66,45 @@ export function ChartScreen() {
   useEffect(() => {
     void read();
   }, [read]);
+
+  // Pulling down asks her providers for anything new, then reads again.
+  const refresh = useCallback(async () => {
+    setBusy(true);
+    setNote(null);
+    try {
+      setNote(syncNote(await syncProviders(connections)));
+    } finally {
+      await read();
+    }
+  }, [connections, read]);
+
+  const add = useCallback(() => nav.push('providerConnect' as Screen), [nav]);
+
+  const remove = useCallback(
+    (c: Connection) => {
+      Alert.alert(
+        displayCopy(`Remove ${providerName(c)}?`),
+        'The records it sent are removed from Ciatta. Nothing changes in your chart at your provider, and you can connect again later.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Remove',
+            style: 'destructive',
+            onPress: () =>
+              void disconnectProvider(c.id).then((ok) => {
+                if (!ok) setNote('That provider could not be removed just now. Nothing was changed.');
+                return read();
+              }),
+          },
+        ],
+      );
+    },
+    [read],
+  );
+
+  const providers = connections.length ? (
+    <Providers connections={connections} onReconnect={add} onRemove={remove} onAdd={add} />
+  ) : null;
 
   if (!view) {
     return (
@@ -75,12 +119,26 @@ export function ChartScreen() {
   if (isEmpty(view)) {
     return (
       <DetailScreen title="From your providers" onBack={nav.back}>
-        <View style={s.pad}>
-          <Lead style={s.lede} text={"Nothing has arrived from a provider yet. Connecting a hospital or clinic brings your results, conditions and medications here."} />
-          <View style={{ marginTop: SPACE.block }}>
-            <SecondaryButton label="Connect a Provider" onPress={() => nav.push('providerConnect' as Screen)} />
-          </View>
-        </View>
+        <ScrollView
+          style={s.fill}
+          contentContainerStyle={s.body}
+          refreshControl={<RefreshControl refreshing={busy} onRefresh={refresh} tintColor={G.meta} />}
+        >
+          <Lead
+            style={s.lede}
+            text={
+              connections.length
+                ? 'Nothing has arrived from your providers yet. Pull down to check again.'
+                : 'Nothing has arrived from a provider yet. Connecting a hospital or clinic brings your results, conditions and medications here.'
+            }
+          />
+          {note ? <Text style={[font('caption1'), s.note]}>{displayCopy(note)}</Text> : null}
+          {providers ?? (
+            <View style={[s.pad, { marginTop: SPACE.block }]}>
+              <SecondaryButton label="Connect a Provider" onPress={add} />
+            </View>
+          )}
+        </ScrollView>
       </DetailScreen>
     );
   }
@@ -90,12 +148,14 @@ export function ChartScreen() {
       <ScrollView
         style={s.fill}
         contentContainerStyle={s.body}
-        refreshControl={<RefreshControl refreshing={busy} onRefresh={read} tintColor={G.meta} />}
+        refreshControl={<RefreshControl refreshing={busy} onRefresh={refresh} tintColor={G.meta} />}
       >
         <Lead style={s.lede} text={displayCopy(chartLine(view))} />
         <Text style={[font('caption1'), s.note]}>
           Everything here came from your provider, in their words. Ciatta has not changed any of it.
         </Text>
+        {note ? <Text style={[font('caption1'), s.note]}>{displayCopy(note)}</Text> : null}
+        {providers}
 
         <Standing title="Conditions" records={view.conditions} />
         <Standing title="Medications" records={view.medications} />
@@ -139,6 +199,51 @@ export function ChartScreen() {
         ) : null}
       </ScrollView>
     </DetailScreen>
+  );
+}
+
+// Her providers, each with what it has sent and when, and the two things
+// she can do: connect again when it has expired, and remove it.
+function Providers({
+  connections,
+  onReconnect,
+  onRemove,
+  onAdd,
+}: {
+  connections: readonly Connection[];
+  onReconnect: () => void;
+  onRemove: (c: Connection) => void;
+  onAdd: () => void;
+}) {
+  const now = new Date();
+  return (
+    <View style={s.section}>
+      <Eyebrow>Your providers</Eyebrow>
+      <View style={s.card}>
+        <CardFill />
+        {connections.map((c, n) => (
+          <View key={c.id} style={[s.provider, n > 0 && s.divided]}>
+            <Text style={[font('subhead', 'semibold'), s.name]}>{displayCopy(providerName(c))}</Text>
+            <Text style={[font('caption1'), needsReconnect(c) ? s.attention : s.when]}>{displayCopy(connectionLine(c, now))}</Text>
+            <View style={s.providerActions}>
+              {needsReconnect(c) ? <TextAction label="Connect again" onPress={onReconnect} /> : null}
+              <TextAction label="Remove" onPress={() => onRemove(c)} />
+            </View>
+          </View>
+        ))}
+      </View>
+      <View style={{ marginTop: SPACE.near }}>
+        <SecondaryButton label="Add Another Provider" onPress={onAdd} />
+      </View>
+    </View>
+  );
+}
+
+function TextAction({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" hitSlop={8} style={({ pressed }) => pressed && s.pressed}>
+      <Text style={[font('footnote', 'semibold'), s.action]}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -217,4 +322,9 @@ const s = StyleSheet.create({
   when: { color: L.meta, marginTop: 2 },
   status: { color: HUE.uncertainty, marginTop: 2 },
   value: { color: L.body },
+  provider: { paddingVertical: 12, gap: 2 },
+  providerActions: { flexDirection: 'row', gap: 18, marginTop: 6 },
+  action: { color: L.ink },
+  attention: { color: HUE.attention, marginTop: 2 },
+  pressed: { opacity: 0.6 },
 });

@@ -19,6 +19,7 @@ import { supabase } from '../lib/supabase';
 import { parseCompact } from '../lib/providers/brandsDirectory';
 import type { Endpoint } from '../lib/providers/directory';
 import type { ClinicalRecord } from '../lib/providers/fhirMap';
+import { canSync, providerName, type SyncFailure } from '../lib/providers/connectionView';
 import { parseEndpointBundle, SANDBOX, SMART_TEST } from '../lib/providers/epicDirectory';
 import {
   authorizeUrl,
@@ -245,4 +246,19 @@ export async function loadConnections(): Promise<Connection[]> {
 export async function disconnectProvider(connectionId: string): Promise<boolean> {
   const { data, error } = await supabase.rpc('disconnect_provider', { p_connection: connectionId });
   return !error && data === true;
+}
+
+// Asks each working provider for anything new, through the function that
+// holds the tokens. One at a time, and a failure does not stop the rest.
+export async function syncProviders(connections: readonly Connection[]): Promise<SyncFailure[]> {
+  const failures: SyncFailure[] = [];
+  for (const c of connections.filter(canSync)) {
+    const { data, error } = await supabase.functions.invoke('provider-connect', {
+      body: { action: 'sync', connectionId: c.id },
+    });
+    if (error || !data?.connection) {
+      failures.push({ name: providerName(c), message: await functionError(error, data, 'That did not finish.') });
+    }
+  }
+  return failures;
 }

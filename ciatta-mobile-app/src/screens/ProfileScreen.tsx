@@ -7,6 +7,7 @@ import { deleteAccount, exportAndShare } from '../data/account';
 import type { SourceView } from '../data/rows';
 import type { Reported } from '../data/repo';
 import { type Connection, loadConnections } from '../data/providers';
+import { recordsSource } from '../lib/providers/connectionView';
 import { type BodyManual, overviewFacts, resolveBody } from '../lib/overviewFacts';
 import { ageFact } from '../lib/healthFacts';
 import { activeUnits, formatDistance, formatHeight, formatWeight, UNIT_LABEL } from '../lib/units';
@@ -282,7 +283,7 @@ function DataSources({ onOpen }: { onOpen: (screen: Screen) => void }) {
   const devices = sources.filter((x) => x.kind === 'measured');
   const labs = sources.find((x) => x.kind === 'lab');
   const logs = sources.find((x) => x.kind === 'logged');
-  const linked = (providers ?? []).filter((c) => c.status === 'active');
+  const records = recordsSource(providers ?? []);
 
   return (
     <View>
@@ -297,10 +298,10 @@ function DataSources({ onOpen }: { onOpen: (screen: Screen) => void }) {
         <SourceRow
           icon="stethoscope"
           title="Health Records"
-          status={linked.length ? `${linked.reduce((n, c) => n + c.recordCount, 0)} records from ${linked.length === 1 ? linked[0].endpointName : `${linked.length} providers`}` : 'Your hospital or clinic, through its portal'}
-          tone={linked.length ? 'live' : 'suggested'}
-          connected={linked.length > 0}
-          onPress={() => onOpen(linked.length ? 'chart' : 'providerConnect')}
+          status={records.status}
+          tone={records.tone}
+          connected={records.connected}
+          onPress={() => onOpen(records.target)}
         />
         <SourceRow
           icon="shield"
