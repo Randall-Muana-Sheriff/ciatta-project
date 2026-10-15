@@ -40,7 +40,7 @@ const SCHEMA = {
   schema: {
     type: 'object',
     additionalProperties: false,
-    required: ['not_lab', 'collected_on', 'lab', 'ordering_clinician', 'specimen', 'unreadable_pages', 'tests'],
+    required: ['not_lab', 'collected_on', 'lab', 'ordering_clinician', 'specimen', 'unreadable_pages', 'multiple_dates', 'tests'],
     properties: {
       not_lab: { type: 'boolean' },
       collected_on: NULLABLE('string'),
@@ -48,6 +48,7 @@ const SCHEMA = {
       ordering_clinician: NULLABLE('string'),
       specimen: NULLABLE('string'),
       unreadable_pages: { type: 'array', items: { type: 'integer' } },
+      multiple_dates: { type: 'boolean' },
       tests: {
         type: 'array',
         items: {
@@ -80,6 +81,7 @@ const INSTRUCTIONS = [
   'If the document is not a lab report, set not_lab to true and return no tests.',
   'panel is the heading the test is printed under, such as "Complete Blood Count", "Comprehensive Metabolic Panel" or "Lipid Panel", or null when it is under none.',
   'ordering_clinician is the ordering or referring clinician as printed, or null. specimen is the specimen as printed (for example "Serum", "Whole blood", "Urine"), or null.',
+  'multiple_dates is true when the document shows results collected on more than one date, otherwise false.',
   'unreadable_pages lists the page numbers of this document, counted from 1, that you could not read; an empty list when you read every page.',
 ].join(' ');
 

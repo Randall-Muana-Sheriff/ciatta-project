@@ -238,6 +238,8 @@ export type LabScan = {
   pages: number | null;
   // Pages of the report the model could not read, so she can check them.
   unreadablePages: number[];
+  // The file holds results from more than one collection day.
+  multipleDates: boolean;
   tests: ScannedTest[];
 };
 
@@ -289,6 +291,7 @@ export function readLabScan(json: unknown): LabScan {
     specimen: str(j.specimen),
     pages,
     unreadablePages: [...unreadable].sort((a, b) => a - b),
+    multipleDates: j.multiple_dates === true,
     tests: tests.slice(0, MAX_TESTS),
   };
 }

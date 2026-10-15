@@ -29,6 +29,8 @@ export function mergeChunks(reads: ChunkRead[], pages: number): Record<string, u
   const tests: unknown[] = [];
   const unreadable = new Set<number>();
   let anyLab = false;
+  let several = false;
+  const days = new Set<string>();
   for (const r of ordered) {
     if (!r.parsed) {
       for (let p = r.first; p <= r.last; p++) unreadable.add(p);
@@ -37,6 +39,9 @@ export function mergeChunks(reads: ChunkRead[], pages: number): Record<string, u
     const chunkTests = Array.isArray(r.parsed.tests) ? r.parsed.tests : [];
     if (r.parsed.not_lab !== true || chunkTests.length) anyLab = true;
     tests.push(...chunkTests);
+    if (r.parsed.multiple_dates === true) several = true;
+    const day = text(r.parsed.collected_on);
+    if (day) days.add(day);
     for (const p of Array.isArray(r.parsed.unreadable_pages) ? r.parsed.unreadable_pages : []) {
       if (typeof p !== 'number' || !Number.isInteger(p) || p < 1) continue;
       const page = r.first + p - 1;
@@ -51,6 +56,9 @@ export function mergeChunks(reads: ChunkRead[], pages: number): Record<string, u
     specimen: pick('specimen'),
     pages,
     unreadable_pages: [...unreadable].sort((a, b) => a - b),
+    // A portal export can hold several visits; the review warns her,
+    // because one report is saved under one collection day.
+    multiple_dates: several || days.size > 1,
     tests,
   };
 }

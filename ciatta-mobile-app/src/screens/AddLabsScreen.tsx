@@ -54,11 +54,12 @@ export function AddLabsScreen() {
   const [note, setNote] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [file, setFile] = useState<{ base64: string; kind: 'image' | 'pdf'; checksum: string } | null>(null);
-  const [meta, setMeta] = useState<{ orderingClinician: string | null; specimen: string | null; pages: number | null; unreadable: number[] }>({
+  const [meta, setMeta] = useState<{ orderingClinician: string | null; specimen: string | null; pages: number | null; unreadable: number[]; multipleDates: boolean }>({
     orderingClinician: null,
     specimen: null,
     pages: null,
     unreadable: [],
+    multipleDates: false,
   });
   const [duplicate, setDuplicate] = useState<{ id: string; on: string } | null>(null);
   const canScan = isScannerAvailable();
@@ -81,7 +82,7 @@ export function AddLabsScreen() {
         return;
       }
       setFile({ base64, kind, checksum });
-      setMeta({ orderingClinician: scan.orderingClinician, specimen: scan.specimen, pages: scan.pages, unreadable: scan.unreadablePages });
+      setMeta({ orderingClinician: scan.orderingClinician, specimen: scan.specimen, pages: scan.pages, unreadable: scan.unreadablePages, multipleDates: scan.multipleDates });
       setLines(scan.tests.map(lineFrom));
       setLab(scan.lab ?? '');
       if (scan.on) {
@@ -254,6 +255,11 @@ export function AddLabsScreen() {
           </View>
           {!on ? <Text style={[font('footnote'), s.meta, { marginTop: 6 }]}>Add the day the sample was taken, as it is on the report.</Text> : null}
 
+          {meta.multipleDates ? (
+            <Text style={[font('footnote'), s.warn, { marginTop: 10 }]}>
+              This file has results from more than one day, and they will all be saved under the date above. Switch off the lines from other days, and add those as their own report.
+            </Text>
+          ) : null}
           {meta.unreadable.length ? (
             <Text style={[font('footnote'), s.warn, { marginTop: 10 }]}>
               {meta.unreadable.length === 1

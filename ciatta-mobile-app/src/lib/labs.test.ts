@@ -189,3 +189,8 @@ test('the review groups lines under their printed panel, in the order printed, w
   ]);
   assert.deepEqual(groupByPanel([]), []);
 });
+
+test('a report that holds results from more than one day is marked, so she is warned before saving', () => {
+  assert.equal(readLabScan({ not_lab: false, multiple_dates: true, tests: [] }).multipleDates, true);
+  assert.equal(readLabScan({ not_lab: false, tests: [] }).multipleDates, false);
+});

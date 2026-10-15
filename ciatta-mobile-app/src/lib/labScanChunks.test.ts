@@ -67,3 +67,16 @@ test('it is not a lab report only when no chunk found a lab report', () => {
     false,
   );
 });
+
+test('a report whose pieces show different collection days says so', () => {
+  const merged = mergeChunks(
+    [
+      { first: 1, last: 8, parsed: { not_lab: false, collected_on: '2026-06-12', multiple_dates: false, tests: [t('TSH')] } },
+      { first: 9, last: 9, parsed: { not_lab: false, collected_on: '2025-11-03', multiple_dates: false, tests: [t('TSH')] } },
+    ],
+    9,
+  );
+  assert.equal(merged.multiple_dates, true);
+  assert.equal(mergeChunks([{ first: 1, last: 2, parsed: { not_lab: false, collected_on: '2026-06-12', multiple_dates: true, tests: [] } }], 2).multiple_dates, true, 'one piece can say it holds several days');
+  assert.equal(mergeChunks([{ first: 1, last: 2, parsed: { not_lab: false, collected_on: '2026-06-12', multiple_dates: false, tests: [] } }], 2).multiple_dates, false);
+});
