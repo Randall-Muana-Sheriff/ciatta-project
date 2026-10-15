@@ -16,6 +16,7 @@ import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'rea
 
 import { startFasten } from '../data/providers';
 import { displayCopy } from '../lib/displayCopy';
+import type { FastenHit } from '../lib/providers/fastenCatalog';
 import { stitchOutcome } from '../lib/providers/stitch';
 import { font, GUTTER } from '../theme';
 import { Ground } from '../ui/Ground';
@@ -25,7 +26,18 @@ import { G } from '../ui/scheme';
 
 type Session = { externalId: string; publicId: string };
 
-export function FastenConnectSheet({ visible, onClose }: { visible: boolean; onClose: (connected: boolean) => void }) {
+// target is the provider she picked from Ciatta's search, so Fasten opens
+// on it rather than asking her to search again. Null opens Fasten's own
+// search.
+export function FastenConnectSheet({
+  visible,
+  target,
+  onClose,
+}: {
+  visible: boolean;
+  target: FastenHit | null;
+  onClose: (connected: boolean) => void;
+}) {
   const [session, setSession] = useState<Session | null>(null);
   const [message, setMessage] = useState('');
   const [connected, setConnected] = useState(false);
@@ -67,16 +79,16 @@ export function FastenConnectSheet({ visible, onClose }: { visible: boolean; onC
       <Ground from="measured" to="timeDepth">
         <View style={s.head}>
           <Text style={[font('headline'), s.title]} accessibilityRole="header">
-            Other providers and insurers
+            {displayCopy(target?.name ?? 'Other providers and insurers')}
           </Text>
           <Pressable onPress={close} accessibilityRole="button" hitSlop={10}>
             <Text style={[font('body', 'semibold'), s.done]}>Done</Text>
           </Pressable>
         </View>
         <Text style={[font('footnote'), s.sub]}>
-          Search for your hospital, clinic, lab or insurance plan, then sign in to its portal. Your password goes to
-          them, not to Ciatta. Your records arrive in a few minutes, and you can remove the connection whenever you
-          want.
+          {target
+            ? 'Sign in to its portal below. Your password goes to them, not to Ciatta. Your records arrive in a few minutes, and you can remove the connection whenever you want.'
+            : 'Search for your hospital, clinic, lab or insurance plan, then sign in to its portal. Your password goes to them, not to Ciatta. Your records arrive in a few minutes, and you can remove the connection whenever you want.'}
         </Text>
 
         {message ? (
@@ -98,6 +110,9 @@ export function FastenConnectSheet({ visible, onClose }: { visible: boolean; onC
               key={`${session.externalId}:${attempt}`}
               publicId={session.publicId}
               externalId={session.externalId}
+              brandId={target?.brandId}
+              portalId={target?.portalId}
+              endpointId={target?.endpointId}
               onEventBus={onEvent}
               renderCloseButton={(dismiss) => (
                 <Pressable onPress={dismiss} accessibilityRole="button" style={s.portalClose}>

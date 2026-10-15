@@ -19,6 +19,7 @@ import { supabase } from '../lib/supabase';
 import { parseCompact } from '../lib/providers/brandsDirectory';
 import type { Endpoint } from '../lib/providers/directory';
 import type { ClinicalRecord } from '../lib/providers/fhirMap';
+import { catalogSearchUrl, type FastenHit, parseCatalogSearch } from '../lib/providers/fastenCatalog';
 import { canUpdate, providerName, type SyncFailure } from '../lib/providers/connectionView';
 import { parseEndpointBundle, withTestEndpoints } from '../lib/providers/epicDirectory';
 import {
@@ -257,6 +258,29 @@ export async function startFasten(): Promise<FastenStart> {
     return { ok: false, message: await functionError(error, data, 'That did not start. Nothing was shared.') };
   }
   return { ok: true, externalId: data.externalId, publicId: data.publicId };
+}
+
+// Fasten's public id, which is meant to be in the app. Empty in a build
+// made without it, and then the search simply has no Fasten results.
+export const FASTEN_PUBLIC_ID = process.env.EXPO_PUBLIC_FASTEN_PUBLIC_ID?.trim() ?? '';
+
+// Fasten's catalog, for the same words she typed into the MyChart search.
+// Null when it could not be reached, which the screen says, rather than an
+// empty list that would read as no match.
+export async function searchFasten(query: string, signal?: AbortSignal): Promise<FastenHit[] | null> {
+  if (!FASTEN_PUBLIC_ID || query.trim().length < 2) return [];
+  try {
+    const res = await fetch(catalogSearchUrl(FASTEN_PUBLIC_ID), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ query: query.trim() }),
+      signal,
+    });
+    if (!res.ok) return null;
+    return parseCatalogSearch(await res.json());
+  } catch {
+    return null;
+  }
 }
 
 // Removes a provider: the connection, its records and its labs, on the

@@ -14,7 +14,8 @@ import { GroundLayer } from '../ui/Ground';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { connectProvider, loadConnections, loadDirectory, showsTestProviders } from '../data/providers';
+import { connectProvider, loadConnections, loadDirectory, searchFasten, showsTestProviders } from '../data/providers';
+import { type FastenHit, fastenNote, placeLine as fastenPlace, platformLine } from '../lib/providers/fastenCatalog';
 import { FastenConnectSheet } from './FastenConnectSheet';
 import { clientIds as readClientIds, setClientId } from '../data/providerAccess';
 import { type ClientIds, clientFor } from '../lib/providers/clientChoice';
@@ -39,6 +40,9 @@ export function ProviderConnectScreen() {
   const [connecting, setConnecting] = useState(false);
   const [message, setMessage] = useState('');
   const [fastenOpen, setFastenOpen] = useState(false);
+  const [fastenTarget, setFastenTarget] = useState<FastenHit | null>(null);
+  // Fasten's catalog for the same words. undefined while it is asked.
+  const [fastenHits, setFastenHits] = useState<FastenHit[] | null | undefined>([]);
   // Read rather than compiled in, so a registration approved today works
   // today. Null while the read is in flight, which is not the same as
   // absent and must not render as it.
@@ -59,6 +63,32 @@ export function ProviderConnectScreen() {
   }, []);
 
   const groups = useMemo(() => (directory ? search(directory, query) : []), [directory, query]);
+  const searching = query.trim().length >= 2;
+
+  // Asked a moment after she stops typing, and the previous ask dropped,
+  // so a fast typist sends one search rather than one per letter.
+  useEffect(() => {
+    if (!searching) {
+      setFastenHits([]);
+      return;
+    }
+    setFastenHits(undefined);
+    const abort = new AbortController();
+    const timer = setTimeout(() => {
+      void searchFasten(query, abort.signal).then((hits) => {
+        if (!abort.signal.aborted) setFastenHits(hits);
+      });
+    }, 350);
+    return () => {
+      clearTimeout(timer);
+      abort.abort();
+    };
+  }, [query, searching]);
+
+  const openFasten = (target: FastenHit | null) => {
+    setFastenTarget(target);
+    setFastenOpen(true);
+  };
 
   const connect = useCallback(async () => {
     if (!picked || connecting) return;
@@ -92,13 +122,14 @@ export function ProviderConnectScreen() {
         Two ways in, side by side. Epic's MyChart through Ciatta's own
         connection, searched below; everything else through Fasten.
       */}
+      {searching ? null : (
       <View style={s.ways}>
         <View style={s.way}>
           <Text style={[font('subhead', 'semibold'), s.rowName]}>Epic (MyChart)</Text>
-          <Text style={[font('caption1'), s.place]}>Most hospitals and clinics using MyChart. Search below.</Text>
+          <Text style={[font('caption1'), s.place]}>Hospitals and clinics on MyChart</Text>
         </View>
         <Pressable
-          onPress={() => setFastenOpen(true)}
+          onPress={() => openFasten(null)}
           accessibilityRole="button"
           accessibilityLabel="Other providers and insurers"
           style={({ pressed }) => [s.way, s.wayAction, pressed && s.pressed]}
@@ -110,19 +141,20 @@ export function ProviderConnectScreen() {
           <Icon name="chevronRight" size={15} color={G.meta} />
         </Pressable>
       </View>
+      )}
 
       <View style={s.searchWrap}>
         <Icon name="search" size={18} color={G.meta} />
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Hospital or clinic name"
+          placeholder="Hospital, clinic, lab or insurer"
           placeholderTextColor={G.meta}
           autoCapitalize="words"
           autoCorrect={false}
           returnKeyType="search"
           style={[font('body'), s.search]}
-          accessibilityLabel="Search for your health institution"
+          accessibilityLabel="Search for your hospital, clinic, lab or insurer"
         />
         {query ? (
           <Pressable onPress={() => setQuery('')} accessibilityRole="button" accessibilityLabel="Clear" hitSlop={8}>
@@ -152,8 +184,14 @@ export function ProviderConnectScreen() {
         </Text>
       ) : null}
 
-      {query.trim().length >= 2 && groups.length === 0 && directory !== null ? (
+      {searching && groups.length === 0 && directory !== null && Array.isArray(fastenHits) && fastenHits.length === 0 ? (
         <Text style={[font('subhead'), s.empty]}>{displayCopy(noResults(query))}</Text>
+      ) : null}
+
+      {searching && groups.length > 0 ? (
+        <View style={s.sectionHead}>
+          <Eyebrow>MyChart</Eyebrow>
+        </View>
       ) : null}
 
       {groups.length > MAX_GROUPS ? (
@@ -174,10 +212,40 @@ export function ProviderConnectScreen() {
           onPick={setPicked}
         />
       ))}
+
+      {searching ? (
+        <View style={s.fastenSection}>
+          <Eyebrow>Other providers and insurers</Eyebrow>
+          {fastenHits === undefined ? (
+            <View style={s.centreSmall}>
+              <ActivityIndicator color={G.meta} />
+            </View>
+          ) : (
+            <>
+              {fastenNote(fastenHits) && !(groups.length === 0 && fastenHits?.length === 0) ? (
+                <Text style={[font('caption1'), s.fastenNote]}>{displayCopy(fastenNote(fastenHits)!)}</Text>
+              ) : null}
+              <View style={s.groupBody}>
+                {(fastenHits ?? []).slice(0, MAX_FASTEN).map((hit) => (
+                  <FastenRow key={hit.brandId} hit={hit} onPick={openFasten} />
+                ))}
+              </View>
+            </>
+          )}
+          <Pressable
+            onPress={() => openFasten(null)}
+            accessibilityRole="button"
+            style={({ pressed }) => [pressed && s.pressed]}
+          >
+            <Text style={[font('subhead', 'semibold'), s.viewAll]}>Search every provider and insurer</Text>
+          </Pressable>
+        </View>
+      ) : null}
       </DetailScreen>
 
       <FastenConnectSheet
         visible={fastenOpen}
+        target={fastenTarget}
         onClose={(connected) => {
           setFastenOpen(false);
           if (connected) {
@@ -305,6 +373,28 @@ function placeLine(endpoint: Endpoint, standalone: boolean): string | null {
   const line = parts.filter(Boolean).join(', ');
   return line || null;
 }
+
+// A provider from Fasten's catalog: its name, the system behind it, and
+// where it is when the catalog says.
+function FastenRow({ hit, onPick }: { hit: FastenHit; onPick: (h: FastenHit) => void }) {
+  const line = [platformLine(hit), fastenPlace(hit)].filter(Boolean).join(', ');
+  return (
+    <Pressable
+      onPress={() => onPick(hit)}
+      accessibilityRole="button"
+      accessibilityLabel={[hit.name, line].filter(Boolean).join(', ')}
+      style={({ pressed }) => [s.row, pressed && s.pressed]}
+    >
+      <View style={{ flex: 1 }}>
+        <Text style={[font('subhead'), s.rowName]}>{displayCopy(hit.name)}</Text>
+        {line ? <Text style={[font('caption1'), s.place]}>{displayCopy(line)}</Text> : null}
+      </View>
+      <Icon name="chevronRight" size={15} color={G.meta} />
+    </Pressable>
+  );
+}
+
+const MAX_FASTEN = 20;
 
 // A broad word like "clinic" matches most of the country. Past this many
 // systems the list asks for a town instead of drawing them all.
@@ -478,6 +568,10 @@ const s = StyleSheet.create({
     backgroundColor: G.fill,
     overflow: 'hidden',
   },
+  sectionHead: { marginHorizontal: GUTTER, marginTop: SPACE.block },
+  fastenSection: { marginHorizontal: GUTTER, marginTop: SPACE.section },
+  fastenNote: { color: G.meta, marginTop: 8, lineHeight: 19 },
+  centreSmall: { alignItems: 'center', paddingVertical: SPACE.near },
   wayAction: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: G.card },
 
   centre: { alignItems: 'center', gap: 10, paddingVertical: SPACE.block },
