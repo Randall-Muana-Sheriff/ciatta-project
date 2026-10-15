@@ -35,6 +35,7 @@ test('the export says what it is, what each part holds, and what could not be re
     { table: 'lab_analysis_uses', reason: 'A count of lab report analyses per day, kept on the server only to limit them to 20 a day.' },
   ]);
   assert.match(out.about.files, /on this phone/);
+  assert.match(out.about.files, /lab report/i, 'lab report originals are kept in her account, and the export says so');
   assert.ok(out.about.tables.episodes);
 });
 

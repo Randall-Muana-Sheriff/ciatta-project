@@ -122,7 +122,7 @@ export function buildExport(reads: Partial<Record<ExportTable, TableRead>>, user
     about: {
       what: 'Everything Ciatta holds about you, as it is stored. Each table is listed with what it holds.',
       files:
-        'Photos, videos and PDFs you attached are kept on this phone, not on Ciatta\'s servers, so they are not in this file. Their names are listed with the entry they belong to.',
+        'Photos, videos and PDFs you attached to an entry are kept on this phone, not on Ciatta\'s servers, so they are not in this file. Their names are listed with the entry they belong to. The original of each lab report you added is kept privately in your Ciatta account; each one is listed under documents, and you can open it from that report.',
       tables: {},
     },
     counts: {},
