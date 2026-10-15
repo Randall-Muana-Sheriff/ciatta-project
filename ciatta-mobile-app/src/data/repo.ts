@@ -79,6 +79,17 @@ const SOURCE_NAME: Record<DbSourceKind, string> = {
 
 // Where screens get their record. Demo serves the sample person and keeps
 // nothing; real reads and writes her own rows, protected by RLS.
+export type LabReportInput = {
+  file: { base64: string; kind: 'image' | 'pdf' };
+  checksum: string;
+  on: string;
+  lab: string | null;
+  orderingClinician: string | null;
+  specimen: string | null;
+  pages: number | null;
+  tests: ScannedTest[];
+};
+
 export type Repo = {
   mode: 'demo' | 'real';
   loadEpisodes(): Promise<Episode[]>;
@@ -189,8 +200,13 @@ export type Repo = {
   loadLabs(): Promise<LabResult[]>;
   // Reads a photo or PDF of a lab report. Nothing is saved until saveLabs.
   scanLab(base64: string, kind: 'image' | 'pdf'): Promise<LabScan>;
-  // The lines she checked, saved as one visit read from a report.
-  saveLabs(tests: ScannedTest[], on: string, lab: string | null): Promise<void>;
+  // A checked lab report: its original file kept privately, and its results
+  // saved with it, all or nothing. Returns the report's id.
+  saveLabReport(input: LabReportInput): Promise<string>;
+  // A report she already added from the same file, by its checksum.
+  findLabReport(checksum: string): Promise<{ id: string; on: string } | null>;
+  // The report, its results and its stored file.
+  removeLabReport(id: string): Promise<void>;
   // Her sleep stages since a moment, each with when it began and ended.
   loadSleepSamples(sinceIso: string): Promise<SleepSample[]>;
   // Her body measurements as she entered them, and her units.
@@ -316,6 +332,7 @@ export function demoRepo(): Repo {
   ];
   // The example person's labs, from the sample's draws.
   let labs: LabResult[] = sampleLabs();
+  let demoReports: { id: string; on: string; checksum: string }[] = [];
   // The example person's insurance, as the sample shows it.
   let insurance: Insurance | null = { provider: 'Anthem', plan: 'PPO' };
   let view: JournalView = {
@@ -537,11 +554,22 @@ export function demoRepo(): Repo {
           { name: 'Ferritin', value: 13, value_text: null, unit: 'ng/mL', range: '15 to 150', flag: 'L' },
         ],
       }),
-    saveLabs: async (tests, on, lab) => {
+    saveLabReport: async (input) => {
+      const id = `report-${Date.now()}`;
+      demoReports.push({ id, on: input.on, checksum: input.checksum });
       labs = [
         ...labs,
-        ...tests.map((t, n) => ({ id: `scan-${Date.now()}-${n}`, ...t, status: 'final', source: 'report' as const, lab, on })),
+        ...input.tests.map((t, n) => ({ id: `${id}-${n}`, ...t, status: 'final', source: 'report' as const, lab: input.lab, on: input.on, documentId: id })),
       ];
+      return id;
+    },
+    findLabReport: async (checksum) => {
+      const hit = demoReports.find((r) => r.checksum === checksum);
+      return hit ? { id: hit.id, on: hit.on } : null;
+    },
+    removeLabReport: async (id) => {
+      demoReports = demoReports.filter((r) => r.id !== id);
+      labs = labs.filter((l) => l.documentId !== id);
     },
     loadSleepSamples: async () => demoNight(),
     loadBody: async () => body,
@@ -1153,7 +1181,7 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       const rows = must(
         await db
           .from('results')
-          .select('id, test_name, value, value_text, unit, reference_low, reference_high, reference_text, flag, status, source, provider, occurred_at')
+          .select('id, test_name, value, value_text, unit, reference_low, reference_high, reference_text, flag, status, source, provider, occurred_at, document_id, panel')
           .order('occurred_at', { ascending: false })
           .limit(1000),
       ) as LabRow[] | null;
@@ -1165,27 +1193,62 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       if (data?.error) throw new Error(data.error);
       return readLabScan(data);
     },
-    async saveLabs(tests, on, lab) {
-      if (!tests.length) return;
-      must(
-        await db.from('results').insert(
-          tests.map((t) => ({
-            user_id: userId,
-            test_name: t.name,
-            value: t.value,
-            value_text: t.valueText,
-            unit: t.unit,
-            reference_low: t.low,
-            reference_high: t.high,
-            reference_text: t.rangeText,
-            flag: t.flag,
-            status: 'final',
-            provider: lab,
-            source: 'report',
-            occurred_at: `${on}T12:00:00Z`,
-          })),
-        ),
-      );
+    async saveLabReport(input) {
+      const reportId = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`).toLowerCase();
+      const ext = input.file.kind === 'pdf' ? 'pdf' : 'jpg';
+      const path = `${userId}/lab-reports/${reportId}.${ext}`;
+      const bytes = Uint8Array.from(atob(input.file.base64), (c) => c.charCodeAt(0));
+      const { error: uploadError } = await db.storage
+        .from('documents')
+        .upload(path, bytes, { contentType: input.file.kind === 'pdf' ? 'application/pdf' : 'image/jpeg', upsert: false });
+      if (uploadError) throw uploadError;
+      const { data, error } = await db.rpc('save_lab_report', {
+        p_title: input.lab ?? 'Lab report',
+        p_collected_on: input.on,
+        p_storage_path: path,
+        p_metadata: {
+          lab: input.lab,
+          ordering_clinician: input.orderingClinician,
+          specimen: input.specimen,
+          pages: input.pages,
+          panels: [...new Set(input.tests.map((t) => t.panel).filter((p): p is string => !!p))],
+          checksum: input.checksum,
+        },
+        p_tests: input.tests.map((t) => ({
+          name: t.name,
+          panel: t.panel,
+          value: t.value,
+          value_text: t.valueText,
+          unit: t.unit,
+          low: t.low,
+          high: t.high,
+          range: t.rangeText,
+          flag: t.flag,
+        })),
+      });
+      if (error) {
+        // The file went up but the report did not: take the file back down.
+        await db.storage.from('documents').remove([path]);
+        throw error;
+      }
+      return data as string;
+    },
+    async findLabReport(checksum) {
+      const rows = must(
+        await db
+          .from('documents')
+          .select('id, occurred_at')
+          .eq('doc_type', 'lab_report')
+          .eq('metadata->>checksum', checksum)
+          .limit(1),
+      ) as { id: string; occurred_at: string }[] | null;
+      const hit = rows?.[0];
+      return hit ? { id: hit.id, on: hit.occurred_at.slice(0, 10) } : null;
+    },
+    async removeLabReport(id) {
+      const { data: path, error } = await db.rpc('remove_lab_report', { p_document: id });
+      if (error) throw error;
+      if (typeof path === 'string') await db.storage.from('documents').remove([path]);
     },
     async loadSleepSamples(sinceIso) {
       const rows = must(
@@ -1496,6 +1559,8 @@ type LabRow = {
   source: string | null;
   provider: string | null;
   occurred_at: string;
+  document_id: string | null;
+  panel: string | null;
 };
 
 const numOrNull = (v: number | string | null) => (v == null ? null : Number(v));
@@ -1516,6 +1581,8 @@ function labFromRow(r: LabRow): LabResult {
     source: r.source === 'report' ? 'report' : 'provider',
     lab: r.provider,
     on: r.occurred_at.slice(0, 10),
+    documentId: r.document_id,
+    panel: r.panel,
   };
 }
 

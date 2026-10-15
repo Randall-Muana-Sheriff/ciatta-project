@@ -283,10 +283,27 @@ test('the example person has labs, and a scanned report is saved as hers', async
   assert.equal(ferritin.low, 15);
   const scan = await repo.scanLab('base64', 'image');
   assert.ok(scan.tests.length > 0);
-  await repo.saveLabs(scan.tests.slice(0, 1), '2026-10-01', 'Example Lab');
+  const input = {
+    file: { base64: 'aGVsbG8=', kind: 'pdf' as const },
+    checksum: 'sum-1',
+    on: '2026-10-01',
+    lab: 'Example Lab',
+    orderingClinician: null,
+    specimen: null,
+    pages: 1,
+    tests: scan.tests.slice(0, 1),
+  };
+  const id = await repo.saveLabReport(input);
   const after = await repo.loadLabs();
   assert.equal(after.length, before.length + 1);
-  assert.equal(after.find((l) => l.on === '2026-10-01')?.source, 'report');
+  const saved = after.find((l) => l.on === '2026-10-01')!;
+  assert.equal(saved.source, 'report');
+  assert.equal(saved.documentId, id);
+  assert.deepEqual(await repo.findLabReport('sum-1'), { id, on: '2026-10-01' }, 'the same file is recognised');
+  assert.equal(await repo.findLabReport('another'), null);
+  await repo.removeLabReport(id);
+  assert.equal((await repo.loadLabs()).length, before.length, 'removing the report removes its results');
+  assert.equal(await repo.findLabReport('sum-1'), null);
 });
 
 test('a referral she tracks saves, updates its steps, and can be removed', async () => {

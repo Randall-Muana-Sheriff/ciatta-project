@@ -116,7 +116,7 @@ export function AddLabsScreen() {
     setSaving(true);
     setNote(null);
     try {
-      await repo.saveLabs(kept, on, lab.trim() || null);
+      await repo.saveLabReport({ file: { base64: '', kind: 'pdf' }, checksum: '', on, lab: lab.trim() || null, orderingClinician: null, specimen: null, pages: null, tests: kept });
       nav.back();
     } catch (e) {
       setNote(userFacingError(e, 'Your labs did not save. Try again.'));
