@@ -52,7 +52,7 @@ export function InsightCards() {
   return (
     <View>
       <SectionHeading
-        title="Insights"
+        title="Pattern Insights"
         right={
           saved.length ? (
           <Pressable

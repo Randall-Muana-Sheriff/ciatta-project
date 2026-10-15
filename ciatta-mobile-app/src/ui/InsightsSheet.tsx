@@ -75,12 +75,12 @@ export function InsightsSheet() {
       {...pan.panHandlers}
     >
       <GroundLayer />
-      <Pressable onPress={() => settle(!open)} accessibilityRole="button" accessibilityLabel={open ? 'Lower insights' : 'Show all insights'} style={s.head}>
+      <Pressable onPress={() => settle(!open)} accessibilityRole="button" accessibilityLabel={open ? 'Lower pattern insights' : 'Show all pattern insights'} style={s.head}>
         <View style={s.grabber} />
         <View style={s.titleRow}>
           <Icon name="sparkle" size={18} color={G.ink} />
           <Text style={[font('title3', 'semibold'), s.title]} accessibilityRole="header">
-            Insights
+            Pattern Insights
           </Text>
           <Text style={[font('footnote'), s.count]}>{`${matches.length} for today`}</Text>
         </View>
