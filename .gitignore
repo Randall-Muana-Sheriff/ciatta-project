@@ -13,6 +13,10 @@
 # Native and generated files
 **/ios/
 **/android/
+# Local Expo modules keep their native source in git; only the generated app
+# projects above are ignored.
+!ciatta-mobile-app/modules/**/ios/
+!ciatta-mobile-app/modules/**/android/
 **/.metro-health-check*
 
 # Logs and local environment
