@@ -159,6 +159,18 @@ export function nextPage(bundle: unknown, base: string): string | null {
   }
 }
 
+// What one page's answer means for the sync. 401 is the provider saying
+// the token is no longer good: she withdrew access in her portal, or it
+// lapsed early. That is not a type the hospital does not publish, and must
+// not read as one.
+export type PageOutcome = 'read' | 'skip' | 'expired';
+
+export function pageOutcome(status: number): PageOutcome {
+  if (status >= 200 && status < 300) return 'read';
+  if (status === 401) return 'expired';
+  return 'skip';
+}
+
 export function planQuery(base: string, entry: PlanEntry, patientId: string, count = 100): string {
   const url = new URL(resourceQuery(base, entry.type, patientId, count));
   for (const [k, v] of Object.entries(entry.params ?? {})) url.searchParams.set(k, v);

@@ -8,6 +8,7 @@ import {
   FETCH_PLAN,
   MAX_PAGES,
   nextPage,
+  pageOutcome,
   planFor,
   planQuery,
   isFailure,
@@ -186,4 +187,18 @@ test('a next link to any other host is never followed, because her token would g
 
 test('reading stops at a bound, so a server that never ends cannot hold the sync', () => {
   assert.ok(MAX_PAGES >= 10 && MAX_PAGES <= 100);
+});
+
+// ── What one page's answer means ─────────────────────────────────────
+
+test('a page that answered is read', () => {
+  assert.equal(pageOutcome(200), 'read');
+});
+
+test('a token the provider no longer accepts is an expired connection, not a missing type', () => {
+  assert.equal(pageOutcome(401), 'expired');
+});
+
+test('a type the provider does not publish is skipped, and the rest of the chart still comes', () => {
+  for (const status of [403, 404, 500, 503]) assert.equal(pageOutcome(status), 'skip', String(status));
 });

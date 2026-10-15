@@ -27,6 +27,7 @@ import {
   refreshBody,
   MAX_PAGES,
   nextPage,
+  pageOutcome,
   planFor,
   planQuery,
 } from './exchange.ts';
@@ -159,8 +160,7 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
 
   if (needsRefresh(conn.token_expires_at, new Date())) {
     if (!conn.refresh_token) {
-      await admin.from('provider_connections').update({ status: 'expired' }).eq('id', connectionId).eq('user_id', uid);
-      return json({ error: 'That connection has expired. You can connect again whenever you want.' }, 400);
+      return await markExpired(admin, uid, connectionId);
     }
     const tokenEndpoint: string | null = conn.token_endpoint ?? (await discoverTokenEndpoint(conn.fhir_base_url));
     if (!tokenEndpoint) {
@@ -174,14 +174,7 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
       body: refreshBody(conn.refresh_token, CLIENT_ID),
     });
     const fresh = readTokens(await res.json().catch(() => null), new Date());
-    if (isFailure(fresh)) {
-      await admin
-        .from('provider_connections')
-        .update({ status: 'expired', last_error: 'The connection needs to be made again.' })
-        .eq('id', connectionId)
-        .eq('user_id', uid);
-      return json({ error: 'That connection has expired. You can connect again whenever you want.' }, 400);
-    }
+    if (isFailure(fresh)) return await markExpired(admin, uid, connectionId);
     accessToken = fresh.accessToken;
     await admin
       .from('provider_connections')
@@ -209,15 +202,39 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
       const res = await fetch(page, {
         headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/fhir+json' },
       });
+      const outcome = pageOutcome(res.status);
+      if (outcome === 'expired') return await markExpired(admin, uid, connectionId);
       // A provider that does not hold a resource type answers 404 or 403.
       // That is not a failed sync; it is a hospital that does not publish
       // immunisations, and the rest of the chart still arrives.
-      if (!res.ok) break;
+      if (outcome === 'skip') break;
 
       const bundle = await res.json().catch(() => null);
       page = nextPage(bundle, conn.fhir_base_url);
       const { records, skipped: missed } = mapBundle(bundle);
       skipped += missed;
+
+      // Clinical records first. They reference the connection, so if she
+      // removed it while this ran, the write fails here, before any lab is
+      // put back into her results with nothing left to remove it by.
+      if (records.length) {
+        const rows = records.map((r) => ({
+          user_id: uid,
+          connection_id: connectionId,
+          source_id: r.sourceId,
+          kind: r.kind,
+          name: r.name,
+          value: r.value,
+          flag: r.flag,
+          effective_on: r.effectiveOn,
+          status: r.status,
+        }));
+        const { error: writeError } = await admin
+          .from('clinical_records')
+          .upsert(rows, { onConflict: 'user_id,connection_id,source_id' });
+        if (writeError) throw writeError;
+        written += rows.length;
+      }
 
       // Labs also go into her lab results, with the number, unit and printed
       // range kept apart, so Labs can draw where each value sits. Keyed by
@@ -249,26 +266,17 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
           if (labError) throw labError;
         }
       }
-      if (!records.length) continue;
-
-      const rows = records.map((r) => ({
-        user_id: uid,
-        connection_id: connectionId,
-        source_id: r.sourceId,
-        kind: r.kind,
-        name: r.name,
-        value: r.value,
-        flag: r.flag,
-        effective_on: r.effectiveOn,
-        status: r.status,
-      }));
-      const { error: writeError } = await admin
-        .from('clinical_records')
-        .upsert(rows, { onConflict: 'user_id,connection_id,source_id' });
-      if (writeError) throw writeError;
-      written += rows.length;
     }
   }
+
+  // What she holds from this provider, not what this one run wrote. A run
+  // that found nothing new does not make her chart look empty.
+  const { count: held, error: countError } = await admin
+    .from('clinical_records')
+    .select('id', { count: 'exact', head: true })
+    .eq('connection_id', connectionId)
+    .eq('user_id', uid);
+  if (countError) throw countError;
 
   const { data: updated, error: updateError } = await admin
     .from('provider_connections')
@@ -277,8 +285,8 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
       // authorised and returned nothing is connected, not active, and the
       // difference is what stops the screen claiming a chart it does not
       // have.
-      status: written > 0 ? 'active' : 'connected',
-      record_count: written,
+      status: (held ?? 0) > 0 ? 'active' : 'connected',
+      record_count: held ?? 0,
       last_synced_at: new Date().toISOString(),
       last_error: null,
       updated_at: new Date().toISOString(),
@@ -305,4 +313,15 @@ async function discoverTokenEndpoint(fhirBaseUrl: string): Promise<string | null
   } catch {
     return null;
   }
+}
+
+// The provider no longer accepts this connection. Her records so far are
+// kept, and the screen asks her to connect again.
+async function markExpired(admin: any, uid: string, connectionId: string): Promise<Response> {
+  await admin
+    .from('provider_connections')
+    .update({ status: 'expired', last_error: 'The connection needs to be made again.', updated_at: new Date().toISOString() })
+    .eq('id', connectionId)
+    .eq('user_id', uid);
+  return json({ error: 'That connection has expired. You can connect again whenever you want.' }, 400);
 }
