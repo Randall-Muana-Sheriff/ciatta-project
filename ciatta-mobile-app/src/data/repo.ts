@@ -207,6 +207,8 @@ export type Repo = {
   findLabReport(checksum: string): Promise<{ id: string; on: string } | null>;
   // The report, its results and its stored file.
   removeLabReport(id: string): Promise<void>;
+  // A short lived private link to the report's original file.
+  labReportFile(documentId: string): Promise<string | null>;
   // Her sleep stages since a moment, each with when it began and ended.
   loadSleepSamples(sinceIso: string): Promise<SleepSample[]>;
   // Her body measurements as she entered them, and her units.
@@ -567,6 +569,7 @@ export function demoRepo(): Repo {
       const hit = demoReports.find((r) => r.checksum === checksum);
       return hit ? { id: hit.id, on: hit.on } : null;
     },
+    labReportFile: async () => null,
     removeLabReport: async (id) => {
       demoReports = demoReports.filter((r) => r.id !== id);
       labs = labs.filter((l) => l.documentId !== id);
@@ -1244,6 +1247,14 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       ) as { id: string; occurred_at: string }[] | null;
       const hit = rows?.[0];
       return hit ? { id: hit.id, on: hit.occurred_at.slice(0, 10) } : null;
+    },
+    async labReportFile(documentId) {
+      const rows = must(await db.from('documents').select('storage_path').eq('id', documentId).limit(1)) as { storage_path: string }[] | null;
+      const path = rows?.[0]?.storage_path;
+      if (!path) return null;
+      const { data, error } = await db.storage.from('documents').createSignedUrl(path, 600);
+      if (error) return null;
+      return data?.signedUrl ?? null;
     },
     async removeLabReport(id) {
       const { data: path, error } = await db.rpc('remove_lab_report', { p_document: id });

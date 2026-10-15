@@ -13,7 +13,7 @@ import { type RecordEntry, recordEntries } from '../lib/recordEntries';
 import { type Screen, useNav } from '../navigation';
 import { displayCopy } from '../lib/displayCopy';
 import { type LabResult, labDay, labDraws, labStatus, latestSummary } from '../lib/labs';
-import { chooseLab } from '../lib/labHandoff';
+import { chooseLab, chooseReport } from '../lib/labHandoff';
 import { LabRangeBar, LabStatusTag } from './labs';
 import { useRepo } from '../state/session';
 import { C, font } from '../theme';
@@ -57,10 +57,20 @@ function LabsSection({ onOpen }: { onOpen: (screen: Screen) => void }) {
       ) : null}
       {draws.slice(0, shown).map((d) => (
         <View key={`${d.on}-${d.lab ?? ''}`} style={{ marginBottom: 18 }}>
-          <Text style={[font('caption1'), { color: G.meta, letterSpacing: 0.4 }]}>{labDay(d.on)}</Text>
-          <Text style={[font('caption1'), { color: G.meta, marginBottom: 6 }]}>
-            {displayCopy(`${d.lab ?? 'Lab not named'}${d.outside ? ` · ${d.outside} outside range` : ''}`)}
-          </Text>
+          <Pressable
+            onPress={() => {
+              chooseReport({ documentId: d.results.find((x) => x.documentId)?.documentId ?? null, on: d.on, lab: d.lab });
+              onOpen('labReport');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Open the report from ${labDay(d.on)}`}
+            style={({ pressed }) => pressed && { opacity: 0.6 }}
+          >
+            <Text style={[font('caption1'), { color: G.meta, letterSpacing: 0.4 }]}>{labDay(d.on)}</Text>
+            <Text style={[font('caption1'), { color: G.meta, marginBottom: 6 }]}>
+              {displayCopy(`${d.lab ?? 'Lab not named'}${d.outside ? ` · ${d.outside} outside range` : ''}`)}
+            </Text>
+          </Pressable>
           {d.results.map((r) => (
             <Pressable
               key={r.id}

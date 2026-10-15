@@ -99,7 +99,9 @@ export type LabDraw = { on: string; lab: string | null; results: LabResult[]; ou
 export function labDraws(results: readonly LabResult[]): LabDraw[] {
   const groups = new Map<string, LabResult[]>();
   for (const r of results) {
-    const key = `${r.on}|${r.lab ?? ''}`;
+    // A report she added is its own draw, even beside a provider draw
+    // from the same lab on the same day.
+    const key = `${r.on}|${r.lab ?? ''}|${r.documentId ?? ''}`;
     groups.set(key, [...(groups.get(key) ?? []), r]);
   }
   return [...groups.values()]

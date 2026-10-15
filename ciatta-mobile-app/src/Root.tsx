@@ -32,6 +32,7 @@ import { PrivacyScreen } from './screens/PrivacyScreen';
 import { InsuranceScreen } from './screens/InsuranceScreen';
 import { LabDetailScreen } from './screens/LabDetailScreen';
 import { AddLabsScreen } from './screens/AddLabsScreen';
+import { LabReportScreen } from './screens/LabReportScreen';
 import { VisitPrepScreen } from './screens/VisitPrepScreen';
 import { LabBriefScreen } from './screens/LabBriefScreen';
 import { ReferralsScreen } from './screens/ReferralsScreen';
@@ -112,6 +113,7 @@ const DETAIL_SCREENS: Record<Screen, ComponentType> = {
   insurance: InsuranceScreen,
   lab: LabDetailScreen,
   addLabs: AddLabsScreen,
+  labReport: LabReportScreen,
   visitPrep: VisitPrepScreen,
   labBrief: LabBriefScreen,
   referrals: ReferralsScreen,

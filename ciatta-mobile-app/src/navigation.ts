@@ -39,6 +39,7 @@ export type Screen =
   | 'privacy'
   | 'insurance'
   | 'lab'
+  | 'labReport'
   | 'addLabs'
   | 'visitPrep'
   | 'labBrief'

@@ -17,6 +17,7 @@ import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { displayCopy } from '../lib/displayCopy';
 import { isScannerAvailable, scanDocument } from '../../modules/document-scanner';
 import { groupByPanel, type LabFlag, type LabResult, labDay, type ScannedTest, testFromFields } from '../lib/labs';
+import { chooseReport } from '../lib/labHandoff';
 import { dayFromParts } from '../lib/procedureEffect';
 import { userFacingError } from '../lib/userFacingError';
 import { useNav } from '../navigation';
@@ -138,7 +139,7 @@ export function AddLabsScreen() {
     setSaving(true);
     setNote(null);
     try {
-      await repo.saveLabReport({
+      const id = await repo.saveLabReport({
         file: { base64: file.base64, kind: file.kind },
         checksum: file.checksum,
         on,
@@ -148,7 +149,9 @@ export function AddLabsScreen() {
         pages: meta.pages,
         tests: kept,
       });
+      chooseReport({ documentId: id, on, lab: lab.trim() || null });
       nav.back();
+      nav.push('labReport');
     } catch (e) {
       setNote(userFacingError(e, 'Your report did not save. Try again.'));
     } finally {
