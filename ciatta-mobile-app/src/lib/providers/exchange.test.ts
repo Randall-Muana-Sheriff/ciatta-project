@@ -3,6 +3,9 @@ import { test } from 'node:test';
 
 import {
   allowedClients,
+  connectionKey,
+  keepGoing,
+  SYNC_BUDGET_MS,
   dueBefore,
   sameSecret,
   SYNC_BATCH,
@@ -236,4 +239,28 @@ test('the scheduler is recognised by the exact key and by nothing else', () => {
   assert.equal(sameSecret('key 12', 'key 123'), false);
   assert.equal(sameSecret('key 1234', 'key 123'), false);
   assert.equal(sameSecret('', ''), false);
+});
+
+// ── Which connection a login belongs to ──────────────────────────────
+
+test('one FHIR server is one connection, whichever directory row she picked', () => {
+  const a = connectionKey('https://FHIR.Mercy.example/api/FHIR/R4/');
+  const b = connectionKey('https://fhir.mercy.example/api/FHIR/R4');
+  assert.equal(a, b);
+  assert.equal(a, 'https://fhir.mercy.example/api/FHIR/R4');
+});
+
+test('two hospitals on different servers never share a connection', () => {
+  assert.notEqual(connectionKey('https://fhir.mercy.example/api/FHIR/R4'), connectionKey('https://fhir.hope.example/api/FHIR/R4'));
+});
+
+// ── How long one scheduled run keeps going ───────────────────────────
+
+test('a scheduled run takes more batches while it is inside its time budget', () => {
+  assert.equal(keepGoing(0, SYNC_BUDGET_MS - 1), true);
+});
+
+test('a scheduled run stops once its time budget is spent, inside the function limit', () => {
+  assert.equal(keepGoing(0, SYNC_BUDGET_MS), false);
+  assert.ok(SYNC_BUDGET_MS <= 100_000);
 });

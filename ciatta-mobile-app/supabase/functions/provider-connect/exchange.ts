@@ -76,6 +76,16 @@ export function exchangeBody(code: string, redirectUri: string, clientId: string
   }).toString();
 }
 
+// Which connection a login belongs to: her provider's FHIR server, as an
+// address with its host lowercased and no trailing slash. One server is one
+// patient record. The directory's own ids are row positions that change
+// when the directory does, so they must never decide this.
+export function connectionKey(fhirBaseUrl: string): string {
+  const clean = fhirBaseUrl.trim().replace(/\/+$/, '');
+  const m = clean.match(/^([a-z][a-z0-9+.-]*:\/\/[^/]+)(.*)$/i);
+  return m ? m[1].toLowerCase() + m[2] : clean;
+}
+
 // The client ids this function will exchange for: production and non
 // production, from SMART_CLIENT_IDS, plus the older single SMART_CLIENT_ID
 // so a deploy that has only that keeps working. Public by design. Listed so
@@ -216,6 +226,15 @@ export function needsRefresh(expiresAt: string | null, now: Date): boolean {
 // current; three keeps one run well inside the function's time limit.
 export const SYNC_EVERY_HOURS = 20;
 export const SYNC_BATCH = 3;
+
+// How long one scheduled run keeps taking batches. Well inside the edge
+// function's wall clock limit and pg_net's 120 second wait, so a run that
+// finds a backlog drains as much as it safely can instead of three.
+export const SYNC_BUDGET_MS = 90_000;
+
+export function keepGoing(startedMs: number, nowMs: number): boolean {
+  return nowMs - startedMs < SYNC_BUDGET_MS;
+}
 
 export function dueBefore(now: Date): string {
   return new Date(now.getTime() - SYNC_EVERY_HOURS * 3_600_000).toISOString();

@@ -146,7 +146,11 @@ async function main() {
     const refreshed = await call(her.jwt, { action: 'sync', connectionId: id });
     check('an expired token is refreshed and the sync goes on', refreshed.status === 200 && (await connection(id))?.status === 'active');
 
-    await setConnection(id, { access_token: 'refused at the provider', token_expires_at: new Date(Date.now() + 3600_000).toISOString() });
+    await setConnection(id, { access_token: 'lapsed mid sync', token_expires_at: new Date(Date.now() + 3600_000).toISOString() });
+    const recovered = await call(her.jwt, { action: 'sync', connectionId: id });
+    check('a token that lapses mid sync is refreshed once and the sync goes on', recovered.status === 200 && (await connection(id))?.status === 'active', `${recovered.status} ${(await connection(id))?.status}`);
+
+    await setConnection(id, { access_token: 'refused at the provider', refresh_token: 'refused too', token_expires_at: new Date(Date.now() + 3600_000).toISOString() });
     const refused = await call(her.jwt, { action: 'sync', connectionId: id });
     const expired = await connection(id);
     check('a token the provider refuses marks the connection expired', refused.status === 400 && expired?.status === 'expired', `${refused.status} ${expired?.status}`);
@@ -154,6 +158,19 @@ async function main() {
 
     const back = await exchange(her.jwt);
     check('connecting again revives the same connection', back.body?.connection?.id === id && back.body?.connection?.status === 'active');
+
+    // The carried directory numbers its rows, so the same hospital can come
+    // back under a different id. One FHIR server is one connection.
+    const { code: code2, verifier: verifier2, tokenEndpoint: token2 } = await login();
+    const otherRow = await call(her.jwt, {
+      action: 'exchange',
+      code: code2,
+      verifier: verifier2,
+      clientId: CLIENT_ID,
+      endpoint: { ...SMART_TEST, id: 'epic-facility-123', name: 'Another row, same server', tokenEndpoint: token2 },
+    });
+    check('a different directory row for the same server reconnects the same connection', otherRow.body?.connection?.id === id, otherRow.body?.connection?.id);
+    check('and she still has one connection', (await count(her.jwt, 'provider_connections')) === 1);
 
     check('someone else cannot remove her connection', (await removeConnection(other.jwt, id)) === false && (await connection(id)) !== null);
     check('she can remove it', (await removeConnection(her.jwt, id)) === true && (await connection(id)) === null);

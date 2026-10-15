@@ -20,10 +20,12 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 import {
   allowedClients,
+  connectionKey,
   dueBefore,
   exchangeBody,
   failureLine,
   isFailure,
+  keepGoing,
   needsRefresh,
   readTokens,
   refreshBody,
@@ -136,7 +138,9 @@ async function exchange(admin: any, uid: string, body: Record<string, any>): Pro
 
   const row = {
     user_id: uid,
-    endpoint_id: String(endpoint.id ?? endpoint.fhirBaseUrl),
+    // Her provider's server, not the directory row she tapped: rows are
+    // numbered, and the same hospital can come back under another number.
+    endpoint_id: connectionKey(String(endpoint.fhirBaseUrl)),
     endpoint_name: String(endpoint.name ?? 'Your provider'),
     organization: endpoint.organization ?? null,
     fhir_base_url: String(endpoint.fhirBaseUrl),
@@ -187,11 +191,12 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
     .eq('user_id', uid);
 
   let accessToken: string = conn.access_token ?? '';
+  let refreshToken: string | null = conn.refresh_token ?? null;
 
-  if (needsRefresh(conn.token_expires_at, new Date())) {
-    if (!conn.refresh_token) {
-      return await markExpired(admin, uid, connectionId);
-    }
+  // A new access token from the refresh token. A Response when it cannot
+  // be had: expired when the provider refuses, or unreachable for now.
+  const refresh = async (): Promise<Response | null> => {
+    if (!refreshToken) return await markExpired(admin, uid, connectionId);
     const tokenEndpoint: string | null = conn.token_endpoint ?? (await discoverTokenEndpoint(conn.fhir_base_url));
     if (!tokenEndpoint) {
       // Could not ask the provider where to refresh. Not marked expired:
@@ -201,22 +206,33 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
     const res = await fetch(tokenEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
-      body: refreshBody(conn.refresh_token, conn.client_id ?? CLIENT_IDS[0]),
+      body: refreshBody(refreshToken, conn.client_id ?? CLIENT_IDS[0]),
     });
     const fresh = readTokens(await res.json().catch(() => null), new Date());
     if (isFailure(fresh)) return await markExpired(admin, uid, connectionId);
     accessToken = fresh.accessToken;
+    refreshToken = fresh.refreshToken ?? refreshToken;
     await admin
       .from('provider_connections')
       .update({
         access_token: fresh.accessToken,
-        refresh_token: fresh.refreshToken ?? conn.refresh_token,
+        refresh_token: refreshToken,
         token_expires_at: fresh.expiresAt,
         token_endpoint: tokenEndpoint,
       })
       .eq('id', connectionId)
       .eq('user_id', uid);
+    return null;
+  };
+
+  if (needsRefresh(conn.token_expires_at, new Date())) {
+    const stopped = await refresh();
+    if (stopped) return stopped;
   }
+  // A long sync can outlast the token it started with. The first refusal
+  // in a run gets one refresh and the same page again; only a refusal of a
+  // fresh token means the connection itself has gone.
+  let refreshedOnRefusal = false;
 
   const patientId: string = conn.fhir_patient_id ?? '';
   if (!patientId) {
@@ -233,7 +249,14 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
         headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/fhir+json' },
       });
       const outcome = pageOutcome(res.status);
-      if (outcome === 'expired') return await markExpired(admin, uid, connectionId);
+      if (outcome === 'expired') {
+        if (refreshedOnRefusal) return await markExpired(admin, uid, connectionId);
+        refreshedOnRefusal = true;
+        const stopped = await refresh();
+        if (stopped) return stopped;
+        n--;
+        continue;
+      }
       // A provider that does not hold a resource type answers 404 or 403.
       // That is not a failed sync; it is a hospital that does not publish
       // immunisations, and the rest of the chart still arrives.
@@ -289,6 +312,7 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
               provider: conn.organization ?? conn.endpoint_name ?? null,
               source: 'provider',
               source_ref: `${connectionId}:${l.sourceId}`,
+              connection_id: connectionId,
               occurred_at: `${l.on}T12:00:00Z`,
             })),
             { onConflict: 'user_id,source_ref' },
@@ -348,30 +372,45 @@ async function discoverTokenEndpoint(fhirBaseUrl: string): Promise<string | null
 // The connections that have waited longest, read one at a time. One that
 // fails is noted and the run goes on to the next.
 async function syncDue(admin: any): Promise<Response> {
-  const { data: due, error } = await admin
-    .from('provider_connections')
-    .select('id, user_id')
-    .in('status', ['active', 'connected'])
-    .or(`sync_attempted_at.is.null,sync_attempted_at.lt.${dueBefore(new Date())}`)
-    .order('sync_attempted_at', { ascending: true, nullsFirst: true })
-    .limit(SYNC_BATCH);
-  if (error) throw error;
-
+  const started = Date.now();
+  let considered = 0;
   let synced = 0;
-  for (const c of (due ?? []) as { id: string; user_id: string }[]) {
-    try {
-      const res = await sync(admin, c.user_id, c.id);
-      if (res.ok) synced++;
-    } catch (e) {
-      console.error('provider sync failed', e instanceof Error ? e.name : 'unknown');
-      await admin
-        .from('provider_connections')
-        .update({ last_error: 'The last update did not finish. Ciatta will try again.' })
-        .eq('id', c.id)
-        .eq('user_id', c.user_id);
+  // Batches until the time budget is spent or nobody is due, so a backlog
+  // drains instead of stretching everyone's interval. Each sync stamps
+  // sync_attempted_at first, so no connection is taken twice in a run.
+  while (keepGoing(started, Date.now())) {
+    const { data: due, error } = await admin
+      .from('provider_connections')
+      .select('id, user_id')
+      .in('status', ['active', 'connected'])
+      .or(`sync_attempted_at.is.null,sync_attempted_at.lt.${dueBefore(new Date())}`)
+      .order('sync_attempted_at', { ascending: true, nullsFirst: true })
+      .limit(SYNC_BATCH);
+    if (error) throw error;
+    const batch = (due ?? []) as { id: string; user_id: string }[];
+    if (!batch.length) break;
+    considered += batch.length;
+
+    for (const c of batch) {
+      try {
+        const res = await sync(admin, c.user_id, c.id);
+        if (res.ok) synced++;
+      } catch (e) {
+        console.error('provider sync failed', e instanceof Error ? e.name : 'unknown');
+        await admin
+          .from('provider_connections')
+          .update({
+            sync_attempted_at: new Date().toISOString(),
+            last_error: 'The last update did not finish. Ciatta will try again.',
+          })
+          .eq('id', c.id)
+          .eq('user_id', c.user_id);
+      }
     }
   }
-  return json({ considered: (due ?? []).length, synced });
+  // Counts only, never who: a backlog shows up in the logs as a number.
+  console.log('provider sync_due', JSON.stringify({ considered, synced }));
+  return json({ considered, synced });
 }
 
 // The provider no longer accepts this connection. Her records so far are
