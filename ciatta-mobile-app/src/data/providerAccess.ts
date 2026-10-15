@@ -7,7 +7,8 @@
 //
 // Two sources, in order:
 //
-//   The build, through EXPO_PUBLIC_SMART_CLIENT_ID, which is where a
+//   The build, through EXPO_PUBLIC_SMART_CLIENT_ID (production) and
+//   EXPO_PUBLIC_SMART_CLIENT_ID_NONPROD (the sandbox), which is where a
 //   shipped app gets it.
 //
 //   A value entered in the app, which is how this becomes usable the day
@@ -15,33 +16,34 @@
 //   is also how the Epic sandbox gets exercised without touching the
 //   build at all.
 //
-// The entered value wins, so a tester can point a build at a different
-// registration without waiting for anyone.
+// The entered value replaces the non production id, so a tester can
+// point a build at a different sandbox registration without waiting for
+// anyone.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import type { ClientIds } from '../lib/providers/clientChoice';
+
 const KEY = 'ciatta.smart.clientId';
 
-const FROM_BUILD = process.env.EXPO_PUBLIC_SMART_CLIENT_ID ?? '';
+const PRODUCTION = process.env.EXPO_PUBLIC_SMART_CLIENT_ID ?? '';
+const NON_PRODUCTION = process.env.EXPO_PUBLIC_SMART_CLIENT_ID_NONPROD ?? '';
 
-export async function clientId(): Promise<string> {
+// Both ids. A value entered in the app replaces the non production id
+// only: it is how a test build reaches the sandbox, and it can never point
+// a real hospital at a different registration.
+export async function clientIds(): Promise<ClientIds> {
+  let entered = '';
   try {
-    const stored = (await AsyncStorage.getItem(KEY))?.trim();
-    if (stored) return stored;
+    entered = (await AsyncStorage.getItem(KEY))?.trim() ?? '';
   } catch {
-    // Storage unavailable. The build value is still a real answer.
+    // Storage unavailable. The build values are still a real answer.
   }
-  return FROM_BUILD.trim();
+  return { production: PRODUCTION.trim(), nonProduction: entered || NON_PRODUCTION.trim() };
 }
 
 export async function setClientId(value: string): Promise<void> {
   const clean = value.trim();
   if (clean) await AsyncStorage.setItem(KEY, clean);
   else await AsyncStorage.removeItem(KEY);
-}
-
-// Whether a connection can be attempted at all. Asked before the button
-// is drawn, so she is never sent to a login that cannot complete.
-export async function canConnect(): Promise<boolean> {
-  return (await clientId()).length > 0;
 }

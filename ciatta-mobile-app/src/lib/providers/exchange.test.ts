@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  allowedClients,
   exchangeBody,
   failureLine,
   FETCH_ORDER,
@@ -201,4 +202,15 @@ test('a token the provider no longer accepts is an expired connection, not a mis
 
 test('a type the provider does not publish is skipped, and the rest of the chart still comes', () => {
   for (const status of [403, 404, 500, 503]) assert.equal(pageOutcome(status), 'skip', String(status));
+});
+
+// ── Which client ids the function accepts ────────────────────────────
+
+test('the allowed ids are the listed ones and the single legacy one, each once', () => {
+  assert.deepEqual(allowedClients('prod-id, nonprod-id', 'nonprod-id'), ['prod-id', 'nonprod-id']);
+});
+
+test('nothing configured allows nothing', () => {
+  assert.deepEqual(allowedClients(undefined, undefined), []);
+  assert.deepEqual(allowedClients(' , ', ''), []);
 });

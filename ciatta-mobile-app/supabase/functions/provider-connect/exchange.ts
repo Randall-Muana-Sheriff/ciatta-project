@@ -76,6 +76,15 @@ export function exchangeBody(code: string, redirectUri: string, clientId: string
   }).toString();
 }
 
+// The client ids this function will exchange for: production and non
+// production, from SMART_CLIENT_IDS, plus the older single SMART_CLIENT_ID
+// so a deploy that has only that keeps working. Public by design. Listed so
+// a request can only name one of ours.
+export function allowedClients(list: string | undefined, single: string | undefined): string[] {
+  const all = [...(list ?? '').split(','), single ?? ''].map((s) => s.trim()).filter(Boolean);
+  return [...new Set(all)];
+}
+
 export function refreshBody(refreshToken: string, clientId: string): string {
   return new URLSearchParams({
     grant_type: 'refresh_token',

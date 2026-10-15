@@ -15,7 +15,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { connectProvider, loadConnections, loadDirectory } from '../data/providers';
-import { clientId as readClientId, setClientId } from '../data/providerAccess';
+import { clientIds as readClientIds, setClientId } from '../data/providerAccess';
+import { type ClientIds, clientFor } from '../lib/providers/clientChoice';
 import type { Endpoint } from '../lib/providers/directory';
 import { groupLine, hasMore, MAX_SHOWN, noResults, PREVIEW, type ResultGroup, search } from '../lib/providers/directory';
 import { isSandbox } from '../lib/providers/epicDirectory';
@@ -39,10 +40,10 @@ export function ProviderConnectScreen() {
   // Read rather than compiled in, so a registration approved today works
   // today. Null while the read is in flight, which is not the same as
   // absent and must not render as it.
-  const [registration, setRegistration] = useState<string | null>(null);
+  const [registration, setRegistration] = useState<ClientIds | null>(null);
 
   useEffect(() => {
-    void readClientId().then(setRegistration);
+    void readClientIds().then(setRegistration);
   }, []);
 
   useEffect(() => {
@@ -61,7 +62,7 @@ export function ProviderConnectScreen() {
     if (!picked || connecting) return;
     setConnecting(true);
     setMessage('');
-    const out = await connectProvider(picked, registration ?? '');
+    const out = await connectProvider(picked, registration ? clientFor(picked, registration) : '');
     setConnecting(false);
     if (!out.ok) {
       setMessage(out.message);
@@ -172,10 +173,10 @@ export function ProviderConnectScreen() {
               endpoint={picked}
               connecting={connecting}
               message={message}
-              registration={registration}
+              registration={registration ? clientFor(picked, registration) : null}
               onRegister={async (value) => {
                 await setClientId(value);
-                setRegistration(await readClientId());
+                setRegistration(await readClientIds());
               }}
               onBack={dismiss}
               onConnect={connect}

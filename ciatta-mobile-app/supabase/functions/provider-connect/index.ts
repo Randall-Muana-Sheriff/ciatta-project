@@ -19,6 +19,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 import {
+  allowedClients,
   exchangeBody,
   failureLine,
   isFailure,
@@ -36,9 +37,10 @@ import { labFromResource, mapBundle } from './fhirMap.ts';
 const url = Deno.env.get('SUPABASE_URL') ?? '';
 const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-// The public client id, registered with the vendor. Public by design:
-// PKCE is what proves the exchange, not a secret.
-const CLIENT_ID = Deno.env.get('SMART_CLIENT_ID') ?? '';
+// The public client ids registered with the vendor: production, and non
+// production for the sandbox. Public by design: PKCE is what proves the
+// exchange, not a secret.
+const CLIENT_IDS = allowedClients(Deno.env.get('SMART_CLIENT_IDS'), Deno.env.get('SMART_CLIENT_ID'));
 const REDIRECT_URI = Deno.env.get('SMART_REDIRECT_URI') ?? 'ciatta://provider-callback';
 
 const json = (body: unknown, status = 200) =>
@@ -67,13 +69,13 @@ Deno.serve(async (req: Request) => {
   if (whoError || !who?.user) return json({ error: 'Not signed in' }, 401);
   const uid = who.user.id;
 
-  if (!CLIENT_ID) {
+  if (!CLIENT_IDS.length) {
     // Said plainly rather than failing as a provider error. A missing
     // registration is our problem, not her hospital's.
     return json({ error: 'Ciatta is not registered with a provider network yet.' }, 503);
   }
 
-  let body: { action?: string; connectionId?: string; code?: string; verifier?: string; endpoint?: Record<string, unknown> };
+  let body: { action?: string; clientId?: string; connectionId?: string; code?: string; verifier?: string; endpoint?: Record<string, unknown> };
   try {
     body = await req.json();
   } catch {
@@ -100,10 +102,17 @@ async function exchange(admin: any, uid: string, body: Record<string, any>): Pro
     return json({ error: 'Invalid request' }, 400);
   }
 
+  const clientId = typeof body.clientId === 'string' ? body.clientId : '';
+  if (!CLIENT_IDS.includes(clientId)) {
+    // An older build carrying an id that has since changed. Said as ours
+    // to fix, before her provider is called at all.
+    return json({ error: 'This version of Ciatta cannot connect to providers. Updating the app should fix it.' }, 400);
+  }
+
   const res = await fetch(endpoint.tokenEndpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
-    body: exchangeBody(code, REDIRECT_URI, CLIENT_ID, verifier),
+    body: exchangeBody(code, REDIRECT_URI, clientId, verifier),
   });
 
   const tokens = readTokens(await res.json().catch(() => null), new Date());
@@ -125,6 +134,7 @@ async function exchange(admin: any, uid: string, body: Record<string, any>): Pro
     token_expires_at: tokens.expiresAt,
     fhir_patient_id: tokens.patientId,
     token_endpoint: String(endpoint.tokenEndpoint),
+    client_id: clientId,
     last_error: null,
     updated_at: new Date().toISOString(),
   };
@@ -171,7 +181,7 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
     const res = await fetch(tokenEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
-      body: refreshBody(conn.refresh_token, CLIENT_ID),
+      body: refreshBody(conn.refresh_token, conn.client_id ?? CLIENT_IDS[0]),
     });
     const fresh = readTokens(await res.json().catch(() => null), new Date());
     if (isFailure(fresh)) return await markExpired(admin, uid, connectionId);

@@ -103,7 +103,14 @@ async function main() {
   const her = await user('her');
   const other = await user('other');
   try {
-    // CHECKS BEFORE CONNECTING (Task 2 adds one here)
+    const wrong = await call(her.jwt, {
+      action: 'exchange',
+      code: 'unused',
+      verifier: 'unused',
+      clientId: 'not one of ours',
+      endpoint: { ...SMART_TEST, tokenEndpoint: 'https://example.invalid/token' },
+    });
+    check('a client id that is not ours is refused before the provider is called', wrong.status === 400 && /Updating the app/.test(wrong.body?.error ?? ''), wrong.body?.error);
 
     const ex = await exchange(her.jwt);
     const id: string = ex.body?.connection?.id ?? '';

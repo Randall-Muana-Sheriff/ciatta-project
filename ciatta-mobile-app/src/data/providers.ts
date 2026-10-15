@@ -133,6 +133,21 @@ async function refusesClient(url: string): Promise<boolean> {
   }
 }
 
+// What the function said went wrong. On an answer other than 2xx,
+// supabase-js puts the response in error.context and leaves data null,
+// so the function's own sentence has to be read from there.
+export async function functionError(error: unknown, data: unknown, fallback: string): Promise<string> {
+  const said = (data as { error?: unknown } | null)?.error;
+  if (typeof said === 'string' && said) return said;
+  try {
+    const body = await (error as { context?: Response } | null)?.context?.json();
+    if (typeof body?.error === 'string' && body.error) return body.error;
+  } catch {
+    // Not JSON, or already read. The fallback still says nothing was shared.
+  }
+  return fallback;
+}
+
 export async function connectProvider(endpoint: Endpoint, clientId: string): Promise<ConnectOutcome> {
   const config = await smartConfig(endpoint);
   if (!config) {
@@ -162,6 +177,7 @@ export async function connectProvider(endpoint: Endpoint, clientId: string): Pro
   const { data, error } = await supabase.functions.invoke('provider-connect', {
     body: {
       action: 'exchange',
+      clientId,
       code: callback.code,
       verifier: request.verifier,
       endpoint: { ...endpoint, tokenEndpoint: config.tokenEndpoint },
@@ -169,7 +185,7 @@ export async function connectProvider(endpoint: Endpoint, clientId: string): Pro
   });
 
   if (error || !data?.connection?.id) {
-    return { ok: false, message: (data as { error?: string } | null)?.error ?? 'That did not finish. Nothing was shared.' };
+    return { ok: false, message: await functionError(error, data, 'That did not finish. Nothing was shared.') };
   }
   return { ok: true, connectionId: data.connection.id as string, written: Number(data.written ?? 0) };
 }
