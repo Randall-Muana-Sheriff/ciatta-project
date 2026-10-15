@@ -64,12 +64,12 @@ export const privacy: LegalDoc = {
         {
           list: [
             'What you tell it: what you log, your cycle, symptoms, conditions, medications, notes and your profile.',
-            'What you connect: health data you allow it to read from Apple Health on your phone, and records from a hospital or clinic you connect through its patient portal, such as MyChart.',
+            'What you connect: health data you allow it to read from Apple Health on your phone, and records from a hospital, clinic, lab or insurance plan you connect through its patient portal, such as MyChart, either directly or through Fasten Health.',
             'Documents you add, such as lab reports, visit summaries, imaging and pathology reports, prescriptions, referral letters and insurance cards: what was read from them and filed into your record with your check, and the original file, so you can check anything against it.',
           ],
         },
         {
-          p: 'Records from a hospital you connect are read only. Ciatta asks for read access and nothing else, so it cannot add to or change anything in your chart. You log in on your provider’s own page, and Ciatta never sees your portal password.',
+          p: 'Records from a hospital you connect are read only. Ciatta asks for read access and nothing else, so it cannot add to or change anything in your chart. You log in on your provider’s own page, and Ciatta never sees your portal password. When you connect through Fasten Health, Fasten holds the connection to your portal and passes your records to Ciatta at your request.',
         },
         {
           p: 'Ciatta does not have business associate agreements with the hospitals and clinics you connect. Once your records are in Ciatta, they are protected by this policy and by the laws that apply to us, rather than by the HIPAA rules that apply to your provider.',
@@ -112,6 +112,7 @@ export const privacy: LegalDoc = {
             rows: [
               ['Supabase', 'Stores your account and your record, and runs the server side of the app', 'United States'],
               ['OpenAI', 'Reads lab reports, medical documents and meal photos you add, and writes the clinical AI analyses of lab reports and documents', 'United States'],
+              ['Fasten Health', 'Connects to the hospitals, clinics, labs and insurance plans you choose through it, and passes their records to Ciatta', 'United States'],
               ['Apple', 'Apple Health data stays on your phone, and the app reads only what you allow', 'On your phone'],
             ],
           },
