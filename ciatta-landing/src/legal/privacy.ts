@@ -65,7 +65,7 @@ export const privacy: LegalDoc = {
           list: [
             'What you tell it: what you log, your cycle, symptoms, conditions, medications, notes and your profile.',
             'What you connect: health data you allow it to read from Apple Health on your phone, and records from a hospital or clinic you connect through its patient portal, such as MyChart.',
-            'Lab reports you add: the results read from them, and the original file, so you can check any result against it.',
+            'Documents you add, such as lab reports, visit summaries, imaging and pathology reports, prescriptions, referral letters and insurance cards: what was read from them and filed into your record with your check, and the original file, so you can check anything against it.',
           ],
         },
         {
@@ -111,7 +111,7 @@ export const privacy: LegalDoc = {
             head: ['Provider', 'What they do for the app', 'Where'],
             rows: [
               ['Supabase', 'Stores your account and your record, and runs the server side of the app', 'United States'],
-              ['OpenAI', 'Reads lab reports and meal photos you add, and writes the clinical AI analysis of a lab report', 'United States'],
+              ['OpenAI', 'Reads lab reports, medical documents and meal photos you add, and writes the clinical AI analyses of lab reports and documents', 'United States'],
               ['Apple', 'Apple Health data stays on your phone, and the app reads only what you allow', 'On your phone'],
             ],
           },
@@ -132,7 +132,7 @@ export const privacy: LegalDoc = {
             'You can download a complete copy of what Ciatta holds about you at any time, from Privacy and Data in the app.',
             'You can delete all of it. When you delete your account, everything is deleted, and nothing is kept afterwards.',
             'You can disconnect a hospital or clinic at any time, and the records it sent are removed from Ciatta. Nothing changes in your chart at your provider.',
-            'You can remove a lab report you added, with its results, its original file and its analysis.',
+            'You can remove a lab report or document you added, with what was filed from it, its original file and its analysis.',
           ],
         },
       ],
