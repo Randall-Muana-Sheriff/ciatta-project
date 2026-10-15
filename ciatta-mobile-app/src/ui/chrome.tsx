@@ -1,6 +1,6 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import type { ViewStyle } from 'react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { displayCopy } from '../lib/displayCopy';
@@ -201,6 +201,17 @@ export function CornerNav({
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const rows = menuFor(active);
+  // Out of the way while she types, so it never sits over the box.
+  const [typing, setTyping] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardWillShow', () => setTyping(true));
+    const hide = Keyboard.addListener('keyboardWillHide', () => setTyping(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  if (typing) return null;
   return (
     <View style={s.cornerRoot} pointerEvents="box-none">
       {open ? (

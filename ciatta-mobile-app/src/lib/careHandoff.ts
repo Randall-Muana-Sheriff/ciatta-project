@@ -2,24 +2,31 @@
 // a body system. Care, if it is listening, asks it at once; otherwise it
 // asks it the next time it reads. Delivered once either way.
 
+// What she attached in the chat box on Today, carried with the message
+// she sent from there.
+type Files = readonly import('./attachments').Attachment[];
 let pending: string | null = null;
-const listeners = new Set<(prompt: string) => void>();
+let pendingFiles: Files = [];
+const listeners = new Set<(prompt: string, files: Files) => void>();
 
-export function askCare(prompt: string): void {
+export function askCare(prompt: string, files: Files = []): void {
   if (listeners.size) {
-    for (const l of listeners) l(prompt);
+    for (const l of listeners) l(prompt, files);
     return;
   }
   pending = prompt;
+  pendingFiles = files;
 }
 
-export function takeCareAsk(): string | null {
+export function takeCareAsk(): { prompt: string; files: Files } | null {
   const p = pending;
+  const f = pendingFiles;
   pending = null;
-  return p;
+  pendingFiles = [];
+  return p == null ? null : { prompt: p, files: f };
 }
 
-export function onCareAsk(listener: (prompt: string) => void): () => void {
+export function onCareAsk(listener: (prompt: string, files: Files) => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }

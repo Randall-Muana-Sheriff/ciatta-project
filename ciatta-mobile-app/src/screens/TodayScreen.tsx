@@ -358,8 +358,9 @@ export function TodayScreen() {
         </View>
       </ScrollView>
 
-      {/* The chat, resting at the foot; it opens over the whole screen. */}
-      <ChatCard onOpen={openChat} />
+      {/* The chat box, live at the foot; sending opens the chat over the
+          whole screen with the message in it. */}
+      <ChatCard onSent={openChat} />
     </View>
   );
 }

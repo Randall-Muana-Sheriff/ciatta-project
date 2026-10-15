@@ -260,9 +260,11 @@ export function CareScreen() {
   const grow = useCallback(() => scroller.current?.scrollToEnd({ animated: true }), []);
 
   const send = useCallback(
-    (text: string) => {
+    (text: string, sentFiles?: readonly Attachment[]) => {
       const message = text.trim();
       if (!message) return;
+      // Files sent with a message from Today's box come with it.
+      const files_ = sentFiles ? [...sentFiles] : files;
       const at = new Date().toISOString();
       // A test she has on record, named without the word lab, is a lab
       // question; a warning sign is always escalated first.
@@ -283,13 +285,13 @@ export function CareScreen() {
       const local = loggable ? Object.values(readCategories(message)).flat() : [];
       setTurns((prev) => [
         ...prev,
-        { id: `${at}-her`, role: 'her', text: message, at, attachments: files },
+        { id: `${at}-her`, role: 'her', text: message, at, attachments: files_ },
         ...(plan.answer && !(loggable && capability === 'decline')
           ? [{ id: `${at}-ciatta`, role: 'ciatta' as const, text: said, at, answer, worded, fresh: true }]
           : []),
       ]);
       if (loggable) {
-        const attached = files;
+        const attached = files_;
         void readLog(message).then((read) => {
           const items = mergeItems(read?.items ?? null, local);
           const next = turnPlan(capability, items);
@@ -330,8 +332,8 @@ export function CareScreen() {
   // system: asked as if she had typed it.
   useEffect(() => {
     const waiting = takeCareAsk();
-    if (waiting) send(waiting);
-    return onCareAsk((prompt) => send(prompt));
+    if (waiting) send(waiting.prompt, waiting.files);
+    return onCareAsk((prompt, sent) => send(prompt, sent));
   }, [send]);
 
   return (
