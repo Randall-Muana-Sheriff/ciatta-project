@@ -8,7 +8,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Polyline, Rect } from 'react-native-svg';
 
 import { displayCopy } from '../lib/displayCopy';
+import { countedWindows, medianLength } from '../lib/cycleModel';
+import { cycleDayAt, cycleLine, isCycleHormone } from '../lib/labCycle';
 import { chosenLab } from '../lib/labHandoff';
+import { useCycleInsights } from '../state/cycleStore';
 import { changeSinceLast, type LabResult, labDay, labHistory, labStatus } from '../lib/labs';
 import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
@@ -84,6 +87,9 @@ export function LabDetailScreen() {
   }, [repo]);
   const history = useMemo(() => labHistory(labs ?? [], name), [labs, name]);
   const latest = history[history.length - 1];
+  const { windows, profile } = useCycleInsights();
+  const usual = useMemo(() => medianLength(countedWindows(windows, profile)), [windows, profile]);
+  const hormone = latest ? isCycleHormone(latest.name) : false;
 
   if (!latest) {
     return (
@@ -114,6 +120,11 @@ export function LabDetailScreen() {
         <View style={{ marginTop: SPACE.block }}>
           <Eyebrow>Over time</Eyebrow>
           <History results={history} />
+          {hormone ? (
+            <Text style={[font('caption1'), s.meta, { marginTop: 6 }]}>
+              Each result was drawn on a different day of your cycle, so a change here may be the cycle and not a trend.
+            </Text>
+          ) : null}
         </View>
       ) : null}
 
@@ -131,6 +142,7 @@ export function LabDetailScreen() {
                   `${r.source === 'report' ? 'Read from a report' : 'From your provider'}${r.lab ? `, ${r.lab}` : ''}${r.status && r.status !== 'final' ? ` · ${r.status}` : ''}`,
                 )}
               </Text>
+              {hormone ? <Text style={[font('caption1'), s.meta]}>{displayCopy(cycleLine(cycleDayAt(r.on, windows, usual)))}</Text> : null}
             </View>
             <View style={{ alignItems: 'flex-end', gap: 4 }}>
               <Text style={[font('subhead', 'semibold'), s.ink]}>

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { cycleWindows } from './cycleModel';
-import { chosenRange, cycleDayAt, cycleLine, isCycleHormone, phaseRanges } from './labCycle';
+import { chosenRange, cycleDayAt, cycleLine, isCycleHormone, phaseRangeLine, phaseRanges } from './labCycle';
 import { changeSinceLast, type LabResult, labHistory, testKey } from './labs';
 import { labSystem, reportSystems } from './labSystems';
 
@@ -121,4 +121,11 @@ test('the range for her likely phase is the one chosen, and none when the phase 
   assert.equal(chosenRange(ranges, 'Menstrual')?.phase, 'Follicular', 'menstrual days are early follicular');
   assert.equal(chosenRange(ranges, null), null);
   assert.equal(chosenRange(ranges, 'Ovulatory'), null, 'no printed ovulation range, so none is chosen');
+});
+
+test('the phase range line names the likely one and still shows every printed range', () => {
+  const ranges = phaseRanges('Follicular 12.5 to 166 / Luteal 43.8 to 211');
+  assert.equal(phaseRangeLine(ranges, ranges[1], 'Likely luteal'), 'Likely luteal: Luteal range 43.8 to 211. All printed: Follicular 12.5 to 166, Luteal 43.8 to 211');
+  assert.equal(phaseRangeLine(ranges, null, null), 'Printed by phase: Follicular 12.5 to 166, Luteal 43.8 to 211');
+  assert.equal(phaseRangeLine([], null, null), '');
 });

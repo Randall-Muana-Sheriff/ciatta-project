@@ -14,6 +14,9 @@ import { countLine, reportPanels, reportResults } from '../lib/labReport';
 import { SYSTEM_DOTS, WHOLE_BODY } from '../lib/bodyMap';
 import { changeSinceLast, isOutside, type LabResult, labDay, labHistory, labStatus } from '../lib/labs';
 import { reportSystems } from '../lib/labSystems';
+import { countedWindows, estimatedPhaseLabel, medianLength } from '../lib/cycleModel';
+import { chosenRange, cycleDayAt, cycleLine, isCycleHormone, phaseRangeLine, phaseRanges } from '../lib/labCycle';
+import { useCycleInsights } from '../state/cycleStore';
 import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
 import { font } from '../theme';
@@ -128,6 +131,9 @@ export function LabReportScreen() {
   }, [repo]);
 
   const results = useMemo(() => (key && labs ? reportResults(labs, key) : []), [key, labs]);
+  const { windows, profile } = useCycleInsights();
+  const usual = useMemo(() => medianLength(countedWindows(windows, profile)), [windows, profile]);
+  const cycle = useMemo(() => (key ? cycleDayAt(key.on, windows, usual) : null), [key, windows, usual]);
   const panels = useMemo(() => reportPanels(results), [results]);
   const trends = useMemo(
     () =>
@@ -222,6 +228,22 @@ export function LabReportScreen() {
                     <LabRangeBar result={r} height={4} />
                   </View>
                 </View>
+                {isCycleHormone(r.name) ? (
+                  <View style={{ gap: 2 }}>
+                    <Text style={[font('caption1'), s.meta]}>{displayCopy(cycleLine(cycle))}</Text>
+                    {phaseRanges(r.rangeText).length ? (
+                      <Text style={[font('caption1'), s.meta]}>
+                        {displayCopy(
+                          phaseRangeLine(
+                            phaseRanges(r.rangeText),
+                            chosenRange(phaseRanges(r.rangeText), cycle?.likely ?? null),
+                            cycle ? estimatedPhaseLabel(cycle.likely) : null,
+                          ),
+                        )}
+                      </Text>
+                    ) : null}
+                  </View>
+                ) : null}
               </Pressable>
             ))}
           </View>

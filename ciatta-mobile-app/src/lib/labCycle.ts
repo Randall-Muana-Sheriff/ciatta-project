@@ -64,3 +64,9 @@ export function chosenRange(ranges: PhaseRange[], likely: ClinicalPhase | null):
   if (!likely) return null;
   return ranges.find((r) => FOR_PHASE[likely].includes(r.phase.toLowerCase())) ?? null;
 }
+
+export function phaseRangeLine(ranges: PhaseRange[], chosen: PhaseRange | null, likelyLabel: string | null): string {
+  if (!ranges.length) return '';
+  const list = ranges.map((r) => `${r.phase} ${r.text}`).join(', ');
+  return chosen && likelyLabel ? `${likelyLabel}: ${chosen.phase} range ${chosen.text}. All printed: ${list}` : `Printed by phase: ${list}`;
+}
