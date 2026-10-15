@@ -12,6 +12,6 @@ export const PAPER = {
   rule: 'rgba(12, 14, 17, 0.12)',
   pill: '#0C0E11',
   onPill: '#FFFFFF',
-  // The text box on paper: a soft grey well, so it reads as a place to write.
-  card: '#F2F2F0',
+  // The text box on paper: the paper itself, flat white with no edge.
+  card: '#FFFFFF',
 } as const;

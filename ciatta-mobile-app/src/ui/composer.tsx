@@ -386,7 +386,8 @@ const styles = (K: Palette) =>
     color: K.ink,
     backgroundColor: K.card,
     borderRadius: TILE_RADIUS,
-    borderWidth: StyleSheet.hairlineWidth,
+    // On paper the box is the paper: no edge, no tint.
+    borderWidth: K === PAPER ? 0 : StyleSheet.hairlineWidth,
     borderColor: K.rule,
     padding: 16,
     // Room at the foot for the controls, so a long answer scrolls behind
