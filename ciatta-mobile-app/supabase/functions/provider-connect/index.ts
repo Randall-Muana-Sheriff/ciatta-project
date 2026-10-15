@@ -25,7 +25,9 @@ import {
   needsRefresh,
   readTokens,
   refreshBody,
-  FETCH_PLAN,
+  MAX_PAGES,
+  nextPage,
+  planFor,
   planQuery,
 } from './exchange.ts';
 import { labFromResource, mapBundle } from './fhirMap.ts';
@@ -121,6 +123,7 @@ async function exchange(admin: any, uid: string, body: Record<string, any>): Pro
     refresh_token: tokens.refreshToken,
     token_expires_at: tokens.expiresAt,
     fhir_patient_id: tokens.patientId,
+    token_endpoint: String(endpoint.tokenEndpoint),
     last_error: null,
     updated_at: new Date().toISOString(),
   };
@@ -159,7 +162,13 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
       await admin.from('provider_connections').update({ status: 'expired' }).eq('id', connectionId).eq('user_id', uid);
       return json({ error: 'That connection has expired. You can connect again whenever you want.' }, 400);
     }
-    const res = await fetch(conn.token_endpoint ?? `${conn.fhir_base_url}/oauth2/token`, {
+    const tokenEndpoint: string | null = conn.token_endpoint ?? (await discoverTokenEndpoint(conn.fhir_base_url));
+    if (!tokenEndpoint) {
+      // Could not ask the provider where to refresh. Not marked expired:
+      // the refresh token is still good, and the next sync tries again.
+      return json({ error: 'Ciatta could not reach that provider right now. Nothing was shared.' }, 502);
+    }
+    const res = await fetch(tokenEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
       body: refreshBody(conn.refresh_token, CLIENT_ID),
@@ -180,6 +189,7 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
         access_token: fresh.accessToken,
         refresh_token: fresh.refreshToken ?? conn.refresh_token,
         token_expires_at: fresh.expiresAt,
+        token_endpoint: tokenEndpoint,
       })
       .eq('id', connectionId)
       .eq('user_id', uid);
@@ -193,68 +203,71 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
   let written = 0;
   let skipped = 0;
 
-  for (const entry of FETCH_PLAN) {
-    const type = entry.type;
-    const res = await fetch(planQuery(conn.fhir_base_url, entry, patientId), {
-      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/fhir+json' },
-    });
-    // A provider that does not hold a resource type answers 404 or 403.
-    // That is not a failed sync; it is a hospital that does not publish
-    // immunisations, and the rest of the chart still arrives.
-    if (!res.ok) continue;
+  for (const entry of planFor(conn.vendor)) {
+    let page: string | null = planQuery(conn.fhir_base_url, entry, patientId);
+    for (let n = 0; page && n < MAX_PAGES; n++) {
+      const res = await fetch(page, {
+        headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/fhir+json' },
+      });
+      // A provider that does not hold a resource type answers 404 or 403.
+      // That is not a failed sync; it is a hospital that does not publish
+      // immunisations, and the rest of the chart still arrives.
+      if (!res.ok) break;
 
-    const bundle = await res.json().catch(() => null);
-    const { records, skipped: missed } = mapBundle(bundle);
-    skipped += missed;
+      const bundle = await res.json().catch(() => null);
+      page = nextPage(bundle, conn.fhir_base_url);
+      const { records, skipped: missed } = mapBundle(bundle);
+      skipped += missed;
 
-    // Labs also go into her lab results, with the number, unit and printed
-    // range kept apart, so Labs can draw where each value sits. Keyed by
-    // connection and resource, so a re sync updates rather than repeats.
-    if (type === 'Observation') {
-      const labs = (Array.isArray(bundle?.entry) ? bundle.entry : [])
-        .map((e: { resource?: unknown }) => labFromResource(e?.resource))
-        .filter((l: ReturnType<typeof labFromResource>): l is NonNullable<ReturnType<typeof labFromResource>> => l != null);
-      if (labs.length) {
-        const { error: labError } = await admin.from('results').upsert(
-          labs.map((l: NonNullable<ReturnType<typeof labFromResource>>) => ({
-            user_id: uid,
-            test_name: l.name,
-            value: l.value,
-            value_text: l.valueText,
-            unit: l.unit,
-            reference_low: l.low,
-            reference_high: l.high,
-            reference_text: l.rangeText,
-            flag: l.flag,
-            status: l.status,
-            provider: conn.organization ?? conn.endpoint_name ?? null,
-            source: 'provider',
-            source_ref: `${connectionId}:${l.sourceId}`,
-            occurred_at: `${l.on}T12:00:00Z`,
-          })),
-          { onConflict: 'user_id,source_ref' },
-        );
-        if (labError) throw labError;
+      // Labs also go into her lab results, with the number, unit and printed
+      // range kept apart, so Labs can draw where each value sits. Keyed by
+      // connection and resource, so a re sync updates rather than repeats.
+      if (entry.type === 'Observation') {
+        const labs = (Array.isArray(bundle?.entry) ? bundle.entry : [])
+          .map((e: { resource?: unknown }) => labFromResource(e?.resource))
+          .filter((l: ReturnType<typeof labFromResource>): l is NonNullable<ReturnType<typeof labFromResource>> => l != null);
+        if (labs.length) {
+          const { error: labError } = await admin.from('results').upsert(
+            labs.map((l: NonNullable<ReturnType<typeof labFromResource>>) => ({
+              user_id: uid,
+              test_name: l.name,
+              value: l.value,
+              value_text: l.valueText,
+              unit: l.unit,
+              reference_low: l.low,
+              reference_high: l.high,
+              reference_text: l.rangeText,
+              flag: l.flag,
+              status: l.status,
+              provider: conn.organization ?? conn.endpoint_name ?? null,
+              source: 'provider',
+              source_ref: `${connectionId}:${l.sourceId}`,
+              occurred_at: `${l.on}T12:00:00Z`,
+            })),
+            { onConflict: 'user_id,source_ref' },
+          );
+          if (labError) throw labError;
+        }
       }
-    }
-    if (!records.length) continue;
+      if (!records.length) continue;
 
-    const rows = records.map((r) => ({
-      user_id: uid,
-      connection_id: connectionId,
-      source_id: r.sourceId,
-      kind: r.kind,
-      name: r.name,
-      value: r.value,
-      flag: r.flag,
-      effective_on: r.effectiveOn,
-      status: r.status,
-    }));
-    const { error: writeError } = await admin
-      .from('clinical_records')
-      .upsert(rows, { onConflict: 'user_id,connection_id,source_id' });
-    if (writeError) throw writeError;
-    written += rows.length;
+      const rows = records.map((r) => ({
+        user_id: uid,
+        connection_id: connectionId,
+        source_id: r.sourceId,
+        kind: r.kind,
+        name: r.name,
+        value: r.value,
+        flag: r.flag,
+        effective_on: r.effectiveOn,
+        status: r.status,
+      }));
+      const { error: writeError } = await admin
+        .from('clinical_records')
+        .upsert(rows, { onConflict: 'user_id,connection_id,source_id' });
+      if (writeError) throw writeError;
+      written += rows.length;
+    }
   }
 
   const { data: updated, error: updateError } = await admin
@@ -277,4 +290,19 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
   if (updateError) throw updateError;
 
   return json({ connection: publicConnection(updated), written, skipped });
+}
+
+// Where the provider refreshes tokens, asked of the provider itself, for a
+// connection made before the address was kept. Null when it cannot say.
+async function discoverTokenEndpoint(fhirBaseUrl: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${fhirBaseUrl.replace(/\/+$/, '')}/.well-known/smart-configuration`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return null;
+    const config = await res.json();
+    return typeof config?.token_endpoint === 'string' ? config.token_endpoint : null;
+  } catch {
+    return null;
+  }
 }

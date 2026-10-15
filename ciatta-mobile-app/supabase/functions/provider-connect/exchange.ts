@@ -124,6 +124,41 @@ export const FETCH_PLAN: readonly PlanEntry[] = [
   { type: 'Coverage' },
 ];
 
+// The categories above are Epic's rules. Other servers often leave a
+// condition untagged, and a query by category then returns none of them,
+// so elsewhere each type is read once, whole.
+export function planFor(vendor: string): readonly PlanEntry[] {
+  if (vendor === 'epic') return FETCH_PLAN;
+  const seen = new Set<string>();
+  const plan: PlanEntry[] = [];
+  for (const { type } of FETCH_PLAN) {
+    if (seen.has(type)) continue;
+    seen.add(type);
+    plan.push({ type });
+  }
+  return plan;
+}
+
+// A server answers a page at a time. Enough pages for a long record, and
+// a bound so one that never says it is finished cannot hold the sync.
+export const MAX_PAGES = 50;
+
+// The next page's address, when the server gives one. Only ever on the
+// server's own origin: the request carries her token, and a next link
+// pointing anywhere else would hand it over.
+export function nextPage(bundle: unknown, base: string): string | null {
+  const links = (bundle as { link?: unknown } | null)?.link;
+  if (!Array.isArray(links)) return null;
+  const next = links.find((l) => l?.relation === 'next');
+  if (typeof next?.url !== 'string') return null;
+  try {
+    const url = new URL(next.url);
+    return url.origin === new URL(base).origin ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 export function planQuery(base: string, entry: PlanEntry, patientId: string, count = 100): string {
   const url = new URL(resourceQuery(base, entry.type, patientId, count));
   for (const [k, v] of Object.entries(entry.params ?? {})) url.searchParams.set(k, v);

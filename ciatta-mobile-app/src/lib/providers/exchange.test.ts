@@ -6,6 +6,9 @@ import {
   failureLine,
   FETCH_ORDER,
   FETCH_PLAN,
+  MAX_PAGES,
+  nextPage,
+  planFor,
   planQuery,
   isFailure,
   needsRefresh,
@@ -139,4 +142,48 @@ test('appointments, care plans and notes carry the category Epic requires', () =
   assert.ok(q('Appointment').includes('service-category=appointment'));
   assert.ok(q('CarePlan').includes('category=38717003'));
   assert.ok(q('DocumentReference').includes('category=clinical-note'));
+});
+
+// ── Servers that are not Epic ────────────────────────────────────────
+
+test('Epic is read by the plan Epic requires', () => {
+  assert.deepEqual(planFor('epic'), FETCH_PLAN);
+});
+
+test('elsewhere, conditions are read once with no category, so untagged ones still arrive', () => {
+  for (const vendor of ['cerner', 'athena', 'other']) {
+    const conditions = planFor(vendor).filter((p) => p.type === 'Condition');
+    assert.equal(conditions.length, 1, vendor);
+    assert.equal(conditions[0].params, undefined, vendor);
+  }
+});
+
+test('elsewhere, no type is narrowed to a category the server may not use', () => {
+  for (const p of planFor('other')) assert.equal(p.params, undefined, p.type);
+  assert.deepEqual(new Set(planFor('other').map((p) => p.type)), new Set(FETCH_PLAN.map((p) => p.type)));
+});
+
+// ── Reading past the first page ──────────────────────────────────────
+
+const BASE = 'https://fhir.example.org/api/FHIR/R4';
+
+test('the next page is followed when the server offers one on its own address', () => {
+  const next = `${BASE}?_getpages=abc&_getpagesoffset=100`;
+  assert.equal(nextPage({ link: [{ relation: 'self', url: BASE }, { relation: 'next', url: next }] }, BASE), next);
+});
+
+test('a last page, or something unreadable, ends the reading', () => {
+  assert.equal(nextPage({ link: [{ relation: 'self', url: BASE }] }, BASE), null);
+  assert.equal(nextPage({}, BASE), null);
+  assert.equal(nextPage(null, BASE), null);
+  assert.equal(nextPage({ link: [{ relation: 'next', url: 'not a url' }] }, BASE), null);
+});
+
+test('a next link to any other host is never followed, because her token would go with it', () => {
+  assert.equal(nextPage({ link: [{ relation: 'next', url: 'https://elsewhere.example.com/R4?page=2' }] }, BASE), null);
+  assert.equal(nextPage({ link: [{ relation: 'next', url: 'http://fhir.example.org/api/FHIR/R4?page=2' }] }, BASE), null);
+});
+
+test('reading stops at a bound, so a server that never ends cannot hold the sync', () => {
+  assert.ok(MAX_PAGES >= 10 && MAX_PAGES <= 100);
 });
