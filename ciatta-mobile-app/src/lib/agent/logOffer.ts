@@ -43,3 +43,13 @@ export function turnPlan(capability: CapabilityId, items: readonly string[]): { 
   const offer = items.length > 0;
   return { answer: !(offer && capability === 'decline'), offer };
 }
+
+// She is asking to see her documents: the word, or a kind of document she
+// would ask for by name. Answered with the list, which is the only place
+// documents are shown now.
+const DOCUMENT_ASK = /\b(documents?|files?|uploads?|uploaded|scans?|ultrasound|report|visit summar(y|ies)|referral letters?|prescriptions?)\b/i;
+const LAB_ASK = /\blabs?\b|\bresults?\b/i;
+
+export function wantsDocuments(message: string): boolean {
+  return DOCUMENT_ASK.test(message) && !(LAB_ASK.test(message) && !/\bdocuments?|files?\b/i.test(message));
+}

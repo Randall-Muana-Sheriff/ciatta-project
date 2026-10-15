@@ -26,7 +26,7 @@ const PLACES: { title: string; words: string; open: HealthOpen }[] = [
   { title: 'Timeline', words: 'timeline journey', open: { kind: 'screen', screen: 'journey' } },
   { title: 'Cycle', words: 'cycle period', open: { kind: 'screen', screen: 'cycle' } },
   { title: 'Body systems', words: 'body systems', open: { kind: 'view', view: 'Body' } },
-  { title: 'Records', words: 'records labs documents', open: { kind: 'tab', tab: 'records' } },
+  { title: 'Labs', words: 'labs records results', open: { kind: 'tab', tab: 'records' } },
   { title: 'Medications', words: 'medications medicines', open: { kind: 'screen', screen: 'medications' } },
   { title: 'Symptoms', words: 'symptoms', open: { kind: 'screen', screen: 'symptoms' } },
   { title: 'Journal', words: 'journal notes', open: { kind: 'screen', screen: 'journal' } },

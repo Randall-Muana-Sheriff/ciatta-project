@@ -146,47 +146,18 @@ function DocumentsSection({ onOpen }: { onOpen: (screen: Screen) => void }) {
 }
 
 export function RecordsView({ onOpen }: { onOpen: (screen: Screen) => void }) {
-  const repo = useRepo();
-  const nav = useNav();
-  const [added, setAdded] = useState<RecordEntry[]>([]);
-
-  // What she added herself, read again whenever Records is back in view, so
-  // one she just added shows.
-  useEffect(() => {
-    if (nav.depth > 1) return;
-    let ignore = false;
-    repo
-      .loadJournal()
-      .then((view) => {
-        if (!ignore) setAdded(recordEntries(view));
-      })
-      .catch(() => {});
-    return () => {
-      ignore = true;
-    };
-  }, [repo, nav.depth]);
-
+  // Labs, and nothing else: documents are listed when she asks Ciatta for
+  // them, and adding one is the button at the foot.
   return (
     <View>
-      {/* Every way a record reaches her, in one place: voice, camera, an
-          image, a PDF or a video, through the same box every log uses. */}
-      <View style={{ marginTop: 8 }}>
-        <PrimaryButton label="Add to Your Records" onPress={() => onOpen('addRecord')} />
-        <Text style={[font('caption1'), hr.addHint]}>Voice, camera, image, PDF or a procedure</Text>
-      </View>
-
-      {added.length ? (
-        <ListGroup header="Added by you" style={hr.section}>
-          {added.map((r, n) => (
-            <ListRow key={r.key} first={n === 0} icon="doc" title={displayCopy(r.title)} sub={displayCopy(r.sub)} />
-          ))}
-        </ListGroup>
-      ) : null}
-
       {/* Labs: from her providers and from reports she had read. */}
-      <DocumentsSection onOpen={onOpen} />
       <LabsSection onOpen={onOpen} />
 
+      {/* One way in for a lab report or any medical document: the camera
+          or a file, read and filed with her check. */}
+      <View style={hr.add}>
+        <PrimaryButton label="Scan or Upload a Document" onPress={() => onOpen('addDocument')} />
+      </View>
     </View>
   );
 }
@@ -202,4 +173,5 @@ const hr = StyleSheet.create({
   section: { marginTop: 24, marginBottom: 10 },
   labTop: { flexDirection: 'row', alignItems: 'center', gap: 10, justifyContent: 'space-between' },
   addHint: { color: G.meta, textAlign: 'center', marginTop: 6 },
+  add: { marginTop: 32 },
 });

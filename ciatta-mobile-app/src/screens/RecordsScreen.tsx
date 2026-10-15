@@ -1,5 +1,5 @@
-// Records: labs, documents and provider records, a place of its own in the
-// corner menu rather than a half of Health.
+// Labs: her results, from providers and the reports she added, and the
+// one button that adds a document. A place of its own in the corner menu.
 
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -13,7 +13,7 @@ export function RecordsScreen() {
   const nav = useNav();
   return (
     <ScrollView style={r.fill} contentContainerStyle={r.body}>
-      <LargeTitle title="Records" />
+      <LargeTitle title="Labs" />
       <View style={r.pad}>
         <RecordsView onOpen={nav.push} />
       </View>

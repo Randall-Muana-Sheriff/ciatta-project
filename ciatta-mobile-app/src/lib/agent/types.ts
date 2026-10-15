@@ -123,6 +123,9 @@ export type Turn = {
   // explicit that Ciatta does not open a file, and the composer says so
   // under the box.
   attachments?: readonly { id: string; kind: string; name: string }[];
+  // Her documents, when she asked to see them: the only place they are
+  // listed.
+  documents?: readonly { id: string; title: string; kind: string; on: string }[];
   // Ciatta's offer to add what she said to her timeline, and where it
   // stands. Nothing is saved while it is offered.
   offer?: {

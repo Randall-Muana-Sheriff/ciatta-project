@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { groupItems, LOG_VOCABULARY, mergeItems, offerLine, turnPlan } from './logOffer';
+import { groupItems, LOG_VOCABULARY, mergeItems, offerLine, turnPlan, wantsDocuments } from './logOffer';
 
 test('the vocabulary holds every log word once', () => {
   for (const w of ['Pain', 'Pelvic pain', 'Fatigue', 'Period', 'Spotting', 'Caffeine', 'Slept badly']) assert.ok(LOG_VOCABULARY.includes(w), w);
@@ -28,4 +28,11 @@ test('a statement with nothing Ciatta can answer becomes only an offer', () => {
   assert.deepEqual(turnPlan('labs', ['Pain']), { answer: true, offer: true });
   assert.deepEqual(turnPlan('decline', []), { answer: true, offer: false });
   assert.deepEqual(turnPlan('escalate', ['Pain']), { answer: true, offer: false });
+});
+
+test('asking for documents is recognised, saying something else is not', () => {
+  for (const m of ['Show me my documents', 'what documents do I have?', 'Open my ultrasound report', 'Can I see the files I uploaded', 'my scans']) {
+    assert.equal(wantsDocuments(m), true, m);
+  }
+  for (const m of ['Had a dull ache since lunch', 'What stands out in my labs?', 'How is my sleep']) assert.equal(wantsDocuments(m), false, m);
 });

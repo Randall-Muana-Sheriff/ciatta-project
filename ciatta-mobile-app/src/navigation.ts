@@ -6,7 +6,9 @@ import type { IconName } from './ui/icons';
 // from Health, rather than a place of its own.
 export type Tab = 'today' | 'myhealth' | 'records' | 'care';
 
-export const TAB_ORDER: Tab[] = ['today', 'myhealth', 'records', 'care'];
+// Body is a view on Today now (Explore's switch), so it is not in the menu;
+// 'myhealth' stays a place only so an old route still resolves.
+export const TAB_ORDER: Tab[] = ['today', 'records', 'care'];
 
 // The header arrows step through the tabs, wrapping at either end.
 export function adjacentTab(tab: Tab, step: 1 | -1): Tab {
@@ -91,8 +93,7 @@ export type MenuItem = { key: string; label: string; icon: IconName; go: MenuGo 
 
 export const MENU_ITEMS: MenuItem[] = [
   { key: 'today', label: 'Today', icon: 'home', go: { kind: 'tab', tab: 'today' } },
-  { key: 'myhealth', label: 'Body', icon: 'heart', go: { kind: 'tab', tab: 'myhealth' } },
-  { key: 'records', label: 'Records', icon: 'doc', go: { kind: 'tab', tab: 'records' } },
+  { key: 'records', label: 'Labs', icon: 'flask', go: { kind: 'tab', tab: 'records' } },
   { key: 'care', label: 'Care', icon: 'concierge', go: { kind: 'tab', tab: 'care' } },
   { key: 'profile', label: 'Profile', icon: 'person', go: { kind: 'screen', screen: 'profile' } },
 ];

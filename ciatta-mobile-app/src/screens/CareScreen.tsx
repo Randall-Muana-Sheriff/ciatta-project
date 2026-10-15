@@ -58,7 +58,10 @@ import { AgentAvatar } from '../ui/AgentAvatar';
 import { onCareAsk, openRequest, takeCareAsk } from '../lib/careHandoff';
 import { CareHub } from '../ui/CareHub';
 import { ScreenHeader } from '../ui/kit';
-import { groupItems, mergeItems, offerLine, turnPlan } from '../lib/agent/logOffer';
+import { groupItems, mergeItems, offerLine, turnPlan, wantsDocuments } from '../lib/agent/logOffer';
+import { DOC_TYPE_LABEL } from '../lib/documents';
+import { chooseDocument } from '../lib/documentHandoff';
+import { labDay } from '../lib/labs';
 import { isLoggable } from '../../supabase/functions/_shared/checkIn';
 import { readCategories } from '../lib/quickLog';
 import { readLog } from '../data/logRead';
@@ -267,6 +270,32 @@ export function CareScreen() {
       if (!message) return;
       // Files sent with a message from Today's box come with it.
       const files_ = sentFiles ? [...sentFiles] : files;
+
+      // Asking to see her documents: answered with the list of them.
+      if (wantsDocuments(message)) {
+        const asked = new Date().toISOString();
+        setTurns((prev) => [...prev, { id: `${asked}-her`, role: 'her', text: message, at: asked, attachments: files_ }]);
+        setDraft('');
+        setFiles([]);
+        void repo
+          .loadDocuments()
+          .then((docs) => {
+            const list = docs.map((d) => ({ id: d.id, title: d.title ?? DOC_TYPE_LABEL[d.docType], kind: DOC_TYPE_LABEL[d.docType], on: d.on }));
+            setTurns((prev) => [
+              ...prev,
+              {
+                id: `${asked}-docs`,
+                role: 'ciatta',
+                text: list.length ? `Here ${list.length === 1 ? 'is your document' : `are your ${list.length} documents`}. Tap one to open it.` : 'You have no documents in Ciatta yet. You can add one from Labs, with Scan or Upload a Document.',
+                at: asked,
+                documents: list,
+              },
+            ]);
+            requestAnimationFrame(() => scroller.current?.scrollToEnd({ animated: true }));
+          })
+          .catch(() => {});
+        return;
+      }
       const at = new Date().toISOString();
       // A test she has on record, named without the word lab, is a lab
       // question; a warning sign is always escalated first.
@@ -374,6 +403,11 @@ export function CareScreen() {
                       ))
                     : null}
                 </View>
+              ) : turn.documents ? (
+                <DocumentsBlock key={turn.id} turn={turn} onOpen={(id) => {
+                  chooseDocument(id);
+                  nav.push('document');
+                }} />
               ) : turn.offer ? (
                 <OfferBlock key={turn.id} turn={turn} onAdd={() => void addOffer(turn.id)} onDecline={() => setOffer(turn.id, 'declined')} />
               ) : (
@@ -411,6 +445,31 @@ export function CareScreen() {
         </Text>
       </View>
     </KeyboardAvoidingView>
+  );
+}
+
+// Her documents, listed because she asked: each opens its page.
+function DocumentsBlock({ turn, onOpen }: { turn: Turn; onOpen: (id: string) => void }) {
+  return (
+    <View style={s.actionCard}>
+      <Text style={[font('subhead'), s.bubbleText]}>{displayCopy(turn.text)}</Text>
+      {(turn.documents ?? []).map((d, n) => (
+        <Pressable
+          key={d.id}
+          onPress={() => onOpen(d.id)}
+          accessibilityRole="button"
+          accessibilityLabel={`${d.title}, ${d.kind}, ${d.on}`}
+          style={({ pressed }) => [s.docRow, n > 0 && s.docRule, pressed && s.pressed]}
+        >
+          <Icon name="doc" size={18} color={PAPER.body} />
+          <View style={{ flex: 1 }}>
+            <Text style={[font('subhead', 'semibold'), { color: PAPER.ink }]}>{displayCopy(d.title)}</Text>
+            <Text style={[font('footnote'), { color: PAPER.meta }]}>{displayCopy(`${d.kind}, ${labDay(d.on)}`)}</Text>
+          </View>
+          <Icon name="chevronRight" size={14} color={PAPER.meta} />
+        </Pressable>
+      ))}
+    </View>
   );
 }
 
@@ -714,6 +773,8 @@ const s = StyleSheet.create({
   suggestionText: { color: ON_WHITE },
   pressed: { opacity: 0.55 },
 
+  docRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, paddingVertical: 8 },
+  docRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: PAPER.rule },
   closeRow: { alignItems: 'center', paddingTop: 8, paddingBottom: 6 },
   closePill: {
     flexDirection: 'row',
