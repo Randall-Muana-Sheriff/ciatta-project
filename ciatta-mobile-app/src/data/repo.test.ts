@@ -364,3 +364,25 @@ test('her first name can be changed and reads back', async () => {
   await repo.saveFirstName('Maya Rose');
   assert.equal(await repo.firstName(), 'Maya Rose');
 });
+
+test('a document is read, filed, listed, opened and removed', async () => {
+  const repo = demoRepo();
+  const scan = await repo.scanDocument('aGVsbG8=', 'pdf');
+  assert.equal(scan.docType, 'visit');
+  const { reviewItems, buildFilings, insuranceFrom } = await import('../lib/documents');
+  const items = reviewItems(scan, await repo.loadExistingForDocuments());
+  const id = await repo.saveDocument({
+    file: { base64: 'aGVsbG8=', kind: 'pdf' },
+    checksum: 'doc-1',
+    scan,
+    filings: buildFilings(items, scan.date),
+    insurance: insuranceFrom(items),
+  });
+  const list = await repo.loadDocuments();
+  assert.equal(list[0].id, id);
+  const doc = await repo.loadDocument(id);
+  assert.ok(doc && doc.filed.medications.length > 0);
+  assert.deepEqual(await repo.findDocument('doc-1'), { id, on: scan.date, docType: 'visit' });
+  await repo.removeDocument(id);
+  assert.equal((await repo.loadDocuments()).length, 0);
+});

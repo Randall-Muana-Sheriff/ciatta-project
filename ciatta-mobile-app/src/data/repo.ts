@@ -41,6 +41,7 @@ import type { Referral } from '../lib/referrals';
 import type { BodyManual } from '../lib/overviewFacts';
 import type { SleepSample } from '../lib/hypnogram';
 import { type LabFlag, type LabResult, type LabScan, parseRange, readLabScan, type ScannedTest } from '../lib/labs';
+import { type DocType, type DocumentFilings, type DocumentScan, type Existing, readDocumentScan, toSnake } from '../lib/documents';
 import { readStoredAnalysis, type StoredAnalysis } from '../lib/labAnalysis';
 import { records as sampleRecords } from './sample';
 import type { CareRequest, ClinicianRow } from '../lib/care';
@@ -89,6 +90,20 @@ export type LabReportInput = {
   specimen: string | null;
   pages: number | null;
   tests: ScannedTest[];
+};
+
+export type DocumentInput = {
+  file: { base64: string; kind: 'image' | 'pdf' };
+  checksum: string;
+  scan: DocumentScan;
+  filings: DocumentFilings;
+  insurance: { provider: string; plan: string | null; member_id: string | null } | null;
+};
+export type DocumentSummary = { id: string; docType: DocType; title: string | null; on: string };
+export type DocumentDetail = DocumentSummary & {
+  extraction: DocumentScan;
+  filed: { conditions: string[]; allergies: string[]; medications: string[]; procedures: string[]; referrals: string[] };
+  linked: { table: string; id: string }[];
 };
 
 export type Repo = {
@@ -213,6 +228,15 @@ export type Repo = {
   // Her labs collected before a day, newest first by time then id: the
   // same rows the lab-analysis function reads, so both fingerprint alike.
   loadLabsBefore(day: string): Promise<LabResult[]>;
+  // Any medical document: read it, see what she has, file it, list, open
+  // and remove it. labReportFile opens any document's original.
+  scanDocument(base64: string, kind: 'image' | 'pdf', as?: DocType): Promise<DocumentScan>;
+  loadExistingForDocuments(): Promise<Existing>;
+  saveDocument(input: DocumentInput): Promise<string>;
+  findDocument(checksum: string): Promise<{ id: string; on: string; docType: string } | null>;
+  loadDocuments(): Promise<DocumentSummary[]>;
+  loadDocument(id: string): Promise<DocumentDetail | null>;
+  removeDocument(id: string): Promise<void>;
   // The latest stored clinical AI analysis of a report, or null.
   loadLabAnalysis(documentId: string): Promise<StoredAnalysis | null>;
   // Asks for a new one. Throws with the function's own sentence when it
@@ -345,6 +369,7 @@ export function demoRepo(): Repo {
   let labs: LabResult[] = sampleLabs();
   let demoReports: { id: string; on: string; checksum: string }[] = [];
   const demoAnalyses = new Map<string, StoredAnalysis>();
+  let demoDocuments: (DocumentDetail & { checksum: string })[] = [];
   // The example person's insurance, as the sample shows it.
   let insurance: Insurance | null = { provider: 'Anthem', plan: 'PPO' };
   let view: JournalView = {
@@ -580,6 +605,74 @@ export function demoRepo(): Repo {
       return hit ? { id: hit.id, on: hit.on } : null;
     },
     labReportFile: async () => null,
+    scanDocument: async (_b64, _kind, as) =>
+      readDocumentScan({
+        not_medical: false,
+        doc_type: as ?? 'visit',
+        title: 'Example visit summary',
+        date: '2026-10-01',
+        clinician: 'Dr Example',
+        facility: 'Example Clinic',
+        multiple_dates: false,
+        unreadable_pages: [],
+        visit:
+          (as ?? 'visit') === 'visit'
+            ? {
+                reason: 'Follow up',
+                diagnoses: [{ name: 'Iron deficiency anemia', status: 'new' }],
+                medications_started: [{ name: 'Ferrous sulfate', strength: '325 mg', dose: null, frequency: 'once daily', route: 'oral', prescriber: null, date: null }],
+                medications_stopped: [],
+                medications_changed: [],
+                procedures: [],
+                follow_ups: [],
+                instructions: ['Take with food.'],
+                allergies: [],
+              }
+            : null,
+        report: null,
+        prescription: null,
+        referral: null,
+        insurance: null,
+        other: (as ?? 'visit') === 'visit' ? null : { description: 'An example document' },
+      }),
+    loadExistingForDocuments: async () => ({ conditions: [], medications: [] }),
+    saveDocument: async (input) => {
+      const id = `document-${Date.now()}`;
+      demoDocuments = [
+        {
+          id,
+          checksum: input.checksum,
+          docType: input.scan.docType,
+          title: input.scan.title,
+          on: input.scan.date ?? new Date().toISOString().slice(0, 10),
+          extraction: input.scan,
+          filed: {
+            conditions: input.filings.conditions.map((c) => c.name),
+            allergies: input.filings.allergies.map((a) => a.name),
+            medications: input.filings.medications.map((m) => m.name),
+            procedures: input.filings.procedures.map((p) => p.name),
+            referrals: input.filings.referrals.map((r) => r.specialty),
+          },
+          linked: input.filings.linked,
+        },
+        ...demoDocuments,
+      ];
+      return id;
+    },
+    findDocument: async (checksum) => {
+      const hit = demoDocuments.find((d) => d.checksum === checksum);
+      return hit ? { id: hit.id, on: hit.on, docType: hit.docType } : null;
+    },
+    loadDocuments: async () => demoDocuments.map(({ id, docType, title, on }) => ({ id, docType, title, on })),
+    loadDocument: async (id) => {
+      const d = demoDocuments.find((x) => x.id === id);
+      if (!d) return null;
+      const { checksum: _c, ...rest } = d;
+      return rest;
+    },
+    removeDocument: async (id) => {
+      demoDocuments = demoDocuments.filter((d) => d.id !== id);
+    },
     loadLabsBefore: async (day) => labs.filter((l) => l.on < day).sort((a, b) => b.on.localeCompare(a.on)),
     loadLabAnalysis: async (documentId) => demoAnalyses.get(documentId) ?? null,
     analyzeLabReport: async (documentId) => {
@@ -1327,6 +1420,106 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       const stored = readStoredAnalysis(data);
       if (!stored) throw new Error('The analysis could not be written just now.');
       return stored;
+    },
+    async scanDocument(base64, kind, as) {
+      const { data, error } = await db.functions.invoke('document-scan', { body: { file: base64, kind, as } });
+      if (error) {
+        let sentence = 'The document could not be read. Try again.';
+        try {
+          const body = await (error as { context?: Response }).context?.json();
+          if (typeof body?.error === 'string') sentence = body.error;
+        } catch {
+          // Not JSON; the plain sentence stands.
+        }
+        throw new Error(sentence);
+      }
+      return readDocumentScan(data);
+    },
+    async loadExistingForDocuments() {
+      const [conds, meds] = await Promise.all([
+        db.from('conditions').select('id, name, kind').in('kind', ['condition', 'surgery']),
+        db.from('medications').select('id, name, stopped_on'),
+      ]);
+      return {
+        conditions: ((must(conds) as { id: string; name: string }[] | null) ?? []).map((c) => ({ id: c.id, name: c.name })),
+        medications: ((must(meds) as { id: string; name: string; stopped_on: string | null }[] | null) ?? []).map((m) => ({ id: m.id, name: m.name, stoppedOn: m.stopped_on })),
+      };
+    },
+    async saveDocument(input) {
+      const docId = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`).toLowerCase();
+      const ext = input.file.kind === 'pdf' ? 'pdf' : 'jpg';
+      const path = `${userId}/documents/${docId}.${ext}`;
+      const bytes = Uint8Array.from(atob(input.file.base64), (c) => c.charCodeAt(0));
+      const { error: uploadError } = await db.storage
+        .from('documents')
+        .upload(path, bytes, { contentType: input.file.kind === 'pdf' ? 'application/pdf' : 'image/jpeg', upsert: false });
+      if (uploadError) throw uploadError;
+      const { data, error } = await db.rpc('save_document', {
+        p_doc_type: input.scan.docType,
+        p_title: input.scan.title,
+        p_occurred_on: input.scan.date,
+        p_storage_path: path,
+        p_metadata: { checksum: input.checksum, pages: null, clinician: input.scan.clinician, facility: input.scan.facility, extraction: toSnake(input.scan) },
+        p_filings: input.filings,
+        p_insurance: input.insurance,
+      });
+      if (error) {
+        await db.storage.from('documents').remove([path]);
+        throw error;
+      }
+      return data as string;
+    },
+    async findDocument(checksum) {
+      const rows = must(await db.from('documents').select('id, occurred_at, doc_type').eq('metadata->>checksum', checksum).limit(1)) as
+        | { id: string; occurred_at: string; doc_type: string }[]
+        | null;
+      const hit = rows?.[0];
+      return hit ? { id: hit.id, on: hit.occurred_at.slice(0, 10), docType: hit.doc_type } : null;
+    },
+    async loadDocuments() {
+      const rows = must(
+        await db
+          .from('documents')
+          .select('id, doc_type, title, occurred_at')
+          .not('doc_type', 'is', null)
+          .neq('doc_type', 'lab_report')
+          .order('occurred_at', { ascending: false })
+          .limit(200),
+      ) as { id: string; doc_type: string; title: string | null; occurred_at: string }[] | null;
+      return (rows ?? []).map((r) => ({ id: r.id, docType: r.doc_type as DocType, title: r.title, on: r.occurred_at.slice(0, 10) }));
+    },
+    async loadDocument(id) {
+      const rows = must(await db.from('documents').select('id, doc_type, title, occurred_at, metadata').eq('id', id).limit(1)) as
+        | { id: string; doc_type: string; title: string | null; occurred_at: string; metadata: Record<string, unknown> }[]
+        | null;
+      const r = rows?.[0];
+      if (!r) return null;
+      const names = async (table: 'conditions' | 'medications' | 'procedures', extra?: (q: any) => any) => {
+        let q = db.from(table).select('name').eq('document_id', id);
+        if (extra) q = extra(q);
+        return ((must(await q) as { name: string }[] | null) ?? []).map((x) => x.name);
+      };
+      const [conditions, allergies, medications, procedures, referrals] = await Promise.all([
+        names('conditions', (q) => q.neq('kind', 'allergy')),
+        names('conditions', (q) => q.eq('kind', 'allergy')),
+        names('medications'),
+        names('procedures'),
+        db.from('referrals').select('specialty').eq('document_id', id).then((x: any) => ((must(x) as { specialty: string }[] | null) ?? []).map((y) => y.specialty)),
+      ]);
+      return {
+        id: r.id,
+        docType: r.doc_type as DocType,
+        title: r.title,
+        on: r.occurred_at.slice(0, 10),
+        extraction: readDocumentScan(toSnake(r.metadata?.extraction)),
+        filed: { conditions, allergies, medications, procedures, referrals },
+        linked: Array.isArray(r.metadata?.linked) ? (r.metadata.linked as { table: string; id: string }[]) : [],
+      };
+    },
+    async removeDocument(id) {
+      const { data: path, error } = await db.rpc('remove_document', { p_document: id });
+      if (error) throw error;
+      if (typeof path === 'string') await db.storage.from('documents').remove([path]);
     },
     async removeLabReport(id) {
       const { data: path, error } = await db.rpc('remove_lab_report', { p_document: id });

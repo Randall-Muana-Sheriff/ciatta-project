@@ -236,3 +236,11 @@ export function insuranceFrom(items: ReviewItem[]): { provider: string; plan: st
   if (!i || !i.value.provider) return null;
   return { provider: i.value.provider, plan: i.value.plan ?? null, member_id: i.value.memberId ?? null };
 }
+
+// The scan as stored in documents.metadata.extraction: the function's own
+// snake case shape, so readDocumentScan reads it back unchanged.
+export function toSnake(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(toSnake);
+  if (!v || typeof v !== 'object') return v;
+  return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`), toSnake(x)]));
+}

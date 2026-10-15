@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildFilings, foldName, insuranceFrom, readDocumentScan, reviewItems, TARGET_HEADING } from './documents';
+import { buildFilings, foldName, insuranceFrom, readDocumentScan, reviewItems, TARGET_HEADING, toSnake } from './documents';
 
 const med = (name: string, extra: Record<string, unknown> = {}) => ({ name, strength: null, dose: null, frequency: null, route: null, prescriber: null, date: null, ...extra });
 
@@ -119,4 +119,9 @@ test('imaging and pathology offer the conditions they name, and file nothing els
   assert.equal(img.report?.impression, 'Likely endometrioma.');
   const items = reviewItems(img, { conditions: [], medications: [] });
   assert.deepEqual(items.map((i) => [i.target, i.title]), [['conditions', 'Endometrioma']]);
+});
+
+test('a scan stored in snake case reads back the same', () => {
+  const s = readDocumentScan(visitJson);
+  assert.deepEqual(readDocumentScan(toSnake(s)), s);
 });
