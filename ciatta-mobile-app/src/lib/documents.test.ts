@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildFilings, foldName, insuranceFrom, readDocumentScan, reviewItems, TARGET_HEADING, toSnake } from './documents';
+import { buildFilings, foldName, insuranceFrom, readDocumentScan, editedScan, renameItem, reviewItems, TARGET_HEADING, toSnake } from './documents';
 
 const med = (name: string, extra: Record<string, unknown> = {}) => ({ name, strength: null, dose: null, frequency: null, route: null, prescriber: null, date: null, ...extra });
 
@@ -124,4 +124,48 @@ test('imaging and pathology offer the conditions they name, and file nothing els
 test('a scan stored in snake case reads back the same', () => {
   const s = readDocumentScan(visitJson);
   assert.deepEqual(readDocumentScan(toSnake(s)), s);
+});
+
+// ── From the branch review ───────────────────────────────────────────
+
+test('a card with no plan or member id leaves those keys out, so the plan check accepts it', () => {
+  const card = readDocumentScan({ ...visitJson, doc_type: 'insurance', visit: null, insurance: { provider: 'Aetna', plan: null, member_id: null } });
+  assert.deepEqual(insuranceFrom(reviewItems(card, { conditions: [], medications: [] })), { provider: 'Aetna' });
+});
+
+test('a medication an undated document stops, that she does not have, is added stopped today', () => {
+  const s = readDocumentScan({ ...visitJson, date: null });
+  const f = buildFilings(reviewItems(s, { conditions: [], medications: [] }), s.date, '2026-10-15');
+  assert.equal(f.medications.find((m) => m.name === 'Ibuprofen')?.stopped_on, '2026-10-15');
+});
+
+test('an allergy she already has is linked, not added again', () => {
+  const items = reviewItems(readDocumentScan(visitJson), { conditions: [], medications: [], allergies: [{ id: 'a1', name: 'penicillin' }] });
+  const f = buildFilings(items, '2026-09-02');
+  assert.deepEqual(f.allergies, []);
+  assert.ok(f.linked.some((l) => l.table === 'conditions' && l.id === 'a1'));
+});
+
+test('renaming an item matches it again, so a renamed medication is added rather than linked to the old one', () => {
+  const existing = { conditions: [], medications: [{ id: 'm1', name: 'Ibuprofen', stoppedOn: null }] };
+  const items = reviewItems(readDocumentScan(visitJson), existing);
+  const stop = items.find((i) => i.target === 'stop_medications')!;
+  assert.equal(stop.existingId, 'm1');
+  const renamed = renameItem(stop, 'Naproxen', existing);
+  assert.equal(renamed.existingId, null);
+  assert.equal(renamed.value.name, 'Naproxen');
+  assert.equal(renameItem(renamed, 'ibuprofen', existing).existingId, 'm1', 'renaming back matches again');
+});
+
+test('what is saved for the analysis is the document as she kept and corrected it', () => {
+  const scan = readDocumentScan(visitJson);
+  const existing = { conditions: [], medications: [] };
+  let items = reviewItems(scan, existing);
+  items = items.map((i) => (i.title === 'Iron deficiency anemia' ? { ...i, keep: false } : i));
+  items = items.map((i) => (i.title === 'Ferrous sulfate' ? renameItem(i, 'Ferrous gluconate', existing) : i));
+  const edited = editedScan(scan, items);
+  assert.deepEqual(edited.visit?.diagnoses.map((d) => d.name), ['Endometriosis']);
+  assert.equal(edited.visit?.medicationsStarted[0].name, 'Ferrous gluconate');
+  assert.deepEqual(edited.visit?.instructions, scan.visit?.instructions, 'text she did not review is kept as read');
+  assert.deepEqual(scan.visit?.diagnoses.length, 2, 'the original scan is not changed');
 });

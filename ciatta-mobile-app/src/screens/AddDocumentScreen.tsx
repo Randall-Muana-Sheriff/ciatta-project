@@ -9,8 +9,8 @@ import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-nati
 
 import { displayCopy } from '../lib/displayCopy';
 import { chooseDocument } from '../lib/documentHandoff';
-import { buildFilings, DOC_TYPE_LABEL, type DocType, type DocumentScan, insuranceFrom, type ReviewItem, reviewItems, TARGET_HEADING, type Target } from '../lib/documents';
-import { chooseLabFile } from '../lib/labHandoff';
+import { buildFilings, DOC_TYPE_LABEL, type DocType, type DocumentScan, editedScan, type Existing, insuranceFrom, renameItem, type ReviewItem, reviewItems, TARGET_HEADING, type Target } from '../lib/documents';
+import { chooseLabFile, chooseReport } from '../lib/labHandoff';
 import { labDay } from '../lib/labs';
 import { userFacingError } from '../lib/userFacingError';
 import { useNav } from '../navigation';
@@ -32,8 +32,9 @@ export function AddDocumentScreen() {
   const [file, setFile] = useState<(Captured & { checksum: string }) | null>(null);
   const [scan, setScan] = useState<DocumentScan | null>(null);
   const [items, setItems] = useState<ReviewItem[]>([]);
+  const [existing, setExisting] = useState<Existing>({ conditions: [], medications: [] });
   const [note, setNote] = useState<string | null>(null);
-  const [duplicate, setDuplicate] = useState<{ id: string; on: string } | null>(null);
+  const [duplicate, setDuplicate] = useState<{ id: string; on: string; docType: string } | null>(null);
   const [replacePlan, setReplacePlan] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -44,7 +45,7 @@ export function AddDocumentScreen() {
     if (!as) {
       const seen = await repo.findDocument(checksum).catch(() => null);
       if (seen) {
-        setDuplicate({ id: seen.id, on: seen.on });
+        setDuplicate(seen);
         return;
       }
     }
@@ -64,7 +65,9 @@ export function AddDocumentScreen() {
       }
       setFile({ ...f, checksum });
       setScan(s);
-      setItems(reviewItems(s, await repo.loadExistingForDocuments().catch(() => ({ conditions: [], medications: [] }))));
+      const have = await repo.loadExistingForDocuments().catch(() => ({ conditions: [], medications: [] }));
+      setExisting(have);
+      setItems(reviewItems(s, have));
       setStage('review');
     } catch (e) {
       setNote(userFacingError(e, 'The document could not be read. Try again.'));
@@ -88,7 +91,7 @@ export function AddDocumentScreen() {
       const id = await repo.saveDocument({
         file: { base64: file.base64, kind: file.kind },
         checksum: file.checksum,
-        scan,
+        scan: editedScan(scan, items),
         filings: buildFilings(items, scan.date),
         insurance: hasPlan && replacePlan ? insuranceFrom(items) : null,
       });
@@ -119,8 +122,14 @@ export function AddDocumentScreen() {
           {duplicate ? (
             <Pressable
               onPress={() => {
-                chooseDocument(duplicate.id);
-                nav.push('document');
+                // A file already added as a lab report opens as one.
+                if (duplicate.docType === 'lab_report') {
+                  chooseReport({ documentId: duplicate.id, on: duplicate.on, lab: null });
+                  nav.push('labReport');
+                } else {
+                  chooseDocument(duplicate.id);
+                  nav.push('document');
+                }
               }}
               accessibilityRole="button"
               style={[s.card, { marginTop: SPACE.near }]}
@@ -191,7 +200,7 @@ export function AddDocumentScreen() {
                   .map((i, n) => (
                     <View key={i.key} style={[s.row, n > 0 && s.divided, !i.keep && { opacity: 0.45 }]}>
                       <View style={{ flex: 1 }}>
-                        <TextInput value={i.title} onChangeText={(v) => edit(i.key, { title: v, value: { ...i.value, name: v, ...(t === 'referrals' ? { specialty: v } : {}), ...(t === 'insurance' ? { provider: v } : {}) } })} style={[font('subhead', 'semibold'), s.ink]} accessibilityLabel="Item" />
+                        <TextInput value={i.title} onChangeText={(v) => setItems((xs) => xs.map((x) => (x.key === i.key ? renameItem(x, v, existing) : x)))} style={[font('subhead', 'semibold'), s.ink]} accessibilityLabel={displayCopy(`Item, ${i.title}`)} />
                         {i.detail ? <Text style={[font('caption1'), s.meta]}>{displayCopy(i.detail)}</Text> : null}
                         {i.existingId ? <Text style={[font('caption1'), s.meta]}>{t === 'stop_medications' ? 'In your Medications; it will be marked stopped' : 'Already in your record; it will be linked, not added again'}</Text> : null}
                       </View>

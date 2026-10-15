@@ -109,3 +109,34 @@ test('the document text, its medications, and a stable fingerprint', () => {
   assert.notEqual(extractionFingerprint(extraction), extractionFingerprint({ ...extraction, date: '2026-09-03' }));
   assert.deepEqual(readCycle({ day: 3, phase: 'During period', usual_length: 29 }), { day: 3, phase: 'During period', usual_length: 29 });
 });
+
+// ── From the branch review ───────────────────────────────────────────
+
+const withSertraline: DocFacts = { ...facts, record: { ...facts.record, medications: ['Ibuprofen', 'Sertraline'] } };
+
+test('medication advice in other forms is refused', () => {
+  for (const q of [
+    'Stopping sertraline may help your sleep.',
+    'Consider increasing your sertraline.',
+    'Take 325 mg of sertraline each morning.',
+    'Take two tablets of ibuprofen twice daily.',
+    'Try taking 10 mL of the syrup.',
+    'Sertraline is no longer needed; you can come off it.',
+    'Your doctor says to take ferrous sulfate and stop sertraline.',
+  ]) {
+    const a = good();
+    a.questions = [q];
+    assert.ok(checkDocumentAnalysis(a, withSertraline).length > 0, q);
+  }
+});
+
+test('a dose may be quoted only for the medication the document printed it for', () => {
+  const a = good();
+  a.summary = 'Your visit summary starts ferrous sulfate 325 mg once daily.';
+  assert.deepEqual(checkDocumentAnalysis(a, withSertraline), []);
+});
+
+test('urgent words are read from the instructions, findings and impression, not from names', () => {
+  const er: DocFacts = { ...facts, document: { ...facts.document, facility: 'Mercy Emergency Department', extraction: { ...extraction, facility: 'Mercy Emergency Department', title: 'Emergency Department Discharge' } } };
+  assert.deepEqual(checkDocumentAnalysis(good(), er), []);
+});

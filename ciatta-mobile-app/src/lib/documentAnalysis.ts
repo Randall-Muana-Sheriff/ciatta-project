@@ -56,8 +56,17 @@ function strings(v: unknown, out: string[] = []): string[] {
   return out;
 }
 
+// Where a document says something is urgent: its instructions, findings
+// and impression, not names. The same as lab-analysis's urgentText.
+function urgentSources(extraction: unknown): string[] {
+  const x = (extraction && typeof extraction === 'object' ? extraction : {}) as Record<string, unknown>;
+  const visit = (x.visit ?? {}) as Record<string, unknown>;
+  const report = (x.report ?? {}) as Record<string, unknown>;
+  return [...(Array.isArray(visit.instructions) ? visit.instructions : []), report.findings, report.impression].filter((t): t is string => typeof t === 'string');
+}
+
 export function documentUrgentLines(extraction: unknown, analysis: DocAnalysis | null): string[] {
-  const lines = strings(extraction)
+  const lines = urgentSources(extraction)
     .flatMap((t) => t.split(/(?<=[.!?])\s+/))
     .filter((sentence) => URGENT.test(sentence))
     .map((sentence) => `The document says: ${sentence.trim()}`);

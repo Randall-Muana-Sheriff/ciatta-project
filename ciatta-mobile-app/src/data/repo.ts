@@ -98,7 +98,7 @@ export type DocumentInput = {
   checksum: string;
   scan: DocumentScan;
   filings: DocumentFilings;
-  insurance: { provider: string; plan: string | null; member_id: string | null } | null;
+  insurance: { provider: string; plan?: string; member_id?: string } | null;
 };
 export type DocumentSummary = { id: string; docType: DocType; title: string | null; on: string };
 export type DocumentDetail = DocumentSummary & {
@@ -984,8 +984,13 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
         const rows = must(await db.from('conditions').select('kind, name')) as { kind: string; name: string }[];
         return [...new Set(rows.filter((r) => r.kind === 'condition' || r.kind === 'surgery').map((r) => r.name))];
       }
+      if (kind === 'allergies') {
+        // Allergies filed from documents, before she has kept a list here.
+        const rows = must(await db.from('conditions').select('name').eq('kind', 'allergy')) as { name: string }[] | null;
+        return [...new Set((rows ?? []).map((r) => r.name))];
+      }
       if (kind === 'medications') {
-        const [meds, sups] = await Promise.all([db.from('medications').select('name'), db.from('supplements').select('name')]);
+        const [meds, sups] = await Promise.all([db.from('medications').select('name').is('stopped_on', null), db.from('supplements').select('name')]);
         return [...new Set([...(must(meds) as { name: string }[]), ...(must(sups) as { name: string }[])].map((r) => r.name))];
       }
       return [];
@@ -1297,7 +1302,8 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
     async loadReported() {
       const [conditions, meds, sups] = await Promise.all([
         db.from('conditions').select('kind, name'),
-        db.from('medications').select('name'),
+        // Current medications only: one a document stopped is not listed.
+        db.from('medications').select('name').is('stopped_on', null),
         db.from('supplements').select('name'),
       ]);
       const named = (must(conditions) ?? []) as { kind: string; name: string }[];
@@ -1462,11 +1468,13 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
     },
     async loadExistingForDocuments() {
       const [conds, meds] = await Promise.all([
-        db.from('conditions').select('id, name, kind').in('kind', ['condition', 'surgery']),
+        db.from('conditions').select('id, name, kind').in('kind', ['condition', 'surgery', 'allergy']),
         db.from('medications').select('id, name, stopped_on'),
       ]);
+      const named = (must(conds) as { id: string; name: string; kind: string }[] | null) ?? [];
       return {
-        conditions: ((must(conds) as { id: string; name: string }[] | null) ?? []).map((c) => ({ id: c.id, name: c.name })),
+        conditions: named.filter((c) => c.kind !== 'allergy').map((c) => ({ id: c.id, name: c.name })),
+        allergies: named.filter((c) => c.kind === 'allergy').map((c) => ({ id: c.id, name: c.name })),
         medications: ((must(meds) as { id: string; name: string; stopped_on: string | null }[] | null) ?? []).map((m) => ({ id: m.id, name: m.name, stoppedOn: m.stopped_on })),
       };
     },
@@ -1566,7 +1574,9 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
     async removeDocument(id) {
       const { data: path, error } = await db.rpc('remove_document', { p_document: id });
       if (error) throw error;
-      if (typeof path === 'string') await db.storage.from('documents').remove([path]);
+      // Null means nothing was removed: not hers, or not a document of this kind.
+      if (typeof path !== 'string') throw new Error('That document could not be removed.');
+      await db.storage.from('documents').remove([path]);
     },
     async removeLabReport(id) {
       const { data: path, error } = await db.rpc('remove_lab_report', { p_document: id });

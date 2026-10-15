@@ -124,7 +124,17 @@ export const foldName = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim
 export type Existing = {
   conditions: { id: string; name: string }[];
   medications: { id: string; name: string; stoppedOn: string | null }[];
+  allergies?: { id: string; name: string }[];
 };
+
+// What she already has under a name, for the kind of item it is.
+function matchExisting(target: Target, name: string, existing: Existing): string | null {
+  const f = foldName(name);
+  if (target === 'conditions') return existing.conditions.find((c) => foldName(c.name) === f)?.id ?? null;
+  if (target === 'allergies') return (existing.allergies ?? []).find((a) => foldName(a.name) === f)?.id ?? null;
+  if (target === 'medications' || target === 'stop_medications') return existing.medications.find((m) => foldName(m.name) === f && !m.stoppedOn)?.id ?? null;
+  return null;
+}
 
 export type Target = 'conditions' | 'allergies' | 'medications' | 'stop_medications' | 'procedures' | 'referrals' | 'insurance';
 
@@ -146,6 +156,9 @@ export type ReviewItem = {
   keep: boolean;
   existingId: string | null;
   value: Record<string, string | null>;
+  // Where in the document it came from ("visit.diagnoses.0"), so her
+  // edits can be carried back into the saved reading.
+  source?: string;
 };
 
 const join = (...parts: (string | null | undefined)[]) => parts.filter(Boolean).join(', ') || null;
@@ -153,33 +166,76 @@ const join = (...parts: (string | null | undefined)[]) => parts.filter(Boolean).
 export function reviewItems(scan: DocumentScan, existing: Existing): ReviewItem[] {
   const items: ReviewItem[] = [];
   let n = 0;
-  const push = (target: Target, title: string, detail: string | null, value: Record<string, string | null>, existingId: string | null = null) =>
-    items.push({ key: `i${n++}`, target, title, detail, keep: true, existingId, value });
-  const condition = (name: string) => existing.conditions.find((c) => foldName(c.name) === foldName(name))?.id ?? null;
-  const medication = (name: string) => existing.medications.find((m) => foldName(m.name) === foldName(name) && !m.stoppedOn)?.id ?? null;
-  const addMed = (m: DocMed) =>
-    push('medications', m.name, join(m.strength, m.dose, m.frequency, m.route), { ...m, name: m.name }, medication(m.name));
+  const push = (target: Target, title: string, detail: string | null, value: Record<string, string | null>, existingId: string | null, source: string) =>
+    items.push({ key: `i${n++}`, target, title, detail, keep: true, existingId, value, source });
+  const medItem = (target: 'medications' | 'stop_medications', m: DocMed, source: string) =>
+    push(target, m.name, target === 'medications' ? join(m.strength, m.dose, m.frequency, m.route) : join(m.strength, m.dose), { ...m, name: m.name }, matchExisting(target, m.name, existing), source);
 
   const v = scan.visit;
   if (v) {
-    for (const d of v.diagnoses) push('conditions', d.name, d.status === 'new' ? 'New diagnosis' : null, { name: d.name, status: d.status }, condition(d.name));
-    for (const a of v.allergies) push('allergies', a.substance, a.reaction, { name: a.substance, reaction: a.reaction });
-    for (const m of [...v.medicationsStarted, ...v.medicationsChanged]) addMed(m);
-    for (const m of v.medicationsStopped) push('stop_medications', m.name, join(m.strength, m.dose), { ...m, name: m.name }, medication(m.name));
-    for (const p of v.procedures) push('procedures', p.name, p.date, { name: p.name, date: p.date });
-    for (const f of v.followUps) push('referrals', f.specialty, join(f.clinician, f.reason, f.when), { specialty: f.specialty, clinician: f.clinician, reason: f.reason, when: f.when, referredBy: scan.clinician });
+    v.diagnoses.forEach((d, i) => push('conditions', d.name, d.status === 'new' ? 'New diagnosis' : null, { name: d.name, status: d.status }, matchExisting('conditions', d.name, existing), `visit.diagnoses.${i}`));
+    v.allergies.forEach((a, i) => push('allergies', a.substance, a.reaction, { name: a.substance, reaction: a.reaction }, matchExisting('allergies', a.substance, existing), `visit.allergies.${i}`));
+    v.medicationsStarted.forEach((m, i) => medItem('medications', m, `visit.medicationsStarted.${i}`));
+    v.medicationsChanged.forEach((m, i) => medItem('medications', m, `visit.medicationsChanged.${i}`));
+    v.medicationsStopped.forEach((m, i) => medItem('stop_medications', m, `visit.medicationsStopped.${i}`));
+    v.procedures.forEach((p, i) => push('procedures', p.name, p.date, { name: p.name, date: p.date }, null, `visit.procedures.${i}`));
+    v.followUps.forEach((f, i) =>
+      push('referrals', f.specialty, join(f.clinician, f.reason, f.when), { specialty: f.specialty, clinician: f.clinician, reason: f.reason, when: f.when, referredBy: scan.clinician }, null, `visit.followUps.${i}`),
+    );
   }
-  if (scan.report) for (const c of scan.report.namedConditions) push('conditions', c, 'Named in the report', { name: c, status: 'unclear' }, condition(c));
-  if (scan.prescription) for (const m of scan.prescription.medications) addMed(m);
+  scan.report?.namedConditions.forEach((c, i) => push('conditions', c, 'Named in the report', { name: c, status: 'unclear' }, matchExisting('conditions', c, existing), `report.namedConditions.${i}`));
+  scan.prescription?.medications.forEach((m, i) => medItem('medications', m, `prescription.medications.${i}`));
   if (scan.referral?.specialty) {
     const r = scan.referral;
-    push('referrals', r.specialty!, join(r.clinician, r.reason), { specialty: r.specialty, clinician: r.clinician, reason: r.reason, referredBy: r.referredBy });
+    push('referrals', r.specialty!, join(r.clinician, r.reason), { specialty: r.specialty, clinician: r.clinician, reason: r.reason, referredBy: r.referredBy }, null, 'referral');
   }
   if (scan.insurance?.provider) {
     const i = scan.insurance;
-    push('insurance', i.provider!, join(i.plan, i.memberId ? `Member ${i.memberId}` : null), { provider: i.provider, plan: i.plan, memberId: i.memberId });
+    push('insurance', i.provider!, join(i.plan, i.memberId ? `Member ${i.memberId}` : null), { provider: i.provider, plan: i.plan, memberId: i.memberId }, null, 'insurance');
   }
   return items;
+}
+
+// The document as she kept and corrected it: items she switched off are
+// left out, and names she corrected are used. This is what is saved and
+// what the analysis reads; text she did not review is kept as read.
+export function editedScan(scan: DocumentScan, items: ReviewItem[]): DocumentScan {
+  const out = JSON.parse(JSON.stringify(scan)) as DocumentScan;
+  const drop = new Map<string, Set<number>>();
+  for (const item of items) {
+    if (!item.source) continue;
+    const parts = item.source.split('.');
+    if (parts.length === 3) {
+      const [section, list, idx] = parts;
+      const arr = (out as unknown as Record<string, Record<string, unknown[]>>)[section]?.[list];
+      const i = Number(idx);
+      if (!arr || !(i in arr)) continue;
+      if (!item.keep) {
+        const key = `${section}.${list}`;
+        drop.set(key, (drop.get(key) ?? new Set()).add(i));
+        continue;
+      }
+      const entry = arr[i];
+      if (typeof entry === 'string') arr[i] = item.title;
+      else if (entry && typeof entry === 'object') {
+        const e = entry as Record<string, unknown>;
+        const field = 'substance' in e ? 'substance' : 'specialty' in e && !('name' in e) ? 'specialty' : 'name';
+        e[field] = item.title;
+      }
+    } else if (item.source === 'referral' && out.referral) {
+      if (item.keep) out.referral.specialty = item.title;
+      else out.referral = null;
+    } else if (item.source === 'insurance' && out.insurance) {
+      if (item.keep) out.insurance.provider = item.title;
+      else out.insurance = null;
+    }
+  }
+  for (const [key, idxs] of drop) {
+    const [section, list] = key.split('.');
+    const holder = (out as unknown as Record<string, Record<string, unknown[]>>)[section];
+    holder[list] = holder[list].filter((_, i) => !idxs.has(i));
+  }
+  return out;
 }
 
 export type DocumentFilings = {
@@ -195,7 +251,7 @@ export type DocumentFilings = {
 // What save_document writes. New items are added; items she already has
 // are linked; a medication the document stops is stopped if she has it,
 // or added already stopped if she does not.
-export function buildFilings(items: ReviewItem[], docDate: string | null): DocumentFilings {
+export function buildFilings(items: ReviewItem[], docDate: string | null, today: string = new Date().toISOString().slice(0, 10)): DocumentFilings {
   const f: DocumentFilings = { conditions: [], allergies: [], medications: [], stop_medications: [], procedures: [], referrals: [], linked: [] };
   for (const i of items.filter((x) => x.keep && x.title.trim())) {
     const v = i.value;
@@ -206,7 +262,8 @@ export function buildFilings(items: ReviewItem[], docDate: string | null): Docum
         else f.conditions.push({ name, status: v.status === 'new' ? 'active' : 'unknown' });
         break;
       case 'allergies':
-        f.allergies.push({ name, reaction: v.reaction ?? null });
+        if (i.existingId) f.linked.push({ table: 'conditions', id: i.existingId });
+        else f.allergies.push({ name, reaction: v.reaction ?? null });
         break;
       case 'medications':
         if (i.existingId) f.linked.push({ table: 'medications', id: i.existingId });
@@ -217,7 +274,7 @@ export function buildFilings(items: ReviewItem[], docDate: string | null): Docum
           f.stop_medications.push({ id: i.existingId });
           f.linked.push({ table: 'medications', id: i.existingId });
         } else {
-          f.medications.push({ name, dose: join(v.strength, v.dose), started_on: null, stopped_on: docDate, route: v.route ?? null, prescriber: v.prescriber ?? null });
+          f.medications.push({ name, dose: join(v.strength, v.dose), started_on: null, stopped_on: docDate ?? today, route: v.route ?? null, prescriber: v.prescriber ?? null });
         }
         break;
       case 'procedures':
@@ -231,10 +288,24 @@ export function buildFilings(items: ReviewItem[], docDate: string | null): Docum
   return f;
 }
 
-export function insuranceFrom(items: ReviewItem[]): { provider: string; plan: string | null; member_id: string | null } | null {
+// Empty keys are left out rather than sent as null: the plan check on
+// profiles accepts a missing plan or member id, not a JSON null.
+// An item she renamed, matched again: a new name is something new unless
+// she already has it under that name.
+export function renameItem(item: ReviewItem, title: string, existing: Existing): ReviewItem {
+  const value = { ...item.value, name: title, ...(item.target === 'referrals' ? { specialty: title } : {}), ...(item.target === 'insurance' ? { provider: title } : {}) };
+  return { ...item, title, value, existingId: matchExisting(item.target, title, existing) };
+}
+
+export function insuranceFrom(items: ReviewItem[]): { provider: string; plan?: string; member_id?: string } | null {
   const i = items.find((x) => x.target === 'insurance' && x.keep);
-  if (!i || !i.value.provider) return null;
-  return { provider: i.value.provider, plan: i.value.plan ?? null, member_id: i.value.memberId ?? null };
+  const provider = i?.value.provider?.trim();
+  if (!i || !provider) return null;
+  return {
+    provider,
+    ...(i.value.plan?.trim() ? { plan: i.value.plan.trim() } : {}),
+    ...(i.value.memberId?.trim() ? { member_id: i.value.memberId.trim() } : {}),
+  };
 }
 
 // The scan as stored in documents.metadata.extraction: the function's own

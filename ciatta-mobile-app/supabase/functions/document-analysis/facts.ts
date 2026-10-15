@@ -53,3 +53,28 @@ export function readCycle(raw: unknown): DocFacts['record']['cycle'] {
   if (!c || day == null) return null;
   return { day, phase: typeof c.phase === 'string' && PHASES.includes(c.phase) ? c.phase : null, usual_length: int(c.usual_length, 15, 90) };
 }
+
+// Where a document says something is urgent: its instructions, findings
+// and impression. Not names: a facility called an emergency department is
+// not an urgent finding. The same in the app (src/lib/documentAnalysis.ts).
+export function urgentText(extraction: Record<string, unknown>): string {
+  const visit = (extraction.visit ?? {}) as Record<string, unknown>;
+  const report = (extraction.report ?? {}) as Record<string, unknown>;
+  const parts = [...(Array.isArray(visit.instructions) ? visit.instructions : []), report.findings, report.impression];
+  return parts.filter((x): x is string => typeof x === 'string').join(' \n ');
+}
+
+// Each medication the document names, with everything it printed for it.
+export function documentMedLines(extraction: Record<string, unknown>): { name: string; text: string }[] {
+  const visit = (extraction.visit ?? {}) as Record<string, unknown>;
+  const rx = (extraction.prescription ?? {}) as Record<string, unknown>;
+  const out: { name: string; text: string }[] = [];
+  for (const list of [visit.medications_started, visit.medications_stopped, visit.medications_changed, rx.medications]) {
+    for (const m of Array.isArray(list) ? list : []) {
+      if (typeof m?.name !== 'string') continue;
+      out.push({ name: m.name, text: [m.name, m.strength, m.dose, m.frequency, m.route].filter((x: unknown) => typeof x === 'string').join(' ') });
+    }
+  }
+  for (const line of Array.isArray(visit.instructions) ? visit.instructions : []) if (typeof line === 'string') out.push({ name: '', text: line });
+  return out;
+}

@@ -28,3 +28,7 @@ test('a stored row is read only in shape', () => {
 test('the printed analysis carries the label', () => {
   assert.match(docAnalysisHtml('Ultrasound', '2026-09-02', { analysis, model: 'gpt-4o', createdAt: '2026-10-15T00:00:00Z', factsHash: 'h' }), /Not a diagnosis/);
 });
+
+test('a facility or title with an urgent word in its name does not raise the banner', () => {
+  assert.deepEqual(documentUrgentLines({ facility: 'Mercy Emergency Department', title: 'Emergency Department Discharge', visit: { instructions: ['Rest and drink fluids.'] } }, null), []);
+});

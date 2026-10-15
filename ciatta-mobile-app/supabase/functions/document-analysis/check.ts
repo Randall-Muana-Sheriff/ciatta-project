@@ -5,8 +5,8 @@
 // that is not the document's own credited instruction, misses the
 // document's own urgent words, or runs long. Pure; tested from the app.
 
-import { changesMedication, doseMatches, fold, numbersIn, URGENT_WORDS } from '../_shared/textChecks.ts';
-import { type DocFacts, documentMeds, documentText } from './facts.ts';
+import { changesMedication, doseMatches, fold, medsNamed, numbersIn, URGENT_WORDS } from '../_shared/textChecks.ts';
+import { type DocFacts, documentMedLines, documentMeds, documentText, urgentText } from './facts.ts';
 
 export type DocAnalysis = {
   urgent: { item: string; reason: string; action: 'contact_today' | 'urgent_care' }[];
@@ -56,7 +56,7 @@ export function readDocAnalysis(json: unknown): DocAnalysis | null {
 
 const LIMITS = { terms: 12, findings: 12, patterns: 8, considerations: 6, next_steps: 8, questions: 10 } as const;
 // A sentence that credits an instruction to the document or its clinician.
-const CREDITED = /\b(your|the)\s+(visit summary|discharge (?:papers|summary|instructions)|summary|document|note|notes|report|prescription|clinician|doctor|care team)\b[^.]{0,40}\b(say|says|said|state|states|instruct|instructs|instructed|list|lists|tell|tells|told|recommend|recommends|recommended)\b|\baccording to (your|the)\b/i;
+const CREDITED = /\b(this|your|the)\s+(visit summary|discharge (?:papers|summary|instructions)|summary|document|note|notes|report|prescription|clinician|doctor|care team)\b[^.]{0,80}?\b(say|says|said|state|states|instruct|instructs|instructed|list|lists|listed|record|records|recorded|start|starts|started|stop|stops|stopped|note|notes|noted|prescribe|prescribes|prescribed|tell|tells|told|recommend|recommends|recommended)\b|\baccording to (your|the|this)\b/i;
 
 export function checkDocumentAnalysis(a: DocAnalysis, facts: DocFacts): string[] {
   const problems: string[] = [];
@@ -92,9 +92,16 @@ export function checkDocumentAnalysis(a: DocAnalysis, facts: DocFacts): string[]
   for (const p of a.patterns) for (const i of p.items) if (!known(i)) problems.push(`a pattern names ${i}, which is in neither the document nor her record`);
   for (const c of a.considerations) for (const i of c.items) if (!known(i)) problems.push(`a consideration names ${i}, which is in neither the document nor her record`);
 
-  const printedDoses = new Set(doseMatches(docText));
-  const allMeds = [...docMeds, ...r.medications, ...r.supplements];
-  const texts = [
+  const medLines = documentMedLines(facts.document.extraction);
+  const allMeds = [...new Set([...docMeds, ...r.medications, ...r.supplements])];
+  // A dose is allowed only as the document printed it, for that medication
+  // when the sentence names one.
+  const doseAllowed = (dose: string, sentence: string) => {
+    const named = medsNamed(sentence, allMeds);
+    const lines = named.length ? medLines.filter((l) => named.some((n) => fold(l.name) === fold(n) || (!l.name && fold(l.text).includes(fold(n))))) : medLines.length ? medLines : [{ name: '', text: docText }];
+    return lines.some((l) => doseMatches(l.text).includes(dose));
+  };
+  const texts: { text: string; question: boolean }[] = [
     a.summary,
     ...a.urgent.flatMap((u) => [u.item, u.reason]),
     ...a.terms.flatMap((t) => [t.term, t.meaning]),
@@ -102,21 +109,23 @@ export function checkDocumentAnalysis(a: DocAnalysis, facts: DocFacts): string[]
     ...a.patterns.flatMap((p) => [p.title, p.explanation]),
     ...a.considerations.flatMap((c) => [c.condition, c.how_confirmed]),
     ...a.next_steps.flatMap((n) => [n.step, n.reason]),
-    ...a.questions,
-  ];
-  for (const text of texts) {
+  ].map((text) => ({ text, question: false }));
+  for (const q of a.questions) texts.push({ text: q, question: true });
+  for (const { text, question } of texts) {
     for (const n of numbersIn(text)) if (!allowed.has(n)) problems.push(`the number ${n} is in no fact`);
-    for (const dose of doseMatches(text)) if (!printedDoses.has(dose)) problems.push(`it gives a dose (${dose}) the document did not print`);
-    for (const sentence of text.split(/(?<=[.!?])\s+/)) {
+    for (const sentence of text.split(/(?<=[.!?;])\s+/)) {
+      for (const dose of doseMatches(sentence)) if (!doseAllowed(dose, sentence)) problems.push(`it gives a dose (${dose}) the document did not print for that medication`);
+      // A question for her clinician asks; it does not advise.
+      if (question && sentence.trim().endsWith('?')) continue;
       if (!changesMedication(sentence, allMeds)) continue;
+      const named = medsNamed(sentence, allMeds);
       const credited = CREDITED.test(sentence);
-      // The document's own instruction: it names a medication the document lists.
-      const fromDocument = docMeds.some((m) => fold(sentence).includes(fold(m)));
+      const fromDocument = named.length > 0 && named.every((m) => docMeds.some((d) => fold(d) === fold(m)));
       if (!credited || !fromDocument) problems.push('it tells her to change a medication that the document does not instruct');
     }
   }
 
-  const urgentInDocument = URGENT_WORDS.test(docText);
+  const urgentInDocument = URGENT_WORDS.test(urgentText(facts.document.extraction));
   if (urgentInDocument && !a.urgent.length) problems.push('the document uses urgent words and nothing is marked urgent');
 
   for (const [key, max] of Object.entries(LIMITS)) {
