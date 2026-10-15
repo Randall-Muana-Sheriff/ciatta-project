@@ -452,3 +452,13 @@ enabled = true
 # (supabase/functions/provider-callback/bounce.ts).
 [functions.provider-callback]
 verify_jwt = false
+
+# Fasten Connect's webhook. Fasten is the caller and carries no Ciatta
+# session, so platform JWT verification is off; the function verifies
+# Fasten's Standard Webhooks signature over the raw body before reading
+# anything (supabase/functions/fasten-webhook/fasten.ts).
+[functions.fasten-webhook]
+verify_jwt = false
+
+[functions.fasten-connect]
+verify_jwt = true

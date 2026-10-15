@@ -183,6 +183,9 @@ async function sync(admin: any, uid: string, connectionId: string): Promise<Resp
     .maybeSingle();
   if (error) throw error;
   if (!conn) return json({ error: 'That connection was not found.' }, 404);
+  if (conn.source === 'fasten') {
+    return json({ error: 'This provider sends its records through Fasten, so there is nothing to update here.' }, 400);
+  }
 
   await admin
     .from('provider_connections')
@@ -382,6 +385,8 @@ async function syncDue(admin: any): Promise<Response> {
     const { data: due, error } = await admin
       .from('provider_connections')
       .select('id, user_id')
+      // Fasten connections arrive by webhook and hold no token to sync with.
+      .eq('source', 'smart')
       .in('status', ['active', 'connected'])
       .or(`sync_attempted_at.is.null,sync_attempted_at.lt.${dueBefore(new Date())}`)
       .order('sync_attempted_at', { ascending: true, nullsFirst: true })

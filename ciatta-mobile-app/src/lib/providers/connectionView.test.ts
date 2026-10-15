@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { Connection } from '../../data/providers';
-import { connectionLine, recordsSource, syncNote, updatedLine } from './connectionView';
+import { canUpdate, connectionLine, recordsSource, syncNote, updatedLine } from './connectionView';
 
 const c = (over: Partial<Connection> = {}): Connection => ({
   id: 'c1',
@@ -12,6 +12,7 @@ const c = (over: Partial<Connection> = {}): Connection => ({
   recordCount: 12,
   lastSyncedAt: null,
   lastError: null,
+  source: 'smart',
   ...over,
 });
 
@@ -95,4 +96,31 @@ test('no line here carries a dash or a hyphen', () => {
     recordsSource([c({ status: 'expired' })]).status,
   ];
   for (const line of lines) assert.ok(!/[—–-]/.test(line), line);
+});
+
+test('a Fasten connection waiting on its export says its records are on the way', () => {
+  assert.equal(
+    connectionLine(c({ source: 'fasten', status: 'connected', recordCount: 0 }), NOW),
+    'Getting your records. This usually takes a few minutes.',
+  );
+});
+
+test('a Fasten connection that failed says why', () => {
+  assert.equal(
+    connectionLine(c({ source: 'fasten', status: 'error', recordCount: 0, lastError: 'Your provider did not share any records.' }), NOW),
+    'Your provider did not share any records.',
+  );
+});
+
+test('a Fasten connection turned off at the provider keeps its records', () => {
+  assert.equal(
+    connectionLine(c({ source: 'fasten', status: 'revoked', recordCount: 4 }), NOW),
+    'Access was turned off at your provider. The records it already sent are kept.',
+  );
+});
+
+test('only SMART connections are asked for updates from the phone', () => {
+  assert.equal(canUpdate(c()), true);
+  assert.equal(canUpdate(c({ source: 'fasten' })), false);
+  assert.equal(canUpdate(c({ status: 'expired' })), false);
 });

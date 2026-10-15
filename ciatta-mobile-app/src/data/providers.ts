@@ -19,7 +19,7 @@ import { supabase } from '../lib/supabase';
 import { parseCompact } from '../lib/providers/brandsDirectory';
 import type { Endpoint } from '../lib/providers/directory';
 import type { ClinicalRecord } from '../lib/providers/fhirMap';
-import { canSync, providerName, type SyncFailure } from '../lib/providers/connectionView';
+import { canUpdate, providerName, type SyncFailure } from '../lib/providers/connectionView';
 import { parseEndpointBundle, withTestEndpoints } from '../lib/providers/epicDirectory';
 import {
   authorizeUrl,
@@ -203,6 +203,7 @@ export type Connection = {
   recordCount: number;
   lastSyncedAt: string | null;
   lastError: string | null;
+  source: 'smart' | 'fasten';
 };
 
 // Everything her connected hospitals have sent. Read as her, so RLS is
@@ -230,7 +231,7 @@ export async function loadConnections(): Promise<Connection[]> {
     .from('provider_connections')
     // The token columns are not in the grant, so they cannot be asked
     // for here even by mistake.
-    .select('id, endpoint_name, organization, status, record_count, last_synced_at, last_error')
+    .select('id, endpoint_name, organization, status, record_count, last_synced_at, last_error, source')
     .order('created_at', { ascending: false });
   if (error || !data) return [];
   return data.map((r) => ({
@@ -241,7 +242,21 @@ export async function loadConnections(): Promise<Connection[]> {
     recordCount: (r.record_count as number) ?? 0,
     lastSyncedAt: (r.last_synced_at as string | null) ?? null,
     lastError: (r.last_error as string | null) ?? null,
+    source: r.source === 'fasten' ? 'fasten' : 'smart',
   }));
+}
+
+// A Fasten session for her: the one time id the webhook will bind her
+// connections by, and the public id the search opens with. Nothing about
+// which provider she picks ever comes back through here.
+export type FastenStart = { ok: true; externalId: string; publicId: string } | { ok: false; message: string };
+
+export async function startFasten(): Promise<FastenStart> {
+  const { data, error } = await supabase.functions.invoke('fasten-connect', { body: { action: 'start' } });
+  if (error || typeof data?.externalId !== 'string' || typeof data?.publicId !== 'string') {
+    return { ok: false, message: await functionError(error, data, 'That did not start. Nothing was shared.') };
+  }
+  return { ok: true, externalId: data.externalId, publicId: data.publicId };
 }
 
 // Removes a provider: the connection, its records and its labs, on the
@@ -256,7 +271,7 @@ export async function disconnectProvider(connectionId: string): Promise<boolean>
 // holds the tokens. One at a time, and a failure does not stop the rest.
 export async function syncProviders(connections: readonly Connection[]): Promise<SyncFailure[]> {
   const failures: SyncFailure[] = [];
-  for (const c of connections.filter(canSync)) {
+  for (const c of connections.filter(canUpdate)) {
     const { data, error } = await supabase.functions.invoke('provider-connect', {
       body: { action: 'sync', connectionId: c.id },
     });

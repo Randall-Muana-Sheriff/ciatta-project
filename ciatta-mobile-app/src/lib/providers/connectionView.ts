@@ -26,8 +26,16 @@ export function updatedLine(lastSyncedAt: string | null, now: Date): string {
 export const canSync = (c: Connection) => c.status === 'active' || c.status === 'connected';
 export const needsReconnect = (c: Connection) => c.status === 'expired' || c.status === 'error';
 export const providerName = (c: Connection) => c.organization ?? c.endpointName;
+// Fasten connections arrive by webhook; there is no token on the phone's
+// side to ask for an update with.
+export const canUpdate = (c: Connection) => canSync(c) && c.source !== 'fasten';
 
 export function connectionLine(c: Connection, now: Date): string {
+  if (c.source === 'fasten') {
+    if (c.status === 'revoked') return 'Access was turned off at your provider. The records it already sent are kept.';
+    if (c.status === 'error' && c.lastError) return c.lastError;
+    if (c.status === 'connected' && c.recordCount === 0) return 'Getting your records. This usually takes a few minutes.';
+  }
   if (needsReconnect(c)) return 'Needs connecting again. The records it already sent are kept.';
   if (c.recordCount === 0) return 'Connected. Nothing has arrived yet.';
   return `${records(c.recordCount)}. ${c.lastError ?? updatedLine(c.lastSyncedAt, now)}`;

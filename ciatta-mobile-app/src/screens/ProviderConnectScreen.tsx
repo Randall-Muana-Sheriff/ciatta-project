@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { connectProvider, loadConnections, loadDirectory, showsTestProviders } from '../data/providers';
+import { FastenConnectSheet } from './FastenConnectSheet';
 import { clientIds as readClientIds, setClientId } from '../data/providerAccess';
 import { type ClientIds, clientFor } from '../lib/providers/clientChoice';
 import type { Endpoint } from '../lib/providers/directory';
@@ -37,6 +38,7 @@ export function ProviderConnectScreen() {
   const [picked, setPicked] = useState<Endpoint | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [message, setMessage] = useState('');
+  const [fastenOpen, setFastenOpen] = useState(false);
   // Read rather than compiled in, so a registration approved today works
   // today. Null while the read is in flight, which is not the same as
   // absent and must not render as it.
@@ -86,6 +88,29 @@ export function ProviderConnectScreen() {
   return (
     <>
       <DetailScreen title="Find your health institution" onBack={nav.back}>
+      {/*
+        Two ways in, side by side. Epic's MyChart through Ciatta's own
+        connection, searched below; everything else through Fasten.
+      */}
+      <View style={s.ways}>
+        <View style={s.way}>
+          <Text style={[font('subhead', 'semibold'), s.rowName]}>Epic (MyChart)</Text>
+          <Text style={[font('caption1'), s.place]}>Most hospitals and clinics using MyChart. Search below.</Text>
+        </View>
+        <Pressable
+          onPress={() => setFastenOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Other providers and insurers"
+          style={({ pressed }) => [s.way, s.wayAction, pressed && s.pressed]}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={[font('subhead', 'semibold'), s.rowName]}>Other providers and insurers</Text>
+            <Text style={[font('caption1'), s.place]}>Hospitals, clinics, labs and insurance plans</Text>
+          </View>
+          <Icon name="chevronRight" size={15} color={G.meta} />
+        </Pressable>
+      </View>
+
       <View style={s.searchWrap}>
         <Icon name="search" size={18} color={G.meta} />
         <TextInput
@@ -150,6 +175,16 @@ export function ProviderConnectScreen() {
         />
       ))}
       </DetailScreen>
+
+      <FastenConnectSheet
+        visible={fastenOpen}
+        onClose={(connected) => {
+          setFastenOpen(false);
+          if (connected) {
+            setMessage('Connected. Your records are on their way and usually arrive within a few minutes, under Your providers.');
+          }
+        }}
+      />
 
       {/*
         A sheet over the search, not a screen replacing it. She is one tap
@@ -435,6 +470,15 @@ const s = StyleSheet.create({
     overflow: 'hidden',
   },
   search: { flex: 1, color: G.ink },
+  ways: { flexDirection: 'row', gap: SPACE.grid, marginHorizontal: GUTTER, marginBottom: SPACE.near },
+  way: {
+    flex: 1,
+    padding: 14,
+    borderRadius: TILE_RADIUS,
+    backgroundColor: G.fill,
+    overflow: 'hidden',
+  },
+  wayAction: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: G.card },
 
   centre: { alignItems: 'center', gap: 10, paddingVertical: SPACE.block },
   note: { color: G.meta, marginHorizontal: GUTTER, marginTop: 12, lineHeight: 19 },

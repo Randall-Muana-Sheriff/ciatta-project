@@ -33,6 +33,7 @@ test('the export says what it is, what each part holds, and what could not be re
     { table: 'food_scan_uses', reason: 'A count of meal scans per day, kept on the server only to limit scans to 40 a day.' },
     { table: 'lab_scan_uses', reason: 'A count of lab reports read per day, kept on the server only to limit them to 20 a day.' },
     { table: 'lab_analysis_uses', reason: 'A count of lab report analyses per day, kept on the server only to limit them to 20 a day.' },
+    { table: 'fasten_connect_requests', reason: 'A one time code for connecting a provider through Fasten, kept for two hours and never information about you.' },
   ]);
   assert.match(out.about.files, /on this phone/);
   assert.match(out.about.files, /lab report/i, 'lab report originals are kept in her account, and the export says so');
