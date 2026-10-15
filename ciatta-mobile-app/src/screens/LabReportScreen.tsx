@@ -5,13 +5,15 @@
 
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Polyline } from 'react-native-svg';
 
 import { displayCopy } from '../lib/displayCopy';
 import { chooseLab, chosenReport } from '../lib/labHandoff';
 import { countLine, reportPanels, reportResults } from '../lib/labReport';
-import { changeSinceLast, type LabResult, labDay, labHistory, labStatus } from '../lib/labs';
+import { SYSTEM_DOTS, WHOLE_BODY } from '../lib/bodyMap';
+import { changeSinceLast, isOutside, type LabResult, labDay, labHistory, labStatus } from '../lib/labs';
+import { reportSystems } from '../lib/labSystems';
 import { useNav } from '../navigation';
 import { useRepo } from '../state/session';
 import { font } from '../theme';
@@ -20,7 +22,8 @@ import { CardFill } from '../ui/cardFill';
 import { DetailScreen, EmptyNote, SecondaryButton } from '../ui/kit';
 import { LabRangeBar, LabStatusTag, STATUS_COLOR } from '../ui/labs';
 import { G } from '../ui/scheme';
-import { L, SPACE, TILE_RADIUS } from '../ui/surface';
+import { images } from '../ui/images';
+import { HUE, L, SPACE, TILE_RADIUS } from '../ui/surface';
 
 const MINI_H = 44;
 
@@ -43,6 +46,72 @@ function MiniTrend({ history }: { history: LabResult[] }) {
           ))}
         </Svg>
       ) : null}
+    </View>
+  );
+}
+
+const FIGURE_H = 300;
+const FIGURE_W = FIGURE_H * (850 / 1850);
+
+// The figure with a dot for each system this report touches, ringed where
+// a result is outside its range, and a row per system that opens its
+// results. Tests in no system are listed under Whole Body.
+function BodySystems({ results }: { results: LabResult[] }) {
+  const { systems, whole } = useMemo(() => reportSystems(results), [results]);
+  const [open, setOpen] = useState<string | null>(null);
+  if (!systems.length && !whole.length) return null;
+  const rows = [...systems.map((x) => ({ key: x.system, results: x.results, flagged: x.flagged })), ...(whole.length ? [{ key: WHOLE_BODY, results: whole, flagged: whole.some(isOutside) }] : [])];
+  return (
+    <View style={{ marginTop: SPACE.block }}>
+      <Eyebrow>Body systems</Eyebrow>
+      <View style={[s.card, s.bodyCard]}>
+        <CardFill />
+        <View style={{ width: FIGURE_W, height: FIGURE_H }}>
+          <Image source={images.body} style={{ width: FIGURE_W, height: FIGURE_H, opacity: 0.85 }} resizeMode="contain" accessibilityIgnoresInvertColors />
+          {systems.map((x) => {
+            const dot = SYSTEM_DOTS[x.system];
+            if (!dot) return null;
+            return (
+              <View
+                key={x.system}
+                style={[
+                  s.dot,
+                  { left: (dot.x / 100) * FIGURE_W - 7, top: (dot.y / 100) * FIGURE_H - 7, backgroundColor: dot.color },
+                  x.flagged && { borderColor: HUE.attention, borderWidth: 3 },
+                ]}
+              />
+            );
+          })}
+        </View>
+        <View style={{ flex: 1 }}>
+          {rows.map((row, n) => (
+            <View key={row.key}>
+              <Pressable
+                onPress={() => setOpen((o) => (o === row.key ? null : row.key))}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: open === row.key }}
+                style={({ pressed }) => [s.sysRow, n > 0 && s.divided, pressed && { opacity: 0.6 }]}
+              >
+                <View style={[s.swatch, { backgroundColor: SYSTEM_DOTS[row.key]?.color ?? L.meta }]} />
+                <Text style={[font('subhead'), s.ink, { flex: 1 }]}>{row.key}</Text>
+                <Text style={[font('caption1'), row.flagged ? s.flag : s.meta]}>
+                  {row.flagged ? `${row.results.filter(isOutside).length} outside` : `${row.results.length}`}
+                </Text>
+              </Pressable>
+              {open === row.key
+                ? row.results.map((r) => (
+                    <View key={r.id} style={s.sysResult}>
+                      <Text style={[font('caption1'), s.ink, { flex: 1 }]} numberOfLines={1}>
+                        {displayCopy(r.name)}
+                      </Text>
+                      <LabStatusTag result={r} small />
+                    </View>
+                  ))
+                : null}
+            </View>
+          ))}
+        </View>
+      </View>
     </View>
   );
 }
@@ -184,7 +253,7 @@ export function LabReportScreen() {
         </View>
       ) : null}
 
-      {/* PART 2 SECTIONS: body systems and cycle follow */}
+      <BodySystems results={results} />
 
       {key.documentId ? (
         <View style={{ marginTop: SPACE.section }}>
@@ -209,4 +278,10 @@ const s = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingVertical: 10 },
   cell: { width: '47%', gap: 2 },
+  bodyCard: { flexDirection: 'row', gap: 12, paddingVertical: 12 },
+  dot: { position: 'absolute', width: 14, height: 14, borderRadius: 7, borderWidth: 2, borderColor: 'rgba(255,255,255,0.85)' },
+  sysRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 9 },
+  swatch: { width: 8, height: 8, borderRadius: 4 },
+  flag: { color: HUE.attention },
+  sysResult: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingBottom: 8 },
 });
