@@ -1,7 +1,7 @@
 // One research insight, set as Lotus sets its articles: the photograph
 // across the top with the title on it and the Sources pill, then the
-// Highlights, the body, and how it connects to her own record. Discuss
-// takes it to the concierge. Sources open in a sheet, each named.
+// Highlights (her own context first), the body, and a Metrics view of the
+// numbers behind it. Discuss takes it to Ciatta. Sources open in a sheet, each named.
 
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
@@ -20,6 +20,14 @@ import { Sheet } from '../ui/Sheet';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
 import { CardPhoto } from '../ui/cardFill';
 import { G } from '../ui/scheme';
+import { SegmentedControl } from '../ui/kit';
+import { MetricTiles } from '../ui/MetricTiles';
+import { patternContext } from '../lib/patternContext';
+import { useAgentContext } from '../state/agentContext';
+import { JourneyScreen } from './JourneyScreen';
+
+const VIEWS = ['Insight', 'Metrics'] as const;
+const METRIC_VIEWS = ['Timeline', 'Each metric'] as const;
 
 export function InsightScreen() {
   const nav = useNav();
@@ -37,6 +45,12 @@ export function InsightView({ id, onClose, sheet = false }: { id: string | null;
   const insight = useMemo(() => library.find((i) => i.id === id) ?? null, [library, id]);
   const connections = matches.find((m) => m.insight.id === id)?.connections ?? [];
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  // What this pattern rests on in her record, and which metrics it is
+  // about, for the Insight view and the Metrics view.
+  const { context: agent } = useAgentContext();
+  const pattern = useMemo(() => patternContext(id ?? '', connections, agent), [id, connections, agent]);
+  const [view, setView] = useState<(typeof VIEWS)[number]>('Insight');
+  const [metricsView, setMetricsView] = useState<(typeof METRIC_VIEWS)[number]>('Timeline');
   if (!insight) return null;
 
   return (
@@ -74,6 +88,28 @@ export function InsightView({ id, onClose, sheet = false }: { id: string | null;
           </Pressable>
         </PhotoCard>
 
+        {/*
+          The pattern, or the numbers behind it. Metrics is the Journey
+          timeline, and a switch to each metric on its own.
+        */}
+        <View style={s.toggle}>
+          <SegmentedControl segments={VIEWS} active={view} onChange={setView} />
+        </View>
+
+        {view === 'Metrics' ? (
+          <View style={s.metrics}>
+            <View style={s.metricsSwitch}>
+              <SegmentedControl segments={METRIC_VIEWS} active={metricsView} onChange={setMetricsView} />
+            </View>
+            {metricsView === 'Timeline' ? (
+              <JourneyScreen embedded />
+            ) : (
+              <View style={s.tiles}>
+                <MetricTiles first={pattern.metrics} />
+              </View>
+            )}
+          </View>
+        ) : (
         <View style={s.body}>
           {/* Her say on it, so Ciatta shows more of what she finds useful. */}
           <View style={s.reactions}>
@@ -114,6 +150,25 @@ export function InsightView({ id, onClose, sheet = false }: { id: string | null;
             ) : null}
           </View>
           <Text style={[font('title2', 'semibold'), s.ink]}>Highlights</Text>
+          {/*
+            Her own context first: what this rests on in her record, her
+            readings against her usual and for how long, and where she is
+            in her cycle. Then what research says, which is about people
+            in general.
+          */}
+          {pattern.lines.length ? (
+            <View style={s.record}>
+              <CardPhoto />
+              <Text style={[font('headline'), s.ink]}>For you</Text>
+              {pattern.lines.map((c) => (
+                <View key={c} style={s.bullet}>
+                  <View style={[s.dot, s.dotYours]} />
+                  <Text style={[font('subhead'), s.recordLine, { flex: 1 }]}>{displayCopy(c)}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+          <Text style={[font('headline'), s.ink, { marginTop: 4 }]}>What research says</Text>
           {insight.highlights.map((h) => (
             <View key={h} style={s.bullet}>
               <View style={s.dot} />
@@ -122,21 +177,11 @@ export function InsightView({ id, onClose, sheet = false }: { id: string | null;
           ))}
           <Text style={[font('body'), s.paragraph]}>{displayCopy(insight.body)}</Text>
 
-          {connections.length ? (
-            <View style={s.record}>
-              <CardPhoto />
-              <Text style={[font('headline'), s.ink]}>In your record</Text>
-              {connections.map((c) => (
-                <Text key={c} style={[font('subhead'), s.recordLine]}>
-                  {displayCopy(c)}
-                </Text>
-              ))}
-            </View>
-          ) : null}
         </View>
+        )}
       </ScrollView>
 
-      {/* Discuss, as Lotus floats it: the concierge, asked about this. */}
+      {/* Discuss, as Lotus floats it: Ciatta, asked about this. */}
       <Pressable
         onPress={() => {
           askCare(discussPrompt(insight.title));
@@ -194,6 +239,11 @@ const s = StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: HUE.reported, marginTop: 9 },
   bulletText: { color: G.ink, flex: 1, lineHeight: 26 },
   paragraph: { color: G.ink, lineHeight: 27, marginTop: 6 },
+  toggle: { paddingHorizontal: GUTTER, paddingTop: SPACE.near },
+  metrics: { paddingTop: SPACE.near },
+  metricsSwitch: { paddingHorizontal: GUTTER, marginBottom: SPACE.tight },
+  tiles: { paddingHorizontal: GUTTER, paddingTop: SPACE.tight },
+  dotYours: { backgroundColor: HUE.measured, marginTop: 7 },
   record: { marginTop: 8, padding: 16, gap: 6, borderRadius: TILE_RADIUS, backgroundColor: L.glass, overflow: 'hidden' },
   recordLine: { color: L.body, lineHeight: 21 },
   discuss: {

@@ -3,7 +3,9 @@
 // record, with how many sources stand behind it. Only the ones that
 // connect are shown.
 
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+
+import type { ResearchInsight } from '../lib/insights';
 
 import { displayCopy } from '../lib/displayCopy';
 import { useResearchInsights } from '../state/researchInsights';
@@ -74,60 +76,7 @@ export function InsightCards() {
             accessibilityLabel={`${insight.title}. ${insight.sources.length} sources`}
             style={({ pressed }) => [pressed && s.pressed]}
           >
-            <PhotoCard source={headingFor(insight.image)} style={s.card}>
-              <View style={s.cardTop}>
-                <Pressable
-                  onPress={() => react(insight.id, { saved: !of(insight.id).saved })}
-                  accessibilityRole="button"
-                  accessibilityLabel={of(insight.id).saved ? 'Remove from saved' : 'Save'}
-                  hitSlop={10}
-                >
-                  <Icon name="bookmark" size={20} color="#FFFFFF" filled={of(insight.id).saved} />
-                </Pressable>
-              </View>
-              <View style={{ flex: 1 }} />
-              <Text style={[font('title3', 'semibold'), s.title]} numberOfLines={4}>
-                {displayCopy(insight.title)}
-              </Text>
-              {connections[0] ? (
-                <Text style={[font('footnote'), s.connection]} numberOfLines={2}>
-                  {displayCopy(connections[0])}
-                </Text>
-              ) : null}
-              <View style={s.foot}>
-              <View style={[chip.pill, s.sources]}>
-                <View style={s.logos}>
-                  {[...new Set(insight.sources.map((x) => x.logo))].map((l, n) => (
-                    <View key={l} style={{ marginLeft: n ? -6 : 0 }}>
-                      <PublisherLogo logo={l} size={18} />
-                    </View>
-                  ))}
-                </View>
-                <Text style={[font('footnote'), chip.text]}>{`${insight.sources.length} ${insight.sources.length === 1 ? 'Source' : 'Sources'}`}</Text>
-                <Icon name="chevronRight" size={12} color="#FFFFFF" />
-              </View>
-              {/* What she thinks of it, which is what Ciatta learns from:
-                  up shows more like it, down stops showing it. */}
-              <View style={s.thumbs}>
-                {(['up', 'down'] as const).map((r) => {
-                  const on = of(insight.id).reaction === r;
-                  return (
-                    <Pressable
-                      key={r}
-                      onPress={() => react(insight.id, { reaction: on ? null : r })}
-                      accessibilityRole="button"
-                      accessibilityLabel={r === 'up' ? 'Show more like this' : 'Show less like this'}
-                      accessibilityState={{ selected: on }}
-                      hitSlop={8}
-                      style={[chip.round, on && chip.on]}
-                    >
-                      <Icon name={r === 'up' ? 'thumbUp' : 'thumbDown'} size={17} color={on ? '#0C0E11' : '#FFFFFF'} />
-                    </Pressable>
-                  );
-                })}
-              </View>
-              </View>
-            </PhotoCard>
+            <InsightCard insight={insight} connections={connections} style={s.card} />
           </Pressable>
         ))}
       </ScrollView>
@@ -137,6 +86,78 @@ export function InsightCards() {
         </Ground>
       </Modal>
     </View>
+  );
+}
+
+
+// One insight on its photograph: the finding, the line from her record it
+// connects to, its sources, and her say on it. Shared by the row on a
+// screen and the Insights sheet on Today.
+export function InsightCard({
+  insight,
+  connections,
+  style,
+}: {
+  insight: ResearchInsight;
+  connections: readonly string[];
+  style?: ViewStyle;
+}) {
+  const { react, of } = useInsightReactions();
+  return (
+    <PhotoCard source={headingFor(insight.image)} style={style}>
+      <View style={s.cardTop}>
+        <Pressable
+          onPress={() => react(insight.id, { saved: !of(insight.id).saved })}
+          accessibilityRole="button"
+          accessibilityLabel={of(insight.id).saved ? 'Remove from saved' : 'Save'}
+          hitSlop={10}
+        >
+          <Icon name="bookmark" size={20} color="#FFFFFF" filled={of(insight.id).saved} />
+        </Pressable>
+      </View>
+      <View style={{ flex: 1 }} />
+      <Text style={[font('title3', 'semibold'), s.title]} numberOfLines={4}>
+        {displayCopy(insight.title)}
+      </Text>
+      {connections[0] ? (
+        <Text style={[font('footnote'), s.connection]} numberOfLines={2}>
+          {displayCopy(connections[0])}
+        </Text>
+      ) : null}
+      <View style={s.foot}>
+      <View style={[chip.pill, s.sources]}>
+        <View style={s.logos}>
+          {[...new Set(insight.sources.map((x) => x.logo))].map((l, n) => (
+            <View key={l} style={{ marginLeft: n ? -6 : 0 }}>
+              <PublisherLogo logo={l} size={18} />
+            </View>
+          ))}
+        </View>
+        <Text style={[font('footnote'), chip.text]}>{`${insight.sources.length} ${insight.sources.length === 1 ? 'Source' : 'Sources'}`}</Text>
+        <Icon name="chevronRight" size={12} color="#FFFFFF" />
+      </View>
+      {/* What she thinks of it, which is what Ciatta learns from:
+          up shows more like it, down stops showing it. */}
+      <View style={s.thumbs}>
+        {(['up', 'down'] as const).map((r) => {
+          const on = of(insight.id).reaction === r;
+          return (
+            <Pressable
+              key={r}
+              onPress={() => react(insight.id, { reaction: on ? null : r })}
+              accessibilityRole="button"
+              accessibilityLabel={r === 'up' ? 'Show more like this' : 'Show less like this'}
+              accessibilityState={{ selected: on }}
+              hitSlop={8}
+              style={[chip.round, on && chip.on]}
+            >
+              <Icon name={r === 'up' ? 'thumbUp' : 'thumbDown'} size={17} color={on ? '#0C0E11' : '#FFFFFF'} />
+            </Pressable>
+          );
+        })}
+      </View>
+      </View>
+    </PhotoCard>
   );
 }
 

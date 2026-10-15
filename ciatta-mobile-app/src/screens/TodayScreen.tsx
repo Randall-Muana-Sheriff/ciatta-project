@@ -22,6 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { answerSave, checkIn } from '../../supabase/functions/_shared/checkIn';
 import { groupItems } from '../lib/agent/logOffer';
 import { CiattaCard } from '../ui/CiattaCard';
+import { InsightsSheet } from '../ui/InsightsSheet';
 import { JourneyScreen } from './JourneyScreen';
 import { useInsights } from '../state/insights';
 import { useData, useRepo, useSession } from '../state/session';
@@ -303,42 +304,32 @@ export function TodayScreen() {
   const helloSize = fitTitle(hello, screenWidth - GUTTER * 2);
 
   return (
+    <View style={t.fill}>
     <ScrollView style={t.fill} contentContainerStyle={t.body}>
-      {/*
-        The concept's shape: the mark sits alone at the top of the screen
-        and the day introduces itself underneath.
-      */}
-      {/*
-        The mark centred, the hamburger on the right. Both sides of the row
-        reserve the same width, because a wordmark pushed off centre by one
-        button is a wordmark set incorrectly.
-      */}
-      <View style={t.wordmarkRow}>
-        {/* Profile lives in the corner menu now; the space stays so the
-            wordmark stays centred. */}
-        <View style={t.menu} />
-        <Wordmark />
-        <Pressable
-          onPress={go('calendar')}
-          accessibilityRole="button"
-          accessibilityLabel="Your calendar"
-          hitSlop={10}
-          style={({ pressed }) => [t.menu, pressed && t.pressed]}
-        >
-          <Icon name="calendar" size={25} color={G.ink} />
-        </Pressable>
-      </View>
 
       <View style={t.pad}>
         {/* One row on every phone, the whole name shown: Title 1 where it fits, sized
             down from the screen's width for a long name. */}
-        <Text
-          style={[font('title1', 'medium'), t.hello, { fontSize: helloSize, lineHeight: Math.round(helloSize * 1.2) }]}
-          accessibilityRole="header"
-          numberOfLines={1}
-        >
-          {hello}
-        </Text>
+        {/* No wordmark: her name is the top of the screen, with the
+            calendar beside it. */}
+        <View style={t.helloRow}>
+          <Text
+            style={[font('title1', 'medium'), t.hello, { flex: 1, fontSize: helloSize, lineHeight: Math.round(helloSize * 1.2) }]}
+            accessibilityRole="header"
+            numberOfLines={1}
+          >
+            {hello}
+          </Text>
+          <Pressable
+            onPress={go('calendar')}
+            accessibilityRole="button"
+            accessibilityLabel="Your calendar"
+            hitSlop={10}
+            style={({ pressed }) => [t.menu, pressed && t.pressed]}
+          >
+            <Icon name="calendar" size={25} color={G.ink} />
+          </Pressable>
+        </View>
 
         {state.state === 'empty' ? (
           <TodayStart
@@ -351,16 +342,11 @@ export function TodayScreen() {
         ) : (
           <>
         {/*
-          Ciatta first: the check in when today gives a reason, then what
-          Ciatta noticed. What she could try is Plans & Protocols, in the
-          corner menu.
+          Ciatta first: the check in when today gives a reason. What
+          Ciatta noticed is the Insights sheet below; what she could try is
+          Plans & Protocols, in the corner menu.
         */}
         <CiattaCard checkIn={question} onAnswer={answerCheckIn} answered={checkInNote}>
-        {state.state === 'content' ? (
-          <View style={t.section}>
-            <InsightCards />
-          </View>
-        ) : null}
         </CiattaCard>
 
         {/* The conversation, one tap away: talk or type, or ask. */}
@@ -374,188 +360,16 @@ export function TodayScreen() {
           <Icon name="mic" size={20} color={G.meta} />
         </Pressable>
 
-        {/*
-          Every visualization of her day in one card, behind one switch:
-          the day itself, the six metrics, her symptoms over time, and the
-          Journey timeline with the latest activity under it.
-        */}
-        <View style={t.headed}>
-          <SectionHeading
-            title="Today's patterns"
-            right={
-              <Pressable onPress={go('patterns')} accessibilityRole="button" accessibilityLabel="Open Today's patterns" hitSlop={8} style={t.all}>
-                <Text style={[font('subhead'), t.headRight]}>{now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
-                <Icon name="chevronRight" size={14} color={G.meta} />
-              </Pressable>
-            }
-          />
-        </View>
-        <View style={t.patternToggle}>
-          <SegmentedControl segments={CARD_VIEWS} active={cardView} onChange={chooseCardView} />
-        </View>
-        {cardView === 'Day' ? (
-        <Pressable
-          onPress={go('patterns')}
-          accessibilityRole="button"
-          accessibilityHint="Opens Today's patterns, with your Journey timeline"
-          style={({ pressed }) => [t.dayCard, pressed && t.cardPressed]}
-        >
-          <CardFill />
-          {/*
-            The day itself, from her wearable: two metrics at a time on the
-            day's hours, so one can be read against the other.
-          */}
-          {dayView.series.length ? (
-            <DayPair
-              view={dayView}
-              usual={{
-                hrv: usualFor('hrv', baselines)?.median,
-                oxygen_saturation: usualFor('spo2', baselines)?.median,
-              }}
-            />
-          ) : (
-            <Text style={[font('subhead'), t.dayEmpty]}>
-              Your day appears here as your watch or ring sends heart rate, HRV and steps.
-            </Text>
-          )}
-
-          {/*
-            Where she is in her cycle, under the day it belongs to. It
-            lives here rather than among the metrics because it is not a
-            metric: it is the context the day is read in, and it is the
-            one thing on this card she reported rather than a device
-            measured.
-          */}
-          <Pressable
-            disabled={!!cycleNow}
-            onPress={logCycle}
-            accessibilityRole={cycleNow ? undefined : 'button'}
-            accessibilityHint={cycleNow ? undefined : 'Opens Ciatta to tell it about your period'}
-            style={({ pressed }) => [t.cycleRow, pressed && !cycleNow ? t.pressed : null]}
-          >
-            <View>
-              <Text style={[font('caption1'), t.cycleKey]}>CYCLE</Text>
-              <Text style={[font('headline'), cycleNow ? t.cycleValue : t.cycleNone]}>
-                {cycleNow ? `Day ${cycleNow.day}` : 'No logged cycle'}
-              </Text>
-            </View>
-            {phaseText ? (
-              <Text style={[font('footnote', 'semibold'), t.phase]}>{phaseText}</Text>
-            ) : !cycleNow ? (
-              <Text style={[font('footnote', 'semibold'), t.phase]}>Log a period</Text>
-            ) : null}
-          </Pressable>
-        </Pressable>
-        ) : cardView === 'Metrics' ? (
-          <>
-            <View style={t.metricsHead}>
-          <SectionHeading
-            title="Metrics"
-            right={
-          <Pressable
-            onPress={go('metrics')}
-            accessibilityRole="button"
-            accessibilityLabel="All your metrics, as a dashboard or a list"
-            hitSlop={8}
-            style={({ pressed }) => [t.all, pressed && t.pressed]}
-          >
-            <Text style={[font('footnote', 'semibold'), t.allText]}>All</Text>
-            <Icon name="chevronRight" size={14} color={G.body} />
-          </Pressable>
-            }
-          />
-            </View>
-        {state.measured ? (
-        // One container on a photograph, and the six as frosted glass tiles
-        // over it.
-        <View style={t.metricsCard}>
-          <CardFill />
-          {/*
-            Six cards and nothing else. The card holds only metrics now:
-            the chart and the cycle moved up into Today's Patterns, where
-            the one is the day drawn and the other is the context it is
-            read in.
-          */}
-          <View style={t.grid}>
-            {headlineMetrics(days, vitals, new Date(), baselines).map((m) => (
-              <Pressable
-                key={m.key}
-                style={({ pressed }) => [chip.tile, t.gridCell, pressed && t.pressed]}
-                onPress={() => {
-                  chooseMetric(m.key as MetricKey);
-                  nav.push('metric');
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`${m.label}, ${m.value ?? 'not recorded today'}${m.note && m.value ? `, ${m.note}` : ''}`}
-                accessibilityHint="Opens this metric over time"
-              >
-                <MetricCard
-                  label={m.label}
-                  value={m.value}
-                  note={m.note}
-                  from={m.from}
-                  trend={m.trend}
-                  color={METRIC_HUE[m.key]}
-                  icon={METRIC_ICON[m.key]}
-                />
-              </Pressable>
-            ))}
-          </View>
-  
-          </View>
-        ) : (
-          // Nothing measured yet: one row that says how to fill this,
-          // rather than six cards reading Not yet.
-          <ListGroup light style={{ marginTop: SPACE.tight }}>
-            <ListRow
-              light
-              first
-              icon="heart"
-              title={connecting ? 'Connecting' : 'Connect a Source'}
-              sub={connectNote ?? 'Connect Apple Health to see your sleep, HRV, steps and more each day.'}
-              onPress={connecting ? undefined : () => void connect()}
-            />
-          </ListGroup>
-        )}
-          </>
-        ) : cardView === 'Symptoms' ? (
-          state.state === 'content' ? (
-            <SymptomCompare
-              strip={strip}
-              range={stripRange}
-              onRange={setStripRange}
-              seen={seen}
-              days={days}
-              chosen={chosen}
-              onChoose={setChosen}
-              onAll={go('symptoms')}
-            />
-          ) : (
-            <View style={t.dayCard}>
-              <CardFill />
-              <Text style={[font('subhead'), t.dayEmpty]}>Your symptoms appear here once you tell Ciatta about them.</Text>
-            </View>
-          )
-        ) : (
-          <>
-            <View style={[t.dayCard, t.journeyCard]}>
-              <CardFill />
-              <JourneyScreen embedded />
-            </View>
-            {state.state === 'content' ? (
-              <View style={t.section}>
-            <LatestActivity />
-              </View>
-            ) : null}
-          </>
-        )}
-
         {/* The period product she has in, only while one is in. */}
         <ProductNowCard />
           </>
         )}
       </View>
     </ScrollView>
+    {/* What Ciatta noticed today, resting over the lower screen and
+        sliding up to show every pattern. */}
+    {state.state === 'content' ? <InsightsSheet /> : null}
+    </View>
   );
 }
 
@@ -614,6 +428,7 @@ const t = StyleSheet.create({
     overflow: 'hidden',
   },
   askText: { flex: 1, color: G.meta },
+  helloRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   metricsHead: { marginBottom: SPACE.tight },
   patternToggle: { marginBottom: 10 },
   // The timeline brings its own side padding, so the card adds none.
