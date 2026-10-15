@@ -111,13 +111,18 @@ export function AddLabsScreen() {
     }
   };
 
+  const [scanning, setScanning] = useState(false);
   const fromScan = async () => {
+    if (scanning) return;
+    setScanning(true);
     try {
       const scanned = await scanDocument();
       if (!scanned) return;
       await read(await new File(scanned.uri).base64(), 'pdf');
     } catch {
       setNote('The scan did not open. Try again.');
+    } finally {
+      setScanning(false);
     }
   };
 
@@ -220,7 +225,7 @@ export function AddLabsScreen() {
         <>
           <Lead style={s.lede} text={"Scan a paper report, or upload the PDF from your patient portal. Ciatta reads every page, then you check each line before anything is saved."} />
           <View style={{ gap: 12 }}>
-            {canScan ? <PrimaryButton label="Scan a Paper Report" onPress={() => void fromScan()} /> : null}
+            {canScan ? <PrimaryButton label="Scan a Paper Report" onPress={() => void fromScan()} disabled={scanning} /> : null}
             {canScan ? (
               <SecondaryButton label="Upload a PDF" onPress={() => void fromPdf()} />
             ) : (

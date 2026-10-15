@@ -21,6 +21,12 @@ public class DocumentScannerModule: Module {
         promise.resolve(nil)
         return
       }
+      // One scanner at a time: a second call would replace the session the
+      // open camera reports to, and its Save and Cancel would do nothing.
+      guard self.session == nil else {
+        promise.reject("E_BUSY", "The scanner is already open")
+        return
+      }
       guard let presenter = self.appContext?.utilities?.currentViewController() else {
         promise.reject("E_NO_VIEW", "There is no screen to show the scanner on")
         return
@@ -44,20 +50,30 @@ final class ScanSession: NSObject, VNDocumentCameraViewControllerDelegate {
   }
 
   func documentCameraViewController(_ controller: VNDocumentCameraViewController, didFinishWith scan: VNDocumentCameraScan) {
-    let pdf = PDFDocument()
-    for index in 0..<scan.pageCount {
-      if let page = PDFPage(image: Self.compressed(scan.imageOfPage(at: index))) {
-        pdf.insert(page, at: pdf.pageCount)
-      }
-    }
-    let url = FileManager.default.temporaryDirectory.appendingPathComponent("lab-scan-\(UUID().uuidString).pdf")
     controller.dismiss(animated: true) {
-      if pdf.pageCount > 0 && pdf.write(to: url) {
-        self.promise.resolve(["uri": url.absoluteString, "pages": pdf.pageCount])
-      } else {
-        self.promise.reject("E_WRITE", "The scan could not be saved")
+      // Built off the main thread, one page at a time, each page's images
+      // released before the next, so a long scan neither freezes the screen
+      // nor holds every full size page in memory at once.
+      DispatchQueue.global(qos: .userInitiated).async {
+        let pdf = PDFDocument()
+        for index in 0..<scan.pageCount {
+          autoreleasepool {
+            if let page = PDFPage(image: Self.compressed(scan.imageOfPage(at: index))) {
+              pdf.insert(page, at: pdf.pageCount)
+            }
+          }
+        }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("lab-scan-\(UUID().uuidString).pdf")
+        let written = pdf.pageCount > 0 && pdf.write(to: url)
+        DispatchQueue.main.async {
+          if written {
+            self.promise.resolve(["uri": url.absoluteString, "pages": pdf.pageCount])
+          } else {
+            self.promise.reject("E_WRITE", "The scan could not be saved")
+          }
+          self.finished()
+        }
       }
-      self.finished()
     }
   }
 
