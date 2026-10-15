@@ -124,3 +124,12 @@ export const SMART_TEST: Endpoint = {
   vendor: 'other',
   portalName: 'the SMART test login',
 };
+
+// The two test servers, at the front of the directory in test builds and
+// absent from production ones: synthetic patients must never be one tap
+// away from someone looking for her own hospital.
+export const TEST_ENDPOINTS: readonly Endpoint[] = [SANDBOX, SMART_TEST];
+
+export function withTestEndpoints(rows: Endpoint[], include: boolean): Endpoint[] {
+  return include ? [...TEST_ENDPOINTS, ...rows] : rows;
+}

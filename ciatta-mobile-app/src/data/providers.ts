@@ -20,7 +20,7 @@ import { parseCompact } from '../lib/providers/brandsDirectory';
 import type { Endpoint } from '../lib/providers/directory';
 import type { ClinicalRecord } from '../lib/providers/fhirMap';
 import { canSync, providerName, type SyncFailure } from '../lib/providers/connectionView';
-import { parseEndpointBundle, SANDBOX, SMART_TEST } from '../lib/providers/epicDirectory';
+import { parseEndpointBundle, withTestEndpoints } from '../lib/providers/epicDirectory';
 import {
   authorizeUrl,
   failureLine,
@@ -45,6 +45,10 @@ export const REDIRECT_URI = process.env.EXPO_PUBLIC_SMART_REDIRECT_URI?.trim() |
 // rather than bundled, because it changes and a stale hospital URL is a
 // connection that fails.
 const EPIC_DIRECTORY = 'https://open.epic.com/Endpoints/R4';
+
+// Development and preview builds. Production builds carry neither the
+// test servers nor the client id field.
+export const showsTestProviders = __DEV__ || process.env.EXPO_PUBLIC_TEST_PROVIDERS === '1';
 
 export type ConnectOutcome =
   | { ok: true; connectionId: string; written: number }
@@ -87,19 +91,19 @@ async function readCarried(): Promise<Endpoint[]> {
 export async function loadDirectory(): Promise<Endpoint[]> {
   carried ??= readCarried().catch(() => []);
   const rows = await carried;
-  if (rows.length) return [SANDBOX, SMART_TEST, ...rows];
+  if (rows.length) return withTestEndpoints(rows, showsTestProviders);
   // The carried file could not be read: fall back to Epic's live list of
   // health systems, which has no locations but is still every system.
   carried = null;
   try {
     const res = await fetch(EPIC_DIRECTORY, { headers: { Accept: 'application/json' } });
-    if (!res.ok) return [SANDBOX, SMART_TEST];
-    return [SANDBOX, SMART_TEST, ...parseEndpointBundle(await res.json(), 'epic', 'MyChart')];
+    if (!res.ok) return withTestEndpoints([], showsTestProviders);
+    return withTestEndpoints(parseEndpointBundle(await res.json(), 'epic', 'MyChart'), showsTestProviders);
   } catch {
-    // Offline, or the vendor moved the file. The sandbox still works and
-    // the screen says the rest of the directory could not be reached,
-    // rather than showing an empty search that looks like no match.
-    return [SANDBOX, SMART_TEST];
+    // Offline, or the vendor moved the file. The screen says the directory
+    // could not be reached, rather than showing an empty search that looks
+    // like no match.
+    return withTestEndpoints([], showsTestProviders);
   }
 }
 

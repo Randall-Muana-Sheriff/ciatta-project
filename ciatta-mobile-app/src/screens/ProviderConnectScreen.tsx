@@ -14,7 +14,7 @@ import { GroundLayer } from '../ui/Ground';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { connectProvider, loadConnections, loadDirectory } from '../data/providers';
+import { connectProvider, loadConnections, loadDirectory, showsTestProviders } from '../data/providers';
 import { clientIds as readClientIds, setClientId } from '../data/providerAccess';
 import { type ClientIds, clientFor } from '../lib/providers/clientChoice';
 import type { Endpoint } from '../lib/providers/directory';
@@ -115,13 +115,15 @@ export function ProviderConnectScreen() {
       ) : null}
 
       {/*
-        One row of real hospitals is the whole directory when the fetch
-        did not land. Said plainly, because an empty search otherwise
+        No real hospital in the directory means the fetch did not land
+        (test builds still list the test servers). Said plainly, because an empty search otherwise
         reads as "your hospital is not supported".
       */}
-      {directory !== null && directory.length <= 1 ? (
+      {directory !== null && directory.every(isSandbox) ? (
         <Text style={[font('caption1'), s.note]}>
-          The full directory could not be reached just now. You can still connect to the test server below.
+          {showsTestProviders
+            ? 'The full directory could not be reached just now. You can still connect to the test servers below.'
+            : 'The directory of hospitals and clinics could not be reached just now. Check your connection and try again.'}
         </Text>
       ) : null}
 
@@ -367,7 +369,7 @@ function ProviderSheet({
                     Ciatta is early, and is not yet registered with the provider networks that hospitals require, so
                     this cannot open yet. Nothing about your record has changed.
                   </Text>
-                  {showSetup ? (
+                  {!showsTestProviders ? null : showSetup ? (
                     <View style={s.setup}>
                       <Text style={[font('caption1'), s.note]}>
                         Paste the client ID from your provider registration. It is public rather than a secret, and it

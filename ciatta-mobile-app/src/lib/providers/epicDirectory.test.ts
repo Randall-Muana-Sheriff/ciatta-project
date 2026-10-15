@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { isSandbox, parseEndpointBundle, SANDBOX, SMART_TEST } from './epicDirectory';
+import { isSandbox, parseEndpointBundle, SANDBOX, SMART_TEST, TEST_ENDPOINTS, withTestEndpoints } from './epicDirectory';
 
 const bundle = (entry: unknown[]) => ({ resourceType: 'Bundle', entry });
 const ep = (over: Record<string, unknown>) => ({
@@ -101,4 +101,16 @@ test('the SMART test server signs in the test patient without a password', () =>
   assert.ok(launch[1]);
   assert.equal(launch[4], 1);
   assert.equal(launch[5], 1);
+});
+
+test('a test build lists the test servers first', () => {
+  const rows = withTestEndpoints([{ ...SANDBOX, id: 'mercy', name: 'Mercy Hospital' }], true);
+  assert.deepEqual(rows.slice(0, 2).map((r) => r.id), TEST_ENDPOINTS.map((r) => r.id));
+  assert.equal(rows.length, 3);
+});
+
+test('a production build never lists test data', () => {
+  const rows = withTestEndpoints([{ ...SANDBOX, id: 'mercy', name: 'Mercy Hospital' }], false);
+  assert.deepEqual(rows.map((r) => r.id), ['mercy']);
+  assert.ok(!rows.some(isSandbox));
 });
