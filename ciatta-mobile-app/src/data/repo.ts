@@ -41,6 +41,7 @@ import type { Referral } from '../lib/referrals';
 import type { BodyManual } from '../lib/overviewFacts';
 import type { SleepSample } from '../lib/hypnogram';
 import { type LabFlag, type LabResult, type LabScan, parseRange, readLabScan, type ScannedTest } from '../lib/labs';
+import { readStoredAnalysis, type StoredAnalysis } from '../lib/labAnalysis';
 import { records as sampleRecords } from './sample';
 import type { CareRequest, ClinicianRow } from '../lib/care';
 import { INSIGHTS, type InsightReaction, type ResearchInsight } from '../lib/insights';
@@ -209,6 +210,11 @@ export type Repo = {
   removeLabReport(id: string): Promise<void>;
   // A short lived private link to the report's original file.
   labReportFile(documentId: string): Promise<string | null>;
+  // The latest stored clinical AI analysis of a report, or null.
+  loadLabAnalysis(documentId: string): Promise<StoredAnalysis | null>;
+  // Asks for a new one. Throws with the function's own sentence when it
+  // could not be written or checked.
+  analyzeLabReport(documentId: string, cycle: { day: number; phase: string | null; usual_length: number | null } | null): Promise<StoredAnalysis>;
   // Her sleep stages since a moment, each with when it began and ended.
   loadSleepSamples(sinceIso: string): Promise<SleepSample[]>;
   // Her body measurements as she entered them, and her units.
@@ -335,6 +341,7 @@ export function demoRepo(): Repo {
   // The example person's labs, from the sample's draws.
   let labs: LabResult[] = sampleLabs();
   let demoReports: { id: string; on: string; checksum: string }[] = [];
+  const demoAnalyses = new Map<string, StoredAnalysis>();
   // The example person's insurance, as the sample shows it.
   let insurance: Insurance | null = { provider: 'Anthem', plan: 'PPO' };
   let view: JournalView = {
@@ -570,6 +577,33 @@ export function demoRepo(): Repo {
       return hit ? { id: hit.id, on: hit.on } : null;
     },
     labReportFile: async () => null,
+    loadLabAnalysis: async (documentId) => demoAnalyses.get(documentId) ?? null,
+    analyzeLabReport: async (documentId) => {
+      const rows = labs.filter((l) => l.documentId === documentId);
+      const flagged = rows.filter((l) => l.flag);
+      const stored: StoredAnalysis = {
+        analysis: {
+          urgent: [],
+          summary: `This example report has ${rows.length} results, ${flagged.length} flagged by the lab.`,
+          findings: flagged.map((l) => ({
+            test: l.name,
+            value: `${l.value ?? l.valueText}${l.unit ? ` ${l.unit}` : ''}`,
+            explanation: `${l.name} was flagged by the lab. In the real app a clinical AI analysis explains it here.`,
+            common_causes: [],
+            relevance: null,
+          })),
+          patterns: [],
+          considerations: [],
+          next_tests: [],
+          questions: ['What do these results mean for me?'],
+        },
+        model: 'example',
+        createdAt: new Date().toISOString(),
+        factsHash: '',
+      };
+      demoAnalyses.set(documentId, stored);
+      return stored;
+    },
     removeLabReport: async (id) => {
       demoReports = demoReports.filter((r) => r.id !== id);
       labs = labs.filter((l) => l.documentId !== id);
@@ -1255,6 +1289,28 @@ export function realRepo(db: SupabaseClient, userId: string): Repo {
       const { data, error } = await db.storage.from('documents').createSignedUrl(path, 600);
       if (error) return null;
       return data?.signedUrl ?? null;
+    },
+    async loadLabAnalysis(documentId) {
+      const rows = must(
+        await db.from('lab_analyses').select('analysis, model, created_at, facts_hash').eq('document_id', documentId).order('created_at', { ascending: false }).limit(1),
+      ) as unknown[] | null;
+      return readStoredAnalysis(rows?.[0] ?? null);
+    },
+    async analyzeLabReport(documentId, cycle) {
+      const { data, error } = await db.functions.invoke('lab-analysis', { body: { documentId, cycle } });
+      if (error) {
+        let sentence = 'The analysis could not be written just now.';
+        try {
+          const body = await (error as { context?: Response }).context?.json();
+          if (typeof body?.error === 'string') sentence = body.error;
+        } catch {
+          // Not JSON. The plain sentence stands.
+        }
+        throw new Error(sentence);
+      }
+      const stored = readStoredAnalysis(data);
+      if (!stored) throw new Error('The analysis could not be written just now.');
+      return stored;
     },
     async removeLabReport(id) {
       const { data: path, error } = await db.rpc('remove_lab_report', { p_document: id });

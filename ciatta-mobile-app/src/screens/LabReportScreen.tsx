@@ -5,14 +5,16 @@
 
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import * as Print from 'expo-print';
+import { Alert, Image, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Polyline } from 'react-native-svg';
 
 import { displayCopy } from '../lib/displayCopy';
 import { chooseLab, chosenReport } from '../lib/labHandoff';
 import { countLine, reportPanels, reportResults } from '../lib/labReport';
 import { SYSTEM_DOTS, WHOLE_BODY } from '../lib/bodyMap';
-import { changeSinceLast, isOutside, type LabResult, labDay, labHistory, labStatus } from '../lib/labs';
+import { ACTION_WORDS, ANALYSIS_LABEL, analysisHtml, analysisStale, criticalResults, type StoredAnalysis } from '../lib/labAnalysis';
+import { changeSinceLast, isOutside, type LabResult, labDay, labHistory, labStatus, testKey } from '../lib/labs';
 import { reportSystems } from '../lib/labSystems';
 import { countedWindows, estimatedPhaseLabel, medianLength } from '../lib/cycleModel';
 import { chosenRange, cycleDayAt, cycleLine, isCycleHormone, phaseRangeLine, phaseRanges } from '../lib/labCycle';
@@ -29,6 +31,27 @@ import { images } from '../ui/images';
 import { HUE, L, SPACE, TILE_RADIUS } from '../ui/surface';
 
 const MINI_H = 44;
+
+function AnalysisList({ title, items }: { title: string; items: { head: string; body: string; chip?: string }[] }) {
+  if (!items.length) return null;
+  return (
+    <View style={{ marginTop: SPACE.near }}>
+      <Text style={[font('footnote', 'semibold'), { color: G.body }]}>{title}</Text>
+      <View style={s.card}>
+        <CardFill />
+        {items.map((item, n) => (
+          <View key={`${item.head}${n}`} style={[s.row, n > 0 && s.divided]}>
+            <View style={s.top}>
+              <Text style={[font('subhead', 'semibold'), s.ink, { flex: 1 }]}>{displayCopy(item.head)}</Text>
+              {item.chip ? <Text style={[font('caption2', 'semibold'), s.chip]}>{displayCopy(item.chip)}</Text> : null}
+            </View>
+            {item.body ? <Text style={[font('subhead'), s.ink]}>{displayCopy(item.body)}</Text> : null}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
 
 function MiniTrend({ history }: { history: LabResult[] }) {
   const [width, setWidth] = useState(0);
@@ -134,6 +157,51 @@ export function LabReportScreen() {
   const { windows, profile } = useCycleInsights();
   const usual = useMemo(() => medianLength(countedWindows(windows, profile)), [windows, profile]);
   const cycle = useMemo(() => (key ? cycleDayAt(key.on, windows, usual) : null), [key, windows, usual]);
+  const [stored, setStored] = useState<StoredAnalysis | null>(null);
+  const [analysing, setAnalysing] = useState(false);
+  const [analysisNote, setAnalysisNote] = useState<string | null>(null);
+
+  const analyse = useCallback(async () => {
+    if (!key?.documentId || analysing) return;
+    setAnalysing(true);
+    setAnalysisNote(null);
+    try {
+      setStored(
+        await repo.analyzeLabReport(key.documentId, cycle ? { day: cycle.day, phase: cycle.phase, usual_length: usual } : null),
+      );
+    } catch (e) {
+      setAnalysisNote(e instanceof Error ? e.message : 'The analysis could not be written just now.');
+    } finally {
+      setAnalysing(false);
+    }
+  }, [key, analysing, repo, cycle, usual]);
+
+  // Read the stored analysis; write one the first time a report is opened.
+  useEffect(() => {
+    if (!key?.documentId || !labs) return;
+    let ignore = false;
+    repo
+      .loadLabAnalysis(key.documentId)
+      .then((s) => {
+        if (ignore) return;
+        if (s) setStored(s);
+        else void analyse();
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+    // analyse is stable enough for a once per report read; listing it would loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, labs, repo]);
+
+  const critical = useMemo(() => criticalResults(results), [results]);
+  const stale = stored && labs ? analysisStale(stored, results, labs) : false;
+  const share = useCallback(async () => {
+    if (!stored || !key) return;
+    const { uri } = await Print.printToFileAsync({ html: analysisHtml(key.lab ?? 'Lab report', key.on, stored) });
+    await Share.share({ url: uri, title: 'Lab report analysis' });
+  }, [stored, key]);
   const panels = useMemo(() => reportPanels(results), [results]);
   const trends = useMemo(
     () =>
@@ -190,6 +258,20 @@ export function LabReportScreen() {
     <DetailScreen title={key.lab ?? 'Lab Report'} onBack={nav.back}>
       <Text style={[font('caption1'), s.meta]}>{displayCopy(`Collected ${labDay(key.on)}`)}</Text>
       <Text style={[font('title3', 'semibold'), s.count]}>{displayCopy(countLine(results))}</Text>
+      {critical.length || stored?.analysis.urgent.length ? (
+        <View style={[s.card, s.urgent]}>
+          <CardFill />
+          <Text style={[font('headline'), s.urgentHead]}>Needs prompt attention</Text>
+          {(stored?.analysis.urgent.length
+            ? stored.analysis.urgent.map((u) => `${u.test} ${u.value}. ${u.reason} ${ACTION_WORDS[u.action]}.`)
+            : critical.map((r) => `${r.name} ${r.value ?? r.valueText}${r.unit ? ` ${r.unit}` : ''} was flagged as critical by the lab. Contact your clinician today.`)
+          ).map((line) => (
+            <Text key={line} style={[font('subhead'), s.ink, { marginTop: 4 }]}>
+              {displayCopy(line)}
+            </Text>
+          ))}
+        </View>
+      ) : null}
       {key.documentId ? (
         <Pressable onPress={() => void openOriginal()} accessibilityRole="button" hitSlop={8} style={({ pressed }) => pressed && { opacity: 0.6 }}>
           <Text style={[font('subhead', 'semibold'), s.link]}>View original</Text>
@@ -244,6 +326,13 @@ export function LabReportScreen() {
                     ) : null}
                   </View>
                 ) : null}
+                {stored?.analysis.findings
+                  .filter((f) => testKey(f.test) === testKey(r.name))
+                  .map((f) => (
+                    <Text key={f.test} style={[font('caption1'), s.finding]}>
+                      {displayCopy(f.explanation)}
+                    </Text>
+                  ))}
               </Pressable>
             ))}
           </View>
@@ -278,6 +367,43 @@ export function LabReportScreen() {
       <BodySystems results={results} />
 
       {key.documentId ? (
+        <View style={{ marginTop: SPACE.block }}>
+          <Eyebrow>Clinical AI analysis</Eyebrow>
+          <Text style={[font('footnote', 'semibold'), s.label]}>{ANALYSIS_LABEL}</Text>
+          {analysing ? <Text style={[font('subhead'), s.meta, { marginTop: 8 }]}>Analysing your report.</Text> : null}
+          {analysisNote ? <Text style={[font('subhead'), s.meta, { marginTop: 8 }]}>{displayCopy(analysisNote)}</Text> : null}
+          {stored ? (
+            <>
+              <Text style={[font('caption1'), s.meta, { marginTop: 4 }]}>
+                {displayCopy(`Written by ${stored.model} on ${labDay(stored.createdAt.slice(0, 10))} from the results above.`)}
+              </Text>
+              {stale ? <Text style={[font('subhead'), s.flagText, { marginTop: 8 }]}>Your results have changed since this was written.</Text> : null}
+              <View style={s.card}>
+                <CardFill />
+                <Text style={[font('body'), s.ink, { paddingVertical: 12 }]}>{displayCopy(stored.analysis.summary)}</Text>
+              </View>
+              <AnalysisList title="Findings" items={stored.analysis.findings.map((f) => ({ head: `${f.test}, ${f.value}`, body: [f.explanation, f.common_causes.length ? `Common causes: ${f.common_causes.join(', ')}.` : '', f.relevance ?? ''].filter(Boolean).join(' ') }))} />
+              <AnalysisList title="Patterns" items={stored.analysis.patterns.map((p) => ({ head: p.title, body: `${p.explanation} (${p.tests.join(', ')})` }))} />
+              <AnalysisList
+                title="Conditions to consider"
+                items={stored.analysis.considerations.map((c) => ({ head: c.condition, chip: `${c.confidence} confidence`, body: `How it is confirmed: ${c.how_confirmed} Based on ${c.tests.join(', ')}.` }))}
+              />
+              <AnalysisList title="Suggested next tests" items={stored.analysis.next_tests.map((n) => ({ head: n.test, body: n.reason }))} />
+              <AnalysisList title="Questions for your clinician" items={stored.analysis.questions.map((q) => ({ head: q, body: '' }))} />
+              <View style={{ marginTop: SPACE.near, gap: 12 }}>
+                <SecondaryButton label="Share or Print" onPress={() => void share()} />
+                {stale ? <SecondaryButton label="Analyze Again" onPress={() => void analyse()} /> : null}
+              </View>
+            </>
+          ) : !analysing ? (
+            <View style={{ marginTop: SPACE.near }}>
+              <SecondaryButton label="Analyze This Report" onPress={() => void analyse()} />
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+
+      {key.documentId ? (
         <View style={{ marginTop: SPACE.section }}>
           <SecondaryButton label="Remove This Report" onPress={remove} />
         </View>
@@ -298,6 +424,12 @@ const s = StyleSheet.create({
   row: { paddingVertical: 12, gap: 6 },
   divided: { borderTopWidth: st, borderTopColor: G.rule },
   top: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  urgent: { borderWidth: 1, borderColor: HUE.escalation, paddingVertical: 12, marginTop: SPACE.near },
+  urgentHead: { color: HUE.escalation },
+  finding: { color: L.body, lineHeight: 18 },
+  label: { color: G.ink, marginTop: 4 },
+  flagText: { color: HUE.attention },
+  chip: { color: L.meta, borderWidth: 1, borderColor: L.rule, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, overflow: 'hidden' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingVertical: 10 },
   cell: { width: '47%', gap: 2 },
   bodyCard: { flexDirection: 'row', gap: 12, paddingVertical: 12 },
