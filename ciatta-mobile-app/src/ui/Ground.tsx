@@ -29,12 +29,15 @@ export function Ground({
   from = 'measured',
   to = 'timeDepth',
   today = false,
+  white = false,
 }: {
   children?: ReactNode;
   from?: GroundHue;
   to?: GroundHue;
   // Today alone has its sky: #87CEFA and white, soft and grained.
   today?: boolean;
+  // Plain white, for the body view on Today.
+  white?: boolean;
 }) {
   // Hands each card on this screen its own place in the photo pool, in the
   // order the cards mount, so no two cards on a screen share a background
@@ -44,7 +47,13 @@ export function Ground({
   return (
     <PairContext.Provider value={{ from, to, next }}>
       <View style={s.fill}>
-        {today ? <TodaySky /> : <GroundGlow from={from} to={to} />}
+        {white && G.mode === 'light' ? (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF' }]} pointerEvents="none" />
+        ) : today ? (
+          <TodaySky />
+        ) : (
+          <GroundGlow from={from} to={to} />
+        )}
         {children}
       </View>
     </PairContext.Provider>

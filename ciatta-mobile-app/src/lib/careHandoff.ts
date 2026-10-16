@@ -31,6 +31,18 @@ export function onCareAsk(listener: (prompt: string, files: Files) => void): () 
   return () => listeners.delete(listener);
 }
 
+// A line Ciatta opens the chat with, such as Report symptom asking what
+// she is feeling. Read once by the chat when it opens.
+let greeting: string | null = null;
+export const greetCare = (line: string) => {
+  greeting = line;
+};
+export const takeCareGreeting = (): string | null => {
+  const g = greeting;
+  greeting = null;
+  return g;
+};
+
 // Which request or clinician a pushed screen opens on. Navigation carries
 // a screen name only, so the choice is left here first and read once.
 export type RequestOpen = { id?: string; draft?: { kind: import('./care').RequestKind; tests?: string[]; medication?: string; clinician?: string | null } };

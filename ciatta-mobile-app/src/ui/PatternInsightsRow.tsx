@@ -47,7 +47,7 @@ export function PatternInsightsRow() {
               accessibilityLabel={`${insight.title}. Opens this pattern`}
               style={({ pressed }) => [r.card, { width: cardWidth }, pressed && r.pressed]}
             >
-              <CardFill />
+              <CardFill glow />
               <View style={{ flex: 1 }} />
               <Text style={[font('headline'), r.title]} numberOfLines={4}>
                 {displayCopy(insight.title)}

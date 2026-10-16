@@ -202,7 +202,7 @@ export function Root() {
 
   return (
     <NavContext.Provider value={nav}>
-      <Ground from={TAB_GROUND[tab][0]} to={TAB_GROUND[tab][1]} today={tab === 'today' && !top}>
+      <Ground from={TAB_GROUND[tab][0]} to={TAB_GROUND[tab][1]} today={tab === 'today' && !top} white={tab === 'today' && !top && bodyOpen}>
         {/* The chat is on white paper, up under the status bar too. */}
         <View style={[r.root, { paddingTop: insets.top }, top === 'ciatta' && r.paper]}>
         <View style={r.fill} key={top ? `${tab}:${stack.length}:${top}` : tab}>

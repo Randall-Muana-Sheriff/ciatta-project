@@ -143,7 +143,7 @@ const SOURCE_COLOR: Record<string, string> = {
 
 const c = StyleSheet.create({
   wrap: { marginTop: 28 },
-  card: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 16, gap: 10, overflow: 'hidden' },
+  card: { backgroundColor: L.glass, borderRadius: TILE_RADIUS, padding: 16, gap: 10, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
   // The heading sits on the ground above the card, as every section's does.
   head: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
   title: { color: G.ink, flex: 1 },

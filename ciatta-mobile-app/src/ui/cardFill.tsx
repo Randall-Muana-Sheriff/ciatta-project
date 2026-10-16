@@ -8,7 +8,7 @@
 // set that way on purpose: Care and the Visit prep it opens.
 
 import { useState } from 'react';
-import { Image, StyleSheet } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { FOOT as DARK_FOOT, glowFor, LIGHT_END, LIGHT_FOOT, LIGHT_TOP, MID, mix, POOL, topFor } from './glow';
@@ -41,11 +41,16 @@ export const CARD_POOL: number[] = [
 // Which image the nth card on a screen takes.
 export const poolIndex = (n: number) => n % CARD_POOL.length;
 
-export function CardFill() {
+// glow keeps the coloured light on light too: only Today's topics view
+// asks for it. Every other card on light is flat white on the #F1F0ED
+// ground, and colour is kept for what means something, a lab's status or a
+// body system.
+export function CardFill({ glow = false }: { glow?: boolean } = {}) {
   const { next } = useGroundPair();
   const [n] = useState(next);
   const [id] = useState(() => `glow${ids++}`);
   const pair = glowFor(n);
+  if (G.mode === 'light' && !glow) return <View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF' }]} pointerEvents="none" />;
   // On light, the same glow in a lighter shade: the hue softly over the
   // card's near white, and no grain, which reads as dust on paper.
   const light = G.mode === 'light';

@@ -55,7 +55,7 @@ import { font, GUTTER } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { Composer } from '../ui/composer';
 import { AgentAvatar } from '../ui/AgentAvatar';
-import { onCareAsk, openRequest, takeCareAsk } from '../lib/careHandoff';
+import { onCareAsk, openRequest, takeCareAsk, takeCareGreeting } from '../lib/careHandoff';
 import { CareHub } from '../ui/CareHub';
 import { ScreenHeader } from '../ui/kit';
 import { groupItems, mergeItems, offerLine, turnPlan, wantsDocuments } from '../lib/agent/logOffer';
@@ -154,9 +154,12 @@ export function CareScreen() {
   }, [repo]);
   const [turns, setTurns] = useState<Turn[]>(() => {
     // A check in handed over from Today, asked here in words.
+    const at = new Date().toISOString();
+    // Ciatta asking first: a line from Get care, or a check in from Today.
+    const greeting = takeCareGreeting();
+    if (greeting) return [{ id: `${at}-greeting`, role: 'ciatta', text: greeting, at }];
     const c = takeCheckIn();
     if (!c) return [];
-    const at = new Date().toISOString();
     return [{ id: `${at}-checkin`, role: 'ciatta', text: `${c.line} ${c.question}`, at }];
   });
   const [draft, setDraft] = useState('');

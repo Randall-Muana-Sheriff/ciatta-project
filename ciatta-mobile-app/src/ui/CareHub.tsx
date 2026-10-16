@@ -20,6 +20,7 @@ import { font } from '../theme';
 import { Icon, type IconName } from './icons';
 import { images } from './images';
 import { CardFill } from './cardFill';
+import { GetCare } from './GetCare';
 import { L, SPACE, TILE_RADIUS } from './surface';
 import { G } from './scheme';
 
@@ -52,76 +53,16 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
 
   return (
     <View style={s.stack}>
-      {/* Prescriptions, as Lotus sets it: on a photograph, what is on
-          file, and a line that asks the concierge. */}
+      {/* Get care: five ways in, each a conversation with Ciatta. */}
       <View style={s.section}>
-        <View style={s.glow}>
-          <CardFill />
-          <Text style={[font('headline'), s.white]}>Prescriptions</Text>
-          <Text style={[font('footnote'), s.whiteMeta]}>From your providers and your profile</Text>
-          <Text style={[font('title3', 'semibold'), s.white, s.statement]}>
-            {displayCopy(
-              hub.rx.items.length
-                ? `${listNames(hub.rx.items.map((m) => m.name))} on file.${hub.rx.items[0].last ? ` Last taken ${hub.rx.items[0].last}.` : ''}`
-                : 'No prescriptions on file yet. Refill or ask about one by simply asking.',
-            )}
-          </Text>
-          <AskLine
-            text="Refill an existing prescription or ask about a new one"
-            onPress={() => {
-              askCare(REFILL);
-              onAsk();
-            }}
-          />
-          {hub.rx.missed ? <Text style={[font('footnote'), s.whiteMeta]}>{`${hub.rx.missed} missed ${hub.rx.missed === 1 ? 'dose' : 'doses'} logged in the last 30 days.`}</Text> : null}
-        </View>
-      </View>
-
-      {/* Labs */}
-      <View style={s.section}>
-        <View style={s.glow}>
-          <CardFill />
-          <Text style={[font('headline'), s.white]}>Labs</Text>
-          <Text style={[font('footnote'), s.whiteMeta]}>From your providers and your reports</Text>
-          <Pressable onPress={() => (hub.latestDraw ? nav.push('healthrecords') : undefined)} disabled={!hub.latestDraw} accessibilityRole="button" accessibilityHint="Opens your lab results">
-            <Text style={[font('title3', 'semibold'), s.white, s.statement]}>
-              {displayCopy(
-                hub.latestDraw
-                  ? `${hub.latestDraw.results.length} results ${labDay(hub.latestDraw.on).toLowerCase().startsWith('on') ? '' : 'from '}${labDay(hub.latestDraw.on)}. ${hub.latestDraw.outside ? `${hub.latestDraw.outside} outside range.` : 'All within range.'}`
-                  : 'No labs yet. Ask Ciatta which are worth asking your clinician for.',
-              )}
-            </Text>
-          </Pressable>
-          <AskLine
-            text="Suggest the next labs worth asking about, based on my health data"
-            onPress={() => {
-              askCare(SUGGEST_LABS);
-              onAsk();
-            }}
-          />
-          <View style={s.inner}>
-            {hub.insurance ? (
-              <>
-                <Text style={[font('subhead', 'semibold'), s.white]}>Have a report?</Text>
-                <Text style={[font('footnote'), s.whiteMeta]}>Add a photo or PDF, and Ciatta reads it into your record.</Text>
-                <WhiteButton label="Add a lab report" onPress={() => nav.push('addLabs')} />
-              </>
-            ) : (
-              <>
-                <Text style={[font('subhead', 'semibold'), s.white]}>Please add an insurance plan</Text>
-                <Text style={[font('footnote'), s.whiteMeta]}>So a lab request can name your plan.</Text>
-                <WhiteButton label="Add insurance" onPress={() => nav.push('insurance')} />
-              </>
-            )}
-          </View>
-        </View>
+        <GetCare />
       </View>
 
       {/* Your care team, as Lotus sets it: the heading, a line, and tall
           cards with the name across the foot. Her own clinicians. */}
       <View style={s.section}>
         <Text style={[font('title3', 'semibold'), s.ink]} accessibilityRole="header">
-          Meet your care team
+          Care team
         </Text>
         <Text style={[font('subhead', 'semibold'), s.teamLede]}>
           The clinicians in your record, from your providers, referrals and visits. Ciatta gets each request ready, and you send it.
