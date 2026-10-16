@@ -16,7 +16,7 @@ import { useResearchInsights } from '../state/researchInsights';
 import { useRepo } from '../state/session';
 import { font } from '../theme';
 import { CardFill } from '../ui/cardFill';
-import { InsightCard } from '../ui/InsightCards';
+import { InsightCard, InsightSheet } from '../ui/InsightCards';
 import { Icon } from '../ui/icons';
 import { DetailScreen, SectionHeading } from '../ui/kit';
 import { G } from '../ui/scheme';
@@ -38,6 +38,7 @@ export function ExploreScreen() {
   const view = useMemo(() => exploreTopic(key, context, conditions), [key, context, conditions]);
   const { reactions } = useInsightReactions();
   const { matches } = useResearchInsights(reactions);
+  const [open, setOpen] = useState<string | null>(null);
   const related = matches.filter((m) => m.insight.topics.some((t) => view.insightTopics.includes(t)));
 
   return (
@@ -76,10 +77,7 @@ export function ExploreScreen() {
             {related.map((m) => (
               <Pressable
                 key={m.insight.id}
-                onPress={() => {
-                  openInsight(m.insight.id);
-                  nav.push('insight');
-                }}
+                onPress={() => setOpen(m.insight.id)}
                 accessibilityRole="button"
                 accessibilityLabel={`${m.insight.title}. Opens this pattern`}
               >
@@ -89,6 +87,7 @@ export function ExploreScreen() {
           </View>
         </View>
       ) : null}
+      <InsightSheet id={open} onClose={() => setOpen(null)} />
     </DetailScreen>
   );
 }

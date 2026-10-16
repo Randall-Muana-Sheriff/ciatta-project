@@ -14,7 +14,7 @@ import { useInsightReactions } from '../state/insightReactions';
 import { PublisherLogo } from '../ui/PublisherLogo';
 import { font, GUTTER } from '../theme';
 import { Icon } from '../ui/icons';
-import { headingFor } from '../ui/InsightCards';
+import { headingFor, Reactions } from '../ui/InsightCards';
 import { PhotoCard } from '../ui/PhotoCard';
 import { Sheet } from '../ui/Sheet';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
@@ -53,42 +53,11 @@ export function InsightView({ id, onClose, sheet = false }: { id: string | null;
       <ScrollView contentContainerStyle={{ paddingBottom: (sheet ? 40 : NAV_CLEARANCE) + 60 }}>
         <PhotoCard source={headingFor(insight.image)} style={s.hero}>
           <View style={s.bar}>
-            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={sheet ? 'Close' : 'Back'} hitSlop={8} style={s.circle}>
-              <Icon name={sheet ? 'chevronDown' : 'chevronLeft'} size={20} color="#FFFFFF" />
+            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Back" hitSlop={8} style={s.circle}>
+              {/* A back arrow, always, so she can always get back. */}
+            <Icon name="chevronLeft" size={20} color="#FFFFFF" />
             </Pressable>
-            {/* Her say on it, up here with Share, so Ciatta shows more of
-                what she finds useful. */}
             <View style={s.barRight}>
-              <Pressable
-                onPress={() => react(insight.id, { reaction: of(insight.id).reaction === 'up' ? null : 'up' })}
-                accessibilityRole="button"
-                accessibilityLabel="Helpful"
-                accessibilityState={{ selected: of(insight.id).reaction === 'up' }}
-                hitSlop={6}
-                style={[s.circle, of(insight.id).reaction === 'up' && s.circleOn]}
-              >
-                <Icon name="thumbUp" size={17} color={of(insight.id).reaction === 'up' ? '#0C0E11' : '#FFFFFF'} />
-              </Pressable>
-              <Pressable
-                onPress={() => react(insight.id, { reaction: of(insight.id).reaction === 'down' ? null : 'down' })}
-                accessibilityRole="button"
-                accessibilityLabel="Not for me"
-                accessibilityState={{ selected: of(insight.id).reaction === 'down' }}
-                hitSlop={6}
-                style={[s.circle, of(insight.id).reaction === 'down' && s.circleOn]}
-              >
-                <Icon name="thumbDown" size={17} color={of(insight.id).reaction === 'down' ? '#0C0E11' : '#FFFFFF'} />
-              </Pressable>
-              <Pressable
-                onPress={() => react(insight.id, { saved: !of(insight.id).saved })}
-                accessibilityRole="button"
-                accessibilityLabel={of(insight.id).saved ? 'Remove from saved' : 'Save'}
-                accessibilityState={{ selected: of(insight.id).saved }}
-                hitSlop={6}
-                style={[s.circle, of(insight.id).saved && s.circleOn]}
-              >
-                <Icon name="bookmark" size={17} color={of(insight.id).saved ? '#0C0E11' : '#FFFFFF'} filled={of(insight.id).saved} />
-              </Pressable>
               <Pressable
                 onPress={() => void Share.share({ message: `${insight.title}\n\n${insight.highlights.map((h) => `• ${h}`).join('\n')}` })}
                 accessibilityRole="button"
@@ -104,6 +73,8 @@ export function InsightView({ id, onClose, sheet = false }: { id: string | null;
           <Text style={[font('title1', 'semibold'), s.title]} accessibilityRole="header">
             {displayCopy(insight.title)}
           </Text>
+          {/* Sources on the left, her say on it in the corner, as on its card. */}
+          <View style={s.heroFoot}>
           <Pressable onPress={() => setSourcesOpen(true)} accessibilityRole="button" style={s.sourcesPill}>
             <View style={s.logos}>
               {[...new Set(insight.sources.map((x) => x.logo))].map((l, n) => (
@@ -115,6 +86,8 @@ export function InsightView({ id, onClose, sheet = false }: { id: string | null;
             <Text style={[font('subhead', 'semibold'), s.white]}>{`${insight.sources.length} ${insight.sources.length === 1 ? 'Source' : 'Sources'}`}</Text>
             <Icon name="chevronRight" size={13} color="#FFFFFF" />
           </Pressable>
+          <Reactions id={insight.id} />
+          </View>
         </PhotoCard>
 
         {/* The page itself on white, for the strongest contrast. */}
@@ -194,6 +167,7 @@ const s = StyleSheet.create({
   hero: { height: 430, borderRadius: 0, borderWidth: 0 },
   bar: { flexDirection: 'row', justifyContent: 'space-between' },
   barRight: { flexDirection: 'row', gap: 8 },
+  heroFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   circleOn: { backgroundColor: '#FFFFFF' },
   circle: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.18)' },
   title: { color: '#FFFFFF', lineHeight: 36 },

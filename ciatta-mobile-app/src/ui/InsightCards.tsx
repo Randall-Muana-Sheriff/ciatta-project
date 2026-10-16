@@ -23,18 +23,18 @@ import { InsightView } from '../screens/InsightScreen';
 import { Ground } from './Ground';
 import { CardFill } from './cardFill';
 
-// The heading images, generated for Ciatta in one style: a dark room,
-// light in two of the design system's hues, a soft figure out of focus.
+// The heading photographs: real photographs (Unsplash and Pexels, free to
+// use), one per pattern, shown on its card and at the top of its page.
 const HEADINGS: Record<string, number> = {
-  'iron-fatigue': require('../../assets/images/insights/iron-fatigue.jpg'),
-  'cycle-physiology': require('../../assets/images/insights/cycle-physiology.jpg'),
-  'sleep-cycle': require('../../assets/images/insights/sleep-cycle.jpg'),
-  'bp-categories': require('../../assets/images/insights/bp-categories.jpg'),
-  bristol: require('../../assets/images/insights/bristol.jpg'),
-  'endo-gut': require('../../assets/images/insights/endo-gut.jpg'),
-  thyroid: require('../../assets/images/insights/thyroid.jpg'),
-  'headache-red-flags': require('../../assets/images/insights/headache-red-flags.jpg'),
-  'hormones-cycle': require('../../assets/images/insights/hormones-cycle.jpg'),
+  'iron-fatigue': require('../../assets/images/insight-photos/iron-fatigue.jpg'),
+  'cycle-physiology': require('../../assets/images/insight-photos/cycle-physiology.jpg'),
+  'sleep-cycle': require('../../assets/images/insight-photos/sleep-cycle.jpg'),
+  'bp-categories': require('../../assets/images/insight-photos/bp-categories.jpg'),
+  bristol: require('../../assets/images/insight-photos/bristol.jpg'),
+  'endo-gut': require('../../assets/images/insight-photos/endo-gut.jpg'),
+  thyroid: require('../../assets/images/insight-photos/thyroid.jpg'),
+  'headache-red-flags': require('../../assets/images/insight-photos/headache-red-flags.jpg'),
+  'hormones-cycle': require('../../assets/images/insight-photos/hormones-cycle.jpg'),
 };
 // An insight added to the library before its heading exists takes the
 // first one, so a card is never blank.
@@ -103,11 +103,9 @@ export function InsightCard({
   connections: readonly string[];
   style?: ViewStyle;
 }) {
-  // The cards' own soft glow, as every card has, rather than a photograph:
-  // light on light, dark on dark, with the type to match.
+  // On its photograph, with white type, and her say on it in the corner.
   return (
-    <View style={[s.glowCard, style]}>
-      <CardFill />
+    <PhotoCard source={headingFor(insight.image)} style={style}>
       <View style={{ flex: 1 }} />
       <Text style={[font('title3', 'semibold'), s.title]} numberOfLines={4}>
         {displayCopy(insight.title)}
@@ -126,10 +124,66 @@ export function InsightCard({
             </View>
           ))}
         </View>
-        <Text style={[font('footnote'), chip.text]}>{`${insight.sources.length} ${insight.sources.length === 1 ? 'Source' : 'Sources'}`}</Text>
-        <Icon name="chevronRight" size={12} color={L.meta} />
+        <Text style={[font('footnote'), s.white]}>{`${insight.sources.length} ${insight.sources.length === 1 ? 'Source' : 'Sources'}`}</Text>
+        <Icon name="chevronRight" size={12} color="#FFFFFF" />
       </View>
+      <Reactions id={insight.id} />
       </View>
+    </PhotoCard>
+  );
+}
+
+// A pattern opened as a sheet that slides up over the screen, as Profile's
+// details do, on the same ground, with its photograph at the top.
+export function InsightSheet({ id, onClose }: { id: string | null; onClose: () => void }) {
+  return (
+    <Modal visible={id !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <Ground>
+        <InsightView id={id} onClose={onClose} sheet />
+      </Ground>
+    </Modal>
+  );
+}
+
+// Thumbs up, thumbs down and save, as small rings in a card's corner. What
+// she says here is what Ciatta learns from: up shows more like it, down
+// fewer, and save keeps it.
+export function Reactions({ id }: { id: string }) {
+  const { react, of } = useInsightReactions();
+  const mine = of(id);
+  const ring = (on: boolean) => [s.ring, on && s.ringOn];
+  return (
+    <View style={s.reactions}>
+      <Pressable
+        onPress={() => react(id, { reaction: mine.reaction === 'up' ? null : 'up' })}
+        accessibilityRole="button"
+        accessibilityLabel="Show more like this"
+        accessibilityState={{ selected: mine.reaction === 'up' }}
+        hitSlop={6}
+        style={ring(mine.reaction === 'up')}
+      >
+        <Icon name="thumbUp" size={16} color={mine.reaction === 'up' ? '#0C0E11' : '#FFFFFF'} />
+      </Pressable>
+      <Pressable
+        onPress={() => react(id, { reaction: mine.reaction === 'down' ? null : 'down' })}
+        accessibilityRole="button"
+        accessibilityLabel="Show fewer like this"
+        accessibilityState={{ selected: mine.reaction === 'down' }}
+        hitSlop={6}
+        style={ring(mine.reaction === 'down')}
+      >
+        <Icon name="thumbDown" size={16} color={mine.reaction === 'down' ? '#0C0E11' : '#FFFFFF'} />
+      </Pressable>
+      <Pressable
+        onPress={() => react(id, { saved: !mine.saved })}
+        accessibilityRole="button"
+        accessibilityLabel={mine.saved ? 'Remove from saved' : 'Save'}
+        accessibilityState={{ selected: mine.saved }}
+        hitSlop={6}
+        style={ring(mine.saved)}
+      >
+        <Icon name="bookmark" size={16} color={mine.saved ? '#0C0E11' : '#FFFFFF'} filled={mine.saved} />
+      </Pressable>
     </View>
   );
 }
@@ -138,11 +192,14 @@ const s = StyleSheet.create({
   ink: { color: G.ink },
   row: { gap: 12 },
   card: { width: 272, height: 340 },
-  title: { color: L.ink, lineHeight: 28 },
+  title: { color: '#FFFFFF', lineHeight: 28 },
+  reactions: { flexDirection: 'row', gap: 8 },
+  ring: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255, 255, 255, 0.7)', backgroundColor: 'rgba(0, 0, 0, 0.18)' },
+  ringOn: { backgroundColor: '#FFFFFF', borderColor: '#FFFFFF' },
   glowCard: { borderRadius: 22, overflow: 'hidden', padding: 18, gap: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
-  connection: { color: L.body, lineHeight: 18 },
+  connection: { color: 'rgba(255, 255, 255, 0.85)', lineHeight: 18 },
   white: { color: '#FFFFFF' },
-  sources: { alignSelf: 'flex-start' },
+  sources: { alignSelf: 'flex-start', borderColor: 'rgba(255, 255, 255, 0.6)' },
   pressed: { opacity: 0.7 },
   cardTop: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
   foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
