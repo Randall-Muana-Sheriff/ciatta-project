@@ -13,7 +13,7 @@ export function RecordsScreen() {
   const nav = useNav();
   return (
     <ScrollView style={r.fill} contentContainerStyle={r.body}>
-      <LargeTitle title="Labs" />
+      <LargeTitle title="Labs" onBack={() => nav.goTab('today')} />
       <View style={r.pad}>
         <RecordsView onOpen={nav.push} />
       </View>

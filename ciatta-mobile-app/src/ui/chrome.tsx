@@ -43,9 +43,15 @@ export function TextButton({ label, onPress }: { label: string; onPress: () => v
 // name is already in the tab bar does not need to announce itself twice,
 // and the space it gives back goes to the content under it.
 // A screen's title: the same size on every screen, at the top left.
-export function LargeTitle({ title, eyebrow, trailing }: { title?: string; eyebrow?: string; trailing?: ReactNode }) {
+export function LargeTitle({ title, eyebrow, trailing, onBack }: { title?: string; eyebrow?: string; trailing?: ReactNode; onBack?: () => void }) {
   return (
     <View style={[s.largeTitle, !title && s.eyebrowOnly]}>
+      {/* A back arrow, as every screen has, beside the title. */}
+      {onBack ? (
+        <Pressable onPress={onBack} accessibilityRole="button" accessibilityLabel="Back" hitSlop={10} style={s.titleBack}>
+          <Icon name="chevronLeft" size={22} color={G.ink} />
+        </Pressable>
+      ) : null}
       <View style={{ flex: 1 }}>
         {eyebrow ? (
           <Text
@@ -266,9 +272,10 @@ export function CornerNav({
 const s = StyleSheet.create({
   pressed: { opacity: 0.55 },
 
+  titleBack: { width: 32, height: 32, justifyContent: 'center', marginLeft: -6, marginRight: 4 },
   largeTitle: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     paddingHorizontal: GUTTER,
     paddingTop: 12,
     paddingBottom: 4,

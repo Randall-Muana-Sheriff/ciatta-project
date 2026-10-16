@@ -429,6 +429,8 @@ export function CareScreen() {
       <View style={s.composer}>
         <Composer
           paper
+          // The other shade of white, so the box stands apart from the page.
+          well="#F1F0ED"
           value={draft}
           onChange={setDraft}
           // An example of what she might ask, in her own voice.

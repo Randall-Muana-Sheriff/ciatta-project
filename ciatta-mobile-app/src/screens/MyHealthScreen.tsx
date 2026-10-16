@@ -116,7 +116,7 @@ export function MyHealthScreen() {
       {/* No logging control here. Logging lives behind the white plus in the
           bottom navigation, which is reachable from every screen, and two
           doors to the same room only made the room harder to find. */}
-      <LargeTitle title="Body" />
+      <LargeTitle title="Body" onBack={() => nav.goTab('today')} />
 
       <View style={h.pad}>
         <Text style={[font('subhead'), { color: G.body, marginBottom: 16 }]}>Everything about your health, in one place.</Text>

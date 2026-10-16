@@ -1,5 +1,5 @@
-import { type ComponentType, useEffect, useMemo, useState } from 'react';
-import { BackHandler, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { type ComponentType, useEffect, useMemo, useRef, useState } from 'react';
+import { BackHandler, Modal, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import * as Notifications from 'expo-notifications';
@@ -198,16 +198,38 @@ export function Root() {
   }, [nav, stack.length, tab]);
 
   const top = stack[stack.length - 1];
-  const Current = top ? DETAIL_SCREENS[top] : TAB_SCREENS[tab];
+  // The chat is a sheet that slides up over the screen it was opened from,
+  // so that screen stays rendered beneath it, unchanged, and is where she
+  // lands when she slides the chat back down.
+  const chatOpen = top === 'ciatta';
+  const base = chatOpen ? stack[stack.length - 2] : top;
+  const baseDepth = chatOpen ? stack.length - 1 : stack.length;
+  const Current = base ? DETAIL_SCREENS[base] : TAB_SCREENS[tab];
+  const closingChat = useRef(false);
+  const closeChat = () => {
+    if (closingChat.current) return;
+    closingChat.current = true;
+    nav.back();
+    setTimeout(() => {
+      closingChat.current = false;
+    }, 400);
+  };
 
   return (
     <NavContext.Provider value={nav}>
-      <Ground from={TAB_GROUND[tab][0]} to={TAB_GROUND[tab][1]} today={tab === 'today' && !top} white={tab === 'today' && !top && bodyOpen}>
-        {/* The chat is on white paper, up under the status bar too. */}
-        <View style={[r.root, { paddingTop: insets.top }, top === 'ciatta' && r.paper]}>
-        <View style={r.fill} key={top ? `${tab}:${stack.length}:${top}` : tab}>
+      <Ground from={TAB_GROUND[tab][0]} to={TAB_GROUND[tab][1]} today={tab === 'today' && !base} white={tab === 'today' && !base && bodyOpen}>
+        <View style={[r.root, { paddingTop: insets.top }]}>
+        <View style={r.fill} key={base ? `${tab}:${baseDepth}:${base}` : tab}>
           <Current />
         </View>
+        {/*
+          The chat: a page sheet that slides up almost to the top. Sliding it
+          down, the back arrow or Close chat each bring her back to where she
+          opened it.
+        */}
+        <Modal visible={chatOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeChat} onDismiss={() => chatOpen && closeChat()}>
+          {chatOpen ? <CareScreen /> : null}
+        </Modal>
         {/*
           The plus and the menu float in the bottom right corner, over the
           screen. Screens leave NAV_CLEARANCE at the bottom of their scroll
@@ -231,5 +253,4 @@ export function Root() {
 const r = StyleSheet.create({
   root: { flex: 1 },
   fill: { flex: 1 },
-  paper: { backgroundColor: '#FFFFFF' },
 });

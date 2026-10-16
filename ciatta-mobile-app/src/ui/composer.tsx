@@ -53,6 +53,9 @@ export type ComposerProps = {
   // words between, the microphone or send on the right. It grows as she
   // writes, up to a few lines.
   fill?: boolean;
+  // The box's own colour, when it should stand apart from what holds it:
+  // the open chat sets it on the other shade of white.
+  well?: string;
   value: string;
   // The second argument is how the words arrived. Onboarding persists it
   // as input_mode, because "she typed this" and "she said this out loud"
@@ -122,6 +125,7 @@ export function Composer({
   command = null,
   paper = false,
   fill = false,
+  well,
 }: ComposerProps) {
   // On the chat's white paper, or on the dark ground.
   const K: Palette = paper ? PAPER : G;
@@ -279,7 +283,7 @@ export function Composer({
           placeholderTextColor={K.meta}
           multiline
           textAlignVertical="top"
-          style={[font('body'), s.field, fill ? s.fillField : { minHeight: MIN_HEIGHT }]}
+          style={[font('body'), s.field, fill ? s.fillField : { minHeight: MIN_HEIGHT }, well ? { backgroundColor: well } : null]}
           accessibilityLabel={label}
         />
 

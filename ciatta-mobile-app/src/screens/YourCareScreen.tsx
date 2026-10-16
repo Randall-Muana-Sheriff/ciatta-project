@@ -13,7 +13,7 @@ export function YourCareScreen() {
   const nav = useNav();
   return (
     <ScrollView style={y.fill} contentContainerStyle={y.body}>
-      <LargeTitle title="Care" />
+      <LargeTitle title="Care" onBack={() => nav.goTab('today')} />
       <View style={y.pad}>
         <CareHub onAsk={() => nav.push('ciatta')} />
       </View>
