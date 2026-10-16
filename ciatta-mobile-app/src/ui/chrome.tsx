@@ -42,6 +42,7 @@ export function TextButton({ label, onPress }: { label: string; onPress: () => v
 // this is 17, which is the same step the body text sits on. A screen whose
 // name is already in the tab bar does not need to announce itself twice,
 // and the space it gives back goes to the content under it.
+// A screen's title: the same size on every screen, at the top left.
 export function LargeTitle({ title, eyebrow, trailing }: { title?: string; eyebrow?: string; trailing?: ReactNode }) {
   return (
     <View style={[s.largeTitle, !title && s.eyebrowOnly]}>
@@ -55,7 +56,7 @@ export function LargeTitle({ title, eyebrow, trailing }: { title?: string; eyebr
           </Text>
         ) : null}
         {title ? (
-          <Text style={[font('largeTitle', 'bold'), { color: G.ink, letterSpacing: 0.2 }]} accessibilityRole="header">
+          <Text style={[font('headline'), { color: G.ink }]} accessibilityRole="header">
             {title}
           </Text>
         ) : null}

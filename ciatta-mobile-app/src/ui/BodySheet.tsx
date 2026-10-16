@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ETHNICITIES } from '../lib/ethnicity';
-import { ALL_LANGUAGES, GENDERS, POPULAR_LANGUAGES } from '../lib/personal';
+import { ALL_LANGUAGES, POPULAR_LANGUAGES, SEXES_AT_BIRTH } from '../lib/personal';
 import { bloodTypeLabel } from '../lib/healthFacts';
 import { askForCharacteristics } from '../lib/healthKit';
 import type { BodyManual } from '../lib/overviewFacts';
@@ -23,9 +23,9 @@ import { Sheet } from './Sheet';
 import { TILE_RADIUS } from './surface';
 import { bumpProfile } from '../state/profileRevision';
 
-export type BodyField = 'blood' | 'height' | 'weight' | 'ethnicity' | 'gender' | 'language' | 'units';
+export type BodyField = 'blood' | 'height' | 'weight' | 'ethnicity' | 'sex' | 'language' | 'units';
 
-const TITLE: Record<BodyField, string> = { blood: 'Blood Type', height: 'Height', weight: 'Weight', ethnicity: 'Ethnicity', gender: 'Gender', language: 'Language', units: 'Units' };
+const TITLE: Record<BodyField, string> = { blood: 'Blood Type', height: 'Height', weight: 'Weight', ethnicity: 'Ethnicity', sex: 'Sex at Birth', language: 'Language', units: 'Units' };
 const BLOOD_CODES = [1, 2, 3, 4, 5, 6, 7, 8];
 const today = () => {
   const d = new Date();
@@ -150,10 +150,10 @@ export function BodySheet({ field, onClose, onSaved }: { field: BodyField | null
         </ListGroup>
       ) : null}
 
-      {field === 'gender' ? (
+      {field === 'sex' ? (
         <ListGroup footer="Some ranges and risks differ by sex at birth and by hormones taken. Ciatta uses this only for those.">
-          {GENDERS.map((g, n) => (
-            <ListRow key={g.id} first={n === 0} title={g.label} selected={body.gender === g.id} onPress={() => void save({ gender: g.id })} />
+          {SEXES_AT_BIRTH.map((g, n) => (
+            <ListRow key={g.id} first={n === 0} title={g.label} selected={body.sex_at_birth === g.id} onPress={() => void save({ sex_at_birth: g.id })} />
           ))}
         </ListGroup>
       ) : null}

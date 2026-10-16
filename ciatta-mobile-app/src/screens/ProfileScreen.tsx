@@ -12,7 +12,7 @@ import { type BodyManual, overviewFacts, resolveBody } from '../lib/overviewFact
 import { ageFact } from '../lib/healthFacts';
 import { activeUnits, formatDistance, formatHeight, formatWeight, UNIT_LABEL } from '../lib/units';
 import { ethnicityLabel } from '../lib/ethnicity';
-import { genderLabel } from '../lib/personal';
+import { sexAtBirthLabel } from '../lib/personal';
 import { bloodTypeLabel } from '../lib/healthFacts';
 import { type BodyField, BodySheet } from '../ui/BodySheet';
 import { type Insurance, insuranceFact } from '../lib/insurance';
@@ -469,7 +469,7 @@ function Goals() {
   );
 }
 
-// Who she is: gender, language, ethnicity, and her body's measures. Each
+// Who she is: sex at birth, language, ethnicity, and her body's measures. Each
 // opens its own sheet.
 function PersonalDetails() {
   const repo = useRepo();
@@ -483,7 +483,7 @@ function PersonalDetails() {
   return (
     <View>
       <ListGroup footer="Only you can see these. Ciatta uses them to read your ranges and readings in context.">
-        <ListRow first title="Gender" value={genderLabel(body?.gender) ?? add} onPress={() => setOpen('gender')} />
+        <ListRow first title="Sex at Birth" value={sexAtBirthLabel(body?.sex_at_birth) ?? add} onPress={() => setOpen('sex')} />
         <ListRow title="Language" value={body?.language ?? add} onPress={() => setOpen('language')} />
         <ListRow title="Ethnicity" value={ethnicityLabel(body?.ethnicity) ?? add} onPress={() => setOpen('ethnicity')} />
         <ListRow title="Blood Type" value={bloodTypeLabel(body?.blood_type) ?? add} onPress={() => setOpen('blood')} />

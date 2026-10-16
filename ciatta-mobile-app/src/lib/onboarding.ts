@@ -1,3 +1,4 @@
+import type { SexAtBirth } from './personal';
 // The first session, as a sequence and a reflection.
 //
 // No React and no Supabase in this file, the same arrangement as engine.ts and
@@ -81,6 +82,7 @@ export type StepId =
   | 'intent'
   | 'tell'
   | 'age'
+  | 'sex'
   | 'units'
   | 'lifeStage'
   | 'cycle'
@@ -110,6 +112,9 @@ export type Answers = {
   openingMode: 'typed' | 'spoken' | null;
   intents: Intent[];
   ageRange: AgeRange | null;
+  // Sex assigned at birth, saved to her body record when onboarding
+  // finishes; changed later in Profile.
+  sexAtBirth: SexAtBirth | null;
   // Metric or imperial, for every measure in the app. Saved to her body
   // record when onboarding finishes; changed later in Settings.
   units: Units | null;
@@ -137,6 +142,7 @@ export function emptyAnswers(): Answers {
     openingMode: null,
     intents: [],
     ageRange: null,
+    sexAtBirth: null,
     units: null,
     lifeStage: null,
     cycleLength: null,
@@ -184,6 +190,7 @@ export function stepsFor(a: Answers): StepId[] {
     'intent',
     'tell',
     'age',
+    'sex',
     'units',
     'lifeStage',
     ...(cycleIsRelevant(a) ? (['cycle'] as StepId[]) : []),

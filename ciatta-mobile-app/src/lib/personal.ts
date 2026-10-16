@@ -1,20 +1,19 @@
-// Who she is beyond her body: gender and the language she speaks. Ciatta
+// Who she is beyond her body: her sex at birth and the language she speaks. Ciatta
 // itself is in English for now; her language tells Ciatta, and anyone she
 // shares her record with, what she would rather read and be spoken to in.
 
-export const GENDERS = [
-  { id: 'woman', label: 'Woman' },
-  { id: 'man', label: 'Man' },
-  { id: 'non_binary', label: 'Non binary' },
-  { id: 'trans_woman', label: 'Transgender woman' },
-  { id: 'trans_man', label: 'Transgender man' },
+// Sex assigned at birth: what reference ranges and conditions are read
+// against, asked plainly, with a way to decline.
+export const SEXES_AT_BIRTH = [
+  { id: 'female', label: 'Female' },
+  { id: 'male', label: 'Male' },
   { id: 'intersex', label: 'Intersex' },
-  { id: 'another', label: 'Another identity' },
   { id: 'prefer_not', label: 'Prefer not to say' },
 ] as const;
+export type SexAtBirth = (typeof SEXES_AT_BIRTH)[number]['id'];
 
-export function genderLabel(id: string | null | undefined): string | null {
-  return GENDERS.find((g) => g.id === id)?.label ?? null;
+export function sexAtBirthLabel(id: string | null | undefined): string | null {
+  return SEXES_AT_BIRTH.find((g) => g.id === id)?.label ?? null;
 }
 
 // First: English, then the most spoken languages worldwide.

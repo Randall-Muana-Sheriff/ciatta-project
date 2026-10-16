@@ -61,6 +61,8 @@ export function ScreenHeader({ title, onBack }: { title: string; onBack: () => v
           <Path d="M10 2L2 10l8 8" stroke={G.ink} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
       </Pressable>
+      {/* The title at the top left, beside the back arrow, as on every
+          screen. */}
       <View style={s.headerTitle} pointerEvents="none">
         <Text style={[font('headline'), { color: G.ink }]} numberOfLines={1} accessibilityRole="header">
           {title}
@@ -425,12 +427,7 @@ export const s = StyleSheet.create({
 
   header: { flexDirection: 'row', alignItems: 'center', height: 44, paddingHorizontal: 8 },
   back: { width: 44, height: 44, alignItems: 'flex-start', justifyContent: 'center', paddingLeft: 4, zIndex: 1 },
-  headerTitle: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 88,
-  },
+  headerTitle: { flex: 1, justifyContent: 'center', paddingRight: 8 },
   detailBody: { paddingHorizontal: GUTTER, paddingTop: 12, paddingBottom: 32 },
 
   secLabel: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 10 },

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { SEXES_AT_BIRTH } from '../lib/personal';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -69,7 +70,7 @@ const BOTTOM: StepId[] = ['tell', 'lifeStage', 'connect', 'reflect'];
 // that answers the question is the tap that moves her on. A Continue button
 // here is a second tap that adds nothing, and a woman who has already told
 // Ciatta her age has no reason to confirm it.
-const AUTO: StepId[] = ['age', 'lifeStage', 'cycle'];
+const AUTO: StepId[] = ['age', 'sex', 'lifeStage', 'cycle'];
 
 // Screens that render no Continue at the foot. The three above answer
 // themselves, and connect carries its own action: a Continue under Connect
@@ -97,6 +98,7 @@ const SUB: Partial<Record<StepId, string>> = {
   intent: 'Pick all that apply. Ciatta starts there.',
   tell: 'In your own words. Speak, type or add a photo.',
   age: 'Some ranges and patterns change with age.',
+  sex: 'Lab ranges and conditions are read against it.',
   lifeStage: 'So your cycle is read in the right context.',
   cycle: 'From the first day of one period to the next.',
   symptoms: 'Tap any that fit. You can add more later.',
@@ -480,10 +482,13 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         }
       }
       // Her units, for every measure from here on. Changed later in Settings.
-      if (a.units) {
-        setActiveUnits(a.units);
+      // And her sex at birth, onto the same body record Profile shows.
+      if (a.units || a.sexAtBirth) {
+        if (a.units) setActiveUnits(a.units);
         const b = await repo.loadBody().catch(() => null);
-        await repo.saveBody({ ...(b ?? {}), units: a.units }).catch(() => {});
+        await repo
+          .saveBody({ ...(b ?? {}), ...(a.units ? { units: a.units } : {}), ...(a.sexAtBirth ? { sex_at_birth: a.sexAtBirth } : {}) })
+          .catch(() => {});
       }
       setStageDone('saved');
       await reloadFirstName();
@@ -784,6 +789,20 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               options={AGE_RANGES.map((o) => o.label)}
               selected={AGE_RANGES.find((o) => o.id === a.ageRange)?.label ?? null}
               onPick={(label) => pick({ ageRange: AGE_RANGES.find((o) => o.label === label)?.id as AgeRange })}
+            />
+          </View>
+        ) : null}
+
+        {step === 'sex' ? (
+          <View>
+            <Text style={[font('title1', 'semibold'), s.title]} accessibilityRole="header">
+              What was your sex at birth?
+            </Text>
+            {SUB[step] ? <Text style={[font('subhead'), s.sub]}>{SUB[step]}</Text> : null}
+            <Choices
+              options={SEXES_AT_BIRTH.map((o) => o.label)}
+              selected={SEXES_AT_BIRTH.find((o) => o.id === a.sexAtBirth)?.label ?? null}
+              onPick={(label) => pick({ sexAtBirth: SEXES_AT_BIRTH.find((o) => o.label === label)?.id ?? null })}
             />
           </View>
         ) : null}

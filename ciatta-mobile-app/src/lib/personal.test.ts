@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { ALL_LANGUAGES, GENDERS, genderLabel, POPULAR_LANGUAGES } from './personal';
+import { ALL_LANGUAGES, POPULAR_LANGUAGES, SEXES_AT_BIRTH, sexAtBirthLabel } from './personal';
 
 test('English leads, then the most spoken languages, then every language A to Z', () => {
   assert.equal(POPULAR_LANGUAGES[0], 'English');
@@ -20,9 +20,8 @@ test('African languages are listed', () => {
   }
 });
 
-test('gender offers inclusive options, with a way to decline', () => {
-  const labels = GENDERS.map((g) => g.label);
-  for (const want of ['Woman', 'Man', 'Non binary', 'Prefer not to say']) assert.ok(labels.includes(want), want);
-  assert.equal(genderLabel('woman'), 'Woman');
-  assert.equal(genderLabel('martian'), null);
+test('sex at birth offers female, male and intersex, with a way to decline', () => {
+  assert.deepEqual(SEXES_AT_BIRTH.map((g) => g.label), ['Female', 'Male', 'Intersex', 'Prefer not to say']);
+  assert.equal(sexAtBirthLabel('female'), 'Female');
+  assert.equal(sexAtBirthLabel('martian'), null);
 });

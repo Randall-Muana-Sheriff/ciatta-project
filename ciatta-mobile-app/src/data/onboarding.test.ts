@@ -129,6 +129,7 @@ test('the sequence opens on the promise and closes on the reflection', () => {
     'intent',
     'tell',
     'age',
+    'sex',
     'units',
     'lifeStage',
     'cycle',
@@ -533,11 +534,14 @@ test('the profile with measured data holds no dash of any kind', () => {
   }
 });
 
-test('onboarding asks for her units once, straight after her age', () => {
+test('onboarding asks her sex at birth after her age, then her units, once each', () => {
   const steps = stepsFor(answers());
   assert.equal(steps.filter((x) => x === 'units').length, 1);
-  assert.equal(steps[steps.indexOf('age') + 1], 'units');
+  assert.equal(steps.filter((x) => x === 'sex').length, 1);
+  assert.equal(steps[steps.indexOf('age') + 1], 'sex');
+  assert.equal(steps[steps.indexOf('sex') + 1], 'units');
   assert.equal(emptyAnswers().units, null);
+  assert.equal(emptyAnswers().sexAtBirth, null);
 });
 
 test('her onboarding answers become her cycle condition in Profile', () => {

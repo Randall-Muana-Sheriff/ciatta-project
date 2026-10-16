@@ -81,13 +81,6 @@ const HUE_DARK: Record<Meaning, string> = {
 };
 
 
-// The third shade, on light: sky blue for what she can press or has
-// chosen, buttons, selected pills and chips, with dark type on it for the
-// contrast (10:1). The canvas is #F1F0ED and the cards white; colour is
-// kept for this and for what means something.
-const SKY = '#87CEFA';
-const SKY_SELECTED = 'rgba(135, 206, 250, 0.45)';
-
 function build(mode: Mode): Palette {
   // Each mode is whole now: on light the cards are light too, the same soft
   // glow in a lighter shade over #F1F0ED, with dark type; on dark they are
@@ -105,7 +98,7 @@ function build(mode: Mode): Palette {
     ? { mode: 'dark', ...ground('#161616'), bar: 'rgba(14, 16, 20, 0.94)', shadow: '#000000', statusBar: 'light',
         ink: '#FFFFFF', body: '#D2D5DA', meta: '#A9AEB5', fill: 'rgba(255, 255, 255, 0.08)', fillSelected: 'rgba(255, 255, 255, 0.15)', rule: 'rgba(255, 255, 255, 0.1)', pill: '#FFFFFF', onPill: '#0C0E11', card: '#0F0F0F' }
     : { mode: 'light', ...ground('#F1F0ED'), bar: 'rgba(22, 22, 22, 0.94)', shadow: '#2A2520', statusBar: 'dark',
-        ink: '#0C0E11', body: '#373C44', meta: '#454B54', fill: 'rgba(12, 14, 17, 0.06)', fillSelected: SKY_SELECTED, rule: 'rgba(12, 14, 17, 0.12)', pill: SKY, onPill: '#0C0E11', card: '#FFFFFF' };
+        ink: '#0C0E11', body: '#373C44', meta: '#454B54', fill: 'rgba(12, 14, 17, 0.06)', fillSelected: 'rgba(12, 14, 17, 0.12)', rule: 'rgba(12, 14, 17, 0.12)', pill: '#161616', onPill: '#FFFFFF', card: '#FFFFFF' };
   // A card on light is paper lifted toward white rather than darkened, so
   // it still reads as nearer than the ground.
   // Dark glass: a smoked fill over the blur, so a card is darker than the
@@ -130,13 +123,13 @@ function build(mode: Mode): Palette {
       field,
       rule: lift(mode, dark ? 0.1 : 0.09),
       statement: dark ? lift(mode, 0.085) : cardHi,
-      fillSelected: dark ? lift(mode, 0.14) : SKY_SELECTED,
+      fillSelected: lift(mode, dark ? 0.14 : 0.08),
       edgeOn: lift(mode, dark ? 0.16 : 0.22),
       ink,
       body,
       meta,
-      pill: dark ? ink : SKY,
-      onPill: '#0C0E11',
+      pill: ink,
+      onPill: dark ? '#0C0E11' : '#FFFFFF',
     },
     M: {
       ...h,
@@ -149,7 +142,7 @@ function build(mode: Mode): Palette {
       cardHi,
       surface: card,
       fill: lift(mode, dark ? 0.08 : 0.05),
-      fillSelected: dark ? lift(mode, 0.14) : SKY_SELECTED,
+      fillSelected: lift(mode, dark ? 0.14 : 0.09),
       border: lift(mode, dark ? 0.12 : 0.1),
       borderSub: lift(mode, dark ? 0.1 : 0.07),
       separator: lift(mode, dark ? 0.07 : 0.08),

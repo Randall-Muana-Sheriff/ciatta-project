@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 
 import { ethnicityLabel } from '../lib/ethnicity';
-import { genderLabel } from '../lib/personal';
+import { sexAtBirthLabel } from '../lib/personal';
 import { bloodTypeLabel } from '../lib/healthFacts';
 import type { BodyManual } from '../lib/overviewFacts';
 import { formatHeight, formatWeight } from '../lib/units';
@@ -32,7 +32,7 @@ export function BodyMeasurementsScreen() {
   return (
     <DetailScreen title="Body Measurements" onBack={nav.back}>
       <ListGroup footer="Only you can see these. Ciatta uses them to read your ranges and readings in context.">
-        <ListRow first title="Gender" value={genderLabel(body?.gender) ?? add} onPress={() => setOpen('gender')} />
+        <ListRow first title="Sex at Birth" value={sexAtBirthLabel(body?.sex_at_birth) ?? add} onPress={() => setOpen('sex')} />
         <ListRow title="Language" value={body?.language ?? add} onPress={() => setOpen('language')} />
         <ListRow title="Blood Type" value={bloodTypeLabel(body?.blood_type) ?? add} onPress={() => setOpen('blood')} />
         <ListRow title="Height" value={body?.height_cm != null ? formatHeight(body.height_cm, units).value : add} onPress={() => setOpen('height')} />

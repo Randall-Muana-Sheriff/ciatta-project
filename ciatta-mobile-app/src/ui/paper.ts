@@ -10,9 +10,8 @@ export const PAPER = {
   fill: 'rgba(12, 14, 17, 0.06)',
   fillSelected: 'rgba(12, 14, 17, 0.10)',
   rule: 'rgba(12, 14, 17, 0.12)',
-  // The third shade: sky blue, with dark type on it.
-  pill: '#87CEFA',
-  onPill: '#0C0E11',
+  pill: '#0C0E11',
+  onPill: '#FFFFFF',
   // The text box on paper: the paper itself, flat white with no edge.
   card: '#FFFFFF',
 } as const;
