@@ -458,7 +458,7 @@ const styles = (K: Palette) =>
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: K.rule,
   },
-  actionOn: { backgroundColor: K.ink, borderColor: K.ink },
+  actionOn: { backgroundColor: K.pill, borderColor: K.pill },
   pressed: { opacity: 0.55 },
   partial: { color: K.meta, marginTop: 12, fontStyle: 'italic' },
   note: { color: K.meta, marginTop: 10, lineHeight: 18 },

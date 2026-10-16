@@ -764,8 +764,8 @@ const s = StyleSheet.create({
   actionUrgent: { borderColor: '#C52D1E' },
   actionDetail: { color: ON_WHITE_META, marginTop: 4, lineHeight: 18 },
   // The one action in a white card: a solid pill, the inverse of the card.
-  actionButton: { backgroundColor: '#161616', borderRadius: 999, minHeight: 36, paddingHorizontal: 16, justifyContent: 'center' },
-  actionButtonText: { color: WHITE },
+  actionButton: { backgroundColor: PAPER.pill, borderRadius: 999, minHeight: 36, paddingHorizontal: 16, justifyContent: 'center' },
+  actionButtonText: { color: PAPER.onPill },
   suggestion: {
     backgroundColor: WHITE,
     borderRadius: 999,

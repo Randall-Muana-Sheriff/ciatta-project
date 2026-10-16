@@ -122,8 +122,8 @@ const e = StyleSheet.create({
     padding: 12,
     justifyContent: 'space-between',
     borderRadius: 18,
-    // The ground's own lift and edge, so a tile reads in light and dark.
-    backgroundColor: G.fill,
+    // A card: white on the canvas in light, the plain surface in dark.
+    backgroundColor: G.card,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: G.rule,
   },

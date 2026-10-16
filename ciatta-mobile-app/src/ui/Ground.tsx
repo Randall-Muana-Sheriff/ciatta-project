@@ -47,13 +47,8 @@ export function Ground({
   return (
     <PairContext.Provider value={{ from, to, next }}>
       <View style={s.fill}>
-        {white && G.mode === 'light' ? (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF' }]} pointerEvents="none" />
-        ) : today ? (
-          <TodaySky />
-        ) : (
-          <GroundGlow from={from} to={to} />
-        )}
+        {/* On light every screen, Today too, is the flat #F1F0ED canvas. */}
+        {G.mode === 'light' ? null : today && !white ? <TodaySky /> : <GroundGlow from={from} to={to} />}
         {children}
       </View>
     </PairContext.Provider>
