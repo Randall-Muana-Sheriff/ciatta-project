@@ -77,7 +77,7 @@ const r = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
+    borderColor: L.rule,
   },
   // On a glow card, dark in every appearance.
   title: { color: L.ink, lineHeight: 22 },

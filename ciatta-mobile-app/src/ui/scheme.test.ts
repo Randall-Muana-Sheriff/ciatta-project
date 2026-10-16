@@ -24,10 +24,13 @@ test('both palettes set every token the app reads', () => {
   }
 });
 
-test('cards are the same dark object in both modes, so their type is too', () => {
+test('each mode is whole: light cards carry dark type, dark cards light', () => {
   const [d, l] = [PALETTES.dark, PALETTES.light];
-  assert.deepEqual(l.HUE, d.HUE);
-  for (const k of ['ink', 'body', 'meta', 'recessed', 'glass', 'field', 'rule'] as const) assert.equal(l.L[k], d.L[k], k);
+  // The same accents, deepened on light so they read on a light card.
+  assert.deepEqual(Object.keys(l.HUE).sort(), Object.keys(d.HUE).sort());
+  assert.equal(l.L.ink, '#0C0E11');
+  assert.equal(d.L.ink, '#FFFFFF');
+  assert.ok(contrast(l.L.ink, l.L.glass) >= 12);
   const card = d.L.glass;
   assert.ok(contrast(d.L.ink, card) >= 12);
   assert.ok(contrast(d.L.body, card) >= 7);

@@ -32,6 +32,10 @@ export const GLOWS: [string, string][] = [
 
 // The dark the light fades into.
 export const FOOT = '#0A0A0C';
+// On light: a card is the screen's #F1F0ED lifted a hair, and its hue
+// tints the top softly, as the reference's frosted cards do.
+export const LIGHT_FOOT = '#F6F5F2';
+export const LIGHT_TOP = 0.16;
 // How much of the hue reaches the top edge at most, and how much is left
 // where the light ends, a fifth of the way down: the top fifth is colour,
 // the other four fifths the dark shade. A bright hue like Amber is held lower than Sky, so every

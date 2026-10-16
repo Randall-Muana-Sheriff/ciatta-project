@@ -28,10 +28,13 @@ export function Ground({
   // Sky into Lavender unless the screen says otherwise.
   from = 'measured',
   to = 'timeDepth',
+  today = false,
 }: {
   children?: ReactNode;
   from?: GroundHue;
   to?: GroundHue;
+  // Today alone has its sky: #87CEFA and white, soft and grained.
+  today?: boolean;
 }) {
   // Hands each card on this screen its own place in the photo pool, in the
   // order the cards mount, so no two cards on a screen share a background
@@ -41,7 +44,7 @@ export function Ground({
   return (
     <PairContext.Provider value={{ from, to, next }}>
       <View style={s.fill}>
-        <GroundGlow from={from} to={to} />
+        {today ? <TodaySky /> : <GroundGlow from={from} to={to} />}
         {children}
       </View>
     </PairContext.Provider>
@@ -69,16 +72,57 @@ const SCREEN_LIGHT_END = 0.38;
 const SCREEN_STRENGTH = 0.7;
 const SCREEN_POOL = 0.22;
 
+// Today's ground: sky blue and white, in soft bands as the reference has
+// them, a light band crossing from the lower left to the top, the blue
+// gathered at the corners, and a fine grain. On dark the same sky at dusk.
+const SKY = '#87CEFA';
+function TodaySky() {
+  const [id] = useState(() => `sky${glowIds++}`);
+  const dark = G.mode === 'dark';
+  const base = dark ? mix(SKY, FOOT, 0.32) : SKY;
+  const white = dark ? mix('#FFFFFF', FOOT, 0.22) : '#FFFFFF';
+  return (
+    <>
+      <Svg style={StyleSheet.absoluteFill} viewBox="0 0 1 1" preserveAspectRatio="none" pointerEvents="none">
+        <Defs>
+          <LinearGradient id={`${id}band`} x1="0" y1="1" x2="0.9" y2="0">
+            <Stop offset="0" stopColor={white} stopOpacity={0.55} />
+            <Stop offset="0.38" stopColor={white} stopOpacity={0.9} />
+            <Stop offset="0.6" stopColor={white} stopOpacity={0.35} />
+            <Stop offset="0.82" stopColor={white} stopOpacity={0} />
+          </LinearGradient>
+          <RadialGradient id={`${id}top`} cx="0.55" cy="0" rx="0.4" ry="0.22" fx="0.55" fy="0">
+            <Stop offset="0" stopColor={white} stopOpacity={0.85} />
+            <Stop offset="1" stopColor={white} stopOpacity={0} />
+          </RadialGradient>
+          <RadialGradient id={`${id}left`} cx="0.05" cy="0.28" rx="0.45" ry="0.22" fx="0.05" fy="0.28">
+            <Stop offset="0" stopColor={base} stopOpacity={0.9} />
+            <Stop offset="1" stopColor={base} stopOpacity={0} />
+          </RadialGradient>
+          <RadialGradient id={`${id}corner`} cx="1" cy="0.85" rx="0.55" ry="0.3" fx="1" fy="0.85">
+            <Stop offset="0" stopColor={base} stopOpacity={0.95} />
+            <Stop offset="1" stopColor={base} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Rect x="0" y="0" width="1" height="1" fill={base} />
+        <Rect x="0" y="0" width="1" height="1" fill={`url(#${id}band)`} />
+        <Rect x="0" y="0" width="1" height="1" fill={`url(#${id}top)`} />
+        <Rect x="0" y="0" width="1" height="1" fill={`url(#${id}left)`} />
+        <Rect x="0" y="0" width="1" height="1" fill={`url(#${id}corner)`} />
+      </Svg>
+      <Image source={GRAIN} resizeMode="cover" style={[StyleSheet.absoluteFill, { opacity: 0.5 }]} accessible={false} />
+    </>
+  );
+}
+
 function GroundGlow({ from, to }: { from: GroundHue; to: GroundHue }) {
   const [id] = useState(() => `ground${glowIds++}`);
+  // On light, every screen but Today is the flat #F1F0ED.
+  if (G.mode === 'light') return null;
   const first = GLOW_OF[from] ?? GLOW_OF.measured;
   const second = GLOW_OF[to] ?? GLOW_OF.timeDepth;
-  // On light, the same light over paper: the hue tints the top and fades
-  // into the light ground, so dark type keeps its contrast. On dark, it
-  // falls into the dark.
-  const light = G.mode === 'light';
-  const foot = light ? G.mid : FOOT;
-  const top = light ? 0.16 : topFor([first, second]) * SCREEN_STRENGTH;
+  const foot = FOOT;
+  const top = topFor([first, second]) * SCREEN_STRENGTH;
   return (
     <>
       <Svg style={StyleSheet.absoluteFill} viewBox="0 0 1 1" preserveAspectRatio="none" pointerEvents="none">
@@ -97,7 +141,7 @@ function GroundGlow({ from, to }: { from: GroundHue; to: GroundHue }) {
         <Rect x="0" y="0" width="1" height="1" fill={`url(#${id}l)`} />
         <Rect x="0" y="0" width="1" height="1" fill={`url(#${id}r)`} />
       </Svg>
-      {light ? null : <Image source={GRAIN} resizeMode="cover" style={StyleSheet.absoluteFill} accessible={false} />}
+      <Image source={GRAIN} resizeMode="cover" style={StyleSheet.absoluteFill} accessible={false} />
     </>
   );
 }

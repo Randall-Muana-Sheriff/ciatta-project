@@ -11,7 +11,8 @@ import { useState } from 'react';
 import { Image, StyleSheet } from 'react-native';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
-import { FOOT, glowFor, LIGHT_END, MID, mix, POOL, topFor } from './glow';
+import { FOOT as DARK_FOOT, glowFor, LIGHT_END, LIGHT_FOOT, LIGHT_TOP, MID, mix, POOL, topFor } from './glow';
+import { G } from './scheme';
 import { useGroundPair } from './Ground';
 import { CardWash } from './PhotoCard';
 
@@ -45,7 +46,11 @@ export function CardFill() {
   const [n] = useState(next);
   const [id] = useState(() => `glow${ids++}`);
   const pair = glowFor(n);
-  const top = topFor(pair);
+  // On light, the same glow in a lighter shade: the hue softly over the
+  // card's near white, and no grain, which reads as dust on paper.
+  const light = G.mode === 'light';
+  const FOOT = light ? LIGHT_FOOT : DARK_FOOT;
+  const top = light ? LIGHT_TOP : topFor(pair);
   return (
     <>
       <Svg style={StyleSheet.absoluteFill} viewBox="0 0 1 1" preserveAspectRatio="none" pointerEvents="none">
@@ -69,7 +74,7 @@ export function CardFill() {
       </Svg>
       {/* One grain image across the whole card. A repeating tile drew only
           a single square in the corner. */}
-      <Image source={GRAIN} resizeMode="cover" style={StyleSheet.absoluteFill} accessible={false} />
+      {light ? null : <Image source={GRAIN} resizeMode="cover" style={StyleSheet.absoluteFill} accessible={false} />}
     </>
   );
 }

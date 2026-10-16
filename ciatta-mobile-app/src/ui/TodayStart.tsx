@@ -131,5 +131,5 @@ const s = StyleSheet.create({
     justifyContent: 'flex-end', borderRadius: TILE_RADIUS },
   previewPhoto: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', opacity: 0.5 },
   fade: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(12, 14, 17, 0.45)' },
-  previewText: { color: 'rgba(255, 255, 255, 0.88)', textAlign: 'center', paddingHorizontal: 24, paddingBottom: 20, lineHeight: 19 },
+  previewText: { color: L.body, textAlign: 'center', paddingHorizontal: 24, paddingBottom: 20, lineHeight: 19 },
 });

@@ -21,6 +21,7 @@ import { SectionHeading } from './kit';
 import { chip } from './chip';
 import { InsightView } from '../screens/InsightScreen';
 import { Ground } from './Ground';
+import { CardFill } from './cardFill';
 
 // The heading images, generated for Ciatta in one style: a dark room,
 // light in two of the design system's hues, a soft figure out of focus.
@@ -102,8 +103,11 @@ export function InsightCard({
   connections: readonly string[];
   style?: ViewStyle;
 }) {
+  // The cards' own soft glow, as every card has, rather than a photograph:
+  // light on light, dark on dark, with the type to match.
   return (
-    <PhotoCard source={headingFor(insight.image)} style={style}>
+    <View style={[s.glowCard, style]}>
+      <CardFill />
       <View style={{ flex: 1 }} />
       <Text style={[font('title3', 'semibold'), s.title]} numberOfLines={4}>
         {displayCopy(insight.title)}
@@ -123,10 +127,10 @@ export function InsightCard({
           ))}
         </View>
         <Text style={[font('footnote'), chip.text]}>{`${insight.sources.length} ${insight.sources.length === 1 ? 'Source' : 'Sources'}`}</Text>
-        <Icon name="chevronRight" size={12} color="#FFFFFF" />
+        <Icon name="chevronRight" size={12} color={L.meta} />
       </View>
       </View>
-    </PhotoCard>
+    </View>
   );
 }
 
@@ -134,8 +138,9 @@ const s = StyleSheet.create({
   ink: { color: G.ink },
   row: { gap: 12 },
   card: { width: 272, height: 340 },
-  title: { color: '#FFFFFF', lineHeight: 28 },
-  connection: { color: 'rgba(255,255,255,0.78)', lineHeight: 18 },
+  title: { color: L.ink, lineHeight: 28 },
+  glowCard: { borderRadius: 22, overflow: 'hidden', padding: 18, gap: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
+  connection: { color: L.body, lineHeight: 18 },
   white: { color: '#FFFFFF' },
   sources: { alignSelf: 'flex-start' },
   pressed: { opacity: 0.7 },

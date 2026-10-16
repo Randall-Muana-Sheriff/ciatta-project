@@ -13,9 +13,10 @@ const KEY = 'ciatta.scheme';
 export async function loadScheme(): Promise<Scheme> {
   try {
     const v = await AsyncStorage.getItem(KEY);
-    return SCHEMES.includes(v as Scheme) ? (v as Scheme) : 'system';
+    // Light unless she has chosen: the app is designed light first.
+    return SCHEMES.includes(v as Scheme) ? (v as Scheme) : 'light';
   } catch {
-    return 'system';
+    return 'light';
   }
 }
 
