@@ -19,9 +19,8 @@ import { useCareHub } from '../state/careHub';
 import { font } from '../theme';
 import { Icon, type IconName } from './icons';
 import { images } from './images';
-import { PhotoCard } from './PhotoCard';
+import { CardFill } from './cardFill';
 import { L, SPACE, TILE_RADIUS } from './surface';
-import { CardPhoto } from './cardFill';
 import { G } from './scheme';
 
 const NEW_KINDS: { kind: RequestKind; label: string }[] = [
@@ -53,83 +52,11 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
 
   return (
     <View style={s.stack}>
-      {/* Open plan: the hero of Your Care, as Lotus sets its plan. The
-          first step as a statement, the white pill to start it, and the
-          rest beneath; or, with nothing open, all caught up. */}
-      <View style={s.section}>
-        <PhotoCard source={images.carePlan} style={{ minHeight: 300 }}>
-          <View style={{ flex: 1, minHeight: 80 }} />
-          {hub.plan.length ? (
-            <>
-              <Text style={[font('footnote', 'semibold'), s.whiteMeta]}>{`Open plan · ${hub.plan.length} ${hub.plan.length === 1 ? 'step' : 'steps'}`}</Text>
-              <Text style={[font('title2', 'semibold'), s.white, s.statement]}>{displayCopy(hub.plan[0].title)}</Text>
-              {hub.plan[0].sub ? <Text style={[font('subhead'), s.whiteMeta]}>{displayCopy(hub.plan[0].sub)}</Text> : null}
-              <WhiteButton label="Open plan" onPress={() => go(hub.plan[0])} />
-              {hub.plan.slice(1).map((p) => (
-                <Pressable key={p.id} onPress={() => go(p)} accessibilityRole="button" style={({ pressed }) => [s.planStep, pressed && s.pressed]}>
-                  <Text style={[font('subhead'), s.white, { flex: 1 }]} numberOfLines={2}>
-                    {displayCopy(p.title)}
-                  </Text>
-                  <Icon name="chevronRight" size={14} color="rgba(255,255,255,0.7)" />
-                </Pressable>
-              ))}
-            </>
-          ) : (
-            <>
-              <Text style={[font('title2', 'semibold'), s.white, s.statement]}>You are all caught up</Text>
-              <Text style={[font('subhead'), s.whiteMeta]}>Next steps needing your attention will appear here as your record changes.</Text>
-            </>
-          )}
-        </PhotoCard>
-      </View>
-
-      {/* Open requests, set as Prescriptions and Labs are: on a photograph,
-          the heading inside, white type. */}
-      <View style={s.section}>
-        <PhotoCard source={images.youCan}>
-          <View style={s.cardHead}>
-            <View style={{ flex: 1 }}>
-              <Text style={[font('headline'), s.white]} accessibilityRole="header">Open requests</Text>
-              <Text style={[font('footnote'), s.whiteMeta]}>Ciatta drafts them; you send them</Text>
-            </View>
-            <Pressable onPress={() => setChoosing((v) => !v)} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [s.smallWhite, pressed && s.pressed]}>
-              <Text style={[font('footnote', 'semibold'), { color: '#0C0E11' }]}>{choosing ? 'Close' : 'New'}</Text>
-            </Pressable>
-          </View>
-        {choosing ? (
-          <View style={s.kinds}>
-            {NEW_KINDS.map((k) => (
-              <Pressable key={k.kind} onPress={() => draft(k.kind)} accessibilityRole="button" style={({ pressed }) => [s.kind, pressed && s.pressed]}>
-                <Text style={[font('footnote', 'semibold'), s.white]}>{k.label}</Text>
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
-        {hub.open.length ? (
-          hub.open.map((r, n) => (
-            <Row
-              key={r.id}
-              first={n === 0 && !choosing}
-              icon={r.status === 'sent' ? 'send' : 'doc'}
-              title={r.title}
-              sub={r.clinician}
-              pill={STATUS_LABEL[r.status]}
-              onPress={() => {
-                openRequest({ id: r.id });
-                nav.push('careRequest');
-              }}
-            />
-          ))
-        ) : !choosing ? (
-          <Text style={[font('subhead'), s.whiteMeta]}>Ask your clinician for a refill, labs, your records or a referral.</Text>
-        ) : null}
-        </PhotoCard>
-      </View>
-
       {/* Prescriptions, as Lotus sets it: on a photograph, what is on
           file, and a line that asks the concierge. */}
       <View style={s.section}>
-        <PhotoCard source={images.careRx}>
+        <View style={s.glow}>
+          <CardFill />
           <Text style={[font('headline'), s.white]}>Prescriptions</Text>
           <Text style={[font('footnote'), s.whiteMeta]}>From your providers and your profile</Text>
           <Text style={[font('title3', 'semibold'), s.white, s.statement]}>
@@ -147,12 +74,13 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
             }}
           />
           {hub.rx.missed ? <Text style={[font('footnote'), s.whiteMeta]}>{`${hub.rx.missed} missed ${hub.rx.missed === 1 ? 'dose' : 'doses'} logged in the last 30 days.`}</Text> : null}
-        </PhotoCard>
+        </View>
       </View>
 
       {/* Labs */}
       <View style={s.section}>
-        <PhotoCard source={images.careLabs}>
+        <View style={s.glow}>
+          <CardFill />
           <Text style={[font('headline'), s.white]}>Labs</Text>
           <Text style={[font('footnote'), s.whiteMeta]}>From your providers and your reports</Text>
           <Pressable onPress={() => (hub.latestDraw ? nav.push('healthrecords') : undefined)} disabled={!hub.latestDraw} accessibilityRole="button" accessibilityHint="Opens your lab results">
@@ -186,7 +114,7 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
               </>
             )}
           </View>
-        </PhotoCard>
+        </View>
       </View>
 
       {/* Your care team, as Lotus sets it: the heading, a line, and tall
@@ -211,7 +139,8 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
               accessibilityLabel={`${c.name}${c.role ? `, ${c.role}` : ''}`}
               style={({ pressed }) => [pressed && s.pressed]}
             >
-              <PhotoCard source={TEAM_PHOTOS[n % TEAM_PHOTOS.length]} style={s.member}>
+              <View style={[s.glow, s.member]}>
+                <CardFill />
                 <View style={s.memberFill}>
                   <Text style={[s.initials]}>{c.initials}</Text>
                 </View>
@@ -228,7 +157,7 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
                     {displayCopy(c.organization)}
                   </Text>
                 ) : null}
-              </PhotoCard>
+              </View>
             </Pressable>
           ))}
           <Pressable
@@ -240,7 +169,7 @@ export function CareHub({ onAsk }: { onAsk: () => void }) {
             accessibilityLabel="Add a clinician"
             style={({ pressed }) => [s.member, s.addMember, pressed && s.pressed]}
           >
-            <CardPhoto />
+            <CardFill />
             <Icon name="plus" size={26} color={L.ink} />
             <Text style={[font('headline'), s.cardInk]}>Add a clinician</Text>
           </Pressable>
@@ -266,7 +195,7 @@ function AskLine({ text, onPress }: { text: string; onPress: () => void }) {
 function WhiteButton({ label, onPress }: { label: string; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [s.whiteButton, pressed && s.pressed]}>
-      <Text style={[font('subhead', 'semibold'), { color: '#0C0E11' }]}>{label}</Text>
+      <Text style={[font('subhead', 'semibold'), { color: L.onPill }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -291,7 +220,7 @@ function Row({
 }) {
   return (
     <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? 'button' : undefined} style={({ pressed }) => [s.row, !first && s.rule, pressed && onPress && s.pressed]}>
-      <Icon name={icon} size={18} color="rgba(255,255,255,0.8)" />
+      <Icon name={icon} size={18} color={L.body} />
       <View style={{ flex: 1 }}>
         <Text style={[font('subhead', 'semibold'), s.white]} numberOfLines={2}>
           {displayCopy(title)}
@@ -308,7 +237,7 @@ function Row({
         </View>
       ) : null}
       {right ? <Text style={[font('caption1'), s.whiteMeta]}>{right}</Text> : null}
-      {onPress ? <Icon name="chevronRight" size={14} color="rgba(255,255,255,0.7)" /> : null}
+      {onPress ? <Icon name="chevronRight" size={14} color={L.meta} /> : null}
     </Pressable>
   );
 }
@@ -318,18 +247,21 @@ function Row({
 const st = StyleSheet.hairlineWidth;
 const s = StyleSheet.create({
   stack: { gap: 0 },
+  // The cards as Labs and every other card are drawn: the soft glow, in
+  // the mode's shade, rounded, with a hairline.
+  glow: { borderRadius: TILE_RADIUS, overflow: 'hidden', padding: 18, gap: 8, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
   section: { marginTop: SPACE.block },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   card: { marginTop: SPACE.tight, backgroundColor: L.glass, paddingHorizontal: 14, overflow: 'hidden', borderRadius: TILE_RADIUS },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
-  rule: { borderTopWidth: st, borderTopColor: 'rgba(255,255,255,0.18)' },
+  rule: { borderTopWidth: st, borderTopColor: L.rule },
   ink: { color: G.ink },
   cardInk: { color: L.ink },
   body: { color: G.body },
   meta: { color: G.meta },
   note: { color: L.meta, paddingBottom: 12 },
   empty: { color: G.body, lineHeight: 21, paddingVertical: 14 },
-  pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.16)' },
+  pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: L.recessed },
   kinds: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 12 },
   kind: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.14)' },
   cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
@@ -340,13 +272,16 @@ const s = StyleSheet.create({
   addMember: { borderRadius: TILE_RADIUS, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: L.glass, overflow: 'hidden' },
   pressed: { opacity: 0.6 },
   planStep: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 12, marginTop: 4, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.18)' },
-  white: { color: '#FFFFFF' },
-  whiteMeta: { color: 'rgba(255,255,255,0.72)' },
+  // Type on the glow cards, which follow the mode: dark on light, light
+  // on dark.
+  white: { color: L.ink },
+  whiteMeta: { color: L.body },
   statement: { marginTop: 6, lineHeight: 28 },
   askLine: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  inner: { marginTop: 8, padding: 14, gap: 6, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.14)' },
-  whiteButton: { marginTop: 8, minHeight: 46, borderRadius: 999, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  inner: { marginTop: 8, padding: 14, gap: 6, borderRadius: 18, backgroundColor: L.recessed, borderWidth: StyleSheet.hairlineWidth, borderColor: L.rule },
+  // The one button in a card: the card's pill, solid, the inverse of it.
+  whiteButton: { marginTop: 8, minHeight: 46, borderRadius: 999, backgroundColor: L.pill, alignItems: 'center', justifyContent: 'center' },
   teamLede: { color: G.body, marginTop: 8, lineHeight: 22 },
-  initials: { color: 'rgba(255,255,255,0.9)', fontSize: 44, fontWeight: '300', letterSpacing: 2 },
+  initials: { color: L.meta, fontSize: 44, fontWeight: '300', letterSpacing: 2 },
   memberFill: { flex: 1, minHeight: 120, justifyContent: 'center' },
 });

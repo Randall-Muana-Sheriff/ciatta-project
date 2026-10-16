@@ -18,7 +18,7 @@ import { headingFor } from '../ui/InsightCards';
 import { PhotoCard } from '../ui/PhotoCard';
 import { Sheet } from '../ui/Sheet';
 import { HUE, L, NAV_CLEARANCE, SPACE, TILE_RADIUS } from '../ui/surface';
-import { CardFill, CardPhoto } from '../ui/cardFill';
+import { CardFill } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 import { PAPER } from '../ui/paper';
 import { patternContext } from '../lib/patternContext';
@@ -128,7 +128,7 @@ export function InsightView({ id, onClose, sheet = false }: { id: string | null;
           */}
           {pattern.lines.length ? (
             <View style={s.record}>
-              <CardPhoto />
+              <CardFill />
               <Text style={[font('headline'), s.onCard]}>For you</Text>
               {pattern.lines.map((c) => (
                 <View key={c} style={s.bullet}>

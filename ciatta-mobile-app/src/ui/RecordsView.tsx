@@ -51,9 +51,8 @@ function LabsSection({ onOpen }: { onOpen: (screen: Screen) => void }) {
 
   return (
     <View>
-      <View style={hr.section}>
-        <SectionHeading title="Labs" />
-      </View>
+      {/* No heading of its own: the page is Labs. */}
+      <View style={hr.top} />
       {summary ? <Text style={[font('subhead'), { color: G.ink, marginBottom: 12 }]}>{displayCopy(summary)}</Text> : null}
       {labs && !labs.length ? (
         <EmptyNote text="No labs yet. They arrive from a provider you connect, or from a lab report you add." />
@@ -174,4 +173,5 @@ const hr = StyleSheet.create({
   labTop: { flexDirection: 'row', alignItems: 'center', gap: 10, justifyContent: 'space-between' },
   addHint: { color: G.meta, textAlign: 'center', marginTop: 6 },
   add: { marginTop: 32 },
+  top: { height: 8 },
 });

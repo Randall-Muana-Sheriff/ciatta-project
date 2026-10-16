@@ -16,7 +16,7 @@ import { C, font } from '../theme';
 import { Eyebrow } from '../ui/bento';
 import { DetailScreen, EmptyNote, PrimaryButton, SecondaryButton, Lead } from '../ui/kit';
 import { L, SPACE, TILE_RADIUS } from '../ui/surface';
-import { CardPhoto } from '../ui/cardFill';
+import { CardFill } from '../ui/cardFill';
 import { G } from '../ui/scheme';
 
 export function VisitPrepScreen() {
@@ -49,7 +49,7 @@ export function VisitPrepScreen() {
         <View key={sec.title} style={{ marginTop: SPACE.near }}>
           <Eyebrow>{sec.title}</Eyebrow>
           <View style={s.card}>
-            <CardPhoto />
+            <CardFill />
             {sec.lines.map((l) => (
               <Text key={l} style={[font('subhead'), s.line]}>
                 {displayCopy(l)}
@@ -63,7 +63,7 @@ export function VisitPrepScreen() {
         <Eyebrow>Questions to ask</Eyebrow>
       </View>
       <View style={s.card}>
-        <CardPhoto />
+        <CardFill />
         {prep.questions.map((q) => (
           <View key={q} style={s.row}>
             <Text style={[font('subhead'), s.line, { flex: 1 }]}>{displayCopy(q)}</Text>
